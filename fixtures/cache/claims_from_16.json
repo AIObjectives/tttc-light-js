@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim": "Incarceration provides an opportunity for personal transformation.",
+      "quote": "you could tell when a person came in prison how they was, they was ignorant. [...] So you have to begin to know the things that you need to know in order to live a successful life.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Education in prison should aim to reduce recidivism by teaching life skills.",
+      "quote": "There's a responsibility for you to know.  So you have to begin to know the things that you need to know in order to live a successful life. Live a crime free life.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Supporting others can be a pathway to personal rehabilitation.",
+      "quote": "Live a life that you can be helpful to someone in some way, and then begin to uplift yourself and follow humanity.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

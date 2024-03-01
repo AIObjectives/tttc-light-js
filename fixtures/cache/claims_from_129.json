@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim": "Collaborative efforts among organizations supporting justice-involved individuals are crucial for maximizing impact.",
+      "quote": "there's so many different organizations that are trying to do this work and trying to support people who are justice involved., one of the problems I've experienced is that, We're like in these different silos.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Working in isolation hampers the effectiveness and sustainability of organizations aiding justice-involved individuals.",
+      "quote": "That one group is over here doing amazing work. Another group is over here, but we're not working on it together. And so, , our resources are limited. We're working ourselves to death and because it's hard work mentally, and, and that takes a physical taxing toll on your body.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Addressing basic needs such as safe housing, employment, and reproductive freedom is interconnected with broader societal issues like voting rights.",
+      "quote": "There is definite interconnection because if you don't have a safe place to lay your head at night, if you don't have a job to pay just to live and survive if you don't have reproductive freedom then. Why would you care about voting?",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    }
+  ]
+}

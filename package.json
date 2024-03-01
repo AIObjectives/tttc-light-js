@@ -1,22 +1,24 @@
 {
   "name": "tttc-light-js",
   "version": "1.0.0",
-  "description": "",
-  "type": "module",
+  "description": "Express.js server for turbo pipeline and report generation",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx babel rendering --out-dir rendering/compiled --extensions \".tsx\""
+    "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\"",
+    "watch": "npx babel src --out-dir dist --extensions \".tsx,.ts\" --watch",
+    "test": "npm run build && node dist/test.js"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
   "devDependencies": {
     "@babel/cli": "^7.23.9",
     "@babel/core": "^7.24.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.23.3",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-react": "^7.23.3",
     "@babel/preset-typescript": "^7.23.3",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "typescript": "^5.3.3"
   },

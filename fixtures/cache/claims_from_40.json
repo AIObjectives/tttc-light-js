@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "Awareness must be raised about ongoing injustices faced by children and people of color.",
+      "quote": "I'm really a big supporter with Silent Cry. And I, I try to get the, get the message out that these things are happening and have happened and that where awareness, awareness has to happen, that these things are going on and still going on, and especially with our children.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "People of color and those from lower economic backgrounds are disproportionately incarcerated.",
+      "quote": "they're still incarcerating young people. , and people of color and people with less economic standards. They're, they're treated less than everybody else.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Economic status and racial background influence the level of support and resources available post-release.",
+      "quote": "Even once you, if you do and you come out and you look different than me, you probably would get more access to resources that will help you along the way.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "The criminal justice system is still flawed and biased despite reforms.",
+      "quote": "It, it hasn't, it hasn't changed. Even though they did pass that law. Let all these people out, they're still, they're still incarcerating young people. , and people of color and people with less economic standards.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Prison Gerrymandering"
+    },
+    {
+      "claim": "Compassion and a willingness to listen can make a significant difference in supporting affected communities.",
+      "quote": "sometimes all it takes is one person willing to just listen.  Sometimes all it is is, is just a touch., a consoling touch that, that you're listening and you have compassion.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

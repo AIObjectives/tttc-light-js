@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "Incarcerated individuals can be wrongly convicted due to corruption within the judicial system.",
+      "quote": "No witnesses, no evidence, no nothing. [...] My judge. His name is Thomas J Maloney. They was arresting him and he went to jail. For what? Bribery. And blackmailed.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Spiritual growth and guidance from religious leaders can help overcome bitterness and anger caused by unjust incarceration.",
+      "quote": "I'm so glad for the teachings of the honorable Elijah Muhammad and the Honorable Minister Louis Farrakhan because they taught me how to overcome these conditions and not be bitter, not be angry.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Channeling anger into community work can be therapeutic for individuals who have experienced injustice.",
+      "quote": "Take your anger out in another way. I take my anger out by doing this work because this work is a healing for me.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "The existence of a higher power can influence individuals to hope for justice against their wrongdoers.",
+      "quote": "if there's a God and I believe it is, you gonna pay for what you've done for to me. Cause you know I didn't do nothing but you sending me to prison because I won't give you no money.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    }
+  ]
+}

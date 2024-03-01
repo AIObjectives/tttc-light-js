@@ -1,0 +1,78 @@
+{
+  "taxonomy": [
+    {
+      "topicName": "Reentry Challenges",
+      "topicShortDescription": "Obstacles faced by formerly incarcerated individuals upon reentry into society.",
+      "subtopics": [
+        {
+          "subtopicName": "Mental Health Support",
+          "subtopicShortDescription": "The need for mental health services tailored to the experiences of returning citizens."
+        },
+        {
+          "subtopicName": "Housing Accessibility",
+          "subtopicShortDescription": "Challenges in securing safe and stable housing due to criminal records."
+        },
+        {
+          "subtopicName": "Employment Opportunities",
+          "subtopicShortDescription": "Difficulties in finding employment that matches educational or skill levels, primarily because of past convictions."
+        },
+        {
+          "subtopicName": "Technology Adaptation",
+          "subtopicShortDescription": "The struggle to adapt to modern technology after long periods of incarceration."
+        },
+        {
+          "subtopicName": "Family and Social Reintegration",
+          "subtopicShortDescription": "Navigating relationship rebuilding and establishing social connections post-release."
+        },
+        {
+          "subtopicName": "Educational Pathways",
+          "subtopicShortDescription": "Access to and the importance of education and training while incarcerated and upon reentry."
+        }
+      ]
+    },
+    {
+      "topicName": "Policy Reform",
+      "topicShortDescription": "Efforts and challenges in reforming policies that affect justice-involved individuals.",
+      "subtopics": [
+        {
+          "subtopicName": "Voting Rights",
+          "subtopicShortDescription": "Challenges and efforts to ensure voting rights for justice-involved and formerly incarcerated individuals."
+        },
+        {
+          "subtopicName": "Fair Housing Legislation",
+          "subtopicShortDescription": "Legislation aimed at providing fair housing opportunities, minimizing discrimination based on criminal records."
+        },
+        {
+          "subtopicName": "Expungement and Record Sealing",
+          "subtopicShortDescription": "Efforts and barriers to expunging or sealing criminal records to ease reentry challenges."
+        },
+        {
+          "subtopicName": "Good Time Credit Policies",
+          "subtopicShortDescription": "Advocacy and legislative efforts to reinstate or implement policies allowing sentence reduction for good behavior."
+        },
+        {
+          "subtopicName": "Prison Gerrymandering",
+          "subtopicShortDescription": "Campaigns addressing the allocation of political power and resources based on incarcerated populations."
+        }
+      ]
+    },
+    {
+      "topicName": "Community and Supportive Services",
+      "topicShortDescription": "The role of community organizations and services in aiding reentry.",
+      "subtopics": [
+        {
+          "subtopicName": "Reentry Programs",
+          "subtopicShortDescription": "Programs designed to support transition back into society with resources like housing, employment, and education."
+        },
+        {
+          "subtopicName": "Peer Support Networks",
+          "subtopicShortDescription": "The value of peer-led support groups and networks for sharing experiences and advice."
+        },
+        {
+          "subtopicName": "Collaborative Efforts",
+          "subtopicShortDescription": "The importance of collaborative work between various organizations to maximize impact on reentry support."
+        }
+      ]
+    }
+  ]
+}

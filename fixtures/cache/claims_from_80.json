@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "Redlining still exists, affecting where people can live.",
+      "quote": "Housing is a, they might not have it officially anymore, but redlining still exists.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Formerly incarcerated individuals face significant challenges in securing housing.",
+      "quote": "And within three hours we were all now no longer approved. [...] purely because I was in prison.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "High credit scores and financial readiness do not negate the impact of a criminal record on housing applications.",
+      "quote": "I have nearly an 800 credit score. And so there's nothing else that goes into this except for that.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Formerly incarcerated individuals often are not the primary lessee due to discrimination.",
+      "quote": "I'm not on my lease right now. My wife is on the lease.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Universities contribute to housing shortages and prices, exacerbating challenges for formerly incarcerated individuals.",
+      "quote": "The problem is you have Eastern Michigan and you have University of Michigan, so they've got a transient population that can always fill their housing.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Legislation exists to prevent discrimination against formerly incarcerated individuals in housing applications, but enforcement is lax.",
+      "quote": "If part of Ann Arbor actually has something on the books that says they can't use your incarceration against you on the front end. On the back end, they still can.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Fair Housing Legislation"
+    },
+    {
+      "claim": "Homeownership is often viewed as the only reliable pathway to stable housing for formerly incarcerated individuals.",
+      "quote": "The only real way out of this in a lot of ways is home ownership.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    }
+  ]
+}

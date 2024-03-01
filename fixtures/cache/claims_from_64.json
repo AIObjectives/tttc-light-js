@@ -1,0 +1,52 @@
+{
+  "claims": [
+    {
+      "claim": "Formerly incarcerated individuals can face significant challenges adapting to modern technology.",
+      "quote": "I didn't expect to come home after 20 years of incarceration [...] The only technology I had access to was, again, a desktop.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Reintegrating individuals may become unexpected sources of technological knowledge for their peers.",
+      "quote": "I didn't expect to come home and I become the tech guy, not even six months from being home.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Society fails to prepare incarcerated individuals for the technological advances that have occurred during their time away.",
+      "quote": "Now you take someone outta society who, before they left only knew of email from a television show. [...] 20, 25, 30 years later, you bring them home and let them know, like, Hey, you gotta know how to do this.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Comprehensive support in reentry programs, including technology education, is essential for successful societal reintegration.",
+      "quote": "A Brighter Way [...] the nonprofits focus on helping folks who are returning from home especially longer returning citizens, but anyone returning from home in Washtenaw County to to have a mentor to assist system with their transition and also to providing what's called, like we call wraparound services, That goes from anything from housing assistance to covid assistance, to job assistance, to interview assistance, to resumes, whatever.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Lack of prior technology engagement magnifies the difficulties faced by formerly incarcerated individuals on reentry.",
+      "quote": "So now you take someone outta society who, before they left only knew of email from a television show. [...] It wasn't prior daily interactions or needs, and 20, 25, 30 years later, you bring them home and let them know, like, Hey, you gotta know how to do this.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "The transition to technological fluency is hindered by the absence of relatable teaching methodologies for returning citizens.",
+      "quote": "But they didn't do it on their own successfully until they understood why they had to have two factor where it went to in relay.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Peer support plays a crucial role in navigating technology adaptation challenges.",
+      "quote": "I've shown people step by step how to get into their email.  But they didn't do it on their own successfully until they understood why they had to have two factor where it went to in relay.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Fear and unfamiliarity with technology are significant barriers for formerly incarcerated individuals.",
+      "quote": "Now it's, it's a thing I, I still struggle with and it was something I realized a few years ago was like, I was afraid me, I was afraid of this damn laptop because I was worried that there was gonna be another instance where I would be looking to do something that should take me 10 or 15 minutes.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    }
+  ]
+}

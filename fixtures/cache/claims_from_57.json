@@ -1,0 +1,58 @@
+{
+  "claims": [
+    {
+      "claim": "Formerly incarcerated individuals should have stable housing upon release.",
+      "quote": "You have to make sure that they're equipped somewhere to lay their head, not for a day or a week or just for a month.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "The system should ensure housing arrangements for returning citizens before their release.",
+      "quote": "There should be some type of agreement entered into before they come out.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Lack of stable housing for returning citizens can lead to criminal infractions.",
+      "quote": "You can't be vagrant. You what? At some point you wanna go, go inside. It snows here. So they're gonna break into a structure.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Returning citizens require assistance with employment immediately upon release.",
+      "quote": "And in that time, you need to make sure somebody's helping them get a job.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "State IDs or driver's licenses are essential for employment and should be provided upon reentry.",
+      "quote": "Okay, well then you need to start with a state ID or a driver's license. They can't get a job without that.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "Returning citizens face barriers in obtaining necessary documents for employment.",
+      "quote": "They can't get a state ID or driver's license without a social security card.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "Formal systems set returning citizens up for failure by not providing necessary reentry support.",
+      "quote": "So you're setting them up for failure?",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Emergency food stamp provision varies by state, impacting the welfare of returning citizens.",
+      "quote": "You might be able to get some emergency food stamps if your state allows for that. All states are different.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "Decision-makers in reentry processes may not fully understand the challenges faced by returning citizens.",
+      "quote": "I think the people who are making the decisions have not been affected, impacted by these type of challenges.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    }
+  ]
+}

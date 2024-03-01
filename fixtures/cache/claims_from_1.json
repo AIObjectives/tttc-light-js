@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "The incarceration of mothers has a devastating impact on communities.",
+      "quote": "And when you lock up a mom, you destroy a community.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Family and Social Reintegration"
+    },
+    {
+      "claim": "Women incarcerated due to their relations with men face a unique set of challenges.",
+      "quote": "Women that are incarcerated are [...] because of direct action of a man or a dominant co-defendant who was forcing things on them.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Marginalized communities in Detroit face neglect in terms of resources and safety.",
+      "quote": "I'm not light enough. Because I'm not the right ethnicity [...] why is it that my resources, my cops, Can't come to my city block in a hurry like they do in all of the nice neighborhoods...",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "There is racial disparity in how justice-involved women are treated and perceived.",
+      "quote": "And the first time it happens to someone of another race, then all hell loose. And that's not fair.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Formerly incarcerated individuals are barred from volunteering in valuable community programs.",
+      "quote": "But yet cannot allow a parent to volunteer and help.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "The Detroit public school system needs improvement, especially for the children of the incarcerated.",
+      "quote": "I do care about how my child is being educated in the Detroit public schools and their ratings.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Community involvement and beautification efforts in Detroit are not equally distributed.",
+      "quote": "I love the idea of the walk and the bike ride to be able to go from one city all the way downtown to the river walk.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    }
+  ]
+}

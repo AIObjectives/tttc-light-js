@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "Food insecurity impacts children's ability to perform academically.",
+      "quote": "How can you think right when you're not eating right.",
+      "topicName": "Educational Pathways",
+      "subtopicName": "Access to and the importance of education and training while incarcerated and upon reentry."
+    },
+    {
+      "claim": "Weekends and end-of-month periods are particularly hard for food-insecure students.",
+      "quote": "Most children, they say that are food insecure, go hungry from Friday to Sunday when school is out. [...] the last two weekends of the month, the last third and fourth week of the month when the bridge card or the food assistant card runs out, that they're most hungry.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Physical health and mental health are interconnected, affecting students' learning.",
+      "quote": "Gut health and mental health inter correlated.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Behavioral issues in schools may be linked to nutritional deficiencies.",
+      "quote": "I'm often compelled to wonder, was it the lack of nutrition? Were we failing nutritionally?",
+      "topicName": "Educational Pathways",
+      "subtopicName": "Access to and the importance of education and training while incarcerated and upon reentry."
+    },
+    {
+      "claim": "Schools need to address nutritional needs to ensure students' academic success.",
+      "quote": "So if you don't have a healthy breakfast, how could I have been grading you and holding you accountable when you didn't have the basic tools to be successful?",
+      "topicName": "Educational Pathways",
+      "subtopicName": "Access to and the importance of education and training while incarcerated and upon reentry."
+    }
+  ]
+}
