@@ -1,0 +1,22 @@
+"use strict";
+
+var _express = _interopRequireDefault(require("express"));
+var _cors = _interopRequireDefault(require("cors"));
+var _pipeline = _interopRequireDefault(require("./pipeline"));
+var _html = _interopRequireDefault(require("./html"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+const port = 8080;
+const app = (0, _express.default)();
+app.use((0, _cors.default)());
+app.use(_express.default.json());
+app.post("/generate", async (req, res) => {
+  const {
+    data
+  } = req.body;
+  const json = await (0, _pipeline.default)(data);
+  const htmlString = await (0, _html.default)(json);
+  res.send(htmlString);
+});
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
