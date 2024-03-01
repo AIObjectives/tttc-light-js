@@ -4,16 +4,27 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx babel rendering --out-dir rendering/compiled --extensions \".tsx\""
   },
   "author": "Bruno Marnette",
   "license": "MIT",
   "devDependencies": {
+    "@babel/cli": "^7.23.9",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-react": "^7.23.3",
+    "@babel/preset-typescript": "^7.23.3",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "csv-parser": "^3.0.0",
     "openai": "^4.28.4",
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }

@@ -45,6 +45,7 @@ async function main() {
   fs.writeFileSync(
     "./report.html",
     await prettier.format(report.html, { parser: "html" })
+    // report.html
   );
   fs.writeFileSync("./report.json", JSON.stringify(report.json, null, 2));
 }
