@@ -2,3 +2,4 @@ fixtures/
 src/
 google-credentials.json
 .env
+.env*

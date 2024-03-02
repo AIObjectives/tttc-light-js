@@ -12,6 +12,9 @@ app.use((0, _cors.default)());
 app.use(_express.default.json());
 app.post("/generate", async (req, res) => {
   const config = req.body;
+  if (config.filename) {
+    console.log(`WILL STORE  ${config.filename}`);
+  }
   console.log(JSON.stringify(config, null, 2));
   const json = await (0, _pipeline.default)(config);
   console.log(JSON.stringify(json, null, 2));
@@ -19,8 +22,10 @@ app.post("/generate", async (req, res) => {
   if (config.filename) {
     const storeRes = await (0, _storage.storeHtml)(config.filename, htmlString);
     console.log(storeRes);
+    res.send("produced file: " + storeRes.url);
+  } else {
+    res.send(htmlString);
   }
-  res.send(htmlString);
 });
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
