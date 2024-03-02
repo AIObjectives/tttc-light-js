@@ -6,7 +6,7 @@
     "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\"",
     "watch": "npx babel src --out-dir dist --extensions \".tsx,.ts\" --watch",
     "test": "npm run build && node dist/test.js",
-    "serve": "npm run build && node dist/server.js"
+    "start": "node dist/server.js"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
