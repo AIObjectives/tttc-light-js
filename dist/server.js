@@ -10,13 +10,13 @@ const app = (0, _express.default)();
 app.use((0, _cors.default)());
 app.use(_express.default.json());
 app.post("/generate", async (req, res) => {
-  const {
-    data
-  } = req.body;
-  const json = await (0, _pipeline.default)(data);
+  const config = req.body;
+  console.log(JSON.stringify(config, null, 2));
+  const json = await (0, _pipeline.default)(config);
+  console.log(JSON.stringify(json, null, 2));
   const htmlString = await (0, _html.default)(json);
   res.send(htmlString);
 });
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`Listening at http://localhost:${port}`);
 });

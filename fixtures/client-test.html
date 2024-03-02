@@ -7,7 +7,7 @@
   </head>
   <body>
     <script>
-      const data = {
+      const bodyData = {
         title: "City of Madrid",
         question: "How can we improve the quality of life in Madrid?",
         data: [
@@ -24,7 +24,7 @@
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(bodyData),
       })
         .then((response) => response.text()) // Assuming the response is text (HTML in this case)
         .then((html) => {

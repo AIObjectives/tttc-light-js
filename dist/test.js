@@ -2,6 +2,7 @@
 
 var _pipeline = _interopRequireDefault(require("./pipeline"));
 var _html = _interopRequireDefault(require("./html"));
+var _storage = require("./storage");
 var _fs = _interopRequireDefault(require("fs"));
 var _csvParser = _interopRequireDefault(require("csv-parser"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -35,5 +36,7 @@ async function main() {
   _fs.default.writeFileSync("./fixtures/report.json", JSON.stringify(json, null, 2));
   const report = await (0, _html.default)(json);
   _fs.default.writeFileSync("./fixtures/report.html", report);
+  const res = await (0, _storage.storeHtml)("test-report.html", report);
+  console.log(res);
 }
 main();

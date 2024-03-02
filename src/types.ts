@@ -15,6 +15,7 @@ export type Options = {
   clusteringInstructions?: string;
   extractionInstructions?: string;
   batchSize?: number;
+  filename?: string;
 };
 
 export type Cache = {
@@ -73,4 +74,8 @@ export type PipelineOutput = {
   costs: number;
   end?: number;
   duration?: string;
+};
+
+export type SourceMap = {
+  [key: string]: SourceRow;
 };
