@@ -21,9 +21,9 @@ app.post("/generate", async (req, res) => {
   console.log(JSON.stringify(json, null, 2));
   const htmlString = await html(json);
   if (config.filename) {
-    const storeRes = await storeHtml(config.filename, htmlString);
-    console.log(storeRes);
-    res.send("produced file: " + storeRes.url);
+    const url = await storeHtml(config.filename, htmlString);
+    console.log("produced file: " + url);
+    res.send("produced file: " + url);
   } else {
     res.send(htmlString);
   }

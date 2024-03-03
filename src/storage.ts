@@ -1,31 +1,27 @@
 import { Storage } from "@google-cloud/storage";
 
-const storage = new Storage();
+let storage: any;
+const encoded_creds = process.env.GOOGLE_CREDENTIALS_ENCODED;
+if (encoded_creds) {
+  const decoded = Buffer.from(encoded_creds, "base64").toString("utf-8");
+  storage = new Storage({ credentials: JSON.parse(decoded) });
+}
+
 const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
 
 export async function storeHtml(fileName: string, fileContent: string) {
   if (!bucketName) {
-    return {
-      status: "error",
-      message: "GCLOUD_STORAGE_BUCKET is not set",
-    };
+    throw new Error("Missing bucket name (GCLOUD_STORAGE_BUCKET).");
+  }
+  if (!storage) {
+    throw new Error("Missing google creds (GOOGLE_CREDENTIALS_ENCODED)");
   }
   const bucket = storage.bucket(bucketName);
   const file = bucket.file(fileName);
-  try {
-    await file.save(fileContent, {
-      metadata: {
-        contentType: "text/html",
-      },
-    });
-    return {
-      status: "ok",
-      url: `https://storage.googleapis.com/${bucketName}/${fileName}`,
-    };
-  } catch (e: any) {
-    return {
-      status: "error",
-      message: e.message,
-    };
-  }
+  await file.save(fileContent, {
+    metadata: {
+      contentType: "text/html",
+    },
+  });
+  return `https://storage.googleapis.com/${bucketName}/${fileName}`;
 }
