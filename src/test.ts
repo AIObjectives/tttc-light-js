@@ -39,6 +39,7 @@ async function main() {
   const data = await loadSource();
   const json = await pipeline(
     {
+      apiKey: process.env.OPENAI_API_KEY!,
       data,
       title: "Heal Michigan",
       question: "What challenges are you and the community facing?",
@@ -50,8 +51,9 @@ async function main() {
   fs.writeFileSync("./fixtures/report.json", JSON.stringify(json, null, 2));
   const report = await html(json);
   fs.writeFileSync("./fixtures/report.html", report);
-  const res = await storeHtml("test-report.html", report);
-  console.log(res);
+  console.log("report written to fixtures/report.html");
+  //   const res = await storeHtml("test-report.html", report);
+  //   console.log(res);
 }
 
 main();

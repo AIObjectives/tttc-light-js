@@ -1,11 +1,17 @@
-#
+# tttc-light-js...
+
+Todo:
+
+- use openAIkey from front-end or AOI key if password provided instead
 
 ## Running locally (for development)
 
-Create a `.env` file with an OpenAI key
+Create a `.env` file with your own OpenAI key and set also a password.
+If you give this password to a friend, they'll be allowed to use your server by putting this password instead of an OpenAI key.
 
 ```
 export OPENAI_API_KEY=sk-something-something
+export OPENAI_API_KEY_PASSWORD=some-password
 ```
 
 Then run:

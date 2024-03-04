@@ -9,7 +9,14 @@ if (encoded_creds) {
 
 const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
 
-export async function storeHtml(fileName: string, fileContent: string) {
+export const getUrl = (fileName: string) =>
+  `https://storage.googleapis.com/${bucketName}/${fileName}`;
+
+export async function storeHtml(
+  fileName: string,
+  fileContent: string,
+  allowCache?: boolean
+) {
   if (!bucketName) {
     throw new Error("Missing bucket name (GCLOUD_STORAGE_BUCKET).");
   }
@@ -21,7 +28,12 @@ export async function storeHtml(fileName: string, fileContent: string) {
   await file.save(fileContent, {
     metadata: {
       contentType: "text/html",
+      ...(allowCache
+        ? {}
+        : {
+            cacheControl: "no-cache, no-store, must-revalidate",
+          }),
     },
   });
-  return `https://storage.googleapis.com/${bucketName}/${fileName}`;
+  return getUrl(fileName);
 }

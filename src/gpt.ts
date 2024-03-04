@@ -1,16 +1,25 @@
 import OpenAI from "openai";
-const openai = new OpenAI();
 
 import { Tracker, Cache } from "./types";
 
+export const testGPT = async (apiKey: string) => {
+  const openai = new OpenAI({ apiKey });
+  await openai.chat.completions.create({
+    messages: [{ role: "user", content: "hi" }],
+    model: "gpt-4-turbo-preview",
+  });
+};
+
 export const gpt = async (
-  key: string,
+  apiKey: string,
+  cacheKey: string,
   system: string,
   user: string,
   tracker: Tracker,
   cache?: Cache
 ) => {
-  if (cache && cache.get(key)) return cache.get(key);
+  const openai = new OpenAI({ apiKey });
+  if (cache && cache.get(cacheKey)) return cache.get(cacheKey);
   const start = Date.now();
   const completion = await openai.chat.completions.create({
     messages: [
@@ -31,11 +40,11 @@ export const gpt = async (
     throw new Error("gpt 4 turbo stopped early!");
   } else {
     const result = JSON.parse(message.content!);
-    if (cache) cache.set(key, result);
+    if (cache) cache.set(cacheKey, result);
     const _s = ((Date.now() - start) / 1000).toFixed(1);
     const _c = cost.toFixed(2);
     console.log(
-      `[${key}] ${_s}s and ~$${_c} for ${prompt_tokens}+${completion_tokens} tokens`
+      `[${cacheKey}] ${_s}s and ~$${_c} for ${prompt_tokens}+${completion_tokens} tokens`
     );
     return result;
   }

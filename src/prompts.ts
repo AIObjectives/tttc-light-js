@@ -71,12 +71,13 @@ And then here is the comment:
 ${comment} 
 `;
 
-export const dedupPrompt = (claims: string) => `
+export const dedupPrompt = (options: Options, claims: string) => `
 I'm going to give you a JSON object containing a list of claims with some ids.
 I want you to remove any near-duplicate claims from the list by nesting some claims under some top-level claims. 
 For example, if we have 5 claims and claim 3 and 5 are similar to claim 2, we will nest claim 3 and 5 under claim 2. 
 The nesting will be represented as a JSON object where the keys are the ids of the 
 top-level claims and the values are lists of ids of the nested claims.
+${options.dedupInstructions} 
 
 Return a JSON object of the form {
   "nesting": {

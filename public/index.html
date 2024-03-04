@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
+    <title>Talk the City</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <script src="index.js"></script>
+    <div class="navbar">
+      <h1>Talk to the City</h1>
+      <div class="nav-links">
+        <a href="/examples">Examples</a>
+        <a href="/docs">Docs</a>
+        <a href="/api">API</a>
+        <a href="/about">About</a>
+      </div>
+    </div>
+
+    <p class="intro">
+      Talk to the City (TttC) is a AI-powered summarization tool designed to
+      generate insightful reports based on public consultation data.
+    </p>
+
+    <form id="reportForm">
+      <label for="title">Report title:</label>
+      <input type="text" id="title" name="title" required /><br />
+
+      <label for="dataInput">Data:</label>
+      <small>Upload a CSV file with a "comment" column.</small>
+      <input
+        type="file"
+        id="csvInput"
+        name="dataInput"
+        accept=".csv"
+        onchange="onFileChange(event)"
+      />
+      <div type="file" id="csvUploaded">
+        <span id="filename"></span>
+        <span class="clickable" onclick="unsetCsv()">reset</span>
+      </div>
+      <br />
+
+      <label for="apiKey">OpenAI key:</label>
+      <small
+        >This key will only be stored on your device, not on our servers.</small
+      >
+      <input type="password" id="apiKey" name="apiKey" required /><br />
+
+      <div
+        id="advance"
+        class="clickable"
+        onclick="toggle('advanced', 'open'); toggle('advance', 'hidden')"
+      >
+        Show advanced settings
+      </div>
+
+      <div id="advanced">
+        <label for="question">Main question asked to participants:</label>
+        <textarea
+          id="question"
+          name="claimExtractionInstructions"
+          rows="3"
+          cols="50"
+        ></textarea
+        ><br />
+
+        <label for="description">Introduction paragraph:</label>
+        <textarea
+          id="description"
+          name="claimExtractionInstructions"
+          rows="3"
+          cols="50"
+        ></textarea
+        ><br />
+
+        <label for="systemInstructions"
+          >Instructions for the system prompt:</label
+        >
+        <textarea
+          id="systemInstructions"
+          name="systemInstructions"
+          rows="3"
+          cols="50"
+        ></textarea
+        ><br />
+
+        <label for="clusteringInstructions"
+          >Instructions for the clustering step:</label
+        >
+        <textarea
+          id="clusteringInstructions"
+          name="clusteringInstructions"
+          rows="3"
+          cols="50"
+        ></textarea
+        ><br />
+
+        <label for="extractionInstructions"
+          >Instructions for the claim extraction step:</label
+        >
+        <textarea
+          id="extractionInstructions"
+          name="extractionInstructions"
+          rows="3"
+          cols="50"
+        ></textarea
+        ><br />
+
+        <label for="dedupInstructions"
+          >Instructions for the deduplication step:</label
+        >
+        <textarea
+          id="dedupInstructions"
+          name="dedupInstructions"
+          rows="3"
+          cols="50"
+        ></textarea
+        ><br />
+        <div
+          class="clickable"
+          onclick="toggle('advanced', 'open'); toggle('advance', 'hidden')"
+        >
+          Hide advanced settings
+        </div>
+      </div>
+
+      <button id="generate" type="button" onclick="submitForm(event)">
+        Generate Report
+      </button>
+    </form>
+
+    <div id="messageModal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle">Message Title</h2>
+        <p id="modalMessage">Your message goes here.</p>
+        <a id="modalLink"></a>
+      </div>
+    </div>
+  </body>
+
+  <script>
+    loadAllFields();
+    updateDataField();
+  </script>
+</html>

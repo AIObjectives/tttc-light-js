@@ -3,12 +3,27 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.gpt = exports.default = void 0;
+exports.testGPT = exports.gpt = exports.default = void 0;
 var _openai = _interopRequireDefault(require("openai"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-const openai = new _openai.default();
-const gpt = async (key, system, user, tracker, cache) => {
-  if (cache && cache.get(key)) return cache.get(key);
+const testGPT = async apiKey => {
+  const openai = new _openai.default({
+    apiKey
+  });
+  await openai.chat.completions.create({
+    messages: [{
+      role: "user",
+      content: "hi"
+    }],
+    model: "gpt-4-turbo-preview"
+  });
+};
+exports.testGPT = testGPT;
+const gpt = async (apiKey, cacheKey, system, user, tracker, cache) => {
+  const openai = new _openai.default({
+    apiKey
+  });
+  if (cache && cache.get(cacheKey)) return cache.get(cacheKey);
   const start = Date.now();
   const completion = await openai.chat.completions.create({
     messages: [{
@@ -39,10 +54,10 @@ const gpt = async (key, system, user, tracker, cache) => {
     throw new Error("gpt 4 turbo stopped early!");
   } else {
     const result = JSON.parse(message.content);
-    if (cache) cache.set(key, result);
+    if (cache) cache.set(cacheKey, result);
     const _s = ((Date.now() - start) / 1000).toFixed(1);
     const _c = cost.toFixed(2);
-    console.log(`[${key}] ${_s}s and ~$${_c} for ${prompt_tokens}+${completion_tokens} tokens`);
+    console.log(`[${cacheKey}] ${_s}s and ~$${_c} for ${prompt_tokens}+${completion_tokens} tokens`);
     return result;
   }
 };

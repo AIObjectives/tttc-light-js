@@ -7,6 +7,7 @@ export type SourceRow = {
 };
 
 export type Options = {
+  apiKey?: string;
   data: SourceRow[];
   title: string;
   question: string;
@@ -14,6 +15,7 @@ export type Options = {
   systemInstructions?: string;
   clusteringInstructions?: string;
   extractionInstructions?: string;
+  dedupInstructions?: string;
   batchSize?: number;
   filename?: string;
 };

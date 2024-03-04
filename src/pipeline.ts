@@ -1,3 +1,4 @@
+import { Pipe } from "stream";
 import gpt from "./gpt";
 import {
   clusteringPrompt,
@@ -6,7 +7,15 @@ import {
   systemMessage,
 } from "./prompts";
 
-import { Options, Tracker, Cache, Claim, Subtopic, Taxonomy } from "./types";
+import {
+  Options,
+  Tracker,
+  Cache,
+  Claim,
+  Subtopic,
+  Taxonomy,
+  PipelineOutput,
+} from "./types";
 
 const defaultOptions = {
   data: [],
@@ -61,13 +70,18 @@ function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
     .sort((x, y) => (y.duplicates || []).length - (x.duplicates || []).length);
 }
 
-async function pipeline(_options: Options, cache?: Cache) {
+async function pipeline(
+  _options: Options,
+  cache?: Cache
+): Promise<PipelineOutput> {
   const options = { ...defaultOptions, ..._options };
   const tracker: Tracker = { costs: 0, start: Date.now(), unmatchedClaims: [] };
   const comments = JSON.stringify(options.data.map((x) => x.comment));
 
   console.log("Step 1: generating taxonomy of topics and subtopics");
+
   const { taxonomy }: { taxonomy: Taxonomy } = await gpt(
+    options.apiKey!,
     "taxonomy",
     systemMessage(options),
     clusteringPrompt(options, comments),
@@ -76,11 +90,13 @@ async function pipeline(_options: Options, cache?: Cache) {
   );
 
   console.log("Step 2: extracting claims matching the topics and subtopics");
+
   for (let i = 0; i < options.data.length; i += options.batchSize) {
     const batch = options.data.slice(i, i + options.batchSize);
     await Promise.all(
       batch.map(async ({ id, comment }) => {
         const { claims } = await gpt(
+          options.apiKey!,
           "claims_from_" + id,
           systemMessage(options),
           extractionPrompt(options, JSON.stringify(taxonomy), comment),
@@ -103,6 +119,7 @@ async function pipeline(_options: Options, cache?: Cache) {
   }
 
   console.log("Step 3: cleaning and sorting the taxonomy");
+
   taxonomy.forEach((topic) => {
     topic.claimsCount = 0;
     topic.subtopics.forEach((subtopic) => {
@@ -124,15 +141,17 @@ async function pipeline(_options: Options, cache?: Cache) {
   });
 
   console.log("Step 4: deduplicating claims in each subtopic");
+
   for (const topic of taxonomy) {
     for (const subtopic of topic.subtopics) {
       const { nesting } = await gpt(
+        options.apiKey!,
         "nesting_" +
           subtopic.subtopicName
             .replace(/[^a-zA-Z0-9 ]/g, "")
             .replace(/\s/g, "_"),
         systemMessage(options),
-        dedupPrompt(JSON.stringify(subtopic.claims)),
+        dedupPrompt(options, JSON.stringify(subtopic.claims)),
         tracker,
         cache
       );
@@ -149,135 +168,9 @@ async function pipeline(_options: Options, cache?: Cache) {
       ? `${Math.floor(secs / 60)} minutes ${secs % 60} seconds`
       : `${secs} seconds`;
 
+  // next line is important to avoid leaking keys!
+  delete options.apiKey;
   return { ...options, tree, ...tracker };
 }
 
 export default pipeline;
-
-// const styles = `
-// body {
-//   margin: 20px
-// }
-
-// h2, h3 {
-//   margin-bottom: 5px;
-// }
-// h3 {
-//   margin-top: 8px;
-// }
-
-// .claim {
-//   color: gray;
-//   cursor: pointer;
-//   text-decoration: underline;
-// }
-// .report-description {
-//   font-style: italic;
-// }
-// .details {
-//   display: none;
-// }
-// .open > .details {
-//   display: block;
-//   margin-bottom: 1em;
-// }
-// .quote {
-//   font-style: italic;
-// }
-
-// .count {
-//   font-weight: normal;
-//   opacity: 0.5;
-// }
-
-// .video {
-//   border: none;
-// }
-// `;
-
-// const setVideo = (claimId: string, video: string, timestamp: string) => {
-//   if (!video) return "";
-//   const parts = video.split("/");
-//   const videoId = parts[parts.length - 1];
-//   let [hours, minutes, seconds] = timestamp.split(":").map(Number);
-//   let totalSeconds = hours * 3600 + minutes * 60 + seconds;
-//   const src = `https://player.vimeo.com/video/${videoId}#t=${totalSeconds}s`;
-//   return `document.getElementById('video-${claimId}').src = '${src}';`;
-// };
-
-// const toHtml = (data: PipelineOutput) => {
-//   const sourceMap: any = {};
-//   data.data.forEach((d) => {
-//     sourceMap[d.id] = d;
-//   });
-//   let page = "<html>";
-//   page += `<style>${styles}</style>`;
-//   page += `<h1 id="title">${data.title}</h1>`;
-//   page += `<h1 id="question">${data.question}</h1>`;
-//   page += `<div class='report-description'>${data.description}</div>`;
-//   data.tree.forEach((topic) => {
-//     page += `<h2>${topic.topicName} <span class="count">(${topic.claimsCount})</span></h2>`;
-//     page += `<div class='topic-description'>${topic.topicShortDescription}</div>`;
-//     topic.subtopics.forEach((subtopic) => {
-//       page += `<div class="subtopic" id=${subtopic.subtopicId}>`;
-//       page += `<h3>${subtopic.subtopicName} <span class="count">(${subtopic.claims!.length})</span></h3>`;
-//       page += `<div class='subtopic-description'>${subtopic.subtopicShortDescription}</div>`;
-//       page += `<ul>`;
-//       subtopic.claims!.forEach((claim) => {
-//         page += `<li id="${claim.claimId}">`;
-//         let onclick = `document.getElementById('${claim.claimId}').classList.toggle('open');`;
-//         const { interview, video, timestamp } = sourceMap[claim.commentId!];
-//         if (video) {
-//           onclick += setVideo(claim.claimId!, video, timestamp);
-//         }
-//         const xN = claim.duplicates ? ` (x${1 + claim.duplicates.length})` : "";
-//         page += `<span class="claim" onclick="${onclick}">${claim.claim} ${xN}</span>`;
-//         page += `<div class='details' id="details-${claim.claimId}">`;
-//         if (interview) {
-//           page += `Interview: <span class="interview">"${interview}"</span> <br/>`;
-//         }
-//         if (video) {
-//           page += `<iframe id="video-${claim.claimId}" class="video" src="" width="250" height="141" allow="autoplay; fullscreen; picture-in-picture"></iframe><br/>`;
-//         }
-//         page += `Quote: <span class="quote">"${claim.quote}"</span>`;
-//         if (claim.duplicates) {
-//           page += `<div>Similar claims:</div>`;
-//           page += `<ul>`;
-//           claim.duplicates.forEach((claim) => {
-//             page += `<li id="${claim.claimId}">`;
-//             let onclick = `document.getElementById('${claim.claimId}').classList.toggle('open');`;
-//             const { interview, video, timestamp } = sourceMap[claim.commentId!];
-//             if (video) {
-//               onclick += setVideo(claim.claimId!, video, timestamp);
-//             }
-//             page += `<span class="claim" onclick="${onclick}">${claim.claim}</span>`;
-//             page += `<div class='details' id="details-${claim.claimId}">`;
-//             if (interview) {
-//               page += `Interview: <span class="interview">"${interview}"</span> <br/>`;
-//             }
-//             if (video) {
-//               page += `<iframe id="video-${claim.claimId}" class="video" src="" width="250" height="141" allow="autoplay; fullscreen; picture-in-picture"></iframe><br/>`;
-//             }
-//             page += `Quote: <span class="quote">"${claim.quote}"</span>`;
-//             page += `</div>`;
-//             page += `</li>`;
-//           });
-//           page += `</ul>`;
-//         }
-//         page += `</div>`;
-//         page += `</li>`;
-//       });
-//       page += `</ul>`;
-//       page += `</div>`;
-//     });
-//   });
-//   return page;
-// };
-
-// async function turbo(_options: Options, cache: Cache) {
-//   const json = await pipeline(_options, cache);
-//   const html = toHtml(json);
-//   return { json, html };
-// }
-
-// export default turbo;

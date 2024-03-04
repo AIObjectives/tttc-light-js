@@ -5,9 +5,14 @@ import * as prettier from "prettier";
 
 import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "./types";
 type ReportProps = { data: PipelineOutput };
-type TopicProps = { topic: Topic; sourceMap: SourceMap };
-type SubtopicProps = { subtopic: Subtopic; sourceMap: SourceMap };
-type ClaimProps = { claim: Claim; sourceMap: SourceMap };
+type TopicProps = { i: number; topic: Topic; sourceMap: SourceMap };
+type SubtopicProps = {
+  i: number;
+  j: number;
+  subtopic: Subtopic;
+  sourceMap: SourceMap;
+};
+type ClaimProps = { claim: Claim; sourceMap: SourceMap; more?: boolean };
 type ClaimDetailProps = { claim: Claim; sourceMap: SourceMap };
 
 export const Report = ({ data }: ReportProps) => {
@@ -24,8 +29,10 @@ export const Report = ({ data }: ReportProps) => {
         <h1 id="title">{data.title}</h1>
         <h1 id="question">{data.question}</h1>
         <div className="report-description">{data.description}</div>
-        {data.tree.map((topic) => (
+        <Outline data={data} />
+        {data.tree.map((topic, i) => (
           <TopicComponent
+            i={i}
             key={topic.topicId}
             topic={topic}
             sourceMap={sourceMap}
@@ -36,14 +43,63 @@ export const Report = ({ data }: ReportProps) => {
   );
 };
 
-const TopicComponent = ({ topic, sourceMap }: TopicProps) => (
-  <div>
+const Outline = ({ data }: ReportProps) => {
+  let totalClaims = 0;
+  data.tree.forEach((topic) => (totalClaims += topic.claimsCount!));
+  const rows: any = [];
+  data.tree.forEach((topic, i) => {
+    rows.push(
+      <tr key={i} className="outline-topic-row">
+        <td>
+          <a href={`#${topic.topicId}`}>
+            {i + 1}. {topic.topicName}
+          </a>
+        </td>
+        <td>{topic.claimsCount}</td>
+        <td>{((100 * topic.claimsCount!) / totalClaims).toFixed(0)}%</td>
+      </tr>
+    );
+    topic.subtopics.forEach((subtopic, j) => {
+      rows.push(
+        <tr key={`${i}/${j}`} className="outline-subtopic-row">
+          <td>
+            <a href={`#${subtopic.subtopicId}`}>
+              {i + 1}.{j + 1}. {subtopic.subtopicName}
+            </a>
+          </td>
+          <td>{subtopic.claimsCount}</td>
+          <td>{((100 * subtopic.claimsCount!) / totalClaims).toFixed(0)}%</td>
+        </tr>
+      );
+    });
+  });
+  return (
+    <div id="outline">
+      <table>
+        <thead>
+          <tr>
+            <th>Topic/Subtopic</th>
+            <th>Claims</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
+  );
+};
+
+const TopicComponent = ({ topic, i, sourceMap }: TopicProps) => (
+  <div id={topic.topicId}>
     <h2>
-      {topic.topicName} <span className="count">({topic.claimsCount})</span>
+      {i + 1}. {topic.topicName}{" "}
+      <span className="count">({topic.claimsCount})</span>
     </h2>
     <div className="topic-description">{topic.topicShortDescription}</div>
-    {topic.subtopics.map((subtopic) => (
+    {topic.subtopics.map((subtopic, j) => (
       <SubtopicComponent
+        i={i}
+        j={j}
         key={subtopic.subtopicId}
         subtopic={subtopic}
         sourceMap={sourceMap}
@@ -52,32 +108,58 @@ const TopicComponent = ({ topic, sourceMap }: TopicProps) => (
   </div>
 );
 
-const SubtopicComponent = ({ subtopic, sourceMap }: SubtopicProps) => (
+const SubtopicComponent = ({ subtopic, i, j, sourceMap }: SubtopicProps) => (
   <div className="subtopic" id={subtopic.subtopicId}>
     <h3>
-      {subtopic.subtopicName}{" "}
+      {i + 1}.{j + 1}. {subtopic.subtopicName}{" "}
       <span className="count">({subtopic.claims!.length})</span>
     </h3>
     <div className="subtopic-description">
       {subtopic.subtopicShortDescription}
     </div>
     <ul>
-      {subtopic.claims!.map((claim) => (
+      {subtopic.claims!.slice(0, 5).map((claim) => (
         <ClaimComponent
           key={claim.claimId}
           claim={claim}
           sourceMap={sourceMap}
         />
       ))}
+      {subtopic.claims!.length > 5 && (
+        <button
+          className="showmore-button"
+          data-onclick={showMoreOnclick(subtopic.subtopicId!)}
+        >
+          show all
+        </button>
+      )}
+      {subtopic.claims!.slice(5).map((claim) => (
+        <ClaimComponent
+          key={claim.claimId}
+          claim={claim}
+          sourceMap={sourceMap}
+          more
+        />
+      ))}
+      {subtopic.claims!.length > 5 && (
+        <button
+          className="showless-button"
+          data-onclick={showMoreOnclick(subtopic.subtopicId!)}
+        >
+          show less
+        </button>
+      )}
     </ul>
   </div>
 );
 
-const ClaimComponent = ({ claim, sourceMap }: ClaimProps) => (
-  <li id={claim.claimId}>
-    <span className="claim" data-onclick={onclick(sourceMap, claim)}>
+const ClaimComponent = ({ claim, sourceMap, more }: ClaimProps) => (
+  <li id={claim.claimId} className={more ? "more" : ""}>
+    <span className="claim" data-onclick={onClaimClick(sourceMap, claim)}>
       {claim.claim}{" "}
-      {claim.duplicates ? ` (x${1 + claim.duplicates.length})` : ""}
+      {claim.duplicates && claim.duplicates.length
+        ? ` (x${1 + claim.duplicates.length})`
+        : ""}
     </span>
     <ClaimDetailComponent claim={claim} sourceMap={sourceMap} />
   </li>
@@ -123,7 +205,7 @@ const ClaimDetailComponent = ({ claim, sourceMap }: ClaimDetailProps) => (
   </div>
 );
 
-const onclick = (sourceMap: SourceMap, claim: Claim) => {
+const onClaimClick = (sourceMap: SourceMap, claim: Claim) => {
   let callback = `document.getElementById('${claim.claimId}').classList.toggle('open');`;
   const { video, timestamp } = sourceMap[claim.commentId!];
   if (video) {
@@ -137,11 +219,17 @@ const onclick = (sourceMap: SourceMap, claim: Claim) => {
   return callback;
 };
 
+const showMoreOnclick = (subtopicId: String) => {
+  return `document.getElementById('${subtopicId}').classList.toggle('showmore');`;
+};
+
 const html = async (data: PipelineOutput) => {
   let str = ReactDOMServer.renderToString(<Report data={data} />);
   str = str.replace(/data-onclick/g, "onclick");
   str = str.replace(/&gt;/g, ">");
+  str = str.replace(/&lt;/g, "<");
   str = str.replace(/&#x27;/g, "'");
+  str = str.replace(/&quot;/g, '"');
   str = await prettier.format(str, { parser: "html" });
   return str;
 };

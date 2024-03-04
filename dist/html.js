@@ -24,49 +24,98 @@ const Report = ({
     id: "question"
   }, data.question), /*#__PURE__*/_react.default.createElement("div", {
     className: "report-description"
-  }, data.description), data.tree.map(topic => /*#__PURE__*/_react.default.createElement(TopicComponent, {
+  }, data.description), /*#__PURE__*/_react.default.createElement(Outline, {
+    data: data
+  }), data.tree.map((topic, i) => /*#__PURE__*/_react.default.createElement(TopicComponent, {
+    i: i,
     key: topic.topicId,
     topic: topic,
     sourceMap: sourceMap
   }))));
 };
 exports.Report = Report;
+const Outline = ({
+  data
+}) => {
+  let totalClaims = 0;
+  data.tree.forEach(topic => totalClaims += topic.claimsCount);
+  const rows = [];
+  data.tree.forEach((topic, i) => {
+    rows.push( /*#__PURE__*/_react.default.createElement("tr", {
+      key: i,
+      className: "outline-topic-row"
+    }, /*#__PURE__*/_react.default.createElement("td", null, /*#__PURE__*/_react.default.createElement("a", {
+      href: `#${topic.topicId}`
+    }, i + 1, ". ", topic.topicName)), /*#__PURE__*/_react.default.createElement("td", null, topic.claimsCount), /*#__PURE__*/_react.default.createElement("td", null, (100 * topic.claimsCount / totalClaims).toFixed(0), "%")));
+    topic.subtopics.forEach((subtopic, j) => {
+      rows.push( /*#__PURE__*/_react.default.createElement("tr", {
+        key: `${i}/${j}`,
+        className: "outline-subtopic-row"
+      }, /*#__PURE__*/_react.default.createElement("td", null, /*#__PURE__*/_react.default.createElement("a", {
+        href: `#${subtopic.subtopicId}`
+      }, i + 1, ".", j + 1, ". ", subtopic.subtopicName)), /*#__PURE__*/_react.default.createElement("td", null, subtopic.claimsCount), /*#__PURE__*/_react.default.createElement("td", null, (100 * subtopic.claimsCount / totalClaims).toFixed(0), "%")));
+    });
+  });
+  return /*#__PURE__*/_react.default.createElement("div", {
+    id: "outline"
+  }, /*#__PURE__*/_react.default.createElement("table", null, /*#__PURE__*/_react.default.createElement("thead", null, /*#__PURE__*/_react.default.createElement("tr", null, /*#__PURE__*/_react.default.createElement("th", null, "Topic/Subtopic"), /*#__PURE__*/_react.default.createElement("th", null, "Claims"), /*#__PURE__*/_react.default.createElement("th", null, "%"))), /*#__PURE__*/_react.default.createElement("tbody", null, rows)));
+};
 const TopicComponent = ({
   topic,
+  i,
   sourceMap
-}) => /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("h2", null, topic.topicName, " ", /*#__PURE__*/_react.default.createElement("span", {
+}) => /*#__PURE__*/_react.default.createElement("div", {
+  id: topic.topicId
+}, /*#__PURE__*/_react.default.createElement("h2", null, i + 1, ". ", topic.topicName, " ", /*#__PURE__*/_react.default.createElement("span", {
   className: "count"
 }, "(", topic.claimsCount, ")")), /*#__PURE__*/_react.default.createElement("div", {
   className: "topic-description"
-}, topic.topicShortDescription), topic.subtopics.map(subtopic => /*#__PURE__*/_react.default.createElement(SubtopicComponent, {
+}, topic.topicShortDescription), topic.subtopics.map((subtopic, j) => /*#__PURE__*/_react.default.createElement(SubtopicComponent, {
+  i: i,
+  j: j,
   key: subtopic.subtopicId,
   subtopic: subtopic,
   sourceMap: sourceMap
 })));
 const SubtopicComponent = ({
   subtopic,
+  i,
+  j,
   sourceMap
 }) => /*#__PURE__*/_react.default.createElement("div", {
   className: "subtopic",
   id: subtopic.subtopicId
-}, /*#__PURE__*/_react.default.createElement("h3", null, subtopic.subtopicName, " ", /*#__PURE__*/_react.default.createElement("span", {
+}, /*#__PURE__*/_react.default.createElement("h3", null, i + 1, ".", j + 1, ". ", subtopic.subtopicName, " ", /*#__PURE__*/_react.default.createElement("span", {
   className: "count"
 }, "(", subtopic.claims.length, ")")), /*#__PURE__*/_react.default.createElement("div", {
   className: "subtopic-description"
-}, subtopic.subtopicShortDescription), /*#__PURE__*/_react.default.createElement("ul", null, subtopic.claims.map(claim => /*#__PURE__*/_react.default.createElement(ClaimComponent, {
+}, subtopic.subtopicShortDescription), /*#__PURE__*/_react.default.createElement("ul", null, subtopic.claims.slice(0, 5).map(claim => /*#__PURE__*/_react.default.createElement(ClaimComponent, {
   key: claim.claimId,
   claim: claim,
   sourceMap: sourceMap
-}))));
+})), subtopic.claims.length > 5 && /*#__PURE__*/_react.default.createElement("button", {
+  className: "showmore-button",
+  "data-onclick": showMoreOnclick(subtopic.subtopicId)
+}, "show all"), subtopic.claims.slice(5).map(claim => /*#__PURE__*/_react.default.createElement(ClaimComponent, {
+  key: claim.claimId,
+  claim: claim,
+  sourceMap: sourceMap,
+  more: true
+})), subtopic.claims.length > 5 && /*#__PURE__*/_react.default.createElement("button", {
+  className: "showless-button",
+  "data-onclick": showMoreOnclick(subtopic.subtopicId)
+}, "show less")));
 const ClaimComponent = ({
   claim,
-  sourceMap
+  sourceMap,
+  more
 }) => /*#__PURE__*/_react.default.createElement("li", {
-  id: claim.claimId
+  id: claim.claimId,
+  className: more ? "more" : ""
 }, /*#__PURE__*/_react.default.createElement("span", {
   className: "claim",
-  "data-onclick": onclick(sourceMap, claim)
-}, claim.claim, " ", claim.duplicates ? ` (x${1 + claim.duplicates.length})` : ""), /*#__PURE__*/_react.default.createElement(ClaimDetailComponent, {
+  "data-onclick": onClaimClick(sourceMap, claim)
+}, claim.claim, " ", claim.duplicates && claim.duplicates.length ? ` (x${1 + claim.duplicates.length})` : ""), /*#__PURE__*/_react.default.createElement(ClaimDetailComponent, {
   claim: claim,
   sourceMap: sourceMap
 }));
@@ -92,7 +141,7 @@ const ClaimDetailComponent = ({
   claim: duplicate,
   sourceMap: sourceMap
 })))));
-const onclick = (sourceMap, claim) => {
+const onClaimClick = (sourceMap, claim) => {
   let callback = `document.getElementById('${claim.claimId}').classList.toggle('open');`;
   const {
     video,
@@ -108,13 +157,18 @@ const onclick = (sourceMap, claim) => {
   }
   return callback;
 };
+const showMoreOnclick = subtopicId => {
+  return `document.getElementById('${subtopicId}').classList.toggle('showmore');`;
+};
 const html = async data => {
   let str = _server.default.renderToString( /*#__PURE__*/_react.default.createElement(Report, {
     data: data
   }));
   str = str.replace(/data-onclick/g, "onclick");
   str = str.replace(/&gt;/g, ">");
+  str = str.replace(/&lt;/g, "<");
   str = str.replace(/&#x27;/g, "'");
+  str = str.replace(/&quot;/g, '"');
   str = await prettier.format(str, {
     parser: "html"
   });
