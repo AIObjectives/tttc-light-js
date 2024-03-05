@@ -2,7 +2,7 @@
 
 A backend API for turbo pipeline.
 
-## Running locally (for development)
+## How to run locally (for development)
 
 Create a `.env` file with your own OpenAI key and set also a password.
 If you give this password to a friend, they'll be allowed to use your server by putting this password instead of an OpenAI key.
@@ -36,6 +36,11 @@ Use provided script to build and push docker image
 - `./bin/docker-build-gloud`
 
 Then use the Google Cloud Run console to deploy new revision.
+
+- open the google console and search for gloud cloud run
+- find your project and the `tttc-light-js` app
+- click "EDIT AND DEPLOW NEW VERSION"
+- find the new docker container that you just pushed (search Google Cloud Registry)
 
 ## Setting up new Google Cloud instance
 
