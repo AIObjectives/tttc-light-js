@@ -1,8 +1,6 @@
-# tttc-light-js...
+# tttc-light-js-server
 
-Todo:
-
-- use openAIkey from front-end or AOI key if password provided instead
+A backend API for turbo pipeline.
 
 ## Running locally (for development)
 
