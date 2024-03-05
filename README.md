@@ -20,6 +20,49 @@ npm run build
 npm start
 ```
 
+## API docs
+
+The enpoint to generate reports is `POST /generate` and it expects a JSON body of the following type:
+
+```
+export type Options = {
+  apiKey?: string;       // a valid OpenAI key with gpt-4 access (or a password to use the server's key)
+  data: SourceRow[];     // input data in JSON format, see next section for SourceRow definition
+  title: string;         // title for the report, defaults to ""
+  question: string;      // the question asked to participants, defaults to ""
+  description: string;   //  intro  or abstract to include at the start of the report, defaults to ""
+  batchSize?: number;    // max number of parrallel calls for gpt-4, defaults to 5
+  filename?: string;     // where to store the report on gcloud (it generate a name if none is provided)
+  systemInstructions?: string;      // optional additional instructions for system prompt
+  clusteringInstructions?: string;  // optional additional instructions for clustering step
+  extractionInstructions?: string;  // optional additional instructions for extraction step
+  dedupInstructions?: string;       // optional additional instructions for deduplication step
+};
+```
+
+The enpoint is implemented in `./src/server.ts` and you can look at the client's file `./public/index.js` (line 108) for an example of how to use it.
+
+## Data format
+
+The data field must contain an array of objects of the following type:
+
+```
+export type SourceRow = {
+  id: string;        // unique id per raw
+  comment: string;   // main content
+
+  // optional fields for video interviews:
+  interview?: string; // name of participants
+  video?: string;     // link to a video hosted on Vimeo
+  timestamp?: string; // timestamp in the video
+};
+```
+
+## Provided client
+
+Open `localhost:8080/` to see the example of client provided.
+The client is written in plain html/css/js in the `public` folder.
+
 ## Deploying to Google Cloud
 
 This secion assumes a team member has already set up a google cloud project and given you the keys you need to put in you `.env` file. See next section if that's not the case.
