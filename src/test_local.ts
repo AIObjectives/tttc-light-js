@@ -1,6 +1,5 @@
 import pipeline from "./pipeline";
 import html from "./html";
-import { storeHtml } from "./storage";
 import fs from "fs";
 import csv from "csv-parser";
 import { SourceRow, Cache } from "./types";
@@ -52,8 +51,6 @@ async function main() {
   const report = await html(json);
   fs.writeFileSync("./fixtures/report.html", report);
   console.log("report written to fixtures/report.html");
-  //   const res = await storeHtml("test-report.html", report);
-  //   console.log(res);
 }
 
 main();
