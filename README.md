@@ -18,7 +18,7 @@ see the "Deploying to Google Cloud" section for how to set up a project.
 ```
 export GCLOUD_STORAGE_BUCKET=some-project
 export GOOGLE_CREDENTIALS_ENCODE=some-alphanumeric-string
-``
+```
 
 Then run:
 
@@ -117,12 +117,11 @@ Add a Google Run Service:
 
 - go to the Google Run console
 - create service
-- Specify the Image Source `gcr.io/your-project-id/tttc-light-js-app` (in the field "Container image URL")
-- after creating the service, in the side menu that opened, select the GCR tab and find the image
-- allow unauthorised access (like for public APIs)
-- select only charge when running (no need to keep this running at all time)
-- the first deploy with fail if you haven't set the env variables
-- click "EDIT & DEPLOY NEW VERSION" to set all the keys and deploy again
+- Specify the Image Source `gcr.io/your-project-id/tttc-light-js-app@...` (in the field "Container image URL") by clicking the "Select" button and choosing the container image for your project in the "Artifact Registry" tab
+- allow unauthorised access ("unauthenticated invocations" -- like for public APIs)
+- select "CPU is only allocated during request processing" (no need to keep this running at all time)
+
+Note: the first deploy with fail if you haven't set the .env variables
 
 ## Using docker locally (not recommended)
 
