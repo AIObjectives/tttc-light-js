@@ -12,6 +12,14 @@ export OPENAI_API_KEY=sk-something-something
 export OPENAI_API_KEY_PASSWORD=some-password
 ```
 
+If a team member has already set up a Google Cloud Storage project, add the keys for that project to the same `.env` file. Otheriwse,
+see the "Deploying to Google Cloud" section for how to set up a project.
+
+```
+export GCLOUD_STORAGE_BUCKET=some-project
+export GOOGLE_CREDENTIALS_ENCODE=some-alphanumeric-string
+```
+
 Then run:
 
 ```
@@ -65,9 +73,7 @@ The client is written in plain html/css/js in the `public` folder.
 
 ## Deploying to Google Cloud
 
-This secion assumes a team member has already set up a google cloud project and given you the keys you need to put in you `.env` file. See next section if that's not the case.
-
-Set up gcloud SDK on you machine
+Set up gcloud SDK on your machine
 
 - install `gloud` (see https://cloud.google.com/sdk/docs/install-sdk)
 - `gcloud auth login`
@@ -76,23 +82,23 @@ Set up gcloud SDK on you machine
 
 Use provided script to build and push docker image
 
-- `./bin/docker-build-gloud`
+- `./bin/docker-build-gcloud.sh`
 
 Then use the Google Cloud Run console to deploy new revision.
 
 - open the google console and search for gloud cloud run
 - find your project and the `tttc-light-js` app
-- click "EDIT AND DEPLOW NEW VERSION"
+- click "EDIT AND DEPLOY NEW VERSION"
 - find the new docker container that you just pushed (search Google Cloud Registry)
 
 ## Setting up new Google Cloud instance
 
 Instructions:
 
-- create a google cloudd project and a google storage bucket
+- create a google cloud project and a google storage bucket
 - add `GCLOUD_STORAGE_BUCKET=name-of-your-bucket` to your `.env`
 - make sure this bucket has public access so that anyone can read
-- create a service account and give it permission to write on that bucket
+- create a service account and give it permission to write on that bucket ("Editor" role)
 - create keys for this account and download them as a json files
 - save this file as `./google-credentials.json`
 - encode this using by running the command `base64 -i ./google-credentials.json`
@@ -101,21 +107,21 @@ Instructions:
 Your .evn file should then look like this:
 
 ```
-OPENAI_API_KEY=sk-something-something
-GCLOUD_STORAGE_BUCKET=name-of-your-bucket
-GOOGLE_APPLICATION_CREDENTIALS=some-long-encoded-string
+export OPENAI_API_KEY=sk-something-something
+export OPENAI_API_KEY_PASSWORD=some-password
+export GCLOUD_STORAGE_BUCKET=name-of-your-bucket
+export GOOGLE_APPLICATION_CREDENTIALS=some-long-encoded-string
 ```
 
 Add a Google Run Service:
 
 - go to the Google Run console
 - create service
-- Specify the Image Source `gcr.io/your-project-id/tttc-light-js-app` (in the field "Container image URL")
-- in the side menu that opened, select the GCR tab and find the image
-- allow unauthorised access (like for public APIs)
-- select only charge when running (no need to keep this running at all time)
-- the first deploy with fail if you haven't set the env variables
-- click "EDIT & DEPLOY NEW VERSION" to set all the keys and deploy again
+- Specify the Image Source `gcr.io/your-project-id/tttc-light-js-app@...` (in the field "Container image URL") by clicking the "Select" button and choosing the container image for your project in the "Artifact Registry" tab
+- allow unauthorised access ("unauthenticated invocations" -- like for public APIs)
+- select "CPU is only allocated during request processing" (no need to keep this running at all time)
+
+Note: the first deploy with fail if you haven't set the .env variables
 
 ## Using docker locally (not recommended)
 
