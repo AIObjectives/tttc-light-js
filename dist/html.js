@@ -136,7 +136,7 @@ const ClaimDetailComponent = ({
   allow: "autoplay; fullscreen; picture-in-picture"
 }), /*#__PURE__*/_react.default.createElement("br", null), "Quote: ", /*#__PURE__*/_react.default.createElement("span", {
   className: "quote"
-}, "\"", claim.quote, "\""), claim.duplicates && /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("div", null, "Similar claims:"), /*#__PURE__*/_react.default.createElement("ul", null, claim.duplicates.map(duplicate => /*#__PURE__*/_react.default.createElement(ClaimComponent, {
+}, "\"", claim.quote, "\""), claim.duplicates && claim.duplicates.length && /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("div", null, "Similar claims:"), /*#__PURE__*/_react.default.createElement("ul", null, claim.duplicates.map(duplicate => /*#__PURE__*/_react.default.createElement(ClaimComponent, {
   key: duplicate.claimId,
   claim: duplicate,
   sourceMap: sourceMap
@@ -152,6 +152,8 @@ const onClaimClick = (sourceMap, claim) => {
     const videoId = parts[parts.length - 1];
     let [hours, minutes, seconds] = timestamp.split(":").map(Number);
     let totalSeconds = hours * 3600 + minutes * 60 + seconds;
+    // note that we're only loading video when the user clicks on the claim
+    // that's for performance reasons and to work around a vimeo bug...
     const src = `https://player.vimeo.com/video/${videoId}#t=${totalSeconds}s`;
     callback += `document.getElementById('video-${claim.claimId}').src = '${src}';`;
   }

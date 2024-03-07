@@ -188,8 +188,9 @@ const ClaimDetailComponent = ({ claim, sourceMap }: ClaimDetailProps) => (
     )}
     <br />
     Quote: <span className="quote">"{claim.quote}"</span>
-    {claim.duplicates && (
+    {claim.duplicates && claim.duplicates.length && (
       <div>
+        <br />
         <div>Similar claims:</div>
         <ul>
           {claim.duplicates.map((duplicate) => (
