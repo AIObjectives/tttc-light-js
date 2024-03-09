@@ -1,5 +1,5 @@
-import styles from "src/styles"
 import {Metadata} from 'next'
+import './reportPage.css'
 
 export const metadata:Metadata = {
   title: 'Talk the City',
@@ -12,9 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <style>{styles}</style>
-      </head>
+      
       <body>{children}</body>
     </html>
   )
