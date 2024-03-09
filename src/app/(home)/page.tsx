@@ -1,4 +1,4 @@
-import '../styles'
+// import '../styles'
 
 export function generateStaticParams() {
     return [{slug: ['']}]
