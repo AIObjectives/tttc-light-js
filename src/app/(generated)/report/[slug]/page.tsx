@@ -1,11 +1,16 @@
 import json from '../../../../../fixtures/report.json'
 import Report from 'src/features/report'
+import ClientSideOpenClaimVideo from 'src/features/report/components/OpenClaimVideo/ClientSideOpenClaimVideo'
 import ClientSideToggleShowMoreButton from 'src/features/report/components/ToggleShowMoreButton/ClientSideToggleShowMore'
 
 export default function ReportPage({ params }: { params: { slug: string } }) {
     return (
       <>
-        <Report data={json} ToggleShowMoreComponent={ClientSideToggleShowMoreButton} />
+        <Report 
+          data={json} 
+          ToggleShowMoreComponent={ClientSideToggleShowMoreButton} 
+          OpenClaimVideo={ClientSideOpenClaimVideo}
+        />
       </>
     )
   }

@@ -1,7 +1,11 @@
 import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "../../types";
+import { OpenClaimVideoProps } from "./components/OpenClaimVideo/OpenClaimVideoInterface";
 import { ToggleShowMoreComponentProps } from "./components/ToggleShowMoreButton/ToggleShowMoreInterface";
 
-type InteractiveComponents = {ToggleShowMoreComponent: React.FC<ToggleShowMoreComponentProps>}
+type InteractiveComponents = {
+  ToggleShowMoreComponent: React.FC<ToggleShowMoreComponentProps>
+  OpenClaimVideo: React.FC<OpenClaimVideoProps>
+}
 type ReportProps = { data: PipelineOutput};
 type TopicProps = { i: number; topic: Topic; sourceMap: SourceMap } & InteractiveComponents;
 type SubtopicProps = {
@@ -10,8 +14,8 @@ type SubtopicProps = {
   subtopic: Subtopic;
   sourceMap: SourceMap;
 } & InteractiveComponents;
-type ClaimProps = { claim: Claim; sourceMap: SourceMap; more?: boolean };
-type ClaimDetailProps = { claim: Claim; sourceMap: SourceMap };
+type ClaimProps = { claim: Claim; sourceMap: SourceMap; more?: boolean } & InteractiveComponents;
+type ClaimDetailProps = { claim: Claim; sourceMap: SourceMap } & InteractiveComponents;
 
 export default function Report(props: ReportProps & InteractiveComponents) {
     const {data} = props
@@ -33,6 +37,7 @@ export default function Report(props: ReportProps & InteractiveComponents) {
             topic={topic}
             sourceMap={sourceMap}
             ToggleShowMoreComponent={props.ToggleShowMoreComponent}
+            OpenClaimVideo={props.OpenClaimVideo}
           />
         ))}
         </>
@@ -85,7 +90,7 @@ function Outline({data}:ReportProps) {
   );
 }
 
-function TopicComponent({ topic, i, sourceMap, ToggleShowMoreComponent }: TopicProps) {
+function TopicComponent({ topic, i, sourceMap, ToggleShowMoreComponent, OpenClaimVideo }: TopicProps) {
     return (
         <div id={topic.topicId}>
     <h2>
@@ -101,6 +106,7 @@ function TopicComponent({ topic, i, sourceMap, ToggleShowMoreComponent }: TopicP
         subtopic={subtopic}
         sourceMap={sourceMap}
         ToggleShowMoreComponent={ToggleShowMoreComponent}
+        OpenClaimVideo={OpenClaimVideo}
       />
     ))}
   </div>
@@ -108,12 +114,7 @@ function TopicComponent({ topic, i, sourceMap, ToggleShowMoreComponent }: TopicP
 }
 
 
-function SubtopicComponent({ subtopic, i, j, sourceMap, ToggleShowMoreComponent }: SubtopicProps) {
-    
-    // const showMoreOnclick = (subtopicId:string) => {
-    //     'use client'
-    //     document.getElementById(`${subtopicId}`)?.classList.toggle('showmore')
-    // }
+function SubtopicComponent({ subtopic, i, j, sourceMap, ToggleShowMoreComponent, OpenClaimVideo }: SubtopicProps) {
 
     return (
         <div className="subtopic" id={subtopic.subtopicId}>
@@ -130,15 +131,11 @@ function SubtopicComponent({ subtopic, i, j, sourceMap, ToggleShowMoreComponent 
           key={claim.claimId}
           claim={claim}
           sourceMap={sourceMap}
+          ToggleShowMoreComponent={ToggleShowMoreComponent}
+          OpenClaimVideo={OpenClaimVideo}
         />
       ))}
       {subtopic.claims!.length > 5 && (
-        // <button
-        //   className="showmore-button"
-        //   data-onclick={showMoreOnclick(subtopic.subtopicId!)}
-        // >
-        //   show all
-        // </button>
         <ToggleShowMoreComponent subtopic={subtopic} className="showmore-button">
           show all
         </ToggleShowMoreComponent>
@@ -148,16 +145,12 @@ function SubtopicComponent({ subtopic, i, j, sourceMap, ToggleShowMoreComponent 
           key={claim.claimId}
           claim={claim}
           sourceMap={sourceMap}
+          OpenClaimVideo={OpenClaimVideo}
+          ToggleShowMoreComponent={ToggleShowMoreComponent}
           more
         />
       ))}
       {subtopic.claims!.length > 5 && (
-        // <button
-        //   className="showless-button"
-        //   // data-onclick={showMoreOnclick(subtopic.subtopicId!)}
-        // >
-        //   show less
-        // </button>
         <ToggleShowMoreComponent subtopic={subtopic} className="showless-button">
           show less
         </ToggleShowMoreComponent>
@@ -167,46 +160,22 @@ function SubtopicComponent({ subtopic, i, j, sourceMap, ToggleShowMoreComponent 
     )
 }
 
-function ClaimComponent({ claim, sourceMap, more }: ClaimProps) {
-
-    // const onClaimClick = (sourceMap: SourceMap, claim: Claim) => {
-    //     return ()=> {
-    //         'use client'
-
-    //         // toggle opening claim
-    //         document.getElementById(`${claim.claimId}`)?.classList.toggle('open')
-
-    //         const {video, timestamp} = sourceMap[claim.commentId!]
-    //         if (video) {
-    //             const parts = video.split("/");
-    //             const videoId = parts[parts.length - 1];
-    //             let [hours, minutes, seconds] = timestamp!.split(":").map(Number);
-    //             let totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    //             // note that we're only loading video when the user clicks on the claim
-    //             // that's for performance reasons and to work around a vimeo bug...
-    //             const src = `https://player.vimeo.com/video/${videoId}#t=${totalSeconds}s`;
-    //             (document.getElementById('video-${claim.claimId}') as HTMLVideoElement).src = src;
-    //         }
-    //     }
-        
-      // };
+function ClaimComponent({ claim, sourceMap, more, ToggleShowMoreComponent, OpenClaimVideo }: ClaimProps) {
 
     return (
     <li id={claim.claimId} className={more ? "more" : ""}>
-    <span className="claim" 
-    // data-onclick={onClaimClick(sourceMap, claim)}
-    >
-      {claim.claim}{" "}
-      {claim.duplicates && claim.duplicates.length
-        ? ` (x${1 + claim.duplicates.length})`
-        : ""}
-    </span>
-    {/* <ClaimDetailComponent claim={claim} sourceMap={sourceMap} /> */}
+      <OpenClaimVideo sourceMap={sourceMap} claim={claim}>
+        {claim.claim}{" "}
+        {claim.duplicates && claim.duplicates.length
+          ? ` (x${1 + claim.duplicates.length})`
+          : ""}
+      </OpenClaimVideo>
+    <ClaimDetailComponent claim={claim} sourceMap={sourceMap} ToggleShowMoreComponent={ToggleShowMoreComponent} OpenClaimVideo={OpenClaimVideo} />
   </li>
     )
 }
 
-function ClaimDetailComponent({ claim, sourceMap }: ClaimDetailProps) {
+function ClaimDetailComponent({ claim, sourceMap, ToggleShowMoreComponent, OpenClaimVideo }: ClaimDetailProps) {
 
     return (
         <div className="details" id={`details-${claim.claimId}`}>
@@ -240,6 +209,8 @@ function ClaimDetailComponent({ claim, sourceMap }: ClaimDetailProps) {
               key={duplicate.claimId}
               claim={duplicate}
               sourceMap={sourceMap}
+              OpenClaimVideo={OpenClaimVideo}
+              ToggleShowMoreComponent={ToggleShowMoreComponent}
             />
           ))}
         </ul>

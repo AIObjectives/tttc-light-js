@@ -3,6 +3,7 @@ import json from '../../../../fixtures/report.json'
 import styles from 'src/styles';
 import ServerSideToggleShowMoreButton from 'src/features/report/components/ToggleShowMoreButton/ServerSideToggleShowMore';
 import * as prettier from "prettier";
+import ServerSideOpenClaimVideo from 'src/features/report/components/OpenClaimVideo/ServerSideOpenClaimVideo';
 
 
 const wrapHtml = (htmlStr:string) => {
@@ -26,7 +27,7 @@ const wrapHtml = (htmlStr:string) => {
 
 export default async function TempPage({ params }: { params: { slug: string } }) {
     const ReactDOMServer = (await import('react-dom/server')).default
-    const html:string = ReactDOMServer.renderToString(<Report data={json} ToggleShowMoreComponent={ServerSideToggleShowMoreButton} />);
+    const html:string = ReactDOMServer.renderToString(<Report data={json} ToggleShowMoreComponent={ServerSideToggleShowMoreButton} OpenClaimVideo={ServerSideOpenClaimVideo} />);
     const parsedHtml = wrapHtml(html)
         .replace(/data-onclick/g, "onclick");
     return await prettier.format(parsedHtml, { parser: "html" })
