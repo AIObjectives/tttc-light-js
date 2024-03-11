@@ -1032,6 +1032,16 @@
   "clusteringInstructions": "",
   "extractionInstructions": "",
   "batchSize": 10,
+  "pieChart": [
+    {
+      "label": "Challenges",
+      "count": 10
+    },
+    {
+      "label": "Opportunities",
+      "count": 5
+    }
+  ],
   "tree": [
     {
       "topicName": "Community and Supportive Services",
@@ -6266,7 +6276,7 @@
     }
   ],
   "costs": 0,
-  "start": 1709570184768,
+  "start": 1710179075227,
   "unmatchedClaims": [
     {
       "claim": "Formerly incarcerated individuals lack knowledge on managing credit effectively.",
@@ -6621,6 +6631,6 @@
       "claimId": "118-4"
     }
   ],
-  "end": 1709570184808,
-  "duration": "0.04 seconds"
+  "end": 1710179075265,
+  "duration": "0.038 seconds"
 }

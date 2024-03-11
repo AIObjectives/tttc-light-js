@@ -11,6 +11,7 @@ export type Options = {
   data: SourceRow[];
   title: string;
   question: string;
+  pieChart?: { label: string; count: number }[];
   description: string;
   systemInstructions?: string;
   clusteringInstructions?: string;
@@ -66,6 +67,7 @@ export type PipelineOutput = {
   data: SourceRow[];
   title: string;
   question: string;
+  pieChart?: { label: string; count: number }[];
   description: string;
   systemInstructions: string;
   clusteringInstructions: string;
