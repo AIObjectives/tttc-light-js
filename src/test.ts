@@ -40,9 +40,11 @@ async function main() {
     {
       apiKey: process.env.OPENAI_API_KEY!,
       data,
-      pieChart: [
-        { label: "Challenges", count: 10 },
-        { label: "Opportunities", count: 5 },
+      pieCharts: [
+        [
+          { label: "Challenges", count: 10 },
+          { label: "Opportunities", count: 5 },
+        ],
       ],
       title: "Heal Michigan",
       question: "What challenges are you and the community facing?",

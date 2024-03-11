@@ -6,12 +6,14 @@ export type SourceRow = {
   timestamp?: string;
 };
 
+export type PieChart = { label: string; count: number }[];
+
 export type Options = {
   apiKey?: string;
-  data: SourceRow[];
+  data?: SourceRow[];
   title: string;
   question: string;
-  pieChart?: { label: string; count: number }[];
+  pieCharts?: PieChart[];
   description: string;
   systemInstructions?: string;
   clusteringInstructions?: string;
@@ -19,6 +21,11 @@ export type Options = {
   dedupInstructions?: string;
   batchSize?: number;
   filename?: string;
+  googleSheet?: {
+    url: string;
+    pieChartColumns?: string[];
+    filterEmails?: string[];
+  };
 };
 
 export type Cache = {
@@ -67,7 +74,7 @@ export type PipelineOutput = {
   data: SourceRow[];
   title: string;
   question: string;
-  pieChart?: { label: string; count: number }[];
+  pieCharts?: PieChart[];
   description: string;
   systemInstructions: string;
   clusteringInstructions: string;

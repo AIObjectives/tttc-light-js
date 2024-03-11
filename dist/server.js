@@ -7,6 +7,7 @@ var _html = _interopRequireDefault(require("./html"));
 var _gpt = require("./gpt");
 var _storage = require("./storage");
 var _utils = require("./utils");
+var _googlesheet = require("./googlesheet");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 const port = 8080;
 const app = (0, _express.default)();
@@ -19,6 +20,14 @@ app.post("/generate", async (req, res) => {
   let responded = false;
   try {
     const config = req.body;
+    if (config.googleSheet) {
+      const {
+        data,
+        pieCharts
+      } = await (0, _googlesheet.fetchSpreadsheetData)(config.googleSheet.url, config.googleSheet.pieChartColumns, config.googleSheet.filterEmails);
+      config.data = (0, _utils.formatData)(data);
+      config.pieCharts = pieCharts;
+    }
     if (!config.data) {
       throw new Error("Missing data");
     }

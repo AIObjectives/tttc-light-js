@@ -18,8 +18,8 @@ const Report = ({
     ...acc,
     [d.id]: d
   }), {});
-  const pieChart = data.pieChart;
-  return /*#__PURE__*/_react.default.createElement("html", null, /*#__PURE__*/_react.default.createElement("head", null, /*#__PURE__*/_react.default.createElement("style", null, _styles.default), pieChart && /*#__PURE__*/_react.default.createElement("script", {
+  const pieCharts = data.pieCharts || [];
+  return /*#__PURE__*/_react.default.createElement("html", null, /*#__PURE__*/_react.default.createElement("head", null, /*#__PURE__*/_react.default.createElement("style", null, _styles.default), pieCharts.length && /*#__PURE__*/_react.default.createElement("script", {
     src: "https://cdn.plot.ly/plotly-latest.min.js"
   })), /*#__PURE__*/_react.default.createElement("body", null, /*#__PURE__*/_react.default.createElement("h1", {
     id: "title"
@@ -27,16 +27,16 @@ const Report = ({
     id: "question"
   }, data.question), /*#__PURE__*/_react.default.createElement("div", {
     className: "report-description"
-  }, data.description), pieChart && /*#__PURE__*/_react.default.createElement("div", {
-    id: "piechart"
-  }), /*#__PURE__*/_react.default.createElement(Outline, {
+  }, data.description), pieCharts.map((_, i) => /*#__PURE__*/_react.default.createElement("div", {
+    id: `piechart_${i}`
+  })), /*#__PURE__*/_react.default.createElement(Outline, {
     data: data
   }), data.tree.map((topic, i) => /*#__PURE__*/_react.default.createElement(TopicComponent, {
     i: i,
     key: topic.topicId,
     topic: topic,
     sourceMap: sourceMap
-  })), pieChart && /*#__PURE__*/_react.default.createElement("script", null, pieChartScript(pieChart))));
+  })), pieCharts.length && /*#__PURE__*/_react.default.createElement("script", null, pieCharts.map((pieChart, i) => pieChartScript(pieChart, i)).join("\n\n"))));
 };
 exports.Report = Report;
 const SHOW_STATS = false; // TODO: provide this as an option
@@ -169,19 +169,16 @@ const onClaimClick = (sourceMap, claim) => {
 const showMoreOnclick = subtopicId => {
   return `document.getElementById('${subtopicId}').classList.toggle('showmore');`;
 };
-const pieChartScript = data => `
-const data = ${JSON.stringify(data)};
-const labels = data.map(item => item.label);
-const values = data.map(item => item.count);
-const plotData = [{
+const pieChartScript = (pieChart, i) => `
+const data_${i} = ${JSON.stringify(pieChart)};
+const plotData_${i} = [{
   type: 'pie',
-  values: values,
-  labels: labels,
+  values: data_${i}.map(item => item.count),
+  labels: data_${i}.map(item => item.label),
   textinfo: "label+percent",
   insidetextorientation: "radial"
 }];
-const layout = {height: 400, width: 500};
-Plotly.newPlot('piechart', plotData, layout);`;
+Plotly.newPlot('piechart_${i}', plotData_${i}, {height: 400, width: 500});`;
 const html = async data => {
   let str = _server.default.renderToString( /*#__PURE__*/_react.default.createElement(Report, {
     data: data

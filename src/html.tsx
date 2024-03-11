@@ -3,7 +3,14 @@ import styles from "./styles";
 import ReactDOMServer from "react-dom/server";
 import * as prettier from "prettier";
 
-import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "./types";
+import {
+  PipelineOutput,
+  Claim,
+  SourceMap,
+  Topic,
+  Subtopic,
+  PieChart,
+} from "./types";
 type ReportProps = { data: PipelineOutput };
 type TopicProps = { i: number; topic: Topic; sourceMap: SourceMap };
 type SubtopicProps = {
@@ -20,12 +27,12 @@ export const Report = ({ data }: ReportProps) => {
     (acc, d) => ({ ...acc, [d.id]: d }),
     {}
   );
-  const pieChart = data.pieChart!!;
+  const pieCharts = data.pieCharts || [];
   return (
     <html>
       <head>
         <style>{styles}</style>
-        {pieChart && (
+        {pieCharts.length && (
           <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         )}
       </head>
@@ -33,7 +40,9 @@ export const Report = ({ data }: ReportProps) => {
         <h1 id="title">{data.title}</h1>
         <h1 id="question">{data.question}</h1>
         <div className="report-description">{data.description}</div>
-        {pieChart && <div id="piechart" />}
+        {pieCharts.map((_, i) => (
+          <div id={`piechart_${i}`} />
+        ))}
         <Outline data={data} />
         {data.tree.map((topic, i) => (
           <TopicComponent
@@ -43,7 +52,13 @@ export const Report = ({ data }: ReportProps) => {
             sourceMap={sourceMap}
           />
         ))}
-        {pieChart && <script>{pieChartScript(pieChart)}</script>}
+        {pieCharts.length && (
+          <script>
+            {pieCharts
+              .map((pieChart, i) => pieChartScript(pieChart, i))
+              .join("\n\n")}
+          </script>
+        )}
       </body>
     </html>
   );
@@ -238,19 +253,16 @@ const showMoreOnclick = (subtopicId: String) => {
   return `document.getElementById('${subtopicId}').classList.toggle('showmore');`;
 };
 
-const pieChartScript = (data: { label: string; count: number }[]) => `
-const data = ${JSON.stringify(data)};
-const labels = data.map(item => item.label);
-const values = data.map(item => item.count);
-const plotData = [{
+const pieChartScript = (pieChart: PieChart, i: number) => `
+const data_${i} = ${JSON.stringify(pieChart)};
+const plotData_${i} = [{
   type: 'pie',
-  values: values,
-  labels: labels,
+  values: data_${i}.map(item => item.count),
+  labels: data_${i}.map(item => item.label),
   textinfo: "label+percent",
   insidetextorientation: "radial"
 }];
-const layout = {height: 400, width: 500};
-Plotly.newPlot('piechart', plotData, layout);`;
+Plotly.newPlot('piechart_${i}', plotData_${i}, {height: 400, width: 500});`;
 
 const html = async (data: PipelineOutput) => {
   let str = ReactDOMServer.renderToString(<Report data={data} />);

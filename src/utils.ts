@@ -15,6 +15,7 @@ export function uniqueSlug(str: string): string {
 }
 
 export function formatData(data: any): SourceRow[] {
+  console.log("formatData, data: ", JSON.stringify(data, null, 2));
   const ID_COLS = ["id", "Id", "ID", "comment-id", "i"];
   const COMMENT_COLS = ["comment", "Comment", "comment-body"];
   if (!data || !data.length) {
