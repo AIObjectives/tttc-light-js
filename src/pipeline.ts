@@ -51,10 +51,10 @@ function insertClaim(taxonomy: Taxonomy, claim: Claim, tracker: Tracker) {
 
 function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
   const map: { [key: string]: Claim } = {};
-  subtopic.claims!.forEach((claim) => {
+  (subtopic.claims || []).forEach((claim) => {
     map[claim.claimId!] = claim;
   });
-  subtopic.claims!.forEach((claim) => {
+  (subtopic.claims || []).forEach((claim) => {
     if (nesting[claim.claimId!]) {
       claim.duplicates = nesting[claim.claimId!]
         .filter((id) => map[id])
@@ -122,8 +122,8 @@ async function pipeline(
   taxonomy.forEach((topic) => {
     topic.claimsCount = 0;
     topic.subtopics.forEach((subtopic) => {
-      topic.claimsCount! += subtopic.claims!.length;
-      subtopic.claimsCount = subtopic.claims!.length;
+      topic.claimsCount! += (subtopic.claims || []).length;
+      subtopic.claimsCount = (subtopic.claims || []).length;
     });
     topic.subtopics
       .sort((a, b) => b.claimsCount! - a.claimsCount!)

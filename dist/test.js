@@ -29,13 +29,16 @@ async function main() {
   const json = await (0, _pipeline.default)({
     apiKey: process.env.OPENAI_API_KEY,
     data,
-    pieCharts: [[{
-      label: "Challenges",
-      count: 10
-    }, {
-      label: "Opportunities",
-      count: 5
-    }]],
+    pieCharts: [{
+      title: "",
+      items: [{
+        label: "Challenges",
+        count: 10
+      }, {
+        label: "Opportunities",
+        count: 5
+      }]
+    }],
     title: "Heal Michigan",
     question: "What challenges are you and the community facing?",
     description: "This AI-generated report is based on a collection of video interviews about challenges faced by individuals in Michigan, many of whom are formerly incarcerated individuals (referred to below as “returning citizens”). Twelve interviews were conducted in Summer 2023 during a collaboration between the AI Objectives Institute and Silent Cry."

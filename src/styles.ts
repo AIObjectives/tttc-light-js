@@ -128,4 +128,8 @@ export default css`
     padding-top: 10px;
     font-style: italic;
   }
+
+  .piecharts {
+    display: flex;
+  }
 `;

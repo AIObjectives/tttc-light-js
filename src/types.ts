@@ -6,7 +6,10 @@ export type SourceRow = {
   timestamp?: string;
 };
 
-export type PieChart = { label: string; count: number }[];
+export type PieChart = {
+  title: string;
+  items: { label: string; count: number }[];
+};
 
 export type Options = {
   apiKey?: string;

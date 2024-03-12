@@ -133,4 +133,8 @@ var _default = exports.default = css`
     padding-top: 10px;
     font-style: italic;
   }
+
+  .piecharts {
+    display: flex;
+  }
 `;

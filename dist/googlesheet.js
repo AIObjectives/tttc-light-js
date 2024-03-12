@@ -12,13 +12,13 @@ async function fetchSpreadsheetData(url, pieChartColumnNames = [], filterEmails)
   const matches = url.match(regex);
   if (!matches) throw new Error("Invalid Google Sheets URL");
   const spreadsheetId = matches[1];
-  console.log("Fetching data from Google Sheets spreadsheetId...", spreadsheetId);
 
   // extract the data from the spreadsheet
   const url2 = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
   const response = await _axios.default.get(url2);
   const jsonStr = response.data.match(/(?<=.*\().*(?=\);)/s)[0];
   const json = JSON.parse(jsonStr);
+  console.log(JSON.stringify(json, null, 2));
 
   // extract the columns and rows
   const columns = json.table.cols.map(x => x.label);
@@ -51,14 +51,18 @@ async function fetchSpreadsheetData(url, pieChartColumnNames = [], filterEmails)
 
   // extract the pie chart data
   let pieCharts = pieChartColumns.map(({
+    name,
     index
   }) => {
     const values = rows.map(row => row[index]);
     const uniqueValues = Array.from(new Set(values));
-    return uniqueValues.map(label => ({
-      label,
-      count: values.filter(x => x === label).length
-    }));
+    return {
+      title: name,
+      items: uniqueValues.map(label => ({
+        label,
+        count: values.filter(x => x === label).length
+      }))
+    };
   });
 
   // extract the comments

@@ -40,9 +40,13 @@ export const Report = ({ data }: ReportProps) => {
         <h1 id="title">{data.title}</h1>
         <h1 id="question">{data.question}</h1>
         <div className="report-description">{data.description}</div>
-        {pieCharts.map((_, i) => (
-          <div id={`piechart_${i}`} />
-        ))}
+        {pieCharts.length && (
+          <div className="piecharts">
+            {pieCharts.map((_, i) => (
+              <div key={i} id={`piechart_${i}`} />
+            ))}
+          </div>
+        )}
         <Outline data={data} />
         {data.tree.map((topic, i) => (
           <TopicComponent
@@ -254,7 +258,7 @@ const showMoreOnclick = (subtopicId: String) => {
 };
 
 const pieChartScript = (pieChart: PieChart, i: number) => `
-const data_${i} = ${JSON.stringify(pieChart)};
+const data_${i} = ${JSON.stringify(pieChart.items)};
 const plotData_${i} = [{
   type: 'pie',
   values: data_${i}.map(item => item.count),
@@ -262,7 +266,12 @@ const plotData_${i} = [{
   textinfo: "label+percent",
   insidetextorientation: "radial"
 }];
-Plotly.newPlot('piechart_${i}', plotData_${i}, {height: 400, width: 500});`;
+Plotly.newPlot(
+  'piechart_${i}', 
+  plotData_${i},
+  {height: 399, width: 399, title: '${pieChart.title}'},
+  {staticPlot: true}
+);`;
 
 const html = async (data: PipelineOutput) => {
   let str = ReactDOMServer.renderToString(<Report data={data} />);

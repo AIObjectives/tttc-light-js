@@ -27,9 +27,12 @@ const Report = ({
     id: "question"
   }, data.question), /*#__PURE__*/_react.default.createElement("div", {
     className: "report-description"
-  }, data.description), pieCharts.map((_, i) => /*#__PURE__*/_react.default.createElement("div", {
+  }, data.description), pieCharts.length && /*#__PURE__*/_react.default.createElement("div", {
+    className: "piecharts"
+  }, pieCharts.map((_, i) => /*#__PURE__*/_react.default.createElement("div", {
+    key: i,
     id: `piechart_${i}`
-  })), /*#__PURE__*/_react.default.createElement(Outline, {
+  }))), /*#__PURE__*/_react.default.createElement(Outline, {
     data: data
   }), data.tree.map((topic, i) => /*#__PURE__*/_react.default.createElement(TopicComponent, {
     i: i,
@@ -170,7 +173,7 @@ const showMoreOnclick = subtopicId => {
   return `document.getElementById('${subtopicId}').classList.toggle('showmore');`;
 };
 const pieChartScript = (pieChart, i) => `
-const data_${i} = ${JSON.stringify(pieChart)};
+const data_${i} = ${JSON.stringify(pieChart.items)};
 const plotData_${i} = [{
   type: 'pie',
   values: data_${i}.map(item => item.count),
@@ -178,7 +181,12 @@ const plotData_${i} = [{
   textinfo: "label+percent",
   insidetextorientation: "radial"
 }];
-Plotly.newPlot('piechart_${i}', plotData_${i}, {height: 400, width: 500});`;
+Plotly.newPlot(
+  'piechart_${i}', 
+  plotData_${i},
+  {height: 399, width: 399, title: '${pieChart.title}'},
+  {staticPlot: true}
+);`;
 const html = async data => {
   let str = _server.default.renderToString( /*#__PURE__*/_react.default.createElement(Report, {
     data: data
