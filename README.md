@@ -17,7 +17,7 @@ see the "Deploying to Google Cloud" section for how to set up a project.
 
 ```
 export GCLOUD_STORAGE_BUCKET=some-project
-export GOOGLE_CREDENTIALS_ENCODE=some-alphanumeric-string
+export GOOGLE_CREDENTIALS_ENCODED=some-alphanumeric-string
 ```
 
 Then run:
@@ -101,7 +101,7 @@ Instructions:
 - create keys for this account and download them as a json files
 - save this file as `./google-credentials.json`
 - encode this using by running the command `base64 -i ./google-credentials.json`
-- put this in a variable `GOOGLE_APPLICATION_CREDENTIALS` in your `.env`
+- put this in a variable `GOOGLE_CREDENTIALS_ENCODED` in your `.env`
 
 Your .evn file should then look like this:
 
@@ -109,7 +109,7 @@ Your .evn file should then look like this:
 export OPENAI_API_KEY=sk-something-something
 export OPENAI_API_KEY_PASSWORD=some-password
 export GCLOUD_STORAGE_BUCKET=name-of-your-bucket
-export GOOGLE_APPLICATION_CREDENTIALS=some-long-encoded-string
+export GOOGLE_CREDENTIALS_ENCODED=some-long-encoded-string
 ```
 
 Add a Google Run Service:
