@@ -52,7 +52,7 @@ function nestClaims(subtopic, nesting) {
       });
     }
   });
-  subtopic.claims = subtopic.claims.filter(claim => !claim.duplicated).sort((x, y) => (y.duplicates || []).length - (x.duplicates || []).length);
+  subtopic.claims = (subtopic.claims || []).filter(claim => !claim.duplicated).sort((x, y) => (y.duplicates || []).length - (x.duplicates || []).length);
 }
 async function pipeline(_options, cache) {
   const options = {

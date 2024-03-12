@@ -1,6 +1,7 @@
 import fetch from "node-fetch";
 
 // INPUT: https://docs.google.com/spreadsheets/d/1OmPC3j6RNMWPNeZKVPH_ffy6Clouq_Wn_dF_NZ_bVDM/edit#gid=0
+// OUTPUT: https://storage.googleapis.com/test-gds-api/data-availability-layer-1710235307574
 
 async function main() {
   const res = await fetch("http://localhost:8080/generate", {

@@ -64,8 +64,8 @@ function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
       });
     }
   });
-  subtopic.claims = subtopic
-    .claims!.filter((claim) => !claim.duplicated)
+  subtopic.claims = (subtopic.claims || [])
+    .filter((claim) => !claim.duplicated)
     .sort((x, y) => (y.duplicates || []).length - (x.duplicates || []).length);
 }
 

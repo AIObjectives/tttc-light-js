@@ -18,7 +18,6 @@ async function fetchSpreadsheetData(url, pieChartColumnNames = [], filterEmails)
   const response = await _axios.default.get(url2);
   const jsonStr = response.data.match(/(?<=.*\().*(?=\);)/s)[0];
   const json = JSON.parse(jsonStr);
-  console.log(JSON.stringify(json, null, 2));
 
   // extract the columns and rows
   const columns = json.table.cols.map(x => x.label);

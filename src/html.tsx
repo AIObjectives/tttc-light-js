@@ -269,7 +269,7 @@ const plotData_${i} = [{
 Plotly.newPlot(
   'piechart_${i}', 
   plotData_${i},
-  {height: 399, width: 399, title: '${pieChart.title}'},
+  {height: 399, width: 399, title: {text: '${pieChart.title}', font: {size: 10}}},
   {staticPlot: true}
 );`;
 
