@@ -6276,7 +6276,7 @@
     }
   ],
   "costs": 0,
-  "start": 1710179075227,
+  "start": 1710187859086,
   "unmatchedClaims": [
     {
       "claim": "Formerly incarcerated individuals lack knowledge on managing credit effectively.",
@@ -6631,6 +6631,6 @@
       "claimId": "118-4"
     }
   ],
-  "end": 1710179075265,
-  "duration": "0.038 seconds"
+  "end": 1710187859127,
+  "duration": "0.041 seconds"
 }

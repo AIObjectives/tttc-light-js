@@ -37,7 +37,7 @@ app.post("/generate", async (req, res) => {
       config.apiKey = process.env.OPENAI_API_KEY;
     }
     if (!config.apiKey) {
-      throw new Error("Missing key");
+      throw new Error("Missing OpenAI API key");
     }
     await (0, _gpt.testGPT)(config.apiKey); // will fail is key is invalid
     config.filename = config.filename || (0, _utils.uniqueSlug)(config.title);
