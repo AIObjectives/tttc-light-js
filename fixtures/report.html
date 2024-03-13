@@ -127,6 +127,7 @@
         font-style: italic;
       }
     </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   </head>
   <body>
     <h1 id="title">Heal Michigan</h1>
@@ -138,13 +139,13 @@
       citizens”). Twelve interviews were conducted in Summer 2023 during a
       collaboration between the AI Objectives Institute and Silent Cry.
     </div>
+    <div id="piechart"></div>
     <div id="outline">
       <table>
         <thead>
           <tr>
             <th>Topic/Subtopic</th>
-            <th>Claims</th>
-            <th>%</th>
+            <th>Arguments</th>
           </tr>
         </thead>
         <tbody>
@@ -156,7 +157,6 @@
               >
             </td>
             <td>251</td>
-            <td>45<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -166,7 +166,6 @@
               >
             </td>
             <td>125</td>
-            <td>23<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -176,7 +175,6 @@
               >
             </td>
             <td>76</td>
-            <td>14<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -186,7 +184,6 @@
               >
             </td>
             <td>50</td>
-            <td>9<!-- -->%</td>
           </tr>
           <tr class="outline-topic-row">
             <td>
@@ -196,7 +193,6 @@
               >
             </td>
             <td>197</td>
-            <td>36<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -206,7 +202,6 @@
               >
             </td>
             <td>50</td>
-            <td>9<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -216,7 +211,6 @@
               >
             </td>
             <td>49</td>
-            <td>9<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -226,7 +220,6 @@
               >
             </td>
             <td>31</td>
-            <td>6<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -236,7 +229,6 @@
               >
             </td>
             <td>30</td>
-            <td>5<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -246,7 +238,6 @@
               >
             </td>
             <td>22</td>
-            <td>4<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -256,7 +247,6 @@
               >
             </td>
             <td>15</td>
-            <td>3<!-- -->%</td>
           </tr>
           <tr class="outline-topic-row">
             <td>
@@ -266,7 +256,6 @@
               >
             </td>
             <td>105</td>
-            <td>19<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -276,7 +265,6 @@
               >
             </td>
             <td>48</td>
-            <td>9<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -286,7 +274,6 @@
               >
             </td>
             <td>18</td>
-            <td>3<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -296,7 +283,6 @@
               >
             </td>
             <td>18</td>
-            <td>3<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -306,7 +292,6 @@
               >
             </td>
             <td>15</td>
-            <td>3<!-- -->%</td>
           </tr>
           <tr class="outline-subtopic-row">
             <td>
@@ -316,7 +301,6 @@
               >
             </td>
             <td>6</td>
-            <td>1<!-- -->%</td>
           </tr>
         </tbody>
       </table>
@@ -368,6 +352,7 @@
                 preparing them to go home.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="104-1" class="">
@@ -573,6 +558,7 @@
                 than they were doing at the time.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="78-1" class="">
@@ -719,6 +705,7 @@
                 job for myself.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="101-1" class="">
@@ -876,6 +863,7 @@
                 'cause I had to prepare folks legal brief.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="63-1" class="">
@@ -1001,6 +989,7 @@
                 bunch of credits...<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="77-1" class="">
@@ -1125,6 +1114,7 @@
                 becomes a relationship that you have with Adam.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="90-2" class="">
@@ -1243,6 +1233,7 @@
                 backpack full of office supplies<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="22-1" class="">
@@ -1331,6 +1322,7 @@
                 a Narcan training here.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="33-2" class="">
@@ -1421,6 +1413,7 @@
                 hard for him to adjust to living out here in the world.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="38-4" class="">
@@ -1511,6 +1504,7 @@
                 your resume on there.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="21-1" class="">
@@ -1577,6 +1571,7 @@
                 if you don't understand what's going on<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="21-3" class="">
@@ -1639,6 +1634,7 @@
                 how to manage our money better ...<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="21-2" class="">
@@ -1701,6 +1697,7 @@
                 children to get Christmas presents.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="27-5" class="">
@@ -1764,6 +1761,7 @@
                 comes from.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="30-3" class="">
@@ -1830,6 +1828,7 @@
                 a call. And then each call costs so much money per minute.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="38-1" class="">
@@ -1890,6 +1889,7 @@
                 some grassroots organ organizing.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="49-7" class="">
@@ -1951,6 +1951,7 @@
                 their time and energy into that.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="41-2" class="">
@@ -2010,6 +2011,7 @@
                 who believe in them.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="46-5" class="">
@@ -2070,6 +2072,7 @@
                 at one institution, music workshops<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="70-3" class="">
@@ -2137,6 +2140,7 @@
                 can, they can buy their own house and go from there.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="82-0" class="">
@@ -2199,6 +2203,7 @@
                 get to count me as a victory.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="76-2" class="">
@@ -2259,6 +2264,7 @@
                 nothing, nothing, you barely can get a GED.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="106-1" class="">
@@ -2322,6 +2328,7 @@
                 Some organization who may or may not be able to help me.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="111-2" class="">
@@ -2386,6 +2393,7 @@
                 mortgage and taxes and things like that, then it is useless<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="116-1" class="">
@@ -2456,6 +2464,7 @@
                 easier transition? [...] How do we bring jobs and housing?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="121-1" class="">
@@ -3980,6 +3989,7 @@
                 compassion.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="17-2" class="">
@@ -4011,6 +4021,7 @@
                         the work only get done by those who does the work.<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="17-0" class="">
@@ -4040,11 +4051,7 @@
                                 the real nitty gritty to go do the work, the
                                 work isn't being done in the, in the manner in
                                 which they're speaking.<!-- -->"</span
-                              >
-                              <div>
-                                <div>Similar claims:</div>
-                                <ul></ul>
-                              </div>
+                              >0
                             </div>
                           </li>
                         </ul>
@@ -4078,11 +4085,7 @@
                         Community Outreach, grow, Detroit Young Talent. The
                         Youth Connection, Pingry Farms and Milton manufacturer
                         grow Detroit Young Grow Detroit.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -4116,6 +4119,7 @@
                 have to build the whole city.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="2-3" class="">
@@ -4149,6 +4153,7 @@
                         the parts they care about the most?<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="1-2" class="">
@@ -4178,11 +4183,7 @@
                                 resources, my cops, Can't come to my city block
                                 in a hurry like they do in all of the nice
                                 neighborhoods...<!-- -->"</span
-                              >
-                              <div>
-                                <div>Similar claims:</div>
-                                <ul></ul>
-                              </div>
+                              >0
                             </div>
                           </li>
                         </ul>
@@ -4219,6 +4220,7 @@
                 so we're not gonna drink the water.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="50-0" class="">
@@ -4245,11 +4247,7 @@
                       <span class="quote"
                         >"<!-- -->they want, they want the nation to think that,
                         oh, well they got good water now.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -4282,6 +4280,7 @@
                 give it to the people to drink?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="51-1" class="">
@@ -4315,6 +4314,7 @@
                         drink?<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="51-0" class="">
@@ -4344,11 +4344,7 @@
                                 Motors pulled out, I mean, we have a few
                                 factories, but this whole time was General
                                 Motors, right.<!-- -->"</span
-                              >
-                              <div>
-                                <div>Similar claims:</div>
-                                <ul></ul>
-                              </div>
+                              >0
                             </div>
                           </li>
                         </ul>
@@ -4386,6 +4382,7 @@
                 it's not their responsibility to come back and clean up.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="53-1" class="">
@@ -4420,6 +4417,7 @@
                         There was not poverty. Everybody worked.<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="53-0" class="">
@@ -4450,11 +4448,7 @@
                                 there was no regulations. Nothing was given you,
                                 so you contributed to that. Did they come back
                                 and clean up? No, they did not.<!-- -->"</span
-                              >
-                              <div>
-                                <div>Similar claims:</div>
-                                <ul></ul>
-                              </div>
+                              >0
                             </div>
                           </li>
                         </ul>
@@ -4497,6 +4491,7 @@
                 do I go to? I don't wanna call the police because...<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="54-0" class="">
@@ -4524,11 +4519,7 @@
                         >"<!-- -->So now, like I just finished lobbying in
                         March, $20 million for them to put in the spending
                         budget for. Violence interrupters for urban communities.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -4563,6 +4554,7 @@
                 having a hard time getting a job?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="58-0" class="">
@@ -4590,11 +4582,7 @@
                         >"<!-- -->in organizing work when you're mad and pissed
                         off at things that aren't happening, right? That's when
                         you're doing your work best.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -4629,6 +4617,7 @@
                 the mindset.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="59-2" class="">
@@ -4656,11 +4645,7 @@
                         mowed. All this dilapidation and stuff did not occur. It
                         just didn't, they were still trying to build schools,
                         like people were having kids.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -4693,6 +4678,7 @@
                 provide them with the resources that they need.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="60-4" class="">
@@ -4726,6 +4712,7 @@
                         used to seeing that.<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="60-3" class="">
@@ -4757,6 +4744,7 @@
                                 face of the community. It's still ingrained now.<!-- -->"</span
                               >
                               <div>
+                                <br />
                                 <div>Similar claims:</div>
                                 <ul>
                                   <li id="60-2" class="">
@@ -4789,6 +4777,7 @@
                                         God, we're afraid of them.<!-- -->"</span
                                       >
                                       <div>
+                                        <br />
                                         <div>Similar claims:</div>
                                         <ul>
                                           <li id="60-1" class="">
@@ -4828,6 +4817,7 @@
                                                 who were in the other city.<!-- -->"</span
                                               >
                                               <div>
+                                                <br />
                                                 <div>Similar claims:</div>
                                                 <ul>
                                                   <li id="60-0" class="">
@@ -4867,6 +4857,7 @@
                                                         vested. [...] They left.<!-- -->"</span
                                                       >
                                                       <div>
+                                                        <br />
                                                         <div>
                                                           Similar claims:
                                                         </div>
@@ -4918,14 +4909,7 @@
                                                                 schools, like
                                                                 people were
                                                                 having kids.<!-- -->"</span
-                                                              >
-                                                              <div>
-                                                                <div>
-                                                                  Similar
-                                                                  claims:
-                                                                </div>
-                                                                <ul></ul>
-                                                              </div>
+                                                              >0
                                                             </div>
                                                           </li>
                                                         </ul>
@@ -4978,6 +4962,7 @@
                 and the nineties anyway<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="61-2" class="">
@@ -5009,6 +4994,7 @@
                         to.<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="61-0" class="">
@@ -5040,11 +5026,7 @@
                                 get access to enough of the parts or information
                                 or knowledge to assemble something on their own
                                 [...], and that's not what I see.<!-- -->"</span
-                              >
-                              <div>
-                                <div>Similar claims:</div>
-                                <ul></ul>
-                              </div>
+                              >0
                             </div>
                           </li>
                         </ul>
@@ -5082,6 +5064,7 @@
                 because they care about delivering.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="70-1" class="">
@@ -5110,11 +5093,7 @@
                         >"<!-- -->So Pcap is the University of Michigan. They go
                         inside, they perform, they run a facilitate, I should
                         say create writing workshops, theater workshops.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5148,6 +5127,7 @@
                 said Adam was built for this job.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="76-0" class="">
@@ -5175,11 +5155,7 @@
                         >"<!-- -->Once I came home, I used that stubbornness to
                         my advantage and I just kept showing up. [...] This job
                         actually came to me.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5214,6 +5190,7 @@
                 reach without having to have our hands. On all of it.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="79-0" class="">
@@ -5242,11 +5219,7 @@
                         regional and when they start expanding to be statewide,
                         when they started out local they lose a lot of what they
                         had<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5282,6 +5255,7 @@
                 needs to be served as well.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="86-0" class="">
@@ -5310,11 +5284,7 @@
                         meant for, , reentry and people who've returned need to
                         be given to the people who live in the area because you
                         get. A multiplier effect out of that.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5347,6 +5317,7 @@
                 kind of benefit, , from that position as well.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="88-2" class="">
@@ -5379,6 +5350,7 @@
                         infiltrate other systems.<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="88-1" class="">
@@ -5412,6 +5384,7 @@
                                 for us is formerly incarcerated.<!-- -->"</span
                               >
                               <div>
+                                <br />
                                 <div>Similar claims:</div>
                                 <ul>
                                   <li id="88-0" class="">
@@ -5441,11 +5414,7 @@
                                         living wage. It's an entry level
                                         position. So in Michigan, $40,000 in
                                         insurance and stuff like that isn't bad.<!-- -->"</span
-                                      >
-                                      <div>
-                                        <div>Similar claims:</div>
-                                        <ul></ul>
-                                      </div>
+                                      >0
                                     </div>
                                   </li>
                                 </ul>
@@ -5485,6 +5454,7 @@
                 feel so heavy.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="84-0" class="">
@@ -5513,11 +5483,7 @@
                         classes took place when it had me, a staff member and a
                         volunteer running the class, cuz all three of them have
                         a different credibility.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5551,6 +5517,7 @@
                 relationship that you have with Adam.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="84-0" class="">
@@ -5579,11 +5546,7 @@
                         classes took place when it had me, a staff member and a
                         volunteer running the class, cuz all three of them have
                         a different credibility.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5617,6 +5580,7 @@
                 do we say we both can go home?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="98-3" class="">
@@ -5649,6 +5613,7 @@
                         until you assess it.<!-- -->"</span
                       >
                       <div>
+                        <br />
                         <div>Similar claims:</div>
                         <ul>
                           <li id="97-4" class="">
@@ -5683,6 +5648,7 @@
                                 and say, you don't know what you're doing.<!-- -->"</span
                               >
                               <div>
+                                <br />
                                 <div>Similar claims:</div>
                                 <ul>
                                   <li id="97-1" class="">
@@ -5715,11 +5681,7 @@
                                         educated and implement within the next,
                                         I would easily say 7 to 10 years, we
                                         would easily be able to flip the script<!-- -->"</span
-                                      >
-                                      <div>
-                                        <div>Similar claims:</div>
-                                        <ul></ul>
-                                      </div>
+                                      >0
                                     </div>
                                   </li>
                                 </ul>
@@ -5761,6 +5723,7 @@
                 degrees, PhDs<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="105-0" class="">
@@ -5789,11 +5752,7 @@
                         election opened all city jobs to ex-offenders, to those
                         that qualify all of them.? That's in government office
                         and everything.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5831,6 +5790,7 @@
                 who signed this petition need you gone.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="118-3" class="">
@@ -5857,11 +5817,7 @@
                       <span class="quote"
                         >"<!-- -->people don't know that. Yeah. They don't know
                         how politics work.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5895,6 +5851,7 @@
                 Something needs to be done.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="119-0" class="">
@@ -5925,11 +5882,7 @@
                         computer labs and things with, with my babies out there.
                         Phenomenal here in the Detroit public school system, not
                         so much.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -5963,6 +5916,7 @@
                 has that.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="120-3" class="">
@@ -5991,11 +5945,7 @@
                         focus changed. And so that's when I. Started working
                         with people who were also justice involved to say, how
                         could we make things better?<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -6031,6 +5981,7 @@
                 that takes a physical taxing toll on your body.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="129-0" class="">
@@ -6061,11 +6012,7 @@
                         who are justice involved., one of the problems I've
                         experienced is that, We're like in these different
                         silos.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -6095,11 +6042,7 @@
                 >"<!-- -->You need avenues to get out and we don't allow victims
                 enough space to feel safe enough to trust us as a society to be
                 transparent enough to say, I need help.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="27-2" class="more">
@@ -6125,11 +6068,7 @@
                 >"<!-- -->Got in contact with Huron Valley, the parole officer
                 in Huron Valley, and she has a list of women coming home and I
                 can help them with the CARES Package.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="27-6" class="more">
@@ -6154,11 +6093,7 @@
               <span class="quote"
                 >"<!-- -->So I did 50 children who parents were incarcerated. Oh
                 wow. And that was amazing.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="43-3" class="more">
@@ -6184,11 +6119,7 @@
                 >"<!-- -->the general public, the public at large needs to be
                 more informed. They need to be willing to listen to what is
                 really going on in their neighborhoods and in their communities.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="49-0" class="more">
@@ -6213,11 +6144,7 @@
               <span class="quote"
                 >"<!-- -->What we do is identify injustices and we build
                 campaigns around those injustices.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="49-3" class="more">
@@ -6243,11 +6170,7 @@
                 >"<!-- -->I think those, those critical skills that I learned in
                 college and then on the job are things that help me look at
                 things a little different here.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="50-2" class="more">
@@ -6272,11 +6195,7 @@
               <span class="quote"
                 >"<!-- -->it's worse because the people who were sending us the
                 resources, those resources have pretty much dried up.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="55-0" class="more">
@@ -6305,11 +6224,7 @@
                 there. But We, the residents, said there was something wrong
                 with the water. It smelled funny in some areas. It tasted funny
                 for me.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="55-3" class="more">
@@ -6335,11 +6250,7 @@
                 >"<!-- -->So I know that the concern is the kids, and it should
                 be there are today or tomorrow. ... but they're not putting
                 emphasis on the elderly or the adults.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="56-6" class="more">
@@ -6363,11 +6274,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->All of these things is like a domino effect.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="66-2" class="more">
@@ -6393,11 +6300,7 @@
                 >"<!-- -->Technology is not real for us there. why? 'cause it
                 ain't did shit for us there. But help us get on social media and
                 invite ourselves more.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="67-1" class="more">
@@ -6422,11 +6325,7 @@
               <span class="quote"
                 >"<!-- -->You have to have both operating at the exact same
                 time.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="68-2" class="more">
@@ -6461,11 +6360,7 @@
                 make is that we can't have this be a thing where we rec, where
                 we think that only the elective few need to make it, we need to
                 shower this stuff over everybody.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="95-4" class="more">
@@ -6490,11 +6385,7 @@
                 >"<!-- -->the guy who arrested me on my drug case wound up
                 becoming the chief of police. And then I sat on a board with
                 him.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="109-2" class="more">
@@ -6519,11 +6410,7 @@
               <span class="quote"
                 >"<!-- -->Take your anger out in another way. I take my anger
                 out by doing this work because this work is a healing for me.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="123-1" class="more">
@@ -6550,11 +6437,7 @@
                 who's working with Rep Aiyash... we're working together with the
                 community to organize what's called Capital Day for Housing, not
                 Hurdles is what we're calling it.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="125-1" class="more">
@@ -6580,11 +6463,7 @@
                 >"<!-- -->Sheriff Chris, Chris Swanson who I know has been
                 integral into helping people who are formerly incarcerated find
                 safe, stable, and secure housing.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -6631,6 +6510,7 @@
                 redeemed. All of us can be redeemed.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="110-1" class="">
@@ -6753,6 +6633,7 @@
                 are bad.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="54-3" class="">
@@ -6846,6 +6727,7 @@
                 that.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="120-2" class="">
@@ -6933,6 +6815,7 @@
                 helping them.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="16-2" class="">
@@ -6994,6 +6877,7 @@
                 touch that, that you're listening and you have compassion.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="41-0" class="">
@@ -7059,6 +6943,7 @@
                 normal because that's the only behavior they see<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="56-5" class="">
@@ -7120,6 +7005,7 @@
                 wake up thinking I had broken my phone or dropped it.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="7-3" class="">
@@ -7149,11 +7035,7 @@
                         that's locked up for decades coming home and you don't
                         give them no pre-training with any kind of technology,
                         you are setting them up for failure.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -7188,6 +7070,7 @@
                 what they're connected to.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="66-7" class="">
@@ -7253,6 +7136,7 @@
                 I'm still, I still do SOS online for her.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="64-6" class="">
@@ -7281,11 +7165,7 @@
                         their email. But they didn't do it on their own
                         successfully until they understood why they had to have
                         two factor where it went to in relay.<!-- -->"</span
-                      >
-                      <div>
-                        <div>Similar claims:</div>
-                        <ul></ul>
-                      </div>
+                      >0
                     </div>
                   </li>
                 </ul>
@@ -7320,6 +7200,7 @@
                 of us and to society as a whole.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="74-6" class="">
@@ -7380,6 +7261,7 @@
                 is, is the credibility that we have.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="84-2" class="">
@@ -7440,6 +7322,7 @@
                 connection.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="89-2" class="">
@@ -7493,11 +7376,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->But yet cannot allow a parent to volunteer and help.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="10-5" class="more">
@@ -7522,11 +7401,7 @@
               <span class="quote"
                 >"<!-- -->After that 20 years, you give that person chance and
                 if they come back, Then they never wanted that chance.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="18-0" class="more">
@@ -7553,11 +7428,7 @@
                 Hey, I know this book. I wrote that book, and I'm telling you,
                 you gonna write your name in that book and you don't want your
                 name in that book.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="32-3" class="more">
@@ -7582,11 +7453,7 @@
               <span class="quote"
                 >"<!-- -->if I'm succeeding, I should be able to connect with
                 those next to me and help them to succeed.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="35-4" class="more">
@@ -7615,11 +7482,7 @@
                 phone. [...] when they come here for these five hours, it's five
                 hours of me barking at 'em. Get off your phone, come on, get out
                 here in this garden.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="39-1" class="more">
@@ -7647,11 +7510,7 @@
                 on a technicality that happened in his case that he found. So
                 he's using those skills. To help others that are, are locked up
                 unjustly or unfairly.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="48-1" class="more">
@@ -7676,11 +7535,7 @@
               <span class="quote"
                 >"<!-- -->it was conditioned from slavery, right? I beat on you
                 and you don't do whatever, right? So we know that's wrong.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="49-1" class="more">
@@ -7706,11 +7561,7 @@
                 >"<!-- -->They're a grocery store, but they see the same people.
                 The people that live in the neighborhood, they are yet another
                 source of support.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="59-4" class="more">
@@ -7736,11 +7587,7 @@
                 >"<!-- -->We hear gunfire daily, we still watch tv. We don't, we
                 can hear the gunshot and know just how far it is before we
                 determine if we gonna take a dive.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="71-2" class="more">
@@ -7766,11 +7613,7 @@
                 >"<!-- -->PCAP's a community and so you get assistance from all
                 other, from all, I got assistance with everything from. Where to
                 go get my phone to transportation when I need to go places.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="73-5" class="more">
@@ -7795,11 +7638,7 @@
               <span class="quote"
                 >"<!-- -->I actually became more valuable to my parole officer
                 than he was to me because I got a peer recovery coach job.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="76-1" class="more">
@@ -7824,11 +7663,7 @@
               <span class="quote"
                 >"<!-- -->I believe that I'm meant to be a voice, and so I need
                 to stay close to these things.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="77-5" class="more">
@@ -7855,11 +7690,7 @@
                 reentry and things like that, people can get degrees and go into
                 fields that they actually want to do and they're actually
                 motivated to do.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="78-3" class="more">
@@ -7886,11 +7717,7 @@
                 my shoulders. It says A Brighter Way. It's got my name on the
                 back and it's got the number of years that I served. Everybody
                 in the office has the same thing.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="83-3" class="more">
@@ -7914,11 +7741,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->Mine are there for public consumption and I own them.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="85-1" class="more">
@@ -7943,11 +7766,7 @@
               <span class="quote"
                 >"<!-- -->I did this despite you, I was not gonna become a
                 statistic.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="93-2" class="more">
@@ -7973,11 +7792,7 @@
                 >"<!-- -->But somewhere where we're like, why are you drinking
                 and driving? you could kill a life. Let me help you and befriend
                 you and offer the services<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="95-2" class="more">
@@ -8002,11 +7817,7 @@
               <span class="quote"
                 >"<!-- -->the community I think as a whole really embraced me
                 and just how I grew up.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="106-2" class="more">
@@ -8032,11 +7843,7 @@
                 >"<!-- -->it's also important for you to be able to understand
                 yourself. As a victim under the worst circumstances that if I
                 could do it, anybody can do it.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="109-1" class="more">
@@ -8063,11 +7870,7 @@
                 Muhammad and the Honorable Minister Louis Farrakhan because they
                 taught me how to overcome these conditions and not be bitter,
                 not be angry.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="113-1" class="more">
@@ -8092,11 +7895,7 @@
               <span class="quote"
                 >"<!-- -->why isn't there a returning citizen's union or, or
                 something of the like<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="122-0" class="more">
@@ -8122,11 +7921,7 @@
                 >"<!-- -->Who's gonna hire me? I have a master's, but that
                 doesn't mean anything if you have this on your record, because
                 what company is gonna take a chance on me?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -8185,6 +7980,7 @@
                 that might be able to say, I've heard of something like this.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="4-1" class="">
@@ -9579,11 +9375,7 @@
                 >"<!-- -->Women that are incarcerated are [...] because of
                 direct action of a man or a dominant co-defendant who was
                 forcing things on them.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
         </ul>
@@ -9626,6 +9418,7 @@
                 [...] Three year olds can do stuff better than me<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="9-1" class="">
@@ -9744,6 +9537,7 @@
                 can't go over something one or two times and get it in.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="8-4" class="">
@@ -9835,6 +9629,7 @@
                 caught up to where it's headed, you'll be left behind.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="37-1" class="">
@@ -9926,6 +9721,7 @@
                 you gotta know how to do this.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="64-4" class="">
@@ -10019,6 +9815,7 @@
                 even know what online is.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="11-0" class="">
@@ -10087,6 +9884,7 @@
                 more in-person, stuff like that.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="69-2" class="">
@@ -10148,6 +9946,7 @@
                 really know how to operate the new thing, the new technologies<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="36-2" class="">
@@ -10205,11 +10004,7 @@
                 >"<!-- -->Where they can like practice research and stuff. It
                 can be like, we gonna hook this up to the legal library or
                 something where they just practice.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="8-3" class="more">
@@ -10237,11 +10032,7 @@
                 we are investing in you because we know you're your future
                 customers and we don't want you coming home not having a proper
                 technology.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="11-1" class="more">
@@ -10266,11 +10057,7 @@
               <span class="quote"
                 >"<!-- -->But, so I went to a class, I was able to get in the
                 class, but then COVID came up, shut the class down.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="11-3" class="more">
@@ -10295,11 +10082,7 @@
               <span class="quote"
                 >"<!-- -->Then my granddaughters was able to assist me further
                 because they kids are tech savvy.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="12-0" class="more">
@@ -10325,11 +10108,7 @@
                 >"<!-- -->You wanna be able to be independent. 'cause after so
                 long being in, in that cage and, and everything is given to you
                 all.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="12-1" class="more">
@@ -10353,11 +10132,7 @@
               <span class="quote"
                 >"<!-- -->A lot of people don't get that and a lot of, and then
                 that just takes them back to what they know.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="20-3" class="more">
@@ -10384,11 +10159,7 @@
                 your, food stamps, everything went to online and talking to the
                 computer people on the phone, and I was used to going in person
                 and talking to people.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="20-4" class="more">
@@ -10438,11 +10209,7 @@
               <span class="quote"
                 >"<!-- -->making sure youth have that access to. Those jobs that
                 are going to be essential to surviving in the future.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="31-2" class="more">
@@ -10467,11 +10234,7 @@
               <span class="quote"
                 >"<!-- -->If you don't have access to wifi, you don't have
                 access to The future.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="31-3" class="more">
@@ -10497,11 +10260,7 @@
                 >"<!-- -->there's gotta be some type of programming that we
                 create to be able to make sure that our kids aren't getting left
                 behind.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="31-4" class="more">
@@ -10525,11 +10284,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->I think that's huge for the Detroit community.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="36-1" class="more">
@@ -10554,11 +10309,7 @@
                 >"<!-- -->my grandkids at four years old can operate, they can
                 tell me stuff. They can show me stuff that's happening on my
                 phone that I don't even know<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="36-3" class="more">
@@ -10583,11 +10334,7 @@
               <span class="quote"
                 >"<!-- -->A lot of my technology learning was pretty much and is
                 pretty much on hand hands-on<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="37-2" class="more">
@@ -10613,11 +10360,7 @@
                 >"<!-- -->I have a car that. You don't even put a key into it.
                 You just push a button in. It starts up and you don't even have
                 a gear shift. You push a button and it shifts gears for you.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="37-3" class="more">
@@ -10642,11 +10385,7 @@
               <span class="quote"
                 >"<!-- -->So your television is a smart tv. So you have to learn
                 how to operate all these new things.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="61-1" class="more">
@@ -10671,11 +10410,7 @@
               <span class="quote"
                 >"<!-- -->Because you recognize just like it's a food desert,
                 it's a technology desert.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="62-0" class="more">
@@ -10701,11 +10436,7 @@
                 >"<!-- -->I'm one of those folks that was like really fortunate
                 in that I understood technology in the ways that a lot of my,
                 like contemporaries didn't<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="62-3" class="more">
@@ -10732,11 +10463,7 @@
                 incarcerated, I was a person that science digest and sci-fi news
                 that was the stuff like I, that would, would be some things I
                 would do for my own personal interest<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="64-1" class="more">
@@ -10761,11 +10488,7 @@
               <span class="quote"
                 >"<!-- -->I didn't expect to come home and I become the tech
                 guy, not even six months from being home.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="64-5" class="more">
@@ -10792,11 +10515,7 @@
                 >"<!-- -->But they didn't do it on their own successfully until
                 they understood why they had to have two factor where it went to
                 in relay.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="64-7" class="more">
@@ -10824,11 +10543,7 @@
                 me, I was afraid of this damn laptop because I was worried that
                 there was gonna be another instance where I would be looking to
                 do something that should take me 10 or 15 minutes.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="66-0" class="more">
@@ -10857,11 +10572,7 @@
                 internet, The fact that I would come back, had my phone for a
                 couple weeks, maybe, And somehow now be a go-to person for my
                 family and my community was ridiculous.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="66-1" class="more">
@@ -10890,11 +10601,7 @@
                 what I mean? Like, it, it that, that, that way of living. Right.
                 The, the, the realization of how we can pres propel you forward
                 is not present because the desert, it's not real for us.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="69-3" class="more">
@@ -10921,11 +10628,7 @@
                 problem. They, when, when SOS online first got integrated and
                 rolled out, they were there learning the buggy ways to get
                 through it...<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="108-0" class="more">
@@ -10951,11 +10654,7 @@
                 >"<!-- -->You don't know how to use a phone, you don't know how
                 to use a computer. [...] You don't need no computer. You don't
                 need no cell phone.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="108-1" class="more">
@@ -10980,11 +10679,7 @@
               <span class="quote"
                 >"<!-- -->Typewriters are outdated. They still using typewriters
                 in prison and this is 2023.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="108-3" class="more">
@@ -11009,11 +10704,7 @@
               <span class="quote"
                 >"<!-- -->My mama said no, he on his Bluetooth. I said, what
                 kind of two, his teeth is blue.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="108-4" class="more">
@@ -11040,11 +10731,7 @@
                 intelligent thing in the world. And my mom, she laughed about
                 it. She said, what are you doing? I said, I'm reading the
                 manual.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="108-5" class="more">
@@ -11071,11 +10758,7 @@
                 write use the phone, so those are some of the challenges that we
                 face coming home not being, see, when you don't have access to
                 modern technology, then you like a fish out of the water.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -11123,6 +10806,7 @@
                 pay the taxes.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="87-0" class="">
@@ -11219,6 +10903,7 @@
                 ain't felony 'cause I got a felony, you know?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="100-0" class="">
@@ -11281,6 +10966,7 @@
                 properly cuz then they rescinded the offer.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="75-1" class="">
@@ -11341,11 +11027,7 @@
                 >"<!-- -->I, I could have 10 one-on-ones in the time it take me
                 to do one report for one, one-on-one, because that's how bad I
                 suck at trying to put stuff in the computer.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="9-0" class="">
@@ -11369,11 +11051,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->people didn't wanna hire a felon.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -11406,11 +11084,7 @@
                 I figured I'd have a job with Habitat for Humanity, since they
                 use Habitat for Humanity in prison. But when I came out, I
                 asked, I applied for the job. They said I was a felon.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="19-3" class="more">
@@ -11438,11 +11112,7 @@
                 am not a factory person. The factory thing was not for me. The
                 two, the, the two and few dollars at like McDonald's and stuff,
                 that wasn't gonna help me.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="19-5" class="more">
@@ -11470,11 +11140,7 @@
                 on the wall, do some demo work. Anything that had to do with
                 housing at that time to put my house still to get a couple of
                 dollars. I was working under the table, but it made it happen.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="20-0" class="more">
@@ -11499,11 +11165,7 @@
               <span class="quote"
                 >"<!-- -->I had supervision fees. I forgot how much it was. It
                 was a while ago. But yeah, I had supervision fees.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="20-1" class="more">
@@ -11553,11 +11215,7 @@
               <span class="quote"
                 >"<!-- -->Across the country, 23 countries saying the same
                 thing.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="26-0" class="more">
@@ -11582,11 +11240,7 @@
               <span class="quote"
                 >"<!-- -->Just because I, I got an F behind my name. I try not
                 to make that hinder me...<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="26-2" class="more">
@@ -11611,11 +11265,7 @@
               <span class="quote"
                 >"<!-- -->I'm not trying to rent any place. So I'm good and I
                 work for myself<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="35-2" class="more">
@@ -11641,11 +11291,7 @@
                 >"<!-- -->So ultimately it's these students can go in and
                 develop an engineering skill that'll pay them six figures for
                 the rest of their life without ever going to college.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="42-3" class="more">
@@ -11671,11 +11317,7 @@
                 >"<!-- -->So when they come out, if they come out, you got child
                 support, you owe, you got restitution, you owe, you need to get
                 a place, you need to get a car. How do you survive?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="48-4" class="more">
@@ -11701,11 +11343,7 @@
                 >"<!-- -->Coming back, their challenges may be something
                 different or coming back. They might already have a job set up
                 for them.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="57-3" class="more">
@@ -11730,11 +11368,7 @@
               <span class="quote"
                 >"<!-- -->And in that time, you need to make sure somebody's
                 helping them get a job.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="57-4" class="more">
@@ -11759,11 +11393,7 @@
               <span class="quote"
                 >"<!-- -->Okay, well then you need to start with a state ID or a
                 driver's license. They can't get a job without that.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="57-5" class="more">
@@ -11788,11 +11418,7 @@
               <span class="quote"
                 >"<!-- -->They can't get a state ID or driver's license without
                 a social security card.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="57-7" class="more">
@@ -11817,11 +11443,7 @@
               <span class="quote"
                 >"<!-- -->You might be able to get some emergency food stamps if
                 your state allows for that. All states are different.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="58-2" class="more">
@@ -11846,11 +11468,7 @@
               <span class="quote"
                 >"<!-- -->, it's mismanaged and it's used in a way that gets
                 them put back in the system.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="59-1" class="more">
@@ -11877,11 +11495,7 @@
                 people Listen, people who are retired make more money than I do.
                 Because they retired from General Motors when money was good and
                 they worked 40.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="75-2" class="more">
@@ -11906,11 +11520,7 @@
               <span class="quote"
                 >"<!-- -->I couldn't get a job at Blarney Castle Petroleum
                 because I couldn't handle $50 in the till.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="75-3" class="more">
@@ -11937,11 +11547,7 @@
                 >"<!-- -->it's kind of funny now because I'm, I'm the head of an
                 organization that currently is up to about a $400,000 a year
                 budget.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="96-4" class="more">
@@ -11968,11 +11574,7 @@
                 trying to get a job and it's not working, he goes back to sell
                 drugs. He ain't doing it 'cause he want to, he tried to do
                 something different, but this is what works.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="113-0" class="more">
@@ -11998,11 +11600,7 @@
                 >"<!-- -->I gotta take wages that are way less than what I know
                 I'm worth and take whatever job that I can get simply because of
                 my background.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="113-3" class="more">
@@ -12027,11 +11625,7 @@
               <span class="quote"
                 >"<!-- -->debilitating being free and still feeling like you're
                 in prison out here in society<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -12079,6 +11673,7 @@
                 one would let her get even an apartment because of her status.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="19-0" class="">
@@ -12190,6 +11785,7 @@
                 to lay their head, not for a day or a week or just for a month.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="57-1" class="">
@@ -12251,6 +11847,7 @@
                 the security deposit.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="123-3" class="">
@@ -12309,11 +11906,7 @@
               <span class="quote"
                 >"<!-- -->my biggest concern as a Detroiter is the
                 gentrification that's going on.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="0-1" class="">
@@ -12338,11 +11931,7 @@
               <span class="quote"
                 >"<!-- -->It's little bitty kids that can play differently in a
                 cleaner street and a different environment.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -12373,11 +11962,7 @@
               <span class="quote"
                 >"<!-- -->You get hurt on the job. You have to have insurance,
                 your own insurance.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="15-1" class="more">
@@ -12401,11 +11986,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->We need another system for that.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="15-2" class="more">
@@ -12430,11 +12011,7 @@
               <span class="quote"
                 >"<!-- -->And I was like, well, we know that's not gonna happen
                 to everybody. So there it is there.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="15-3" class="more">
@@ -12460,11 +12037,7 @@
                 >"<!-- -->Now I don't know how many times that's gonna happen in
                 life...And I was like, well, we know that's not gonna happen to
                 everybody.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="19-2" class="more">
@@ -12490,11 +12063,7 @@
                 >"<!-- -->I tried to get help through different organizations.
                 They told me I wasn't homeless. Well, that's not my address. I'm
                 just sleeping on the couch.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="20-6" class="more">
@@ -12546,11 +12115,7 @@
                 >"<!-- -->So over there we were in Kenya and it was 23 countries
                 there, 97 people all saying the same thing. Return to citizens
                 have a hard time finding housing and work.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="42-4" class="more">
@@ -12575,11 +12140,7 @@
               <span class="quote"
                 >"<!-- -->And you're not supposed to go back into your old
                 neighborhood. . So where do you go?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="57-2" class="more">
@@ -12605,11 +12166,7 @@
                 >"<!-- -->You can't be vagrant. You what? At some point you
                 wanna go, go inside. It snows here. So they're gonna break into
                 a structure.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="57-6" class="more">
@@ -12633,11 +12190,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->So you're setting them up for failure?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="57-8" class="more">
@@ -12662,11 +12215,7 @@
               <span class="quote"
                 >"<!-- -->I think the people who are making the decisions have
                 not been affected, impacted by these type of challenges.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="80-0" class="more">
@@ -12690,11 +12239,7 @@
               <span class="quote"
                 >"<!-- -->Housing is a, they might not have it officially
                 anymore, but redlining still exists.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="80-2" class="more">
@@ -12719,11 +12264,7 @@
               <span class="quote"
                 >"<!-- -->I have nearly an 800 credit score. And so there's
                 nothing else that goes into this except for that.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="80-3" class="more">
@@ -12748,11 +12289,7 @@
               <span class="quote"
                 >"<!-- -->I'm not on my lease right now. My wife is on the
                 lease.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="80-4" class="more">
@@ -12778,11 +12315,7 @@
                 >"<!-- -->The problem is you have Eastern Michigan and you have
                 University of Michigan, so they've got a transient population
                 that can always fill their housing.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="80-6" class="more">
@@ -12807,11 +12340,7 @@
               <span class="quote"
                 >"<!-- -->The only real way out of this in a lot of ways is home
                 ownership.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="81-0" class="more">
@@ -12843,11 +12372,7 @@
                 individuals. And if they start banking there, they start working
                 so that hopefully within two years they can get a loan, they
                 can, they can buy their own house and go from there.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="82-1" class="more">
@@ -12874,11 +12399,7 @@
                 them to buy. Multi-unit dwellings so that then we can do both
                 things where that they can own something and they can rent to
                 somebody else who couldn't otherwise rent.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="123-4" class="more">
@@ -12904,11 +12425,7 @@
                 >"<!-- -->these are people that are working like steadily going
                 to school. They are trying to better themselves and their
                 families.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="125-0" class="more">
@@ -12934,11 +12451,7 @@
                 >"<!-- -->there are programs like in Genesee County centered
                 around housing where they are specifically working with
                 landlords.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -12988,6 +12501,7 @@
                 they might need to excel.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="6-5" class="">
@@ -13079,6 +12593,7 @@
                 can they even pass the test?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="47-1" class="">
@@ -13170,6 +12685,7 @@
                 confidence.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="30-1" class="">
@@ -13233,6 +12749,7 @@
                 confidence, build understanding<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="32-1" class="">
@@ -13294,6 +12811,7 @@
                 have a master's degree in communication.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="100-6" class="">
@@ -13355,11 +12873,7 @@
               <span class="quote"
                 >"<!-- -->I do care about how my child is being educated in the
                 Detroit public schools and their ratings.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="6-3" class="more">
@@ -13384,11 +12898,7 @@
               <span class="quote"
                 >"<!-- -->Cram their classrooms where they can't give our
                 students as much of attention as they might need to excel.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="6-4" class="more">
@@ -13414,11 +12924,7 @@
                 >"<!-- -->I feel like my child should get a top A grade
                 education no matter where I live, whether it's Flint, whether
                 it's Jackson, [...] or Detroit.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="12-3" class="more">
@@ -13444,11 +12950,7 @@
                 >"<!-- -->let me learn something on my own and then let me go
                 see if I'm capable of doing A, B, and C and then getting the
                 desired result that I would like to have<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="13-1" class="more">
@@ -13474,11 +12976,7 @@
                 >"<!-- -->that's a big thing people need to know about how to
                 get credit. Not only just to get it, but to maintain it and use
                 it properly.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="16-1" class="more">
@@ -13504,11 +13002,7 @@
                 >"<!-- -->There's a responsibility for you to know. So you have
                 to begin to know the things that you need to know in order to
                 live a successful life. Live a crime free life.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="28-0" class="more">
@@ -13532,11 +13026,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->Teachers are required to do too much<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="35-6" class="more">
@@ -13563,11 +13053,7 @@
                 year now. July 1st, I stepped in and my focus was to increase
                 the education. So ideally I wanted. To be able to create a space
                 of enrichment.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="48-2" class="more">
@@ -13595,11 +13081,7 @@
                 him up. And then they would show me his report card and say,
                 well, mom, I want you to know he came in and got extra help in
                 the morning.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="66-3" class="more">
@@ -13624,11 +13106,7 @@
               <span class="quote"
                 >"<!-- -->That $65 notebook doesn't mean that that kid's now
                 gonna be finishing high school on time.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -13679,6 +13157,7 @@
                 touch 'em, they couldn't do anything.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="45-1" class="">
@@ -13825,6 +13304,7 @@
                 it seemed to be no protection for women and girls now<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="0-4" class="">
@@ -13884,6 +13364,7 @@
                 real monsters came out in the homes.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="3-2" class="">
@@ -13955,6 +13436,7 @@
                 they understand why the struggle exists.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="44-1" class="">
@@ -14011,11 +13493,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->as a youth growing up in Detroit, I wasn't heard.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -14045,11 +13523,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->And when you lock up a mom, you destroy a community.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="2-0" class="more">
@@ -14076,11 +13550,7 @@
                 want her to go somewhere where she's just as included as
                 everybody else [...] Do I have to go to a small hick town to do
                 that?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="39-5" class="more">
@@ -14106,11 +13576,7 @@
                 >"<!-- -->You, you grow up fast, you learn how to survive. ...
                 but they don't, they didn't get that. And, and the the staff
                 inside doesn't become their parents at all.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -14171,6 +13637,7 @@
                 why we can't take that model and just duplicate it.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="92-1" class="">
@@ -14288,6 +13755,7 @@
                 the Senate and changed the bill.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="10-2" class="">
@@ -14381,6 +13849,7 @@
                 build more institutions, where would they get their jobs from?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="94-1" class="">
@@ -14469,6 +13938,7 @@
                 make it so heavily weighted just on background check.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="112-1" class="">
@@ -14558,6 +14028,7 @@
                 paperwork or for the attorney to look at the paperwork.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="39-2" class="">
@@ -14625,6 +14096,7 @@
                 have to go into my past to, to think of the things I did?<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="83-2" class="">
@@ -14689,6 +14161,7 @@
                 status.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="93-3" class="">
@@ -14751,6 +14224,7 @@
                 safety when there's a portion of it.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="96-5" class="">
@@ -14814,6 +14288,7 @@
                 to jail. For what? Bribery. And blackmailed.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="109-3" class="">
@@ -14876,6 +14351,7 @@
                 ties into the recidivism rate.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="111-6" class="">
@@ -14939,6 +14415,7 @@
                 like this should not be a defacto life sentence.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="124-1" class="">
@@ -14995,11 +14472,7 @@
               <span class="quote"
                 >"<!-- -->And the first time it happens to someone of another
                 race, then all hell loose. And that's not fair.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="2-1" class="more">
@@ -15028,11 +14501,7 @@
                 her accomplishments and not have to work 10 times as hard as the
                 other counterparts to see the same accomplishments and
                 achievements and get the same rewards?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="7-2" class="more">
@@ -15058,11 +14527,7 @@
                 >"<!-- -->Because if you have somebody that's locked up for
                 decades coming home and you don't give them no pre-training with
                 any kind of technology, you are setting them up for failure.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="17-4" class="more">
@@ -15090,11 +14555,7 @@
                 department. That's not, that's not a good, I don't believe it's
                 a good thing to do. However, if you're saying you're gonna take
                 some money, then you should put the money in education.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="24-5" class="more">
@@ -15119,11 +14580,7 @@
               <span class="quote"
                 >"<!-- -->When they did the redistricting that tore us all up,
                 they moved the lines all over the place. It's horrible.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="26-1" class="more">
@@ -15149,11 +14606,7 @@
                 >"<!-- -->I helped Safe &amp; Just write the expungement law and
                 I went through the, through the motions and I can't get it
                 expunged...<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="38-5" class="more">
@@ -15177,11 +14630,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->And if they mess up, On that probation, they go back.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="40-1" class="more">
@@ -15207,11 +14656,7 @@
                 >"<!-- -->they're still incarcerating young people. , and people
                 of color and people with less economic standards. They're,
                 they're treated less than everybody else.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="59-3" class="more">
@@ -15237,11 +14682,7 @@
                 >"<!-- -->If the answer is not to institutionalize them, the
                 problem is to catch them before they go in and provide them the
                 services.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="62-4" class="more">
@@ -15267,11 +14708,7 @@
                 >"<!-- -->if your parents went and broke they back and sweat to
                 get you this video game system, you bet not break that thing
                 apart... because of socioeconomic issues<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="67-0" class="more">
@@ -15299,11 +14736,7 @@
                 then you have the folks who are, in the political room ... who
                 are making sure that the laws that hurt the wounded get taken
                 off.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="74-0" class="more">
@@ -15329,11 +14762,7 @@
                 >"<!-- -->the Department of Corrections is set up is, is it does
                 very little to emulate the actual world that most people are
                 gonna be released into.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="85-0" class="more">
@@ -15358,11 +14787,7 @@
               <span class="quote"
                 >"<!-- -->it's amazing to me how they will kick us in the teeth
                 every chance they get and then try and take credit for us.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="91-0" class="more">
@@ -15391,11 +14816,7 @@
                 because if you think about this, [...]. And then as soon as they
                 graduate, they get told, you can't associate with any Spartans
                 anymore.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="95-3" class="more">
@@ -15420,11 +14841,7 @@
               <span class="quote"
                 >"<!-- -->I was in a period that the whole pipeline to prison
                 wasn't so magnified as it is today.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="97-0" class="more">
@@ -15453,11 +14870,7 @@
                 the habitual criminal, the enhancement, like all of this is
                 designed based on that 13th amendment being passed to where
                 we're at today<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="100-1" class="more">
@@ -15481,11 +14894,7 @@
               <span class="quote"
                 >"<!-- -->if somebody has done wrong and you call yourself a
                 Christian society, then where's forgiveness come in at<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="106-3" class="more">
@@ -15511,11 +14920,7 @@
                 >"<!-- -->it's going to go to practice in slavery all over
                 again. Because what does the 13th amendments say? It say slavery
                 is abolished except that you're convicted of a crime.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="113-2" class="more">
@@ -15541,11 +14946,7 @@
                 >"<!-- -->some type of union that advocates like, okay, yeah,
                 this person might be a return that says, but you gonna pay them
                 a wage as if you know<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="119-2" class="more">
@@ -15572,11 +14973,7 @@
                 legislation and how they choose to,when they have these millages
                 and that that data that everybody have to come to, to the school
                 to get counted and mm-hmm.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="126-3" class="more">
@@ -15604,11 +15001,7 @@
                 to be refined. So there are people who are, they're still having
                 expungement fairs. And so when we go there, we talk to folks and
                 we ask them if they're registered to vote.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -15657,6 +15050,7 @@
                 tell people they had a right to vote.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="23-2" class="">
@@ -15801,11 +15195,7 @@
                 life was lost, and the response to the death. I will ever be
                 grateful for all the people, like the Black Lives Matter,
                 everything that grew out of that one death.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="23-3" class="">
@@ -15831,11 +15221,7 @@
                 >"<!-- -->the suburbs voting for all of that and we not voting.
                 So of course they gonna close everything around us and wanna
                 know why we don't have it.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="23-4" class="">
@@ -15859,11 +15245,7 @@
               ><br />Quote:
               <span class="quote"
                 >"<!-- -->And they was like, well my vote don't count.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="23-6" class="">
@@ -15889,11 +15271,7 @@
                 >"<!-- -->If you had a prosecutor or if you had a judge, you
                 know, you could vote them outta the seat 'cause they didn't put
                 you in jail.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -15924,11 +15302,7 @@
                 >"<!-- -->Washington, DC you can vote while you still in, in
                 prison. So I wanted to try to get that policy, like how can we
                 change that rule?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="40-0" class="more">
@@ -15956,11 +15330,7 @@
                 happening and have happened and that where awareness, awareness
                 has to happen, that these things are going on and still going
                 on, and especially with our children.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="43-5" class="more">
@@ -15985,11 +15355,7 @@
               <span class="quote"
                 >"<!-- -->And you do need to learn how to vote. It does work. It
                 does work. Get involved.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="98-0" class="more">
@@ -16013,11 +15379,7 @@
               <span class="quote"
                 >"<!-- -->a republic form of government is what we're
                 self-governing.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="98-1" class="more">
@@ -16042,11 +15404,7 @@
               <span class="quote"
                 >"<!-- -->you can't have a democracy think they can vote away
                 your rights 'cause they're the majority.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="98-2" class="more">
@@ -16071,11 +15429,7 @@
               <span class="quote"
                 >"<!-- -->you don't fight racism with racism, you fight it with
                 solidarity.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="126-4" class="more">
@@ -16101,11 +15455,7 @@
                 >"<!-- -->even if you're justice involved, you have a right to
                 vote in Michigan so you, the only time you're not able to vote
                 is if you are currently serving your sentence in Michigan.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="126-5" class="more">
@@ -16131,11 +15481,7 @@
               <span class="quote"
                 >"<!-- -->Housing, employment mental health. We have to tell
                 them and let them know that they actually work for the people.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="129-2" class="more">
@@ -16163,11 +15509,7 @@
                 have a safe place to lay your head at night, if you don't have a
                 job to pay just to live and survive if you don't have
                 reproductive freedom then. Why would you care about voting?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -16216,6 +15558,7 @@
                 takes away from Detroit Public schools.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="128-0" class="">
@@ -16314,6 +15657,7 @@
                 they moved the lines all over the place. It's horrible.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="24-1" class="">
@@ -16408,6 +15752,7 @@
                 institutions open, you don't get that amount of money.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="52-1" class="">
@@ -16501,6 +15846,7 @@
                 them up for the prison and school pipeline.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="43-2" class="">
@@ -16563,6 +15909,7 @@
                 people with less economic standards.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="42-0" class="">
@@ -16629,6 +15976,7 @@
                 it is in the legislative, it's SB 33.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="128-3" class="">
@@ -16689,11 +16037,7 @@
                 >"<!-- -->General Motors pulled out. So Flint was a General
                 Motors town. So when General Motors pulled out, I mean, we have
                 a few factories, but this whole time was General Motors, right.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="74-4" class="more">
@@ -16720,11 +16064,7 @@
                 be on the bottom and people to be on the top. And therefore it
                 allows certain people to stay on the bottom and become the
                 aggregate for everything else.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="92-4" class="more">
@@ -16751,11 +16091,7 @@
                 legalized slavery is, 'cause we don't really grasp that, is when
                 30 Democrats and 17 Republicans vote on something that infringes
                 upon our right.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -16803,6 +16139,7 @@
                 in prison, right? It's called good conduct time or good credits.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="127-1" class="">
@@ -17008,6 +16345,7 @@
                 votes in the House and Senate and get some people home.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="65-1" class="">
@@ -17068,11 +16406,7 @@
                 >"<!-- -->a child tried as an adult, and I think that's what
                 the, the problem was, is that these people were were tried as,
                 as adults and they were children.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="42-1" class="">
@@ -17099,11 +16433,7 @@
                 when they're in prison, free labor. What they make? Some people,
                 some of them, [...] they get like maybe $2 a day or something
                 like that.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="74-1" class="">
@@ -17130,11 +16460,7 @@
                 are learned. They don't have any idea that the reason why
                 they're making 17 cents an hour is because they're deferring all
                 these other costs...<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -17165,11 +16491,7 @@
               <span class="quote"
                 >"<!-- -->when I got out, I went right back after three months
                 for selling drugs.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="96-3" class="more">
@@ -17197,11 +16519,7 @@
                 and, and I, when I, when I say that, it's because if we look at
                 the history of United States, what was it before the United
                 States? It was Turtle Island.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="97-2" class="more">
@@ -17230,11 +16548,7 @@
                 out after 15 years, see these people with a, with a different
                 opportunity That I believe is kinda like modeled after the
                 Norway prison<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <button
@@ -17284,6 +16598,7 @@
                 have to check when you're applying for housing.<!-- -->"</span
               >
               <div>
+                <br />
                 <div>Similar claims:</div>
                 <ul>
                   <li id="123-0" class="">
@@ -17342,11 +16657,7 @@
                 >"<!-- -->Can she call the cops just like somebody else can call
                 the cops and get the same response? Do I have to move in a
                 richer neighborhood for her to be able to get help?<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="80-5" class="">
@@ -17373,11 +16684,7 @@
                 >"<!-- -->If part of Ann Arbor actually has something on the
                 books that says they can't use your incarceration against you on
                 the front end. On the back end, they still can.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="81-2" class="">
@@ -17409,11 +16716,7 @@
                 individuals. And if they start banking there, they start working
                 so that hopefully within two years they can get a loan, they
                 can, they can buy their own house and go from there.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
           <li id="100-5" class="">
@@ -17440,15 +16743,30 @@
                 effect that you had in this school on these young men, he said,
                 I might let you go on paper, but you can still volunteer and
                 I'll pay you under the table.<!-- -->"</span
-              >
-              <div>
-                <div>Similar claims:</div>
-                <ul></ul>
-              </div>
+              >0
             </div>
           </li>
         </ul>
       </div>
     </div>
+    <script>
+      const data = [
+        { label: "Challenges", count: 10 },
+        { label: "Opportunities", count: 5 },
+      ];
+      const labels = data.map((item) => item.label);
+      const values = data.map((item) => item.count);
+      const plotData = [
+        {
+          type: "pie",
+          values: values,
+          labels: labels,
+          textinfo: "label+percent",
+          insidetextorientation: "radial",
+        },
+      ];
+      const layout = { height: 400, width: 500 };
+      Plotly.newPlot("piechart", plotData, layout);
+    </script>
   </body>
 </html>

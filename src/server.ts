@@ -6,6 +6,7 @@ import { testGPT } from "./gpt";
 import { Options } from "./types";
 import { getUrl, storeHtml } from "./storage";
 import { uniqueSlug, formatData, placeholderFile } from "./utils";
+import { fetchSpreadsheetData } from "./googlesheet";
 
 const port = 8080;
 
@@ -18,6 +19,15 @@ app.post("/generate", async (req, res) => {
   let responded = false;
   try {
     const config: Options = req.body;
+    if (config.googleSheet) {
+      const { data, pieCharts } = await fetchSpreadsheetData(
+        config.googleSheet.url,
+        config.googleSheet.pieChartColumns,
+        config.googleSheet.filterEmails
+      );
+      config.data = formatData(data);
+      config.pieCharts = pieCharts;
+    }
     if (!config.data) {
       throw new Error("Missing data");
     }
@@ -27,7 +37,7 @@ app.post("/generate", async (req, res) => {
       config.apiKey = process.env.OPENAI_API_KEY!;
     }
     if (!config.apiKey) {
-      throw new Error("Missing key");
+      throw new Error("Missing OpenAI API key");
     }
     await testGPT(config.apiKey); // will fail is key is invalid
     config.filename = config.filename || uniqueSlug(config.title);

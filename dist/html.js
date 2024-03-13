@@ -18,22 +18,32 @@ const Report = ({
     ...acc,
     [d.id]: d
   }), {});
-  return /*#__PURE__*/_react.default.createElement("html", null, /*#__PURE__*/_react.default.createElement("head", null, /*#__PURE__*/_react.default.createElement("style", null, _styles.default)), /*#__PURE__*/_react.default.createElement("body", null, /*#__PURE__*/_react.default.createElement("h1", {
+  const pieCharts = data.pieCharts || [];
+  return /*#__PURE__*/_react.default.createElement("html", null, /*#__PURE__*/_react.default.createElement("head", null, /*#__PURE__*/_react.default.createElement("style", null, _styles.default), pieCharts.length && /*#__PURE__*/_react.default.createElement("script", {
+    src: "https://cdn.plot.ly/plotly-latest.min.js"
+  })), /*#__PURE__*/_react.default.createElement("body", null, /*#__PURE__*/_react.default.createElement("h1", {
     id: "title"
   }, data.title), /*#__PURE__*/_react.default.createElement("h1", {
     id: "question"
   }, data.question), /*#__PURE__*/_react.default.createElement("div", {
     className: "report-description"
-  }, data.description), /*#__PURE__*/_react.default.createElement(Outline, {
+  }, data.description), pieCharts.length && /*#__PURE__*/_react.default.createElement("div", {
+    className: "piecharts"
+  }, pieCharts.map((_, i) => /*#__PURE__*/_react.default.createElement("div", {
+    key: i,
+    id: `piechart_${i}`
+  }))), /*#__PURE__*/_react.default.createElement(Outline, {
     data: data
   }), data.tree.map((topic, i) => /*#__PURE__*/_react.default.createElement(TopicComponent, {
     i: i,
     key: topic.topicId,
     topic: topic,
     sourceMap: sourceMap
-  }))));
+  })), pieCharts.length && /*#__PURE__*/_react.default.createElement("script", null, pieCharts.map((pieChart, i) => pieChartScript(pieChart, i)).join("\n\n"))));
 };
 exports.Report = Report;
+const SHOW_STATS = false; // TODO: provide this as an option
+
 const Outline = ({
   data
 }) => {
@@ -46,19 +56,19 @@ const Outline = ({
       className: "outline-topic-row"
     }, /*#__PURE__*/_react.default.createElement("td", null, /*#__PURE__*/_react.default.createElement("a", {
       href: `#${topic.topicId}`
-    }, i + 1, ". ", topic.topicName)), /*#__PURE__*/_react.default.createElement("td", null, topic.claimsCount), /*#__PURE__*/_react.default.createElement("td", null, (100 * topic.claimsCount / totalClaims).toFixed(0), "%")));
+    }, i + 1, ". ", topic.topicName)), /*#__PURE__*/_react.default.createElement("td", null, topic.claimsCount), SHOW_STATS && /*#__PURE__*/_react.default.createElement("td", null, (100 * topic.claimsCount / totalClaims).toFixed(0), "%")));
     topic.subtopics.forEach((subtopic, j) => {
       rows.push( /*#__PURE__*/_react.default.createElement("tr", {
         key: `${i}/${j}`,
         className: "outline-subtopic-row"
       }, /*#__PURE__*/_react.default.createElement("td", null, /*#__PURE__*/_react.default.createElement("a", {
         href: `#${subtopic.subtopicId}`
-      }, i + 1, ".", j + 1, ". ", subtopic.subtopicName)), /*#__PURE__*/_react.default.createElement("td", null, subtopic.claimsCount), /*#__PURE__*/_react.default.createElement("td", null, (100 * subtopic.claimsCount / totalClaims).toFixed(0), "%")));
+      }, i + 1, ".", j + 1, ". ", subtopic.subtopicName)), /*#__PURE__*/_react.default.createElement("td", null, subtopic.claimsCount), SHOW_STATS && /*#__PURE__*/_react.default.createElement("td", null, (100 * subtopic.claimsCount / totalClaims).toFixed(0), "%")));
     });
   });
   return /*#__PURE__*/_react.default.createElement("div", {
     id: "outline"
-  }, /*#__PURE__*/_react.default.createElement("table", null, /*#__PURE__*/_react.default.createElement("thead", null, /*#__PURE__*/_react.default.createElement("tr", null, /*#__PURE__*/_react.default.createElement("th", null, "Topic/Subtopic"), /*#__PURE__*/_react.default.createElement("th", null, "Claims"), /*#__PURE__*/_react.default.createElement("th", null, "%"))), /*#__PURE__*/_react.default.createElement("tbody", null, rows)));
+  }, /*#__PURE__*/_react.default.createElement("table", null, /*#__PURE__*/_react.default.createElement("thead", null, /*#__PURE__*/_react.default.createElement("tr", null, /*#__PURE__*/_react.default.createElement("th", null, "Topic/Subtopic"), /*#__PURE__*/_react.default.createElement("th", null, "Arguments"), SHOW_STATS && /*#__PURE__*/_react.default.createElement("th", null, "%"))), /*#__PURE__*/_react.default.createElement("tbody", null, rows)));
 };
 const TopicComponent = ({
   topic,
@@ -162,6 +172,21 @@ const onClaimClick = (sourceMap, claim) => {
 const showMoreOnclick = subtopicId => {
   return `document.getElementById('${subtopicId}').classList.toggle('showmore');`;
 };
+const pieChartScript = (pieChart, i) => `
+const data_${i} = ${JSON.stringify(pieChart.items)};
+const plotData_${i} = [{
+  type: 'pie',
+  values: data_${i}.map(item => item.count),
+  labels: data_${i}.map(item => item.label),
+  textinfo: "label+percent",
+  insidetextorientation: "radial"
+}];
+Plotly.newPlot(
+  'piechart_${i}', 
+  plotData_${i},
+  {height: 399, width: 399, title: {text: '${pieChart.title}', font: {size: 10}}},
+  {staticPlot: true}
+);`;
 const html = async data => {
   let str = _server.default.renderToString( /*#__PURE__*/_react.default.createElement(Report, {
     data: data

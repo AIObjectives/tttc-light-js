@@ -3,7 +3,14 @@ import styles from "./styles";
 import ReactDOMServer from "react-dom/server";
 import * as prettier from "prettier";
 
-import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "./types";
+import {
+  PipelineOutput,
+  Claim,
+  SourceMap,
+  Topic,
+  Subtopic,
+  PieChart,
+} from "./types";
 type ReportProps = { data: PipelineOutput };
 type TopicProps = { i: number; topic: Topic; sourceMap: SourceMap };
 type SubtopicProps = {
@@ -20,15 +27,26 @@ export const Report = ({ data }: ReportProps) => {
     (acc, d) => ({ ...acc, [d.id]: d }),
     {}
   );
+  const pieCharts = data.pieCharts || [];
   return (
     <html>
       <head>
         <style>{styles}</style>
+        {pieCharts.length && (
+          <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        )}
       </head>
       <body>
         <h1 id="title">{data.title}</h1>
         <h1 id="question">{data.question}</h1>
         <div className="report-description">{data.description}</div>
+        {pieCharts.length && (
+          <div className="piecharts">
+            {pieCharts.map((_, i) => (
+              <div key={i} id={`piechart_${i}`} />
+            ))}
+          </div>
+        )}
         <Outline data={data} />
         {data.tree.map((topic, i) => (
           <TopicComponent
@@ -38,10 +56,19 @@ export const Report = ({ data }: ReportProps) => {
             sourceMap={sourceMap}
           />
         ))}
+        {pieCharts.length && (
+          <script>
+            {pieCharts
+              .map((pieChart, i) => pieChartScript(pieChart, i))
+              .join("\n\n")}
+          </script>
+        )}
       </body>
     </html>
   );
 };
+
+const SHOW_STATS = false; // TODO: provide this as an option
 
 const Outline = ({ data }: ReportProps) => {
   let totalClaims = 0;
@@ -56,7 +83,9 @@ const Outline = ({ data }: ReportProps) => {
           </a>
         </td>
         <td>{topic.claimsCount}</td>
-        <td>{((100 * topic.claimsCount!) / totalClaims).toFixed(0)}%</td>
+        {SHOW_STATS && (
+          <td>{((100 * topic.claimsCount!) / totalClaims).toFixed(0)}%</td>
+        )}
       </tr>
     );
     topic.subtopics.forEach((subtopic, j) => {
@@ -68,7 +97,9 @@ const Outline = ({ data }: ReportProps) => {
             </a>
           </td>
           <td>{subtopic.claimsCount}</td>
-          <td>{((100 * subtopic.claimsCount!) / totalClaims).toFixed(0)}%</td>
+          {SHOW_STATS && (
+            <td>{((100 * subtopic.claimsCount!) / totalClaims).toFixed(0)}%</td>
+          )}
         </tr>
       );
     });
@@ -79,8 +110,8 @@ const Outline = ({ data }: ReportProps) => {
         <thead>
           <tr>
             <th>Topic/Subtopic</th>
-            <th>Claims</th>
-            <th>%</th>
+            <th>Arguments</th>
+            {SHOW_STATS && <th>%</th>}
           </tr>
         </thead>
         <tbody>{rows}</tbody>
@@ -225,6 +256,22 @@ const onClaimClick = (sourceMap: SourceMap, claim: Claim) => {
 const showMoreOnclick = (subtopicId: String) => {
   return `document.getElementById('${subtopicId}').classList.toggle('showmore');`;
 };
+
+const pieChartScript = (pieChart: PieChart, i: number) => `
+const data_${i} = ${JSON.stringify(pieChart.items)};
+const plotData_${i} = [{
+  type: 'pie',
+  values: data_${i}.map(item => item.count),
+  labels: data_${i}.map(item => item.label),
+  textinfo: "label+percent",
+  insidetextorientation: "radial"
+}];
+Plotly.newPlot(
+  'piechart_${i}', 
+  plotData_${i},
+  {height: 399, width: 399, title: {text: '${pieChart.title}', font: {size: 10}}},
+  {staticPlot: true}
+);`;
 
 const html = async (data: PipelineOutput) => {
   let str = ReactDOMServer.renderToString(<Report data={data} />);

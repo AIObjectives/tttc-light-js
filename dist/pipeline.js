@@ -41,10 +41,10 @@ function insertClaim(taxonomy, claim, tracker) {
 }
 function nestClaims(subtopic, nesting) {
   const map = {};
-  subtopic.claims.forEach(claim => {
+  (subtopic.claims || []).forEach(claim => {
     map[claim.claimId] = claim;
   });
-  subtopic.claims.forEach(claim => {
+  (subtopic.claims || []).forEach(claim => {
     if (nesting[claim.claimId]) {
       claim.duplicates = nesting[claim.claimId].filter(id => map[id]).map(id => map[id]);
       nesting[claim.claimId].forEach(id => {
@@ -52,7 +52,7 @@ function nestClaims(subtopic, nesting) {
       });
     }
   });
-  subtopic.claims = subtopic.claims.filter(claim => !claim.duplicated).sort((x, y) => (y.duplicates || []).length - (x.duplicates || []).length);
+  subtopic.claims = (subtopic.claims || []).filter(claim => !claim.duplicated).sort((x, y) => (y.duplicates || []).length - (x.duplicates || []).length);
 }
 async function pipeline(_options, cache) {
   const options = {
@@ -92,8 +92,8 @@ async function pipeline(_options, cache) {
   taxonomy.forEach(topic => {
     topic.claimsCount = 0;
     topic.subtopics.forEach(subtopic => {
-      topic.claimsCount += subtopic.claims.length;
-      subtopic.claimsCount = subtopic.claims.length;
+      topic.claimsCount += (subtopic.claims || []).length;
+      subtopic.claimsCount = (subtopic.claims || []).length;
     });
     topic.subtopics.sort((a, b) => b.claimsCount - a.claimsCount).filter(x => x.claimsCount > 0);
   });
