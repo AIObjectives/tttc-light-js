@@ -39,6 +39,8 @@ export type Cache = {
 export type Tracker = {
   start: number;
   costs: number;
+  prompt_tokens: number;
+  completion_tokens: number;
   unmatchedClaims: Claim[];
   end?: number;
   duration?: string;

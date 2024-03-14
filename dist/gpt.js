@@ -44,6 +44,8 @@ const gpt = async (apiKey, cacheKey, system, user, tracker, cache) => {
   } = completion.usage;
   const cost = prompt_tokens * (10 / 1000000) + completion_tokens * (30 / 1000000);
   tracker.costs += cost;
+  tracker.prompt_tokens += prompt_tokens;
+  tracker.completion_tokens += completion_tokens;
   const {
     finish_reason,
     message

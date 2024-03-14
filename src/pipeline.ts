@@ -74,7 +74,13 @@ async function pipeline(
   cache?: Cache
 ): Promise<PipelineOutput> {
   const options = { ...defaultOptions, ..._options };
-  const tracker: Tracker = { costs: 0, start: Date.now(), unmatchedClaims: [] };
+  const tracker: Tracker = {
+    costs: 0,
+    start: Date.now(),
+    unmatchedClaims: [],
+    prompt_tokens: 0,
+    completion_tokens: 0,
+  };
   const comments = JSON.stringify(options.data.map((x) => x.comment));
 
   console.log("Step 1: generating taxonomy of topics and subtopics");
@@ -169,6 +175,10 @@ async function pipeline(
 
   // next line is important to avoid leaking keys!
   delete options.apiKey;
+  console.log(`Pipeline completed in ${tracker.duration}`);
+  console.log(
+    `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`
+  );
   return { ...options, tree, ...tracker };
 }
 
