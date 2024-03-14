@@ -266,10 +266,12 @@ const plotData_${i} = [{
   textinfo: "label+percent",
   insidetextorientation: "radial"
 }];
+/* Plotly lets long titles overflow the container; wrap titles at max 60 chars */
+const wrappedTitle_${i} = "${pieChart.title}".replace(/([\\w\\s]{60,}?)\\s?\\b/g, "$1<br>");
 Plotly.newPlot(
   'piechart_${i}', 
   plotData_${i},
-  {height: 399, width: 399, title: {text: '${pieChart.title}', font: {size: 10}}},
+  {height: 399, width: 399, title: {text: wrappedTitle_${i}, font: {size: 10}}},
   {staticPlot: true}
 );`;
 
