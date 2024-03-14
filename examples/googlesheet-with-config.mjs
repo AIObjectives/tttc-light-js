@@ -19,19 +19,22 @@ import { parse } from "csv-parse/sync";
  *
  * Run this script with `node googlesheet-with-config.mjs`.
  */
+
 const CONFIG = {
-  reportTitle: "Talk to the City [synethic survey]",
-  reportQuestion: "What are your impressions of Talk to the City?",
-  googleSheetUrl: "https://docs.google.com/spreadsheets/d/1pQjnqA4Ul07JCRDr0UMuOP26z3QD0RfigTa6zuOUBmw/edit#gid=0",
-  pieChartColumns: [
-    "Would you use the tool described in the article? (1 = Very unlikely to use; 5 = Very likely to use)",
-    "How helpful would you expect this tool to be for your work? (1 = Not helpful; 5 = Very helpful)"
-  ],
-  whitelistCSV: "example-email-whitelist.csv"
+  apiKey: process.env.OPENAI_API_KEY,
+  title: "Talk to the City [synthetic survey]",
+  question: "What are your impressions of Talk to the City?",
+  googleSheet: {
+    url: "https://docs.google.com/spreadsheets/d/1pQjnqA4Ul07JCRDr0UMuOP26z3QD0RfigTa6zuOUBmw/edit#gid=0",
+    pieChartColumns: [
+      "Would you use the tool described in the article? (1 = Very unlikely to use; 5 = Very likely to use)",
+      "How helpful would you expect this tool to be for your work? (1 = Not helpful; 5 = Very helpful)"
+    ],
+    filterEmails: getWhiteListFromCSV("example-email-whitelist.csv"),
+  }
 }
 
-
-function unpackCSV(filename) {
+function getWhiteListFromCSV(filename) {
   const content = fs.readFileSync(filename);
   let records = parse(content, {
     columns: false,
@@ -43,27 +46,12 @@ function unpackCSV(filename) {
 }
 
 async function main() {
-  let whitelist = null;
-  if (CONFIG.whitelistCSV) {
-    whitelist = unpackCSV(CONFIG.whitelistCSV);
-    console.log('Including only responses from emails in ' + CONFIG.whitelistCSV);
-  }
-
   const res = await fetch("http://localhost:8080/generate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      apiKey: process.env.OPENAI_API_KEY,
-      googleSheet: {
-        url: CONFIG.googleSheetUrl,
-        pieChartColumns: CONFIG.pieChartColumns,
-        filterEmails: CONFIG.emailwhitelist
-      },
-      title: CONFIG.reportTitle,
-      question: CONFIG.reportQuestion
-    }),
+    body: JSON.stringify(CONFIG),
   });
   const resData = await res.json();
   console.log("The report will be generated at: ", resData.url);
