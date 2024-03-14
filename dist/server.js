@@ -1,5 +1,6 @@
 "use strict";
 
+require("dotenv/config");
 var _express = _interopRequireDefault(require("express"));
 var _cors = _interopRequireDefault(require("cors"));
 var _pipeline = _interopRequireDefault(require("./pipeline"));

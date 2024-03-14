@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import fetch from "node-fetch";
 
 // SEE OUTPUT: https://storage.googleapis.com/test-gds-api/fruit-preference-1710194611555
