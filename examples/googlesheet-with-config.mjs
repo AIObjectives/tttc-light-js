@@ -16,6 +16,8 @@ import { parse } from "csv-parse/sync";
  *
  * Note: in any single column, all cells must have the same data type (string or
  * number format) for the Google Sheets API to fetch them as displayed.
+ *
+ * Run this script with `node googlesheet-with-config.mjs`.
  */
 const CONFIG = {
   reportTitle: "Talk to the City [synethic survey]",
