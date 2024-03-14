@@ -15,7 +15,7 @@ import { parse } from "csv-parse/sync";
  *     email addresses to include responses from, if desired.
  *
  * Note: in any single column, all cells must have the same data type (string or
- * number format) for the Google Shets API to fetch them as displayed.
+ * number format) for the Google Sheets API to fetch them as displayed.
  */
 const CONFIG = {
   reportTitle: "Talk to the City [synethic survey]",
