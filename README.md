@@ -2,10 +2,13 @@
 
 A backend API for turbo pipeline.
 
-## How to run locally (for development)
+## Running the pipeline locally
 
-Create a `.env` file with your own OpenAI key and set also a password.
-If you give this password to a friend, they'll be allowed to use your server by putting this password instead of an OpenAI key.
+The current version has a local pipeline that uploads reports to a Google Cloud Storage instance upon completion.
+
+Create a `.env` file with your own OpenAI key.
+
+Optionally, you can also set a password. If you give this password to a friend, they'll be allowed to use your server by putting this password in the OPENAI_API_KEY field in their own .env, instead of copying your OpenAI key directly.
 
 ```
 export OPENAI_API_KEY=sk-something-something
@@ -13,10 +16,10 @@ export OPENAI_API_KEY_PASSWORD=some-password
 ```
 
 If a team member has already set up a Google Cloud Storage project, add the keys for that project to the same `.env` file. Otheriwse,
-see the "Deploying to Google Cloud" section for how to set up a project.
+see the "Setting up a Google Cloud instance" section for how to set up a project.
 
 ```
-export GCLOUD_STORAGE_BUCKET=some-project
+export GCLOUD_STORAGE_BUCKET=some-bucket-name
 export GOOGLE_CREDENTIALS_ENCODED=some-alphanumeric-string
 ```
 
@@ -27,6 +30,9 @@ npm i
 npm run build
 npm start
 ```
+
+Keep the npm server running, and provide input through the page at localhost:8080 (to upload a data file),
+or through one of the scripts in the `examples/` folder (to reference a Google Sheet).
 
 ## API docs
 
@@ -70,57 +76,70 @@ export type SourceRow = {
 Open `localhost:8080/` to see the example of client provided.
 The client is written in plain html/css/js in the `public` folder.
 
-## Deploying to Google Cloud
 
-Set up gcloud SDK on your machine
+## Setting up a Google Cloud instance
 
-- install `gloud` (see https://cloud.google.com/sdk/docs/install-sdk)
-- `gcloud auth login`
-- `gcloud config set project your-project-name`
-- `gcloud auth configure-docker`
+### Set up Google Cloud storage & services
 
-Use provided script to build and push docker image
+First create a new storage bucket:
+- Create a Google Cloud project and a Google Cloud Storage bucket
+- Add `GCLOUD_STORAGE_BUCKET=name-of-your-bucket` to your `.env`
+- Make sure this bucket has public access so that anyone can read from it (to
+make your reports accessible from your browser):
+    - Turn off the "Prevent public access" protect
+    - In the "Permissions" tab, click "Grant access." Add the principal `allUsers`
+      and assign the role `Storage Object User`.
 
-- `./bin/docker-build-gcloud.sh`
+Then create a service account for this bucket:
+- In the "IAM & Admin" view, select "Service Accounts" from the left menu, and
+  then click "Create service account"
+- Give this account the "Editor" role
+- Create keys for this account and download them as a json file:
+    - Save this file as `./google-credentials.json`
+    - Encode this using by running the command `base64 -i ./google-credentials.json`
+    - Put this in a variable `GOOGLE_CREDENTIALS_ENCODED` in your `.env`
 
-Then use the Google Cloud Run console to deploy new revision.
-
-- open the google console and search for gloud cloud run
-- find your project and the `tttc-light-js` app
-- click "EDIT AND DEPLOY NEW VERSION"
-- find the new docker container that you just pushed (search Google Cloud Registry)
-
-## Setting up new Google Cloud instance
-
-Instructions:
-
-- create a google cloud project and a google storage bucket
-- add `GCLOUD_STORAGE_BUCKET=name-of-your-bucket` to your `.env`
-- make sure this bucket has public access so that anyone can read
-- create a service account and give it permission to write on that bucket ("Editor" role)
-- create keys for this account and download them as a json files
-- save this file as `./google-credentials.json`
-- encode this using by running the command `base64 -i ./google-credentials.json`
-- put this in a variable `GOOGLE_CREDENTIALS_ENCODED` in your `.env`
-
-Your .evn file should then look like this:
+Your .env file should now look like this:
 
 ```
 export OPENAI_API_KEY=sk-something-something
-export OPENAI_API_KEY_PASSWORD=some-password
+export OPENAI_API_KEY_PASSWORD=optional-password
 export GCLOUD_STORAGE_BUCKET=name-of-your-bucket
 export GOOGLE_CREDENTIALS_ENCODED=some-long-encoded-string
 ```
 
-Add a Google Run Service:
+### Set up gcloud SDK on your machine
 
-- go to the Google Run console
-- create service
-- Specify the Image Source `gcr.io/your-project-id/tttc-light-js-app@...` (in the field "Container image URL") by clicking the "Select" button and choosing the container image for your project in the "Artifact Registry" tab
-- allow unauthorised access ("unauthenticated invocations" -- like for public APIs)
-- select "CPU is only allocated during request processing" (no need to keep this running at all time)
+- install `gcloud` (see https://cloud.google.com/sdk/docs/install-sdk)
+- `gcloud auth login`
+- `gcloud config set project your-project-name`
+- `gcloud auth configure-docker`
 
-Note: the first deploy with fail if you haven't set the .env variables
+### Deploy Docker instance to Google Cloud Storage
+
+Use the provided script to build and push the docker image:
+
+- `./bin/docker-build-gcloud.sh`
+
+### Add a Google Run Service
+
+- Go to the Google Run console
+- Create a new service
+- In the field "Container image URL", specify the Image Source by clicking the "Select" button and choosing the container image for your project in the "Artifact Registry" tab. The Image Source should look something like `gcr.io/your-project-id/tttc-light-js-app@...`. If you don't see your image listed, make sure you've run the Docker build script above without errors.
+- Allow unauthorised access ("unauthenticated invocations" -- like for public APIs)
+- Select "CPU is only allocated during request processing" (no need to keep this running at all time)
+
+Note: the first deploy with fail if you haven't set the .env variables as described above
+
+Your cloud instance is now ready to use!
+
+To upload a new image (e.g. after a fresh git pull), deploy a new docker image to the same instance:
+- Run `./bin/docker-build-gcloud.sh`
+- Open the google console and search for gloud cloud run
+- Find your project and the `tttc-light-js` app
+- Click "EDIT AND DEPLOY NEW VERSION"
+- Find the new docker image that you just pushed from the list of available images
+
 
 ## Using docker locally (not recommended)
 
