@@ -13,16 +13,19 @@ import { parse } from "csv-parse/sync";
  *     the report. Values must match the spreadsheet column names exactly.
  * whitelistCSV (string|null): the name of a CSV in the current directory listing
  *     email addresses to include responses from, if desired.
+ *
+ * Note: in any single column, all cells must have the same data type (string or
+ * number format) for the Google Shets API to fetch them as displayed.
  */
 const CONFIG = {
-  reportTitle: "Mina Data Availability Layer [synthetic]",
-  reportQuestion: "What do you think about the proposal to create a Data Availability Layer for Mina?",
-  googleSheetUrl: "https://docs.google.com/spreadsheets/d/1OmPC3j6RNMWPNeZKVPH_ffy6Clouq_Wn_dF_NZ_bVDM/edit#gid=0",
+  reportTitle: "Talk to the City [synethic survey]",
+  reportQuestion: "What are your impressions of Talk to the City?",
+  googleSheetUrl: "https://docs.google.com/spreadsheets/d/1pQjnqA4Ul07JCRDr0UMuOP26z3QD0RfigTa6zuOUBmw/edit#gid=0",
   pieChartColumns: [
-    "Do you support building a Data Availability Layer for Mina?",
-    "Please rate how much you agree or disagree with this proposal (1 = Strongly disagree, 5 = Strongly agree)"
+    "Would you use the tool described in the article? (1 = Very unlikely to use; 5 = Very likely to use)",
+    "How helpful would you expect this tool to be for your work? (1 = Not helpful; 5 = Very helpful)"
   ],
-  whitelistCSV: "email-whitelist.csv"
+  whitelistCSV: "example-email-whitelist.csv"
 }
 
 
