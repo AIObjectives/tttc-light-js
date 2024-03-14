@@ -182,8 +182,7 @@ const plotData_${i} = [{
   insidetextorientation: "radial"
 }];
 /* Plotly lets long titles overflow the container; wrap titles at max 60 chars */
-const wrappedTitle_${i} = "${pieChart.title}".replace(/([\\w\\s]{60,}?)\\s?\\b/g, "$1<br>");
-console.log(wrappedTitle_${i})
+const wrappedTitle_${i} = "${pieChart.title}".replace(/(.{60,}?)\\s?(\\W)/g, "$1<br>$2");
 Plotly.newPlot(
   'piechart_${i}', 
   plotData_${i},
