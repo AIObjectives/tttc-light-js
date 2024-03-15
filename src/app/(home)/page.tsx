@@ -1,10 +1,34 @@
-// import '../styles'
+// import * as ReactDOMServer from 'react-dom/server'
+import * as prettier from 'prettier'
+import Report from 'src/features/report'
+import ServerSideOpenClaimVideo from 'src/features/report/components/OpenClaimVideo/ServerSideOpenClaimVideo'
+import ServerSideToggleShowMoreButton from 'src/features/report/components/ToggleShowMoreButton/ServerSideToggleShowMore'
+import { Options, PipelineOutput, options, submissionFormData } from 'src/types'
+import styles from 'src/styles'
+import SubmissionForm from 'src/features/submission'
 
 export function generateStaticParams() {
     return [{slug: ['']}]
 }
 
+
+
 export default function HomePage() {
+    const submitAction = async(formData:FormData) => {
+      'use server'
+      const config = options.parse({
+        apiKey: formData.get('apiKey'),
+        data: formData.get('dataInput'),
+        title: formData.get('title'),
+        question: formData.get('question'),
+        description: formData.get('description'),
+        systemInstructions: formData.get('systemInstructions'),
+        extractionInstructions: formData.get('extractionInstructions'),
+        dedupInstructions: formData.get('dedupInstructions'),
+      })
+      console.log(config)
+
+    }
     return (
         <>
         <p className="intro">
@@ -12,7 +36,7 @@ export default function HomePage() {
       generate insightful reports based on public consultation data.
     </p>
 
-    <form id="reportForm">
+    {/* <form id="reportForm" action={submitAction}>
       <label htmlFor="title">Report title:</label>
       <input type="text" id="title" name="title" required /><br />
 
@@ -25,7 +49,6 @@ export default function HomePage() {
         accept=".csv"
         // onChange="onFileChange(event)"
       />
-      {/* ! div was changed to input here. Check on this later */}
       <div itemType="file" id="csvUploaded"> 
         <span id="filename"></span>
         <span className="clickable" 
@@ -120,12 +143,14 @@ export default function HomePage() {
         </div>
       </div>
 
-      <button id="generate" type="button" 
+      <button id="generate" type="submit" 
     //   onclick="submitForm(event)"
       >
         Generate Report
       </button>
-    </form>
+    </form> */}
+
+    <SubmissionForm />
 
     <div id="messageModal" className="modal hidden">
       <div className="modal-content">
@@ -140,4 +165,32 @@ export default function HomePage() {
     </div>
         </>
     )
+}
+
+const wrapHtml = (htmlStr:string) => {
+    return `<!DOCTYPE html>
+    <html>
+    <head>
+        <title>Report</title>
+        <style>
+            ${styles}
+        </style>
+    </head>
+    <body>
+        ${htmlStr}
+        <script>
+            // Inline JS or link to external JS
+        </script>
+    </body>
+    </html>`;
+}
+
+const generateServerSideHTML = async(json: PipelineOutput) => {
+    // const ReactDOMServer = (await import('react-dom/server')).default
+    // const html:string = ReactDOMServer.renderToString(<Report data={json} ToggleShowMoreComponent={ServerSideToggleShowMoreButton} OpenClaimVideo={ServerSideOpenClaimVideo} />);
+    // const html:string = ReactDOMServer.renderToString(Report({data:json, ToggleShowMoreComponent:ServerSideToggleShowMoreButton, OpenClaimVideo:ServerSideOpenClaimVideo}));
+    const html = ''
+    const parsedHtml = wrapHtml(html)
+        .replace(/data-onclick/g, "onclick");
+    return await prettier.format(parsedHtml, { parser: "html" })
 }
