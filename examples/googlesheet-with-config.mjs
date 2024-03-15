@@ -4,15 +4,16 @@ import { parse } from "csv-parse/sync";
 
 /*
  * Report generation options:
- * reportTitle (string): The title of this report.
- * reportQuestion (string): The overall topic of this report's content
- * googleSheetUrl (string): full URL for a Google Sheets spreadsheet. The data
+ * title (string): The title of this report.
+ * question (string): The overall topic of this report's content
+ * googleSheet:
+ * - url (string): full URL for a Google Sheets spreadsheet. The data
  *     to analyze must be in the first tab of this sheet.
- * pieChartColumns (string|null): a list of column names in the spreadsheet to
+ * - pieChartColumns (string|null): a list of column names in the spreadsheet to
  *     treat as quantitative data, displayed as pie charts at the beginning of
  *     the report. Values must match the spreadsheet column names exactly.
- * whitelistCSV (string|null): the name of a CSV in the current directory listing
- *     email addresses to include responses from, if desired.
+ * - filterEmails (array of  strings|null): list of email addresses to whitelist  
+ *     (we'll loading these from a CSV in this example)
  *
  * Note: in any single column, all cells must have the same data type (string or
  * number format) for the Google Sheets API to fetch them as displayed.
