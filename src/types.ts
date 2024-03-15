@@ -1,24 +1,31 @@
-export type SourceRow = {
-  comment: string;
-  id: string;
-  interview?: string;
-  video?: string;
-  timestamp?: string;
-};
+import {z} from 'zod'
 
-export type Options = {
-  apiKey?: string;
-  data: SourceRow[];
-  title: string;
-  question: string;
-  description: string;
-  systemInstructions?: string;
-  clusteringInstructions?: string;
-  extractionInstructions?: string;
-  dedupInstructions?: string;
-  batchSize?: number;
-  filename?: string;
-};
+
+export const sourceRow = z.object({
+  comment: z.string(),
+  id: z.string(),
+  interview: z.string().optional(),
+  video: z.string().optional(),
+  timestamp: z.string().optional(),
+})
+
+export type SourceRow = z.infer<typeof sourceRow>
+
+export const options = z.object({
+  apiKey: z.string().optional(),
+  data: sourceRow.array(),
+  title: z.string(),
+  question: z.string(),
+  description: z.string(),
+  systemInstructions: z.string().optional(),
+  clusteringInstructions: z.string().optional(),
+  extractionInstructions: z.string().optional(),
+  dedupInstructions: z.string().optional(),
+  batchSize: z.number().optional(),
+  filename: z.string().optional(),
+})
+
+export type Options = z.infer<typeof options>
 
 export type Cache = {
   get: (key: string) => any;
