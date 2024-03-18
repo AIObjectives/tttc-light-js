@@ -1,5 +1,9 @@
 import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "../../types";
+import ClientSideOpenClaimVideo from "./components/OpenClaimVideo/ClientSideOpenClaimVideo";
 import { OpenClaimVideoProps } from "./components/OpenClaimVideo/OpenClaimVideoInterface";
+import ServerSideOpenClaimVideo from "./components/OpenClaimVideo/ServerSideOpenClaimVideo";
+import ClientSideToggleShowMoreButton from "./components/ToggleShowMoreButton/ClientSideToggleShowMore";
+import ServerSideToggleShowMoreButton from "./components/ToggleShowMoreButton/ServerSideToggleShowMore";
 import { ToggleShowMoreComponentProps } from "./components/ToggleShowMoreButton/ToggleShowMoreInterface";
 
 type InteractiveComponents = {
@@ -17,7 +21,7 @@ type SubtopicProps = {
 type ClaimProps = { claim: Claim; sourceMap: SourceMap; more?: boolean } & InteractiveComponents;
 type ClaimDetailProps = { claim: Claim; sourceMap: SourceMap } & InteractiveComponents;
 
-export default function Report(props: ReportProps & InteractiveComponents) {
+function Report(props: ReportProps & InteractiveComponents) {
     const {data} = props
     const sourceMap: SourceMap = data.data.reduce(
         (acc, d) => ({ ...acc, [d.id]: d }),
@@ -219,3 +223,13 @@ function ClaimDetailComponent({ claim, sourceMap, ToggleShowMoreComponent, OpenC
   </div>
     )
 }
+
+export function ReportCSR(props:ReportProps) {
+  return <Report {...props} ToggleShowMoreComponent={ClientSideToggleShowMoreButton} 
+  OpenClaimVideo={ClientSideOpenClaimVideo} />
+}
+
+export function ReportSSR(props:ReportProps) {
+  return <Report {...props} ToggleShowMoreComponent={ServerSideToggleShowMoreButton} OpenClaimVideo={ServerSideOpenClaimVideo}/>
+}
+

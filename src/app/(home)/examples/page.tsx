@@ -6,10 +6,10 @@ export default function ExamplesPage() {
         <h2>Examples of reports:</h2>
             <ul>
             <li>
-                <a href="/reports/heal-michigan">Heal Michigan</a>
+                <a href="/examples/heal-michigan">Heal Michigan</a>
             </li>
             <li>
-                <a href="/reports/CIP">CIP data</a>
+                <a href="/examples/CIP">CIP data</a>
             </li>
             </ul>
         </>
