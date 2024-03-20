@@ -1,6 +1,7 @@
 import { PipelineOutput } from "tttc-common/schema";
 import * as prettier from 'prettier'
 import ReportSSR from "./Report";
+import styles from "./styles";
 
 // ! TODO styles
 const wrapHtml = (htmlStr:string) => {
@@ -9,7 +10,7 @@ const wrapHtml = (htmlStr:string) => {
     <head>
         <title>Report</title>
         <style>
-            
+            ${styles}
         </style>
     </head>
     <body>

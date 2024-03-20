@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "./styles";
+import styles from "../../express-pipeline/src/styles";
 import ReactDOMServer from "react-dom/server";
 import * as prettier from "prettier";
 

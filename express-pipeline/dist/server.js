@@ -7,9 +7,8 @@ var _html = require("./html");
 var _gpt = require("./gpt");
 var _storage = require("./storage");
 var _utils = require("./utils");
+var _report = _interopRequireDefault(require("tttc-common/fixtures/report.json"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-// import json from 'tttc-common/fixtures/report.json'
-
 const port = 8080;
 const app = (0, _express.default)();
 app.use((0, _cors.default)());
@@ -58,12 +57,10 @@ app.post("/generate", async (req, res) => {
     }
   }
 });
-
-// app.get('/test', async(req,res)=> {
-//   const htmlString = await generateServerSideHTML(json)
-//   res.send(htmlString)
-// })
-
+app.get('/test', async (req, res) => {
+  const htmlString = await (0, _html.generateServerSideHTML)(_report.default);
+  res.send(htmlString);
+});
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });

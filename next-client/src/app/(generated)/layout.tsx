@@ -1,5 +1,5 @@
 import {Metadata} from 'next'
-import './reportPage.css'
+import './reportStyle.css'
 
 export const metadata:Metadata = {
   title: 'Talk the City',

@@ -1,22 +1,19 @@
 {
-    "compilerOptions": {
-      "target": "es5",
-      "allowJs": true,
-      "skipLibCheck": true,
-      "strict": false,
-      "forceConsistentCasingInFileNames": true,
-      "noEmit": true,
-      "esModuleInterop": true,
-      "module": "Node16",
-      "moduleResolution": "Node16",
-      "resolveJsonModule": true,
-      "isolatedModules": true,
-      "jsx": "preserve",
-      "baseUrl": ".",
-      "incremental": true,
-      "strictNullChecks": true
+  "compilerOptions": {
+    "outDir": "./dist", // Output directory for compiled JS files
+    "module": "CommonJS", // Use CommonJS modules for Node.js
+    "target": "es6", // Target ES6 (or a higher version if needed)
+    "declaration": true, // Generate declaration files
+    "sourceMap": true, // Generate source maps
+    "composite": true, // Enable project references,
+    "jsx": "react",
+    "paths": {
+      "*": ["*", "node_modules/*"]
     },
-    "include": ["."],
-    "exclude": ["node_modules"]
-  }
+    "esModuleInterop": true,
+    "baseUrl": "."
+  },
+  "include": ["*", "./components/*"], // Include the components folder,
+  "exclude": ["dist/"]
+}
     

@@ -6,7 +6,7 @@ import { testGPT } from "./gpt";
 import { Options } from "tttc-common/schema";
 import { getUrl, storeHtml } from "./storage";
 import { uniqueSlug, formatData, placeholderFile } from "./utils";
-// import json from 'tttc-common/fixtures/report.json'
+import json from 'tttc-common/fixtures/report.json'
 
 const port = 8080;
 
@@ -55,10 +55,10 @@ app.post("/generate", async (req, res) => {
   }
 });
 
-// app.get('/test', async(req,res)=> {
-//   const htmlString = await generateServerSideHTML(json)
-//   res.send(htmlString)
-// })
+app.get('/test', async(req,res)=> {
+  const htmlString = await generateServerSideHTML(json)
+  res.send(htmlString)
+})
 
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);

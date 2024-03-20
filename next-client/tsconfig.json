@@ -28,7 +28,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "./dist/types/**/*.ts"
-, "../express-pipeline/gpt.ts", "../express-pipeline/test_local.ts"  ],
+, "../express-pipeline/gpt.ts", "../express-pipeline/test_local.ts", "../express-pipeline/src/styles.ts"  ],
   "exclude": ["node_modules"]
 }
   

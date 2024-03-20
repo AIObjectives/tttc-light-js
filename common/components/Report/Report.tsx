@@ -1,3 +1,4 @@
+import React from "react";
 import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "../../schema";
 
 
