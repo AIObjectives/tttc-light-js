@@ -1,16 +1,15 @@
 // import type {Metadata} from 'next'
 
 export const metadata = {
-    title: 'Talk the City',
-}
+  title: "Talk the City",
+};
 
 export default function RootLayout({
-    children,
-  }: {
-    children: React.ReactNode
-  }) {
-    
-    return (
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
     <html lang="en">
       <head>
         {/* <meta charSet="UTF-8" />
@@ -22,13 +21,14 @@ export default function RootLayout({
       <body>
         <script src="index.js"></script>
         <div className="navbar">
-          <a href="/"><h1>Talk to the City (Next)</h1></a>
+          <a href="/">
+            <h1>Talk to the City (Next)</h1>
+          </a>
           <div className="nav-links">
             <a href="/examples.html">Examples</a>
-            <a
-              href="https://github.com/AIObjectives/tttc-light-js?tab=readme-ov-file#api-docs"
-              >API docs</a
-            >
+            <a href="https://github.com/AIObjectives/tttc-light-js?tab=readme-ov-file#api-docs">
+              API docs
+            </a>
           </div>
         </div>
 
@@ -40,6 +40,5 @@ export default function RootLayout({
         updateDataField();
       </script> */}
     </html>
-
-    )
-  }
+  );
+}

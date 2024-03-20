@@ -1,7 +1,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+  value: true,
 });
 exports.getUrl = void 0;
 exports.storeHtml = storeHtml;
@@ -11,11 +11,12 @@ const encoded_creds = process.env.GOOGLE_CREDENTIALS_ENCODED;
 if (encoded_creds) {
   const decoded = Buffer.from(encoded_creds, "base64").toString("utf-8");
   storage = new _storage.Storage({
-    credentials: JSON.parse(decoded)
+    credentials: JSON.parse(decoded),
   });
 }
 const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
-const getUrl = fileName => `https://storage.googleapis.com/${bucketName}/${fileName}`;
+const getUrl = (fileName) =>
+  `https://storage.googleapis.com/${bucketName}/${fileName}`;
 exports.getUrl = getUrl;
 async function storeHtml(fileName, fileContent, allowCache) {
   if (!bucketName) {
@@ -29,10 +30,12 @@ async function storeHtml(fileName, fileContent, allowCache) {
   await file.save(fileContent, {
     metadata: {
       contentType: "text/html",
-      ...(allowCache ? {} : {
-        cacheControl: "no-cache, no-store, must-revalidate"
-      })
-    }
+      ...(allowCache
+        ? {}
+        : {
+            cacheControl: "no-cache, no-store, must-revalidate",
+          }),
+    },
   });
   return getUrl(fileName);
 }

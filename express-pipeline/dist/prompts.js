@@ -1,10 +1,14 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+  value: true,
 });
-exports.systemMessage = exports.extractionPrompt = exports.dedupPrompt = exports.clusteringPrompt = void 0;
-const systemMessage = options => `
+exports.systemMessage =
+  exports.extractionPrompt =
+  exports.dedupPrompt =
+  exports.clusteringPrompt =
+    void 0;
+const systemMessage = (options) => `
 You are a professional research assistant. You have helped run many public consultations, 
 surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights. 
 You are familiar with public consultation tools like Pol.is and you understand the benefits 

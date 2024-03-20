@@ -2,6 +2,7 @@
   "name": "tttc-light-js",
   "version": "1.0.0",
   "description": "Express.js server for turbo pipeline and report generation",
-  "workspaces": []
-  
+  "scripts": {
+    "format": "npx prettier . --write"
+  }
 }

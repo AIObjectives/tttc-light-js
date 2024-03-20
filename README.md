@@ -65,6 +65,7 @@ export type SourceRow = {
   timestamp?: string; // timestamp in the video
 };
 ```
+
 ## Provided client
 
 Open `localhost:8080/` to see the example of client provided.

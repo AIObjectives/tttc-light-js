@@ -1,7 +1,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+  value: true,
 });
 exports.formatData = formatData;
 exports.placeholderFile = void 0;
@@ -26,20 +26,24 @@ function formatData(data) {
     throw Error("Invalid or empty data file");
   }
   const keys = new Set(Object.keys(data[0]));
-  const id_column = ID_COLS.find(x => keys.has(x));
-  const comment_column = COMMENT_COLS.find(x => keys.has(x));
+  const id_column = ID_COLS.find((x) => keys.has(x));
+  const comment_column = COMMENT_COLS.find((x) => keys.has(x));
   if (!comment_column) {
-    throw Error(`The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`);
+    throw Error(
+      `The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`,
+    );
   }
   return data.map((row, i) => {
-    const id = String({
-      ...row,
-      i
-    }[id_column]);
+    const id = String(
+      {
+        ...row,
+        i,
+      }[id_column],
+    );
     const comment = row[comment_column];
     const res = {
       id,
-      comment
+      comment,
     };
     if (keys.has("video")) res.video = row.video;
     if (keys.has("interview")) res.interview = row.interview;

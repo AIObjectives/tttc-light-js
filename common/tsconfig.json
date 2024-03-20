@@ -16,4 +16,3 @@
   "include": ["*", "./components/*"], // Include the components folder,
   "exclude": ["dist/"]
 }
-    

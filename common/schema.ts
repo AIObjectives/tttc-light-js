@@ -1,5 +1,4 @@
-import {z} from 'zod'
-
+import { z } from "zod";
 
 export const sourceRow = z.object({
   comment: z.string(),
@@ -7,9 +6,9 @@ export const sourceRow = z.object({
   interview: z.string().optional(),
   video: z.string().optional(),
   timestamp: z.string().optional(),
-})
+});
 
-export type SourceRow = z.infer<typeof sourceRow>
+export type SourceRow = z.infer<typeof sourceRow>;
 
 export const options = z.object({
   apiKey: z.string().optional(),
@@ -23,9 +22,9 @@ export const options = z.object({
   dedupInstructions: z.string().optional(),
   batchSize: z.number().optional(),
   filename: z.string().optional(),
-})
+});
 
-export type Options = z.infer<typeof options>
+export type Options = z.infer<typeof options>;
 
 export type Cache = {
   get: (key: string) => any;

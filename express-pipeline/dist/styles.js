@@ -1,13 +1,13 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+  value: true,
 });
 exports.default = void 0;
 // TIP: install the VSCODE plugin `vscode-styled-components` to
 // get CSS syntax highlighting and IntelliSense in this file.
-const css = parts => parts[0];
-var _default = exports.default = css`
+const css = (parts) => parts[0];
+var _default = (exports.default = css`
   body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     margin: 10px;
@@ -133,4 +133,4 @@ var _default = exports.default = css`
     padding-top: 10px;
     font-style: italic;
   }
-`;
+`);

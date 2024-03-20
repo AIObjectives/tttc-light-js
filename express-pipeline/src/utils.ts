@@ -25,7 +25,7 @@ export function formatData(data: any): SourceRow[] {
   const comment_column = COMMENT_COLS.find((x) => keys.has(x));
   if (!comment_column) {
     throw Error(
-      `The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`
+      `The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`,
     );
   }
   return data.map((row: any, i: number) => {

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "module": "CommonJS",
-    "target": "es6", 
+    "target": "es6",
     "sourceMap": true,
     "baseUrl": "./src",
     "paths": {
@@ -13,7 +13,5 @@
     "resolveJsonModule": true
   },
   "include": ["./src"],
-  "references": [
-    { "path": "../common" }
-  ]
+  "references": [{ "path": "../common" }]
 }

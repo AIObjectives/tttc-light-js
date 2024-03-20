@@ -12,7 +12,6 @@
 // import ServerSideToggleShowMoreButton from 'src/features/report/components/ToggleShowMoreButton/ServerSideToggleShowMore';
 // import ServerSideOpenClaimVideo from 'src/features/report/components/OpenClaimVideo/ServerSideOpenClaimVideo';
 
-
 // const wrapHtml = (htmlStr:string) => {
 //     return `<!DOCTYPE html>
 //     <html>
@@ -30,7 +29,7 @@
 //     </body>
 //     </html>`;
 //   }
-  
+
 //   const generateServerSideHTML = async(json: PipelineOutput) => {
 //     const ReactDOMServer = (await import('react-dom/server')).default
 //     // const html:string = ReactDOMServer.renderToString(<Report data={json} ToggleShowMoreComponent={ServerSideToggleShowMoreButton} OpenClaimVideo={ServerSideOpenClaimVideo} />);
@@ -41,7 +40,6 @@
 //     return await prettier.format(parsedHtml, { parser: "html" })
 //   }
 
-  
 //   export default async function submitAction(formData:FormData) {
 //     'use server'
 

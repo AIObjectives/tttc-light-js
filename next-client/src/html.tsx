@@ -3,7 +3,13 @@ import styles from "../../express-pipeline/src/styles";
 import ReactDOMServer from "react-dom/server";
 import * as prettier from "prettier";
 
-import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "tttc-common/schema";
+import {
+  PipelineOutput,
+  Claim,
+  SourceMap,
+  Topic,
+  Subtopic,
+} from "tttc-common/schema";
 type ReportProps = { data: PipelineOutput };
 type TopicProps = { i: number; topic: Topic; sourceMap: SourceMap };
 type SubtopicProps = {
@@ -18,7 +24,7 @@ type ClaimDetailProps = { claim: Claim; sourceMap: SourceMap };
 export const Report = ({ data }: ReportProps) => {
   const sourceMap: SourceMap = data.data.reduce(
     (acc, d) => ({ ...acc, [d.id]: d }),
-    {}
+    {},
   );
   return (
     <html>
@@ -57,7 +63,7 @@ const Outline = ({ data }: ReportProps) => {
         </td>
         <td>{topic.claimsCount}</td>
         <td>{((100 * topic.claimsCount!) / totalClaims).toFixed(0)}%</td>
-      </tr>
+      </tr>,
     );
     topic.subtopics.forEach((subtopic, j) => {
       rows.push(
@@ -69,7 +75,7 @@ const Outline = ({ data }: ReportProps) => {
           </td>
           <td>{subtopic.claimsCount}</td>
           <td>{((100 * subtopic.claimsCount!) / totalClaims).toFixed(0)}%</td>
-        </tr>
+        </tr>,
       );
     });
   });
