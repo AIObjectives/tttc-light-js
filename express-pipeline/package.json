@@ -34,6 +34,7 @@
     "prettier": "^3.2.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "tttc-common": "file:../common",
     "zod": "^3.22.4"
   }
 }
