@@ -3,7 +3,7 @@ import styles from "./styles";
 import ReactDOMServer from "react-dom/server";
 import * as prettier from "prettier";
 
-import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "./types";
+import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "tttc-common/schema";
 type ReportProps = { data: PipelineOutput };
 type TopicProps = { i: number; topic: Topic; sourceMap: SourceMap };
 type SubtopicProps = {

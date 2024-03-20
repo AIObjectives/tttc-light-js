@@ -1,6 +1,6 @@
 
-import { Claim, SourceMap } from "src/types";
-import { OpenClaimVideoProps } from "./OpenClaimVideoInterface";
+import { Claim, SourceMap } from "tttc-common/schema";
+import { OpenClaimVideoProps } from "tttc-common/components";
 
 export default function ServerSideOpenClaimVideo({children, sourceMap, claim}:OpenClaimVideoProps) {
     const onClaimClick = (sourceMap: SourceMap, claim: Claim) => {

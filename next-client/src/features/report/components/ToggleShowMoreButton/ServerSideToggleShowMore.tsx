@@ -1,4 +1,4 @@
-import { ToggleShowMoreComponentProps } from "./ToggleShowMoreInterface";
+import { ToggleShowMoreComponentProps } from "tttc-common/components";
 
 export default function ServerSideToggleShowMoreButton({children,subtopic, className}:ToggleShowMoreComponentProps) {
 

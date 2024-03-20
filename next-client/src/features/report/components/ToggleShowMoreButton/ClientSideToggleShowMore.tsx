@@ -1,8 +1,7 @@
 'use client'
 
 import React from "react"
-import { Subtopic } from "src/types"
-import { ToggleShowMoreComponentProps } from "./ToggleShowMoreInterface";
+import { ToggleShowMoreComponentProps } from "tttc-common/components";
 
 export default function ClientSideToggleShowMoreButton({children,subtopic, className}:ToggleShowMoreComponentProps) {
 
