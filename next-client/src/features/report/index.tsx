@@ -1,4 +1,4 @@
-import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "../../types";
+import { PipelineOutput, Claim, SourceMap, Topic, Subtopic } from "tttc-common/schema";
 import ClientSideOpenClaimVideo from "./components/OpenClaimVideo/ClientSideOpenClaimVideo";
 import { OpenClaimVideoProps } from "./components/OpenClaimVideo/OpenClaimVideoInterface";
 import ServerSideOpenClaimVideo from "./components/OpenClaimVideo/ServerSideOpenClaimVideo";

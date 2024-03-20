@@ -1,15 +1,14 @@
 
 import ToggleShowButton from "./components/ToggleShowButton";
-import submitAction from './actions/SubmitAction';
+// import submitAction from './actions/SubmitAction';
 import SubmitFormControl from "./components/SubmitFormControl";
-
 
 export default function SubmissionForm() {
 
     
 
     return (
-      <form id="reportForm" action={submitAction}>
+      <form id="reportForm">
         <SubmitFormControl>
           <label htmlFor="title">Report title:</label>
           <input type="text" id="title" name="title" required /><br />
