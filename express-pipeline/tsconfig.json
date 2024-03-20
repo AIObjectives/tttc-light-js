@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "CommonJS",
+    "target": "es6", 
+    "sourceMap": true,
+    "baseUrl": "./src",
+    "paths": {
+      "common/*": ["../common/*"] // Map "common/*" to "../common/*"
+    },
+    "jsx": "react",
+    "esModuleInterop": true
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../common" }
+  ]
+}

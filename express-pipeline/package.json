@@ -4,7 +4,10 @@
   "description": "pipeline for tttc-light-js",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\"",
+    "watch": "npx babel src --out-dir dist --extensions \".tsx,.ts\" --watch",
+    "test": "npm run build && node dist/test.js",
+    "start": "node dist/server.js"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
@@ -20,6 +23,7 @@
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
+    "babel-plugin-module-resolver": "^5.0.0",
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "typescript": "^5.3.3"
   },
@@ -34,7 +38,7 @@
     "prettier": "^3.2.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "tttc-common": "file:../common",
+    "tttc-common": "file:../common/dist",
     "zod": "^3.22.4"
   }
 }
