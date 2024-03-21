@@ -1,11 +1,17 @@
+"use client";
 import ToggleShowButton from "./components/ToggleShowButton";
 import SubmitFormControl from "./components/SubmitFormControl";
 import submitAction from "./actions/SubmitAction";
+import { GenerateApiResponse } from "tttc-common/api";
+import { useFormState } from "react-dom";
+
+const initialState: GenerateApiResponse | null = null;
 
 export default function SubmissionForm() {
+  const [state, formAction] = useFormState(submitAction, initialState);
   return (
-    <form id="reportForm" action={submitAction}>
-      <SubmitFormControl>
+    <form id="reportForm" action={formAction}>
+      <SubmitFormControl response={state}>
         <label htmlFor="title">Report title:</label>
         <input type="text" id="title" name="title" required />
         <br />

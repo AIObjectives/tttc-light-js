@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useFormStatus } from "react-dom";
+import { GenerateApiResponse } from "tttc-common/api";
 
 function FormLoading() {
   return (
@@ -11,9 +12,25 @@ function FormLoading() {
   );
 }
 
+async function ResponseUI({ response }: { response: GenerateApiResponse }) {
+  const { url, filename } = response;
+  return (
+    <div>
+      <text>Your report is being prepared at </text>{" "}
+      <a href={url}>{filename}</a>{" "}
+      <text>. Make sure to open and bookmark this link!</text>
+    </div>
+  );
+}
+
 export default function SubmitFormControl({
   children,
-}: React.PropsWithChildren) {
+  response,
+}: React.PropsWithChildren<{
+  response: GenerateApiResponse | null;
+}>) {
   const { pending } = useFormStatus();
-  return pending ? <FormLoading /> : children;
+  if (pending) return <FormLoading />;
+  else if (response === null) return children;
+  else return <ResponseUI response={response} />;
 }

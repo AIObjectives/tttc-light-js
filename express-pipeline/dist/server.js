@@ -5,6 +5,7 @@ var _cors = _interopRequireDefault(require("cors"));
 var _pipeline = _interopRequireDefault(require("./pipeline"));
 var _html = require("./html");
 var _gpt = require("./gpt");
+var _schema = require("tttc-common/schema");
 var _storage = require("./storage");
 var _utils = require("./utils");
 var _report = _interopRequireDefault(
@@ -26,17 +27,24 @@ app.use(_express.default.static("public"));
 app.post("/generate", async (req, res) => {
   let responded = false;
   try {
-    const config = req.body;
+    const config = _schema.options.parse(req.body);
     if (!config.data) {
-      throw new Error("Missing data");
+      res.status(500).send({
+        error: "Missing data",
+      });
+      // throw new Error("Missing data");
     }
     config.data = (0, _utils.formatData)(config.data);
+    console.log(config.apiKey, process.env.OPENAI_API_KEY_PASSWORD);
     if (config.apiKey === process.env.OPENAI_API_KEY_PASSWORD) {
       // allow users to use our keys if they provided the password
       config.apiKey = process.env.OPENAI_API_KEY;
     }
-    if (!config.apiKey) {
-      throw new Error("Missing key");
+    if (true) {
+      // throw new Error("Missing key");
+      return res.status(500).send({
+        error: "missing key",
+      });
     }
     await (0, _gpt.testGPT)(config.apiKey); // will fail is key is invalid
     config.filename = config.filename || (0, _utils.uniqueSlug)(config.title);
@@ -45,12 +53,13 @@ app.post("/generate", async (req, res) => {
       config.filename,
       (0, _utils.placeholderFile)(),
     );
-    res.send({
+    const response = {
       message: "Request received.",
       filename: config.filename,
       url,
       // TODO: send cost estimates...
-    });
+    };
+    res.send(response);
     responded = true;
     const json = await (0, _pipeline.default)(config);
     const htmlString = await (0, _html.generateServerSideHTML)(json);
