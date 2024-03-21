@@ -1,5 +1,5 @@
 import { Storage } from "@google-cloud/storage";
-
+require("dotenv").config(); // TODO for some reason the dotenv in server isn't reaching here.
 let storage: any;
 const encoded_creds = process.env.GOOGLE_CREDENTIALS_ENCODED;
 if (encoded_creds) {

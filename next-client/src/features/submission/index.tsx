@@ -1,10 +1,10 @@
 import ToggleShowButton from "./components/ToggleShowButton";
-// import submitAction from './actions/SubmitAction';
 import SubmitFormControl from "./components/SubmitFormControl";
+import submitAction from "./actions/SubmitAction";
 
 export default function SubmissionForm() {
   return (
-    <form id="reportForm">
+    <form id="reportForm" action={submitAction}>
       <SubmitFormControl>
         <label htmlFor="title">Report title:</label>
         <input type="text" id="title" name="title" required />
@@ -12,22 +12,11 @@ export default function SubmissionForm() {
 
         <label htmlFor="dataInput">Data:</label>
         <small>Upload a CSV file with a "comment" column.</small>
-        <input
-          type="file"
-          id="csvInput"
-          name="dataInput"
-          accept=".csv"
-          // onChange="onFileChange(event)"
-        />
+        <input type="file" id="csvInput" name="dataInput" accept=".csv" />
         {/* ! div was changed to input here. Check on this later */}
         <div itemType="file" id="csvUploaded">
           <span id="filename"></span>
-          <span
-            className="clickable"
-            // onclick="unsetCsv()"
-          >
-            reset
-          </span>
+          <span className="clickable">reset</span>
         </div>
         <br />
 
@@ -38,13 +27,6 @@ export default function SubmissionForm() {
         <input type="password" id="apiKey" name="apiKey" required />
         <br />
 
-        {/* <div
-            id="advance"
-            className="clickable"
-            // onclick="toggle('advanced', 'open'); toggle('advance', 'hidden')"
-          >
-            Show advanced settings
-          </div> */}
         <ToggleShowButton klass="open" id="advanced">
           <div id="advance">Show advanced settings</div>
         </ToggleShowButton>

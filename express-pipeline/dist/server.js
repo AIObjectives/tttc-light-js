@@ -13,6 +13,7 @@ var _report = _interopRequireDefault(
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
+require("dotenv").config();
 const port = 8080;
 const app = (0, _express.default)();
 app.use((0, _cors.default)());
@@ -71,5 +72,6 @@ app.get("/test", async (req, res) => {
   res.send(htmlString);
 });
 app.listen(port, () => {
+  console.log("bucket", process.env.GCLOUD_STORAGE_BUCKET);
   console.log(`Listening at http://localhost:${port}`);
 });

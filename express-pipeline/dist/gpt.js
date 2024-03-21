@@ -24,6 +24,7 @@ const testGPT = async (apiKey) => {
 };
 exports.testGPT = testGPT;
 const gpt = async (apiKey, cacheKey, system, user, tracker, cache) => {
+  console.log(apiKey, cache, system, user, tracker, cache);
   const openai = new _openai.default({
     apiKey,
   });

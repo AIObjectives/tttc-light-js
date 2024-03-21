@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.getUrl = void 0;
 exports.storeHtml = storeHtml;
 var _storage = require("@google-cloud/storage");
+require("dotenv").config(); // TODO for some reason the dotenv in server isn't reaching here.
 let storage;
 const encoded_creds = process.env.GOOGLE_CREDENTIALS_ENCODED;
 if (encoded_creds) {

@@ -8,6 +8,8 @@ import { getUrl, storeHtml } from "./storage";
 import { uniqueSlug, formatData, placeholderFile } from "./utils";
 import json from "tttc-common/fixtures/report.json";
 
+require("dotenv").config();
+
 const port = 8080;
 
 const app = express();
@@ -61,5 +63,6 @@ app.get("/test", async (req, res) => {
 });
 
 app.listen(port, () => {
+  console.log("bucket", process.env.GCLOUD_STORAGE_BUCKET);
   console.log(`Listening at http://localhost:${port}`);
 });
