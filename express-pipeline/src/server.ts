@@ -67,6 +67,5 @@ app.get("/test", async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log("bucket", process.env.GCLOUD_STORAGE_BUCKET);
   console.log(`Listening at http://localhost:${port}`);
 });

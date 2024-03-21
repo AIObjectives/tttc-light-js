@@ -32,7 +32,6 @@ app.post("/generate", async (req, res) => {
       res.status(500).send({
         error: "Missing data",
       });
-      // throw new Error("Missing data");
     }
     config.data = (0, _utils.formatData)(config.data);
     console.log(config.apiKey, process.env.OPENAI_API_KEY_PASSWORD);
@@ -40,8 +39,7 @@ app.post("/generate", async (req, res) => {
       // allow users to use our keys if they provided the password
       config.apiKey = process.env.OPENAI_API_KEY;
     }
-    if (true) {
-      // throw new Error("Missing key");
+    if (!config.apiKey) {
       return res.status(500).send({
         error: "missing key",
       });
@@ -69,9 +67,7 @@ app.post("/generate", async (req, res) => {
     console.error(err);
     if (!responded) {
       res.status(500).send({
-        error: {
-          message: err.message || "An unknown error occurred.",
-        },
+        error: err.message || "An unknown error occurred.",
       });
     }
   }
@@ -81,6 +77,5 @@ app.get("/test", async (req, res) => {
   res.send(htmlString);
 });
 app.listen(port, () => {
-  console.log("bucket", process.env.GCLOUD_STORAGE_BUCKET);
   console.log(`Listening at http://localhost:${port}`);
 });
