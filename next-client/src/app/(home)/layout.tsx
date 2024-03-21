@@ -20,7 +20,7 @@ export default function RootLayout({
             <h1>Talk to the City (Next)</h1>
           </a>
           <div className="nav-links">
-            <a href="/examples.html">Examples</a>
+            <a href="/examples">Examples</a>
             <a href="https://github.com/AIObjectives/tttc-light-js?tab=readme-ov-file#api-docs">
               API docs
             </a>
