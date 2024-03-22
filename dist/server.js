@@ -25,10 +25,11 @@ app.post("/generate", async (req, res) => {
       const {
         data,
         pieCharts
-      } = await (0, _googlesheet.fetchSpreadsheetData)(config.googleSheet.url, config.googleSheet.pieChartColumns, config.googleSheet.filterEmails);
+      } = await (0, _googlesheet.fetchSpreadsheetData)(config.googleSheet.url, config.googleSheet.pieChartColumns, config.googleSheet.filterEmails, config.googleSheet.oneSubmissionPerEmail);
       config.data = (0, _utils.formatData)(data);
       config.pieCharts = pieCharts;
     }
+    throw new Error('test');
     if (!config.data) {
       throw new Error("Missing data");
     }

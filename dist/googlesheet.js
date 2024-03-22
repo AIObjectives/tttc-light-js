@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.fetchSpreadsheetData = fetchSpreadsheetData;
 var _axios = _interopRequireDefault(require("axios"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-async function fetchSpreadsheetData(url, pieChartColumnNames = [], filterEmails) {
+async function fetchSpreadsheetData(url, pieChartColumnNames = [], filterEmails, oneSubmissionPerEmail) {
   // extract the spreadsheet id from the url
   const regex = /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
   const matches = url.match(regex);
@@ -22,11 +22,12 @@ async function fetchSpreadsheetData(url, pieChartColumnNames = [], filterEmails)
   // extract the columns and rows
   const columns = json.table.cols.map(x => x.label);
   let rows = json.table.rows.map(x => x.c.map(y => y?.v));
+  const emailColumn = columns.indexOf("Email Address");
 
   // filter out rows with forbidden email addresses
   if (filterEmails) {
     rows = rows.filter(row => {
-      const email = row[columns.indexOf("Email Address")];
+      const email = row[emailColumn];
       return filterEmails.includes(email);
     });
   }
@@ -63,15 +64,24 @@ async function fetchSpreadsheetData(url, pieChartColumnNames = [], filterEmails)
       }))
     };
   });
-
-  // extract the comments
-  const data = rows.map((row, id) => ({
-    id: String(id),
-    comment: commentColumns.map(({
-      name,
-      index
-    }) => `> ${name}\n\n${row[index] || "(not answered)"}`).join("\n\n")
-  }));
+  const emailToData = {};
+  rows.forEach((row, id) => {
+    emailToData[row[emailColumn]] ??= [];
+    emailToData[row[emailColumn]].push({
+      id: String(id),
+      comment: commentColumns.map(({
+        name,
+        index
+      }) => `> ${name}\n\n${row[index] || "(not answered)"}`).join("\n\n")
+    });
+  });
+  let data;
+  if (oneSubmissionPerEmail) {
+    data = Object.values(emailToData).map(v => v[v.length - 1]);
+  } else {
+    data = Object.values(emailToData).flat();
+  }
+  console.log(data);
   return {
     data,
     pieCharts

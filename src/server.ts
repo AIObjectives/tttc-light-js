@@ -24,7 +24,8 @@ app.post("/generate", async (req, res) => {
       const { data, pieCharts } = await fetchSpreadsheetData(
         config.googleSheet.url,
         config.googleSheet.pieChartColumns,
-        config.googleSheet.filterEmails
+        config.googleSheet.filterEmails,
+        config.googleSheet.oneSubmissionPerEmail,
       );
       config.data = formatData(data);
       config.pieCharts = pieCharts;
