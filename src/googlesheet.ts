@@ -4,7 +4,8 @@ import { SourceRow, PieChart } from "./types";
 export async function fetchSpreadsheetData(
   url: string,
   pieChartColumnNames: string[] = [],
-  filterEmails?: string[]
+  filterEmails?: string[],
+  oneSubmissionPerEmail?: boolean
 ): Promise<{ data: SourceRow[]; pieCharts: PieChart[] }> {
   // extract the spreadsheet id from the url
   const regex = /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
@@ -24,10 +25,12 @@ export async function fetchSpreadsheetData(
     x.c.map((y: any) => y?.v)
   );
 
+  const emailColumn = columns.indexOf("Email Address")
+
   // filter out rows with forbidden email addresses
   if (filterEmails) {
     rows = rows.filter((row) => {
-      const email = row[columns.indexOf("Email Address")];
+      const email = row[emailColumn];
       return filterEmails.includes(email);
     });
   }
@@ -57,14 +60,26 @@ export async function fetchSpreadsheetData(
   });
 
   // extract the comments
-  const data = rows.map((row, id) => ({
-    id: String(id),
-    comment: commentColumns
-      .map(
-        ({ name, index }) => `> ${name}\n\n${row[index] || "(not answered)"}`
-      )
-      .join("\n\n"),
-  }));
+  const emailToData = {};
+
+  rows.forEach((row, id) => {
+    emailToData[row[emailColumn]] ??= [];
+    emailToData[row[emailColumn]].push({
+      id: String(id),
+      comment: commentColumns
+        .map(
+          ({ name, index }) => `> ${name}\n\n${row[index] || "(not answered)"}`
+        )
+        .join("\n\n"),
+    });
+  });
+
+  let data;
+  if (oneSubmissionPerEmail) {
+    data = Object.values(emailToData).map((v) => v[v.length-1])
+  } else {
+    data = Object.values(emailToData).flat();
+  }
 
   return { data, pieCharts };
 }
