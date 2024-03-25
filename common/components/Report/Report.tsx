@@ -49,7 +49,7 @@ export function Report(props: ReportProps & InteractiveComponents) {
   const { data } = props;
   const sourceMap: SourceMap = data.data.reduce(
     (acc, d) => ({ ...acc, [d.id]: d }),
-    {},
+    {} as SourceMap,
   );
 
   return (

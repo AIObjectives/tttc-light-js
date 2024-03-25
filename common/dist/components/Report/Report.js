@@ -195,31 +195,35 @@ function SubtopicComponent({
     react_1.default.createElement(
       "ul",
       null,
-      subtopic.claims.slice(0, 5).map((claim) =>
-        react_1.default.createElement(ClaimComponent, {
-          key: claim.claimId,
-          claim: claim,
-          sourceMap: sourceMap,
-          ToggleShowMoreComponent: ToggleShowMoreComponent,
-          OpenClaimVideo: OpenClaimVideo,
-        }),
-      ),
+      subtopic.claims
+        .slice(0, 5)
+        .map((claim) =>
+          react_1.default.createElement(ClaimComponent, {
+            key: claim.claimId,
+            claim: claim,
+            sourceMap: sourceMap,
+            ToggleShowMoreComponent: ToggleShowMoreComponent,
+            OpenClaimVideo: OpenClaimVideo,
+          }),
+        ),
       subtopic.claims.length > 5 &&
         react_1.default.createElement(
           ToggleShowMoreComponent,
           { subtopic: subtopic, className: "showmore-button" },
           "show all",
         ),
-      subtopic.claims.slice(5).map((claim) =>
-        react_1.default.createElement(ClaimComponent, {
-          key: claim.claimId,
-          claim: claim,
-          sourceMap: sourceMap,
-          OpenClaimVideo: OpenClaimVideo,
-          ToggleShowMoreComponent: ToggleShowMoreComponent,
-          more: true,
-        }),
-      ),
+      subtopic.claims
+        .slice(5)
+        .map((claim) =>
+          react_1.default.createElement(ClaimComponent, {
+            key: claim.claimId,
+            claim: claim,
+            sourceMap: sourceMap,
+            OpenClaimVideo: OpenClaimVideo,
+            ToggleShowMoreComponent: ToggleShowMoreComponent,
+            more: true,
+          }),
+        ),
       subtopic.claims.length > 5 &&
         react_1.default.createElement(
           ToggleShowMoreComponent,
