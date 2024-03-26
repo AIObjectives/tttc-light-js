@@ -1,7 +1,7 @@
 "use strict";
 
 var _pipeline = _interopRequireDefault(require("./pipeline"));
-var _html = _interopRequireDefault(require("../../next-client/src/html"));
+var _html = require("./html");
 var _fs = _interopRequireDefault(require("fs"));
 var _csvParser = _interopRequireDefault(require("csv-parser"));
 function _interopRequireDefault(obj) {
@@ -53,7 +53,7 @@ async function main() {
     "./fixtures/report.json",
     JSON.stringify(json, null, 2),
   );
-  const report = await (0, _html.default)(json);
+  const report = await (0, _html.generateServerSideHTML)(json);
   _fs.default.writeFileSync("./fixtures/report.html", report);
   console.log("report written to fixtures/report.html");
 }

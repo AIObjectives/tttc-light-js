@@ -1,5 +1,5 @@
 import pipeline from "./pipeline";
-import html from "../../next-client/src/html";
+import { generateServerSideHTML } from "./html";
 import fs from "fs";
 import csv from "csv-parser";
 import { SourceRow, Cache } from "tttc-common/schema";
@@ -48,7 +48,7 @@ async function main() {
     newCache(),
   );
   fs.writeFileSync("./fixtures/report.json", JSON.stringify(json, null, 2));
-  const report = await html(json);
+  const report = await generateServerSideHTML(json);
   fs.writeFileSync("./fixtures/report.html", report);
   console.log("report written to fixtures/report.html");
 }
