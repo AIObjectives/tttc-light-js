@@ -4,16 +4,38 @@ import SubmitFormControl from "./components/SubmitFormControl";
 import submitAction from "./actions/SubmitAction";
 import { GenerateApiResponse } from "tttc-common/api";
 import { useFormState } from "react-dom";
+import useSessionStorage from "src/lib/useSessionStorage";
 
 const initialState: GenerateApiResponse | null = null;
 
 export default function SubmissionForm() {
   const [state, formAction] = useFormState(submitAction, initialState);
+
+  const [intialTitle, setTitle] = useSessionStorage("@submissionTitle");
+  const [initialAPIKey, setApiKey] = useSessionStorage("@openAIKey");
+  const [initialQuestion, setQuestion] = useSessionStorage("@question");
+  const [initialIntroParagraph, setIntroParagraph] =
+    useSessionStorage("@introParagraph");
+  const [initialSystemPrompt, setSystemPrompt] =
+    useSessionStorage("@systemPrompt");
+  const [initialClusteringStep, setClusteringStep] =
+    useSessionStorage("@clusteringStep");
+  const [initialClaimExtraction, setClaimExtraction] =
+    useSessionStorage("@claimExtraction");
+  const [initialDedup, setDedup] = useSessionStorage("@dedup");
+
   return (
     <form id="reportForm" action={formAction}>
       <SubmitFormControl response={state}>
         <label htmlFor="title">Report title:</label>
-        <input type="text" id="title" name="title" required />
+        <input
+          type="text"
+          id="title"
+          name="title"
+          defaultValue={intialTitle}
+          onChange={setTitle}
+          required
+        />
         <br />
 
         <label htmlFor="dataInput">Data:</label>
@@ -30,7 +52,14 @@ export default function SubmissionForm() {
         <small>
           This key will only be stored on your device, not on our servers.
         </small>
-        <input type="password" id="apiKey" name="apiKey" required />
+        <input
+          type="password"
+          id="apiKey"
+          name="apiKey"
+          defaultValue={initialAPIKey}
+          onChange={setApiKey}
+          required
+        />
         <br />
 
         <ToggleShowButton klass="open" id="advanced">
@@ -39,7 +68,14 @@ export default function SubmissionForm() {
 
         <div id="advanced">
           <label htmlFor="question">Main question asked to participants:</label>
-          <textarea id="question" name="question" rows={3} cols={50}></textarea>
+          <textarea
+            id="question"
+            name="question"
+            rows={3}
+            cols={50}
+            defaultValue={initialQuestion}
+            onChange={setQuestion}
+          ></textarea>
           <br />
 
           <label htmlFor="description">Introduction paragraph:</label>
@@ -48,6 +84,8 @@ export default function SubmissionForm() {
             name="description"
             rows={3}
             cols={50}
+            defaultValue={initialIntroParagraph}
+            onChange={setIntroParagraph}
           ></textarea>
           <br />
 
@@ -59,6 +97,8 @@ export default function SubmissionForm() {
             name="systemInstructions"
             rows={3}
             cols={50}
+            defaultValue={initialSystemPrompt}
+            onChange={setSystemPrompt}
           ></textarea>
           <br />
 
@@ -70,6 +110,8 @@ export default function SubmissionForm() {
             name="clusteringInstructions"
             rows={3}
             cols={50}
+            defaultValue={initialClusteringStep}
+            onChange={setClusteringStep}
           ></textarea>
           <br />
 
@@ -81,6 +123,8 @@ export default function SubmissionForm() {
             name="extractionInstructions"
             rows={3}
             cols={50}
+            defaultValue={initialClaimExtraction}
+            onChange={setClaimExtraction}
           ></textarea>
           <br />
 
@@ -92,6 +136,8 @@ export default function SubmissionForm() {
             name="dedupInstructions"
             rows={3}
             cols={50}
+            defaultValue={initialDedup}
+            onChange={setDedup}
           ></textarea>
           <br />
           <ToggleShowButton id="advanced" klass="open">
