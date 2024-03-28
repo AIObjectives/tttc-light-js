@@ -4,7 +4,7 @@
   "description": "pipeline for tttc-light-js",
   "main": "index.js",
   "scripts": {
-    "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\"",
+    "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\" && npx prettier ./dist --write",
     "watch": "npx babel src --out-dir dist --extensions \".tsx,.ts\" --watch",
     "test": "npm run build && node dist/test.js",
     "start": "node dist/server.js"

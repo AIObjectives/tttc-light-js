@@ -4,7 +4,8 @@
   "description": "Shares common code across monorepo",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc && npx prettier ./dist --write"
   },
   "author": "",
   "license": "MIT",
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "@types/react": "^18.2.67",
+    "prettier": "^3.2.5",
     "typescript": "^5.3.3"
   }
 }

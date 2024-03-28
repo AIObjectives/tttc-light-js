@@ -1,61 +1,45 @@
 import { z } from "zod";
-export declare const sourceRow: z.ZodObject<
-  {
+export declare const sourceRow: z.ZodObject<{
     comment: z.ZodString;
     id: z.ZodString;
     interview: z.ZodOptional<z.ZodString>;
     video: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodOptional<z.ZodString>;
-  },
-  "strip",
-  z.ZodTypeAny,
-  {
+}, "strip", z.ZodTypeAny, {
     comment?: string;
     id?: string;
     interview?: string;
     video?: string;
     timestamp?: string;
-  },
-  {
+}, {
     comment?: string;
     id?: string;
     interview?: string;
     video?: string;
     timestamp?: string;
-  }
->;
+}>;
 export type SourceRow = z.infer<typeof sourceRow>;
-export declare const options: z.ZodObject<
-  {
+export declare const options: z.ZodObject<{
     apiKey: z.ZodOptional<z.ZodString>;
-    data: z.ZodArray<
-      z.ZodObject<
-        {
-          comment: z.ZodString;
-          id: z.ZodString;
-          interview: z.ZodOptional<z.ZodString>;
-          video: z.ZodOptional<z.ZodString>;
-          timestamp: z.ZodOptional<z.ZodString>;
-        },
-        "strip",
-        z.ZodTypeAny,
-        {
-          comment?: string;
-          id?: string;
-          interview?: string;
-          video?: string;
-          timestamp?: string;
-        },
-        {
-          comment?: string;
-          id?: string;
-          interview?: string;
-          video?: string;
-          timestamp?: string;
-        }
-      >,
-      "many"
-    >;
+    data: z.ZodArray<z.ZodObject<{
+        comment: z.ZodString;
+        id: z.ZodString;
+        interview: z.ZodOptional<z.ZodString>;
+        video: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        comment?: string;
+        id?: string;
+        interview?: string;
+        video?: string;
+        timestamp?: string;
+    }, {
+        comment?: string;
+        id?: string;
+        interview?: string;
+        video?: string;
+        timestamp?: string;
+    }>, "many">;
     title: z.ZodString;
     question: z.ZodString;
     description: z.ZodString;
@@ -65,17 +49,14 @@ export declare const options: z.ZodObject<
     dedupInstructions: z.ZodOptional<z.ZodString>;
     batchSize: z.ZodOptional<z.ZodNumber>;
     filename: z.ZodOptional<z.ZodString>;
-  },
-  "strip",
-  z.ZodTypeAny,
-  {
+}, "strip", z.ZodTypeAny, {
     apiKey?: string;
     data?: {
-      comment?: string;
-      id?: string;
-      interview?: string;
-      video?: string;
-      timestamp?: string;
+        comment?: string;
+        id?: string;
+        interview?: string;
+        video?: string;
+        timestamp?: string;
     }[];
     title?: string;
     question?: string;
@@ -86,15 +67,14 @@ export declare const options: z.ZodObject<
     dedupInstructions?: string;
     batchSize?: number;
     filename?: string;
-  },
-  {
+}, {
     apiKey?: string;
     data?: {
-      comment?: string;
-      id?: string;
-      interview?: string;
-      video?: string;
-      timestamp?: string;
+        comment?: string;
+        id?: string;
+        interview?: string;
+        video?: string;
+        timestamp?: string;
     }[];
     title?: string;
     question?: string;
@@ -105,60 +85,59 @@ export declare const options: z.ZodObject<
     dedupInstructions?: string;
     batchSize?: number;
     filename?: string;
-  }
->;
+}>;
 export type Options = z.infer<typeof options>;
 export type Cache = {
-  get: (key: string) => any;
-  set: (key: string, value: any) => void;
+    get: (key: string) => any;
+    set: (key: string, value: any) => void;
 };
 export type Tracker = {
-  start: number;
-  costs: number;
-  unmatchedClaims: Claim[];
-  end?: number;
-  duration?: string;
+    start: number;
+    costs: number;
+    unmatchedClaims: Claim[];
+    end?: number;
+    duration?: string;
 };
 export type Claim = {
-  claim: string;
-  quote: string;
-  claimId?: string;
-  topicName?: string;
-  subtopicName?: string;
-  commentId?: string;
-  duplicates?: Claim[];
-  duplicated?: boolean;
+    claim: string;
+    quote: string;
+    claimId?: string;
+    topicName?: string;
+    subtopicName?: string;
+    commentId?: string;
+    duplicates?: Claim[];
+    duplicated?: boolean;
 };
 export type Subtopic = {
-  subtopicName: string;
-  subtopicShortDescription?: string;
-  subtopicId?: string;
-  claimsCount?: number;
-  claims?: Claim[];
+    subtopicName: string;
+    subtopicShortDescription?: string;
+    subtopicId?: string;
+    claimsCount?: number;
+    claims?: Claim[];
 };
 export type Topic = {
-  topicName: string;
-  topicShortDescription?: string;
-  topicId?: string;
-  claimsCount?: number;
-  subtopics: Subtopic[];
+    topicName: string;
+    topicShortDescription?: string;
+    topicId?: string;
+    claimsCount?: number;
+    subtopics: Subtopic[];
 };
 export type Taxonomy = Topic[];
 export type PipelineOutput = {
-  data: SourceRow[];
-  title: string;
-  question: string;
-  description: string;
-  systemInstructions: string;
-  clusteringInstructions: string;
-  extractionInstructions: string;
-  batchSize: number;
-  tree: Taxonomy;
-  start: number;
-  costs: number;
-  end?: number;
-  duration?: string;
+    data: SourceRow[];
+    title: string;
+    question: string;
+    description: string;
+    systemInstructions: string;
+    clusteringInstructions: string;
+    extractionInstructions: string;
+    batchSize: number;
+    tree: Taxonomy;
+    start: number;
+    costs: number;
+    end?: number;
+    duration?: string;
 };
 export type SourceMap = {
-  [key: string]: SourceRow;
+    [key: string]: SourceRow;
 };

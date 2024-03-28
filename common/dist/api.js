@@ -7,8 +7,8 @@ const zod_1 = require("zod");
  */
 // make generateApiRequest if we need to change requst body to include more than options
 exports.generateApiReponse = zod_1.z.object({
-  message: zod_1.z.string(),
-  filename: zod_1.z.string(),
-  url: zod_1.z.string(),
+    message: zod_1.z.string(),
+    filename: zod_1.z.string(),
+    url: zod_1.z.string(),
 });
 //# sourceMappingURL=api.js.map
