@@ -26,7 +26,6 @@ app.post("/generate", async (req, res) => {
       res.status(500).send({ error: "Missing data" });
     }
     config.data = formatData(config.data);
-    console.log(config.apiKey, process.env.OPENAI_API_KEY_PASSWORD);
     if (config.apiKey === process.env.OPENAI_API_KEY_PASSWORD) {
       // allow users to use our keys if they provided the password
       config.apiKey = process.env.OPENAI_API_KEY!;

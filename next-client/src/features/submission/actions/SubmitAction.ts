@@ -2,6 +2,7 @@
 import { Options, SourceRow, options } from "tttc-common/schema";
 import Papa from "papaparse";
 import { GenerateApiResponse } from "tttc-common/api";
+import { z } from "zod";
 
 export default async function submitAction(
   _: GenerateApiResponse | null,
@@ -30,8 +31,7 @@ export default async function submitAction(
     extractionInstructions: formData.get("extractionInstructions"),
     dedupInstructions: formData.get("dedupInstructions"),
   });
-
-  const url = `http://${process.env.PIPELINE_EXPRESS_URL}/generate`;
+  const url = z.string().url().parse(process.env.PIPELINE_EXPRESS_URL);
   const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify(config),

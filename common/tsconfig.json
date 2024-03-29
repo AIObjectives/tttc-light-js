@@ -11,8 +11,9 @@
       "*": ["*", "node_modules/*"]
     },
     "esModuleInterop": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "resolveJsonModule": true
   },
-  "include": ["*", "./components/*"], // Include the components folder,
-  "exclude": ["dist/"]
+  "include": ["*", "./components/**/*", "./fixtures/*.{json,html,csv}"], // Include the components folder,
+  "exclude": ["dist/", "./fixtures/cache/*"]
 }
