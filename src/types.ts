@@ -12,6 +12,7 @@ export type PieChart = {
 };
 
 export type Options = {
+  model?: string;
   apiKey?: string;
   data?: SourceRow[];
   title: string;

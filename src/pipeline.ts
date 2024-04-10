@@ -17,6 +17,7 @@ import {
 } from "./types";
 
 const defaultOptions = {
+  model: "gpt-4-turbo-preview",
   data: [],
   title: "",
   question: "",
@@ -86,6 +87,7 @@ async function pipeline(
   console.log("Step 1: generating taxonomy of topics and subtopics");
 
   const { taxonomy }: { taxonomy: Taxonomy } = await gpt(
+    options.model,
     options.apiKey!,
     "taxonomy",
     systemMessage(options),
@@ -101,6 +103,7 @@ async function pipeline(
     await Promise.all(
       batch.map(async ({ id, comment }) => {
         const { claims } = await gpt(
+          options.model,
           options.apiKey!,
           "claims_from_" + id,
           systemMessage(options),
@@ -150,6 +153,7 @@ async function pipeline(
   for (const topic of taxonomy) {
     for (const subtopic of topic.subtopics) {
       const { nesting } = await gpt(
+        options.model,
         options.apiKey!,
         "nesting_" +
           subtopic.subtopicName
