@@ -1,9 +1,8 @@
-import 'dotenv/config'
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import pipeline from "./pipeline";
 import html from "./html";
-import { testGPT } from "./gpt";
 import { Options } from "./types";
 import { getUrl, storeHtml } from "./storage";
 import { uniqueSlug, formatData, placeholderFile } from "./utils";
@@ -25,7 +24,7 @@ app.post("/generate", async (req, res) => {
         config.googleSheet.url,
         config.googleSheet.pieChartColumns,
         config.googleSheet.filterEmails,
-        config.googleSheet.oneSubmissionPerEmail,
+        config.googleSheet.oneSubmissionPerEmail
       );
       config.data = formatData(data);
       config.pieCharts = pieCharts;
@@ -41,7 +40,6 @@ app.post("/generate", async (req, res) => {
     if (!config.apiKey) {
       throw new Error("Missing OpenAI API key");
     }
-    await testGPT(config.apiKey); // will fail is key is invalid
     config.filename = config.filename || uniqueSlug(config.title);
     const url = getUrl(config.filename);
     await storeHtml(config.filename, placeholderFile());

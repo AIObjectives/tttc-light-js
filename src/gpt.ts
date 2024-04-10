@@ -2,14 +2,6 @@ import OpenAI from "openai";
 
 import { Tracker, Cache } from "./types";
 
-export const testGPT = async (apiKey: string) => {
-  const openai = new OpenAI({ apiKey });
-  await openai.chat.completions.create({
-    messages: [{ role: "user", content: "hi" }],
-    model: "gpt-4-turbo-preview",
-  });
-};
-
 export const gpt = async (
   apiKey: string,
   cacheKey: string,

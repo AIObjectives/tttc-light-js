@@ -28,6 +28,7 @@ export type Options = {
     url: string;
     pieChartColumns?: string[];
     filterEmails?: string[];
+    oneSubmissionPerEmail?: boolean;
   };
 };
 
