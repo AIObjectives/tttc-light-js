@@ -26,6 +26,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.2",
     "@google-cloud/storage": "^7.7.0",
     "axios": "^1.6.7",
     "cors": "^2.8.5",

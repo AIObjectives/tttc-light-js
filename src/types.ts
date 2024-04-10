@@ -12,6 +12,7 @@ export type PieChart = {
 };
 
 export type Options = {
+  model?: string;
   apiKey?: string;
   data?: SourceRow[];
   title: string;
@@ -28,6 +29,7 @@ export type Options = {
     url: string;
     pieChartColumns?: string[];
     filterEmails?: string[];
+    oneSubmissionPerEmail?: boolean;
   };
 };
 

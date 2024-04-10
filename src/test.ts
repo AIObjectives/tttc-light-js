@@ -38,6 +38,7 @@ async function main() {
   const data = await loadSource();
   const json = await pipeline(
     {
+      model: "claude-3-opus-20240229",
       apiKey: process.env.OPENAI_API_KEY!,
       data,
       pieCharts: [
