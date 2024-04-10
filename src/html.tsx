@@ -25,7 +25,7 @@ type ClaimDetailProps = { claim: Claim; sourceMap: SourceMap };
 export const Report = ({ data }: ReportProps) => {
   const sourceMap: SourceMap = data.data.reduce(
     (acc, d) => ({ ...acc, [d.id]: d }),
-    {}
+    {},
   );
   const pieCharts = data.pieCharts || [];
   return (
@@ -86,7 +86,7 @@ const Outline = ({ data }: ReportProps) => {
         {SHOW_STATS && (
           <td>{((100 * topic.claimsCount!) / totalClaims).toFixed(0)}%</td>
         )}
-      </tr>
+      </tr>,
     );
     topic.subtopics.forEach((subtopic, j) => {
       rows.push(
@@ -100,7 +100,7 @@ const Outline = ({ data }: ReportProps) => {
           {SHOW_STATS && (
             <td>{((100 * subtopic.claimsCount!) / totalClaims).toFixed(0)}%</td>
           )}
-        </tr>
+        </tr>,
       );
     });
   });

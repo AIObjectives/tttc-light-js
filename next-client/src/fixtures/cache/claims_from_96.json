@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "claim": "Prison conditions in some states are horrific, with issues such as inadequate drinking water and unsanitary cells.",
+      "quote": "I got a text today from Indiana. They already had terrible drinking water and now they got, the toilet's been backed up since Thursday.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Women in prison face violations of their rights and lack access to basic sanitary products.",
+      "quote": "the women's, that's a whole nother thing, just about their rights being violated. And again, I wanna know women prison, so I can't speak to that, but my sister Hollywood, who. Been out since 2017.  She can, and we had a panel yesterday and she spoke to that, the, the, the women's, the just one, the disrespect, the, the, the lack of access to tampons to right stuff.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "The United States' history of colonialism influences current inhumane treatment and mindset in the penal system.",
+      "quote": "I believe that conquering mindset is still what exists that's been going on for generation to generation, and they just legitimize it by voting on it, saying We're gonna enter public safety when there's a portion of it.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Incarceration and solitary confinement conditions are equivalent to modern-day slavery.",
+      "quote": "You keep somebody in solitary confinement for years.  What, what is this inhumane colonialism mindset? That's just, and, and I, when I, when I say that, it's because if we look at the history of United States, what was it before the United States? It was Turtle Island.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Good Time Credit Policies"
+    },
+    {
+      "claim": "Individuals resort to criminal activities not out of choice but due to lack of employment opportunities post-incarceration.",
+      "quote": "No difference. When the person gets outta jail and is trying to get a job and it's not working, he goes back to sell drugs.  He ain't doing it 'cause he want to, he tried to do something different, but this is what works.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "The current legislative and correction systems perpetuate a cycle of criminalization rather than rehabilitation.",
+      "quote": "I also believe in a lot of the, the current system of legislation is the criminals. And then partially, I don't even think they realize that's what they're doing. 'cause you're born into it. So it's just the mindset, it's the mentality.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    }
+  ]
+}

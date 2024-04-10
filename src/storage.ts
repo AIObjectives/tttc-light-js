@@ -15,7 +15,7 @@ export const getUrl = (fileName: string) =>
 export async function storeHtml(
   fileName: string,
   fileContent: string,
-  allowCache?: boolean
+  allowCache?: boolean,
 ) {
   if (!bucketName) {
     throw new Error("Missing bucket name (GCLOUD_STORAGE_BUCKET).");

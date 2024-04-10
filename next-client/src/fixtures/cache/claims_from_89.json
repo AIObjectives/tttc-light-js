@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim": "Connection is essential for overcoming addiction.",
+      "quote": "They say the opposite of addiction is, is, is connection.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Collaborative efforts make challenges less daunting.",
+      "quote": "And if we're doing it with one another, it doesn't feel so heavy.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Being part of a community or group aids in personal struggles.",
+      "quote": "even a wolf wants to be a part of a pack.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

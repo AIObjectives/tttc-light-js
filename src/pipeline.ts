@@ -37,7 +37,7 @@ function insertClaim(taxonomy: Taxonomy, claim: Claim, tracker: Tracker) {
     return;
   }
   const subtopic = matchedTopic.subtopics.find(
-    (subtopic) => subtopic.subtopicName === subtopicName
+    (subtopic) => subtopic.subtopicName === subtopicName,
   );
   if (!subtopic) {
     console.log("Subtopic missmatch,skipping claim " + claim.claimId);
@@ -72,7 +72,7 @@ function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
 
 async function pipeline(
   _options: Options,
-  cache?: Cache
+  cache?: Cache,
 ): Promise<PipelineOutput> {
   const options = { ...defaultOptions, ..._options };
   const tracker: Tracker = {
@@ -93,7 +93,7 @@ async function pipeline(
     systemMessage(options),
     clusteringPrompt(options, comments),
     tracker,
-    cache
+    cache,
   );
 
   console.log("Step 2: extracting claims matching the topics and subtopics");
@@ -109,7 +109,7 @@ async function pipeline(
           systemMessage(options),
           extractionPrompt(options, JSON.stringify(taxonomy), comment),
           tracker,
-          cache
+          cache,
         );
         claims.forEach((claim: Claim, i: number) => {
           insertClaim(
@@ -119,10 +119,10 @@ async function pipeline(
               commentId: id,
               claimId: `${id}-${i}`,
             },
-            tracker
+            tracker,
           );
         });
-      })
+      }),
     );
   }
 
@@ -162,7 +162,7 @@ async function pipeline(
         systemMessage(options),
         dedupPrompt(options, JSON.stringify(subtopic.claims)),
         tracker,
-        cache
+        cache,
       );
       nestClaims(subtopic, nesting);
     }
@@ -181,7 +181,7 @@ async function pipeline(
   delete options.apiKey;
   console.log(`Pipeline completed in ${tracker.duration}`);
   console.log(
-    `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`
+    `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`,
   );
   return { ...options, tree, ...tracker };
 }

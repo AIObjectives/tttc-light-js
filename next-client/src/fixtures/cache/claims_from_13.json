@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "Formerly incarcerated individuals lack knowledge on managing credit effectively.",
+      "quote": "Who knows about credit. We didn't know anything.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Financial Literacy"
+    },
+    {
+      "claim": "Reentry into society should include education on credit accumulation and management.",
+      "quote": "that's a big thing people need to know about how to get credit. Not only just to get it, but to maintain it and use it properly.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Inadequate credit history presents challenges for formerly incarcerated individuals when reentering society.",
+      "quote": "So when you come go to credit, they say, who are you? Where have you been? You don't even register on a scale.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Financial Literacy"
+    },
+    {
+      "claim": "The importance of debt management should be a key component of reentry programs.",
+      "quote": "'cause you'll find yourself in a lot of debt and those stories are being told as well.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Financial Literacy"
+    }
+  ]
+}

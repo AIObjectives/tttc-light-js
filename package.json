@@ -6,7 +6,8 @@
     "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\"",
     "watch": "npx babel src --out-dir dist --extensions \".tsx,.ts\" --watch",
     "test": "npm run build && node dist/test.js",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "format": "npx prettier . --write"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
@@ -23,6 +24,7 @@
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
     "babel-plugin-transform-react-jsx": "^6.24.1",
+    "prettier": "3.2.5",
     "typescript": "^5.3.3"
   },
   "dependencies": {
@@ -36,7 +38,6 @@
     "express": "^4.18.3",
     "node-fetch": "^3.3.2",
     "openai": "^4.28.4",
-    "prettier": "^3.2.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

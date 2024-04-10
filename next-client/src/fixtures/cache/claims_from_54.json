@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "Violence interrupters are necessary in urban communities lacking police resources.",
+      "quote": "So now, like I just finished lobbying in March, $20 million for them to put in the spending budget for. Violence interrupters for urban communities.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Communities need alternatives to calling the police to address safety concerns.",
+      "quote": "So there needs to be training. There needs to be, who do I go to? I don't wanna call the police because...",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "The presence of police can traumatize children and communities.",
+      "quote": "Even my, my, my youngest child and my grandchildren traumatized.  They would see the police when I was young. We saw the police, we wave at the police. I don't know about you. We waved at the police and the firemen and stuff like that, right? These kids run from the police and no reason to run from the police. They run from the police. You know why? Because police are bad.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Police actions contribute to a negative perception among youth.",
+      "quote": "Because when they see the police, police are coming into their homes or. Dragging their loved one out, their father, their brother, their whoever, or they're riding past and they see people on the side of the, the road with their hands clapped behind their back and they're like, oh my God, the police, the police are some, they're bad people.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Youth fleeing from police can lead to unjust accusations or violence.",
+      "quote": "And then the police chase us because they think we've done something, because we're running. And then either we get killed or we get accused of something that we didn't do.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

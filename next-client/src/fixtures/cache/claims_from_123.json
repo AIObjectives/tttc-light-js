@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "The Michigan Fair Chance Access to Housing Act aims to reduce housing barriers for individuals with criminal records.",
+      "quote": "The Michigan Fair Chance access to Housing Acts. Right now it is in the house. So it's in the legislative process.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Fair Housing Legislation"
+    },
+    {
+      "claim": "Community organizing is key to supporting the Michigan Fair Chance Access to Housing Act.",
+      "quote": "I'm working with a group called Nation Outside and who's working with Rep Aiyash... we're working together with the community to organize what's called Capital Day for Housing, not Hurdles is what we're calling it.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Individuals with criminal records often face increased security deposit demands or outright denial from landlords.",
+      "quote": "They find housing, but then they're, once the landlord finds out that there's a criminal record involved, either they don't get it, or the other one that I see a lot is they increase the security deposit.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Increasing security deposits due to criminal records further financially burdens individuals striving for reintegration.",
+      "quote": "if you don't, if they find out you have a criminal record then you're either told no or you're given the options.  You, hey, you can pay double sometimes three months in advance for the security deposit.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    },
+    {
+      "claim": "Affected individuals facing housing barriers include those actively working and pursuing education to better themselves.",
+      "quote": "these are people that are working like steadily going to school. They are trying to better themselves and their families.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    }
+  ]
+}

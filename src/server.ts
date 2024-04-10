@@ -24,7 +24,7 @@ app.post("/generate", async (req, res) => {
         config.googleSheet.url,
         config.googleSheet.pieChartColumns,
         config.googleSheet.filterEmails,
-        config.googleSheet.oneSubmissionPerEmail
+        config.googleSheet.oneSubmissionPerEmail,
       );
       config.data = formatData(data);
       config.pieCharts = pieCharts;

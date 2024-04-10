@@ -5,7 +5,7 @@ export async function fetchSpreadsheetData(
   url: string,
   pieChartColumnNames: string[] = [],
   filterEmails?: string[],
-  oneSubmissionPerEmail?: boolean
+  oneSubmissionPerEmail?: boolean,
 ): Promise<{ data: SourceRow[]; pieCharts: PieChart[] }> {
   // extract the spreadsheet id from the url
   const regex = /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
@@ -22,10 +22,10 @@ export async function fetchSpreadsheetData(
   // extract the columns and rows
   const columns: string[] = json.table.cols.map((x: any) => x.label);
   let rows: string[] = json.table.rows.map((x: any) =>
-    x.c.map((y: any) => y?.v)
+    x.c.map((y: any) => y?.v),
   );
 
-  const emailColumn = columns.indexOf("Email Address")
+  const emailColumn = columns.indexOf("Email Address");
 
   // filter out rows with forbidden email addresses
   if (filterEmails) {
@@ -68,7 +68,7 @@ export async function fetchSpreadsheetData(
       id: String(id),
       comment: commentColumns
         .map(
-          ({ name, index }) => `> ${name}\n\n${row[index] || "(not answered)"}`
+          ({ name, index }) => `> ${name}\n\n${row[index] || "(not answered)"}`,
         )
         .join("\n\n"),
     });
@@ -76,7 +76,7 @@ export async function fetchSpreadsheetData(
 
   let data;
   if (oneSubmissionPerEmail) {
-    data = Object.values(emailToData).map((v) => v[v.length-1])
+    data = Object.values(emailToData).map((v) => v[v.length - 1]);
   } else {
     data = Object.values(emailToData).flat();
   }

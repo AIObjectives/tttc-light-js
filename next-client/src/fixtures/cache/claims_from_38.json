@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "The cost of inmate phone calls significantly limits communication with family.",
+      "quote": "if you put $20 on onto the book for him to make a call, the, the service would take, I think, up to about $5. Just a call. And then each call costs so much money per minute.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Many incarcerated individuals lose touch with their families due to high communication costs.",
+      "quote": "The contact with their families is, is very minimal.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Incarcerated individuals develop unique skills to survive financially within the prison system.",
+      "quote": "He learned how to how to write papers for inmates and that kind of helped keep money coming in for him 'cause he would write letters and, and different, things that he would write for them to, to submit to courts.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Formerly incarcerated individuals face significant adjustment challenges upon release.",
+      "quote": "So he comes home and there's no family available to him. So it's, it was hard. Hard for him to adjust and it's still hard for him to adjust to living out here in the world.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Returning citizens often lack practical skills and resources for reintegration.",
+      "quote": "So now he's out and he's doing the same thing, surviving ' cause there's no skills affordable to him. And then coming out with a felony, where do you work and where do you get loans and where do you find housing and.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Probation terms can be strict and risk reincarceration for minor mistakes.",
+      "quote": "And if they mess up, On that probation, they go back.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Incarceration can result in the loss of family connections, compounding reentry challenges.",
+      "quote": "He went in when he was 13. He come out, he's 50 something years old, and all of his family have passed away.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "Background checks prevent formerly incarcerated individuals from securing employment in their field of study.",
+      "quote": "But when we get to that background check aspect of things, I'm dead in the water [...]",
+      "topicName": "Employment Opportunities",
+      "subtopicName": "Challenges in securing employment related to their field of training"
+    },
+    {
+      "claim": "Returning citizens are forced to rely on community organizations due to lack of employment opportunities.",
+      "quote": "if not for A Chance for Life, if not for some of the other community organizations that are out there, which is, is okay. But again, it is why should I [...] have to depend on. Some organization who may or may not be able to help me.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "The disparity between the promise of reintegration programs and the reality discourages returning citizens.",
+      "quote": "yes, we have all of these great programs and, these opportunities sound good? And, and literally, I'm, I'm one of the ones [...] it just doesn't happen. at least not the way that it, from my perspective, the way that it's presented [...] that's a problem.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "The lack of real job opportunities for returning citizens contributes to high recidivism rates.",
+      "quote": "If you don't actu in actuality, give people opportunities to do and be better. [...] that, that actually ties into the recidivism rate.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Despite achieving educational qualifications, returning citizens struggle with financial instability due to underemployment.",
+      "quote": "if I was in a position that would allow for that. But I'm still in the paycheck to paycheck and struggling in a completely different field that. Has nothing to do with it.",
+      "topicName": "Employment Opportunities",
+      "subtopicName": "Employment opportunities are scarce for returning citizens, particularly those not interested in factory jobs or low-wage work"
+    },
+    {
+      "claim": "Returning citizens feel pressured to provide for their families, which is challenging due to employment barriers.",
+      "quote": "Dad has to take care and provide for these children. [...] But if I'm not in a position to provide these things [...] Well, for me, at this point in I'm dead. I need to figure out how to provide these things.",
+      "topicName": "Family and Social Reintegration",
+      "subtopicName": "Family reunification post-incarceration can lead to feelings of inadequacy and self-doubt in parents"
+    },
+    {
+      "claim": "Past mistakes indefinitely affect the employment opportunities of returning citizens.",
+      "quote": "there's nothing I can do about what happened in 1995, the one that I know that literally like red flag, like, yeah, I can't do anything about that. I've done 11 years for that [...] but now I'm trying to do something different",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    }
+  ]
+}

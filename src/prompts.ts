@@ -38,7 +38,7 @@ ${comments}
 export const extractionPrompt = (
   options: Options,
   taxonomy: string,
-  comment: string
+  comment: string,
 ) => `
 I'm going to give you a comment made by a participant and a list of topics and subtopics which have already been extracted.  
 I want you to extract a list of concise claims that the participant may support.

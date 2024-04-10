@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "Lead poisoning in children can lead to long-term learning and developmental issues.",
+      "quote": "I think he has fallen victim to what this lead crisis may have been in Flint. So I think that's where some of his disconnect is because he was a kid that was walking at seven months and never crawled.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Traditional disciplinary practices are influenced by historical oppression.",
+      "quote": "it was conditioned from slavery, right? I beat on you and you don't do whatever, right? So we know that's wrong.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Students with poor grades but good behavior often face unique challenges that aren't accounted for in their academic assessments.",
+      "quote": "my son would get D's and E's, but [...] they would big him up. And then they would show me his report card and say, well, mom, I want you to know he came in and got extra help in the morning.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Background and upbringing do not predetermine an individual's propensity to commit crimes.",
+      "quote": "Your background. You don't have to be a product of your environment, but those people who have already gone, gone into the jails and they weren't all bad. Some of 'em came from affluent, homes and, they had education, but they chose to, they chose to go down this path or they got caught, right?",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Reentering individuals from affluent backgrounds may face different challenges than those from less privileged backgrounds.",
+      "quote": "Coming back, their challenges may be something different or coming back. They might already have a job set up for them.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "The success of reentry programs depends on the ability of returning citizens to communicate their barriers effectively.",
+      "quote": "they have to communicate more what their barriers are. The problem is a lot of the ones that are in there haven't used their voice.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "The criminal justice system may intentionally withhold effective reentry programming.",
+      "quote": "I think that they're withholding some of the programming that they know they should have been giving these people so they could come back.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Reentry Programs"
+    }
+  ]
+}

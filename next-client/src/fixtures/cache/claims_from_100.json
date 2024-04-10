@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "Ex-offenders face discrimination in employment applications.",
+      "quote": "every time you fill out an application and they see that you are an ex-offender, they say, well, we don't hire ex-offenders.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "Society benefits from forgiving and rehabilitating offenders.",
+      "quote": "if somebody has done wrong and you call yourself a Christian society, then where's forgiveness come in at",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Ex-offenders contribute positively to society post-release through service.",
+      "quote": "I was already building the prison ministry. I've been doing this for years. I did it inside a prison and I'm doing it outside",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "People with criminal records can effectively work in educational roles.",
+      "quote": "I worked for Urban Prep Academy ... as a counselor. I have a master's degree in communication.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Formerly incarcerated individuals are crucial in reaching and positively influencing at-risk youth.",
+      "quote": "These young brothers had so much respect for me because they understood what I came from. I knew how to communicate with them. I knew how to talk to them because I came out of the very same streets that they are in right now.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Family and Social Reintegration"
+    },
+    {
+      "claim": "Ex-offenders are unfairly terminated from jobs due to their criminal record despite performance.",
+      "quote": "it finally appeared ... He said, but because the effect that you had in this school on these young men, he said, I might let you go on paper, but you can still volunteer and I'll pay you under the table.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Fair Housing Legislation"
+    },
+    {
+      "claim": "Educational achievements are possible inside prisons.",
+      "quote": "What you thought I did sit down and do nothing. I studied and went to school and worked every day.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    }
+  ]
+}

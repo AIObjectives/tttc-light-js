@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "Every human being has the capacity for redemption.",
+      "quote": "I believe that there's no human being. That cannot be redeemed. All of us can be redeemed.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Understanding and love can change a person's aggressive behavior to a positive one.",
+      "quote": "once somebody understands that you love them, then their response to you is different. They don't respond aggressively. They respond with love.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Inmates value the personal connection and care shown through receiving letters.",
+      "quote": "The most valuables thing in the world to a prisoner is a letter. It ain't a visit and it ain't money. It's a letter, a piece of paper just to say, I love you and I'm thinking about you.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Prison visits and financial support are temporary, but letters have lasting emotional value.",
+      "quote": "The visit comes and goes. The money comes and goes, but the letter. They'll take those letters and put 'em in an envelope and put 'em in a box. And whenever they release, they take those letters with them.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}
