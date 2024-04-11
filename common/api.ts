@@ -1,15 +1,10 @@
 import { z } from "zod";
 
-/**
- * /GENERATE
- */
-
-// make generateApiRequest if we need to change requst body to include more than options
-
 export const generateApiReponse = z.object({
   message: z.string(),
-  filename: z.string(),
-  url: z.string(),
+  filename: z.string().min(1),
+  jsonUrl: z.string().url(),
+  reportUrl: z.string().url(),
 });
 
 export type GenerateApiResponse = z.infer<typeof generateApiReponse>;

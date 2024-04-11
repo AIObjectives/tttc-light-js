@@ -22,7 +22,6 @@ app.use(_express.default.static("public"));
 app.post("/generate", async (req, res) => {
   let responded = false;
   try {
-    console.log("started");
     const config = req.body;
     if (config.googleSheet) {
       const { data, pieCharts } = await (0, _googlesheet.fetchSpreadsheetData)(
@@ -37,41 +36,45 @@ app.post("/generate", async (req, res) => {
     if (!config.data) {
       throw new Error("Missing data");
     }
-    console.log(1);
     config.data = (0, _utils.formatData)(config.data);
-    console.log(2);
     // allow users to use our keys if they provided the password
     if (config.apiKey === process.env.OPENAI_API_KEY_PASSWORD) {
       config.apiKey = process.env.OPENAI_API_KEY;
     } else if (config.apiKey === process.env.ANTHROPIC_API_KEY_PASSWORD) {
       config.apiKey = process.env.ANTHROPIC_API_KEY;
     }
-    console.log(3);
     if (!config.apiKey) {
       throw new Error("Missing API key");
     }
+    const clientBaseUrl = process.env.CLIENT_BASE_URL;
+    if (!clientBaseUrl)
+      throw new Error("You need a CLIENT_BASE_URL defined in env");
     config.filename = config.filename || (0, _utils.uniqueSlug)(config.title);
-    console.log(4);
-    const url = (0, _storage.getUrl)(config.filename);
-    console.log(5);
+    const jsonUrl = (0, _storage.getStorageUrl)(config.filename);
     await (0, _storage.storeJSON)(
       config.filename,
       JSON.stringify({
         message: "Your data is being generated",
       }),
     );
-    console.log(6);
-    res.send({
+    const reportUrl = new URL(
+      `report/${encodeURIComponent(jsonUrl)}`,
+      clientBaseUrl,
+    ).toString();
+    const response = {
       message: "Request received.",
       filename: config.filename,
-      url,
-      // TODO: send cost estimates...
-    });
+      jsonUrl,
+      reportUrl,
+    };
+    console.log("response", response);
+    console.log("did parsing");
+    res.send(response);
     responded = true;
     const json = await (0, _pipeline.default)(config);
     console.log("json", json);
     await (0, _storage.storeJSON)(config.filename, JSON.stringify(json), true);
-    console.log("produced file: " + url);
+    console.log("produced file: " + jsonUrl);
   } catch (err) {
     console.error(err);
     if (!responded) {

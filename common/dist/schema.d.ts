@@ -103,19 +103,19 @@ export declare const options: z.ZodObject<{
     filename: z.ZodOptional<z.ZodString>;
     googleSheet: z.ZodOptional<z.ZodObject<{
         url: z.ZodString;
-        pieChartColumns: z.ZodOptional<z.ZodString>;
-        filterEmails: z.ZodOptional<z.ZodString>;
-        oneSubmissionPerEmail: z.ZodArray<z.ZodBoolean, "many">;
+        pieChartColumns: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        filterEmails: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        oneSubmissionPerEmail: z.ZodBoolean;
     }, "strip", z.ZodTypeAny, {
         url?: string;
-        pieChartColumns?: string;
-        filterEmails?: string;
-        oneSubmissionPerEmail?: boolean[];
+        pieChartColumns?: string[];
+        filterEmails?: string[];
+        oneSubmissionPerEmail?: boolean;
     }, {
         url?: string;
-        pieChartColumns?: string;
-        filterEmails?: string;
-        oneSubmissionPerEmail?: boolean[];
+        pieChartColumns?: string[];
+        filterEmails?: string[];
+        oneSubmissionPerEmail?: boolean;
     }>>;
 }, "strip", z.ZodTypeAny, {
     model?: string;
@@ -145,9 +145,9 @@ export declare const options: z.ZodObject<{
     filename?: string;
     googleSheet?: {
         url?: string;
-        pieChartColumns?: string;
-        filterEmails?: string;
-        oneSubmissionPerEmail?: boolean[];
+        pieChartColumns?: string[];
+        filterEmails?: string[];
+        oneSubmissionPerEmail?: boolean;
     };
 }, {
     model?: string;
@@ -177,9 +177,9 @@ export declare const options: z.ZodObject<{
     filename?: string;
     googleSheet?: {
         url?: string;
-        pieChartColumns?: string;
-        filterEmails?: string;
-        oneSubmissionPerEmail?: boolean[];
+        pieChartColumns?: string[];
+        filterEmails?: string[];
+        oneSubmissionPerEmail?: boolean;
     };
 }>;
 export type Options = z.infer<typeof options>;

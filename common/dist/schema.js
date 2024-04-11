@@ -30,9 +30,9 @@ exports.options = zod_1.z.object({
     googleSheet: zod_1.z
         .object({
         url: zod_1.z.string(),
-        pieChartColumns: zod_1.z.string().optional(),
-        filterEmails: zod_1.z.string().optional(),
-        oneSubmissionPerEmail: zod_1.z.boolean().array(),
+        pieChartColumns: zod_1.z.string().array().optional(),
+        filterEmails: zod_1.z.string().array().optional(),
+        oneSubmissionPerEmail: zod_1.z.boolean(),
     })
         .optional(),
 });

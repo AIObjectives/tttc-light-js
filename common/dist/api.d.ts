@@ -1,18 +1,18 @@
 import { z } from "zod";
-/**
- * /GENERATE
- */
 export declare const generateApiReponse: z.ZodObject<{
     message: z.ZodString;
     filename: z.ZodString;
-    url: z.ZodString;
+    jsonUrl: z.ZodString;
+    reportUrl: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     message?: string;
     filename?: string;
-    url?: string;
+    jsonUrl?: string;
+    reportUrl?: string;
 }, {
     message?: string;
     filename?: string;
-    url?: string;
+    jsonUrl?: string;
+    reportUrl?: string;
 }>;
 export type GenerateApiResponse = z.infer<typeof generateApiReponse>;

@@ -2,10 +2,11 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import pipeline from "./pipeline";
-import { Options, options } from "tttc-common/schema";
-import { getUrl, storeJSON } from "./storage";
+import { Options } from "tttc-common/schema";
+import { getStorageUrl, storeJSON } from "./storage";
 import { uniqueSlug, formatData } from "./utils";
 import { fetchSpreadsheetData } from "./googlesheet";
+import { GenerateApiResponse, generateApiReponse } from "tttc-common/api";
 
 const port = 8080;
 
@@ -17,7 +18,6 @@ app.use(express.static("public"));
 app.post("/generate", async (req, res) => {
   let responded = false;
   try {
-    console.log("started");
     const config: Options = req.body;
     if (config.googleSheet) {
       const { data, pieCharts } = await fetchSpreadsheetData(
@@ -32,39 +32,40 @@ app.post("/generate", async (req, res) => {
     if (!config.data) {
       throw new Error("Missing data");
     }
-    console.log(1);
     config.data = formatData(config.data);
-    console.log(2);
     // allow users to use our keys if they provided the password
     if (config.apiKey === process.env.OPENAI_API_KEY_PASSWORD) {
       config.apiKey = process.env.OPENAI_API_KEY!;
     } else if (config.apiKey === process.env.ANTHROPIC_API_KEY_PASSWORD) {
       config.apiKey = process.env.ANTHROPIC_API_KEY!;
     }
-    console.log(3);
     if (!config.apiKey) {
       throw new Error("Missing API key");
     }
+    const clientBaseUrl = process.env.CLIENT_BASE_URL;
+    if (!clientBaseUrl)
+      throw new Error("You need a CLIENT_BASE_URL defined in env");
     config.filename = config.filename || uniqueSlug(config.title);
-    console.log(4);
-    const url = getUrl(config.filename);
-    console.log(5);
+    const jsonUrl = getStorageUrl(config.filename);
     await storeJSON(
       config.filename,
       JSON.stringify({ message: "Your data is being generated" }),
     );
-    console.log(6);
-    res.send({
+    const reportUrl = new URL(
+      `report/${encodeURIComponent(jsonUrl)}`,
+      clientBaseUrl,
+    ).toString();
+    const response: GenerateApiResponse = {
       message: "Request received.",
       filename: config.filename,
-      url,
-      // TODO: send cost estimates...
-    });
+      jsonUrl,
+      reportUrl,
+    };
+    res.send(response);
     responded = true;
     const json = await pipeline(config);
-    console.log("json", json);
     await storeJSON(config.filename, JSON.stringify(json), true);
-    console.log("produced file: " + url);
+    console.log("produced file: " + jsonUrl);
   } catch (err: any) {
     console.error(err);
     if (!responded) {

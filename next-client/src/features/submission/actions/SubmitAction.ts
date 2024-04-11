@@ -20,7 +20,6 @@ export default async function submitAction(
   if (!data || !data.length) {
     throw new Error("Missing data. Check your csv file");
   }
-  console.log("data", data);
 
   const config: Options = options.parse({
     apiKey: formData.get("apiKey"),
@@ -32,11 +31,8 @@ export default async function submitAction(
     extractionInstructions: formData.get("extractionInstructions"),
     dedupInstructions: formData.get("dedupInstructions"),
   });
-  console.log("config", config);
   const url = z.string().url().parse(process.env.PIPELINE_EXPRESS_URL);
-  console.log("before");
   const blah = JSON.stringify(config);
-  console.log("blah", blah);
   const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify(config),
@@ -44,7 +40,6 @@ export default async function submitAction(
       "Content-Type": "application/json",
     },
   });
-  console.log("response", response);
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error);

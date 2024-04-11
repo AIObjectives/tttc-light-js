@@ -13,12 +13,21 @@ function FormLoading() {
 }
 
 async function ResponseUI({ response }: { response: GenerateApiResponse }) {
-  const { url, filename } = response;
+  const { jsonUrl, reportUrl, filename } = response;
   return (
     <div>
-      <text>Your report is being prepared at </text>{" "}
-      <a href={url}>{filename}</a>{" "}
-      <text>. Make sure to open and bookmark this link!</text>
+      <text>Your submission is being processed</text>
+      <text>
+        You will be able to find your JSON data here:{" "}
+        <a href={jsonUrl}>{filename}</a>
+      </text>
+      <br />
+      <text>
+        After your data has been processed, you'll be able to see your report by
+        following <a href={reportUrl}>this link</a>.
+      </text>
+      <br />
+      <text>Make sure to open and bookmark these links!</text>
     </div>
   );
 }

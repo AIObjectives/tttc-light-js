@@ -9,7 +9,7 @@ if (encoded_creds) {
 
 const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
 
-export const getUrl = (fileName: string) =>
+export const getStorageUrl = (fileName: string) =>
   `https://storage.googleapis.com/${bucketName}/${fileName}`;
 
 export async function storeJSON(
@@ -35,5 +35,5 @@ export async function storeJSON(
           }),
     },
   });
-  return getUrl(fileName);
+  return getStorageUrl(fileName);
 }

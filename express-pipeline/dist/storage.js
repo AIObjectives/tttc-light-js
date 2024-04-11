@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true,
 });
-exports.getUrl = void 0;
+exports.getStorageUrl = void 0;
 exports.storeJSON = storeJSON;
 var _storage = require("@google-cloud/storage");
 let storage;
@@ -15,9 +15,9 @@ if (encoded_creds) {
   });
 }
 const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
-const getUrl = (fileName) =>
+const getStorageUrl = (fileName) =>
   `https://storage.googleapis.com/${bucketName}/${fileName}`;
-exports.getUrl = getUrl;
+exports.getStorageUrl = getStorageUrl;
 async function storeJSON(fileName, fileContent, allowCache) {
   if (!bucketName) {
     throw new Error("Missing bucket name (GCLOUD_STORAGE_BUCKET).");
@@ -37,5 +37,5 @@ async function storeJSON(fileName, fileContent, allowCache) {
           }),
     },
   });
-  return getUrl(fileName);
+  return getStorageUrl(fileName);
 }
