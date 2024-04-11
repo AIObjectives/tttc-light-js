@@ -1,0 +1,12 @@
+{
+  "name": "devtools",
+  "version": "1.0.0",
+  "description": "Devtools for makikng TTTC",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "actions": "./actions/run-actions.sh"
+  },
+  "author": "",
+  "license": "ISC"
+}
