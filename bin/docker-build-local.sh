@@ -1,1 +1,1 @@
-docker build -t tttc-light-js .
+docker build -t tttc-light-js ..
