@@ -2,10 +2,9 @@
   "name": "express-pipeline",
   "version": "1.0.0",
   "description": "pipeline for tttc-light-js",
-  "main": "index.js",
   "scripts": {
     "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\" && npx prettier ./dist --write",
-    "watch": "npx babel src --out-dir dist --extensions \".tsx,.ts\" --watch",
+    "dev": "nodemon src/server.ts",
     "test": "npm run build && node dist/test.js",
     "start": "node dist/server.js"
   },
@@ -25,6 +24,8 @@
     "@types/react-dom": "^18.2.19",
     "babel-plugin-module-resolver": "^5.0.0",
     "babel-plugin-transform-react-jsx": "^6.24.1",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {

@@ -76,6 +76,10 @@ app.post("/generate", async (req, res) => {
   }
 });
 
+app.get("/test", async (req, res) => {
+  res.send("Success");
+});
+
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
