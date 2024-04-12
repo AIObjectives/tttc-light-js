@@ -45,7 +45,7 @@ export const gpt = async (
     const completion = await anthropic.messages.create({
       model: model as any,
       system,
-      max_tokens: 1024,
+      max_tokens: 4096,
       messages: [{ role: "user", content: user }],
     });
     prompt_tokens = completion.usage.input_tokens;
@@ -64,7 +64,7 @@ export const gpt = async (
   tracker.costs += cost;
   tracker.prompt_tokens += prompt_tokens;
   tracker.completion_tokens += completion_tokens;
-  if (finish_reason !== "stop") {
+  if (finish_reason !== "stop" && finish_reason !== "end_turn") {
     console.log(message);
     throw new Error("the AI stopped early!");
   } else {
