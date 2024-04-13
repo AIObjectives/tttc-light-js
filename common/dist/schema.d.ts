@@ -69,7 +69,7 @@ export declare const options: z.ZodObject<{
     }>, "many">;
     title: z.ZodString;
     question: z.ZodString;
-    pieCharts: z.ZodOptional<z.ZodArray<z.ZodObject<{
+    pieChart: z.ZodOptional<z.ZodArray<z.ZodObject<{
         title: z.ZodString;
         items: z.ZodArray<z.ZodObject<{
             label: z.ZodString;
@@ -129,7 +129,7 @@ export declare const options: z.ZodObject<{
     }[];
     title?: string;
     question?: string;
-    pieCharts?: {
+    pieChart?: {
         title?: string;
         items?: {
             label?: string;
@@ -161,7 +161,7 @@ export declare const options: z.ZodObject<{
     }[];
     title?: string;
     question?: string;
-    pieCharts?: {
+    pieChart?: {
         title?: string;
         items?: {
             label?: string;

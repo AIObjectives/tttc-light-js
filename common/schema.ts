@@ -43,21 +43,7 @@ export const options = z.object({
 
 export type Options = z.infer<typeof options>;
 
-export type Cache = {
-  get: (key: string) => any;
-  set: (key: string, value: any) => void;
-};
-
-export type Tracker = {
-  start: number;
-  costs: number;
-  prompt_tokens: number;
-  completion_tokens: number;
-  unmatchedClaims: Claim[];
-  end?: number;
-  duration?: string;
-};
-
+// Zod has trouble with self-referential types, so leave this be until we need to parse
 export type Claim = {
   claim: string;
   quote: string;
@@ -69,41 +55,70 @@ export type Claim = {
   duplicated?: boolean;
 };
 
-export type Subtopic = {
-  subtopicName: string;
-  subtopicShortDescription?: string;
-  subtopicId?: string;
-  claimsCount?: number;
-  claims?: Claim[];
-};
+const claim = z.custom<Claim>();
 
-export type Topic = {
-  topicName: string;
-  topicShortDescription?: string;
-  topicId?: string;
-  claimsCount?: number;
-  subtopics: Subtopic[];
-};
+export const cache = z.object({
+  get: z.function().args(z.string()).returns(z.any()),
+  set: z.function().args(z.string(), z.any()).returns(z.void()),
+});
 
-export type Taxonomy = Topic[];
+export type Cache = z.infer<typeof cache>;
 
-export type PipelineOutput = {
-  data: SourceRow[];
-  title: string;
-  question: string;
-  pieCharts?: PieChart[];
-  description: string;
-  systemInstructions: string;
-  clusteringInstructions: string;
-  extractionInstructions: string;
-  batchSize: number;
-  tree: Taxonomy;
-  start: number;
-  costs: number;
-  end?: number;
-  duration?: string;
-};
+export const tracker = z.object({
+  start: z.number(),
+  costs: z.number(),
+  prompt_tokens: z.number(),
+  completion_tokens: z.number(),
+  unmatchedClaims: z.array(claim),
+  end: z.number().optional(),
+  duration: z.string().optional(),
+});
 
-export type SourceMap = {
-  [key: string]: SourceRow;
-};
+export type Tracker = z.infer<typeof tracker>;
+
+export const subtopic = z.object({
+  subtopicName: z.string(),
+  subtopicShortDescription: z.string().optional(),
+  subtopicId: z.string().optional(),
+  claimsCount: z.number().optional(),
+  claims: z.array(claim).optional(),
+});
+
+export type Subtopic = z.infer<typeof subtopic>;
+
+export const topic = z.object({
+  topicName: z.string(),
+  topicShortDescription: z.string().optional(),
+  topicId: z.string().optional(),
+  claimsCount: z.number().optional(),
+  subtopics: z.array(subtopic),
+});
+
+export type Topic = z.infer<typeof topic>;
+
+export const taxonomy = z.array(topic);
+
+export type Taxonomy = z.infer<typeof taxonomy>;
+
+export const pipelineOutput = z.object({
+  data: z.array(sourceRow),
+  title: z.string(),
+  question: z.string(),
+  pieChart: z.array(pieChart).optional(),
+  description: z.string(),
+  systemInstructions: z.string(),
+  clusteringInstructions: z.string(),
+  extractionInstructions: z.string(),
+  batchSize: z.number(),
+  tree: taxonomy,
+  start: z.number(),
+  costs: z.number(),
+  end: z.number().optional(),
+  duration: z.string().optional(),
+});
+
+export type PipelineOutput = z.infer<typeof pipelineOutput>;
+
+export const sourceMap = z.record(z.string(), sourceRow);
+
+export type SourceMap = z.infer<typeof sourceMap>;
