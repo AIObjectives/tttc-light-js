@@ -4,9 +4,6 @@
   "description": "client for talk-to-the-city light js",
   "scripts": {
     "build": "next build",
-    "build-old": "npx babel src --out-dir dist --extensions \".tsx,.ts\"",
-    "watch": "npx babel src --out-dir dist --extensions \".tsx,.ts\" --watch",
-    "test": "npm run build && node dist/test.js",
     "start": "next start",
     "start-old": "node dist/server.js",
     "dev": "next dev"
