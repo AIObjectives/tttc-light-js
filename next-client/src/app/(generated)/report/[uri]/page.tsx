@@ -14,6 +14,5 @@ export default async function ReportPage({
   });
   let data = await req.json();
   const json = pipelineOutput.parse(data);
-  console.log(json.pieChart);
   return <Report data={json} />;
 }
