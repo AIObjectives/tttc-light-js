@@ -8,6 +8,7 @@ import {
 } from "tttc-common/schema";
 import ToggleShowMoreButton from "./components/ToggleShowButton";
 import OpenClaimVideo from "./components/OpenClaimVideo";
+import PieChart from "./components/PieChart";
 
 export interface OpenClaimVideoProps {
   children?: React.ReactNode;
@@ -49,12 +50,15 @@ export function Report(props: ReportProps) {
     (acc, d) => ({ ...acc, [d.id]: d }),
     {} as SourceMap,
   );
-
   return (
     <>
       <h1 id="title">{data.title}</h1>
       <h1 id="question">{data.question}</h1>
       <div className="report-description">{data.description}</div>
+      {data.pieChart &&
+        data.pieChart?.map((chart, i) => (
+          <PieChart key={`${chart.title}-${i}`} pieData={chart} />
+        ))}
       <Outline {...props} />
       {data.tree.map((topic, i) => (
         <TopicComponent

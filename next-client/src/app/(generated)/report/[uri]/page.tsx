@@ -1,5 +1,5 @@
 import { Report } from "src/features/report";
-
+import { pipelineOutput } from "tttc-common/schema";
 export default async function ReportPage({
   params,
 }: {
@@ -10,9 +10,10 @@ export default async function ReportPage({
     headers: {
       "Content-Type": "application/json",
     },
+    cache: "no-cache",
   });
-
-  const json = await req.json();
-
+  let data = await req.json();
+  const json = pipelineOutput.parse(data);
+  console.log(json.pieChart);
   return <Report data={json} />;
 }

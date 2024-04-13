@@ -1032,16 +1032,17 @@
   "clusteringInstructions": "",
   "extractionInstructions": "",
   "batchSize": 10,
-  "pieChart": [
-    {
+  "pieChart": [{
+    "title": "Example",
+    "items": [{
       "label": "Challenges",
       "count": 10
     },
     {
       "label": "Opportunities",
       "count": 5
-    }
-  ],
+    }]
+  }],
   "tree": [
     {
       "topicName": "Community and Supportive Services",
