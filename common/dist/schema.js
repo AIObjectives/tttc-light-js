@@ -19,7 +19,7 @@ exports.options = zod_1.z.object({
     data: exports.sourceRow.array(),
     title: zod_1.z.string(),
     question: zod_1.z.string(),
-    pieCharts: exports.pieChart.array().optional(),
+    pieChart: exports.pieChart.array().optional(),
     description: zod_1.z.string(),
     systemInstructions: zod_1.z.string().optional(),
     clusteringInstructions: zod_1.z.string().optional(),
