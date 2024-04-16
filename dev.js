@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Scripts to run in terminal
 const nextScript = `cd ${__dirname}/next-client && npm run dev`;
-const commonScript = `cd ${__dirname}/common && npm i && npm run build`;
+const commonScript = `cd ${__dirname}/common && npm i && npm run build && npm run watch`;
 const expressScript = `cd ${__dirname}/express-pipeline && npm i && npm run dev`;
 
 const runScript = (script) =>
@@ -20,7 +20,7 @@ const runScript = (script) =>
 
 const commonProcesss = runScript(commonScript);
 
-commonProcesss.on("exit", function (e, code) {
+commonProcesss.on("exit", function () {
   console.log("finished build common folder");
   const nextProcess = runScript(nextScript);
   const expressProcess = runScript(expressScript);

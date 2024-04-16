@@ -122,3 +122,5 @@ export type PipelineOutput = z.infer<typeof pipelineOutput>;
 export const sourceMap = z.record(z.string(), sourceRow);
 
 export type SourceMap = z.infer<typeof sourceMap>;
+
+export const thisIsATest = z.boolean();
