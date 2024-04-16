@@ -1,0 +1,22 @@
+{
+  "name": "tttc-common",
+  "version": "1.0.0",
+  "description": "Shares common code across monorepo",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc",
+    "watch": "npx tsc --watch --outDir ./dist"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.67",
+    "typescript": "^5.3.3"
+  }
+}
