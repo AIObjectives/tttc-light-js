@@ -5,3 +5,4 @@ google-credentials.json
 .env*
 .vscode/
 .next
+dist
