@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Talk to the City app",
   "scripts": {
-    "format": "npx prettier . --write"
+    "format": "npx prettier . --write",
+    "dev": "node dev.js"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
@@ -11,5 +12,5 @@
     "prettier": "3.2.5",
     "typescript": "^5.3.3"
   },
-  "dependencies": {}
+  "type": "module"
 }
