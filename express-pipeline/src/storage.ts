@@ -27,7 +27,7 @@ export async function storeJSON(
   const file = bucket.file(fileName);
   await file.save(fileContent, {
     metadata: {
-      contentType: "application.json",
+      contentType: "application/json",
       ...(allowCache
         ? {}
         : {
