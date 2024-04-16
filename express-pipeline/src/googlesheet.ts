@@ -60,7 +60,7 @@ export async function fetchSpreadsheetData(
   });
 
   // extract the comments
-  const emailToData = {};
+  const emailToData: { [key: number]: { id: string; comment: string }[] } = {};
 
   rows.forEach((row, id) => {
     emailToData[row[emailColumn]] ??= [];
