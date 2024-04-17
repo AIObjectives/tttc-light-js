@@ -1,56 +1,162 @@
-# tttc-light-js-server
+# Talk to the City
 
-A backend API for turbo pipeline.
+[Talk to the City (TTTC)](https://ai.objectives.institute/talk-to-the-city) Talk to the City is an open-source LLM interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and arranges similar arguments into clusters.
 
-## Running the pipeline locally
+This repo will allow you to setup your own instance of TTTC. The basic workflow is
 
-The current version has a local pipeline that uploads reports to a Google Cloud Storage instance upon completion.
+1. Submit a csv or google sheet with your survey data, either through the NextJS client or the Express API.
+2. The backend app will use an LLM to parse your data.
+3. The backend app will upload a JSON file to a Google Cloud Storage Bucket that you provide.
+4. Your report can be viewed by going to `http://[next client url]/report/[encoded url for your JSON file]`.
 
-Create a `.env` file with your own OpenAI key.
+If you want to use Talk to the City without any setup, you can go to our website at TBD and follow the instructions on [how to use TTTC](#usage)
 
-Optionally, you can also set a password. If you give this password to a friend, they'll be allowed to use your server by putting this password in the OPENAI_API_KEY field in their own .env, instead of copying your OpenAI key directly.
+## Setup
+
+Clone the repo to your local computer:
+
+`git clone https://github.com/AIObjectives/tttc-light-js.git`
+
+or if you have git ssh
+
+`git clone git@github.com:AIObjectives/tttc-light-js.git`
+
+### Google Cloud Storage and Services
+
+TTTC currently only supports using Google Cloud for storing report data out of the box.
+
+First create a new storage bucket:
+
+- Create a Google Cloud project and a Google Cloud Storage bucket
+- Make sure this bucket has public access so that anyone can read from it (to
+  make your reports accessible from your browser): - Turn off the "Prevent public access" protect - In the "Permissions" tab, click "Grant access." Add the principal `allUsers`
+  and assign the role `Storage Object User`.
+
+Then create a service account for this bucket:
+
+- In the "IAM & Admin" view, select "Service Accounts" from the left menu, and
+  then click "Create service account"
+- Give this account the "Editor" role
+- Create keys for this account and download them as a json file:
+  - Save this file as `./google-credentials.json`
+  - Encode this using by running the command `base64 -i ./google-credentials.json`
+  - You will put this encoding into your .env file later
+
+Set up gcloud SDK on your machine
+
+- install `gcloud` (see https://cloud.google.com/sdk/docs/install-sdk)
+- `gcloud auth login`
+- `gcloud config set project your-project-name`
+- `gcloud auth configure-docker`
+
+### .env
+
+You will need to add two .env files, and optionally a third
+
+#### express-pipeline/.env
 
 ```
+export GCLOUD_STORAGE_BUCKET=some-bucket-name
+export GOOGLE_CREDENTIALS_ENCODED=some-alphanumeric-string-from-previous-step
+export CLIENT_BASE_URL=http://wherever-your-client-is
+
+# either
 export OPENAI_API_KEY=sk-something-something
 export OPENAI_API_KEY_PASSWORD=some-password
-```
-
-Likewise for Claude:
-
-```
+# or
 export ANTHROPIC_API_KEY=sk-something-something
 export ANTHROPIC_API_KEY_PASSWORD=some-password
 ```
 
-If a team member has already set up a Google Cloud Storage project, add the keys for that project to the same `.env` file. Otheriwse,
-see the "Setting up a Google Cloud instance" section for how to set up a project.
+#### next-client/.env
 
 ```
-export GCLOUD_STORAGE_BUCKET=some-bucket-name
-export GOOGLE_CREDENTIALS_ENCODED=some-alphanumeric-string
+export PIPELINE_EXPRESS_URL=http://whereever-youre-hosting-client/generate
 ```
 
-Then run:
+#### examples/.env (optional)
+
+Combine all the env files and place one in there. Only useful if you want to try our examples.
+
+### Local Instance
+
+If you want to run a local version of the app that's not publically accessable:
+
+1. Open up your terminal and navigate to the repo folder (i.e. /Desktop/tttc-light-js)
+2. Run `npm run build`.
+3. This should open up a server for the next-client and express-pipeline on localhost:3000 and localhost:8080 respectively.
+4. This build will be optimized for production.
+
+#### Using docker locally (not recommended)
+
+There should be no need to use docker for local development, except when working on the Dockerfile or testing something docker-related, in which case you might want to use these scripts:
 
 ```
-npm i
-npm run build
-npm start
+./bin/docker-build-local.sh # build
+./bin/docker-run.sh   # run
 ```
 
-Keep the npm server running, and provide input through the page at localhost:8080 (to upload a data file),
-or through one of the scripts in the `examples/` folder (to reference a Google Sheet).
+### Remote Instance
 
-## API docs
+#### Add a Google Run Service
+
+- Go to the Google Run console
+- Create a new service
+- In the field "Container image URL", specify the Image Source by clicking the "Select" button and choosing the container image for your project in the "Artifact Registry" tab. The Image Source should look something like `gcr.io/your-project-id/tttc-light-js-app@...`. If you don't see your image listed, make sure you've run the Docker build script above without errors.
+- Allow unauthorised access ("unauthenticated invocations" -- like for public APIs).
+- Select "CPU is only allocated during request processing" (no need to keep this running at all time)
+
+Note: the first deploy with fail if you haven't set the .env variables as described above.
+
+Your cloud instance is now ready to use!
+
+To upload a new image (e.g. after a fresh git pull), deploy a new docker image to the same instance:
+
+- Run `./bin/docker-build-gcloud.sh`
+- Open the google console and search for gloud cloud run.
+- Find your project and the `tttc-light-js` app.
+- Click "EDIT AND DEPLOY NEW VERSION".
+- Find the new docker image that you just pushed from the list of available images.
+
+#### Host Next Client
+
+See here for [how to deploy your NextJS app](https://nextjs.org/docs/pages/building-your-application/deploying).
+
+## Usage
+
+### Next Client
+
+This process should work, regardless of whether the app is built locally or remotely. However, the Next client can only take csvs. To submit a Google Sheet, use the API directly.
+
+You can generate your data and view your reports using the Next client.
+
+To do so:
+
+1. Navigate to wherever your Next client is being hosted.
+2. On the homepage you should see a form to submit your data.
+3. Enter the title, your [api key](#api-key), and add the csv file.
+4. Optionally: You can click on the advanced settings for further customization.
+5. Click submit. It should soon after give you the url for where your JSON data will be stored and the url to view the report.
+6. Depending on how large your file was, it should take anywhere from 30 seconds to 15 minutes to finish. So bookmark the link and check on it periodically.
+7. Once the JSON data has been uploaded to Google Cloud, you can view the report by going to` http://[client url]/report/[encoded uri for your stored JSON object]`. You can then save the report from your browser or add it to your webpage using an iframe.
+
+Note: The backend Express app does not save your API keys on the server. The Next app will save your API keys (and other inputs) in your browser's session storage, which should be secure, and will delete when you close your browser tab.
+
+### API
+
+You can submit your data directly to the Express API using whatever method you're comfortable with.
+Note: You must have the Next client running to view your report. Otherwise, it will just generate the JSON data.
 
 The enpoint to generate reports is `POST /generate` and it expects a JSON body of the following type:
 
 ```
 export type Options = {
-  apiKey?: string;       // a valid OpenAI key with gpt-4 access (or a password to use the server's key)
+  model?: optional;
+  apiKey: string;       // a valid OpenAI key with gpt-4 access (or a password to use the server's key)
   data: SourceRow[];     // input data in JSON format, see next section for SourceRow definition
   title: string;         // title for the report, defaults to ""
   question: string;      // the question asked to participants, defaults to ""
+  pieCharts?: {title:string, items: {label:string, count:number}[]}[]; // optional array if you want pie charts in your report
   description: string;   //  intro  or abstract to include at the start of the report, defaults to ""
   batchSize?: number;    // max number of parrallel calls for gpt-4, defaults to 5
   filename?: string;     // where to store the report on gcloud (it generate a name if none is provided)
@@ -58,12 +164,11 @@ export type Options = {
   clusteringInstructions?: string;  // optional additional instructions for clustering step
   extractionInstructions?: string;  // optional additional instructions for extraction step
   dedupInstructions?: string;       // optional additional instructions for deduplication step
+  googleSheet?: {url: string, pieChartColumns?:string[], filterEmails?: string[], onSubmissionPerEmail: boolean} // optional data input using google sheets
 };
 ```
 
-The enpoint is implemented in `./src/server.ts` and you can look at the client's file `./public/index.js` (line 108) for an example of how to use it.
-
-## Data format
+The enpoint is implemented in `express-pipeline/src/server.ts`. You can see an example of it being used in `next-client/src/features/actions/SubmitAction.ts` and in the `examples/` folder.
 
 The data field must contain an array of objects of the following type:
 
@@ -79,80 +184,16 @@ export type SourceRow = {
 };
 ```
 
-## Provided client
+## API Key
 
-Open `localhost:8080/` to see the example of client provided.
-The client is written in plain html/css/js in the `public` folder.
+If your organization does not have a key for ChatGPT or Claude, you can obtain one by:
 
-## Setting up a Google Cloud instance
+1. Go to [OpenAI's website](https://openai.com/) or [Anthropic's Website](https://anthropic.com) and signup or login.
+2. Navigate to the API section, accessible from the dashboard or user menu.
+3. Choose a plan if you are not already subscribed.
+4. Go the API keys section and press the button to generate a new API key.
+5. Save this key and not share it.
 
-### Set up Google Cloud storage & services
+## Development and Contributing
 
-First create a new storage bucket:
-
-- Create a Google Cloud project and a Google Cloud Storage bucket
-- Add `GCLOUD_STORAGE_BUCKET=name-of-your-bucket` to your `.env`
-- Make sure this bucket has public access so that anyone can read from it (to
-  make your reports accessible from your browser): - Turn off the "Prevent public access" protect - In the "Permissions" tab, click "Grant access." Add the principal `allUsers`
-  and assign the role `Storage Object User`.
-
-Then create a service account for this bucket:
-
-- In the "IAM & Admin" view, select "Service Accounts" from the left menu, and
-  then click "Create service account"
-- Give this account the "Editor" role
-- Create keys for this account and download them as a json file:
-  - Save this file as `./google-credentials.json`
-  - Encode this using by running the command `base64 -i ./google-credentials.json`
-  - Put this in a variable `GOOGLE_CREDENTIALS_ENCODED` in your `.env`
-
-Your .env file should now look like this:
-
-```
-export OPENAI_API_KEY=sk-something-something
-export OPENAI_API_KEY_PASSWORD=optional-password
-export GCLOUD_STORAGE_BUCKET=name-of-your-bucket
-export GOOGLE_CREDENTIALS_ENCODED=some-long-encoded-string
-```
-
-### Set up gcloud SDK on your machine
-
-- install `gcloud` (see https://cloud.google.com/sdk/docs/install-sdk)
-- `gcloud auth login`
-- `gcloud config set project your-project-name`
-- `gcloud auth configure-docker`
-
-### Deploy Docker instance to Google Cloud Storage
-
-Use the provided script to build and push the docker image:
-
-- `./bin/docker-build-gcloud.sh`
-
-### Add a Google Run Service
-
-- Go to the Google Run console
-- Create a new service
-- In the field "Container image URL", specify the Image Source by clicking the "Select" button and choosing the container image for your project in the "Artifact Registry" tab. The Image Source should look something like `gcr.io/your-project-id/tttc-light-js-app@...`. If you don't see your image listed, make sure you've run the Docker build script above without errors.
-- Allow unauthorised access ("unauthenticated invocations" -- like for public APIs)
-- Select "CPU is only allocated during request processing" (no need to keep this running at all time)
-
-Note: the first deploy with fail if you haven't set the .env variables as described above
-
-Your cloud instance is now ready to use!
-
-To upload a new image (e.g. after a fresh git pull), deploy a new docker image to the same instance:
-
-- Run `./bin/docker-build-gcloud.sh`
-- Open the google console and search for gloud cloud run
-- Find your project and the `tttc-light-js` app
-- Click "EDIT AND DEPLOY NEW VERSION"
-- Find the new docker image that you just pushed from the list of available images
-
-## Using docker locally (not recommended)
-
-There should be no need to use docker for local development, except when working on the Dockerfile or testing something docker-related, in which case you might want to use these scripts:
-
-```
-./bin/docker-build-local.sh # build
-./bin/docker-run.sh   # run
-```
+See DEV.md
