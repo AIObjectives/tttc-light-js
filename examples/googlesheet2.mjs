@@ -1,3 +1,4 @@
+import "dotenv/config";
 import fetch from "node-fetch";
 
 // INPUT: https://docs.google.com/spreadsheets/d/1OmPC3j6RNMWPNeZKVPH_ffy6Clouq_Wn_dF_NZ_bVDM/edit#gid=0
@@ -23,7 +24,7 @@ async function main() {
     }),
   });
   const resData = await res.json();
-  console.log("The report will be generated at: ", resData.url);
+  console.log("The report will be generated at: ", resData.reportUrl);
 }
 
 try {

@@ -27,7 +27,7 @@ async function main() {
     }),
   });
   const resData = await res.json();
-  console.log("The report will be generated at: ", resData.url);
+  console.log("The report will be generated at: ", resData.reportUrl);
 }
 
 try {
