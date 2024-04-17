@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: "../express-pipeline/.env" });
 import fetch from "node-fetch";
 
 // SEE OUTPUT: https://storage.googleapis.com/test-gds-api/fruit-preference-1710194611555
@@ -27,7 +28,7 @@ async function main() {
     }),
   });
   const resData = await res.json();
-  console.log("The report will be generated at: ", resData.url);
+  console.log("The report will be generated at: ", resData.jsonUrl);
 }
 
 try {

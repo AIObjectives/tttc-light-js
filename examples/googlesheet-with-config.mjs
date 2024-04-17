@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config({ path: "../express-pipeline/.env" });
 import fetch from "node-fetch";
 import fs from "fs";
 import { parse } from "csv-parse/sync";
@@ -55,7 +57,7 @@ async function main() {
     body: JSON.stringify(CONFIG),
   });
   const resData = await res.json();
-  console.log("The report will be generated at: ", resData.url);
+  console.log("The report data will be generated at: ", resData.jsonUrl);
 }
 
 try {
