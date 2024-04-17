@@ -116,7 +116,7 @@ function submitForm(event) {
         showErrorModal(json.error.message);
       } else {
         showSuccessModal(
-          `Your report is being prepared at <a href="${json.url}">${json.filename}</a>. Make sure to open and bookmark this link!`,
+          `Your report is being prepared at <a href="${json.url}">${json.filename}</a>. Make sure to open and bookmark this link!`
         );
       }
       console.log(json);

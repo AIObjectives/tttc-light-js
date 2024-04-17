@@ -4,5 +4,3 @@ node_modules/
 google-credentials.json
 .env*
 .vscode/
-.next
-dist
