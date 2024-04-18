@@ -28,9 +28,12 @@ TTTC currently only supports using Google Cloud for storing report data out of t
 First create a new storage bucket:
 
 - Create a Google Cloud project and a Google Cloud Storage bucket
+  - When you get to the section "Choose how to control access to objects", uncheck "Enforce public access prevention"
 - Make sure this bucket has public access so that anyone can read from it (to
-  make your reports accessible from your browser): - Turn off the "Prevent public access" protect - In the "Permissions" tab, click "Grant access." Add the principal `allUsers`
-  and assign the role `Storage Object User`.
+  make your reports accessible from your browser):
+  - Turn off "Prevent public access" protect.
+  - In the "Permissions" tab, click "Grant access." Add the principal `allUsers`
+    and assign the role `Storage Object User`.
 
 Then create a service account for this bucket:
 
@@ -38,9 +41,7 @@ Then create a service account for this bucket:
   then click "Create service account"
 - Give this account the "Editor" role
 - Create keys for this account and download them as a json file:
-  - Save this file as `./google-credentials.json`
-  - Encode this using by running the command `base64 -i ./google-credentials.json`
-  - You will put this encoding into your .env file later
+- Save this file as `./google-credentials.json`, it will be used in the next step.
 
 Set up gcloud SDK on your machine
 
@@ -51,9 +52,11 @@ Set up gcloud SDK on your machine
 
 ### .env
 
-You will need to add two .env files, and optionally a third
+You will need to add two .env files
 
 #### express-pipeline/.env
+
+Encode your google credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
 
 ```
 export GCLOUD_STORAGE_BUCKET=some-bucket-name
@@ -71,14 +74,12 @@ export ANTHROPIC_API_KEY_PASSWORD=some-password
 #### next-client/.env
 
 ```
-export PIPELINE_EXPRESS_URL=http://whereever-youre-hosting-client/generate
+export PIPELINE_EXPRESS_URL=http://wherever-youre-hosting-backend/generate
 ```
 
-#### examples/.env (optional)
-
-Combine all the env files and place one in there. Only useful if you want to try our examples.
-
 ### Local Instance
+
+(see [this](./contributing.md) to run in dev mode instead of prod)
 
 If you want to run a local version of the app that's not publically accessable:
 
@@ -98,11 +99,14 @@ There should be no need to use docker for local development, except when working
 
 ### Remote Instance
 
+#### Add Docker Image
+
 #### Add a Google Run Service
 
-- Go to the Google Run console
-- Create a new service
-- In the field "Container image URL", specify the Image Source by clicking the "Select" button and choosing the container image for your project in the "Artifact Registry" tab. The Image Source should look something like `gcr.io/your-project-id/tttc-light-js-app@...`. If you don't see your image listed, make sure you've run the Docker build script above without errors.
+- Run `./bin/docker-build-gcloud.sh`, which will build and upload an image to the cloud.
+- Open the google console and search for gloud cloud run.
+- Click "EDIT AND DEPLOY NEW VERSION".
+- Find the new docker image that you just pushed from the list of available images.
 - Allow unauthorised access ("unauthenticated invocations" -- like for public APIs).
 - Select "CPU is only allocated during request processing" (no need to keep this running at all time)
 
@@ -111,12 +115,6 @@ Note: the first deploy with fail if you haven't set the .env variables as descri
 Your cloud instance is now ready to use!
 
 To upload a new image (e.g. after a fresh git pull), deploy a new docker image to the same instance:
-
-- Run `./bin/docker-build-gcloud.sh`
-- Open the google console and search for gloud cloud run.
-- Find your project and the `tttc-light-js` app.
-- Click "EDIT AND DEPLOY NEW VERSION".
-- Find the new docker image that you just pushed from the list of available images.
 
 #### Host Next Client
 
