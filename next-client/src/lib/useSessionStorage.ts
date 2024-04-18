@@ -25,7 +25,9 @@ function useSessionStorage(
   fn?: (val: string) => void,
 ): useSessionStorageReturnType {
   const initialValue: string | undefined =
-    sessionStorage.getItem(key) || undefined;
+    typeof window !== "undefined"
+      ? sessionStorage.getItem(key) || undefined
+      : undefined;
 
   function wrapperFunc(fn?: (fnVal: string) => void) {
     return (val: string | ChangeEvent<HTMLInputElement>) => {
