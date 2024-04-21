@@ -17,6 +17,45 @@ export const pieChart = z.object({
 
 export type PieChart = z.infer<typeof pieChart>;
 
+export const userConfig = z.object({
+  apiKey: z.string(),
+  title: z.string(),
+  question: z.string(),
+  description: z.string(),
+  systemInstructions: z.string(),
+  clusteringInstructions: z.string(),
+  extractionInstructions: z.string(),
+  dedupInstructions: z.string(),
+});
+
+export type UserConfig = z.infer<typeof userConfig>;
+
+export const systemConfig = z.object({
+  model: z.string().optional(),
+  batchSize: z.number(),
+  filename: z.string(),
+});
+
+export type SystemConfig = z.infer<typeof systemConfig>;
+
+const googleSheetData = z.object({
+  url: z.string(),
+  pieChartColumns: z.string().array().optional(),
+  filterEmails: z.string().array().optional(),
+  oneSubmissionPerEmail: z.boolean(),
+});
+
+const googleSheetDataPayload = z.tuple([
+  z.literal("googlesheet"),
+  googleSheetData,
+]);
+
+const csvDataPayload = z.tuple([z.literal("csv"), sourceRow.array()]);
+
+export const dataPayload = z.union([csvDataPayload, googleSheetDataPayload]);
+
+export type DataPayload = z.infer<typeof dataPayload>;
+
 export const options = z.object({
   model: z.string().optional(),
   apiKey: z.string().optional(),
