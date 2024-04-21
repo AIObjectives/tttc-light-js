@@ -6,7 +6,7 @@ import { Options } from "tttc-common/schema";
 import { getStorageUrl, storeJSON } from "./storage";
 import { uniqueSlug, formatData } from "./utils";
 import { fetchSpreadsheetData } from "./googlesheet";
-import { GenerateApiResponse, generateApiReponse } from "tttc-common/api";
+import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 
 const port = 8080;
 
@@ -18,21 +18,24 @@ app.use(express.static("public"));
 app.post("/generate", async (req, res) => {
   let responded = false;
   try {
-    const config: Options = req.body;
-    if (config.googleSheet) {
+    const body: GenerateApiRequest = req.body;
+    const { data: dataPayload, userConfig } = body;
+    const config: Options = userConfig;
+    if (dataPayload[0] === "googlesheet") {
+      const googleSheet = dataPayload[1];
       const { data, pieCharts } = await fetchSpreadsheetData(
-        config.googleSheet.url,
-        config.googleSheet.pieChartColumns,
-        config.googleSheet.filterEmails,
-        config.googleSheet.oneSubmissionPerEmail,
+        googleSheet.url,
+        googleSheet.pieChartColumns,
+        googleSheet.filterEmails,
+        googleSheet.oneSubmissionPerEmail,
       );
       config.data = formatData(data);
       config.pieCharts = pieCharts;
     }
-    if (!config.data) {
-      throw new Error("Missing data");
-    }
-    config.data = formatData(config.data);
+    // if (!config.data) {
+    //   throw new Error("Missing data");
+    // }
+    config.data = formatData(dataPayload[1]);
     // allow users to use our keys if they provided the password
     if (config.apiKey === process.env.OPENAI_API_KEY_PASSWORD) {
       config.apiKey = process.env.OPENAI_API_KEY!;
@@ -63,7 +66,9 @@ app.post("/generate", async (req, res) => {
     };
     res.send(response);
     responded = true;
+    console.log(10);
     const json = await pipeline(config);
+    console.log(11);
     await storeJSON(config.filename, JSON.stringify(json), true);
     console.log("produced file: " + jsonUrl);
   } catch (err: any) {
