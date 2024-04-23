@@ -3,7 +3,7 @@ import * as schema from "./schema";
 
 export const generateApiRequest = z.object({
   userConfig: schema.userConfig,
-  data: schema.dataPayload,
+  dataPayload: schema.dataPayload,
 });
 
 export type GenerateApiRequest = z.infer<typeof generateApiRequest>;

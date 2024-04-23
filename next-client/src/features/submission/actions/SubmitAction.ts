@@ -39,7 +39,7 @@ export default async function submitAction(
   });
   const dataPayload: DataPayload = ["csv", data];
 
-  const body: GenerateApiRequest = { userConfig: config, data: dataPayload };
+  const body: GenerateApiRequest = { userConfig: config, dataPayload };
 
   const url = z.string().url().parse(process.env.PIPELINE_EXPRESS_URL);
 

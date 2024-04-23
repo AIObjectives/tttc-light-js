@@ -40,10 +40,12 @@ export type SystemConfig = z.infer<typeof systemConfig>;
 
 const googleSheetData = z.object({
   url: z.string(),
-  pieChartColumns: z.string().array().optional(),
-  filterEmails: z.string().array().optional(),
+  pieChartColumns: z.string().array(),
+  filterEmails: z.string().array(),
   oneSubmissionPerEmail: z.boolean(),
 });
+
+export type GoogleSheetData = z.infer<typeof googleSheetData>;
 
 const googleSheetDataPayload = z.tuple([
   z.literal("googlesheet"),

@@ -1,4 +1,4 @@
-import { SourceRow } from "tttc-common/schema";
+import { PieChart, SourceRow } from "tttc-common/schema";
 
 export function uniqueSlug(str: string): string {
   // Convert to lowercase
@@ -14,7 +14,11 @@ export function uniqueSlug(str: string): string {
   return final;
 }
 
-export function formatData(data: any): SourceRow[] {
+export function formatData(props: {
+  data: SourceRow[];
+  pieCharts: PieChart[];
+}): { data: SourceRow[]; pieCharts: PieChart[] } {
+  const { data } = props;
   const ID_COLS = ["id", "Id", "ID", "comment-id", "i"];
   const COMMENT_COLS = ["comment", "Comment", "comment-body"];
   if (!data || !data.length) {
@@ -28,7 +32,7 @@ export function formatData(data: any): SourceRow[] {
       `The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`,
     );
   }
-  return data.map((row: any, i: number) => {
+  const updatedData = data.map((row: any, i: number) => {
     const id = String({ ...row, i }[id_column!]);
     const comment = row[comment_column];
     const res: SourceRow = { id, comment };
@@ -37,4 +41,5 @@ export function formatData(data: any): SourceRow[] {
     if (keys.has("timestamp")) res.timestamp = row.timestamp;
     return res;
   });
+  return { data: updatedData, pieCharts: props.pieCharts };
 }

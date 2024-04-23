@@ -1,12 +1,12 @@
 import axios from "axios";
-import { SourceRow, PieChart } from "tttc-common/schema";
+import { SourceRow, PieChart, GoogleSheetData } from "tttc-common/schema";
 
-export async function fetchSpreadsheetData(
-  url: string,
-  pieChartColumnNames: string[] = [],
-  filterEmails?: string[],
-  oneSubmissionPerEmail?: boolean,
-): Promise<{ data: SourceRow[]; pieCharts: PieChart[] }> {
+export async function fetchSpreadsheetData({
+  url,
+  pieChartColumns = [],
+  filterEmails,
+  oneSubmissionPerEmail,
+}: GoogleSheetData): Promise<{ data: SourceRow[]; pieCharts: PieChart[] }> {
   // extract the spreadsheet id from the url
   const regex = /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
   const matches = url.match(regex);
@@ -36,18 +36,18 @@ export async function fetchSpreadsheetData(
   }
 
   // identify columns for which pie charts and comments
-  let pieChartColumns: { name: string; index: number }[] = [];
+  let pieColumns: { name: string; index: number }[] = [];
   let commentColumns: { name: string; index: number }[] = [];
   columns.forEach((name: string, index: number) => {
-    if (pieChartColumnNames.includes(name)) {
-      pieChartColumns.push({ name, index });
+    if (pieChartColumns.includes(name)) {
+      pieColumns.push({ name, index });
     } else if (name !== "Timestamp" && name !== "Email Address") {
       commentColumns.push({ name, index });
     }
   });
 
   // extract the pie chart data
-  let pieCharts = pieChartColumns.map(({ name, index }) => {
+  let pieCharts = pieColumns.map(({ name, index }) => {
     const values = rows.map((row) => row[index]);
     const uniqueValues = Array.from(new Set(values));
     return {
