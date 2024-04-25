@@ -1,5 +1,5 @@
 /**
- * Opens three terminals that are used for dev
+ *
  */
 
 import child_process from "child_process";
@@ -8,10 +8,9 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Scripts to run in terminal
-const nextScript = `cd ${__dirname}/next-client && npm i && npm run dev`;
-const commonScript = `cd ${__dirname}/common && npm i && npm run build && npm run watch`;
-const expressScript = `cd ${__dirname}/express-pipeline && npm i && npm run dev`;
+const nextScript = `cd ${__dirname}/next-client && npm i && npm run build && npm run start`;
+const commonScript = `cd ${__dirname}/common && npm i && npm run build`;
+const expressScript = `cd ${__dirname}/express-pipeline && npm i && npm run build && npm run start`;
 
 const runScript = (script) =>
   child_process.exec(
@@ -25,10 +24,10 @@ commonProcesss.on("exit", function () {
   const nextProcess = runScript(nextScript);
   const expressProcess = runScript(expressScript);
   nextProcess.on("exit", function () {
-    console.log("finished setting up next dev");
+    console.log("finished building nextjs app");
   });
 
   expressProcess.on("exit", function () {
-    console.log("finished setting up express dev");
+    console.log("finished building express app");
   });
 });
