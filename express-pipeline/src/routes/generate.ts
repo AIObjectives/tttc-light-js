@@ -1,6 +1,14 @@
 import { Request, Response } from "express";
 import pipeline from "../pipeline";
-import { DataPayload, Options, PieChart, SourceRow } from "tttc-common/schema";
+import {
+  DataPayload,
+  Options,
+  PieChart,
+  SourceRow,
+  SystemConfig,
+  UserConfig,
+  options,
+} from "tttc-common/schema";
 import { uniqueSlug, formatData } from "../utils";
 import { fetchSpreadsheetData } from "../googlesheet";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
@@ -30,7 +38,7 @@ const getApiKey = (configKey: string): string => {
   }
 };
 
-// *** URLS ***
+// ** URLS **
 
 /**
  * HOC for urls
@@ -99,39 +107,62 @@ const curryAddFile =
       },
     });
 
+// ** Config **
+
+/**
+ * Creates config file for pipeline
+ */
+const createConfig = async (
+  dataPayload: DataPayload,
+  userConfig: UserConfig,
+  systemConfig: SystemConfig,
+): Promise<Options> => {
+  const { data, pieCharts } = await getData(dataPayload);
+  return {
+    ...systemConfig,
+    ...userConfig,
+    data,
+    pieCharts,
+    apiKey: getApiKey(userConfig.apiKey),
+    filename: systemConfig.filename || uniqueSlug(userConfig.title),
+  };
+};
+
 export async function generate(req: Request, res: Response) {
   let responded = false;
   try {
     const body: GenerateApiRequest = req.body;
     const { dataPayload, userConfig } = body;
-    const config: Options = userConfig;
 
-    const { data, pieCharts } = await getData(dataPayload);
-    // allow users to use our keys if they provided the password
-    const apiKey = getApiKey(config.apiKey);
-    const filename = config.filename || uniqueSlug(config.title);
+    // take input from API and transform it to options that the pipeline can use
+    const config: Options = await createConfig(dataPayload, userConfig, {
+      filename: "",
+      batchSize: 10,
+      model: "gpt-4-turbo-preview",
+    });
 
-    const addFile = curryAddFile(filename);
+    const addFile = curryAddFile(config.filename);
+    // Add placeholder file to bucket
     await addFile(JSON.stringify({ message: "Your data is being generated" }));
 
+    // Send response to user
     const response: GenerateApiResponse = {
       message: "Request received.",
-      filename,
-      jsonUrl: jsonUrl(filename),
-      reportUrl: reportUrl(filename),
+      filename: config.filename,
+      jsonUrl: jsonUrl(config.filename),
+      reportUrl: reportUrl(config.filename),
     };
     res.send(response);
     responded = true;
-    const json = await pipeline({
-      ...config,
-      apiKey,
-      data,
-      pieCharts,
-      filename,
-    });
 
+    // Generate JSON from pipeline
+    const json = options.parse(await pipeline(config));
+
+    // Add JSON file to bucket
     await addFile(JSON.stringify(json));
-    console.log("produced file: " + jsonUrl(filename));
+
+    // Log location of file
+    console.log("produced file: " + jsonUrl(config.filename));
   } catch (err: any) {
     console.error(err);
     if (!responded) {

@@ -58,20 +58,21 @@ export const dataPayload = z.union([csvDataPayload, googleSheetDataPayload]);
 
 export type DataPayload = z.infer<typeof dataPayload>;
 
+// TODO: made it so options merges other schemas
 export const options = z.object({
-  model: z.string().optional(),
-  apiKey: z.string().optional(),
+  model: z.string(),
+  apiKey: z.string(),
   data: sourceRow.array(),
   title: z.string(),
   question: z.string(),
-  pieCharts: pieChart.array().optional(),
+  pieCharts: pieChart.array(),
   description: z.string(),
-  systemInstructions: z.string().optional(),
-  clusteringInstructions: z.string().optional(),
-  extractionInstructions: z.string().optional(),
-  dedupInstructions: z.string().optional(),
-  batchSize: z.number().optional(),
-  filename: z.string().optional(),
+  systemInstructions: z.string(),
+  clusteringInstructions: z.string(),
+  extractionInstructions: z.string(),
+  dedupInstructions: z.string(),
+  batchSize: z.number(),
+  filename: z.string(),
   googleSheet: z
     .object({
       url: z.string(),
