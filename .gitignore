@@ -6,3 +6,4 @@ google-credentials.json
 .vscode/
 .next
 dist
+*storybook.log
