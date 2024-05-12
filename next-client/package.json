@@ -42,8 +42,13 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
+    "lucide-react": "^0.378.0",
     "next": "^14.1.3",
     "papaparse": "^5.4.1",
     "plotly.js": "^2.31.0",
@@ -51,6 +56,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-plotly.js": "^2.6.0",
+    "tailwind-merge": "^2.3.0",
+    "tailwindcss-animate": "^1.0.7",
     "tttc-common": "file:../common",
     "zod": "^3.22.4"
   }
