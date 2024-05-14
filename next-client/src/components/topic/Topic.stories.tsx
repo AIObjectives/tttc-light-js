@@ -17,7 +17,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
   args: {
-    // children: "Button",
-    // variant: "default",
+    claim: "Test claim",
+    quote: "Here's a quote",
+    claimId: "1",
+    topicName: "Test claim title",
+    subtopicName: "blah",
+    commentId: "1",
   },
 };
