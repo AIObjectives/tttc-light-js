@@ -87,7 +87,7 @@ export type Claim = {
   claim: string;
   quote: string;
   claimId?: string;
-  topicName?: string;
+  topicName: string;
   subtopicName?: string;
   commentId?: string;
   duplicates?: Claim[];
