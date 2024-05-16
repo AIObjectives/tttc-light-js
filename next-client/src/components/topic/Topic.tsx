@@ -1,10 +1,10 @@
 import React from "react";
-import { Button, Card, CardContent } from "../elements";
+import { Button, Card, CardContent, CardTitle } from "../elements";
 import * as schema from "tttc-common/schema";
 
 function Topic(props: schema.Claim) {
   return (
-    <Card className="p-8 dark:bg-black">
+    <Card className=" dark:bg-black">
       <CardContent className="flex flex-col gap-y-3">
         <TopicHeader title={props.topicName} numClaims={100} numPeople={200} />
         <TopicUnitList num={100} />
@@ -29,7 +29,8 @@ function TopicHeader({
 }) {
   return (
     <div className="flex justify-between">
-      <h1 className={"text-2xl font-bold"}>{title}</h1>
+      {/* <h1 className={"text-2xl font-bold"}>{title}</h1> */}
+      <CardTitle>{title}</CardTitle>
       <div className="self-center">
         <text className="text-sm text-muted-foreground mr-2">
           {numClaims} claims
