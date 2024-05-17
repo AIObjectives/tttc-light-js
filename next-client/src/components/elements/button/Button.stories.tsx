@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
 import { Button } from "./Button";
-import "../../../app/global.css";
 import Icons from "@src/assets/icons";
 
 /**
