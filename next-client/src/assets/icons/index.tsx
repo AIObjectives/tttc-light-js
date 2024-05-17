@@ -5,6 +5,7 @@ import {
   Text,
   Calendar,
   UnlinkIcon,
+  Plus,
 } from "lucide-react";
 
 const Icons = () => <></>;
@@ -12,5 +13,7 @@ const Icons = () => <></>;
 const Copy = Link;
 
 Icons.Copy = Copy;
+
+Icons.Plus = Plus;
 
 export default Icons;
