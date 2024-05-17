@@ -82,7 +82,7 @@ function ThemeUnitList({ num }: { num: number }) {
 }
 
 function ThemeUnit() {
-  return <div className="w-3 h-3 bg-slate-200 rounded-sm" />;
+  return <div className="w-3 h-3 bg-slate-200 dark:bg-zinc-600 rounded-sm" />;
 }
 
 function TopicList({ topics }: { topics: string[] }) {
