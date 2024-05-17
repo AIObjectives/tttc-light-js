@@ -1,15 +1,26 @@
 import React from "react";
 import { Button, Card, CardContent, CardTitle } from "../elements";
 import * as schema from "tttc-common/schema";
+import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 
 function Theme(props: schema.Claim) {
   return (
-    <Card className=" dark:bg-black">
+    <Card className="">
       <CardContent className="flex flex-col gap-y-3">
-        <ThemeHeader title={props.topicName} numClaims={100} numPeople={200} />
-        <ThemeUnitList num={100} />
+        <ThemeHeader title={props.topicName} />
+        <ThemeGraphic numClaims={243} numPeople={48} />
         <text>{props.quote}</text>
-        <ThemeList themes={["theme1", "theme2"]} />
+        <TopicList
+          topics={[
+            "Dolor simet apsus sit",
+            "Dolor simet apsus sit",
+            "Dolor simet apsus sit",
+            "Dolor simet apsus sit",
+            "Dolor simet apsus sit",
+            "Dolor simet apsus sit",
+            "Dolor simet apsus sit",
+          ]}
+        />
         <div>
           <Button>Expand Theme</Button>
         </div>
@@ -18,27 +29,44 @@ function Theme(props: schema.Claim) {
   );
 }
 
-function ThemeHeader({
-  title,
+function ThemeHeader({ title }: { title: string }) {
+  return (
+    <div className="flex justify-between">
+      <CardTitle>
+        <a id={`${title}`}>{title}</a>
+      </CardTitle>
+      <CopyLinkButton anchor={title} />
+    </div>
+  );
+}
+
+function ThemeGraphic({
   numClaims,
   numPeople,
 }: {
-  title: string;
   numClaims: number;
   numPeople: number;
 }) {
   return (
-    <div className="flex justify-between">
-      {/* <h1 className={"text-2xl font-bold"}>{title}</h1> */}
-      <CardTitle>{title}</CardTitle>
-      <div className="self-center">
-        <text className="text-sm text-muted-foreground mr-2">
-          {numClaims} claims
-        </text>
-        <text className="text-sm text-muted-foreground">
-          {numPeople} people
-        </text>
-      </div>
+    <div className="flex flex-col gap-y-2">
+      <ThemeSubInfo numClaims={numClaims} numPeople={numPeople} />
+      <ThemeUnitList num={numClaims} />
+    </div>
+  );
+}
+
+function ThemeSubInfo({
+  numClaims,
+  numPeople,
+}: {
+  numClaims: number;
+  numPeople: number;
+}) {
+  return (
+    <div>
+      <text className="text-muted-foreground text-sm">
+        {numClaims} claims by {numPeople} people
+      </text>
     </div>
   );
 }
@@ -57,20 +85,26 @@ function ThemeUnit() {
   return <div className="w-3 h-3 bg-slate-200 rounded-sm" />;
 }
 
-function ThemeList({ themes }: { themes: string[] }) {
+function TopicList({ topics }: { topics: string[] }) {
   return (
-    <div>
-      <text className="text-sm text-muted-foreground">
-        {themes.length} Themes:{" "}
-        {themes.map((theme, i) => (
-          <span>
-            <span className="underline">
-              {theme}
-              {i !== themes.length - 1 ? "," : ""}
-            </span>{" "}
-          </span>
-        ))}
-      </text>
+    <div className="flex flex-col gap-y-2">
+      <div>
+        <text className="text-sm text-muted-foreground">
+          {topics.length} topics
+        </text>
+      </div>
+      <div>
+        <text className="text-sm text-muted-foreground">
+          {topics.map((topic, i) => (
+            <span>
+              <span className="underline">
+                {topic}
+                {i !== topics.length - 1 ? "," : ""}
+              </span>{" "}
+            </span>
+          ))}
+        </text>
+      </div>
     </div>
   );
 }
