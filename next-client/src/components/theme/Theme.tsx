@@ -2,23 +2,23 @@ import React from "react";
 import { Button, Card, CardContent, CardTitle } from "../elements";
 import * as schema from "tttc-common/schema";
 
-function Topic(props: schema.Claim) {
+function Theme(props: schema.Claim) {
   return (
     <Card className=" dark:bg-black">
       <CardContent className="flex flex-col gap-y-3">
-        <TopicHeader title={props.topicName} numClaims={100} numPeople={200} />
-        <TopicUnitList num={100} />
+        <ThemeHeader title={props.topicName} numClaims={100} numPeople={200} />
+        <ThemeUnitList num={100} />
         <text>{props.quote}</text>
-        <TopicList topics={["topic1", "topic2"]} />
+        <ThemeList themes={["theme1", "theme2"]} />
         <div>
-          <Button>Expand topic</Button>
+          <Button>Expand Theme</Button>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function TopicHeader({
+function ThemeHeader({
   title,
   numClaims,
   numPeople,
@@ -43,30 +43,30 @@ function TopicHeader({
   );
 }
 
-function TopicUnitList({ num }: { num: number }) {
+function ThemeUnitList({ num }: { num: number }) {
   return (
     <div className="flex flex-row w-full flex-wrap gap-px">
       {[...Array(num)].map((_) => (
-        <TopicUnit />
+        <ThemeUnit />
       ))}
     </div>
   );
 }
 
-function TopicUnit() {
+function ThemeUnit() {
   return <div className="w-3 h-3 bg-slate-200 rounded-sm" />;
 }
 
-function TopicList({ topics }: { topics: string[] }) {
+function ThemeList({ themes }: { themes: string[] }) {
   return (
     <div>
       <text className="text-sm text-muted-foreground">
-        {topics.length} topics:{" "}
-        {topics.map((topic, i) => (
+        {themes.length} Themes:{" "}
+        {themes.map((theme, i) => (
           <span>
             <span className="underline">
-              {topic}
-              {i !== topics.length - 1 ? "," : ""}
+              {theme}
+              {i !== themes.length - 1 ? "," : ""}
             </span>{" "}
           </span>
         ))}
@@ -75,4 +75,4 @@ function TopicList({ topics }: { topics: string[] }) {
   );
 }
 
-export default Topic;
+export default Theme;
