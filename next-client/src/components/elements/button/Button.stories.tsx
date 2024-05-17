@@ -2,6 +2,13 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
 import { Button } from "./Button";
 import "../../../app/global.css";
+import Icons from "@src/assets/icons";
+
+/**
+ * NOTES:
+ * TODO: Add spinner to disabled??
+ * TODO: Icon + Text Story
+ */
 
 const meta = {
   title: "Button",
@@ -31,6 +38,15 @@ export const Primary: Story = {
 };
 
 Primary.decorators = [() => <>{enummerateButtonSizes(Primary)}</>];
+
+export const Destructive: Story = {
+  args: {
+    children: "Destructive",
+    variant: "destructive",
+  },
+};
+
+Destructive.decorators = [() => <>{enummerateButtonSizes(Destructive)}</>];
 
 export const Secondary: Story = {
   args: {
@@ -67,3 +83,28 @@ export const Link: Story = {
 };
 
 Link.decorators = [() => <>{enummerateButtonSizes(Link)}</>];
+
+export const Icon: Story = {
+  args: {
+    children: <Icons.Plus size={16} />,
+    size: "icon",
+    variant: "outline",
+  },
+};
+
+Icon.decorators = [
+  () => (
+    <>
+      <Button {...Icon.args} className="mr-5" />
+      <Button {...Icon.args} className="rounded-full" />
+    </>
+  ),
+];
+
+export const Disabled: Story = {
+  args: {
+    children: "Loading",
+    size: "default",
+    disabled: true,
+  },
+};
