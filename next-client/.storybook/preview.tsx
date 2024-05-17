@@ -42,9 +42,6 @@ const preview: Preview = {
   },
   decorators: [
     (Story, context) => {
-      useEffect(() => {
-        console.log(context.globals.theme);
-      }, [context.globals.theme]);
       return (
         <ThemeProvider theme={context.globals.theme}>
           <Story />
