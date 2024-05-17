@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
-import Topic from "./Topic";
-// import "../../app/global.css";
+import Topic from "./Theme";
 
 const meta = {
   title: "Topic",
