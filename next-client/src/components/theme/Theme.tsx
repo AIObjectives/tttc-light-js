@@ -1,7 +1,14 @@
 import React from "react";
-import { Button, Card, CardContent, CardTitle } from "../elements";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "../elements";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
+import PointGraphic from "../pointGraphic/PointGraphic";
 
 function Theme(props: schema.Claim) {
   return (
@@ -32,7 +39,7 @@ function Theme(props: schema.Claim) {
 function ThemeHeader({ title }: { title: string }) {
   return (
     <div className="flex justify-between">
-      <CardTitle>
+      <CardTitle className="self-center">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
       <CopyLinkButton anchor={title} />
@@ -49,40 +56,12 @@ function ThemeGraphic({
 }) {
   return (
     <div className="flex flex-col gap-y-2">
-      <ThemeSubInfo numClaims={numClaims} numPeople={numPeople} />
-      <ThemeUnitList num={numClaims} />
-    </div>
-  );
-}
-
-function ThemeSubInfo({
-  numClaims,
-  numPeople,
-}: {
-  numClaims: number;
-  numPeople: number;
-}) {
-  return (
-    <div>
-      <text className="text-muted-foreground text-sm">
+      <CardDescription>
         {numClaims} claims by {numPeople} people
-      </text>
+      </CardDescription>
+      <PointGraphic num={numClaims} />
     </div>
   );
-}
-
-function ThemeUnitList({ num }: { num: number }) {
-  return (
-    <div className="flex flex-row w-full flex-wrap gap-px">
-      {[...Array(num)].map((_) => (
-        <ThemeUnit />
-      ))}
-    </div>
-  );
-}
-
-function ThemeUnit() {
-  return <div className="w-3 h-3 bg-slate-200 dark:bg-zinc-600 rounded-sm" />;
 }
 
 function TopicList({ topics }: { topics: string[] }) {
