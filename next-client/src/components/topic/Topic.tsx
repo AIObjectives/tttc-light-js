@@ -1,4 +1,5 @@
 import React from "react";
+import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import {
   Card,
@@ -11,23 +12,24 @@ import PointGraphic from "../pointGraphic/PointGraphic";
 import Claim from "../claim/Claim";
 
 function Topic({
-  title,
-  description,
+  subtopicName,
+  subtopicShortDescription,
   claims,
-}: {
-  title: string;
-  description: string;
-  claims: { title: string; quotes: string[] }[];
-}) {
+}: schema.Subtopic) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-y-4">
-        <TopicHeader title={title} numClaims={10} numPeople={10} />
-        <PointGraphic num={claims.length} />
-        <p>{description}</p>
+        <TopicHeader title={subtopicName} numClaims={10} numPeople={10} />
+        <PointGraphic num={claims!.length} />
+        <p>{subtopicShortDescription}</p>
         <div className="flex flex-col gap-y-6">
-          {claims.map((claim, i) => (
-            <Claim claimNum={i} title={claim.title} quotes={claim.quotes} />
+          {claims!.map((claim, i) => (
+            // ! Something wrong with quotes here
+            <Claim
+              claimNum={i}
+              title={claim.topicName}
+              quotes={[claim.quote]}
+            />
           ))}
         </div>
       </CardContent>

@@ -10,23 +10,15 @@ import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import PointGraphic from "../pointGraphic/PointGraphic";
 
-function Theme(props: schema.Claim) {
+function Theme(props: schema.Topic) {
   return (
     <Card className="">
       <CardContent className="flex flex-col gap-y-3">
         <ThemeHeader title={props.topicName} />
         <ThemeGraphic numClaims={243} numPeople={48} />
-        <text>{props.quote}</text>
+        <text>{props.topicShortDescription}</text>
         <TopicList
-          topics={[
-            "Dolor simet apsus sit",
-            "Dolor simet apsus sit",
-            "Dolor simet apsus sit",
-            "Dolor simet apsus sit",
-            "Dolor simet apsus sit",
-            "Dolor simet apsus sit",
-            "Dolor simet apsus sit",
-          ]}
+          topics={props.subtopics.map((subtopic) => subtopic.subtopicName)}
         />
         <div>
           <Button>Expand Theme</Button>
