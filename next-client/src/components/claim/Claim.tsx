@@ -48,15 +48,16 @@ function QuoteHeader({ title }: { title: string }) {
 function Quote({ quote }: { quote: string }) {
   return (
     <div className="flex flex-row gap-x-3 p-4">
-      <Icons.Quote
-        className="fill-foreground text-transparent rotate-180"
-        size={16}
-      />
+      <div className="min-w-4">
+        <Icons.Quote className="fill-foreground h-4 w-4" />
+      </div>
       <p className="flex-grow">{quote}</p>
-      <Icons.ChevronRight
-        className="text-muted-foreground  self-center"
-        size={24}
-      />
+      <div className="h-full self-center ">
+        <Icons.ChevronRight
+          className="text-muted-foreground  self-center"
+          size={24}
+        />
+      </div>
     </div>
   );
 }
