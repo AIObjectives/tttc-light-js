@@ -1,28 +1,30 @@
 import React from "react";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-} from "../elements";
+import { Card, CardContent, CardDescription, CardTitle } from "../elements";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import PointGraphic from "../pointGraphic/PointGraphic";
+import DisplayExtendedTheme from "./components/ExtendedTheme";
+import Icons from "@src/assets/icons";
+
+/**
+ * Notes:
+ * ! how do we do num claims and people??
+ */
 
 function Theme(props: schema.Topic) {
   return (
     <Card className="">
       <CardContent className="flex flex-col gap-y-3">
         <ThemeHeader title={props.topicName} />
-        <ThemeGraphic numClaims={243} numPeople={48} />
+        <ThemeGraphic
+          numClaims={props.claimsCount!}
+          numPeople={props.subtopics.length}
+        />
         <text>{props.topicShortDescription}</text>
         <TopicList
           topics={props.subtopics.map((subtopic) => subtopic.subtopicName)}
         />
-        <div>
-          <Button>Expand Theme</Button>
-        </div>
+        <DisplayExtendedTheme subtopics={props.subtopics} />
       </CardContent>
     </Card>
   );
@@ -48,7 +50,8 @@ function ThemeGraphic({
 }) {
   return (
     <div className="flex flex-col gap-y-2">
-      <CardDescription>
+      <CardDescription className="flex flex-row">
+        <Icons.Claim />
         {numClaims} claims by {numPeople} people
       </CardDescription>
       <PointGraphic num={numClaims} />
@@ -60,8 +63,8 @@ function TopicList({ topics }: { topics: string[] }) {
   return (
     <div className="flex flex-col gap-y-2">
       <div>
-        <text className="text-sm text-muted-foreground">
-          {topics.length} topics
+        <text className="flex flex-row text-sm text-muted-foreground">
+          <Icons.Topic /> {topics.length} topics
         </text>
       </div>
       <div>
