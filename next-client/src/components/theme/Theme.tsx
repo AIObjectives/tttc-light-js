@@ -1,10 +1,17 @@
 import React from "react";
-import { Card, CardContent, CardDescription, CardTitle } from "../elements";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+  TextIcon,
+} from "../elements";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import DisplayExtendedTheme from "./components/ExtendedTheme";
 import Icons from "@src/assets/icons";
+import { Col, Row } from "../layout";
 
 /**
  * Notes:
@@ -13,35 +20,37 @@ import Icons from "@src/assets/icons";
 
 function Theme(props: schema.Topic) {
   return (
-    <Card className="">
-      <CardContent className="flex flex-col gap-y-3">
-        <ThemeHeader title={props.topicName} />
-        <ThemeGraphic
-          numClaims={props.claimsCount!}
-          numPeople={props.subtopics.length}
-        />
-        <text>{props.topicShortDescription}</text>
-        <TopicList
-          topics={props.subtopics.map((subtopic) => subtopic.subtopicName)}
-        />
-        <DisplayExtendedTheme subtopics={props.subtopics} />
+    <Card>
+      <CardContent>
+        <Col gap={3}>
+          <ThemeHeader title={props.topicName} />
+          <ThemeGraphic
+            numClaims={props.claimsCount!}
+            numPeople={props.subtopics.length}
+          />
+          <text>{props.topicShortDescription}</text>
+          <TopicList
+            topics={props.subtopics.map((subtopic) => subtopic.subtopicName)}
+          />
+          <DisplayExtendedTheme subtopics={props.subtopics} />
+        </Col>
       </CardContent>
     </Card>
   );
 }
 
-function ThemeHeader({ title }: { title: string }) {
+export function ThemeHeader({ title }: { title: string }) {
   return (
-    <div className="flex justify-between">
+    <Row gap={0} className="justify-between">
       <CardTitle className="self-center">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
       <CopyLinkButton anchor={title} />
-    </div>
+    </Row>
   );
 }
 
-function ThemeGraphic({
+export function ThemeGraphic({
   numClaims,
   numPeople,
 }: {
@@ -49,37 +58,38 @@ function ThemeGraphic({
   numPeople: number;
 }) {
   return (
-    <div className="flex flex-col gap-y-2">
-      <CardDescription className="flex flex-row">
-        <Icons.Claim />
-        {numClaims} claims by {numPeople} people
+    <Col gap={2}>
+      <CardDescription>
+        {/* <Icons.Claim />
+        {numClaims} claims by {numPeople} people */}
+        <TextIcon icon={<Icons.Claim />}>
+          {numClaims} claims by {numPeople} people
+        </TextIcon>
       </CardDescription>
       <PointGraphic num={numClaims} />
-    </div>
+    </Col>
   );
 }
 
-function TopicList({ topics }: { topics: string[] }) {
+export function TopicList({ topics }: { topics: string[] }) {
   return (
-    <div className="flex flex-col gap-y-2">
-      <div>
-        <text className="flex flex-row text-sm text-muted-foreground">
-          <Icons.Topic /> {topics.length} topics
-        </text>
-      </div>
-      <div>
-        <text className="text-sm text-muted-foreground">
-          {topics.map((topic, i) => (
-            <span>
-              <span className="underline">
-                {topic}
-                {i !== topics.length - 1 ? "," : ""}
-              </span>{" "}
-            </span>
-          ))}
-        </text>
-      </div>
-    </div>
+    <Col gap={2}>
+      <CardDescription>
+        <TextIcon icon={<Icons.Topic />}>{topics.length} topics</TextIcon>
+      </CardDescription>
+      <CardDescription>
+        {/* <text className="text-sm text-muted-foreground"> */}
+        {topics.map((topic, i) => (
+          <span>
+            <span className="underline">
+              {topic}
+              {i !== topics.length - 1 ? "," : ""}
+            </span>{" "}
+          </span>
+        ))}
+        {/* </text> */}
+      </CardDescription>
+    </Col>
   );
 }
 
