@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
-import Claim from "./Claim";
+import Claim, { Quote, ClaimHeader, Quotes } from "./Claim";
 
 const meta = {
   title: "Claim",
@@ -14,9 +13,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-type Sizes = "lg" | "default" | "sm";
-const sizes: Sizes[] = ["lg", "default", "sm"];
-
 export const Primary: Story = {
   args: {
     claimNum: 1,
@@ -28,3 +24,23 @@ export const Primary: Story = {
     ],
   },
 };
+
+export const Header = () => (
+  <ClaimHeader
+    claimNum={1}
+    title="Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset"
+  />
+);
+
+export const QuoteText = () => (
+  <Quote quote="Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum eratipsum dolor." />
+);
+
+export const ManyQuotes = () => (
+  <Quotes
+    quotes={[
+      "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum eratipsum dolor.",
+      "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum dolor sit amet, in eum erat constituam.",
+    ]}
+  />
+);

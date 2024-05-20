@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import Topic from "./Topic";
+import Topic, { TopicClaims, TopicDescription, TopicHeader } from "./Topic";
 import { taxonomyObject } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 
@@ -24,6 +24,22 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Primary: Story = {
-  args: { subtopic: taxonomyObject[0].subtopics[0] },
+const baseProps = taxonomyObject[0].subtopics[0];
+
+export const Main: Story = {
+  args: { subtopic: baseProps },
 };
+
+export const Header = () => (
+  <TopicHeader
+    title={baseProps.subtopicName}
+    numClaims={baseProps.claimsCount!}
+    numPeople={baseProps.claims!.length}
+  />
+);
+
+export const Description = () => (
+  <TopicDescription description={baseProps.subtopicShortDescription!} />
+);
+
+export const Claims = () => <TopicClaims claims={baseProps.claims!} />;

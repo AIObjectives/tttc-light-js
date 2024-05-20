@@ -22,6 +22,7 @@ Icons.Topic = (props: { className?: string }) => (
   <Image {...props} src={TopicSVG} alt="topic icon" />
 );
 
+// ! Fill color doesn't seem to be working
 Icons.Quote = (props: { className?: string }) => (
   <Image {...props} src={QuoteSVG} alt="topic icon" />
 );
