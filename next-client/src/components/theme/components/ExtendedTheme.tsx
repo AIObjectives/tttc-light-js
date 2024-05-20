@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Separator } from "@src/components/elements";
+import { Col } from "@src/components/layout";
 import Topic from "@src/components/topic/Topic";
 import React, { useState } from "react";
 import * as schema from "tttc-common/schema";
@@ -9,10 +10,14 @@ function DisplayExtendedTheme({ subtopics }: { subtopics: schema.Subtopic[] }) {
   const [show, setShow] = useState<boolean>(false);
 
   return show ? (
-    <ExtendedTheme subtopics={subtopics} description="something" />
+    <ExtendedTheme
+      onClose={() => setShow(false)}
+      subtopics={subtopics}
+      description="something"
+    />
   ) : (
     <div>
-      <Button onClick={() => setShow((curr) => !curr)}>Extend theme</Button>
+      <Button onClick={() => setShow(true)}>Extend theme</Button>
     </div>
   );
 }
@@ -20,22 +25,36 @@ function DisplayExtendedTheme({ subtopics }: { subtopics: schema.Subtopic[] }) {
 function ExtendedTheme({
   subtopics,
   description,
+  onClose,
 }: {
   subtopics: schema.Subtopic[];
   description: string;
+  onClose: () => void;
 }) {
   return (
-    <div className="gap-y-8">
-      <Separator />
+    <Col gap={8}>
       <div>
-        <p>{description}</p>
+        <Button onClick={onClose}>Collapse Theme</Button>
       </div>
       <Separator />
-      {subtopics.map((subtopic) => (
-        <Topic subtopic={subtopic} />
-      ))}
-    </div>
+      <Description description={description} />
+      <Separator />
+      <SubtopicMap subtopics={subtopics} />
+    </Col>
   );
+}
+
+function Description({ description }: { description: string }) {
+  return <p>{description}</p>;
+}
+
+function SubtopicMap({ subtopics }: { subtopics: schema.Subtopic[] }) {
+  return subtopics.map((subtopic, i) => (
+    <>
+      <Topic subtopic={subtopic} />
+      {i !== subtopics.length - 1 ? <Separator /> : null}
+    </>
+  ));
 }
 
 export default DisplayExtendedTheme;
