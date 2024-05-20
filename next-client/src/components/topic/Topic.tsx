@@ -1,10 +1,11 @@
 import React from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
-import { CardDescription } from "../elements";
+import { CardDescription, TextIcon } from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import Claim from "../claim/Claim";
 import { Col, Row } from "../layout";
+import Icons from "@src/assets/icons";
 
 function Topic({ subtopic }: { subtopic: schema.Subtopic }) {
   const { subtopicName, claims, claimsCount, subtopicShortDescription } =
@@ -35,12 +36,14 @@ export function TopicHeader({
   return (
     <Row gap={0} className="justify-between items-center">
       <h3 className="text-xl font-semibold">{title}</h3>
-      <div className="flex flex-row">
+      <Row gap={0}>
         <CardDescription className="self-center mr-4">
-          {numClaims} claims by {numPeople} people
+          <TextIcon icon={<Icons.Claim />}>
+            {numClaims} claims by {numPeople} people
+          </TextIcon>
         </CardDescription>
         <CopyLinkButton anchor={title} />
-      </div>
+      </Row>
     </Row>
   );
 }
