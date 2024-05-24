@@ -52,7 +52,7 @@ export function TopicSummary({ subtopic }: { subtopic: schema.Subtopic }) {
   const { subtopicName, claims, claimsCount, subtopicShortDescription } =
     subtopic;
   return (
-    <Col gap={4}>
+    <Col gap={4} className="px-8 pt-8">
       <TopicHeader
         title={subtopicName}
         numClaims={claimsCount!}

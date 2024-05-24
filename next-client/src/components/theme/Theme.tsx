@@ -1,30 +1,28 @@
 import React from "react";
-import { Card, CardContent, CardTitle, TextIcon } from "../elements";
+import { CardTitle, TextIcon } from "../elements";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import PointGraphic from "../pointGraphic/PointGraphic";
-import DisplayExtendedTheme from "./components/ExtendedTheme";
 import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
+import ThemeWrapper from "./components/ThemeWrapper";
 
 function Theme(props: schema.Topic) {
   return (
-    <Card>
-      <CardContent>
-        <Col gap={3}>
-          <ThemeHeader title={props.topicName} />
-          <ThemeGraphic
-            numClaims={props.claimsCount!}
-            numPeople={props.subtopics.length}
-          />
-          <text>{props.topicShortDescription}</text>
-          <TopicList
-            topics={props.subtopics.map((subtopic) => subtopic.subtopicName)}
-          />
-          <DisplayExtendedTheme subtopics={props.subtopics} />
-        </Col>
-      </CardContent>
-    </Card>
+    <ThemeWrapper
+      subtopics={props.subtopics}
+      description={props.topicShortDescription!}
+    >
+      <ThemeHeader title={props.topicName} />
+      <ThemeGraphic
+        numClaims={props.claimsCount!}
+        numPeople={props.subtopics.length}
+      />
+      <text>{props.topicShortDescription}</text>
+      <TopicList
+        topics={props.subtopics.map((subtopic) => subtopic.subtopicName)}
+      />
+    </ThemeWrapper>
   );
 }
 
