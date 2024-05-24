@@ -19,10 +19,12 @@ function Claim({
   quotes: string[];
 }) {
   return (
-    <Col gap={3}>
-      <ClaimHeader title={title} claimNum={claimNum} />
-      <Quotes quotes={quotes} />
-    </Col>
+    <CardContent className="py-2">
+      <Col gap={3}>
+        <ClaimHeader title={title} claimNum={claimNum} />
+        <Quotes quotes={quotes} />
+      </Col>
+    </CardContent>
   );
 }
 
@@ -37,9 +39,10 @@ export function ClaimHeader({
   claimNum: number;
 }) {
   return (
-    <Row gap={0} className="justify-between items-center">
+    <Row gap={2} className="justify-between items-start">
+      <h2 className="text-muted-foreground">Claim#{claimNum}</h2>
       <h2 className="text-muted-foreground">
-        <a id={`${title}`}>{`Claim#${claimNum} ${title}`}</a>
+        <a id={`${title}`}>{title}</a>
       </h2>
       <CopyLinkButton anchor={title} />
     </Row>
@@ -51,23 +54,25 @@ export function ClaimHeader({
  */
 export function Quote({ quote }: { quote: string }) {
   return (
-    <Row gap={3}>
-      {/* Quote Icon */}
-      <div className="min-w-4">
-        <Icons.Quote className="fill-foreground h-4 w-4" />
-      </div>
+    <CardContent className="p-4">
+      <Row gap={3}>
+        {/* Quote Icon */}
+        <div className="min-w-4">
+          <Icons.Quote className="fill-foreground h-4 w-4" />
+        </div>
 
-      {/* Quote Text */}
-      <p className="flex-grow">{quote}</p>
+        {/* Quote Text */}
+        <p className="flex-grow">{quote}</p>
 
-      {/* Chevron */}
-      <div className="h-full self-center ">
-        <Icons.ChevronRight
-          className="text-muted-foreground  self-center"
-          size={24}
-        />
-      </div>
-    </Row>
+        {/* Chevron */}
+        <div className="h-full self-center ">
+          <Icons.ChevronRight
+            className="text-muted-foreground  self-center"
+            size={24}
+          />
+        </div>
+      </Row>
+    </CardContent>
   );
 }
 
@@ -77,16 +82,12 @@ export function Quote({ quote }: { quote: string }) {
 export function Quotes({ quotes }: { quotes: string[] }) {
   return (
     <Card>
-      <CardContent className="p-4">
-        <Col gap={3}>
-          {quotes.map((quote, i) => (
-            <>
-              <Quote quote={quote} />
-              {i === quotes.length - 1 ? null : <Separator />}
-            </>
-          ))}
-        </Col>
-      </CardContent>
+      {quotes.map((quote, i) => (
+        <>
+          <Quote quote={quote} />
+          {i === quotes.length - 1 ? null : <Separator />}
+        </>
+      ))}
     </Card>
   );
 }
