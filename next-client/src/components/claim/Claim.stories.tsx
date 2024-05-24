@@ -8,6 +8,13 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
+  decorators: [
+    (Story) => (
+      <div className="border">
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof Claim>;
 
 export default meta;

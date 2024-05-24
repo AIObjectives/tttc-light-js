@@ -10,15 +10,15 @@ const meta = {
     // layout: "centered",
   },
   tags: ["autodocs"],
-  decorators: [
-    (Story) => (
-      <Card>
-        <CardContent>
-          <Story />
-        </CardContent>
-      </Card>
-    ),
-  ],
+  // decorators: [
+  //   (Story) => (
+  //     <Card>
+  //       <CardContent>
+  //         <Story />
+  //       </CardContent>
+  //     </Card>
+  //   ),
+  // ],
 } satisfies Meta<typeof Topic>;
 
 export default meta;
