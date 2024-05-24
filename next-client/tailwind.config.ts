@@ -57,6 +57,9 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        AOI_graph_cell: {
+          DEFAULT: "hsl(var(--AOI-graph-cell))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
