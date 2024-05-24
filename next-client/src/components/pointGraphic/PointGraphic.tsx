@@ -11,7 +11,7 @@ function PointGraphic({ num }: { num: number }) {
 }
 
 function ThemeUnit() {
-  return <div className="w-3 h-3 bg-slate-200 dark:bg-zinc-600 rounded-sm" />;
+  return <div className="w-3 h-3 bg-AOI_graph_cell rounded-sm" />;
 }
 
 export default PointGraphic;
