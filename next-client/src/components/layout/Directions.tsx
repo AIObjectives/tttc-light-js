@@ -1,34 +1,61 @@
 import React from "react";
+import "../../app/global.css";
 
-type ClassNameType = React.ComponentProps<"div">["className"];
-type DirectionPropType = React.PropsWithChildren<{
-  className?: ClassNameType;
+type DirectionProps = React.PropsWithChildren<{
   gap: number;
+  className?: string;
 }>;
 
-const constructClassName = (
-  direction: "row" | "col",
-  gap: number,
-  className?: string,
-) =>
-  `flex flex-${direction} gap-${direction === "col" ? "y" : "x"}-${gap} ` +
-  className;
+const classDictRow = {
+  0: "gap-x-0",
+  0.5: "gap-x-0.5",
+  1: "gap-x-1",
+  1.5: "gap-x-1.5",
+  2: "gap-x-2",
+  2.5: "gap-x-2.5",
+  3: "gap-x-3",
+  3.5: "gap-x-3.5",
+  4: "gap-x-4",
+  5: "gap-x-5",
+  6: "gap-x-6",
+  7: "gap-x-7",
+  8: "gap-x-8",
+  9: "gap-x-9",
+  10: "gap-x-10",
+};
 
-function Direction(direction: "row" | "col") {
-  return ({ children, gap, className }: DirectionPropType) => {
-    if (className?.includes("gap"))
-      throw new Error(
-        "Don't include gap in classname for Row, use prop instead",
-      );
+const classDictCol = {
+  0: "gap-y-0",
+  0.5: "gap-y-0.5",
+  1: "gap-y-1",
+  1.5: "gap-y-1.5",
+  2: "gap-y-2",
+  2.5: "gap-y-2.5",
+  3: "gap-y-3",
+  3.5: "gap-y-3.5",
+  4: "gap-y-4",
+  5: "gap-y-5",
+  6: "gap-y-6",
+  7: "gap-y-7",
+  8: "gap-y-8",
+  9: "gap-y-9",
+  10: "gap-y-10",
+};
 
-    return (
-      <div className={constructClassName(direction, gap, className)}>
-        {children}
-      </div>
-    );
-  };
-}
+const Row = ({ children, className, gap }: DirectionProps) => {
+  return (
+    <div className={`flex flex-row ${classDictRow[gap]} ${className}`}>
+      {children}
+    </div>
+  );
+};
 
-export const Row = Direction("row");
+const Col = ({ children, className, gap }: DirectionProps) => {
+  return (
+    <div className={`flex flex-col ${classDictCol[gap]} ${className}`}>
+      {children}
+    </div>
+  );
+};
 
-export const Col = Direction("col");
+export { Row, Col };
