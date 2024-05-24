@@ -1,5 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import Topic, { TopicClaims, TopicDescription, TopicHeader } from "./Topic";
+import Topic, {
+  TopicClaims,
+  TopicDescription,
+  TopicHeader,
+  TopicSummary,
+} from "./Topic";
 import { taxonomyObject } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 
@@ -10,15 +15,13 @@ const meta = {
     // layout: "centered",
   },
   tags: ["autodocs"],
-  // decorators: [
-  //   (Story) => (
-  //     <Card>
-  //       <CardContent>
-  //         <Story />
-  //       </CardContent>
-  //     </Card>
-  //   ),
-  // ],
+  decorators: [
+    (Story) => (
+      <div className="border">
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof Topic>;
 
 export default meta;
@@ -41,5 +44,7 @@ export const Header = () => (
 export const Description = () => (
   <TopicDescription description={baseProps.subtopicShortDescription!} />
 );
+
+export const Summary = () => <TopicSummary subtopic={baseProps} />;
 
 export const Claims = () => <TopicClaims claims={baseProps.claims!} />;
