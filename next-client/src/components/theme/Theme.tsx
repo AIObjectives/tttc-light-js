@@ -1,22 +1,11 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-  TextIcon,
-} from "../elements";
+import { Card, CardContent, CardTitle, TextIcon } from "../elements";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import DisplayExtendedTheme from "./components/ExtendedTheme";
 import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
-
-/**
- * Notes:
- * ! how do we do num claims and people??
- */
 
 function Theme(props: schema.Topic) {
   return (
@@ -41,7 +30,7 @@ function Theme(props: schema.Topic) {
 
 export function ThemeHeader({ title }: { title: string }) {
   return (
-    <Row gap={0} className="justify-between">
+    <Row gap={2} className="justify-between">
       <CardTitle className="self-center">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
@@ -59,13 +48,9 @@ export function ThemeGraphic({
 }) {
   return (
     <Col gap={2}>
-      <CardDescription>
-        {/* <Icons.Claim />
-        {numClaims} claims by {numPeople} people */}
-        <TextIcon icon={<Icons.Claim />}>
-          {numClaims} claims by {numPeople} people
-        </TextIcon>
-      </CardDescription>
+      <TextIcon icon={<Icons.Claim />}>
+        {numClaims} claims by {numPeople} people
+      </TextIcon>
       <PointGraphic num={numClaims} />
     </Col>
   );
@@ -73,22 +58,21 @@ export function ThemeGraphic({
 
 export function TopicList({ topics }: { topics: string[] }) {
   return (
-    <Col gap={2}>
-      <CardDescription>
-        <TextIcon icon={<Icons.Topic />}>{topics.length} topics</TextIcon>
-      </CardDescription>
-      <CardDescription>
-        {/* <text className="text-sm text-muted-foreground"> */}
-        {topics.map((topic, i) => (
-          <span>
-            <span className="underline">
-              {topic}
-              {i !== topics.length - 1 ? "," : ""}
-            </span>{" "}
-          </span>
-        ))}
-        {/* </text> */}
-      </CardDescription>
+    <Col gap={2} className="pb-2">
+      <TextIcon icon={<Icons.Topic />}>{topics.length} topics</TextIcon>
+
+      <text className="text-muted-foreground text-sm">
+        <Row gap={2}>
+          {topics.map((topic, i) => (
+            <span>
+              <span className="underline">
+                {topic}
+                {i !== topics.length - 1 ? "," : ""}
+              </span>
+            </span>
+          ))}
+        </Row>
+      </text>
     </Col>
   );
 }

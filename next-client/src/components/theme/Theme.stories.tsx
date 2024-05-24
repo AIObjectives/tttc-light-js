@@ -27,24 +27,24 @@ const CardWrap = ({ children }: React.PropsWithChildren) => (
 );
 
 export const Header = () => (
-  <CardWrap>
+  <div className="border">
     <ThemeHeader title={baseProps.topicName} />
-  </CardWrap>
+  </div>
 );
 
 export const Graphic = () => (
-  <CardWrap>
+  <div className="border">
     <ThemeGraphic
       numClaims={baseProps.claimsCount!}
       numPeople={baseProps.subtopics.length}
     />
-  </CardWrap>
+  </div>
 );
 
 export const ListOfTopics = () => (
-  <CardWrap>
+  <div className="border">
     <TopicList
       topics={baseProps.subtopics.map((subtopic) => subtopic.subtopicName)}
     />
-  </CardWrap>
+  </div>
 );
