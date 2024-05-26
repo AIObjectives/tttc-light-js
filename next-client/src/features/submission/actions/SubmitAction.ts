@@ -9,6 +9,7 @@ export default async function submitAction(
   formData: FormData,
 ): Promise<GenerateApiResponse> {
   // parses csv file
+  console.log("starting to parse")
   const parseCSV = async (file: File): Promise<SourceRow[]> => {
     const buffer = await file.arrayBuffer();
     return Papa.parse(Buffer.from(buffer).toString(), { header: true })

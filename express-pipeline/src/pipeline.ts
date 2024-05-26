@@ -17,7 +17,7 @@ import {
 } from "tttc-common/schema";
 
 const defaultOptions = {
-  model: "gpt-4-turbo-preview",
+  model: "gpt-4-turbo-preview", // Claude options: "claude-3-sonnet-20240229", claude-3-haiku-20240307"
   data: [],
   title: "",
   question: "",
@@ -25,7 +25,7 @@ const defaultOptions = {
   systemInstructions: "",
   clusteringInstructions: "",
   extractionInstructions: "",
-  batchSize: 10,
+  batchSize:  2, // lower to avoid rate limits! initial was 10,
 };
 
 function insertClaim(taxonomy: Taxonomy, claim: Claim, tracker: Tracker) {
@@ -111,7 +111,7 @@ async function pipeline(
           tracker,
           cache,
         );
-        claims.forEach((claim: Claim, i: number) => {
+        claims?.forEach((claim: Claim, i: number) => {
           insertClaim(
             taxonomy,
             {
