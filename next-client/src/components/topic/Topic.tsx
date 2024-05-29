@@ -28,7 +28,7 @@ export function TopicHeader({
   numPeople: number;
 }) {
   return (
-    <Row gap={2} className="justify-between items-center">
+    <Row gap={4} className="justify-between items-center">
       <div className="flex flex-grow">
         <h3 className="text-xl font-semibold">{title}</h3>
       </div>
@@ -68,7 +68,6 @@ export function TopicClaims({ claims }: { claims: schema.Claim[] }) {
   return (
     <Col gap={4}>
       {claims.map((claim, i) => {
-        // ! Something wrong with quotes here
         return (
           <Claim claimNum={i} title={claim.topicName} quotes={[claim.quote]} />
         );

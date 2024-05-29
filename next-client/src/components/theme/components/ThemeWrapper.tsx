@@ -52,7 +52,7 @@ function ExtendedTheme({
 
 function Description({ description }: { description: string }) {
   return (
-    <CardContent>
+    <CardContent className="py-4">
       <p>{description}</p>
     </CardContent>
   );
