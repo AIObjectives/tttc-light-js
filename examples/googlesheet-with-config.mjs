@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import fetch from "node-fetch";
 import fs from "fs";
 import { parse } from "csv-parse/sync";
