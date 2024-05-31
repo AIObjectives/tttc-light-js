@@ -5,6 +5,7 @@
   "scripts": {
     "format": "npx prettier . --write",
     "dev": "node dev.js",
+    "build": "node build.js",
     "prepare": "husky"
   },
   "author": "Bruno Marnette",
