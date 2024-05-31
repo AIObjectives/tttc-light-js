@@ -5,7 +5,7 @@ import Topic, {
   TopicHeader,
   TopicSummary,
 } from "./Topic";
-import { taxonomyObject } from "stories/data/dummyData";
+import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 
 const meta = {
@@ -27,24 +27,24 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const baseProps = taxonomyObject[0].subtopics[0];
+const baseProps = reportData.themes[0].topics[0];
 
 export const Main: Story = {
-  args: { subtopic: baseProps },
+  args: { topic: baseProps },
 };
 
 export const Header = () => (
   <TopicHeader
-    title={baseProps.subtopicName}
-    numClaims={baseProps.claimsCount!}
-    numPeople={baseProps.claims!.length}
+    title={baseProps.title}
+    numClaims={baseProps.claims.length}
+    numPeople={0}
   />
 );
 
 export const Description = () => (
-  <TopicDescription description={baseProps.subtopicShortDescription!} />
+  <TopicDescription description={baseProps.description!} />
 );
 
-export const Summary = () => <TopicSummary subtopic={baseProps} />;
+export const Summary = () => <TopicSummary topic={baseProps} />;
 
 export const Claims = () => <TopicClaims claims={baseProps.claims!} />;

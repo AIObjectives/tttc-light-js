@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import Theme, { ThemeGraphic, ThemeHeader, TopicList } from "./Theme";
-import { taxonomyObject } from "stories/data/dummyData";
+import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 import React from "react";
 
@@ -14,10 +14,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const baseProps = taxonomyObject[0];
+const baseProps = reportData.themes[0];
 
 export const Main: Story = {
-  args: taxonomyObject[0],
+  args: baseProps,
 };
 
 const CardWrap = ({ children }: React.PropsWithChildren) => (
@@ -28,23 +28,21 @@ const CardWrap = ({ children }: React.PropsWithChildren) => (
 
 export const Header = () => (
   <div className="border">
-    <ThemeHeader title={baseProps.topicName} />
+    <ThemeHeader title={baseProps.title} />
   </div>
 );
 
 export const Graphic = () => (
   <div className="border">
     <ThemeGraphic
-      numClaims={baseProps.claimsCount!}
-      numPeople={baseProps.subtopics.length}
+      numClaims={baseProps.topics.flatMap((topic) => topic).length}
+      numPeople={0}
     />
   </div>
 );
 
 export const ListOfTopics = () => (
   <div className="border">
-    <TopicList
-      topics={baseProps.subtopics.map((subtopic) => subtopic.subtopicName)}
-    />
+    <TopicList topics={baseProps.topics.map((topic) => topic.title)} />
   </div>
 );
