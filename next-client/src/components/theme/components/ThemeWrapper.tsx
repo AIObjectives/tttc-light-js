@@ -10,7 +10,7 @@ function ThemeWrapper({
   subtopics,
   description,
 }: React.PropsWithChildren<{
-  subtopics: schema.Subtopic[];
+  subtopics: schema.Topic[];
   description: string;
 }>) {
   const [show, setShow] = useState<boolean>(false);
@@ -37,7 +37,7 @@ function ExtendedTheme({
   subtopics,
   description,
 }: {
-  subtopics: schema.Subtopic[];
+  subtopics: schema.Topic[];
   description: string;
 }) {
   return (
@@ -58,10 +58,10 @@ function Description({ description }: { description: string }) {
   );
 }
 
-function SubtopicMap({ subtopics }: { subtopics: schema.Subtopic[] }) {
+function SubtopicMap({ subtopics }: { subtopics: schema.Topic[] }) {
   return subtopics.map((subtopic, i) => (
     <Col gap={8}>
-      <Topic subtopic={subtopic} />
+      <Topic topic={subtopic} />
       {i !== subtopics.length - 1 ? <Separator /> : null}
     </Col>
   ));

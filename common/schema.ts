@@ -248,7 +248,7 @@ const quote = z.object({
   reference: reference,
 });
 
-type Quote = z.infer<typeof quote>;
+export type Quote = z.infer<typeof quote>;
 
 /********************************
  * Claim
@@ -289,6 +289,7 @@ const theme = z.object({
   topics: z.array(topic),
 });
 
+export type Theme = z.infer<typeof theme>;
 /********************************
  * Graphics
  * Graphics are object level representations of graphics that are added to the report
@@ -310,7 +311,7 @@ const graphics = pieChartGraphic; // make this a union when we have more
  * Contains all the information that a report needs to display
  ********************************/
 
-const reportDataObj = z.object({
+export const reportDataObj = z.object({
   title: z.string(),
   description: z.string(),
   themes: z.array(theme),
@@ -318,6 +319,8 @@ const reportDataObj = z.object({
   graphics: graphics,
   date: z.date(),
 });
+
+export type ReportDataObj = z.infer<typeof reportDataObj>;
 
 /********************************
  * Report Versions
