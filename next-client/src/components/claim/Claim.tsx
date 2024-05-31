@@ -3,6 +3,7 @@ import { Card, CardContent, Separator } from "../elements";
 import Icons from "@src/assets/icons";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { Col, Row } from "../layout";
+import * as schema from "tttc-common/schema";
 
 /**
  * Notes:
@@ -16,7 +17,7 @@ function Claim({
 }: {
   claimNum: number;
   title: string;
-  quotes: string[];
+  quotes: schema.Quote[];
 }) {
   return (
     <CardContent className="py-2">
@@ -52,7 +53,7 @@ export function ClaimHeader({
 /**
  * Single quote - not wrapped in card.
  */
-export function Quote({ quote }: { quote: string }) {
+export function Quote({ quote }: { quote: schema.Quote }) {
   return (
     <CardContent className="p-4">
       <Row gap={3}>
@@ -62,7 +63,7 @@ export function Quote({ quote }: { quote: string }) {
         </div>
 
         {/* Quote Text */}
-        <p className="flex-grow">{quote}</p>
+        <p className="flex-grow">{quote.text}</p>
 
         {/* Chevron */}
         <div className="h-full self-center ">
@@ -79,7 +80,7 @@ export function Quote({ quote }: { quote: string }) {
 /**
  * Creates a column of quotes
  */
-export function Quotes({ quotes }: { quotes: string[] }) {
+export function Quotes({ quotes }: { quotes: schema.Quote[] }) {
   return (
     <Card>
       {quotes.map((quote, i) => (

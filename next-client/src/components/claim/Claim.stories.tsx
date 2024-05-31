@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import Claim, { Quote, ClaimHeader, Quotes } from "./Claim";
+import { reportData } from "stories/data/dummyData";
 
 const meta = {
   title: "Claim",
@@ -17,6 +18,8 @@ const meta = {
   ],
 } satisfies Meta<typeof Claim>;
 
+const baseProps = reportData.themes[0].topics[0].claims[2];
+
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -25,29 +28,14 @@ export const Primary: Story = {
     claimNum: 1,
     title:
       "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset",
-    quotes: [
-      "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum eratipsum dolor.",
-      "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum dolor sit amet, in eum erat constituam.",
-    ],
+    quotes: baseProps.quotes,
   },
 };
 
 export const Header = () => (
-  <ClaimHeader
-    claimNum={1}
-    title="Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset"
-  />
+  <ClaimHeader claimNum={1} title={baseProps.title} />
 );
 
-export const QuoteText = () => (
-  <Quote quote="Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum eratipsum dolor." />
-);
+export const QuoteText = () => <Quote quote={baseProps.quotes[0]} />;
 
-export const ManyQuotes = () => (
-  <Quotes
-    quotes={[
-      "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum eratipsum dolor.",
-      "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset dolor sit ipsum dolor sit amet, in eum dolor sit amet, in eum erat constituam.",
-    ]}
-  />
-);
+export const ManyQuotes = () => <Quotes quotes={baseProps.quotes} />;
