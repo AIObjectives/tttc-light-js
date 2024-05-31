@@ -7,21 +7,19 @@ import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
 import ThemeWrapper from "./components/ThemeWrapper";
 
-function Theme(props: schema.Topic) {
+function Theme(props: schema.Theme) {
+  const { title, topics, description } = props;
+  const claims: schema.Claim[] = topics.flatMap((topic) => topic.claims);
+
   return (
-    <ThemeWrapper
-      subtopics={props.subtopics}
-      description={props.topicShortDescription!}
-    >
-      <ThemeHeader title={props.topicName} />
+    <ThemeWrapper subtopics={topics} description={description}>
+      <ThemeHeader title={title} />
       <ThemeGraphic
-        numClaims={props.claimsCount!}
-        numPeople={props.subtopics.length}
+        numClaims={claims.length}
+        numPeople={0} // todo Figure out how to do this
       />
-      <text>{props.topicShortDescription}</text>
-      <TopicList
-        topics={props.subtopics.map((subtopic) => subtopic.subtopicName)}
-      />
+      <text>{description}</text>
+      <TopicList topics={topics.map((topic) => topic.title)} />
     </ThemeWrapper>
   );
 }

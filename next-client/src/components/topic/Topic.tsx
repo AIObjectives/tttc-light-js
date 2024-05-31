@@ -7,12 +7,11 @@ import Claim from "../claim/Claim";
 import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
 
-function Topic({ subtopic }: { subtopic: schema.Subtopic }) {
-  const { subtopicName, claims, claimsCount, subtopicShortDescription } =
-    subtopic;
+function Topic({ topic }: { topic: schema.Topic }) {
+  const { title, claims, description } = topic;
   return (
     <Col gap={4}>
-      <TopicSummary subtopic={subtopic} />
+      <TopicSummary topic={topic} />
       <TopicClaims claims={claims!} />
     </Col>
   );
@@ -48,18 +47,17 @@ export function TopicDescription({ description }: { description: string }) {
   );
 }
 
-export function TopicSummary({ subtopic }: { subtopic: schema.Subtopic }) {
-  const { subtopicName, claims, claimsCount, subtopicShortDescription } =
-    subtopic;
+export function TopicSummary({ topic }: { topic: schema.Topic }) {
+  const { title, claims, description } = topic;
   return (
     <Col gap={4} className="px-8 pt-8">
       <TopicHeader
-        title={subtopicName}
-        numClaims={claimsCount!}
+        title={title}
+        numClaims={claims.length}
         numPeople={claims!.length}
       />
       <PointGraphic num={claims!.length} />
-      <TopicDescription description={subtopicShortDescription!} />
+      <TopicDescription description={description!} />
     </Col>
   );
 }
@@ -68,9 +66,7 @@ export function TopicClaims({ claims }: { claims: schema.Claim[] }) {
   return (
     <Col gap={4}>
       {claims.map((claim, i) => {
-        return (
-          <Claim claimNum={i} title={claim.topicName} quotes={[claim.quote]} />
-        );
+        return <Claim claimNum={i} title={claim.title} quotes={claim.quotes} />;
       })}
     </Col>
   );
