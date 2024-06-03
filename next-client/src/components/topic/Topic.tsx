@@ -11,7 +11,7 @@ import ClaimLoader from "./components/ClaimLoader";
 function Topic({ topic }: { topic: schema.Topic }) {
   const { claims } = topic;
   return (
-    <Col gap={4} className="py-8">
+    <Col gap={4} className="py-6 sm:py-8">
       <TopicSummary topic={topic} />
       <TopicClaims claims={claims!} />
     </Col>
@@ -51,7 +51,7 @@ export function TopicDescription({ description }: { description: string }) {
 export function TopicSummary({ topic }: { topic: schema.Topic }) {
   const { title, claims, description } = topic;
   return (
-    <Col gap={4} className="px-8">
+    <Col gap={4} className="px-4">
       <TopicHeader
         title={title}
         numClaims={claims.length}
