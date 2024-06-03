@@ -1,7 +1,7 @@
 import React from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
-import { CardDescription, TextIcon } from "../elements";
+import { TextIcon } from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import Claim from "../claim/Claim";
 import { Col, Row } from "../layout";
@@ -51,7 +51,7 @@ export function TopicDescription({ description }: { description: string }) {
 export function TopicSummary({ topic }: { topic: schema.Topic }) {
   const { title, claims, description } = topic;
   return (
-    <Col gap={4} className="px-4">
+    <Col gap={4} className="px-4 sm:px-8">
       <TopicHeader
         title={title}
         numClaims={claims.length}

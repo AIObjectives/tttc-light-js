@@ -7,10 +7,10 @@ import Topic from "@src/components/topic/Topic";
 
 function ThemeWrapper({
   children,
-  subtopics,
+  topics,
   description,
 }: React.PropsWithChildren<{
-  subtopics: schema.Topic[];
+  topics: schema.Topic[];
   description: string;
 }>) {
   const [show, setShow] = useState<boolean>(false);
@@ -27,17 +27,17 @@ function ThemeWrapper({
         </Col>
       </CardContent>
       {show ? (
-        <ExtendedTheme subtopics={subtopics} description={description} />
+        <ExtendedTheme topics={topics} description={description} />
       ) : null}
     </Card>
   );
 }
 
 function ExtendedTheme({
-  subtopics,
+  topics,
   description,
 }: {
-  subtopics: schema.Topic[];
+  topics: schema.Topic[];
   description: string;
 }) {
   return (
@@ -45,7 +45,7 @@ function ExtendedTheme({
       <Separator />
       <Description description={description} />
       <Separator />
-      <SubtopicMap subtopics={subtopics} />
+      <ThemeTopics topics={topics} />
     </>
   );
 }
@@ -58,13 +58,54 @@ function Description({ description }: { description: string }) {
   );
 }
 
-function SubtopicMap({ subtopics }: { subtopics: schema.Topic[] }) {
-  return subtopics.map((subtopic, i) => (
+function TopicMap({ topics }: { topics: schema.Topic[] }) {
+  return topics.map((topic, i) => (
     <Col>
-      <Topic topic={subtopic} />
-      {i !== subtopics.length - 1 ? <Separator /> : null}
+      <Topic topic={topic} />
+      <Separator />
     </Col>
   ));
+}
+
+function ThemeTopics({ topics }: { topics: schema.Topic[] }) {
+  const pagination = 2;
+
+  return (
+    <>
+      <TopicMap topics={topics.slice(0, pagination)} />
+      <TopicLoader topics={topics.slice(pagination)} pagination={pagination} />
+    </>
+  );
+}
+
+function TopicLoader({
+  topics,
+  pagination,
+}: {
+  topics: schema.Topic[];
+  pagination: number;
+}) {
+  const [showMore, setShowMore] = useState(false);
+  const moreTopics = topics.slice(0, pagination);
+  const evenMoreTopics = topics.slice(pagination);
+  if (!showMore && topics.length > 0) {
+    return (
+      <div className="p-4 sm:p-8">
+        <Button variant={"secondary"} onClick={() => setShowMore(true)}>
+          {topics.length} more topic{topics.length > 1 ? "s" : ""}
+        </Button>
+      </div>
+    );
+  } else {
+    return (
+      <Col>
+        <TopicMap topics={moreTopics} />
+        {evenMoreTopics.length > 0 ? (
+          <TopicLoader topics={evenMoreTopics} pagination={pagination} />
+        ) : null}
+      </Col>
+    );
+  }
 }
 
 export default ThemeWrapper;
