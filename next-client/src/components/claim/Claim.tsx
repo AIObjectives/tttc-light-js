@@ -20,7 +20,7 @@ function Claim({
   quotes: schema.Quote[];
 }) {
   return (
-    <CardContent className="py-2">
+    <CardContent className="sm:py-2">
       <Col gap={3}>
         <ClaimHeader title={title} claimNum={claimNum} />
         <Quotes quotes={quotes} />
