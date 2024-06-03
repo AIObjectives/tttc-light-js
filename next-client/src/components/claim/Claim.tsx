@@ -20,7 +20,7 @@ function Claim({
   quotes: schema.Quote[];
 }) {
   return (
-    <CardContent className="sm:py-2">
+    <CardContent className="py-2 sm:py-2">
       <Col gap={3}>
         <ClaimHeader title={title} claimNum={claimNum} />
         <Quotes quotes={quotes} />
@@ -55,7 +55,7 @@ export function ClaimHeader({
  */
 export function Quote({ quote }: { quote: schema.Quote }) {
   return (
-    <CardContent className="p-4">
+    <CardContent className="p-4 sm:p-4">
       <Row gap={3}>
         {/* Quote Icon */}
         <div className="min-w-4">
