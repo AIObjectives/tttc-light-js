@@ -12,7 +12,7 @@ function Theme(props: schema.Theme) {
   const claims: schema.Claim[] = topics.flatMap((topic) => topic.claims);
 
   return (
-    <ThemeWrapper subtopics={topics} description={description}>
+    <ThemeWrapper topics={topics} description={description}>
       <ThemeHeader title={title} />
       <ThemeGraphic
         numClaims={claims.length}

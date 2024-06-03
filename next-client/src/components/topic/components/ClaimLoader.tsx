@@ -12,14 +12,14 @@ function ClaimLoader({
 }: {
   claims: schema.Claim[];
   pagination: number;
-  i;
+  i: number;
 }) {
   const [showMore, setShowMore] = useState(false);
   const moreClaims = claims.slice(0, pagination);
   const evenMoreClaims = claims.slice(pagination);
   if (!showMore && claims.length > 0)
     return (
-      <div className="pl-8">
+      <div className="pl-4 sm:pl-8">
         <Button variant={"outline"} onClick={() => setShowMore(true)}>
           {claims.length} more claim{claims.length > 0 ? "s" : ""}
         </Button>
@@ -35,7 +35,7 @@ function ClaimLoader({
             quotes={claim.quotes}
           />
         ))}
-        {claims.length > 0 ? (
+        {evenMoreClaims.length > 0 ? (
           <ClaimLoader
             claims={evenMoreClaims}
             pagination={pagination}
