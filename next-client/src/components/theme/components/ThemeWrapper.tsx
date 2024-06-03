@@ -60,7 +60,7 @@ function Description({ description }: { description: string }) {
 
 function SubtopicMap({ subtopics }: { subtopics: schema.Topic[] }) {
   return subtopics.map((subtopic, i) => (
-    <Col gap={8}>
+    <Col>
       <Topic topic={subtopic} />
       {i !== subtopics.length - 1 ? <Separator /> : null}
     </Col>

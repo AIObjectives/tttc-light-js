@@ -2,7 +2,7 @@ import React from "react";
 import "../../app/global.css";
 
 type DirectionProps = React.PropsWithChildren<{
-  gap: number;
+  gap?: number;
   className?: string;
 }>;
 
@@ -42,7 +42,7 @@ const classDictCol = {
   10: "gap-y-10",
 };
 
-const Row = ({ children, className, gap }: DirectionProps) => {
+const Row = ({ children, className, gap = 0 }: DirectionProps) => {
   return (
     <div className={`flex flex-row ${classDictRow[gap]} ${className}`}>
       {children}
@@ -50,7 +50,7 @@ const Row = ({ children, className, gap }: DirectionProps) => {
   );
 };
 
-const Col = ({ children, className, gap }: DirectionProps) => {
+const Col = ({ children, className, gap = 0 }: DirectionProps) => {
   return (
     <div className={`flex flex-col ${classDictCol[gap]} ${className}`}>
       {children}
