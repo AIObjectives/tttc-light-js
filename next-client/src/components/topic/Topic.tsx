@@ -30,7 +30,7 @@ export function TopicHeader({
   return (
     <Row gap={4} className="justify-between items-center">
       <div className="flex flex-grow">
-        <h3 className="text-xl font-semibold">{title}</h3>
+        <h4>{title}</h4>
       </div>
       <TextIcon icon={<Icons.Claim />}>
         {numClaims} claims by {numPeople} people
