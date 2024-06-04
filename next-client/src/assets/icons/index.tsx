@@ -1,8 +1,9 @@
-import { Link, Plus, Quote, ChevronRight } from "lucide-react";
+import { Link, Plus, Quote } from "lucide-react";
 
 import TopicSVG from "./Topic.svg";
 import QuoteSVG from "./quote aoi.svg";
 import ClaimSVG from "./Claim.svg";
+import ChevronRight from "./ChevronRight.svg";
 
 import Image from "next/image";
 
@@ -14,15 +15,14 @@ Icons.Copy = Copy;
 
 Icons.Plus = Plus;
 
-Icons.ChevronRight = ChevronRight;
-
-// ! Go back through here and refigure this out
+Icons.ChevronRight = (props: { className?: string }) => (
+  <Image {...props} src={ChevronRight} alt="chevron icon" />
+);
 
 Icons.Topic = (props: { className?: string }) => (
   <Image {...props} src={TopicSVG} alt="topic icon" />
 );
 
-// ! Fill color doesn't seem to be working
 Icons.Quote = (props: { className?: string }) => (
   <Image {...props} src={QuoteSVG} alt="topic icon" />
 );
