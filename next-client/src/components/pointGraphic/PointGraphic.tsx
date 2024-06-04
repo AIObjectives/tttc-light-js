@@ -2,7 +2,7 @@ import React from "react";
 
 function PointGraphic({ num }: { num: number }) {
   return (
-    <div className="flex flex-row w-full flex-wrap gap-px">
+    <div className="flex flex-row w-full flex-wrap gap-[3px]">
       {[...Array(num)].map((_) => (
         <ThemeUnit />
       ))}
