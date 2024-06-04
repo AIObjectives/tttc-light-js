@@ -5,11 +5,6 @@ import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { Col, Row } from "../layout";
 import * as schema from "tttc-common/schema";
 
-/**
- * Notes:
- * TODO: Icon size seems off somehow?
- */
-
 function Claim({
   claimNum,
   title,
@@ -41,10 +36,10 @@ export function ClaimHeader({
 }) {
   return (
     <Row gap={2} className="justify-between items-start">
-      <h2 className="text-muted-foreground">Claim#{claimNum}</h2>
-      <h2 className="text-muted-foreground">
+      <p className="text-muted-foreground">Claim#{claimNum}</p>
+      <p className="text-muted-foreground">
         <a id={`${title}`}>{title}</a>
-      </h2>
+      </p>
       <CopyLinkButton anchor={title} />
     </Row>
   );
