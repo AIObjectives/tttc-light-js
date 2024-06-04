@@ -37,9 +37,11 @@ export function ClaimHeader({
   return (
     <Row gap={2} className="justify-between items-start">
       <p className="text-muted-foreground">Claim#{claimNum}</p>
-      <p className="text-muted-foreground">
-        <a id={`${title}`}>{title}</a>
-      </p>
+      <div className="flex flex-grow">
+        <p className="text-muted-foreground">
+          <a id={`${title}`}>{title}</a>
+        </p>
+      </div>
       <CopyLinkButton anchor={title} />
     </Row>
   );
@@ -53,8 +55,8 @@ export function Quote({ quote }: { quote: schema.Quote }) {
     <CardContent className="p-4 sm:p-4">
       <Row gap={3}>
         {/* Quote Icon */}
-        <div className="min-w-4">
-          <Icons.Quote className="fill-foreground h-4 w-4" />
+        <div className="self-start">
+          <Icons.Quote className="h-6 w-4" />
         </div>
 
         {/* Quote Text */}
@@ -62,10 +64,7 @@ export function Quote({ quote }: { quote: schema.Quote }) {
 
         {/* Chevron */}
         <div className="h-full self-center ">
-          <Icons.ChevronRight
-            className="text-muted-foreground  self-center"
-            size={24}
-          />
+          <Icons.ChevronRight className="text-muted-foreground self-center w-6 h-6" />
         </div>
       </Row>
     </CardContent>
