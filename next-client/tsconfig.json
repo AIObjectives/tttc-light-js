@@ -36,7 +36,8 @@
     "./dist/types/**/*.ts",
     "../express-pipeline/gpt.ts",
     "../express-pipeline/test_local.ts",
-    "../express-pipeline/src/styles.ts"
+    "../express-pipeline/src/styles.ts",
+    ".storybook/miscStories/Typography.stories.tsx"
   ],
   "exclude": ["node_modules"]
 }

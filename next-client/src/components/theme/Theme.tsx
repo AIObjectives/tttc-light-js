@@ -57,7 +57,7 @@ export function TopicList({ topics }: { topics: string[] }) {
     <Col gap={2} className="pb-2">
       <TextIcon icon={<Icons.Topic />}>{topics.length} topics</TextIcon>
 
-      <text className="text-muted-foreground text-sm">
+      <p className="text-muted-foreground">
         <Row gap={2}>
           {topics.map((topic, i) => (
             <span>
@@ -68,7 +68,7 @@ export function TopicList({ topics }: { topics: string[] }) {
             </span>
           ))}
         </Row>
-      </text>
+      </p>
     </Col>
   );
 }

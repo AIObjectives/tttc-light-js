@@ -70,11 +70,48 @@
   }
 }
 
+@layer utilities {
+  .leading-11 {
+    line-height: 48px;
+  }
+}
+
+@layer components {
+  .p-medium {
+    @apply text-base leading-6 font-medium;
+  }
+  .p2 {
+    @apply text-sm;
+  }
+  .p2-medium {
+    @apply text-sm font-medium;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1 {
+    @apply text-5xl font-extrabold leading-11 tracking-tight
+    /* Does text-5xl apply the right line height by itself? If so, remove leading-11 */;
+  }
+  h2 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+  h3 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  h4 {
+    @apply text-xl font-semibold leading-5 tracking-tight;
+  }
+  p {
+    @apply text-base leading-6;
+  }
+  details {
+    @apply text-sm leading-4;
   }
 }

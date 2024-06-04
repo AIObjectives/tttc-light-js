@@ -6,12 +6,12 @@ function TextIcon({
   icon,
 }: React.PropsWithChildren<{ icon: React.ReactNode }>) {
   return (
-    <text className="text-muted-foreground text-sm">
+    <p className="p2 text-muted-foreground">
       <Row gap={1}>
         {icon}
         {children}
       </Row>
-    </text>
+    </p>
   );
 }
 
