@@ -22,7 +22,7 @@ function Theme({
   return (
     <ThemeWrapper
       topics={topics}
-      description={description}
+      // description={description}
       isOpen={isOpen}
       setIsOpen={setIsOpen}
     >
