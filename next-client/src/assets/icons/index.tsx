@@ -1,4 +1,4 @@
-import { Link, Plus, Quote } from "lucide-react";
+import { Link, Plus, BookText, CircleUserRound, Calendar } from "lucide-react";
 
 import TopicSVG from "./Topic.svg";
 import QuoteSVG from "./quote aoi.svg";
@@ -14,6 +14,12 @@ const Copy = Link;
 Icons.Copy = Copy;
 
 Icons.Plus = Plus;
+
+Icons.Theme = BookText;
+
+Icons.People = CircleUserRound;
+
+Icons.Date = Calendar;
 
 Icons.ChevronRight = (props: { className?: string }) => (
   <Image {...props} src={ChevronRight} alt="chevron icon" />
