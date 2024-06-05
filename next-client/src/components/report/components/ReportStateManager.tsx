@@ -57,23 +57,22 @@ function ReportStateManager({
       ...themeStates.map((themeState) => ({ ...themeState, isOpen: state })),
     ]);
   return (
-    <div className="flex justify-center">
-      <Col>
-        <ReportToolbar
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          setAllIsOpen={setAllThemesState}
-        />
-        <Col gap={4} className="max-w-4xl">
-          {children}
-          {themes.map(({ theme, isOpen }) => (
-            <Theme
-              theme={theme}
-              isOpen={isOpen}
-              setIsOpen={setThemeState(theme)}
-            />
-          ))}
-        </Col>
+    <div>
+      <ReportToolbar
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        setAllIsOpen={setAllThemesState}
+      />
+
+      <Col gap={4} className="w-3/4 m-auto">
+        {children}
+        {themes.map(({ theme, isOpen }) => (
+          <Theme
+            theme={theme}
+            isOpen={isOpen}
+            setIsOpen={setThemeState(theme)}
+          />
+        ))}
       </Col>
     </div>
   );
@@ -103,22 +102,25 @@ export function ReportToolbar({
   }, []);
 
   return (
-    <Row
-      className={`p-2 justify-between bg-white ${isSticky ? "sticky top-0 w-full" : "static"}`}
-      innerRef={toolbarRef}
-    >
-      <div>
-        <ReportSortBy sortBy={sortBy} setSortBy={setSortBy} />
-      </div>
-      <Row gap={2}>
-        <Button onClick={setAllIsOpen(false)} variant={"outline"}>
-          Collapse all
-        </Button>
-        <Button onClick={setAllIsOpen(true)} variant={"secondary"}>
-          Expand all
-        </Button>
+    <div className={`bg-white ${isSticky ? "sticky top-0 w-full" : "static"}`}>
+      <Row
+        // ! make sure this is the same width as the theme cards.
+        className={`p-2 justify-between w-3/4  mx-auto`}
+        innerRef={toolbarRef}
+      >
+        <div>
+          <ReportSortBy sortBy={sortBy} setSortBy={setSortBy} />
+        </div>
+        <Row gap={2}>
+          <Button onClick={setAllIsOpen(false)} variant={"outline"}>
+            Collapse all
+          </Button>
+          <Button onClick={setAllIsOpen(true)} variant={"secondary"}>
+            Expand all
+          </Button>
+        </Row>
       </Row>
-    </Row>
+    </div>
   );
 }
 
