@@ -7,8 +7,8 @@ import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
 import ThemeWrapper from "./components/ThemeWrapper";
 
-function Theme(props: schema.Theme) {
-  const { title, topics, description } = props;
+function Theme({ theme }: { theme: schema.Theme }) {
+  const { title, topics, description } = theme;
   const claims: schema.Claim[] = topics.flatMap((topic) => topic.claims);
 
   return (

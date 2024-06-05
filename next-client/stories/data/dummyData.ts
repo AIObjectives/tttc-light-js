@@ -1,4 +1,6 @@
-export const reportData = {
+import * as schema from "tttc-common/schema";
+
+export const reportData: schema.ReportDataObj = {
   title: "Lorem Ipsum Report",
   description: "Dummy data for testing purposes",
   themes: [
