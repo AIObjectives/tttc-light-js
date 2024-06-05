@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@src/components/elements";
 import { Col, Row } from "@src/components/layout";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as schema from "tttc-common/schema";
 import Theme from "@src/components/theme/Theme";
 
@@ -19,7 +19,7 @@ type SortBy = "claims" | "people";
 
 type ThemeState = { theme: schema.Theme; isOpen: boolean };
 
-function ReportThemeManager({
+function ReportStateManager({
   children,
   themes: _themes,
 }: React.PropsWithChildren<{ themes: schema.Theme[] }>) {
@@ -88,8 +88,25 @@ export function ReportToolbar({
   setSortBy: (val: SortBy) => void;
   setAllIsOpen: (val: boolean) => () => void;
 }) {
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [isSticky, setIsSticky] = useState<boolean>(false);
+
+  const handleIsSticky = () => {
+    const top = toolbarRef.current?.getBoundingClientRect().top;
+    const val = top !== undefined && top <= 0;
+    setIsSticky(val);
+  };
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleIsSticky);
+    return () => window.removeEventListener("scroll", handleIsSticky);
+  }, []);
+
   return (
-    <Row className="p-2 justify-between">
+    <Row
+      className={`p-2 justify-between bg-white ${isSticky ? "sticky top-0 w-full" : "static"}`}
+      innerRef={toolbarRef}
+    >
       <div>
         <ReportSortBy sortBy={sortBy} setSortBy={setSortBy} />
       </div>
@@ -116,7 +133,6 @@ function ReportSortBy({
     <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortBy)}>
       <SelectTrigger>
         <SelectValue />
-        {/* <SelectLabel><Icons.Select /></SelectLabel>  */}
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
@@ -129,4 +145,4 @@ function ReportSortBy({
   );
 }
 
-export default ReportThemeManager;
+export default ReportStateManager;
