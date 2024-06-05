@@ -8,12 +8,12 @@ import Topic from "@src/components/topic/Topic";
 function ThemeWrapper({
   children,
   topics,
-  description,
+  // description,
   isOpen = false,
   setIsOpen,
 }: React.PropsWithChildren<{
   topics: schema.Topic[];
-  description: string;
+  // description: string;
   isOpen: boolean;
   setIsOpen: (val: boolean) => void;
 }>) {
@@ -29,25 +29,23 @@ function ThemeWrapper({
           </div>
         </Col>
       </CardContent>
-      {isOpen ? (
-        <ExtendedTheme topics={topics} description={description} />
-      ) : null}
+      {isOpen ? <ExtendedTheme topics={topics} /> : null}
     </Card>
   );
 }
 
 function ExtendedTheme({
   topics,
-  description,
+  // description,
 }: {
   topics: schema.Topic[];
-  description: string;
+  // description: string;
 }) {
   return (
     <>
       <Separator />
-      <Description description={description} />
-      <Separator />
+      {/* <Description description={description} />
+      <Separator /> */}
       <ThemeTopics topics={topics} />
     </>
   );
