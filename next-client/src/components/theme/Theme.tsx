@@ -7,12 +7,25 @@ import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
 import ThemeWrapper from "./components/ThemeWrapper";
 
-function Theme({ theme }: { theme: schema.Theme }) {
+function Theme({
+  theme,
+  isOpen,
+  setIsOpen,
+}: {
+  theme: schema.Theme;
+  isOpen: boolean;
+  setIsOpen: (val: boolean) => void;
+}) {
   const { title, topics, description } = theme;
   const claims: schema.Claim[] = topics.flatMap((topic) => topic.claims);
 
   return (
-    <ThemeWrapper topics={topics} description={description}>
+    <ThemeWrapper
+      topics={topics}
+      description={description}
+      isOpen={isOpen}
+      setIsOpen={setIsOpen}
+    >
       <ThemeHeader title={title} />
       <ThemeGraphic
         numClaims={claims.length}
