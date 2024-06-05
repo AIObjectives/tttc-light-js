@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { reportData } from "stories/data/dummyData";
 import Report, { ReportHeader, ReportTitle } from "./Report";
+import { ReportToolbar } from "./components/ReportStateManager";
 
 const meta = {
   title: "Report",
@@ -39,3 +40,5 @@ export const Header = () => (
     dateStr={`January 9, 2020`}
   />
 );
+
+export const Toolbar = () => <></>;

@@ -5,17 +5,24 @@ import { Col, Row } from "../layout";
 import { CardContent, Separator, TextIcon } from "../elements";
 import Icons from "@assets/icons";
 import Theme from "../theme/Theme";
+import ReportStateManager from "./components/ReportStateManager";
 
 function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   return (
-    <div className="flex justify-center">
-      <Col gap={4} className="max-w-4xl">
-        <ReportHeader reportData={reportData} />
-        {reportData.themes.map((theme) => (
-          <Theme theme={theme} />
-        ))}
-      </Col>
-    </div>
+    // <div className="flex justify-center">
+    //   <Col gap={4} className="max-w-4xl">
+    //     <ReportHeader reportData={reportData} />
+    //     {/* {reportData.themes.map((theme) => (
+    //       <Theme theme={theme} />
+    //     ))} */}
+    //     <ReportThemeManager themes={reportData.themes}>
+
+    //     </ReportThemeManager>
+    //   </Col>
+    // </div>
+    <ReportStateManager themes={reportData.themes}>
+      <ReportHeader reportData={reportData} />
+    </ReportStateManager>
   );
 }
 

@@ -9,24 +9,27 @@ function ThemeWrapper({
   children,
   topics,
   description,
+  isOpen = false,
+  setIsOpen,
 }: React.PropsWithChildren<{
   topics: schema.Topic[];
   description: string;
+  isOpen: boolean;
+  setIsOpen: (val: boolean) => void;
 }>) {
-  const [show, setShow] = useState<boolean>(false);
   return (
     <Card>
       <CardContent>
         <Col gap={3}>
           {children}
           <div>
-            <Button onClick={() => setShow((val) => !val)}>
-              {show ? "Collapse Theme" : "Extend Theme"}
+            <Button onClick={() => setIsOpen(!isOpen)}>
+              {isOpen ? "Collapse Theme" : "Extend Theme"}
             </Button>
           </div>
         </Col>
       </CardContent>
-      {show ? (
+      {isOpen ? (
         <ExtendedTheme topics={topics} description={description} />
       ) : null}
     </Card>
