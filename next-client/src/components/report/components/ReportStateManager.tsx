@@ -138,7 +138,6 @@ function ReportSortBy({
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel>Sort By</SelectLabel>
           <SelectItem value="claims">Claims</SelectItem>
           <SelectItem value="people">People</SelectItem>
         </SelectGroup>
