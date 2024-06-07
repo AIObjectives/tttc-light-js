@@ -22,10 +22,12 @@ export function TopicHeader({
   title,
   numClaims,
   numPeople,
+  button,
 }: {
   title: string;
   numClaims: number;
   numPeople: number;
+  button?: React.ReactNode;
 }) {
   return (
     <Row gap={4} className="justify-between items-center">
@@ -37,7 +39,7 @@ export function TopicHeader({
       <TextIcon icon={<Icons.Claim />}>
         {numClaims} claims by {numPeople} people
       </TextIcon>
-      <CopyLinkButton anchor={title} />
+      {button}
     </Row>
   );
 }
@@ -58,8 +60,9 @@ export function TopicSummary({ topic }: { topic: schema.Topic }) {
         title={title}
         numClaims={claims.length}
         numPeople={claims!.length}
+        button={<CopyLinkButton anchor={title} />}
       />
-      <PointGraphic num={claims!.length} />
+      <PointGraphic claims={topic.claims} />
       <TopicDescription description={description!} />
     </Col>
   );

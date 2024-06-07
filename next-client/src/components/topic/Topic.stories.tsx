@@ -7,6 +7,7 @@ import Topic, {
 } from "./Topic";
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
+import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 
 const meta = {
   title: "Topic",
@@ -38,6 +39,7 @@ export const Header = () => (
     title={baseProps.title}
     numClaims={baseProps.claims.length}
     numPeople={0}
+    button={<CopyLinkButton anchor={baseProps.title} />}
   />
 );
 
