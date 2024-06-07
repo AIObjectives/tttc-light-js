@@ -1,4 +1,5 @@
 "use client";
+
 import { Card, CardContent, Button, Separator } from "@src/components/elements";
 import React, { useState } from "react";
 import * as schema from "tttc-common/schema";
@@ -8,12 +9,10 @@ import Topic from "@src/components/topic/Topic";
 function ThemeWrapper({
   children,
   topics,
-  // description,
   isOpen = false,
   setIsOpen,
 }: React.PropsWithChildren<{
   topics: schema.Topic[];
-  // description: string;
   isOpen: boolean;
   setIsOpen: (val: boolean) => void;
 }>) {
@@ -34,28 +33,12 @@ function ThemeWrapper({
   );
 }
 
-function ExtendedTheme({
-  topics,
-  // description,
-}: {
-  topics: schema.Topic[];
-  // description: string;
-}) {
+function ExtendedTheme({ topics }: { topics: schema.Topic[] }) {
   return (
     <>
       <Separator />
-      {/* <Description description={description} />
-      <Separator /> */}
       <ThemeTopics topics={topics} />
     </>
-  );
-}
-
-function Description({ description }: { description: string }) {
-  return (
-    <CardContent className="py-4">
-      <p>{description}</p>
-    </CardContent>
   );
 }
 
@@ -109,4 +92,4 @@ function TopicLoader({
   }
 }
 
-export default ThemeWrapper;
+export default ExtendedTheme;
