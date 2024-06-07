@@ -17,7 +17,11 @@ function Claim({
   return (
     <CardContent className="py-2 sm:py-2">
       <Col gap={3}>
-        <ClaimHeader title={title} claimNum={claimNum} />
+        <ClaimHeader
+          title={title}
+          claimNum={claimNum}
+          button={<CopyLinkButton anchor={title} />}
+        />
         <Quotes quotes={quotes} />
       </Col>
     </CardContent>
@@ -30,9 +34,11 @@ function Claim({
 export function ClaimHeader({
   title,
   claimNum,
+  button,
 }: {
   title: string;
   claimNum: number;
+  button?: React.ReactNode;
 }) {
   return (
     <Row gap={2} className="justify-between items-start">
@@ -42,7 +48,7 @@ export function ClaimHeader({
           <a id={`${title}`}>{title}</a>
         </p>
       </div>
-      <CopyLinkButton anchor={title} />
+      {button}
     </Row>
   );
 }
@@ -50,24 +56,35 @@ export function ClaimHeader({
 /**
  * Single quote - not wrapped in card.
  */
-export function Quote({ quote }: { quote: schema.Quote }) {
+export function QuoteCard({ quote }: { quote: schema.Quote }) {
   return (
     <CardContent className="p-4 sm:p-4">
-      <Row gap={3}>
-        {/* Quote Icon */}
-        <div className="self-start">
-          <Icons.Quote className="h-6 w-4" />
-        </div>
-
-        {/* Quote Text */}
-        <p className="flex-grow">{quote.text}</p>
-
-        {/* Chevron */}
-        <div className="h-full self-center ">
-          <Icons.ChevronRight className="text-muted-foreground self-center w-6 h-6" />
-        </div>
-      </Row>
+      <Quote quote={quote} />
     </CardContent>
+  );
+}
+
+export function QuoteText({ text }: { text: string }) {
+  return (
+    <Row gap={3}>
+      {/* Quote Icon */}
+      <div className="self-start">
+        <Icons.Quote className="h-6 w-4" />
+      </div>
+      <p className="flex-grow">{text}</p>
+    </Row>
+  );
+}
+
+export function Quote({ quote }: { quote: schema.Quote }) {
+  return (
+    <Row gap={3}>
+      <QuoteText text={quote.text} />
+      {/* Chevron */}
+      <div className="h-full self-center ">
+        <Icons.ChevronRight className="text-muted-foreground self-center w-6 h-6" />
+      </div>
+    </Row>
   );
 }
 
@@ -79,7 +96,7 @@ export function Quotes({ quotes }: { quotes: schema.Quote[] }) {
     <Card>
       {quotes.map((quote, i) => (
         <>
-          <Quote quote={quote} />
+          <QuoteCard quote={quote} />
           {i === quotes.length - 1 ? null : <Separator />}
         </>
       ))}

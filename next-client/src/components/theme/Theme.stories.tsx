@@ -1,8 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import Theme, { ThemeGraphic, ThemeHeader, TopicList } from "./Theme";
+import Theme, {
+  ThemeInteractiveGraphic,
+  ThemeHeader,
+  TopicList,
+} from "./Theme";
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 import React from "react";
+import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 
 const meta = {
   title: "Theme",
@@ -17,7 +22,11 @@ type Story = StoryObj<typeof meta>;
 const baseProps = reportData.themes[0];
 
 export const Main: Story = {
-  args: baseProps,
+  args: {
+    theme: baseProps,
+    isOpen: true,
+    setIsOpen: () => undefined,
+  },
 };
 
 const CardWrap = ({ children }: React.PropsWithChildren) => (
@@ -28,21 +37,21 @@ const CardWrap = ({ children }: React.PropsWithChildren) => (
 
 export const Header = () => (
   <div className="border">
-    <ThemeHeader title={baseProps.title} />
+    <ThemeHeader
+      title={baseProps.title}
+      button={<CopyLinkButton anchor={baseProps.title} />}
+    />
   </div>
 );
 
 export const Graphic = () => (
   <div className="border">
-    <ThemeGraphic
-      numClaims={baseProps.topics.flatMap((topic) => topic).length}
-      numPeople={0}
-    />
+    <ThemeInteractiveGraphic topics={baseProps.topics} />
   </div>
 );
 
 export const ListOfTopics = () => (
   <div className="border">
-    <TopicList topics={baseProps.topics.map((topic) => topic.title)} />
+    {/* <TopicList topics={baseProps.topics.map((topic) => topic.title)} /> */}
   </div>
 );
