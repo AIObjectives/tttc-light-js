@@ -5,6 +5,7 @@ import { Col, Row } from "../layout";
 import { CardContent, Separator, TextIcon } from "../elements";
 import Icons from "@assets/icons";
 import ReportStateManager from "./components/ReportStateManager";
+import { getNPeople } from "@src/lib/utils/morphisms";
 
 function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   return (
@@ -63,6 +64,7 @@ export function ReportHeader({
   const themes = reportData.themes;
   const topics = themes.flatMap((theme) => theme.topics);
   const claims = topics.flatMap((topic) => topic.claims);
+  const nPeople = getNPeople(claims);
   const dateStr = reportData.date.toDateString().split(" ").slice(1).join(" ");
   return (
     <CardContent>
@@ -72,7 +74,7 @@ export function ReportHeader({
           nThemes={themes.length}
           nTopics={topics.length}
           nClaims={claims.length}
-          nPeople={0}
+          nPeople={nPeople}
           dateStr={dateStr}
         />
         <p>{reportData.description}</p>
