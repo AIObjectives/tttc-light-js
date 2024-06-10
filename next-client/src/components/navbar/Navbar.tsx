@@ -13,6 +13,7 @@ import {
   Separator,
 } from "../elements";
 import Icons from "@src/assets/icons";
+import Link from "next/link";
 
 function Navbar() {
   return (
@@ -31,13 +32,16 @@ function Navbar() {
 
       <Row gap={2} className="items-center">
         {/* github */}
-        <Icons.Github />
+        <Link href={"https://github.com/aIObjectives/tttc-light-js"}>
+          <Icons.Github />
+        </Link>
+
         {/* about */}
-        <div>
+        <Link href={"/about"}>
           <Button variant={"link"}>About</Button>
-        </div>
+        </Link>
+
         {/* language */}
-        {/* create report */}
         <div>
           <Select value="eng">
             <SelectTrigger className="border-none">
@@ -54,12 +58,15 @@ function Navbar() {
           </Select>
         </div>
 
-        <Button>
-          <Row gap={1}>
-            <Icons.Plus className="self-center" size={16} />
-            Create report
-          </Row>
-        </Button>
+        {/* create report */}
+        <Link href={"/"}>
+          <Button>
+            <Row gap={1}>
+              <Icons.Plus className="self-center" size={16} />
+              Create report
+            </Row>
+          </Button>
+        </Link>
       </Row>
     </Row>
   );
