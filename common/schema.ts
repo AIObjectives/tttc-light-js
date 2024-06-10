@@ -321,7 +321,7 @@ export const reportDataObj = z.object({
   themes: z.array(theme),
   sources: z.array(source),
   graphics: graphics,
-  date: z.date(),
+  date: z.string(),
 });
 
 export type ReportDataObj = z.infer<typeof reportDataObj>;
@@ -425,7 +425,9 @@ const reportMetadata = v0_2_ReportMetadata; // make union when we have more vers
  * What the object received from the LLM pipeline should look like.
  ********************************/
 
-const pipelineOutput = z.object({
+export const pipelineOutput = z.object({
   data: reportData,
   metadata: reportMetadata,
 });
+
+export type PipelineOutput = z.infer<typeof pipelineOutput>;

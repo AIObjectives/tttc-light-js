@@ -145,22 +145,22 @@ export function TopicList({
     <Col gap={2} className="pb-2">
       <TextIcon icon={<Icons.Topic />}>{topics.length} topics</TextIcon>
 
-      <p className="text-muted-foreground">
-        <Row gap={2}>
-          {topics.map((topic, i) => (
-            <TopicListItem
-              topic={topic}
-              withComma={i !== topics.length - 1}
-              onMouseOver={() =>
-                mouseEvent({ type: "mouseOver", payload: { id: topic.id } })
-              }
-              onMouseOut={() =>
-                mouseEvent({ type: "mouseExit", payload: { id: topic.id } })
-              }
-            />
-          ))}
-        </Row>
-      </p>
+      {/* <p className="text-muted-foreground"> */}
+      <Row gap={2}>
+        {topics.map((topic, i) => (
+          <TopicListItem
+            topic={topic}
+            withComma={i !== topics.length - 1}
+            onMouseOver={() =>
+              mouseEvent({ type: "mouseOver", payload: { id: topic.id } })
+            }
+            onMouseOut={() =>
+              mouseEvent({ type: "mouseExit", payload: { id: topic.id } })
+            }
+          />
+        ))}
+      </Row>
+      {/* </p> */}
     </Col>
   );
 }

@@ -1,5 +1,6 @@
-import { Report } from "src/features/report";
-import { pipelineOutput } from "tttc-common/schema";
+import Report from "@src/components/report/Report";
+import * as schema from "tttc-common/schema";
+
 export default async function ReportPage({
   params,
 }: {
@@ -13,6 +14,7 @@ export default async function ReportPage({
     cache: "no-cache",
   });
   let data = await req.json();
-  const json = pipelineOutput.parse(data);
-  return <Report data={json} />;
+  // const reportData = schema.pipelineOutput.parse(data).data[1]
+
+  return <Report reportData={data} />;
 }

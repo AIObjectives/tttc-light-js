@@ -1177,5 +1177,5 @@ export const reportData: schema.ReportDataObj = {
       ],
     },
   ],
-  date: new Date("2023-06-05"),
+  date: "2023-06-05",
 };
