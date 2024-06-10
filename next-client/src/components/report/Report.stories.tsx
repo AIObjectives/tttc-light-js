@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { reportData } from "stories/data/dummyData";
 import Report, { ReportHeader, ReportTitle } from "./Report";
+import { getNPeople } from "@src/lib/utils/morphisms";
 
 const meta = {
   title: "Report",
@@ -32,11 +33,15 @@ export const Summary = () => <ReportHeader reportData={baseProps} />;
 export const Header = () => (
   <ReportTitle
     title={"Test"}
-    nClaims={100}
-    nPeople={20}
-    nThemes={3}
-    nTopics={20}
-    dateStr={`January 9, 2020`}
+    nClaims={
+      baseProps.themes.flatMap((theme) =>
+        theme.topics.flatMap((topic) => topic.claims),
+      ).length
+    }
+    nPeople={getNPeople(baseProps.themes)}
+    nThemes={baseProps.themes.length}
+    nTopics={baseProps.themes.flatMap((theme) => theme.topics).length}
+    dateStr={baseProps.date.toDateString()}
   />
 );
 
