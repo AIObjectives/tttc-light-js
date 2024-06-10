@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={nextTypography}>
+      <body className={`${nextTypography} min-w-max pt-0`}>
         <Navbar />
         {children}
       </body>
