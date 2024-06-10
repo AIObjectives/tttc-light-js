@@ -63,7 +63,7 @@ function ReportStateManager({
         setAllIsOpen={setAllThemesState}
       />
 
-      <Col gap={4} className="w-3/4 m-auto">
+      <Col gap={4} className="w-1/2 max-w-[832px] m-auto">
         {children}
         {themes.map(({ theme, isOpen }) => (
           <Theme
@@ -104,7 +104,7 @@ export function ReportToolbar({
     <div className={`bg-white ${isSticky ? "sticky top-0 w-full" : "static"}`}>
       <Row
         // ! make sure this is the same width as the theme cards.
-        className={`p-2 justify-between w-3/4  mx-auto`}
+        className={`p-2 justify-between w-1/2 max-w-[832px]  mx-auto`}
         innerRef={toolbarRef}
       >
         <div>

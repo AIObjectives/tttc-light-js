@@ -16,5 +16,10 @@ export default async function ReportPage({
   let data = await req.json();
   // const reportData = schema.pipelineOutput.parse(data).data[1]
 
-  return <Report reportData={data} />;
+  return (
+    // <div className="flex w-full justify-center">
+
+    <Report reportData={data} />
+    // </div>
+  );
 }
