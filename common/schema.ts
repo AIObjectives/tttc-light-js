@@ -197,10 +197,12 @@ const mediaSources = z.union([
   audioMediaSource,
 ]);
 
-const source = z.object({
+export const source = z.object({
   id: z.string(),
   data: mediaSources,
 });
+
+export type Source = z.infer<typeof source>;
 
 /********************************
  * References
@@ -232,17 +234,19 @@ const referenceAudio = z.tuple([
   }),
 ]);
 
-const reference = z.object({
+export const reference = z.object({
   id: z.string(),
   sourceId: z.string(),
   data: z.union([referenceText, referenceVideo, referenceAudio]),
 });
 
+export type Referece = z.infer<typeof reference>;
+
 /********************************
  * Quote
  * Quotes are objects used in the Report to show the user what was specifically said
  ********************************/
-const quote = z.object({
+export const quote = z.object({
   id: z.string(),
   text: z.string(),
   reference: reference,
@@ -265,13 +269,13 @@ export type Claim = {
   // Maybe duplicates? Talk to Stacy
 };
 
-const claim = z.custom<Claim>();
+export const claim = z.custom<Claim>();
 
 /********************************
  * Topic
  * Topics are categories of claims that share some relation.
  ********************************/
-const topic = z.object({
+export const topic = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
@@ -282,7 +286,7 @@ const topic = z.object({
  * Theme
  * Themes are broader categories of topics
  ********************************/
-const theme = z.object({
+export const theme = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),

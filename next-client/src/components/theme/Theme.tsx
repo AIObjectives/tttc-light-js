@@ -18,6 +18,7 @@ import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
 import ExtendedTheme from "./components/ExtendedTheme";
 import { TopicHeader } from "../topic/Topic";
+import { getNPeople } from "@src/lib/utils/morphisms";
 
 function Theme({
   theme,
@@ -194,7 +195,7 @@ export function TopicListItem({
           <TopicHeader
             title={topic.title}
             numClaims={topic.claims.length}
-            numPeople={0}
+            numPeople={getNPeople(topic.claims)}
           />
           <p className="text-muted-foreground">{topic.description}</p>
         </Col>

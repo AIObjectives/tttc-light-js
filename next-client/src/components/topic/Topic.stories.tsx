@@ -8,6 +8,7 @@ import Topic, {
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
+import { getNPeople } from "@src/lib/utils/morphisms";
 
 const meta = {
   title: "Topic",
@@ -38,7 +39,7 @@ export const Header = () => (
   <TopicHeader
     title={baseProps.title}
     numClaims={baseProps.claims.length}
-    numPeople={0}
+    numPeople={getNPeople(baseProps.claims)}
     button={<CopyLinkButton anchor={baseProps.title} />}
   />
 );
