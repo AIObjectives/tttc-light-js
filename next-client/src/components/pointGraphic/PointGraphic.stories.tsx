@@ -31,7 +31,7 @@ const baseProps = reportData.themes[0].topics;
 
 export const Main: Story = {
   args: {
-    topics: baseProps,
+    claims: baseProps.flatMap((topic) => topic.claims),
   },
 };
 
