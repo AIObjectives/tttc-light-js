@@ -41,7 +41,7 @@ export const Header = () => (
     nPeople={getNPeople(baseProps.themes)}
     nThemes={baseProps.themes.length}
     nTopics={baseProps.themes.flatMap((theme) => theme.topics).length}
-    dateStr={baseProps.date.toDateString()}
+    dateStr={baseProps.date}
   />
 );
 
