@@ -65,7 +65,7 @@ export function ReportHeader({
   const topics = themes.flatMap((theme) => theme.topics);
   const claims = topics.flatMap((topic) => topic.claims);
   const nPeople = getNPeople(claims);
-  const dateStr = reportData.date.toDateString().split(" ").slice(1).join(" ");
+  const dateStr = reportData.date;
   return (
     <CardContent>
       <Col gap={3}>
