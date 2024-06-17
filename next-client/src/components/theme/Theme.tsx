@@ -18,7 +18,7 @@ import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
 import ExtendedTheme from "./components/ExtendedTheme";
 import { TopicHeader } from "../topic/Topic";
-import { getNPeople } from "@src/lib/utils/morphisms";
+import { getNClaims, getNPeople } from "@src/lib/utils/morphisms";
 
 function Theme({
   theme,
@@ -112,12 +112,20 @@ export function ThemeInteractiveGraphic({
   );
   return (
     <Col gap={3}>
-      {/* Point graphic component */}
-      <Row className="gap-x-[3px]">
-        {topicsHoverState.map(({ topic, isHovered }) => (
-          <PointGraphicGroup claims={topic.claims} isHighlighted={isHovered} />
-        ))}
-      </Row>
+      <Col gap={2}>
+        <TextIcon icon={<Icons.Claim />}>
+          {getNClaims(topics)} claims by {getNPeople(topics)} people
+        </TextIcon>
+        {/* Point graphic component */}
+        <Row className="gap-x-[3px]">
+          {topicsHoverState.map(({ topic, isHovered }) => (
+            <PointGraphicGroup
+              claims={topic.claims}
+              isHighlighted={isHovered}
+            />
+          ))}
+        </Row>
+      </Col>
 
       {/* anything in between the point graphic and topic links */}
       {children}
@@ -184,7 +192,7 @@ export function TopicListItem({
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
         >
-          <span className="underline">
+          <span className="link">
             {topic.title}
             {withComma ? "," : ""}
           </span>

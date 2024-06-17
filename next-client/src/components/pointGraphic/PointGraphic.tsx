@@ -1,21 +1,16 @@
 "use client";
 
-import React, { Ref, forwardRef, useImperativeHandle } from "react";
+import React, { Ref, forwardRef } from "react";
 import * as schema from "tttc-common/schema";
-import {
-  CardContent,
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "../elements";
-import { ClaimHeader, Quote, QuoteText } from "../claim/Claim";
-import { Col, Row } from "../layout";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
+import { ClaimHeader, QuoteText } from "../claim/Claim";
+import { Col } from "../layout";
 
 function PointGraphic({ claims }: { claims: schema.Claim[] }) {
   return (
     <div className="flex flex-row w-full flex-wrap gap-[3px]">
-      {claims.map((claim) => (
-        <Cell claim={claim} />
+      {claims.map((claim, i) => (
+        <Cell claim={claim} claimNum={i} />
       ))}
     </div>
   );
@@ -27,8 +22,8 @@ export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
 ) {
   return (
     <div className="flex flex-row gap-[3px]" ref={ref}>
-      {claims.map((claim) => (
-        <Cell claim={claim} isHighlighted={isHighlighted} />
+      {claims.map((claim, i) => (
+        <Cell claim={claim} isHighlighted={isHighlighted} claimNum={i} />
       ))}
     </div>
   );
@@ -41,10 +36,11 @@ interface ICell
   > {
   claim: schema.Claim;
   isHighlighted?: boolean;
+  claimNum: number;
 }
 
 export function Cell(
-  { claim, isHighlighted }: ICell,
+  { claim, isHighlighted, claimNum }: ICell,
   ref: Ref<HTMLDivElement>,
 ) {
   return (
@@ -55,17 +51,23 @@ export function Cell(
         />
       </HoverCardTrigger>
       <HoverCardContent className="p-4 w-full">
-        <ClaimCard claim={claim} />
+        <ClaimCard claim={claim} claimNum={claimNum} />
       </HoverCardContent>
     </HoverCard>
   );
 }
 
-function ClaimCard({ claim }: { claim: schema.Claim }) {
+function ClaimCard({
+  claim,
+  claimNum,
+}: {
+  claim: schema.Claim;
+  claimNum: number;
+}) {
   return (
     // <CardContent className="p-4">
     <Col gap={4}>
-      <ClaimHeader title={claim.title} claimNum={0} />
+      <ClaimHeader title={claim.title} claimNum={claimNum} />
       <Col gap={2}>
         {claim.quotes.map((quote) => (
           <QuoteText text={quote.text} />
