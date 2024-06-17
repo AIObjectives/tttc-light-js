@@ -1,37 +1,10 @@
 "use client";
 
-import { Card, CardContent, Button, Separator } from "@src/components/elements";
+import { Button, Separator } from "@src/components/elements";
 import React, { useState } from "react";
 import * as schema from "tttc-common/schema";
 import { Col } from "@src/components/layout";
 import Topic from "@src/components/topic/Topic";
-
-function ThemeWrapper({
-  children,
-  topics,
-  isOpen = false,
-  setIsOpen,
-}: React.PropsWithChildren<{
-  topics: schema.Topic[];
-  isOpen: boolean;
-  setIsOpen: (val: boolean) => void;
-}>) {
-  return (
-    <Card>
-      <CardContent>
-        <Col gap={3}>
-          {children}
-          <div>
-            <Button onClick={() => setIsOpen(!isOpen)}>
-              {isOpen ? "Collapse Theme" : "Extend Theme"}
-            </Button>
-          </div>
-        </Col>
-      </CardContent>
-      {isOpen ? <ExtendedTheme topics={topics} /> : null}
-    </Card>
-  );
-}
 
 function ExtendedTheme({ topics }: { topics: schema.Topic[] }) {
   return (

@@ -69,3 +69,5 @@ export const getNPeople = (
     | schema.Referece[]
     | schema.Source[],
 ) => chainReport(arg).length;
+
+export const getNClaims = (arg: schema.Topic[]) => fromTopics(arg).length;

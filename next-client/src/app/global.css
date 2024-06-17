@@ -86,6 +86,12 @@
   .p2-medium {
     @apply text-sm font-medium;
   }
+  .link {
+    @apply underline opacity-60;
+  }
+  .link:hover {
+    @apply opacity-100;
+  }
 }
 
 @layer base {
