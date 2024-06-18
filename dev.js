@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Scripts to run in terminal
-const nextScript = `cd ${__dirname}/next-client && npm run dev`;
+const nextScript = `cd ${__dirname}/next-client && npm i && npm run dev`;
 const commonScript = `cd ${__dirname}/common && npm i && npm run build && npm run watch`;
 const expressScript = `cd ${__dirname}/express-pipeline && npm i && npm run dev`;
 
