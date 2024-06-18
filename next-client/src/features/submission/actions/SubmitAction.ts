@@ -11,16 +11,17 @@ export default async function submitAction(
   // parses csv file
   const parseCSV = async (file: File): Promise<SourceRow[]> => {
     const buffer = await file.arrayBuffer();
-    return Papa.parse(Buffer.from(buffer).toString(), { header: true })
-      .data as SourceRow[];
+    return Papa.parse(Buffer.from(buffer).toString(), {
+      header: true,
+      skipEmptyLines: true,
+    }).data as SourceRow[];
   };
-  console.log("from", parseCSV);
   // if csv file is empty, return error
   const data = await parseCSV(formData.get("dataInput") as File);
   if (!data || !data.length) {
     throw new Error("Missing data. Check your csv file");
   }
-
+  console.log(data);
   const config: Options = options.parse({
     apiKey: formData.get("apiKey"),
     data: data,
