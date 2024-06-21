@@ -8,7 +8,7 @@ import Topic, {
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
-import { getNPeople } from "@src/lib/utils/morphisms";
+import { getNPeople } from "tttc-common/morphisms/index";
 
 const meta = {
   title: "Topic",
