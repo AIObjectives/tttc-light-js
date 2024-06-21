@@ -1,6 +1,16 @@
 import { z } from "zod";
 
-export const oldsourceRow = z.object({
+/** VVVVVVVVVVVVVVVVVVVVVVVVVVVVV */
+/********************************
+ * CSV TYPES
+ ********************************/
+/** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+
+/**
+ * Source Row
+ * What the parsed CSV files should look like
+ */
+export const sourceRow = z.object({
   comment: z.string(),
   id: z.string(),
   interview: z.string().optional(),
@@ -8,36 +18,12 @@ export const oldsourceRow = z.object({
   timestamp: z.string().optional(),
 });
 
-export type oldSourceRow = z.infer<typeof oldsourceRow>;
+const csvDataPayload = z.tuple([z.literal("csv"), sourceRow.array()]);
 
-export const oldpieChart = z.object({
-  title: z.string(),
-  items: z.object({ label: z.string(), count: z.number() }).array(),
-});
-
-export type oldPieChart = z.infer<typeof oldpieChart>;
-
-export const olduserConfig = z.object({
-  apiKey: z.string(),
-  title: z.string(),
-  question: z.string(),
-  description: z.string(),
-  systemInstructions: z.string(),
-  clusteringInstructions: z.string(),
-  extractionInstructions: z.string(),
-  dedupInstructions: z.string(),
-});
-
-export type oldUserConfig = z.infer<typeof olduserConfig>;
-
-export const oldsystemConfig = z.object({
-  model: z.string().optional(),
-  batchSize: z.number(),
-  filename: z.string(),
-});
-
-export type oldSystemConfig = z.infer<typeof oldsystemConfig>;
-
+/**
+ * Google Sheet Data
+ * What input from a google sheet should look like
+ */
 const googleSheetData = z.object({
   url: z.string(),
   pieChartColumns: z.string().array().optional(),
@@ -50,19 +36,57 @@ const googleSheetDataPayload = z.tuple([
   googleSheetData,
 ]);
 
-const csvDataPayload = z.tuple([z.literal("csv"), oldsourceRow.array()]);
-
+/**
+ * Data Payload
+ * Union of CSV and Google Sheet inputs
+ */
 export const dataPayload = z.union([csvDataPayload, googleSheetDataPayload]);
+
+export type SourceRow = z.infer<typeof sourceRow>;
+
+/** VVVVVVVVVVVVVVVVVVVVVVVVVVVVV */
+/********************************
+ * LLM TYPES
+ ********************************/
+/** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+
+export const llmPieChart = z.object({
+  title: z.string(),
+  items: z.object({ label: z.string(), count: z.number() }).array(),
+});
+
+export type LLMPieChart = z.infer<typeof llmPieChart>;
+
+export const llmUserConfig = z.object({
+  apiKey: z.string(),
+  title: z.string(),
+  question: z.string(),
+  description: z.string(),
+  systemInstructions: z.string(),
+  clusteringInstructions: z.string(),
+  extractionInstructions: z.string(),
+  dedupInstructions: z.string(),
+});
+
+export type LLMUserConfig = z.infer<typeof llmUserConfig>;
+
+export const llmSystemConfig = z.object({
+  model: z.string().optional(),
+  batchSize: z.number(),
+  filename: z.string(),
+});
+
+export type oldSystemConfig = z.infer<typeof llmSystemConfig>;
 
 export type DataPayload = z.infer<typeof dataPayload>;
 
 export const options = z.object({
   model: z.string(),
   apiKey: z.string(),
-  data: oldsourceRow.array(),
+  data: sourceRow.array(),
   title: z.string(),
   question: z.string(),
-  pieCharts: oldpieChart.array().optional(),
+  pieCharts: llmPieChart.array().optional(),
   description: z.string(),
   systemInstructions: z.string(),
   clusteringInstructions: z.string(),
@@ -83,18 +107,18 @@ export const options = z.object({
 export type Options = z.infer<typeof options>;
 
 // Zod has trouble with self-referential types, so leave this be until we need to parse
-export type oldClaim = {
+export type LLMClaim = {
   claim: string;
   quote: string;
   claimId?: string;
   topicName: string;
   subtopicName?: string;
   commentId?: string;
-  duplicates?: oldClaim[];
+  duplicates?: LLMClaim[];
   duplicated?: boolean;
 };
 
-const oldclaim = z.custom<oldClaim>();
+const oldclaim = z.custom<LLMClaim>();
 
 export const cache = z.object({
   get: z.function().args(z.string()).returns(z.any()),
@@ -115,7 +139,7 @@ export const tracker = z.object({
 
 export type Tracker = z.infer<typeof tracker>;
 
-export const subtopic = z.object({
+export const llmSubtopic = z.object({
   subtopicName: z.string(),
   subtopicShortDescription: z.string().optional(),
   subtopicId: z.string().optional(),
@@ -123,27 +147,27 @@ export const subtopic = z.object({
   claims: z.array(oldclaim).optional(),
 });
 
-export type Subtopic = z.infer<typeof subtopic>;
+export type Subtopic = z.infer<typeof llmSubtopic>;
 
-export const oldtopic = z.object({
+export const llmTopic = z.object({
   topicName: z.string(),
   topicShortDescription: z.string().optional(),
   topicId: z.string().optional(),
   claimsCount: z.number().optional(),
-  subtopics: z.array(subtopic),
+  subtopics: z.array(llmSubtopic),
 });
 
 export type Topic = z.infer<typeof topic>;
 
-export const taxonomy = z.array(oldtopic);
+export const taxonomy = z.array(llmTopic);
 
 export type Taxonomy = z.infer<typeof taxonomy>;
 
-export const oldpipelineOutput = z.object({
-  data: z.array(oldsourceRow),
+export const llmPipelineOutput = z.object({
+  data: z.array(sourceRow),
   title: z.string(),
   question: z.string(),
-  pieChart: z.array(oldpieChart).optional(),
+  pieChart: z.array(llmPieChart).optional(),
   description: z.string(),
   systemInstructions: z.string(),
   clusteringInstructions: z.string(),
@@ -156,11 +180,17 @@ export const oldpipelineOutput = z.object({
   duration: z.string().optional(),
 });
 
-export type oldPipelineOutput = z.infer<typeof oldpipelineOutput>;
+export type LLMPipelineOutput = z.infer<typeof llmPipelineOutput>;
 
-export const oldsourceMap = z.record(z.string(), oldsourceRow);
+export const llmSourceMap = z.record(z.string(), sourceRow);
 
-export type oldSourceMap = z.infer<typeof oldsourceMap>;
+export type LLMSourceMap = z.infer<typeof llmSourceMap>;
+
+/** VVVVVVVVVVVVVVVVVVVVVVVVVVVVV */
+/********************************
+ * UI FACING SCHEMA TYPES
+ ********************************/
+/** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
 
 /********************************
  * Sources
@@ -264,8 +294,8 @@ export type Claim = {
   id: string;
   title: string;
   quotes: Quote[];
-  // similarClaims: Claim[]
-  similarClaimIds: string[];
+  similarClaims: Claim[];
+  // similarClaimIds: string[];
   // Maybe duplicates? Talk to Stacy
 };
 
@@ -320,7 +350,7 @@ export const reportDataObj = z.object({
   description: z.string(),
   themes: z.array(theme),
   sources: z.array(source),
-  graphics: graphics,
+  graphics: graphics.optional(),
   date: z.string(),
 });
 
@@ -373,7 +403,7 @@ const anthropicModels = z.enum([
 
 const models = z.union([openAIModels, anthropicModels]);
 
-const pipelineStages = z.enum([
+export const pipelineStages = z.enum([
   "systemInstructions",
   "clusteringInstructions",
   "extractionInstructions",
@@ -391,7 +421,7 @@ const cost = z.object({
   value: z.number(),
 });
 
-const pipelineStepData = z.object({
+export const pipelineStepData = z.object({
   temperature: z.number(),
   tokenCount,
   costPerToken: cost,
@@ -400,9 +430,13 @@ const pipelineStepData = z.object({
   instructions: z.string(),
 });
 
-const pipelineStep = z.tuple([pipelineStages, pipelineStepData]);
+export type PipelineStepData = z.infer<typeof pipelineStepData>;
 
-const reportMetadataObj = z.object({
+export const pipelineStep = z.tuple([pipelineStages, pipelineStepData]);
+
+export type PipelineStep = z.infer<typeof pipelineStep>;
+
+export const reportMetadataObj = z.object({
   buildProcess: z.array(pipelineStep),
   startTimestamp: z.number(),
   duration: z.number(),
@@ -410,6 +444,8 @@ const reportMetadataObj = z.object({
   author: z.string(),
   organization: z.string().optional(),
 });
+
+export type ReportMetadataObj = z.infer<typeof reportMetadataObj>;
 
 /********************************
  * Pipeline Versions

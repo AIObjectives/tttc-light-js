@@ -1,4 +1,4 @@
-import * as schema from "tttc-common/schema";
+import * as schema from "../schema";
 import { z } from "zod";
 
 // ! these functions haven't been tested thoroughly yet

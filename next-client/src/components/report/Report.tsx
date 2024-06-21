@@ -5,7 +5,7 @@ import { Col, Row } from "../layout";
 import { CardContent, Separator, TextIcon } from "../elements";
 import Icons from "@assets/icons";
 import ReportStateManager from "./components/ReportStateManager";
-import { getNPeople } from "@src/lib/utils/morphisms";
+import { getNPeople } from "tttc-common/morphisms";
 
 function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   return (

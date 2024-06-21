@@ -7,7 +7,7 @@ import Claim from "../claim/Claim";
 import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
 import ClaimLoader from "./components/ClaimLoader";
-import { getNPeople } from "@src/lib/utils/morphisms";
+import { getNPeople } from "tttc-common/morphisms";
 
 function Topic({ topic }: { topic: schema.Topic }) {
   const { claims } = topic;

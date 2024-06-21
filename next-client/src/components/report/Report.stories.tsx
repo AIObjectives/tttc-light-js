@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { reportData } from "stories/data/dummyData";
 import Report, { ReportHeader, ReportTitle } from "./Report";
-import { getNPeople } from "@src/lib/utils/morphisms";
+import { getNPeople } from "tttc-common/morphisms/index";
 
 const meta = {
   title: "Report",
