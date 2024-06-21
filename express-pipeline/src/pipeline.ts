@@ -10,13 +10,14 @@ import {
   Options,
   Tracker,
   Cache,
-  Claim,
   Subtopic,
   Taxonomy,
   PipelineOutput,
   LLMClaim,
   LLMPipelineOutput,
 } from "tttc-common/schema";
+
+import { llmPipelineToSchema } from "tttc-common/morphisms";
 
 const defaultOptions = {
   model: "gpt-4-turbo-preview", // Claude options: "claude-3-sonnet-20240229", claude-3-haiku-20240307"
@@ -75,7 +76,7 @@ function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
 async function pipeline(
   _options: Options,
   cache?: Cache,
-): Promise<LLMPipelineOutput> {
+): Promise<PipelineOutput> {
   const options = { ...defaultOptions, ..._options };
   const tracker: Tracker = {
     costs: 0,
@@ -185,7 +186,9 @@ async function pipeline(
   console.log(
     `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`,
   );
-  return { ...options, tree, ...tracker };
+  const llmPipelineOutput: LLMPipelineOutput = { ...options, tree, ...tracker };
+
+  return llmPipelineToSchema(llmPipelineOutput);
 }
 
 export default pipeline;
