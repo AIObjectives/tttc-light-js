@@ -25,12 +25,12 @@ const fromReport = (arg: schema.ReportDataObj): string[] =>
   fromTheme(arg.themes);
 
 const chainMatch =
-  <S extends z.Schema>(
+  <S extends z.Schema, T>(
     zSchema: S,
-    func: (some: z.TypeOf<S>) => string[],
-    passFunc: (unknown: unknown) => string[],
+    func: (some: z.TypeOf<S>) => T,
+    passFunc: (unknown: unknown) => T,
   ) =>
-  (val: unknown): string[] => {
+  (val: unknown): T => {
     if (zSchema.safeParse(val).success) return func(zSchema.parse(val));
     else return passFunc(val);
   };
