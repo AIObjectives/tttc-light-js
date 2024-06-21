@@ -18,7 +18,7 @@ import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
 import ExtendedTheme from "./components/ExtendedTheme";
 import { TopicHeader } from "../topic/Topic";
-import { getNClaims, getNPeople } from "@src/lib/utils/morphisms";
+import { getNClaims, getNPeople } from "tttc-common/morphisms";
 
 function Theme({
   theme,

@@ -14,6 +14,8 @@ import {
   Subtopic,
   Taxonomy,
   PipelineOutput,
+  LLMClaim,
+  LLMPipelineOutput,
 } from "tttc-common/schema";
 
 const defaultOptions = {
@@ -28,7 +30,7 @@ const defaultOptions = {
   batchSize:  2, // lower to avoid rate limits! initial was 10,
 };
 
-function insertClaim(taxonomy: Taxonomy, claim: Claim, tracker: Tracker) {
+function insertClaim(taxonomy: Taxonomy, claim: LLMClaim, tracker: Tracker) {
   const { topicName, subtopicName } = claim;
   const matchedTopic = taxonomy.find((topic) => topic.topicName === topicName);
   if (!matchedTopic) {
@@ -51,7 +53,7 @@ function insertClaim(taxonomy: Taxonomy, claim: Claim, tracker: Tracker) {
 }
 
 function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
-  const map: { [key: string]: Claim } = {};
+  const map: { [key: string]: LLMClaim } = {};
   (subtopic.claims || []).forEach((claim) => {
     map[claim.claimId!] = claim;
   });
@@ -73,7 +75,7 @@ function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
 async function pipeline(
   _options: Options,
   cache?: Cache,
-): Promise<PipelineOutput> {
+): Promise<LLMPipelineOutput> {
   const options = { ...defaultOptions, ..._options };
   const tracker: Tracker = {
     costs: 0,
@@ -111,7 +113,7 @@ async function pipeline(
           tracker,
           cache,
         );
-        claims?.forEach((claim: Claim, i: number) => {
+        claims.forEach((claim: LLMClaim, i: number) => {
           insertClaim(
             taxonomy,
             {
