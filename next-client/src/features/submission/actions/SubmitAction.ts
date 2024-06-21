@@ -2,9 +2,9 @@
 import {
   DataPayload,
   SourceRow,
-  UserConfig,
+  LLMUserConfig,
   options,
-  userConfig,
+  llmUserConfig,
 } from "tttc-common/schema";
 import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
@@ -29,7 +29,7 @@ export default async function submitAction(
     throw new Error("Missing data. Check your csv file");
   }
 
-  const config: UserConfig = userConfig.parse({
+  const config: LLMUserConfig = llmUserConfig.parse({
     apiKey: formData.get("apiKey"),
     title: formData.get("title"),
     question: formData.get("question"),

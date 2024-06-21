@@ -13,8 +13,8 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "resolveJsonModule": true,
-    "lib": ["ES2019"]
+    "lib": ["ES2019", "DOM"]
   },
-  "include": ["*", "morphisms/morphisms.ts"],
+  "include": ["*", "./morphisms/**/*"],
   "exclude": ["dist/"]
 }

@@ -157,6 +157,8 @@ export const llmTopic = z.object({
   subtopics: z.array(llmSubtopic),
 });
 
+export type LLMTopic = z.infer<typeof llmTopic>;
+
 export type Topic = z.infer<typeof topic>;
 
 export const taxonomy = z.array(llmTopic);
@@ -198,12 +200,14 @@ export type LLMSourceMap = z.infer<typeof llmSourceMap>;
  * There exists a one-to-many relationship between sources and referrences.
  ********************************/
 
-const textMediaSource = z.tuple([
+export const textMediaSource = z.tuple([
   z.literal("text"),
   z.object({
     text: z.string(),
   }),
 ]);
+
+export type TextMediaSource = z.infer<typeof textMediaSource>;
 
 const videoMediaSource = z.tuple([
   z.literal("video"),
@@ -247,6 +251,8 @@ const referenceText = z.tuple([
     endIdx: z.number(),
   }),
 ]);
+
+export type ReferenceText = z.infer<typeof referenceText>;
 
 const referenceVideo = z.tuple([
   z.literal("video"),
@@ -295,8 +301,7 @@ export type Claim = {
   title: string;
   quotes: Quote[];
   similarClaims: Claim[];
-  // similarClaimIds: string[];
-  // Maybe duplicates? Talk to Stacy
+  number: number;
 };
 
 export const claim = z.custom<Claim>();
