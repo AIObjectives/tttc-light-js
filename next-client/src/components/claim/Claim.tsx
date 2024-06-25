@@ -66,12 +66,12 @@ export function QuoteCard({ quote }: { quote: schema.Quote }) {
 
 export function QuoteText({ text }: { text: string }) {
   return (
-    <Row gap={3}>
+    <Row gap={3} className="w-full">
       {/* Quote Icon */}
-      <div className="self-start">
+      <div className="self-start flex-shrink-0">
         <Icons.Quote className="h-6 w-4" />
       </div>
-      <p className="flex-grow">{text}</p>
+      <p className="flex flex-grow">{text}</p>
     </Row>
   );
 }
@@ -81,7 +81,7 @@ export function Quote({ quote }: { quote: schema.Quote }) {
     <Row gap={3}>
       <QuoteText text={quote.text} />
       {/* Chevron */}
-      <div className="h-full self-center ">
+      <div className="h-full self-center flex-shrink-0">
         <Icons.ChevronRight className="text-muted-foreground self-center w-6 h-6" />
       </div>
     </Row>

@@ -49,7 +49,11 @@ export function ReportTitle({
           {nPeople} people
         </TextIcon>
         <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
-          {dateStr}
+          {Intl.DateTimeFormat("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }).format(new Date(dateStr))}
         </TextIcon>
       </Row>
     </Col>
