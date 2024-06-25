@@ -101,10 +101,12 @@ export function ReportToolbar({
   }, []);
 
   return (
-    <div className={`bg-white ${isSticky ? "sticky top-0 w-full" : "static"}`}>
+    <div
+      className={`bg-white z-50 ${isSticky ? "sticky top-0 w-full" : "static"}`}
+    >
       <Row
         // ! make sure this is the same width as the theme cards.
-        className={`p-2 justify-between w-1/2 max-w-[832px]  mx-auto`}
+        className={`p-2 justify-between w-1/2 max-w-[832px] mx-auto`}
         innerRef={toolbarRef}
       >
         <div>
