@@ -18,7 +18,7 @@ const meta = {
   ],
 } satisfies Meta<typeof Claim>;
 
-const baseProps = reportData.themes[0].topics[0].claims[2];
+const baseProps = reportData.themes[0].topics[0].claims[0];
 
 export default meta;
 type Story = StoryObj<typeof meta>;
