@@ -10,7 +10,7 @@ function PointGraphic({ claims }: { claims: schema.Claim[] }) {
   return (
     <div className="flex flex-row w-full flex-wrap gap-[3px]">
       {claims.map((claim, i) => (
-        <Cell claim={claim} claimNum={i} />
+        <Cell claim={claim} />
       ))}
     </div>
   );
@@ -23,7 +23,7 @@ export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
   return (
     <div className="flex flex-row gap-[3px]" ref={ref}>
       {claims.map((claim, i) => (
-        <Cell claim={claim} isHighlighted={isHighlighted} claimNum={i} />
+        <Cell claim={claim} isHighlighted={isHighlighted} />
       ))}
     </div>
   );
@@ -36,11 +36,10 @@ interface ICell
   > {
   claim: schema.Claim;
   isHighlighted?: boolean;
-  claimNum: number;
 }
 
 export function Cell(
-  { claim, isHighlighted, claimNum }: ICell,
+  { claim, isHighlighted }: ICell,
   ref: Ref<HTMLDivElement>,
 ) {
   return (
@@ -51,23 +50,17 @@ export function Cell(
         />
       </HoverCardTrigger>
       <HoverCardContent className="p-4 w-full">
-        <ClaimCard claim={claim} claimNum={claimNum} />
+        <ClaimCard claim={claim} />
       </HoverCardContent>
     </HoverCard>
   );
 }
 
-function ClaimCard({
-  claim,
-  claimNum,
-}: {
-  claim: schema.Claim;
-  claimNum: number;
-}) {
+function ClaimCard({ claim }: { claim: schema.Claim }) {
   return (
     // <CardContent className="p-4">
     <Col gap={4}>
-      <ClaimHeader title={claim.title} claimNum={claimNum} />
+      <ClaimHeader title={claim.title} claimNum={claim.number} />
       <Col gap={2}>
         {claim.quotes.map((quote) => (
           <QuoteText text={quote.text} />
