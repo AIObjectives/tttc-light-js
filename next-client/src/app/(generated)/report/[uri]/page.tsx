@@ -1,4 +1,5 @@
 import Report from "@src/components/report/Report";
+import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
 
 export default async function ReportPage({
@@ -14,12 +15,14 @@ export default async function ReportPage({
     cache: "no-cache",
   });
   let data = await req.json();
-  // const reportData = schema.pipelineOutput.parse(data).data[1]
+  const reportData = schema.llmPipelineOutput.safeParse(data).success
+    ? getReportDataObj(data)
+    : schema.pipelineOutput.parse(data).data[1];
 
   return (
     // <div className="flex w-full justify-center">
 
-    <Report reportData={data} />
+    <Report reportData={reportData} />
     // </div>
   );
 }

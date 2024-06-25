@@ -138,7 +138,7 @@ const getThemesFromTaxonomy =
       topics: getTopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
     }));
 
-const getReportDataObj = (
+export const getReportDataObj = (
   pipelineOutput: schema.LLMPipelineOutput,
 ): schema.ReportDataObj => {
   const sourceMap = buildSourceMap(pipelineOutput.data);
