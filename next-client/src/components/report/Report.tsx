@@ -38,23 +38,29 @@ export function ReportTitle({
         </h3>
         <CopyLinkButton anchor={title} />
       </Row>
-      <Row gap={4} className="h-5">
-        <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
-          {nThemes} themes
-        </TextIcon>
-        <TextIcon icon={<Icons.Topic />}>{nTopics} topics</TextIcon>
-        <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
-        <Separator orientation="vertical" />
-        <TextIcon icon={<Icons.People size={16} className="self-center" />}>
-          {nPeople} people
-        </TextIcon>
-        <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
-          {Intl.DateTimeFormat("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          }).format(new Date(dateStr))}
-        </TextIcon>
+
+      <Row gap={4} className="h-5 flex-wrap gap-y-2">
+        <Row gap={4} className="h-5">
+          <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
+            {nThemes} themes
+          </TextIcon>
+          <TextIcon icon={<Icons.Topic />}>{nTopics} topics</TextIcon>
+          <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
+          <Separator orientation="vertical" />
+        </Row>
+
+        <Row gap={4} className="h-5">
+          <TextIcon icon={<Icons.People size={16} className="self-center" />}>
+            {nPeople} people
+          </TextIcon>
+          <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
+            {Intl.DateTimeFormat("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            }).format(new Date(dateStr))}
+          </TextIcon>
+        </Row>
       </Row>
     </Col>
   );
