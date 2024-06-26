@@ -7,6 +7,7 @@ import {
   ArrowUpDown,
   Github,
   Menu,
+  CheckCircle,
 } from "lucide-react";
 
 import TopicSVG from "./Topic.svg";
@@ -35,6 +36,8 @@ Icons.Select = ArrowUpDown;
 Icons.Github = Github;
 
 Icons.Menu = Menu;
+
+Icons.Success = CheckCircle;
 
 Icons.ChevronRight = (props: { className?: string }) => (
   <Image {...props} src={ChevronRight} alt="chevron icon" />
