@@ -2,6 +2,7 @@
 
 import { Button } from "../elements";
 import Icons from "@src/assets/icons";
+import { toast } from "sonner";
 
 function CopyLinkButton({ anchor }: { anchor: string }) {
   const copy = async () =>
@@ -12,7 +13,8 @@ function CopyLinkButton({ anchor }: { anchor: string }) {
         location.pathname +
         `#${encodeURIComponent(anchor)}`,
     );
-  const notify = async () => null;
+  const notify = async () => toast.success("Success");
+
   return (
     <Button
       size={"icon"}
