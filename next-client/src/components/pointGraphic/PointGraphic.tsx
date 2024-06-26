@@ -43,7 +43,7 @@ export function Cell(
   ref: Ref<HTMLDivElement>,
 ) {
   return (
-    <HoverCard>
+    <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger>
         <div
           className={`w-3 h-3 bg-AOI_graph_cell rounded-sm hover:bg-slate-700 ${isHighlighted ? "bg-slate-700" : ""}`}
