@@ -102,7 +102,7 @@ export function ReportToolbar({
 
   return (
     <div
-      className={`bg-white z-50 ${isSticky ? "sticky top-0 w-full" : "static"}`}
+      className={`bg-white z-50 ${isSticky ? "sticky top-0 w-full border-b shadow-sm" : "static"}`}
     >
       <Row
         // ! make sure this is the same width as the theme cards.
