@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${nextTypography} min-w-max pt-0`}>
+      <body className={`${nextTypography} min-w-max pt-0 px-0`}>
         <Navbar />
         {children}
         <Toaster
