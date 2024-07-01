@@ -21,13 +21,11 @@ export default function RootLayout({
         <Toaster
           position="bottom-right"
           toastOptions={{
-            unstyled: true,
-            className:
-              "border-none flex flex-row gap-x-2 items-center p-4 border-r-2 rounded-md shadow-lg",
+            className: "border-none p-4 flex",
             classNames: {
-              toast: "bg-green-100",
-              title: "text-green-500",
-              icon: "text-green-500",
+              toast: "bg-accent",
+              title: "text-accent-foreground",
+              icon: "text-accent-foreground",
             },
           }}
         />
