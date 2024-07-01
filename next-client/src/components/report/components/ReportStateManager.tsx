@@ -110,7 +110,7 @@ export function ReportToolbar({
         innerRef={toolbarRef}
       >
         <div>
-          <ReportSortBy sortBy={sortBy} setSortBy={setSortBy} />
+          {/* <ReportSortBy sortBy={sortBy} setSortBy={setSortBy} /> */}
         </div>
         <Row gap={2}>
           <Button onClick={setAllIsOpen(false)} variant={"outline"}>
