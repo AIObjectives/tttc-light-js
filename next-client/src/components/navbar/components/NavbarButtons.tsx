@@ -18,10 +18,10 @@ export function Headline() {
   return (
     <Row gap={6} className="h-10 items-center">
       {/* hamburger */}
-      <Button variant={"ghost"} size={"icon"}>
+      <Button variant={"ghost"} size={"icon"} className="p-2 sm:hidden">
         <Icons.Menu size={24} />
       </Button>
-      <Separator orientation="vertical" className="h-full" />
+      <Separator orientation="vertical" className="h-full sm:hidden" />
       <h3>Talk to the City</h3>
     </Row>
   );
