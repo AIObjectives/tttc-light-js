@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useReducer } from "react";
+import React from "react";
 import {
   Button,
   Card,
@@ -19,6 +19,7 @@ import { Col, Row } from "../layout";
 import ExtendedTheme from "./components/ExtendedTheme";
 import { TopicHeader } from "../topic/Topic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
+import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 
 function Theme({
   theme,
@@ -71,45 +72,11 @@ export function ThemeHeader({
   );
 }
 
-type TopicHoverState = { isHovered: boolean; topic: schema.Topic };
-const stateReplace = (
-  state: TopicHoverState[],
-  idx: number,
-  value: boolean,
-): TopicHoverState[] => [
-  ...state.slice(0, idx),
-  { ...state[idx], isHovered: value },
-  ...state.slice(idx + 1),
-];
-const safeFindIdx = (state: TopicHoverState[], id: string): number => {
-  const idx = state.findIndex((val) => val.topic.id === id);
-  if (idx === -1) throw new Error("could not find idx to in topicHoverReducer");
-  return idx;
-};
-const stateFindAndReplace =
-  (value: boolean) =>
-  (state: TopicHoverState[], id: string): TopicHoverState[] =>
-    stateReplace(state, safeFindIdx(state, id), value);
-const onMouseOver = stateFindAndReplace(true);
-const onMouseExit = stateFindAndReplace(false);
-type TopicHoverActions = "mouseOver" | "mouseExit";
-type TopicHoverPayload = { id: string };
-const topicHoverReducer = (
-  state: TopicHoverState[],
-  action: { type: TopicHoverActions; payload: TopicHoverPayload },
-) =>
-  action.type === "mouseOver"
-    ? onMouseOver(state, action.payload.id)
-    : onMouseExit(state, action.payload.id);
-
 export function ThemeInteractiveGraphic({
   children,
   topics,
 }: React.PropsWithChildren<{ topics: schema.Topic[] }>) {
-  const [topicsHoverState, setTopicsHoverState] = useReducer(
-    topicHoverReducer,
-    topics.map((topic) => ({ isHovered: false, topic })),
-  );
+  const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(topics);
   return (
     <Col gap={3}>
       <Col gap={2}>
@@ -118,7 +85,7 @@ export function ThemeInteractiveGraphic({
         </TextIcon>
         {/* Point graphic component */}
         <Row className="gap-x-[3px]">
-          {topicsHoverState.map(({ topic, isHovered }) => (
+          {topicsHoverState.map(({ group: topic, isHovered }) => (
             <PointGraphicGroup
               claims={topic.claims}
               isHighlighted={isHovered}
@@ -132,8 +99,9 @@ export function ThemeInteractiveGraphic({
 
       {/* Topic links */}
       <TopicList
-        topics={topicsHoverState.map(({ topic }) => topic)}
-        mouseEvent={setTopicsHoverState}
+        topics={topicsHoverState.map(({ group: topic }) => topic)}
+        onMouseOver={onMouseOver}
+        onMouseExit={onMouseExit}
       />
     </Col>
   );
@@ -141,13 +109,12 @@ export function ThemeInteractiveGraphic({
 
 export function TopicList({
   topics,
-  mouseEvent,
+  onMouseOver,
+  onMouseExit,
 }: {
   topics: schema.Topic[];
-  mouseEvent: React.Dispatch<{
-    type: TopicHoverActions;
-    payload: TopicHoverPayload;
-  }>;
+  onMouseOver: (id: string) => void;
+  onMouseExit: (id: string) => void;
 }) {
   return (
     <Col gap={2} className="pb-2">
@@ -159,12 +126,8 @@ export function TopicList({
           <TopicListItem
             topic={topic}
             withComma={i !== topics.length - 1}
-            onMouseOver={() =>
-              mouseEvent({ type: "mouseOver", payload: { id: topic.id } })
-            }
-            onMouseOut={() =>
-              mouseEvent({ type: "mouseExit", payload: { id: topic.id } })
-            }
+            onMouseOver={() => onMouseOver(topic.id)}
+            onMouseOut={() => onMouseExit(topic.id)}
           />
         ))}
       </Row>
