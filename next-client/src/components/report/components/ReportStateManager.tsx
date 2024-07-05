@@ -13,6 +13,7 @@ import { Col, Row } from "@src/components/layout";
 import React, { useEffect, useRef, useState } from "react";
 import * as schema from "tttc-common/schema";
 import Theme from "@src/components/theme/Theme";
+import { Sticky } from "@src/components/wrappers";
 
 type SortBy = "claims" | "people";
 
@@ -86,28 +87,11 @@ export function ReportToolbar({
   setSortBy: (val: SortBy) => void;
   setAllIsOpen: (val: boolean) => () => void;
 }) {
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const [isSticky, setIsSticky] = useState<boolean>(false);
-
-  const handleIsSticky = () => {
-    const top = toolbarRef.current?.getBoundingClientRect().top;
-    const val = top !== undefined && top <= 0;
-    setIsSticky(val);
-  };
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleIsSticky);
-    return () => window.removeEventListener("scroll", handleIsSticky);
-  }, []);
-
   return (
-    <div
-      className={`bg-white z-50 ${isSticky ? "sticky top-0 w-full border-b shadow-sm" : "static"}`}
-    >
+    <Sticky className={`bg-white z-50 w-full`} stickyClass="border-b shadow-sm">
       <Row
         // ! make sure this is the same width as the theme cards.
         className={`p-2 justify-between w-1/2 max-w-[832px] mx-auto`}
-        innerRef={toolbarRef}
       >
         <div>
           {/* <ReportSortBy sortBy={sortBy} setSortBy={setSortBy} /> */}
@@ -121,7 +105,7 @@ export function ReportToolbar({
           </Button>
         </Row>
       </Row>
-    </div>
+    </Sticky>
   );
 }
 
