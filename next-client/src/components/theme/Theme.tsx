@@ -20,6 +20,7 @@ import ExtendedTheme from "./components/ExtendedTheme";
 import { TopicHeader } from "../topic/Topic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
+import { Sticky } from "../wrappers";
 
 function Theme({
   theme,
@@ -43,11 +44,11 @@ function Theme({
           <ThemeInteractiveGraphic topics={topics}>
             <p>{description}</p>
           </ThemeInteractiveGraphic>
-          <div>
+          <Sticky className="bg-blue-300">
             <Button onClick={() => setIsOpen(!isOpen)}>
               {isOpen ? "Collapse Theme" : "Extend Theme"}
             </Button>
-          </div>
+          </Sticky>
         </Col>
       </CardContent>
       {isOpen ? <ExtendedTheme topics={topics} /> : null}
