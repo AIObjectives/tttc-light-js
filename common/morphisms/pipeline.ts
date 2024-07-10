@@ -80,9 +80,10 @@ const buildClaimsMap = (
 
   return allClaims.reduce((accum, curr) => {
     accum[curr.claimId!] = createClaim(curr, sourceMap, accum);
-    curr.duplicates.forEach((dup, i) => {
-      accum[dup.claimId] = accum[curr.claimId].similarClaims[i];
-    });
+    curr.duplicates &&
+      curr.duplicates.forEach((dup, i) => {
+        accum[dup.claimId] = accum[curr.claimId].similarClaims[i];
+      });
     return accum;
   }, {} as ClaimMap);
 };
