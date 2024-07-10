@@ -15,7 +15,9 @@ export default async function ReportPage({
     cache: "no-cache",
   });
   let data = await req.json();
-  const reportData = schema.llmPipelineOutput.safeParse(data).success
+  const reportData: schema.ReportDataObj = schema.llmPipelineOutput.safeParse(
+    data,
+  ).success
     ? getReportDataObj(data)
     : schema.pipelineOutput.parse(data).data[1];
 
