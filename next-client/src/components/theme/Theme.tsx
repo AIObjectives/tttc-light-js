@@ -44,7 +44,7 @@ function Theme({
           <ThemeInteractiveGraphic topics={topics}>
             <p>{description}</p>
           </ThemeInteractiveGraphic>
-          <Sticky className="bg-blue-300">
+          <Sticky>
             <Button onClick={() => setIsOpen(!isOpen)}>
               {isOpen ? "Collapse Theme" : "Extend Theme"}
             </Button>
