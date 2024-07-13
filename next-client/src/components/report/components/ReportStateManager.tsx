@@ -14,6 +14,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as schema from "tttc-common/schema";
 import Theme from "@src/components/theme/Theme";
 import { Sticky } from "@src/components/wrappers";
+import { cn } from "@src/lib/utils/shadcn";
 
 type SortBy = "claims" | "people";
 
@@ -88,7 +89,10 @@ export function ReportToolbar({
   setAllIsOpen: (val: boolean) => () => void;
 }) {
   return (
-    <Sticky className={`bg-white z-50 w-full`} stickyClass="border-b shadow-sm">
+    <Sticky
+      className={cn(`z-50 w-full dark:bg-background`)}
+      stickyClass="border-b shadow-sm"
+    >
       <Row
         // ! make sure this is the same width as the theme cards.
         className={`p-2 justify-between md:w-1/2 max-w-[832px] mx-auto`}
