@@ -64,7 +64,7 @@ function ReportStateManager({
         setAllIsOpen={setAllThemesState}
       />
 
-      <Col gap={4} className="w-1/2 max-w-[832px] m-auto">
+      <Col gap={4} className="w-full md:w-1/2 max-w-[832px] m-auto">
         {children}
         {themes.map(({ theme, isOpen }) => (
           <Theme
@@ -91,7 +91,7 @@ export function ReportToolbar({
     <Sticky className={`bg-white z-50 w-full`} stickyClass="border-b shadow-sm">
       <Row
         // ! make sure this is the same width as the theme cards.
-        className={`p-2 justify-between w-1/2 max-w-[832px] mx-auto`}
+        className={`p-2 justify-between md:w-1/2 max-w-[832px] mx-auto`}
       >
         <div>
           {/* <ReportSortBy sortBy={sortBy} setSortBy={setSortBy} /> */}

@@ -21,8 +21,8 @@ export function Headline() {
       <Button variant={"ghost"} size={"icon"} className="p-2 sm:hidden">
         <Icons.Menu size={24} />
       </Button>
-      <Separator orientation="vertical" className="h-full sm:hidden" />
-      <h3>Talk to the City</h3>
+      {/* <Separator orientation="vertical" className="h-full hidden sm:block" /> */}
+      <h3 className="hidden sm:block">Talk to the City</h3>
     </Row>
   );
 }
