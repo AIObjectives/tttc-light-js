@@ -6,7 +6,7 @@
     "build": "next build",
     "start": "next start",
     "start-old": "node dist/server.js",
-    "dev": "next dev"
+    "dev": "node env-check.js env=.env.local example=.example-env.local && next dev"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
