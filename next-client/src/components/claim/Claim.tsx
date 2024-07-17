@@ -82,7 +82,9 @@ export function Quote({ quote }: { quote: schema.Quote }) {
       <QuoteText text={quote.text} />
       {/* Chevron */}
       <div className="h-full self-center flex-shrink-0">
-        <Icons.ChevronRight className="text-muted-foreground self-center w-6 h-6" />
+        {/* ! leave this commented out for now */}
+        {/* <Icons.ChevronRight className="text-muted-foreground self-center w-6 h-6" /> */}
+        <div className="w-6 h-6" />
       </div>
     </Row>
   );
