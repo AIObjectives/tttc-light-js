@@ -1,6 +1,7 @@
 import {
   Link,
   Plus,
+  Minus,
   BookText,
   CircleUserRound,
   Calendar,
@@ -8,6 +9,7 @@ import {
   Github,
   Menu,
   CheckCircle,
+  AlignLeft,
 } from "lucide-react";
 
 import TopicSVG from "./Topic.svg";
@@ -25,6 +27,8 @@ Icons.Copy = Copy;
 
 Icons.Plus = Plus;
 
+Icons.Minus = Minus;
+
 Icons.Theme = BookText;
 
 Icons.People = CircleUserRound;
@@ -38,6 +42,8 @@ Icons.Github = Github;
 Icons.Menu = Menu;
 
 Icons.Success = CheckCircle;
+
+Icons.Outline = AlignLeft;
 
 Icons.ChevronRight = (props: { className?: string }) => (
   <Image {...props} src={ChevronRight} alt="chevron icon" />
