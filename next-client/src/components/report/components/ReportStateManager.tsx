@@ -15,6 +15,7 @@ import * as schema from "tttc-common/schema";
 import Theme from "@src/components/theme/Theme";
 import { Sticky } from "@src/components/wrappers";
 import { cn } from "@src/lib/utils/shadcn";
+import Outline from "@src/components/outline/Outline";
 
 type SortBy = "claims" | "people";
 
@@ -64,7 +65,9 @@ function ReportStateManager({
         setSortBy={setSortBy}
         setAllIsOpen={setAllThemesState}
       />
-
+      <div className="sticky top-1/2">
+        <Outline themes={_themes} />
+      </div>
       <Col gap={4} className="w-full md:w-1/2 max-w-[832px] m-auto">
         {children}
         {themes.map(({ theme, isOpen }) => (
