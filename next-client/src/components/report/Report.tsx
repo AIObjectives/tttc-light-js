@@ -1,17 +1,86 @@
-import React from "react";
+"use client";
+
+import React, { Dispatch, Ref, createContext, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { Col, Row } from "../layout";
-import { CardContent, Separator, TextIcon } from "../elements";
+import { Button, CardContent, Separator, TextIcon } from "../elements";
 import Icons from "@assets/icons";
-import ReportStateManager from "./components/ReportStateManager";
 import { getNPeople } from "tttc-common/morphisms";
+import useReportState, { ReportStateAction } from "./hooks/useReportState";
+import { Sticky } from "../wrappers";
+import { cn } from "@src/lib/utils/shadcn";
+import Outline from "../outline/Outline";
+import Theme from "../theme/Theme";
+import useScrollListener from "./hooks/useScrollListener";
+import useReportSubscribe from "./hooks/useReportSubscribe";
+
+type ReportActionEffectFunc = (action: ReportStateAction) => void;
+type ReportActionEffect = (func: ReportActionEffectFunc) => void;
+
+export const ReportContext = createContext<{
+  dispatch: Dispatch<ReportStateAction>;
+  useScrollTo: (listenForId: string) => Ref<HTMLDivElement>;
+  useReportEffect: ReportActionEffect;
+}>({
+  dispatch: () => null,
+  useScrollTo: () => ({}) as Ref<HTMLDivElement>,
+  useReportEffect: () => {},
+});
 
 function Report({ reportData }: { reportData: schema.ReportDataObj }) {
+  const [state, _dispatch] = useReportState(reportData.themes);
+  const [dispatch, useReportEffect] = useReportSubscribe(_dispatch);
+  const [useScrollTo] = useScrollListener(useReportEffect);
   return (
-    <ReportStateManager themes={reportData.themes}>
-      <ReportHeader reportData={reportData} />
-    </ReportStateManager>
+    <ReportContext.Provider value={{ dispatch, useScrollTo, useReportEffect }}>
+      <div>
+        <ReportToolbar />
+        <div className="sticky top-20">
+          <div className="absolute h-full bottom-full ">
+            <Outline nodes={state.children} reportDispatch={dispatch} />
+          </div>
+        </div>
+
+        <Col gap={4} className="w-full md:w-1/2 max-w-[832px] m-auto">
+          <ReportHeader reportData={reportData} />
+          {state.children.map((themeNode) => (
+            <Theme node={themeNode} />
+          ))}
+        </Col>
+      </div>
+    </ReportContext.Provider>
+  );
+}
+
+export function ReportToolbar() {
+  const { dispatch } = useContext(ReportContext);
+  return (
+    <Sticky
+      className={cn(`z-50 w-full dark:bg-background`)}
+      stickyClass="border-b shadow-sm"
+    >
+      <Row
+        // ! make sure this is the same width as the theme cards.
+        className={`p-2 justify-between md:w-1/2 max-w-[832px] mx-auto`}
+      >
+        <div></div>
+        <Row gap={2}>
+          <Button
+            onClick={() => dispatch({ type: "closeAll", payload: { id: "" } })}
+            variant={"outline"}
+          >
+            Collapse all
+          </Button>
+          <Button
+            onClick={() => dispatch({ type: "openAll", payload: { id: "" } })}
+            variant={"secondary"}
+          >
+            Expand all
+          </Button>
+        </Row>
+      </Row>
+    </Sticky>
   );
 }
 

@@ -7,6 +7,7 @@ type StickyProps = React.PropsWithChildren<{
     React.HTMLAttributes<HTMLDivElement>,
     HTMLDivElement
   >["className"];
+  top?: string;
 }> &
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>;
 

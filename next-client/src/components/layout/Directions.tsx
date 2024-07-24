@@ -1,9 +1,8 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import "../../app/global.css";
 
 type DirectionProps = React.PropsWithChildren<{
   gap?: number;
-  innerRef?: React.Ref<HTMLDivElement>;
 }> &
   React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>;
 
@@ -43,40 +42,34 @@ const classDictCol = {
   10: "gap-y-10",
 };
 
-const Row = ({
-  children,
-  innerRef,
-  className,
-  gap = 0,
-  ...props
-}: DirectionProps) => {
+const Row = forwardRef<HTMLDivElement, DirectionProps>(function Row(
+  { children, className, gap = 0, ...props }: DirectionProps,
+  ref,
+) {
   return (
     <div
       {...props}
-      ref={innerRef}
+      ref={ref}
       className={`flex flex-row ${classDictRow[gap]} ${className}`}
     >
       {children}
     </div>
   );
-};
+});
 
-const Col = ({
-  children,
-  innerRef,
-  className,
-  gap = 0,
-  ...props
-}: DirectionProps) => {
+const Col = forwardRef<HTMLDivElement, DirectionProps>(function Col(
+  { children, className, gap = 0, ...props }: DirectionProps,
+  ref,
+) {
   return (
     <div
       {...props}
-      ref={innerRef}
+      ref={ref}
       className={`flex flex-col ${classDictCol[gap]} ${className}`}
     >
       {children}
     </div>
   );
-};
+});
 
 export { Row, Col };

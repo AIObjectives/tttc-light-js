@@ -1,299 +1,362 @@
 "use client";
 
+import {
+  ClaimNode,
+  ReportState,
+  SomeNode,
+  ThemeNode,
+  TopicNode,
+} from "@src/types";
+import { Dispatch, useReducer } from "react";
+
 import * as schema from "tttc-common/schema";
 
-/********************************
- * TYPE DEFINITIONS
- ********************************/
+const defaultThemePagination = 1;
+const addThemePagination = 1;
 
-/**
- * All Node.data should have an id for easy lookup
- */
-export type HasId = { id: string };
-export type TreeParams = HasId[];
+const defaultTopicPagination = 1;
+const addTopicPagination = 1;
 
-/**
- * Recursive definition for a tree of Nodes. Should be either Node or Node & {children}
- * Provide types in an array. Ex: NodeTree<[A,B]>, B will be the children of A
- */
-export type NodeTree<T extends HasId[], Depth extends number = 0> = T extends [
-  infer First,
-  ...infer Rest,
-]
-  ? First extends HasId
-    ? Rest extends HasId[]
-      ? Rest extends []
-        ? Node<First>
-        : Node<First> & { children: NodeTree<Rest, [1, 2, 3, 4, 5][Depth]>[] }
-      : never
-    : never
-  : never;
+//  ********************************
+//  * UTILITY FUNCTIONS *
+//  ********************************/
 
-/**
- * A single Node in the NodeTree. Wraps data.
- */
-export type Node<T> = {
-  data: Readonly<T>;
-  isOpen: boolean | null; // boolean if open-able, null if always closed
-  isObserved: boolean;
-};
+const identity = <T>(arg: T): T => arg;
 
-/**
- * Report State - highest level implementation
- */
-export type ReportState = {
-  children: NodeTree<[schema.Theme, schema.Topic]>[];
-};
-
-/**
- * Nodes with Themes as data
- */
-export type ThemeState = Unpacked<ReportState["children"]>;
-
-/**
- * Nodes with Topic as data
- */
-export type TopicState = Unpacked<ThemeState["children"]>;
-// export type TopicState = NodeChildren<ThemeState, schema.Topic>
-
-type Test<T> =
-  T extends NodeTree<any> ? T : T extends TreeParams ? NodeTree<T> : never;
-
-/**
- * Function type: NodeTree => NodeTree
- */
-export type TransformFunction<K extends TreeParams> = (
-  tree: NodeTree<K>,
-) => NodeTree<K>;
-
-type ChainTransform<K extends TreeParams> = (
-  func: (arg: TransformFunction<K>) => TransformFunction<K>,
-) => TransformFunction<K>;
-
-/**
- * Utility Type: A[] => A
- */
-export type Unpacked<T> = T extends (infer U)[] ? U : T;
-
-/********************************
- * Helper functions
- ********************************/
-
-/**
- * Takes a T[] and replaces T[idx] with T
- */
-const replace = <T>(state: T[], val: T, idx: number): T[] => [
-  ...state.slice(0, idx),
-  val,
-  ...state.slice(idx + 1),
-];
-
-/**
- * Returns same arg
- */
-const identity = <T>(arg: T) => arg;
-
-/**
- * Takes a transformation function and wraps guard functions around it
- */
-const apply = <K extends TreeParams>(
-  transform: TransformFunction<K>,
-  guardFuncs: ChainTransform<K>[],
+const undefinedCheck = <T>(
+  arg: T | undefined,
+  errorMessage: string = "Falsy check failed",
 ) => {
-  const guard: ChainTransform<K> = guardFuncs.reduce((accum, curr) => {
-    return (func) => accum(curr(func));
-  }, identity as ChainTransform<K>);
-  return guard(transform);
+  if (arg === undefined) {
+    throw new Error(errorMessage);
+  }
+  return arg;
 };
 
-/********************************
- * Transformer guards
- ********************************/
+const replaceNode = <T extends SomeNode>(nodes: T[], node: T): T[] => {
+  const idx = nodes.findIndex((_node) => _node.data.id === node.data.id);
+  if (idx === -1) return nodes;
+  return [...nodes.slice(0, idx), node, ...nodes.slice(idx + 1)];
+};
 
-/**
- * If NodeTree has isOpen set to null, don't change it.
- */
-const guardNullIsOpen =
-  <K extends TreeParams>(func: TransformFunction<K>) =>
-  (tree: NodeTree<K>): NodeTree<K> =>
-    tree.isOpen === null ? identity(tree) : func(tree);
+//  ********************************
+//  * HIGHER ORDER FUNCTIONS *
+//  ********************************/
 
-const guardDataMutation =
-  <K extends TreeParams>(func: TransformFunction<K>) =>
-  (tree: NodeTree<K>): NodeTree<K> => {
-    const res = func(tree);
-    if (JSON.stringify(tree.data) === JSON.stringify(res.data)) {
-      return res;
-    }
-    console.error("Node data should not be changed!");
-    return identity(tree);
-  };
+export type TransformationFunction<T> = (arg: T) => T;
 
-/**
- * Should be used with every transform function
- */
-const universalGuard = <K extends TreeParams>(
-  transform: TransformFunction<K>,
-) => apply(transform, [guardDataMutation]);
+type StateActionOnId = (state: ReportState, id: string) => ReportState;
 
-/********************************
- * Transformers
- ********************************/
+const combineActions =
+  (...funcs: StateActionOnId[]) =>
+  (state: ReportState, id: string) =>
+    funcs.reduce((accum, curr) => {
+      return curr(accum, id);
+    }, state);
 
-const _setIsOpen =
-  (val: boolean) =>
-  <K extends TreeParams>(tree: NodeTree<K>): NodeTree<K> => ({
-    ...tree,
-    isOpen: val,
+const mapActions =
+  (...funcs: TransformationFunction<ReportState>[]) =>
+  (state: ReportState): ReportState =>
+    funcs.reduce((accum, curr) => curr(accum), state);
+
+//  ********************************
+//  * THEME STATE FUNCTIONS *
+//  ********************************/
+
+// **** Base Functions ****
+
+const findTheme = (state: ReportState, id: string): ThemeNode =>
+  undefinedCheck(
+    state.children.find((node) => node.data.id === id),
+    "Couldn't find theme with provided Id",
+  );
+
+// **** Applicative Functions ****
+
+const changeTheme =
+  (transform: TransformationFunction<ThemeNode>) =>
+  (state: ReportState, id: string): ReportState => ({
+    ...state,
+    children: replaceNode(state.children, transform(findTheme(state, id))),
   });
-const _setIsOpenTranformer = (val: boolean) =>
-  apply(_setIsOpen(val), [universalGuard, guardNullIsOpen]);
 
-const open = _setIsOpenTranformer(true);
-const close = _setIsOpenTranformer(false);
-
-const _setIsObservable =
-  (val: boolean) =>
-  <K extends TreeParams>(tree: NodeTree<K>): NodeTree<K> => ({
-    ...tree,
-    isObserved: val,
+const mapTheme =
+  (transform: TransformationFunction<ThemeNode>) =>
+  (state: ReportState): ReportState => ({
+    ...state,
+    children: state.children.map(transform),
   });
-const unsafeObserve = _setIsObservable(true);
-const unsafeUnobserve = _setIsObservable(false);
 
-/**
- * Will look for and replace the node with data.id == id provided based on the transform function. Should not manipulate data property.
- */
-const findAndReplace =
-  (state: ReportState) =>
-  (transform: TransformFunction<[any]>) =>
-  (id: string): ReportState => {
-    const idx = state.children.findIndex((node) => node.data.id === id);
+// **** Transformers ****
 
-    if (idx === -1) {
-      const outerIdx = state.children.findIndex((node) =>
-        node.children.some((topic) => topic.data.id === id),
-      );
-      if (outerIdx === -1) throw new Error("Could not find id in state");
-      const innerIdx = state.children[outerIdx].children.findIndex(
-        (node) => node.data.id === id,
-      );
-      const newTopic: TopicState = transform(
-        state.children[outerIdx].children[innerIdx],
-      );
-      const newTopicNodes: TopicState[] = replace(
-        state.children[outerIdx].children,
-        newTopic,
-        innerIdx,
-      );
-      const newThemeNodes: ThemeState[] = replace(
-        state.children,
-        { ...state.children[outerIdx], children: newTopicNodes },
-        outerIdx,
-      );
-      return { children: newThemeNodes };
-    }
+const openTheme = changeTheme((node) => ({ ...node, isOpen: true }));
 
+const closeTheme = changeTheme((node) => ({ ...node, isOpen: false }));
+
+const toggleTheme = changeTheme((node) => ({ ...node, isOpen: !node.isOpen }));
+
+const openAllThemes = mapTheme((node) => ({ ...node, isOpen: true }));
+
+const closeAllThemes = mapTheme((node) => ({ ...node, isOpen: false }));
+
+const resetAllThemes = mapTheme((node) => ({
+  ...node,
+  pagination: defaultThemePagination,
+}));
+
+const expandTheme = changeTheme((node) => ({
+  ...node,
+  pagination: node.pagination + addThemePagination,
+}));
+
+const setThemePagination = (num: number) =>
+  changeTheme((node) => ({
+    ...node,
+    pagination: num,
+  }));
+
+const resetTheme = setThemePagination(defaultThemePagination);
+
+//  ********************************
+//  * TOPIC STATE FUNCTIONS *
+//  ********************************/
+
+// **** Base Functions ****
+
+const findTopicInTheme = (
+  theme: ThemeNode,
+  id: string,
+): TopicNode | undefined => theme.children.find((node) => node.data.id === id);
+
+const _findTopic = (
+  themeNodes: ThemeNode[],
+  id: string,
+): TopicNode | undefined => {
+  if (themeNodes.length === 0) return undefined;
+  const res = findTopicInTheme(themeNodes[0], id);
+  if (!res) return _findTopic(themeNodes.slice(1), id);
+  return res;
+};
+
+const findTopic = (state: ReportState, id: string): TopicNode =>
+  undefinedCheck(
+    _findTopic(state.children, id),
+    "Could't find topic with provided Id",
+  );
+
+const _parentOfTopic = (
+  themes: ThemeNode[],
+  topicId: string,
+): ThemeNode | undefined => {
+  if (!themes.length) return undefined;
+  else if (
+    themes[0].children.some((node: TopicNode) => node.data.id === topicId)
+  )
+    return themes[0];
+  return _parentOfTopic(themes.slice(1), topicId);
+};
+
+const parentOfTopic = (themes: ThemeNode[], topicId: string) =>
+  undefinedCheck(
+    _parentOfTopic(themes, topicId),
+    "Could not find parent of topic with id provided",
+  );
+
+// **** Applicative Functions ****
+
+const changeTopic =
+  (transform: TransformationFunction<TopicNode>) =>
+  (state: ReportState, id: string): ReportState => {
+    const topic = findTopic(state, id);
     return {
-      children: replace(
-        state.children,
-        transform(state.children[idx]) as ThemeState,
-        idx,
-      ),
+      ...state,
+      children: state.children.map((theme) => ({
+        ...theme,
+        children: replaceNode(theme.children, transform(topic)),
+      })),
     };
   };
 
-const recur = <K extends TreeParams>(
-  nodes: NodeTree<K>[],
-  transform: TransformFunction<K>,
-  id: string,
-) => {
-  const idx = nodes.findIndex((node) => node.data.id === id);
-  if (idx !== -1) return nodes.map((node) => recur(node, transform, id));
-};
+const mapTopic = (transform: TransformationFunction<TopicNode>) =>
+  mapTheme((theme) => ({
+    ...theme,
+    children: theme.children.map(transform),
+  }));
 
-// const setThemeState = (reportState: ReportState) =>
-//   findAndReplace(reportState.children);
+const mapThemeChildren =
+  (transform: TransformationFunction<TopicNode>) =>
+  (state: ReportState, themeId: string): ReportState =>
+    mapTheme((theme) => ({
+      ...theme,
+      children: theme.children.map(
+        theme.data.id === themeId ? transform : identity,
+      ),
+    }))(state);
 
-// const setTopicState = (themeState: ThemeState) =>
-//   findAndReplace(themeState.children);
+// **** Transformers ****
 
-// const setNode = <T extends NodeState<K>, K extends {id:string}>(reportState:ReportState) => (transform:(item:T)=>T) => (id:string):ThemeState[] => {
-//   const themeIdx = reportState.children.findIndex((node) => node.data.id === id)
-//   if (themeIdx !== -1) return findAndReplace(reportState.children)((themeState) => themeState)(id)
-//   const themeWithTopicIdx = reportState.children.findIndex((themeState) => themeState.children.some((topicState) => topicState.data.id === id))
-// if (themeWithTopicIdx === -1) throw new Error("Could not find Node with data id")
-//   const children = reportState.children
-//   const changingTheme = children[themeWithTopicIdx]
-//   return [
-//     ...children.slice(0,themeWithTopicIdx),
-//     {
-//       ...changingTheme,
-//       children: setTopicState(changingTheme)((topicState) => topicState)(id),
-//     },
-//     ...children.slice(themeWithTopicIdx+1)
-//   ]
-// }
+const expandTopic = changeTopic((node) => ({
+  ...node,
+  pagination: node.pagination + addTopicPagination,
+}));
 
-// const setNode = (reportState:ReportState) =>
+const resetTopic = changeTopic((node) => ({
+  ...node,
+  pagination: defaultTopicPagination,
+}));
+
+const resetThemesTopics = mapThemeChildren((topic) => ({
+  ...topic,
+  pagination: defaultTopicPagination,
+}));
+
+const resetAllTopics = mapTopic((node) => ({
+  ...node,
+  pagination: defaultTopicPagination,
+}));
+
+//  ********************************
+//  * STATE BUILDERS *
+//  ********************************/
 
 const stateBuilder = (themes: schema.Theme[]): ReportState => ({
-  children: themes.map((theme) => ({
-    data: theme,
-    isOpen: false,
-    isObserved: false,
-    children: theme.topics.map((topic) => ({
-      data: topic,
-      isOpen: null,
-      isObserved: false,
-    })),
-  })),
+  children: themes.map(makeThemeNode),
 });
 
-export const __internals = {
-  identity,
-  replace,
-  findAndReplace,
-  apply,
-  guardNullIsOpen,
-  guardDataMutation,
-  stateBuilder,
-  open,
+const makeThemeNode = (theme: schema.Theme): ThemeNode => ({
+  data: theme,
+  isOpen: false,
+  pagination: defaultThemePagination,
+  children: theme.topics.map(makeTopicNode),
+});
+
+const makeTopicNode = (topic: schema.Topic): TopicNode => ({
+  data: topic,
+  pagination: defaultTopicPagination,
+  children: topic.claims.map(makeClaimNode),
+});
+
+const makeClaimNode = (claim: schema.Claim): ClaimNode => ({
+  data: claim,
+});
+
+//  ********************************
+//  * REDUCER *
+//  ********************************/
+
+type ReportStateActionTypes =
+  | "open"
+  | "close"
+  | "openAll"
+  | "closeAll"
+  | "toggleTheme"
+  | "expandTheme"
+  | "expandTopic"
+  | "focus";
+
+type ReportStatePayload = { id: string };
+
+export type ReportStateAction = {
+  type: ReportStateActionTypes;
+  payload: ReportStatePayload;
 };
 
-// type ReportStateActionTypes = "openTheme" | "closeTheme" | "isObserved";
+function reducer(state: ReportState, action: ReportStateAction): ReportState {
+  const { id } = action.payload;
+  switch (action.type) {
+    // For open, we want the same function to work for themes or topics.
+    // If topic, should open parent and set pagination to the correct value
+    case "open": {
+      const maybeThemeIdx = state.children.findIndex(
+        (node) => node.data.id === id,
+      );
+      if (maybeThemeIdx !== -1) return openTheme(state, id);
+      const parentTheme = parentOfTopic(state.children, id);
+      const topicIdx = parentTheme.children.findIndex(
+        (topic) => topic.data.id === id,
+      );
+      const func = combineActions(
+        openTheme,
+        setThemePagination(
+          topicIdx + 1 > parentTheme.pagination
+            ? topicIdx + 1
+            : parentTheme.pagination,
+        ),
+      );
+      return func(state, parentTheme.data.id);
+    }
+    case "close": {
+      return combineActions(
+        closeTheme,
+        resetTheme,
+        resetThemesTopics,
+      )(state, id);
+    }
+    case "toggleTheme": {
+      return combineActions(toggleTheme, resetTheme)(state, id);
+    }
+    case "openAll": {
+      return openAllThemes(state);
+    }
+    case "closeAll": {
+      return mapActions(closeAllThemes, resetAllThemes, resetAllTopics)(state);
+    }
+    case "expandTheme": {
+      return expandTheme(state, id);
+    }
+    case "expandTopic": {
+      return expandTopic(state, id);
+    }
+    case "focus": {
+      // placeholder for now to trigger sideffect
+      // TODO: This is a code-smell, figure out what to do.
+      return state;
+    }
+    default: {
+      return state;
+    }
+  }
+}
 
-// type ReportStatePayload = { id: string };
+function useReportState(
+  themes: schema.Theme[],
+): [ReportState, Dispatch<ReportStateAction>] {
+  const [state, dispatch] = useReducer(reducer, stateBuilder(themes));
+  return [state, dispatch];
+}
 
-// type ReportStateAction = {
-//   type: ReportStateActionTypes;
-//   payload: ReportStatePayload;
-// };
+export const __internals = {
+  undefinedCheck,
+  combineActions,
+  mapActions,
+  replaceNode,
+  findTheme,
+  changeTheme,
+  mapTheme,
+  openTheme,
+  closeTheme,
+  toggleTheme,
+  openAllThemes,
+  closeAllThemes,
+  resetTheme,
+  resetAllThemes,
+  expandTheme,
+  findTopicInTheme,
+  findTopic,
+  parentOfTopic,
+  changeTopic,
+  mapTopic,
+  expandTopic,
+  resetTopic,
+  resetAllTopics,
+  reducer,
+  stateBuilder,
+  mapThemeChildren,
+  resetThemesTopics,
+  defaultThemePagination,
+  defaultTopicPagination,
+  addThemePagination,
+  addTopicPagination,
+};
 
-// function reducer(state: ReportState, action: ReportStateAction):ReportState {
-//   const { id } = action.payload;
-//   const closeTheme = setThemeState(state)((theme) => ({
-//     ...theme,
-//     isOpen: false,
-//   }));
-//   const openTheme = setThemeState(state)((theme) => ({
-//     ...theme,
-//     isOpen: false,
-//   }));
-
-//   switch (action.type) {
-//     case "closeTheme": {
-//       return {children: closeTheme(id)};
-//     }
-//     case "openTheme": {
-//       return {children: openTheme(id)};
-//     }
-//     default: {
-//       return state
-//     }
-//   }
-// }
-
-// function useReportState(themes: schema.Theme[]) {
-//   // const [] = useReducer()
-// }
+export default useReportState;

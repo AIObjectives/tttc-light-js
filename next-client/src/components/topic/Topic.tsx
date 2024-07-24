@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { TextIcon } from "../elements";
@@ -8,16 +8,29 @@ import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
 import ClaimLoader from "./components/ClaimLoader";
 import { getNPeople } from "tttc-common/morphisms";
+import { TopicNode } from "@src/types";
+import { ReportContext } from "../report/Report";
 
-function Topic({ topic }: { topic: schema.Topic }) {
-  const { claims } = topic;
-  return (
-    <Col gap={4} className="py-6 sm:py-8">
-      <TopicSummary topic={topic} />
-      <TopicClaims claims={claims!} />
-    </Col>
-  );
+function Topic({ node, isOpen }: { node: TopicNode; isOpen: boolean }) {
+  const { useScrollTo } = useContext(ReportContext);
+
+  const ref = useScrollTo(node.data.id);
+
+  return <div ref={ref}>{isOpen && <TopicComponent topic={node.data} />}</div>;
 }
+
+const TopicComponent = forwardRef<HTMLDivElement, { topic: schema.Topic }>(
+  function TopicComponent({ topic }, ref) {
+    return (
+      <div>
+        <Col gap={4} className="py-6 sm:py-8" ref={ref}>
+          <TopicSummary topic={topic} />
+          <TopicClaims claims={topic.claims} />
+        </Col>
+      </div>
+    );
+  },
+);
 
 export function TopicHeader({
   title,
