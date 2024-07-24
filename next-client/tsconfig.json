@@ -18,7 +18,8 @@
       "@src/*": ["./src/*"],
       "@components/*": ["./src/components/*"],
       "@utils/*": ["./src/lib/utils/*"],
-      "@assets/*": ["./src/assets/*"]
+      "@assets/*": ["./src/assets/*"],
+      "@types/*": ["./src/types/*"]
     },
     "incremental": true,
     "plugins": [

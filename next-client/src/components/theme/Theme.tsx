@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { forwardRef, useContext } from "react";
 import {
   Button,
   Card,
@@ -9,6 +9,7 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
+  Separator,
   TextIcon,
 } from "../elements";
 import * as schema from "tttc-common/schema";
@@ -16,25 +17,46 @@ import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
 import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";
-import ExtendedTheme from "./components/ExtendedTheme";
-import { TopicHeader } from "../topic/Topic";
+import Topic, { TopicHeader } from "../topic/Topic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { Sticky } from "../wrappers";
+import { ThemeNode } from "@src/types";
+import { ReportContext } from "../report/Report";
 
-function Theme({
-  theme,
-  isOpen,
-  setIsOpen,
-}: {
+function Theme({ node }: { node: ThemeNode }) {
+  const { dispatch, useScrollTo } = useContext(ReportContext);
+  const ref = useScrollTo(node.data.id);
+  return (
+    <ThemeCard
+      ref={ref}
+      theme={node.data}
+      openButton={
+        <Button
+          onClick={() =>
+            dispatch({ type: "toggleTheme", payload: { id: node.data.id } })
+          }
+        >
+          {node.isOpen ? "Collapse Theme" : "Extend Theme"}
+        </Button>
+      }
+      openedTheme={<ExpandThemed themeNode={node} />}
+    />
+  );
+}
+interface ThemeCardProps {
   theme: schema.Theme;
-  isOpen: boolean;
-  setIsOpen: (val: boolean) => void;
-}) {
+  openButton: React.ReactNode;
+  openedTheme: React.ReactNode;
+}
+const ThemeCard = forwardRef<HTMLDivElement, ThemeCardProps>(function ThemeCard(
+  { theme, openButton, openedTheme }: ThemeCardProps,
+  ref,
+) {
   const { title, topics, description } = theme;
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardContent>
         <Col gap={3}>
           <ThemeHeader
@@ -44,17 +66,13 @@ function Theme({
           <ThemeInteractiveGraphic topics={topics}>
             <p>{description}</p>
           </ThemeInteractiveGraphic>
-          <Sticky>
-            <Button onClick={() => setIsOpen(!isOpen)}>
-              {isOpen ? "Collapse Theme" : "Extend Theme"}
-            </Button>
-          </Sticky>
+          <Sticky>{openButton}</Sticky>
         </Col>
       </CardContent>
-      {isOpen ? <ExtendedTheme topics={topics} /> : null}
+      {openedTheme}
     </Card>
   );
-}
+});
 
 export function ThemeHeader({
   title,
@@ -121,7 +139,6 @@ export function TopicList({
     <Col gap={2} className="pb-2">
       <TextIcon icon={<Icons.Topic />}>{topics.length} topics</TextIcon>
 
-      {/* <p className="text-muted-foreground"> */}
       <Row gap={2}>
         {topics.map((topic, i) => (
           <TopicListItem
@@ -174,6 +191,49 @@ export function TopicListItem({
       </HoverCardContent>
     </HoverCard>
   );
+}
+
+function ExpandThemed({ themeNode }: { themeNode: ThemeNode }) {
+  const { isOpen, pagination, children: topicNodes, data } = themeNode;
+
+  return (
+    <>
+      <Separator className={`${isOpen ? "" : "hidden"}`} />
+      {topicNodes.map((node, i) => (
+        <Col>
+          <Topic node={node} isOpen={isOpen && i + 1 <= pagination} />
+        </Col>
+      ))}
+      {isOpen && pagination <= topicNodes.length && (
+        <ShowMoreButton
+          moreLeftNum={topicNodes.length - pagination}
+          themeId={data.id}
+        />
+      )}
+    </>
+  );
+}
+
+function ShowMoreButton({
+  moreLeftNum,
+  themeId,
+}: {
+  moreLeftNum: number;
+  themeId: string;
+}) {
+  const { dispatch } = useContext(ReportContext);
+  return moreLeftNum > 0 ? (
+    <div className="p-4 sm:p-8">
+      <Button
+        variant={"secondary"}
+        onClick={() =>
+          dispatch({ type: "expandTheme", payload: { id: themeId } })
+        }
+      >
+        {moreLeftNum} more topic{moreLeftNum > 1 ? "s" : ""}
+      </Button>
+    </div>
+  ) : null;
 }
 
 export default Theme;
