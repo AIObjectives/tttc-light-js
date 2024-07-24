@@ -8,7 +8,8 @@
     "start-old": "node dist/server.js",
     "dev": "next dev",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "test": "vitest"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
@@ -38,7 +39,8 @@
     "postcss": "^8.4.38",
     "storybook": "^8.0.10",
     "tailwindcss": "^3.4.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^2.0.4"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",
