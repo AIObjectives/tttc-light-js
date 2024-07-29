@@ -166,7 +166,7 @@ export function TopicListItem({
   onMouseOut: () => void;
 }) {
   return (
-    <HoverCard openDelay={0} closeDelay={0}>
+    <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger>
         <span
           className="cursor-pointer"
