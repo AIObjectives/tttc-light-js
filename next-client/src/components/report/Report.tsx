@@ -57,7 +57,7 @@ export function ReportToolbar() {
   const { dispatch } = useContext(ReportContext);
   return (
     <Sticky
-      className={cn(`z-50 w-full dark:bg-background`)}
+      className={cn(`z-50 w-full dark:bg-background bg-white`)}
       stickyClass="border-b shadow-sm"
     >
       <Row
