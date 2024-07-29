@@ -28,7 +28,7 @@ const defaultOptions = {
   systemInstructions: "",
   clusteringInstructions: "",
   extractionInstructions: "",
-  batchSize:  2, // lower to avoid rate limits! initial was 10,
+  batchSize: 2, // lower to avoid rate limits! initial was 10,
 };
 
 function insertClaim(taxonomy: Taxonomy, claim: LLMClaim, tracker: Tracker) {

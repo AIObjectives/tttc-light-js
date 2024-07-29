@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { __internals as __useReportStateInternals } from "../../report/hooks/useReportState";
+import {
+  __internals as __useReportStateInternals,
+  SomeNode,
+} from "../../report/hooks/useReportState";
 import { OutlineNode, OutlineTree, __internals } from "./useOutlineState";
 import { reportData } from "stories/data/dummyData";
-import { SomeNode } from "@src/types";
 
 const { stateBuilder, undefinedCheck } = __useReportStateInternals;
 

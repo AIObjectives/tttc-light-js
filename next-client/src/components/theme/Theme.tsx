@@ -21,8 +21,8 @@ import Topic, { TopicHeader } from "../topic/Topic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { Sticky } from "../wrappers";
-import { ThemeNode } from "@src/types";
 import { ReportContext } from "../report/Report";
+import { ThemeNode } from "../report/hooks/useReportState";
 
 function Theme({ node }: { node: ThemeNode }) {
   const { dispatch, useScrollTo } = useContext(ReportContext);
