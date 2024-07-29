@@ -1,9 +1,11 @@
 "use client";
 
-import { ReportStateAction } from "@src/components/report/hooks/useReportState";
-import { ReportState, SomeNode } from "@src/types";
+import {
+  ReportState,
+  SomeNode,
+} from "@src/components/report/hooks/useReportState";
 import assert from "assert";
-import { Dispatch, useEffect, useReducer } from "react";
+import { Dispatch, useReducer } from "react";
 
 type Transform = (arg: OutlineNode) => OutlineNode;
 type EqualsTransform = (arg: Transform, id: string) => Transform;

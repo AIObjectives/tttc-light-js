@@ -8,8 +8,8 @@ import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
 import ClaimLoader from "./components/ClaimLoader";
 import { getNPeople } from "tttc-common/morphisms";
-import { TopicNode } from "@src/types";
 import { ReportContext } from "../report/Report";
+import { TopicNode } from "../report/hooks/useReportState";
 
 function Topic({ node, isOpen }: { node: TopicNode; isOpen: boolean }) {
   const { useScrollTo } = useContext(ReportContext);

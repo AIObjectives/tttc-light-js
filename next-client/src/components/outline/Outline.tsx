@@ -3,14 +3,13 @@
 import { TextIcon } from "../elements";
 import Icons from "@assets/icons";
 import { Col, Row } from "../layout";
-import { Dispatch, createContext, useContext, useState } from "react";
-import { ThemeNode } from "@src/types";
+import { Dispatch, createContext, useContext } from "react";
 import { ReportContext } from "../report/Report";
 import useOutlineState, {
   OutlineNode,
   OutlineStateAction,
 } from "./hooks/useOutlineState";
-import { ReportStateAction } from "../report/hooks/useReportState";
+import { ReportStateAction, ThemeNode } from "../report/hooks/useReportState";
 
 type OutlineContextType = {
   dispatch: Dispatch<OutlineStateAction>;

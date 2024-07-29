@@ -1,8 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { TransformationFunction, __internals } from "./useReportState";
+import { __internals, ReportState, ThemeNode } from "./useReportState";
 import { reportData } from "stories/data/dummyData";
-import * as schema from "tttc-common/schema";
-import { ReportState, ThemeNode, TopicNode } from "@src/types";
 
 const {
   combineActions,
