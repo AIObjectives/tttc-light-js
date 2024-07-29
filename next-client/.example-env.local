@@ -1,1 +1,1 @@
-PIPELINE_EXPRESS_URL=
+PIPELINE_EXPRESS_URL= # This is by default localhost:8080 on dev
