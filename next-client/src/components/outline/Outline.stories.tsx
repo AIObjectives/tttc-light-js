@@ -4,6 +4,11 @@ import React, { useRef, useState } from "react";
 import { Button } from "../elements";
 import { Col, Row } from "../layout";
 import Outline from "./Outline";
+import { __internals as __internals_report } from "../report/hooks/useReportState";
+import { __internals } from "./hooks/useOutlineState";
+
+const { stateBuilder } = __internals_report;
+const { outlineStateBuilder } = __internals;
 
 const meta = {
   title: "Outline",
@@ -21,11 +26,13 @@ const meta = {
   //   ],
 } satisfies Meta<typeof Outline>;
 
+const reportState = stateBuilder(reportData.themes);
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Main: Story = {
   args: {
-    themes: [...reportData.themes, ...reportData.themes],
+    nodes: reportState.children,
+    reportDispatch: () => {},
   },
 };
