@@ -27,11 +27,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const baseProps = reportData.themes[0].topics;
+const baseProps = reportData.topics[0].subtopics;
 
 export const Main: Story = {
   args: {
-    claims: baseProps.flatMap((topic) => topic.claims),
+    claims: baseProps.flatMap((subtopic) => subtopic.claims),
   },
 };
 

@@ -26,7 +26,7 @@ const meta = {
   //   ],
 } satisfies Meta<typeof Outline>;
 
-const reportState = stateBuilder(reportData.themes);
+const reportState = stateBuilder(reportData.topics);
 export default meta;
 type Story = StoryObj<typeof meta>;
 

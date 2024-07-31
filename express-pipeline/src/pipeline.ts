@@ -15,6 +15,7 @@ import {
   PipelineOutput,
   LLMClaim,
   LLMPipelineOutput,
+  LLMSubtopic,
 } from "tttc-common/schema";
 
 import { llmPipelineToSchema } from "tttc-common/morphisms";
@@ -53,7 +54,10 @@ function insertClaim(taxonomy: Taxonomy, claim: LLMClaim, tracker: Tracker) {
   subtopic.claims.push(claim);
 }
 
-function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
+function nestClaims(
+  subtopic: LLMSubtopic,
+  nesting: { [key: string]: string[] },
+) {
   const map: { [key: string]: LLMClaim } = {};
   (subtopic.claims || []).forEach((claim) => {
     map[claim.claimId!] = claim;

@@ -15,14 +15,14 @@ const fromQuotes = (arg: schema.Quote[]): string[] =>
 const fromClaims = (arg: schema.Claim[]): string[] =>
   fromQuotes(arg.flatMap((claim) => claim.quotes));
 
-const fromTopics = (arg: schema.Topic[]): string[] =>
+const fromSubtopics = (arg: schema.Subtopic[]): string[] =>
   fromClaims(arg.flatMap((topic) => topic.claims));
 
-const fromTheme = (arg: schema.Theme[]): string[] =>
-  fromTopics(arg.flatMap((theme) => theme.topics));
+const fromTopics = (arg: schema.Topic[]): string[] =>
+  fromSubtopics(arg.flatMap((theme) => theme.subtopics));
 
 const fromReport = (arg: schema.ReportDataObj): string[] =>
-  fromTheme(arg.themes);
+  fromTopics(arg.topics);
 
 const chainMatch =
   <S extends z.Schema, T>(
@@ -53,21 +53,25 @@ const chainQuotes = chainMatch(
 
 const chainClaims = chainMatch(schema.claim.array(), fromClaims, chainQuotes);
 
-const chainTopics = chainMatch(schema.topic.array(), fromTopics, chainClaims);
+const chainTopics = chainMatch(
+  schema.subtopic.array(),
+  fromSubtopics,
+  chainClaims,
+);
 
-const chainTheme = chainMatch(schema.theme.array(), fromTheme, chainTopics);
+const chainTheme = chainMatch(schema.topic.array(), fromTopics, chainTopics);
 
 const chainReport = chainMatch(schema.reportDataObj, fromReport, chainTheme);
 
 export const getNPeople = (
   arg:
     | schema.ReportDataObj
-    | schema.Theme[]
     | schema.Topic[]
+    | schema.Subtopic[]
     | schema.Claim[]
     | schema.Quote[]
     | schema.Referece[]
     | schema.Source[],
 ) => chainReport(arg).length;
 
-export const getNClaims = (arg: schema.Topic[]) => fromTopics(arg).length;
+export const getNClaims = (arg: schema.Subtopic[]) => fromSubtopics(arg).length;

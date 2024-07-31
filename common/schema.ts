@@ -147,7 +147,7 @@ export const llmSubtopic = z.object({
   claims: z.array(oldclaim).optional(),
 });
 
-export type Subtopic = z.infer<typeof llmSubtopic>;
+export type LLMSubtopic = z.infer<typeof llmSubtopic>;
 
 export const llmTopic = z.object({
   topicName: z.string(),
@@ -158,8 +158,6 @@ export const llmTopic = z.object({
 });
 
 export type LLMTopic = z.infer<typeof llmTopic>;
-
-export type Topic = z.infer<typeof topic>;
 
 export const taxonomy = z.array(llmTopic);
 
@@ -310,25 +308,27 @@ export const claim = z.custom<Claim>();
  * Topic
  * Topics are categories of claims that share some relation.
  ********************************/
-export const topic = z.object({
+export const subtopic = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
   claims: z.array(claim),
 });
 
+export type Subtopic = z.infer<typeof subtopic>;
+
 /********************************
  * Theme
  * Themes are broader categories of topics
  ********************************/
-export const theme = z.object({
+export const topic = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
-  topics: z.array(topic),
+  subtopics: z.array(subtopic),
 });
 
-export type Theme = z.infer<typeof theme>;
+export type Topic = z.infer<typeof topic>;
 /********************************
  * Graphics
  * Graphics are object level representations of graphics that are added to the report
@@ -353,7 +353,7 @@ const graphics = pieChartGraphic; // make this a union when we have more
 export const reportDataObj = z.object({
   title: z.string(),
   description: z.string(),
-  themes: z.array(theme),
+  topics: z.array(topic),
   sources: z.array(source),
   graphics: graphics.optional(),
   date: z.string(),

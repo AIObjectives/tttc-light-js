@@ -1,59 +1,65 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import Topic, {
-  TopicClaims,
-  TopicDescription,
+  TopicInteractiveGraphic,
   TopicHeader,
-  TopicSummary,
+  TopicList,
 } from "./Topic";
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
+import React from "react";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
-import { getNPeople } from "tttc-common/morphisms/index";
 import { __internals } from "../report/hooks/useReportState";
 
 const { stateBuilder } = __internals;
 
-const reportState = stateBuilder(reportData.themes);
-const topicNode = reportState.children[0].children[0];
+/**
+ * TODO
+ * Figure out how to manage state actions here.
+ */
 
 const meta = {
   title: "Topic",
   component: Topic,
-  parameters: {
-    // layout: "centered",
-  },
+  parameters: {},
   tags: ["autodocs"],
-  decorators: [
-    (Story) => (
-      <div className="border">
-        <Story />
-      </div>
-    ),
-  ],
 } satisfies Meta<typeof Topic>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const baseProps = topicNode.data;
+// const baseProps = reportData.themes[0];
+const reportState = stateBuilder(reportData.topics);
+const themeNode = reportState.children[0];
 
 export const Main: Story = {
-  args: { node: topicNode, isOpen: true },
+  args: {
+    node: themeNode,
+  },
 };
 
+const CardWrap = ({ children }: React.PropsWithChildren) => (
+  <Card>
+    <CardContent>{children}</CardContent>
+  </Card>
+);
+
 export const Header = () => (
-  <TopicHeader
-    title={topicNode.data.title}
-    numClaims={topicNode.data.claims.length}
-    numPeople={getNPeople(topicNode.data.claims)}
-    button={<CopyLinkButton anchor={topicNode.data.title} />}
-  />
+  <div className="border">
+    <TopicHeader
+      title={themeNode.data.title}
+      button={<CopyLinkButton anchor={themeNode.data.title} />}
+    />
+  </div>
 );
 
-export const Description = () => (
-  <TopicDescription description={topicNode.data.description!} />
+export const Graphic = () => (
+  <div className="border">
+    <TopicInteractiveGraphic topics={themeNode.data.subtopics} />
+  </div>
 );
 
-export const Summary = () => <TopicSummary topic={topicNode.data} />;
-
-export const Claims = () => <TopicClaims claims={topicNode.data.claims!} />;
+export const ListOfTopics = () => (
+  <div className="border">
+    {/* <TopicList topics={baseProps.topics.map((topic) => topic.title)} /> */}
+  </div>
+);
