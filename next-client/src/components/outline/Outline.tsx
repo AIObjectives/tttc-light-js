@@ -11,6 +11,11 @@ import useOutlineState, {
 } from "./hooks/useOutlineState";
 import { ReportStateAction, ThemeNode } from "../report/hooks/useReportState";
 
+/**
+ * TODO
+ * Figure out how to manage state actions here
+ */
+
 type OutlineContextType = {
   dispatch: Dispatch<OutlineStateAction>;
 };
