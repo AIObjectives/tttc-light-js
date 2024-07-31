@@ -1,105 +1,239 @@
+"use client";
+
 import React, { forwardRef, useContext } from "react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardTitle,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+  Separator,
+  TextIcon,
+} from "../elements";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
-import { TextIcon } from "../elements";
-import PointGraphic from "../pointGraphic/PointGraphic";
-import Claim from "../claim/Claim";
-import { Col, Row } from "../layout";
+import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
 import Icons from "@src/assets/icons";
-import ClaimLoader from "./components/ClaimLoader";
-import { getNPeople } from "tttc-common/morphisms";
+import { Col, Row } from "../layout";
+import Subtopic, { SubtopicHeader } from "../subtopic/Subtopic";
+import { getNClaims, getNPeople } from "tttc-common/morphisms";
+import useGroupHover from "../pointGraphic/hooks/useGroupHover";
+import { Sticky } from "../wrappers";
 import { ReportContext } from "../report/Report";
 import { TopicNode } from "../report/hooks/useReportState";
 
-function Topic({ node, isOpen }: { node: TopicNode; isOpen: boolean }) {
-  const { useScrollTo } = useContext(ReportContext);
-
+function Topic({ node }: { node: TopicNode }) {
+  const { dispatch, useScrollTo } = useContext(ReportContext);
   const ref = useScrollTo(node.data.id);
-
-  return <div ref={ref}>{isOpen && <TopicComponent topic={node.data} />}</div>;
+  return (
+    <TopicCard
+      ref={ref}
+      topic={node.data}
+      openButton={
+        <Button
+          onClick={() =>
+            dispatch({ type: "toggleTopic", payload: { id: node.data.id } })
+          }
+        >
+          {node.isOpen ? "Collapse Topic" : "Expand Topic"}
+        </Button>
+      }
+      openedTopic={<ExpandTopic topicNode={node} />}
+    />
+  );
 }
+interface TopicCardProps {
+  topic: schema.Topic;
+  openButton: React.ReactNode;
+  openedTopic: React.ReactNode;
+}
+const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
+  { topic, openButton, openedTopic }: TopicCardProps,
+  ref,
+) {
+  const { title, subtopics, description } = topic;
 
-const TopicComponent = forwardRef<HTMLDivElement, { topic: schema.Topic }>(
-  function TopicComponent({ topic }, ref) {
-    return (
-      <div>
-        <Col gap={4} className="py-6 sm:py-8" ref={ref}>
-          <TopicSummary topic={topic} />
-          <TopicClaims claims={topic.claims} />
+  return (
+    <Card ref={ref}>
+      <CardContent className="p-2">
+        <Col gap={3}>
+          <TopicHeader
+            title={title}
+            button={<CopyLinkButton anchor={title} />}
+          />
+          <TopicInteractiveGraphic topics={subtopics}>
+            <p>{description}</p>
+          </TopicInteractiveGraphic>
+          <Sticky>{openButton}</Sticky>
         </Col>
-      </div>
-    );
-  },
-);
+      </CardContent>
+      {openedTopic}
+    </Card>
+  );
+});
 
 export function TopicHeader({
   title,
-  numClaims,
-  numPeople,
   button,
 }: {
   title: string;
-  numClaims: number;
-  numPeople: number;
   button?: React.ReactNode;
 }) {
   return (
-    <Row gap={4} className="justify-between items-center">
-      <div className="flex flex-grow">
-        <h4>
-          <a id={`${title}`}>{title}</a>
-        </h4>
-      </div>
-      <TextIcon icon={<Icons.Claim />}>
-        {numClaims} claims by {numPeople} people
-      </TextIcon>
+    <Row gap={2} className="justify-between">
+      <CardTitle className="self-center">
+        <a id={`${title}`}>{title}</a>
+      </CardTitle>
       {button}
     </Row>
   );
 }
 
-export function TopicDescription({ description }: { description: string }) {
+export function TopicInteractiveGraphic({
+  children,
+  topics,
+}: React.PropsWithChildren<{ topics: schema.Subtopic[] }>) {
+  const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(topics);
   return (
-    <div>
-      <p>{description}</p>
-    </div>
-  );
-}
+    <Col gap={3}>
+      <Col gap={2}>
+        <TextIcon icon={<Icons.Claim />}>
+          {getNClaims(topics)} claims by {getNPeople(topics)} people
+        </TextIcon>
+        {/* Point graphic component */}
+        <Row className="gap-x-[3px]">
+          {topicsHoverState.map(({ group: topic, isHovered }) => (
+            <PointGraphicGroup
+              claims={topic.claims}
+              isHighlighted={isHovered}
+            />
+          ))}
+        </Row>
+      </Col>
 
-export function TopicSummary({ topic }: { topic: schema.Topic }) {
-  const { title, claims, description } = topic;
-  const nPeople = getNPeople(claims);
-  return (
-    <Col gap={4} className="px-4 sm:px-8">
-      <TopicHeader
-        title={title}
-        numClaims={claims.length}
-        numPeople={nPeople}
-        button={<CopyLinkButton anchor={title} />}
+      {/* anything in between the point graphic and topic links */}
+      {children}
+
+      {/* Topic links */}
+      <TopicList
+        topics={topicsHoverState.map(({ group: topic }) => topic)}
+        onMouseOver={onMouseOver}
+        onMouseExit={onMouseExit}
       />
-      <PointGraphic claims={topic.claims} />
-      <TopicDescription description={description!} />
     </Col>
   );
 }
 
-export function TopicClaims({ claims }: { claims: schema.Claim[] }) {
-  const pagination = 3;
-  const i = pagination;
+export function TopicList({
+  topics,
+  onMouseOver,
+  onMouseExit,
+}: {
+  topics: schema.Subtopic[];
+  onMouseOver: (id: string) => void;
+  onMouseExit: (id: string) => void;
+}) {
+  return (
+    <Col gap={2} className="pb-2">
+      <TextIcon icon={<Icons.Topic />}>{topics.length} subtopics</TextIcon>
+
+      <Row gap={2}>
+        {topics.map((topic, i) => (
+          <TopicListItem
+            topic={topic}
+            withComma={i !== topics.length - 1}
+            onMouseOver={() => onMouseOver(topic.id)}
+            onMouseOut={() => onMouseExit(topic.id)}
+          />
+        ))}
+      </Row>
+      {/* </p> */}
+    </Col>
+  );
+}
+
+export function TopicListItem({
+  topic,
+  withComma,
+  onMouseOut,
+  onMouseOver,
+}: {
+  topic: schema.Subtopic;
+  withComma: boolean;
+  onMouseOver: () => void;
+  onMouseOut: () => void;
+}) {
+  return (
+    <HoverCard openDelay={300} closeDelay={0}>
+      <HoverCardTrigger>
+        <span
+          className="cursor-pointer"
+          onMouseOver={onMouseOver}
+          onMouseOut={onMouseOut}
+        >
+          <span className="link">
+            {topic.title}
+            {withComma ? "," : ""}
+          </span>
+        </span>
+      </HoverCardTrigger>
+      <HoverCardContent>
+        <Col gap={4}>
+          <SubtopicHeader
+            title={topic.title}
+            numClaims={topic.claims.length}
+            numPeople={getNPeople(topic.claims)}
+          />
+          <p className="text-muted-foreground">{topic.description}</p>
+        </Col>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+function ExpandTopic({ topicNode }: { topicNode: TopicNode }) {
+  const { isOpen, pagination, children: topicNodes, data } = topicNode;
+
   return (
     <>
-      {claims.slice(0, pagination).map((claim, i) => {
-        return (
-          <Claim claimNum={i + 1} title={claim.title} quotes={claim.quotes} />
-        );
-      })}
-      <ClaimLoader
-        claims={claims.slice(pagination)}
-        pagination={pagination}
-        i={i}
-      />
+      <Separator className={`${isOpen ? "" : "hidden"}`} />
+      {topicNodes.map((node, i) => (
+        <Col>
+          <Subtopic node={node} isOpen={isOpen && i + 1 <= pagination} />
+        </Col>
+      ))}
+      {isOpen && pagination <= topicNodes.length && (
+        <ShowMoreButton
+          moreLeftNum={topicNodes.length - pagination}
+          topicId={data.id}
+        />
+      )}
     </>
   );
+}
+
+function ShowMoreButton({
+  moreLeftNum,
+  topicId,
+}: {
+  moreLeftNum: number;
+  topicId: string;
+}) {
+  const { dispatch } = useContext(ReportContext);
+  return moreLeftNum > 0 ? (
+    <div className="p-4 sm:p-8">
+      <Button
+        variant={"secondary"}
+        onClick={() =>
+          dispatch({ type: "expandTopic", payload: { id: topicId } })
+        }
+      >
+        {moreLeftNum} more subtopics{moreLeftNum > 1 ? "s" : ""}
+      </Button>
+    </div>
+  ) : null;
 }
 
 export default Topic;

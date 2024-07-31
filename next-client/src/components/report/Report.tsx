@@ -11,7 +11,7 @@ import useReportState, { ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
 import { cn } from "@src/lib/utils/shadcn";
 import Outline from "../outline/Outline";
-import Theme from "../theme/Theme";
+import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
 
@@ -29,7 +29,7 @@ export const ReportContext = createContext<{
 });
 
 function Report({ reportData }: { reportData: schema.ReportDataObj }) {
-  const [state, _dispatch] = useReportState(reportData.themes);
+  const [state, _dispatch] = useReportState(reportData.topics);
   const [dispatch, useReportEffect] = useReportSubscribe(_dispatch);
   const [useScrollTo] = useScrollListener(useReportEffect);
   return (
@@ -111,9 +111,9 @@ export function ReportTitle({
       <Row gap={4} className="h-5 flex-wrap gap-y-2">
         <Row gap={4} className="h-5">
           <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
-            {nThemes} themes
+            {nThemes} topics
           </TextIcon>
-          <TextIcon icon={<Icons.Topic />}>{nTopics} topics</TextIcon>
+          <TextIcon icon={<Icons.Topic />}>{nTopics} subtopics</TextIcon>
           <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
           <Separator orientation="vertical" />
         </Row>
@@ -140,8 +140,8 @@ export function ReportHeader({
 }: {
   reportData: schema.ReportDataObj;
 }) {
-  const themes = reportData.themes;
-  const topics = themes.flatMap((theme) => theme.topics);
+  const themes = reportData.topics;
+  const topics = themes.flatMap((theme) => theme.subtopics);
   const claims = topics.flatMap((topic) => topic.claims);
   const nPeople = getNPeople(claims);
   const dateStr = reportData.date;

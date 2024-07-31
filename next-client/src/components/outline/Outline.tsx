@@ -9,7 +9,7 @@ import useOutlineState, {
   OutlineNode,
   OutlineStateAction,
 } from "./hooks/useOutlineState";
-import { ReportStateAction, ThemeNode } from "../report/hooks/useReportState";
+import { ReportStateAction, TopicNode } from "../report/hooks/useReportState";
 
 /**
  * TODO
@@ -28,7 +28,7 @@ function Outline({
   nodes,
   reportDispatch,
 }: {
-  nodes: ThemeNode[];
+  nodes: TopicNode[];
   reportDispatch: Dispatch<ReportStateAction>;
 }) {
   const [state, dispatch] = useOutlineState({ children: nodes });
@@ -41,7 +41,7 @@ function Outline({
     > = {
       open: "open",
       close: "close",
-      toggleTheme: "toggle",
+      toggleTopic: "toggle",
       openAll: "openAll",
       closeAll: "closeAll",
     };

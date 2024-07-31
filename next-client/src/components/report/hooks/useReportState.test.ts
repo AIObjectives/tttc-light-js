@@ -1,68 +1,68 @@
 import { describe, expect, test } from "vitest";
-import { __internals, ReportState, ThemeNode } from "./useReportState";
+import { __internals, ReportState, TopicNode } from "./useReportState";
 import { reportData } from "stories/data/dummyData";
 
 const {
   combineActions,
   mapActions,
   replaceNode,
-  findTheme,
-  changeTheme,
-  mapTheme,
-  openTheme,
-  closeTheme,
-  toggleTheme,
-  openAllThemes,
-  closeAllThemes,
-  resetAllThemes,
-  expandTheme,
-  resetTheme,
-  findTopicInTheme,
   findTopic,
-  parentOfTopic,
   changeTopic,
   mapTopic,
+  openTopic,
+  closeTopic,
+  toggleTopic,
+  openAllTopics,
+  closeAllTopics,
+  resetAllTopics,
   expandTopic,
   resetTopic,
-  resetAllTopics,
+  findSubtopicInTopic,
+  findSubtopic,
+  parentOfSubtopic,
+  changeSubtopic,
+  mapSubtopic,
+  expandSubtopic,
+  resetSubtopic,
+  resetAllSubtopics,
   reducer,
   stateBuilder,
   undefinedCheck,
-  mapThemeChildren,
-  resetThemesTopics,
-  defaultThemePagination,
+  mapTopicChildren,
+  resetTopicsTopics,
   defaultTopicPagination,
-  addThemePagination,
+  defaultSubtopicPagination,
   addTopicPagination,
+  addSubtopicPagination,
 } = __internals;
 
-const state = stateBuilder(reportData.themes);
-const getTheme = (state: ReportState, idx: number = 0) => state.children[idx];
-const getLastTheme = (state: ReportState) =>
-  getTheme(state, state.children.length - 1);
-const getTopic = (
-  state: ReportState,
-  themeIdx: number = 0,
-  topicIdx: number = 0,
-) => getTheme(state, themeIdx).children[topicIdx];
+const state = stateBuilder(reportData.topics);
+const getTopic = (state: ReportState, idx: number = 0) => state.children[idx];
 const getLastTopic = (state: ReportState) =>
-  getLastTheme(state).children[getLastTheme(state).children.length - 1];
+  getTopic(state, state.children.length - 1);
+const getSubtopic = (
+  state: ReportState,
+  topicIdx: number = 0,
+  subtopicIdx: number = 0,
+) => getTopic(state, topicIdx).children[subtopicIdx];
+const getLastSubtopic = (state: ReportState) =>
+  getLastTopic(state).children[getLastTopic(state).children.length - 1];
 
 describe("Test Tools", () => {
-  test("getTheme", () => {
-    expect(getTheme(state).data.title).toBe("Technology in Peace-Building");
-  });
-
-  test("getLastTheme", () => {
-    expect(getLastTheme(state).data.title).toBe("Access and Inclusion");
-  });
-
   test("getTopic", () => {
-    expect(getTopic(state).data.title).toBe("Technical Skill Development");
+    expect(getTopic(state).data.title).toBe("Technology in Peace-Building");
   });
 
   test("getLastTopic", () => {
-    expect(getLastTopic(state).data.title).toBe("Representative Data");
+    expect(getLastTopic(state).data.title).toBe("Access and Inclusion");
+  });
+
+  test("getSubtopic", () => {
+    expect(getSubtopic(state).data.title).toBe("Technical Skill Development");
+  });
+
+  test("getLastSubtopic", () => {
+    expect(getLastSubtopic(state).data.title).toBe("Representative Data");
   });
 });
 
@@ -73,12 +73,12 @@ const identity = <T>(arg: T): T => arg;
 //  ********************************/
 
 describe("Builder", () => {
-  describe("Expected Themes", () => {
+  describe("Expected Topics", () => {
     test("Expected initial state", () => {
       expect(
-        state.children.every((themeNode) => {
+        state.children.every((topicNode) => {
           return (
-            !themeNode.isOpen && themeNode.pagination === defaultThemePagination
+            !topicNode.isOpen && topicNode.pagination === defaultTopicPagination
           );
         }),
       ).true;
@@ -89,8 +89,8 @@ describe("Builder", () => {
     test("Expected initial state", () => {
       expect(
         state.children
-          .flatMap((theme) => theme.children)
-          .every((topic) => topic.pagination === defaultTopicPagination),
+          .flatMap((topic) => topic.children)
+          .every((topic) => topic.pagination === defaultSubtopicPagination),
       ).true;
     });
   });
@@ -101,17 +101,17 @@ describe("Builder", () => {
 //  ********************************/
 describe("HOF", () => {
   describe("combineActions", () => {
-    const combined = combineActions(openTheme, expandTheme);
-    const id = getTheme(state).data.id;
-    const intermediateState = openTheme(state, id);
-    const finalState = expandTheme(intermediateState, id);
+    const combined = combineActions(openTopic, expandTopic);
+    const id = getTopic(state).data.id;
+    const intermediateState = openTopic(state, id);
+    const finalState = expandTopic(intermediateState, id);
     test("Combined function is equivalent to two seperate applications", () => {
       const combinedState = combined(state, id);
       expect(combinedState).toStrictEqual(finalState);
     });
 
     test("Order independence (for different changes)", () => {
-      const combined2 = combineActions(expandTheme, openTheme);
+      const combined2 = combineActions(expandTopic, openTopic);
       const newState = combined2(state, id);
       expect(newState).toStrictEqual(finalState);
     });
@@ -125,7 +125,7 @@ describe("HOF", () => {
     });
 
     test("Function is applied to everything", () => {
-      const func = mapActions(identity, openAllThemes);
+      const func = mapActions(identity, openAllTopics);
       const newState = func(state);
       expect(newState.children.every((node) => node.isOpen)).true;
     });
@@ -152,23 +152,23 @@ describe("Utility Functions", () => {
   });
 
   describe("replaceNode", () => {
-    const newTheme1: ThemeNode = {
-      ...getTheme(state),
+    const newTopic1: TopicNode = {
+      ...getTopic(state),
       isOpen: true,
       pagination: 42,
     };
-    const newChildren1: ThemeNode[] = replaceNode(state.children, newTheme1);
+    const newChildren1: TopicNode[] = replaceNode(state.children, newTopic1);
 
-    const newTheme2 = {
-      ...getLastTheme(state),
+    const newTopic2 = {
+      ...getLastTopic(state),
       isOpen: true,
       pagination: 9001,
     };
-    const newChildren2: ThemeNode[] = replaceNode(state.children, newTheme2);
+    const newChildren2: TopicNode[] = replaceNode(state.children, newTopic2);
 
     test("Node is replace", () => {
-      expect(newChildren1[0]).toStrictEqual(newTheme1);
-      expect(newChildren2[newChildren2.length - 1]).toStrictEqual(newTheme2);
+      expect(newChildren1[0]).toStrictEqual(newTopic1);
+      expect(newChildren2[newChildren2.length - 1]).toStrictEqual(newTopic2);
     });
 
     test("Maintains sames length", () => {
@@ -179,44 +179,44 @@ describe("Utility Functions", () => {
 });
 
 //  ********************************
-//  * Theme *
+//  * Topic *
 //  ********************************/
-describe("Theme", () => {
+describe("Topic", () => {
   describe("Base Functions", () => {
-    describe("findTheme", () => {
-      test("Finds existing theme", () => {
-        expect(findTheme(state, getTheme(state).data.id)).toStrictEqual(
-          getTheme(state),
+    describe("findTopic", () => {
+      test("Finds existing topic", () => {
+        expect(findTopic(state, getTopic(state).data.id)).toStrictEqual(
+          getTopic(state),
         );
-        expect(findTheme(state, getLastTheme(state).data.id)).toStrictEqual(
-          getLastTheme(state),
+        expect(findTopic(state, getLastTopic(state).data.id)).toStrictEqual(
+          getLastTopic(state),
         );
       });
 
       test("Thows an error if mismatched id", () => {
-        expect(() => findTheme(state, "doesn't exist")).toThrowError();
+        expect(() => findTopic(state, "doesn't exist")).toThrowError();
       });
     });
   });
 
   describe("Applicative Functions", () => {
-    describe("changeTheme", () => {
+    describe("changeTopic", () => {
       test("Identity won't change anything", () => {
-        const applyId = changeTheme(identity);
-        const sameState1 = applyId(state, getTheme(state).data.id);
+        const applyId = changeTopic(identity);
+        const sameState1 = applyId(state, getTopic(state).data.id);
         expect(sameState1).toStrictEqual(state);
-        const sameState2 = applyId(state, getLastTheme(state).data.id);
+        const sameState2 = applyId(state, getLastTopic(state).data.id);
         expect(sameState2).toStrictEqual(state);
       });
 
       test("Only changes node with provided id", () => {
-        const openedState1 = changeTheme((node) => ({ ...node, isOpen: true }))(
+        const openedState1 = changeTopic((node) => ({ ...node, isOpen: true }))(
           state,
-          getTheme(state).data.id,
+          getTopic(state).data.id,
         );
-        const openedState2 = changeTheme((node) => ({ ...node, isOpen: true }))(
+        const openedState2 = changeTopic((node) => ({ ...node, isOpen: true }))(
           state,
-          getLastTheme(state).data.id,
+          getLastTopic(state).data.id,
         );
         expect(openedState1.children.slice(1).every((node) => !node.isOpen));
         expect(
@@ -227,16 +227,16 @@ describe("Theme", () => {
       });
     });
 
-    describe("mapTheme", () => {
-      const setPage0 = mapTheme((node) => ({ ...node, pagination: 0 }));
-      const applyId = mapTheme(identity);
+    describe("mapTopic", () => {
+      const setPage0 = mapTopic((node) => ({ ...node, pagination: 0 }));
+      const applyId = mapTopic(identity);
 
       test("Identity won't change anything", () => {
         const sameState = applyId(state);
         expect(sameState).toStrictEqual(state);
       });
 
-      test("Applies to all themes", () => {
+      test("Applies to all topics", () => {
         const newState = setPage0(state);
         expect(newState.children.every((node) => node.pagination === 0)).true;
       });
@@ -245,43 +245,43 @@ describe("Theme", () => {
         const newState = setPage0(state);
         expect(
           newState.children
-            .flatMap((theme) => theme.children)
-            .every((topic) => topic.pagination !== 0),
+            .flatMap((topic) => topic.children)
+            .every((subtopic) => subtopic.pagination !== 0),
         );
       });
     });
   });
 
   describe("Tranformers", () => {
-    describe("openTheme", () => {
-      const openedState1 = openTheme(state, getTheme(state).data.id);
-      const openedState2 = openTheme(state, getLastTheme(state).data.id);
+    describe("openTopic", () => {
+      const openedState1 = openTopic(state, getTopic(state).data.id);
+      const openedState2 = openTopic(state, getLastTopic(state).data.id);
 
       test("Changed state", () => {
         expect(openedState1).not.toStrictEqual(state);
         expect(openedState2).not.toStrictEqual(state);
-        expect(getTheme(openedState1).isOpen).true;
-        expect(getLastTheme(openedState2).isOpen);
+        expect(getTopic(openedState1).isOpen).true;
+        expect(getLastTopic(openedState2).isOpen);
       });
     });
 
-    describe("closeTheme", () => {
-      const id = getTheme(state).data.id;
-      const openedState = openTheme(state, id);
+    describe("closeTopic", () => {
+      const id = getTopic(state).data.id;
+      const openedState = openTopic(state, id);
 
-      test("Can close theme", () => {
-        const closedState = closeTheme(openedState, id);
+      test("Can close topic", () => {
+        const closedState = closeTopic(openedState, id);
         expect(closedState).toStrictEqual(state);
       });
     });
 
-    describe("toggleTheme", () => {
-      const id = getTheme(state).data.id;
-      const openedState = toggleTheme(state, id);
-      const doesNothing = combineActions(toggleTheme, toggleTheme);
+    describe("toggleTopic", () => {
+      const id = getTopic(state).data.id;
+      const openedState = toggleTopic(state, id);
+      const doesNothing = combineActions(toggleTopic, toggleTopic);
 
       test("toggle once to open", () => {
-        expect(getTheme(openedState).isOpen).true;
+        expect(getTopic(openedState).isOpen).true;
       });
 
       test("toggle twice goes back to original pos", () => {
@@ -290,33 +290,33 @@ describe("Theme", () => {
     });
 
     describe("openAll", () => {
-      test("opens all themes", () => {
-        expect(openAllThemes(state).children.every((val) => val.isOpen)).true;
+      test("opens all topics", () => {
+        expect(openAllTopics(state).children.every((val) => val.isOpen)).true;
       });
     });
 
     describe("closeAll", () => {
-      test("closes all themes", () => {
-        expect(mapActions(openAllThemes, closeAllThemes)(state)).toStrictEqual(
+      test("closes all topics", () => {
+        expect(mapActions(openAllTopics, closeAllTopics)(state)).toStrictEqual(
           state,
         );
       });
     });
 
-    describe("expandTheme", () => {
-      const id = getTheme(state).data.id;
-      const expandedState = expandTheme(state, id);
-      test("Expanding theme increases pagination", () => {
-        expect(getTheme(expandedState).pagination).greaterThan(
-          getTheme(state).pagination,
+    describe("expandTopic", () => {
+      const id = getTopic(state).data.id;
+      const expandedState = expandTopic(state, id);
+      test("Expanding topic increases pagination", () => {
+        expect(getTopic(expandedState).pagination).greaterThan(
+          getTopic(state).pagination,
         );
       });
     });
 
-    describe("resetTheme", () => {
-      const id = getTheme(state).data.id;
-      const func = combineActions(expandTheme, resetTheme);
-      test("Resetting theme brings it back to original", () => {
+    describe("resetTopic", () => {
+      const id = getTopic(state).data.id;
+      const func = combineActions(expandTopic, resetTopic);
+      test("Resetting topic brings it back to original", () => {
         expect(func(state, id)).toStrictEqual(state);
       });
     });
@@ -324,61 +324,64 @@ describe("Theme", () => {
 });
 
 //  ********************************
-//  * Topic *
+//  * Subtopic *
 //  ********************************/
-describe("Topic", () => {
+describe("Subtopic", () => {
   describe("Base Functions", () => {
-    describe("findTopic", () => {
-      const topic1 = getTopic(state);
-      const topic2 = getLastTopic(state);
+    describe("findSubtopic", () => {
+      const subtopic1 = getSubtopic(state);
+      const subtopic2 = getLastSubtopic(state);
 
       test("Should find topic in reportState", () => {
-        expect(findTopic(state, topic1.data.id)).toStrictEqual(topic1);
-        expect(findTopic(state, topic2.data.id)).toStrictEqual(topic2);
+        expect(findSubtopic(state, subtopic1.data.id)).toStrictEqual(subtopic1);
+        expect(findSubtopic(state, subtopic2.data.id)).toStrictEqual(subtopic2);
       });
 
       test("Should throw an error if it doesn't exist", () => {
-        expect(() => findTopic(state, "")).toThrowError();
+        expect(() => findSubtopic(state, "")).toThrowError();
       });
     });
 
     describe("findParent", () => {
-      const firstTopicId = getTopic(state).data.id;
-      const lastTopicId = getLastTopic(state).data.id;
-      // const theme = parentOfTopic(state.children, firstTopicId);
-      test("Expects to find parent of topicId", () => {
-        expect(parentOfTopic(state.children, firstTopicId)).toStrictEqual(
-          getTheme(state),
+      const firstsubtopicId = getSubtopic(state).data.id;
+      const lastsubtopicId = getLastSubtopic(state).data.id;
+      // const topic = parentOfSubtopic(state.children, firstsubtopicId);
+      test("Expects to find parent of subtopicId", () => {
+        expect(parentOfSubtopic(state.children, firstsubtopicId)).toStrictEqual(
+          getTopic(state),
         );
-        expect(parentOfTopic(state.children, lastTopicId)).toStrictEqual(
-          getLastTheme(state),
+        expect(parentOfSubtopic(state.children, lastsubtopicId)).toStrictEqual(
+          getLastTopic(state),
         );
       });
     });
   });
 
   describe("Applicative Functions", () => {
-    const topicId = getLastTopic(state).data.id;
-    const applyId = changeTopic(identity);
+    const subtopicId = getLastSubtopic(state).data.id;
+    const applyId = changeSubtopic(identity);
 
-    describe("changeTopic", () => {
+    describe("changeSubtopic", () => {
       test("Identity should not affect anything", () => {
-        expect(applyId(state, topicId)).toStrictEqual(state);
+        expect(applyId(state, subtopicId)).toStrictEqual(state);
         expect(true).true;
       });
 
       test("Provided transformer should change topic", () => {
-        const newState = changeTopic((topic) => ({
-          ...topic,
+        const newState = changeSubtopic((subtopic) => ({
+          ...subtopic,
           pagination: 9001,
-        }))(state, topicId);
-        expect(getLastTopic(newState).pagination).toBe(9001);
+        }))(state, subtopicId);
+        expect(getLastSubtopic(newState).pagination).toBe(9001);
       });
     });
 
-    describe("mapTopic", () => {
-      const applyId = mapTopic(identity);
-      const func = mapTopic((topic) => ({ ...topic, pagination: 9001 }));
+    describe("mapSubtopic", () => {
+      const applyId = mapSubtopic(identity);
+      const func = mapSubtopic((subtopic) => ({
+        ...subtopic,
+        pagination: 9001,
+      }));
 
       test("Identity should not affect anything", () => {
         expect(applyId(state)).toStrictEqual(state);
@@ -389,84 +392,87 @@ describe("Topic", () => {
         expect(
           newState.children
             .flatMap((node) => node.children)
-            .every((topic) => topic.pagination === 9001),
+            .every((subtopic) => subtopic.pagination === 9001),
         ).true;
       });
     });
 
-    describe("mapThemeChildren", () => {
-      const themeId = getLastTheme(state).data.id;
-      const newState = mapThemeChildren((topic) => ({
-        ...topic,
+    describe("mapTopicChildren", () => {
+      const topicId = getLastTopic(state).data.id;
+      const newState = mapTopicChildren((subtopic) => ({
+        ...subtopic,
         pagination: 9001,
-      }))(state, themeId);
+      }))(state, topicId);
 
-      test("Should apply to children of correct theme", () => {
+      test("Should apply to children of correct topic", () => {
         expect(
-          getLastTheme(newState).children.every(
+          getLastTopic(newState).children.every(
             (node) => node.pagination === 9001,
           ),
         );
       });
 
-      test("Should only apply to children of correct theme", () => {
+      test("Should only apply to children of correct topic", () => {
         const otherPagNums = newState.children
-          .filter((node) => node.data.id !== themeId)
+          .filter((node) => node.data.id !== topicId)
           .flatMap((node) => node.children)
-          .map((topic) => topic.pagination);
+          .map((subtopic) => subtopic.pagination);
 
         const uniques = Array.from(new Set(otherPagNums));
 
         expect(uniques).length(1);
-        expect(uniques[0]).toBe(defaultTopicPagination);
+        expect(uniques[0]).toBe(defaultSubtopicPagination);
       });
     });
   });
 
   describe("Transformers", () => {
-    const topic = getTopic(state);
-    const topicId = topic.data.id;
+    const subtopic = getSubtopic(state);
+    const subtopicId = subtopic.data.id;
 
-    describe("expandTopic", () => {
-      const newState = expandTopic(state, topicId);
+    describe("expandSubtopic", () => {
+      const newState = expandSubtopic(state, subtopicId);
 
       test("Should increase the topic's pagination", () => {
-        expect(getTopic(newState).pagination).greaterThan(
-          getTopic(state).pagination,
+        expect(getSubtopic(newState).pagination).greaterThan(
+          getSubtopic(state).pagination,
         );
       });
     });
 
-    describe("resetTopic", () => {
-      const newState = combineActions(expandTopic, resetTopic)(state, topicId);
+    describe("resetSubtopic", () => {
+      const newState = combineActions(expandSubtopic, resetSubtopic)(
+        state,
+        subtopicId,
+      );
 
       test("Resetting topic should bring it back to the default", () => {
         expect(newState).toStrictEqual(state);
       });
     });
 
-    describe("resetThemeTopics", () => {
-      const themeId = getTheme(state).data.id;
-      const setupState = mapThemeChildren((topic) => ({
-        ...topic,
+    describe("resetTopicTopics", () => {
+      const topicId = getTopic(state).data.id;
+      const setupState = mapTopicChildren((subtopic) => ({
+        ...subtopic,
         pagination: 9001,
       }));
-      const newState = combineActions(setupState, resetThemesTopics)(
+      const newState = combineActions(setupState, resetTopicsTopics)(
         state,
-        themeId,
+        topicId,
       );
-      test("Restting theme's topics brings it back to default", () => {
+      test("Restting topic's topics brings it back to default", () => {
         expect(newState).toStrictEqual(state);
       });
     });
 
-    describe("resetAllTopics", () => {
-      const setAllTopics = mapTopic((topic) => ({
-        ...topic,
+    describe("resetAllSubtopics", () => {
+      const setAllTopics = mapSubtopic((subtopic) => ({
+        ...subtopic,
         pagination: 9001,
       }));
-      const newState = mapActions(setAllTopics, resetAllTopics)(state);
-      test("Resetting all topics should bring them back to the default", () => {
+      const newState = mapActions(setAllTopics, resetAllSubtopics)(state);
+      test("Resetting all subtopics should bring them back to the default", () => {
         expect(newState).toStrictEqual(state);
       });
     });
@@ -480,41 +486,41 @@ describe("Actions", () => {
   describe("open", () => {
     const openAction = (state: ReportState, id: string) =>
       reducer(state, { type: "open", payload: { id } });
-    const id = getTheme(state).data.id;
-    const lastId = getLastTheme(state).data.id;
+    const id = getTopic(state).data.id;
+    const lastId = getLastTopic(state).data.id;
 
-    describe("Opening theme", () => {
-      test("Opening with themeId sets theme to open", () => {
+    describe("Opening topic", () => {
+      test("Opening with topicId sets topic to open", () => {
         const newState1 = openAction(state, id);
-        expect(getTheme(newState1).isOpen).true;
+        expect(getTopic(newState1).isOpen).true;
 
         const newState2 = openAction(state, lastId);
-        expect(getLastTheme(newState2).isOpen).true;
+        expect(getLastTopic(newState2).isOpen).true;
       });
     });
 
     describe("Opening topic", () => {
-      const firstTopicId = getTopic(state).data.id;
-      const lastTopicId = getLastTopic(state).data.id;
-      const firstState = openAction(state, firstTopicId);
-      const lastState = openAction(state, lastTopicId);
-      test("Opening with topicId should set parent theme to open", () => {
-        expect(getTheme(firstState).isOpen).true;
-        expect(getLastTheme(lastState).isOpen).true;
+      const firstsubtopicId = getSubtopic(state).data.id;
+      const lastsubtopicId = getLastSubtopic(state).data.id;
+      const firstState = openAction(state, firstsubtopicId);
+      const lastState = openAction(state, lastsubtopicId);
+      test("Opening with subtopicId should set parent topic to open", () => {
+        expect(getTopic(firstState).isOpen).true;
+        expect(getLastTopic(lastState).isOpen).true;
       });
 
-      describe("Opening with topicId should set pagination to correct value", () => {
+      describe("Opening with subtopicId should set pagination to correct value", () => {
         test("Topic is earlier than pagination", () => {
-          expect(getTheme(firstState).pagination === defaultThemePagination);
+          expect(getTopic(firstState).pagination === defaultTopicPagination);
         });
 
         test("Topic is later than pagination", () => {
-          const deepTopicId = getTheme(state).children[
-            getTheme(state).children.length - 1
+          const deepsubtopicId = getTopic(state).children[
+            getTopic(state).children.length - 1
           ].data.id as string;
-          const deepState = openAction(state, deepTopicId);
-          expect(getTheme(deepState).pagination).greaterThan(
-            defaultThemePagination,
+          const deepState = openAction(state, deepsubtopicId);
+          expect(getTopic(deepState).pagination).greaterThan(
+            defaultTopicPagination,
           );
         });
       });
@@ -524,14 +530,14 @@ describe("Actions", () => {
   describe("close", () => {
     const close = (state: ReportState, id: string) =>
       reducer(state, { type: "close", payload: { id } });
-    const themeId = getTheme(state).data.id;
     const topicId = getTopic(state).data.id;
-    const setupTheme = combineActions(openTheme, expandTheme);
+    const subtopicId = getSubtopic(state).data.id;
+    const setupTopic = combineActions(openTopic, expandTopic);
 
-    const _setupState = setupTheme(state, themeId);
-    const setupState = expandTopic(_setupState, topicId);
+    const _setupState = setupTopic(state, topicId);
+    const setupState = expandSubtopic(_setupState, subtopicId);
 
-    const newState = close(setupState, themeId);
+    const newState = close(setupState, topicId);
 
     test("Close should reset isOpen, pagination, and children pagination", () => {
       expect(newState).toStrictEqual(state);
@@ -542,7 +548,7 @@ describe("Actions", () => {
     const openAllAction = (state: ReportState) =>
       reducer(state, { type: "openAll", payload: { id: "" } });
     const newState = openAllAction(state);
-    test("Should set every theme to open", () => {
+    test("Should set every topic to open", () => {
       expect(newState.children.every((node) => node.isOpen)).true;
     });
   });
@@ -551,30 +557,18 @@ describe("Actions", () => {
     const closeAllAction = (state: ReportState) =>
       reducer(state, { type: "closeAll", payload: { id: "" } });
     const setupFunc = mapActions(
-      openAllThemes,
-      mapTheme((node) => ({ ...node, pagination: 9001 })),
-      mapTopic((node) => ({ ...node, pagination: 42 })),
+      openAllTopics,
+      mapTopic((node) => ({ ...node, pagination: 9001 })),
+      mapSubtopic((node) => ({ ...node, pagination: 42 })),
     );
     const setupState = setupFunc(state);
 
     test("Opening and then closing does nothing", () => {
-      expect(mapActions(openAllThemes, closeAllAction));
+      expect(mapActions(openAllTopics, closeAllAction));
     });
 
-    test("Closing all should close, reset themes and topics", () => {
+    test("Closing all should close, reset topics and topics", () => {
       expect(closeAllAction(setupState)).toStrictEqual(state);
-    });
-  });
-
-  describe("expandTheme", () => {
-    const expandThemeAction = (state: ReportState, id: string) =>
-      reducer(state, { type: "expandTheme", payload: { id } });
-    const themeId = getTheme(state).data.id;
-    test("Expanding theme should increase pagination by some const", () => {
-      const newState = expandThemeAction(state, themeId);
-      expect(getTheme(newState).pagination).toBe(
-        getTheme(state).pagination + addThemePagination,
-      );
     });
   });
 
@@ -586,6 +580,18 @@ describe("Actions", () => {
       const newState = expandTopicAction(state, topicId);
       expect(getTopic(newState).pagination).toBe(
         getTopic(state).pagination + addTopicPagination,
+      );
+    });
+  });
+
+  describe("expandSubtopic", () => {
+    const expandSubtopicAction = (state: ReportState, id: string) =>
+      reducer(state, { type: "expandSubtopic", payload: { id } });
+    const subtopicId = getSubtopic(state).data.id;
+    test("Expanding subtopic should increase pagination by some const", () => {
+      const newState = expandSubtopicAction(state, subtopicId);
+      expect(getSubtopic(newState).pagination).toBe(
+        getSubtopic(state).pagination + addSubtopicPagination,
       );
     });
   });

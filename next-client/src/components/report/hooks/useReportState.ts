@@ -4,11 +4,11 @@ import { Dispatch, useReducer } from "react";
 
 import * as schema from "tttc-common/schema";
 
-const defaultThemePagination = 1;
-const addThemePagination = 1;
-
 const defaultTopicPagination = 1;
 const addTopicPagination = 1;
+
+const defaultSubtopicPagination = 1;
+const addSubtopicPagination = 1;
 
 //  ********************************
 //  * TYPE DEFINITIONS
@@ -30,29 +30,29 @@ export type Node<T extends HasId> = {
  * Report State - highest level implementation
  */
 export type ReportState = {
-  children: ThemeNode[];
+  children: TopicNode[];
 };
 
 /**
- * Nodes with Themes as data
+ * Nodes with Topics as data
  */
-export type ThemeNode = Node<schema.Theme> & {
-  children: TopicNode[];
+export type TopicNode = Node<schema.Topic> & {
+  children: SubtopicNode[];
   isOpen: boolean;
   pagination: number;
 };
 
 /**
- * Nodes with Topic as data
+ * Nodes with Subtopic as data
  */
-export type TopicNode = Node<schema.Topic> & {
+export type SubtopicNode = Node<schema.Subtopic> & {
   children: ClaimNode[];
   pagination: number;
 };
 
 export type ClaimNode = Node<schema.Claim>;
 
-export type SomeNode = ThemeNode | TopicNode | ClaimNode;
+export type SomeNode = TopicNode | SubtopicNode | ClaimNode;
 
 //  ********************************
 //  * UTILITY FUNCTIONS *
@@ -102,23 +102,23 @@ const mapActions =
 
 // **** Base Functions ****
 
-const findTheme = (state: ReportState, id: string): ThemeNode =>
+const findTopic = (state: ReportState, id: string): TopicNode =>
   undefinedCheck(
     state.children.find((node) => node.data.id === id),
-    "Couldn't find theme with provided Id",
+    "Couldn't find topic with provided Id",
   );
 
 // **** Applicative Functions ****
 
-const changeTheme =
-  (transform: TransformationFunction<ThemeNode>) =>
+const changeTopic =
+  (transform: TransformationFunction<TopicNode>) =>
   (state: ReportState, id: string): ReportState => ({
     ...state,
-    children: replaceNode(state.children, transform(findTheme(state, id))),
+    children: replaceNode(state.children, transform(findTopic(state, id))),
   });
 
-const mapTheme =
-  (transform: TransformationFunction<ThemeNode>) =>
+const mapTopic =
+  (transform: TransformationFunction<TopicNode>) =>
   (state: ReportState): ReportState => ({
     ...state,
     children: state.children.map(transform),
@@ -126,151 +126,152 @@ const mapTheme =
 
 // **** Transformers ****
 
-const openTheme = changeTheme((node) => ({ ...node, isOpen: true }));
+const openTopic = changeTopic((node) => ({ ...node, isOpen: true }));
 
-const closeTheme = changeTheme((node) => ({ ...node, isOpen: false }));
+const closeTopic = changeTopic((node) => ({ ...node, isOpen: false }));
 
-const toggleTheme = changeTheme((node) => ({ ...node, isOpen: !node.isOpen }));
+const toggleTopic = changeTopic((node) => ({ ...node, isOpen: !node.isOpen }));
 
-const openAllThemes = mapTheme((node) => ({ ...node, isOpen: true }));
+const openAllTopics = mapTopic((node) => ({ ...node, isOpen: true }));
 
-const closeAllThemes = mapTheme((node) => ({ ...node, isOpen: false }));
-
-const resetAllThemes = mapTheme((node) => ({
-  ...node,
-  pagination: defaultThemePagination,
-}));
-
-const expandTheme = changeTheme((node) => ({
-  ...node,
-  pagination: node.pagination + addThemePagination,
-}));
-
-const setThemePagination = (num: number) =>
-  changeTheme((node) => ({
-    ...node,
-    pagination: num,
-  }));
-
-const resetTheme = setThemePagination(defaultThemePagination);
-
-//  ********************************
-//  * TOPIC STATE FUNCTIONS *
-//  ********************************/
-
-// **** Base Functions ****
-
-const findTopicInTheme = (
-  theme: ThemeNode,
-  id: string,
-): TopicNode | undefined => theme.children.find((node) => node.data.id === id);
-
-const _findTopic = (
-  themeNodes: ThemeNode[],
-  id: string,
-): TopicNode | undefined => {
-  if (themeNodes.length === 0) return undefined;
-  const res = findTopicInTheme(themeNodes[0], id);
-  if (!res) return _findTopic(themeNodes.slice(1), id);
-  return res;
-};
-
-const findTopic = (state: ReportState, id: string): TopicNode =>
-  undefinedCheck(
-    _findTopic(state.children, id),
-    "Could't find topic with provided Id",
-  );
-
-const _parentOfTopic = (
-  themes: ThemeNode[],
-  topicId: string,
-): ThemeNode | undefined => {
-  if (!themes.length) return undefined;
-  else if (
-    themes[0].children.some((node: TopicNode) => node.data.id === topicId)
-  )
-    return themes[0];
-  return _parentOfTopic(themes.slice(1), topicId);
-};
-
-const parentOfTopic = (themes: ThemeNode[], topicId: string) =>
-  undefinedCheck(
-    _parentOfTopic(themes, topicId),
-    "Could not find parent of topic with id provided",
-  );
-
-// **** Applicative Functions ****
-
-const changeTopic =
-  (transform: TransformationFunction<TopicNode>) =>
-  (state: ReportState, id: string): ReportState => {
-    const topic = findTopic(state, id);
-    return {
-      ...state,
-      children: state.children.map((theme) => ({
-        ...theme,
-        children: replaceNode(theme.children, transform(topic)),
-      })),
-    };
-  };
-
-const mapTopic = (transform: TransformationFunction<TopicNode>) =>
-  mapTheme((theme) => ({
-    ...theme,
-    children: theme.children.map(transform),
-  }));
-
-const mapThemeChildren =
-  (transform: TransformationFunction<TopicNode>) =>
-  (state: ReportState, themeId: string): ReportState =>
-    mapTheme((theme) => ({
-      ...theme,
-      children: theme.children.map(
-        theme.data.id === themeId ? transform : identity,
-      ),
-    }))(state);
-
-// **** Transformers ****
-
-const expandTopic = changeTopic((node) => ({
-  ...node,
-  pagination: node.pagination + addTopicPagination,
-}));
-
-const resetTopic = changeTopic((node) => ({
-  ...node,
-  pagination: defaultTopicPagination,
-}));
-
-const resetThemesTopics = mapThemeChildren((topic) => ({
-  ...topic,
-  pagination: defaultTopicPagination,
-}));
+const closeAllTopics = mapTopic((node) => ({ ...node, isOpen: false }));
 
 const resetAllTopics = mapTopic((node) => ({
   ...node,
   pagination: defaultTopicPagination,
 }));
 
+const expandTopic = changeTopic((node) => ({
+  ...node,
+  pagination: node.pagination + addTopicPagination,
+}));
+
+const setTopicPagination = (num: number) =>
+  changeTopic((node) => ({
+    ...node,
+    pagination: num,
+  }));
+
+const resetTopic = setTopicPagination(defaultTopicPagination);
+
+//  ********************************
+//  * SUBTOPIC STATE FUNCTIONS *
+//  ********************************/
+
+// **** Base Functions ****
+
+const findSubtopicInTopic = (
+  topic: TopicNode,
+  id: string,
+): SubtopicNode | undefined =>
+  topic.children.find((node) => node.data.id === id);
+
+const _findSubtopic = (
+  TopicNodes: TopicNode[],
+  id: string,
+): SubtopicNode | undefined => {
+  if (TopicNodes.length === 0) return undefined;
+  const res = findSubtopicInTopic(TopicNodes[0], id);
+  if (!res) return _findSubtopic(TopicNodes.slice(1), id);
+  return res;
+};
+
+const findSubtopic = (state: ReportState, id: string): SubtopicNode =>
+  undefinedCheck(
+    _findSubtopic(state.children, id),
+    "Could't find topic with provided Id",
+  );
+
+const _parentOfSubtopic = (
+  topics: TopicNode[],
+  subtopicId: string,
+): TopicNode | undefined => {
+  if (!topics.length) return undefined;
+  else if (
+    topics[0].children.some((node: SubtopicNode) => node.data.id === subtopicId)
+  )
+    return topics[0];
+  return _parentOfSubtopic(topics.slice(1), subtopicId);
+};
+
+const parentOfSubtopic = (topics: TopicNode[], subtopicId: string) =>
+  undefinedCheck(
+    _parentOfSubtopic(topics, subtopicId),
+    "Could not find parent of subtopic with id provided",
+  );
+
+// **** Applicative Functions ****
+
+const changeSubtopic =
+  (transform: TransformationFunction<SubtopicNode>) =>
+  (state: ReportState, id: string): ReportState => {
+    const subtopic = findSubtopic(state, id);
+    return {
+      ...state,
+      children: state.children.map((topic) => ({
+        ...topic,
+        children: replaceNode(topic.children, transform(subtopic)),
+      })),
+    };
+  };
+
+const mapSubtopic = (transform: TransformationFunction<SubtopicNode>) =>
+  mapTopic((topic) => ({
+    ...topic,
+    children: topic.children.map(transform),
+  }));
+
+const mapTopicChildren =
+  (transform: TransformationFunction<SubtopicNode>) =>
+  (state: ReportState, topicId: string): ReportState =>
+    mapTopic((topic) => ({
+      ...topic,
+      children: topic.children.map(
+        topic.data.id === topicId ? transform : identity,
+      ),
+    }))(state);
+
+// **** Transformers ****
+
+const expandSubtopic = changeSubtopic((node) => ({
+  ...node,
+  pagination: node.pagination + addSubtopicPagination,
+}));
+
+const resetSubtopic = changeSubtopic((node) => ({
+  ...node,
+  pagination: defaultSubtopicPagination,
+}));
+
+const resetTopicsTopics = mapTopicChildren((topic) => ({
+  ...topic,
+  pagination: defaultSubtopicPagination,
+}));
+
+const resetAllSubtopics = mapSubtopic((node) => ({
+  ...node,
+  pagination: defaultSubtopicPagination,
+}));
+
 //  ********************************
 //  * STATE BUILDERS *
 //  ********************************/
 
-const stateBuilder = (themes: schema.Theme[]): ReportState => ({
-  children: themes.map(makeThemeNode),
-});
-
-const makeThemeNode = (theme: schema.Theme): ThemeNode => ({
-  data: theme,
-  isOpen: false,
-  pagination: defaultThemePagination,
-  children: theme.topics.map(makeTopicNode),
+const stateBuilder = (topics: schema.Topic[]): ReportState => ({
+  children: topics.map(makeTopicNode),
 });
 
 const makeTopicNode = (topic: schema.Topic): TopicNode => ({
   data: topic,
+  isOpen: false,
   pagination: defaultTopicPagination,
-  children: topic.claims.map(makeClaimNode),
+  children: topic.subtopics.map(makeSubSubtopicNode),
+});
+
+const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
+  data: subtopic,
+  pagination: defaultSubtopicPagination,
+  children: subtopic.claims.map(makeClaimNode),
 });
 
 const makeClaimNode = (claim: schema.Claim): ClaimNode => ({
@@ -286,9 +287,9 @@ type ReportStateActionTypes =
   | "close"
   | "openAll"
   | "closeAll"
-  | "toggleTheme"
-  | "expandTheme"
+  | "toggleTopic"
   | "expandTopic"
+  | "expandSubtopic"
   | "focus";
 
 type ReportStatePayload = { id: string };
@@ -301,48 +302,52 @@ export type ReportStateAction = {
 function reducer(state: ReportState, action: ReportStateAction): ReportState {
   const { id } = action.payload;
   switch (action.type) {
-    // For open, we want the same function to work for themes or topics.
-    // If topic, should open parent and set pagination to the correct value
+    // For open, we want the same function to work for topics or subtopics.
+    // If subtopic, should open parent and set pagination to the correct value
     case "open": {
-      const maybeThemeIdx = state.children.findIndex(
+      const maybeTopicIdx = state.children.findIndex(
         (node) => node.data.id === id,
       );
-      if (maybeThemeIdx !== -1) return openTheme(state, id);
-      const parentTheme = parentOfTopic(state.children, id);
-      const topicIdx = parentTheme.children.findIndex(
+      if (maybeTopicIdx !== -1) return openTopic(state, id);
+      const parentTopic = parentOfSubtopic(state.children, id);
+      const topicIdx = parentTopic.children.findIndex(
         (topic) => topic.data.id === id,
       );
       const func = combineActions(
-        openTheme,
-        setThemePagination(
-          topicIdx + 1 > parentTheme.pagination
+        openTopic,
+        setTopicPagination(
+          topicIdx + 1 > parentTopic.pagination
             ? topicIdx + 1
-            : parentTheme.pagination,
+            : parentTopic.pagination,
         ),
       );
-      return func(state, parentTheme.data.id);
+      return func(state, parentTopic.data.id);
     }
     case "close": {
       return combineActions(
-        closeTheme,
-        resetTheme,
-        resetThemesTopics,
+        closeTopic,
+        resetTopic,
+        resetTopicsTopics,
       )(state, id);
     }
-    case "toggleTheme": {
-      return combineActions(toggleTheme, resetTheme)(state, id);
+    case "toggleTopic": {
+      return combineActions(toggleTopic, resetTopic)(state, id);
     }
     case "openAll": {
-      return openAllThemes(state);
+      return openAllTopics(state);
     }
     case "closeAll": {
-      return mapActions(closeAllThemes, resetAllThemes, resetAllTopics)(state);
-    }
-    case "expandTheme": {
-      return expandTheme(state, id);
+      return mapActions(
+        closeAllTopics,
+        resetAllTopics,
+        resetAllSubtopics,
+      )(state);
     }
     case "expandTopic": {
       return expandTopic(state, id);
+    }
+    case "expandSubtopic": {
+      return expandSubtopic(state, id);
     }
     case "focus": {
       // placeholder for now to trigger sideffect
@@ -356,9 +361,9 @@ function reducer(state: ReportState, action: ReportStateAction): ReportState {
 }
 
 function useReportState(
-  themes: schema.Theme[],
+  topics: schema.Topic[],
 ): [ReportState, Dispatch<ReportStateAction>] {
-  const [state, dispatch] = useReducer(reducer, stateBuilder(themes));
+  const [state, dispatch] = useReducer(reducer, stateBuilder(topics));
   return [state, dispatch];
 }
 
@@ -367,33 +372,33 @@ export const __internals = {
   combineActions,
   mapActions,
   replaceNode,
-  findTheme,
-  changeTheme,
-  mapTheme,
-  openTheme,
-  closeTheme,
-  toggleTheme,
-  openAllThemes,
-  closeAllThemes,
-  resetTheme,
-  resetAllThemes,
-  expandTheme,
-  findTopicInTheme,
   findTopic,
-  parentOfTopic,
   changeTopic,
   mapTopic,
-  expandTopic,
+  openTopic,
+  closeTopic,
+  toggleTopic,
+  openAllTopics,
+  closeAllTopics,
   resetTopic,
   resetAllTopics,
+  expandTopic,
+  findSubtopicInTopic,
+  findSubtopic,
+  parentOfSubtopic,
+  changeSubtopic,
+  mapSubtopic,
+  expandSubtopic,
+  resetSubtopic,
+  resetAllSubtopics,
   reducer,
   stateBuilder,
-  mapThemeChildren,
-  resetThemesTopics,
-  defaultThemePagination,
+  mapTopicChildren,
+  resetTopicsTopics,
   defaultTopicPagination,
-  addThemePagination,
+  defaultSubtopicPagination,
   addTopicPagination,
+  addSubtopicPagination,
 };
 
 export default useReportState;

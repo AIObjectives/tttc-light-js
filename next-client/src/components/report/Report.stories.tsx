@@ -34,13 +34,13 @@ export const Header = () => (
   <ReportTitle
     title={"Test"}
     nClaims={
-      baseProps.themes.flatMap((theme) =>
-        theme.topics.flatMap((topic) => topic.claims),
+      baseProps.topics.flatMap((theme) =>
+        theme.subtopics.flatMap((topic) => topic.claims),
       ).length
     }
-    nPeople={getNPeople(baseProps.themes)}
-    nThemes={baseProps.themes.length}
-    nTopics={baseProps.themes.flatMap((theme) => theme.topics).length}
+    nPeople={getNPeople(baseProps.topics)}
+    nThemes={baseProps.topics.length}
+    nTopics={baseProps.topics.flatMap((theme) => theme.subtopics).length}
     dateStr={baseProps.date}
   />
 );

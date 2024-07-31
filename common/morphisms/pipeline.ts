@@ -119,9 +119,9 @@ const getReferenceStartIndex = (clm: schema.LLMClaim, fullText: string) =>
 const getReferenceEndIndex = (clm: schema.LLMClaim, fullText: string) =>
   getReferenceStartIndex(clm, fullText) + clm.quote.length;
 
-const getTopicsFromLLMSubTopics =
+const getSubtopicsFromLLMSubTopics =
   (claimMap: ClaimMap) =>
-  (subtopics: schema.Subtopic[]): schema.Topic[] =>
+  (subtopics: schema.LLMSubtopic[]): schema.Subtopic[] =>
     subtopics.map((subtopic) => ({
       id: uuid(),
       title: subtopic.subtopicName,
@@ -129,14 +129,14 @@ const getTopicsFromLLMSubTopics =
       claims: subtopic.claims.map((claim) => claimMap[claim.claimId!]),
     }));
 
-const getThemesFromTaxonomy =
+const getTopicsFromTaxonomy =
   (claimMap: ClaimMap) =>
-  (tree: schema.Taxonomy): schema.Theme[] =>
+  (tree: schema.Taxonomy): schema.Topic[] =>
     tree.map((leaf) => ({
       id: uuid(),
       title: leaf.topicName,
       description: leaf.topicShortDescription!,
-      topics: getTopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
+      subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
     }));
 
 export const getReportDataObj = (
@@ -148,7 +148,7 @@ export const getReportDataObj = (
     title: pipelineOutput.title,
     description: pipelineOutput.description,
     date: new Date().toISOString(),
-    themes: getThemesFromTaxonomy(claimMap)(pipelineOutput.tree),
+    topics: getTopicsFromTaxonomy(claimMap)(pipelineOutput.tree),
     sources: pipelineOutput.data.map((row) => sourceMap[row.id]),
   };
 };
@@ -199,7 +199,7 @@ export const _internal = {
   getReportMetaData,
   getQuote,
   // getSources,
-  getThemesFromTaxonomy,
+  getTopicsFromTaxonomy,
   llmClaimToSchemaClaim,
   numberClaims,
   // pairSourcesWithRows,

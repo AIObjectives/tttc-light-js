@@ -23,15 +23,15 @@ const {
   closeAll,
 } = __internals;
 
-const reportState = stateBuilder(reportData.themes);
+const reportState = stateBuilder(reportData.topics);
 const state = outlineStateBuilder(reportState.children);
-const getTheme = (state: OutlineTree, idx = 0) => state[idx];
-const getLastTheme = (state: OutlineTree) => getTheme(state, state.length - 1);
-const getTopic = (state: OutlineTree, themeIdx = 0, topicIdx = 0) =>
-  undefinedCheck(getTheme(state, themeIdx).children![topicIdx]);
-const getLastTopic = (state: OutlineTree, themeIdx = 0) =>
+const getTopic = (state: OutlineTree, idx = 0) => state[idx];
+const getLastTopic = (state: OutlineTree) => getTopic(state, state.length - 1);
+const getSubsubtopic = (state: OutlineTree, topicIdx = 0, subtopicIdx = 0) =>
+  undefinedCheck(getTopic(state, topicIdx).children![subtopicIdx]);
+const getLastSubsubtopic = (state: OutlineTree, topicIdx = 0) =>
   undefinedCheck(
-    getLastTheme(state).children![getLastTheme(state).children!.length - 1],
+    getLastTopic(state).children![getLastTopic(state).children!.length - 1],
   );
 
 const _getChildren = (node: OutlineNode) =>
@@ -56,17 +56,17 @@ describe("Utility Functions", () => {
 
   describe("findOutlineNode", () => {
     test("Can find nodes on first level", () => {
-      expect(findOutlineNode(state, getTheme(state).id)).toStrictEqual(
-        getTheme(state),
+      expect(findOutlineNode(state, getTopic(state).id)).toStrictEqual(
+        getTopic(state),
       );
-      expect(findOutlineNode(state, getLastTheme(state).id)).toStrictEqual(
-        getLastTheme(state),
+      expect(findOutlineNode(state, getLastTopic(state).id)).toStrictEqual(
+        getLastTopic(state),
       );
     });
 
     test("Can find nodes on second level", () => {
-      expect(findOutlineNode(state, getTopic(state).id)).toStrictEqual(
-        getTopic(state),
+      expect(findOutlineNode(state, getSubsubtopic(state).id)).toStrictEqual(
+        getSubsubtopic(state),
       );
     });
   });
@@ -75,8 +75,8 @@ describe("Utility Functions", () => {
 describe("Builder", () => {
   describe("outlineStateBuilder", () => {
     test("Can build outline nodes without recursion", () => {
-      const claimNodes = reportState.children.flatMap((theme) =>
-        theme.children.flatMap((topic) => topic.children),
+      const claimNodes = reportState.children.flatMap((topic) =>
+        topic.children.flatMap((subtopic) => subtopic.children),
       );
       expect(claimNodes.map((node) => node.data)[0]).toHaveProperty(
         "similarClaims",
@@ -91,24 +91,28 @@ describe("Builder", () => {
 
     test("Can recursively build nodes", () => {
       const outlineNodes = outlineStateBuilder(reportState.children);
-      const outlineTopics = outlineNodes.flatMap((node) => node.children);
-      const outlineClaims = outlineTopics.flatMap((node) => node?.children);
+      const outlineSubsubtopics = outlineNodes.flatMap((node) => node.children);
+      const outlineClaims = outlineSubsubtopics.flatMap(
+        (node) => node?.children,
+      );
       const getOutlineTitles = (node: OutlineNode) => node.title;
 
-      const reportTopics = reportState.children.flatMap(
-        (theme) => theme.children,
+      const reportSubsubtopics = reportState.children.flatMap(
+        (topic) => topic.children,
       );
-      const reportClaims = reportTopics.flatMap((topic) => topic.children);
+      const reportClaims = reportSubsubtopics.flatMap(
+        (subtopic) => subtopic.children,
+      );
       const getReportStateTitles = (node: SomeNode) => node.data.title;
 
-      // matches themes
+      // matches topics
       expect(outlineNodes.map(getOutlineTitles).sort()).toEqual(
         reportState.children.map(getReportStateTitles).sort(),
       );
 
-      // matches topics
-      expect(outlineTopics.map(getOutlineTitles).sort()).toEqual(
-        reportTopics.map(getReportStateTitles).sort(),
+      // matches subtopics
+      expect(outlineSubsubtopics.map(getOutlineTitles).sort()).toEqual(
+        reportSubsubtopics.map(getReportStateTitles).sort(),
       );
 
       // matches claims
@@ -126,82 +130,82 @@ describe("Applicative Functions", () => {
       ...node,
       title: newTitle,
     }));
-    const changedThemeState = transform(state, getTheme(state).id);
-    const changedLastThemeState = transform(state, getLastTheme(state).id);
-
     const changedTopicState = transform(state, getTopic(state).id);
     const changedLastTopicState = transform(state, getLastTopic(state).id);
 
+    const changedSubsubtopicState = transform(state, getSubsubtopic(state).id);
+    const changedLastSubsubtopicState = transform(
+      state,
+      getLastSubsubtopic(state).id,
+    );
+
     test("Can find and tranform the state in the first level of nodes", () => {
-      expect(getTheme(changedThemeState).title).toBe(newTitle);
-      expect(getLastTheme(changedLastThemeState).title).toBe(newTitle);
-    });
-
-    test("Function doesn't apply to nodes on first level that are not the provided id", () => {
-      expect(getLastTheme(changedThemeState).title).not.toBe(newTitle);
-      expect(getTheme(changedLastThemeState).title).not.toBe(newTitle);
-    });
-
-    test("Function applies to nodes on second level", () => {
       expect(getTopic(changedTopicState).title).toBe(newTitle);
       expect(getLastTopic(changedLastTopicState).title).toBe(newTitle);
     });
 
+    test("Function doesn't apply to nodes on first level that are not the provided id", () => {
+      expect(getLastTopic(changedTopicState).title).not.toBe(newTitle);
+      expect(getTopic(changedLastTopicState).title).not.toBe(newTitle);
+    });
+
+    test("Function applies to nodes on second level", () => {
+      expect(getSubsubtopic(changedSubsubtopicState).title).toBe(newTitle);
+      expect(getLastSubsubtopic(changedLastSubsubtopicState).title).toBe(
+        newTitle,
+      );
+    });
+
     test("Function doesn't apply to nodes on second level that are not the provided id", () => {
-      expect(getLastTheme(changedTopicState).title).not.toBe(newTitle);
-      expect(getTheme(changedLastTopicState).title).not.toBe(newTitle);
+      expect(getLastTopic(changedSubsubtopicState).title).not.toBe(newTitle);
+      expect(getTopic(changedLastSubsubtopicState).title).not.toBe(newTitle);
     });
   });
 
   describe("mapWithChildren", () => {
     const newTitle = "This node changed";
     const transform = mapWithChildren((node) => ({ ...node, title: newTitle }));
-    const changedFirstTheme = transform(state, getTheme(state).id);
-    const changedLastTheme = transform(state, getLastTheme(state).id);
     const changedFirstTopic = transform(state, getTopic(state).id);
     const changedLastTopic = transform(state, getLastTopic(state).id);
+    const changedFirstSubsubtopic = transform(state, getSubsubtopic(state).id);
+    const changedLastSubsubtopic = transform(
+      state,
+      getLastSubsubtopic(state).id,
+    );
 
     test("Transform doesn't change order", () => {
       const flattenedStateIds: string[] = flattenTree(state).map(getId);
-      expect(flattenTree(changedFirstTheme).map(getId)).toEqual(
-        flattenedStateIds,
-      );
-      expect(flattenTree(changedLastTheme).map(getId)).toEqual(
-        flattenedStateIds,
-      );
       expect(flattenTree(changedFirstTopic).map(getId)).toEqual(
         flattenedStateIds,
       );
       expect(flattenTree(changedLastTopic).map(getId)).toEqual(
         flattenedStateIds,
       );
+      expect(flattenTree(changedFirstSubsubtopic).map(getId)).toEqual(
+        flattenedStateIds,
+      );
+      expect(flattenTree(changedLastSubsubtopic).map(getId)).toEqual(
+        flattenedStateIds,
+      );
     });
 
     test("Transform should apply to node with id", () => {
-      expect(getTheme(changedFirstTheme).title).toBe(newTitle);
-      expect(getLastTheme(changedLastTheme).title).toBe(newTitle);
       expect(getTopic(changedFirstTopic).title).toBe(newTitle);
       expect(getLastTopic(changedLastTopic).title).toBe(newTitle);
+      expect(getSubsubtopic(changedFirstSubsubtopic).title).toBe(newTitle);
+      expect(getLastSubsubtopic(changedLastSubsubtopic).title).toBe(newTitle);
     });
 
     test("Transform does not apply to other nodes on the same level", () => {
-      expect(getLastTheme(changedFirstTheme).title).not.toBe(newTitle);
-      expect(getTheme(changedLastTheme).title).not.toBe(newTitle);
       expect(getLastTopic(changedFirstTopic).title).not.toBe(newTitle);
       expect(getTopic(changedLastTopic).title).not.toBe(newTitle);
+      expect(getLastSubsubtopic(changedFirstSubsubtopic).title).not.toBe(
+        newTitle,
+      );
+      expect(getSubsubtopic(changedLastSubsubtopic).title).not.toBe(newTitle);
     });
 
     test("Transform applies to children nodes", () => {
-      expect(
-        getAllChildrenOf(changedFirstTheme, getTheme(changedFirstTheme).id)
-          .map((node) => node.title)
-          .every((title) => title === newTitle),
-      ).true;
-      expect(
-        getAllChildrenOf(changedLastTheme, getLastTheme(changedLastTheme).id)
-          .map((node) => node.title)
-          .every((title) => title === newTitle),
-      ).true;
       expect(
         getAllChildrenOf(changedFirstTopic, getTopic(changedFirstTopic).id)
           .map((node) => node.title)
@@ -209,6 +213,22 @@ describe("Applicative Functions", () => {
       ).true;
       expect(
         getAllChildrenOf(changedLastTopic, getLastTopic(changedLastTopic).id)
+          .map((node) => node.title)
+          .every((title) => title === newTitle),
+      ).true;
+      expect(
+        getAllChildrenOf(
+          changedFirstSubsubtopic,
+          getSubsubtopic(changedFirstSubsubtopic).id,
+        )
+          .map((node) => node.title)
+          .every((title) => title === newTitle),
+      ).true;
+      expect(
+        getAllChildrenOf(
+          changedLastSubsubtopic,
+          getLastSubsubtopic(changedLastSubsubtopic).id,
+        )
           .map((node) => node.title)
           .every((title) => title === newTitle),
       ).true;
@@ -218,52 +238,47 @@ describe("Applicative Functions", () => {
     const newTitle = "this node will change";
     const transform = mapWithParents((node) => ({ ...node, title: newTitle }));
 
-    const changedFirstTheme = transform(state, getTheme(state).id);
-    const changedLastTheme = transform(state, getLastTheme(state).id);
     const changedFirstTopic = transform(state, getTopic(state).id);
     const changedLastTopic = transform(state, getLastTopic(state).id);
+    const changedFirstSubsubtopic = transform(state, getSubsubtopic(state).id);
+    const changedLastSubsubtopic = transform(
+      state,
+      getLastSubsubtopic(state).id,
+    );
 
     test("Transform doesn't change order", () => {
       const flattenedStateIds: string[] = flattenTree(state).map(getId);
-      expect(flattenTree(changedFirstTheme).map(getId)).toEqual(
-        flattenedStateIds,
-      );
-      expect(flattenTree(changedLastTheme).map(getId)).toEqual(
-        flattenedStateIds,
-      );
       expect(flattenTree(changedFirstTopic).map(getId)).toEqual(
         flattenedStateIds,
       );
       expect(flattenTree(changedLastTopic).map(getId)).toEqual(
         flattenedStateIds,
       );
+      expect(flattenTree(changedFirstSubsubtopic).map(getId)).toEqual(
+        flattenedStateIds,
+      );
+      expect(flattenTree(changedLastSubsubtopic).map(getId)).toEqual(
+        flattenedStateIds,
+      );
     });
 
     test("Transform should apply to node with id", () => {
-      expect(getTheme(changedFirstTheme).title).toBe(newTitle);
-      expect(getLastTheme(changedLastTheme).title).toBe(newTitle);
       expect(getTopic(changedFirstTopic).title).toBe(newTitle);
       expect(getLastTopic(changedLastTopic).title).toBe(newTitle);
+      expect(getSubsubtopic(changedFirstSubsubtopic).title).toBe(newTitle);
+      expect(getLastSubsubtopic(changedLastSubsubtopic).title).toBe(newTitle);
     });
 
     test("Transform does not apply to other nodes on the same level", () => {
-      expect(getLastTheme(changedFirstTheme).title).not.toBe(newTitle);
-      expect(getTheme(changedLastTheme).title).not.toBe(newTitle);
       expect(getLastTopic(changedFirstTopic).title).not.toBe(newTitle);
       expect(getTopic(changedLastTopic).title).not.toBe(newTitle);
+      expect(getLastSubsubtopic(changedFirstSubsubtopic).title).not.toBe(
+        newTitle,
+      );
+      expect(getSubsubtopic(changedLastSubsubtopic).title).not.toBe(newTitle);
     });
 
     test("Transform does not apply to children nodes", () => {
-      expect(
-        getAllChildrenOf(changedFirstTheme, getTheme(changedFirstTheme).id)
-          .map((node) => node.title)
-          .every((title) => title === newTitle),
-      ).not.true;
-      expect(
-        getAllChildrenOf(changedLastTheme, getLastTheme(changedLastTheme).id)
-          .map((node) => node.title)
-          .every((title) => title === newTitle),
-      ).not.true;
       expect(
         getAllChildrenOf(changedFirstTopic, getTopic(changedFirstTopic).id)
           .map((node) => node.title)
@@ -274,11 +289,27 @@ describe("Applicative Functions", () => {
           .map((node) => node.title)
           .every((title) => title === newTitle),
       ).not.true;
+      expect(
+        getAllChildrenOf(
+          changedFirstSubsubtopic,
+          getSubsubtopic(changedFirstSubsubtopic).id,
+        )
+          .map((node) => node.title)
+          .every((title) => title === newTitle),
+      ).not.true;
+      expect(
+        getAllChildrenOf(
+          changedLastSubsubtopic,
+          getLastSubsubtopic(changedLastSubsubtopic).id,
+        )
+          .map((node) => node.title)
+          .every((title) => title === newTitle),
+      ).not.true;
     });
 
-    test("When a topic node is changed, a theme node is changed", () => {
-      expect(getTheme(changedFirstTopic).title).toBe(newTitle);
-      expect(getLastTheme(changedLastTopic).title).toBe(newTitle);
+    test("When a subtopic node is changed, a topic node is changed", () => {
+      expect(getTopic(changedFirstSubsubtopic).title).toBe(newTitle);
+      expect(getLastTopic(changedLastSubsubtopic).title).toBe(newTitle);
     });
   });
 
@@ -299,51 +330,51 @@ describe("Tranformers", () => {
   describe("open", () => {
     describe("Open should open provided node", () => {
       test("first level", () => {
-        const test = open(state, getTheme(state).id);
-        expect(getTheme(test).isOpen).true;
+        const test = open(state, getTopic(state).id);
+        expect(getTopic(test).isOpen).true;
       });
 
       test("second level", () => {
-        const test = open(state, getTopic(state).id);
-        expect(getTopic(test).isOpen).true;
+        const test = open(state, getSubsubtopic(state).id);
+        expect(getSubsubtopic(test).isOpen).true;
       });
     });
 
     test("Opening child should open parent", () => {
-      const test = open(state, getTopic(state).id);
-      expect(getTheme(test).isOpen).true;
+      const test = open(state, getSubsubtopic(state).id);
+      expect(getTopic(test).isOpen).true;
     });
   });
 
   describe("Close", () => {
-    const _openState = open(state, getTheme(state).id);
-    const openState = open(_openState, getTopic(state).id);
-    const closedTheme = close(openState, getTheme(state).id);
+    const _openState = open(state, getTopic(state).id);
+    const openState = open(_openState, getSubsubtopic(state).id);
     const closedTopic = close(openState, getTopic(state).id);
+    const closedSubsubtopic = close(openState, getSubsubtopic(state).id);
 
     test("Close should close provided node", () => {
-      expect(getTheme(closedTheme).isOpen).false;
       expect(getTopic(closedTopic).isOpen).false;
+      expect(getSubsubtopic(closedSubsubtopic).isOpen).false;
     });
 
     test("Closing parent should close children", () => {
-      expect(getTopic(closedTheme).isOpen).false;
+      expect(getSubsubtopic(closedTopic).isOpen).false;
     });
 
     test("Closing child should not close parent", () => {
-      expect(getTheme(closedTopic).isOpen).true;
+      expect(getTopic(closedSubsubtopic).isOpen).true;
     });
   });
 
   describe("toggle", () => {
-    const openedState = toggle(state, getLastTopic(state).id);
+    const openedState = toggle(state, getLastSubsubtopic(state).id);
     test("Toggling closed => opened", () => {
-      expect(getLastTopic(openedState).isOpen).true;
+      expect(getLastSubsubtopic(openedState).isOpen).true;
     });
 
     test("Toggling open => closed", () => {
-      const closedState = toggle(openedState, getLastTopic(state).id);
-      expect(getLastTopic(closedState).isOpen).false;
+      const closedState = toggle(openedState, getLastSubsubtopic(state).id);
+      expect(getLastSubsubtopic(closedState).isOpen).false;
     });
   });
 });
