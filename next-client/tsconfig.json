@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "ES5",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -30,7 +30,8 @@
     "./dist/types/**/*.ts",
     "../express-pipeline/gpt.ts",
     "../express-pipeline/test_local.ts",
-    "../express-pipeline/src/styles.ts"
+    "../express-pipeline/src/styles.ts",
+    "env-check.js"
   ],
   "exclude": ["node_modules"]
 }
