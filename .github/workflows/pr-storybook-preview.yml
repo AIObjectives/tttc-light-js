@@ -1,0 +1,37 @@
+name: pr-storybook-preview
+on:
+  pull_request:
+    branches:
+      - "**"
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: next-client
+
+      - name: Build Storybook
+        run: npm run build-storybook --quiet
+        working-directory: next-client
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./next-client/storybook-static
+
+      - name: Comment Storybook URL on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          message: "Storybook preview is available [here](https://${{ github.repository_owner }}.github.io/${{ github.repository }}/storybook-static)"
