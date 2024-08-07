@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "outDir": "./dist", // Output directory for compiled JS files
-    "module": "CommonJS", // Use CommonJS modules for Node.js
-    "target": "es6", // Target ES6 (or a higher version if needed)
-    "declaration": true, // Generate declaration files
-    "sourceMap": true, // Generate source maps
-    "composite": true, // Enable project references,
+    "outDir": "./dist",
+    "module": "ES2020",
+    "moduleResolution": "Bundler",
+    "target": "ESNext",
+    "declaration": true,
+    "sourceMap": true,
+    "composite": true,
     "jsx": "react",
     "paths": {
       "*": ["*", "node_modules/*"]
