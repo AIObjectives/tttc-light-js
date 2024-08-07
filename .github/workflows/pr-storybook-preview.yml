@@ -18,6 +18,10 @@ jobs:
         with:
           node-version: "18.x"
 
+      - name: Install and build common
+        run: npm install && npm run build
+        working-directory: common
+
       - name: Install dependencies
         run: npm install
         working-directory: next-client
