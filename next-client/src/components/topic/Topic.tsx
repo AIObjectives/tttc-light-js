@@ -205,10 +205,13 @@ function ExpandTopic({ topicNode }: { topicNode: TopicNode }) {
         </Col>
       ))}
       {isOpen && pagination <= topicNodes.length && (
-        <ShowMoreButton
-          moreLeftNum={topicNodes.length - pagination}
-          topicId={data.id}
-        />
+        <>
+          <Separator />
+          <ShowMoreButton
+            moreLeftNum={topicNodes.length - pagination}
+            topicId={data.id}
+          />
+        </>
       )}
     </>
   );
