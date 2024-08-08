@@ -34,7 +34,7 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   const [useScrollTo] = useScrollListener(useReportEffect);
   return (
     <ReportContext.Provider value={{ dispatch, useScrollTo, useReportEffect }}>
-      <div>
+      <div className="mb-36">
         <ReportToolbar />
         <div className="sticky top-20">
           <div className="absolute h-full bottom-full ">
