@@ -57,7 +57,7 @@ function Outline({
         <TextIcon icon={<Icons.Outline />} className="pl-5 ">
           Outline
         </TextIcon>
-        <Col gap={2} className="overflow-y-scroll max-h-[80vh]">
+        <Col gap={2} className="overflow-y-scroll max-h-[80vh] no-scrollbar">
           {state.map((node) => (
             <OutlineItem
               node={node}
