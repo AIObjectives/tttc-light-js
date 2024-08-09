@@ -3,7 +3,7 @@ import * as schema from "../../schema";
 import { z } from "zod";
 import { llmPipelineToSchema, _internal } from "../pipeline";
 const {
-  getThemesFromTaxonomy,
+  getTopicsFromTaxonomy,
   getReferenceEndIndex,
   getReferenceStartIndex,
   getReportDataObj,
@@ -174,8 +174,8 @@ test("Get themes from taxonomy", () => {
   const sourceMap = buildSourceMap(pipelineData.data);
 
   const claimMap = buildClaimsMap(pipelineData, sourceMap);
-  const themes = getThemesFromTaxonomy(claimMap)(pipelineData.tree);
-  expect(schema.theme.array().safeParse(themes).success).true;
+  const themes = getTopicsFromTaxonomy(claimMap)(pipelineData.tree);
+  expect(schema.topic.array().safeParse(themes).success).true;
 });
 
 test("Can get reportDataObj from pipeline", () => {
@@ -185,9 +185,9 @@ test("Can get reportDataObj from pipeline", () => {
 
   // check for incorrect src ids
   expect(
-    report.themes
-      .flatMap((theme) =>
-        theme.topics.flatMap((topic) =>
+    report.topics
+      .flatMap((topic) =>
+        topic.subtopics.flatMap((topic) =>
           topic.claims.flatMap((claim) =>
             claim.quotes.map((quote) => quote.reference.sourceId),
           ),
