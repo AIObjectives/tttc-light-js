@@ -1,7 +1,13 @@
 "use server";
-import { Options, SourceRow, options } from "tttc-common/schema";
+import {
+  DataPayload,
+  SourceRow,
+  LLMUserConfig,
+  options,
+  llmUserConfig,
+} from "tttc-common/schema";
 import Papa from "papaparse";
-import { GenerateApiResponse } from "tttc-common/api";
+import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { z } from "zod";
 
 export default async function submitAction(
@@ -9,7 +15,7 @@ export default async function submitAction(
   formData: FormData,
 ): Promise<GenerateApiResponse> {
   // parses csv file
-  console.log("starting to parse")
+  console.log("starting to parse");
   const parseCSV = async (file: File): Promise<SourceRow[]> => {
     const buffer = await file.arrayBuffer();
     return Papa.parse(Buffer.from(buffer).toString(), {
@@ -22,22 +28,26 @@ export default async function submitAction(
   if (!data || !data.length) {
     throw new Error("Missing data. Check your csv file");
   }
-  console.log(data);
-  const config: Options = options.parse({
+
+  const config: LLMUserConfig = llmUserConfig.parse({
     apiKey: formData.get("apiKey"),
-    data: data,
     title: formData.get("title"),
     question: formData.get("question"),
     description: formData.get("description"),
+    clusteringInstructions: formData.get("clusteringInstructions"),
     systemInstructions: formData.get("systemInstructions"),
     extractionInstructions: formData.get("extractionInstructions"),
     dedupInstructions: formData.get("dedupInstructions"),
   });
+  const dataPayload: DataPayload = ["csv", data];
+
+  const body: GenerateApiRequest = { userConfig: config, data: dataPayload };
+
   const url = z.string().url().parse(process.env.PIPELINE_EXPRESS_URL);
-  const blah = JSON.stringify(config);
+
   const response = await fetch(url, {
     method: "POST",
-    body: JSON.stringify(config),
+    body: JSON.stringify(body),
     headers: {
       "Content-Type": "application/json",
     },

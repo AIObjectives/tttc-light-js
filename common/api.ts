@@ -1,4 +1,12 @@
 import { z } from "zod";
+import * as schema from "./schema";
+
+export const generateApiRequest = z.object({
+  userConfig: schema.llmUserConfig,
+  data: schema.dataPayload,
+});
+
+export type GenerateApiRequest = z.infer<typeof generateApiRequest>;
 
 export const generateApiReponse = z.object({
   message: z.string(),
