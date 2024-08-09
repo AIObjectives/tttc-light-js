@@ -11,6 +11,7 @@
       "*": ["*", "node_modules/*"]
     },
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "baseUrl": ".",
     "resolveJsonModule": true,
     "lib": ["ES2019", "DOM"]
