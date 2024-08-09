@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Shares common code across monorepo",
   "main": "index.ts",
+  "type": "module",
   "scripts": {
     "test": "vitest",
     "build": "npx tsc",
