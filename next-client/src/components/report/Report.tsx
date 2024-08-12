@@ -36,10 +36,8 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
     <ReportContext.Provider value={{ dispatch, useScrollTo, useReportEffect }}>
       <div className="mb-36">
         <ReportToolbar />
-        <div className="sticky top-20">
-          <div className="absolute h-full bottom-full ">
-            <Outline nodes={state.children} reportDispatch={dispatch} />
-          </div>
+        <div className="fixed top-20 bottom-0 ml-2 hidden md:block">
+          <Outline nodes={state.children} reportDispatch={dispatch} />
         </div>
 
         <Col gap={4} className="w-full md:w-1/2 max-w-[832px] m-auto">
