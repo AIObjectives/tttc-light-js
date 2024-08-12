@@ -49,7 +49,7 @@ export function Cell(
           className={`w-3 h-3 bg-AOI_graph_cell rounded-sm hover:bg-slate-700 ${isHighlighted ? "bg-slate-700" : ""}`}
         />
       </HoverCardTrigger>
-      <HoverCardContent className="p-4 w-full">
+      <HoverCardContent className="p-4">
         <ClaimCard claim={claim} />
       </HoverCardContent>
     </HoverCard>
