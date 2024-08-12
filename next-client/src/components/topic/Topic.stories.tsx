@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import Topic, {
   TopicInteractiveGraphic,
   TopicHeader,
-  TopicList,
+  SubtopicList,
 } from "./Topic";
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";

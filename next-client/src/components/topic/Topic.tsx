@@ -116,8 +116,8 @@ export function TopicInteractiveGraphic({
       {/* anything in between the point graphic and topic links */}
       {children}
 
-      {/* Topic links */}
-      <TopicList
+      {/* Subtopic links */}
+      <SubtopicList
         topics={topicsHoverState.map(({ group: topic }) => topic)}
         onMouseOver={onMouseOver}
         onMouseExit={onMouseExit}
@@ -126,7 +126,7 @@ export function TopicInteractiveGraphic({
   );
 }
 
-export function TopicList({
+export function SubtopicList({
   topics,
   onMouseOver,
   onMouseExit,
@@ -141,7 +141,7 @@ export function TopicList({
 
       <Row gap={2}>
         {topics.map((topic, i) => (
-          <TopicListItem
+          <SubtopicListItem
             topic={topic}
             withComma={i !== topics.length - 1}
             onMouseOver={() => onMouseOver(topic.id)}
@@ -149,12 +149,11 @@ export function TopicList({
           />
         ))}
       </Row>
-      {/* </p> */}
     </Col>
   );
 }
 
-export function TopicListItem({
+export function SubtopicListItem({
   topic,
   withComma,
   onMouseOut,
@@ -168,8 +167,8 @@ export function TopicListItem({
   return (
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger>
-        <span
-          className="cursor-pointer"
+        <p
+          className="cursor-pointer text-muted-foreground"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
         >
@@ -177,7 +176,7 @@ export function TopicListItem({
             {topic.title}
             {withComma ? "," : ""}
           </span>
-        </span>
+        </p>
       </HoverCardTrigger>
       <HoverCardContent>
         <Col gap={4}>

@@ -54,7 +54,7 @@
     --secondary-foreground: 234, 89%, 74%;
 
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted-foreground: 215 16% 47%;
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
@@ -87,10 +87,10 @@
     @apply text-sm font-medium;
   }
   .link {
-    @apply underline opacity-60;
+    @apply underline;
   }
   .link:hover {
-    @apply opacity-100;
+    @apply opacity-60;
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
