@@ -13,6 +13,7 @@ import {
 } from "../../elements";
 import { Row } from "@src/components/layout";
 import Link from "next/link";
+import { useRef } from "react";
 
 export function Headline() {
   return (
@@ -38,7 +39,9 @@ export function RepoGithub() {
 export function About() {
   return (
     <Link href={"/about"}>
-      <Button variant={"link"}>About</Button>
+      <Button variant={"link"}>
+        <p className="font-medium text-foreground">About</p>
+      </Button>
     </Link>
   );
 }
@@ -48,11 +51,13 @@ export function LanguageSelector() {
     <div>
       <Select value="eng">
         <SelectTrigger className="border-none">
-          <SelectValue />
+          <span className="font-medium">
+            <SelectValue />
+          </span>
         </SelectTrigger>
 
         <SelectContent>
-          <SelectGroup className="w-9">
+          <SelectGroup>
             <SelectItem value="esp">Spanish</SelectItem>
             <SelectItem value="eng">English</SelectItem>
             <SelectItem value="chn">Chinese</SelectItem>
