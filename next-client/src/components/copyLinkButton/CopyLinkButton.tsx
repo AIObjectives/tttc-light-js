@@ -13,7 +13,7 @@ function CopyLinkButton({ anchor }: { anchor: string }) {
         location.pathname +
         `#${encodeURIComponent(anchor)}`,
     );
-  const notify = async () => toast.success("Success");
+  const notify = async () => toast.success("Link copied");
 
   return (
     <Button
