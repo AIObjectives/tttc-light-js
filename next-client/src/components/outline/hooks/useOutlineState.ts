@@ -158,7 +158,7 @@ const outlineStateBuilder = (nodes: SomeNode[]): OutlineNode[] =>
   nodes.map((node) => ({
     id: node.data.id,
     title: node.data.title,
-    isOpen: false,
+    isOpen: true,
     isHighlighted: false,
     children:
       "children" in node ? outlineStateBuilder(node.children) : undefined,

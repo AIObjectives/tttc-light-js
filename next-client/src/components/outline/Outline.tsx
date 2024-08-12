@@ -53,11 +53,11 @@ function Outline({
 
   return (
     <OutlineContext.Provider value={{ dispatch }}>
-      <Col gap={2}>
-        <TextIcon icon={<Icons.Outline />} className="pl-5 ">
+      <Col gap={2} className="h-full">
+        <TextIcon icon={<Icons.Outline size={16} />} className="pl-5">
           Outline
         </TextIcon>
-        <Col gap={2} className="overflow-y-scroll max-h-[80vh] no-scrollbar">
+        <Col gap={2} className="overflow-y-scroll no-scrollbar">
           {state.map((node) => (
             <OutlineItem
               node={node}
@@ -110,10 +110,13 @@ function OutlineItem({
         className={`group items-center ${node.isHighlighted ? "text-primary" : ""} hover:text-primary cursor-pointer`}
       >
         <div className="min-h-6 min-w-3 content-center" onClick={onClick}>
-          <Icons.Minus size={12} className="hidden group-hover:block" />
+          <Icons.Minus
+            size={12}
+            className="hidden group-hover:block stroke-2"
+          />
         </div>
         <div
-          className={`pl-${heirarchyDepth * 4} pr-4 overflow-hidden whitespace-nowrap`}
+          className={`pl-${heirarchyDepth * 4} overflow-hidden whitespace-nowrap`}
         >
           <p
             className="overflow-ellipsis overflow-hidden text-base "
