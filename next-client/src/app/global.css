@@ -130,4 +130,7 @@
   details {
     @apply text-sm leading-4;
   }
+  svg {
+    @apply stroke-[1.5];
+  }
 }
