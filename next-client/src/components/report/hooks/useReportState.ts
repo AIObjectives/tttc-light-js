@@ -4,7 +4,7 @@ import { Dispatch, useReducer } from "react";
 
 import * as schema from "tttc-common/schema";
 
-const defaultTopicPagination = 1;
+const defaultTopicPagination = 3;
 const addTopicPagination = 1;
 
 const defaultSubtopicPagination = 1;
