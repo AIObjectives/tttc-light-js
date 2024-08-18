@@ -10,6 +10,7 @@ import useOutlineState, {
   OutlineStateAction,
 } from "./hooks/useOutlineState";
 import { ReportStateAction, TopicNode } from "../report/hooks/useReportState";
+import { useXORClick } from "@src/lib/hooks/useXORClick";
 
 /**
  * TODO
@@ -33,23 +34,23 @@ function Outline({
 }) {
   const [state, dispatch] = useOutlineState({ children: nodes });
 
-  const { useReportEffect } = useContext(ReportContext);
+  // const { useReportEffect } = useContext(ReportContext);
 
-  useReportEffect((action) => {
-    const ReportToOutlineActionMap: Partial<
-      Record<ReportStateAction["type"], OutlineStateAction["type"]>
-    > = {
-      open: "open",
-      close: "close",
-      toggleTopic: "toggle",
-      openAll: "openAll",
-      closeAll: "closeAll",
-    };
+  // useReportEffect((action) => {
+  //   const ReportToOutlineActionMap: Partial<
+  //     Record<ReportStateAction["type"], OutlineStateAction["type"]>
+  //   > = {
+  //     open: "open",
+  //     close: "close",
+  //     toggleTopic: "toggle",
+  //     openAll: "openAll",
+  //     closeAll: "closeAll",
+  //   };
 
-    const outlineAction = ReportToOutlineActionMap[action.type];
-    if (!outlineAction) return;
-    dispatch({ type: outlineAction, payload: action.payload });
-  });
+  //   const outlineAction = ReportToOutlineActionMap[action.type];
+  //   if (!outlineAction) return;
+  //   dispatch({ type: outlineAction, payload: action.payload });
+  // });
 
   return (
     <OutlineContext.Provider value={{ dispatch }}>
@@ -62,10 +63,12 @@ function Outline({
             <OutlineItem
               node={node}
               title={node.title}
-              onClick={() => {
-                console.log(node.id);
-                reportDispatch({ type: "open", payload: { id: node.id } });
-              }}
+              onClick={() =>
+                reportDispatch({ type: "open", payload: { id: node.id } })
+              }
+              onDoubleClick={() =>
+                dispatch({ type: "toggle", payload: { id: node.id } })
+              }
             >
               {node?.children?.map((subnode) => (
                 <OutlineItem
@@ -73,13 +76,12 @@ function Outline({
                   title={subnode.title}
                   heirarchyDepth={1}
                   parentId={node.id}
-                  onClick={() => {
-                    console.log(subnode.id);
+                  onClick={() =>
                     reportDispatch({
                       type: "open",
                       payload: { id: subnode.id },
-                    });
-                  }}
+                    })
+                  }
                 />
               ))}
             </OutlineItem>
@@ -96,13 +98,20 @@ function OutlineItem({
   children,
   heirarchyDepth = 0,
   onClick,
+  onDoubleClick,
 }: React.PropsWithChildren<{
   node: OutlineNode;
   title: string;
   heirarchyDepth?: number;
   onClick: () => void;
+  onDoubleClick?: () => void;
   parentId?: string;
 }>) {
+  const _onDoubleClick = onDoubleClick ? onDoubleClick : () => null;
+  const { handleClick, handleDoubleClick } = useXORClick(
+    onClick,
+    _onDoubleClick,
+  );
   return (
     <Col gap={2} className="max-w-60">
       <Row
@@ -120,7 +129,8 @@ function OutlineItem({
         >
           <p
             className="overflow-ellipsis overflow-hidden text-base "
-            onClick={onClick}
+            onClick={handleClick}
+            onDoubleClick={handleDoubleClick}
           >
             {title}
           </p>
