@@ -14,6 +14,7 @@ import Outline from "../outline/Outline";
 import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
+import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 
 type ReportActionEffectFunc = (action: ReportStateAction) => void;
 type ReportActionEffect = (func: ReportActionEffectFunc) => void;
@@ -22,22 +23,29 @@ export const ReportContext = createContext<{
   dispatch: Dispatch<ReportStateAction>;
   useScrollTo: (listenForId: string) => Ref<HTMLDivElement>;
   useReportEffect: ReportActionEffect;
+  useFocusedNode: (id: string, ignore?: boolean) => Ref<HTMLDivElement>;
 }>({
   dispatch: () => null,
   useScrollTo: () => ({}) as Ref<HTMLDivElement>,
   useReportEffect: () => {},
+  useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
 });
 
 function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   const [state, _dispatch] = useReportState(reportData.topics);
   const [dispatch, useReportEffect] = useReportSubscribe(_dispatch);
   const [useScrollTo] = useScrollListener(useReportEffect);
+  const useFocusedNode = _useFocusedNode((id: string) =>
+    dispatch({ type: "focus", payload: { id } }),
+  );
   return (
-    <ReportContext.Provider value={{ dispatch, useScrollTo, useReportEffect }}>
+    <ReportContext.Provider
+      value={{ dispatch, useScrollTo, useReportEffect, useFocusedNode }}
+    >
       <div className="mb-36">
         <ReportToolbar />
         <div className="fixed top-20 bottom-0 ml-2 hidden md:block">
-          <Outline nodes={state.children} reportDispatch={dispatch} />
+          <Outline reportState={state} reportDispatch={dispatch} />
         </div>
 
         <Col gap={4} className="w-full md:w-1/2 max-w-[832px] m-auto">
