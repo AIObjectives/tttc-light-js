@@ -6,6 +6,7 @@ import { ReportStateAction } from "./useReportState";
 type ReportActionEffectFunc = (action: ReportStateAction) => void;
 type ReportActionEffect = (func: ReportActionEffectFunc) => void;
 
+// TODO: change the name of this - can be confused with document.addEventListener("scroll")
 function useScrollListener(
   useReportEffect: ReportActionEffect,
 ): [(listenForId: string) => Ref<HTMLDivElement>] {

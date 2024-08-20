@@ -137,6 +137,10 @@ const mapWithParents =
   (tree: OutlineTree, id: string): OutlineTree =>
     tree.map((node) => _mapWithParents(transform, node, id)[0]);
 
+//  ********************************
+//  * Transformers *
+//  ********************************/
+
 const open = mapWithParents((node) => ({
   ...node,
   isOpen: true,
@@ -154,11 +158,26 @@ const openAll = mapOutline((node) => ({ ...node, isOpen: true }));
 
 const closeAll = mapOutline((node) => ({ ...node, isOpen: false }));
 
+const highlight = (state: OutlineTree, id: string) => {
+  const resetedState = mapOutline((node) => ({
+    ...node,
+    isHighlighted: false,
+  }))(state);
+  return findAndTransform((node) => ({ ...node, isHighlighted: true }))(
+    resetedState,
+    id,
+  );
+};
+
+//  ********************************
+//  * State Builder *
+//  ********************************/
+
 const outlineStateBuilder = (nodes: SomeNode[]): OutlineNode[] =>
   nodes.map((node) => ({
     id: node.data.id,
     title: node.data.title,
-    isOpen: true,
+    isOpen: false,
     isHighlighted: false,
     children:
       "children" in node ? outlineStateBuilder(node.children) : undefined,
@@ -169,7 +188,8 @@ type OutlineStateActionTypes =
   | "close"
   | "toggle"
   | "openAll"
-  | "closeAll";
+  | "closeAll"
+  | "highlight";
 
 type OoutlineStatePayload = { id: string };
 
@@ -195,6 +215,9 @@ function reducer(state: OutlineTree, action: OutlineStateAction): OutlineTree {
     }
     case "closeAll": {
       return closeAll(state);
+    }
+    case "highlight": {
+      return highlight(state, id);
     }
     default: {
       return state;

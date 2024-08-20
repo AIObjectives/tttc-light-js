@@ -9,7 +9,11 @@ import useOutlineState, {
   OutlineNode,
   OutlineStateAction,
 } from "./hooks/useOutlineState";
-import { ReportStateAction, TopicNode } from "../report/hooks/useReportState";
+import {
+  ReportState,
+  ReportStateAction,
+  TopicNode,
+} from "../report/hooks/useReportState";
 import { useXORClick } from "@src/lib/hooks/useXORClick";
 
 /**
@@ -26,31 +30,32 @@ const OutlineContext = createContext<OutlineContextType>({
 });
 
 function Outline({
-  nodes,
+  reportState,
   reportDispatch,
 }: {
-  nodes: TopicNode[];
+  reportState: ReportState;
   reportDispatch: Dispatch<ReportStateAction>;
 }) {
-  const [state, dispatch] = useOutlineState({ children: nodes });
+  const [state, dispatch] = useOutlineState(reportState);
 
-  // const { useReportEffect } = useContext(ReportContext);
+  const { useReportEffect } = useContext(ReportContext);
 
-  // useReportEffect((action) => {
-  //   const ReportToOutlineActionMap: Partial<
-  //     Record<ReportStateAction["type"], OutlineStateAction["type"]>
-  //   > = {
-  //     open: "open",
-  //     close: "close",
-  //     toggleTopic: "toggle",
-  //     openAll: "openAll",
-  //     closeAll: "closeAll",
-  //   };
+  useReportEffect((action) => {
+    const ReportToOutlineActionMap: Partial<
+      Record<ReportStateAction["type"], OutlineStateAction["type"]>
+    > = {
+      open: "open",
+      openAll: "openAll",
+      close: "close",
+      closeAll: "closeAll",
+      toggleTopic: "toggle",
+      focus: "highlight",
+    };
 
-  //   const outlineAction = ReportToOutlineActionMap[action.type];
-  //   if (!outlineAction) return;
-  //   dispatch({ type: outlineAction, payload: action.payload });
-  // });
+    const outlineAction = ReportToOutlineActionMap[action.type];
+    if (!outlineAction) return;
+    dispatch({ type: outlineAction, payload: action.payload });
+  });
 
   return (
     <OutlineContext.Provider value={{ dispatch }}>

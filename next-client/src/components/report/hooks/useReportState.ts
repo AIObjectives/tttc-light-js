@@ -31,6 +31,7 @@ export type Node<T extends HasId> = {
  */
 export type ReportState = {
   children: TopicNode[];
+  focusedId: string | null;
 };
 
 /**
@@ -254,11 +255,21 @@ const resetAllSubtopics = mapSubtopic((node) => ({
 }));
 
 //  ********************************
+//  * Focused Node *
+//  ********************************/
+
+const setFocusedId = (state: ReportState, focusedId: string): ReportState => ({
+  ...state,
+  focusedId,
+});
+
+//  ********************************
 //  * STATE BUILDERS *
 //  ********************************/
 
 const stateBuilder = (topics: schema.Topic[]): ReportState => ({
   children: topics.map(makeTopicNode),
+  focusedId: null,
 });
 
 const makeTopicNode = (topic: schema.Topic): TopicNode => ({
@@ -350,9 +361,7 @@ function reducer(state: ReportState, action: ReportStateAction): ReportState {
       return expandSubtopic(state, id);
     }
     case "focus": {
-      // placeholder for now to trigger sideffect
-      // TODO: This is a code-smell, figure out what to do.
-      return state;
+      return setFocusedId(state, id);
     }
     default: {
       return state;

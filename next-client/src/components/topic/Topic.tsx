@@ -23,13 +23,15 @@ import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { Sticky } from "../wrappers";
 import { ReportContext } from "../report/Report";
 import { TopicNode } from "../report/hooks/useReportState";
+import { mergeRefs } from "react-merge-refs";
 
 function Topic({ node }: { node: TopicNode }) {
-  const { dispatch, useScrollTo } = useContext(ReportContext);
-  const ref = useScrollTo(node.data.id);
+  const { dispatch, useScrollTo, useFocusedNode } = useContext(ReportContext);
+  const scrollRef = useScrollTo(node.data.id);
+  const focusedRef = useFocusedNode(node.data.id);
   return (
     <TopicCard
-      ref={ref}
+      ref={mergeRefs([scrollRef, focusedRef])}
       topic={node.data}
       openButton={
         <Button

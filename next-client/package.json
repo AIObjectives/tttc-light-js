@@ -61,6 +61,7 @@
     "prettier": "^3.2.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-merge-refs": "^2.1.1",
     "react-plotly.js": "^2.6.0",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.3.0",

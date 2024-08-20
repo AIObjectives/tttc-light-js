@@ -1,4 +1,4 @@
-import React, { forwardRef, useContext } from "react";
+import React, { forwardRef, useContext, useEffect } from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { TextIcon } from "../elements";
@@ -10,14 +10,18 @@ import ClaimLoader from "./components/ClaimLoader";
 import { getNPeople } from "tttc-common/morphisms";
 import { ReportContext } from "../report/Report";
 import { SubtopicNode } from "../report/hooks/useReportState";
+import { mergeRefs } from "react-merge-refs";
 
 function Subtopic({ node, isOpen }: { node: SubtopicNode; isOpen: boolean }) {
-  const { useScrollTo } = useContext(ReportContext);
+  const { useScrollTo, useFocusedNode } = useContext(ReportContext);
 
-  const ref = useScrollTo(node.data.id);
+  const scrollRef = useScrollTo(node.data.id);
+  const focusedRef = useFocusedNode(node.data.id, !isOpen);
 
   return (
-    <div ref={ref}>{isOpen && <SubtopicComponent topic={node.data} />}</div>
+    <div ref={mergeRefs([scrollRef, focusedRef])}>
+      {isOpen && <SubtopicComponent topic={node.data} />}
+    </div>
   );
 }
 
