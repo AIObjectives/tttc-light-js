@@ -133,7 +133,7 @@ function OutlineItem({
           className={`pl-${heirarchyDepth * 4} overflow-hidden whitespace-nowrap`}
         >
           <p
-            className="overflow-ellipsis overflow-hidden text-base "
+            className="overflow-ellipsis overflow-hidden text-base select-none"
             onClick={handleClick}
             onDoubleClick={handleDoubleClick}
           >
