@@ -58,8 +58,8 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
   const { title, subtopics, description } = topic;
 
   return (
-    <Card ref={ref}>
-      <CardContent className="p-2">
+    <Card>
+      <CardContent ref={ref} className="p-2">
         <Col gap={3}>
           <TopicHeader
             title={title}
