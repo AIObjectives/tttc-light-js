@@ -110,7 +110,6 @@ export function useFocusedNode(action: (id: string) => void): ReturnHook {
     const [observedRef, isObserved] = useIsVisible();
 
     useEffect(() => {
-      console.log(id, isObserved);
       if (isObserved && !ignore) {
         addNodeRef([id, observedRef]);
       } else {

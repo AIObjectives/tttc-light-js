@@ -9,11 +9,7 @@ import useOutlineState, {
   OutlineNode,
   OutlineStateAction,
 } from "./hooks/useOutlineState";
-import {
-  ReportState,
-  ReportStateAction,
-  TopicNode,
-} from "../report/hooks/useReportState";
+import { ReportState, ReportStateAction } from "../report/hooks/useReportState";
 import { useXORClick } from "@src/lib/hooks/useXORClick";
 
 /**
