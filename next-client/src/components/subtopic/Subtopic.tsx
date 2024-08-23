@@ -1,4 +1,4 @@
-import React, { forwardRef, useContext, useEffect } from "react";
+import React, { forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { TextIcon } from "../elements";
@@ -12,6 +12,9 @@ import { ReportContext } from "../report/Report";
 import { SubtopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
 
+/**
+ * Subtopic Node. Only show contents if isOpen=true.
+ */
 function Subtopic({ node, isOpen }: { node: SubtopicNode; isOpen: boolean }) {
   const { useScrollTo, useFocusedNode } = useContext(ReportContext);
 
@@ -25,6 +28,9 @@ function Subtopic({ node, isOpen }: { node: SubtopicNode; isOpen: boolean }) {
   );
 }
 
+/**
+ * UI for subtopic
+ */
 const SubtopicComponent = forwardRef<
   HTMLDivElement,
   { topic: schema.Subtopic }

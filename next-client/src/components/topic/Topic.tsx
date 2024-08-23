@@ -25,6 +25,9 @@ import { ReportContext } from "../report/Report";
 import { TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
 
+/**
+ * Highest level node in Report. Expands to show subtopics.
+ */
 function Topic({ node }: { node: TopicNode }) {
   const { dispatch, useScrollTo, useFocusedNode } = useContext(ReportContext);
   const scrollRef = useScrollTo(node.data.id);
@@ -51,6 +54,9 @@ interface TopicCardProps {
   openButton: React.ReactNode;
   openedTopic: React.ReactNode;
 }
+/**
+ * UI for Topic
+ */
 const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
   { topic, openButton, openedTopic }: TopicCardProps,
   ref,
@@ -93,6 +99,10 @@ export function TopicHeader({
   );
 }
 
+/**
+ * Both the claim-cells and the subtopic list. Together here since they interact with one another.
+ * ! Can probably be refactored to be simpler.
+ */
 export function TopicInteractiveGraphic({
   children,
   topics,
@@ -128,6 +138,9 @@ export function TopicInteractiveGraphic({
   );
 }
 
+/**
+ * List of subtopics. When hovered should show a popup card and highlight the claim-cells.
+ */
 export function SubtopicList({
   topics,
   onMouseOver,
@@ -155,6 +168,9 @@ export function SubtopicList({
   );
 }
 
+/**
+ * Single item in a SubtopicList from above.
+ */
 export function SubtopicListItem({
   topic,
   withComma,
@@ -194,6 +210,9 @@ export function SubtopicListItem({
   );
 }
 
+/**
+ * When the TopicNode is expanded, show subtopics and handle pagination.
+ */
 function ExpandTopic({ topicNode }: { topicNode: TopicNode }) {
   const { isOpen, pagination, children: topicNodes, data } = topicNode;
 

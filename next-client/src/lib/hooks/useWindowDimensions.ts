@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 
+/**
+ * Returns window dimensions and listens for changes.
+ */
 function getWindowDimensions() {
   const { innerWidth: width, innerHeight: height } = window;
   return {

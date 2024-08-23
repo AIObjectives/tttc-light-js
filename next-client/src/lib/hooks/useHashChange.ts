@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
+// ! This component isn't being currently used. Mark for deletion.
+
+/**
+ * Listens for url # changes
+ */
 export function useHashChange(format: "raw" | "decoded" = "decoded") {
   const [hash, setHash] = useState("");
   const pathname = usePathname();

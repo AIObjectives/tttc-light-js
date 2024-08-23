@@ -4,6 +4,9 @@ import { useRef, useCallback } from "react";
 
 type ClickHandler = (event: React.MouseEvent<HTMLElement, MouseEvent>) => void;
 
+/**
+ * React default behavior is to trigger both onClick and onDoubleClick when double-clicked. This wraps the callbacks and makes them exclusive.
+ */
 export function useXORClick(
   onClick: ClickHandler,
   onDoubleClick: ClickHandler,
@@ -14,6 +17,7 @@ export function useXORClick(
 } {
   const clickTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // wraps onClick
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
       if (clickTimer.current === null) {
@@ -26,6 +30,7 @@ export function useXORClick(
     [onClick, delay],
   );
 
+  // wraps onDoubleClick
   const handleDoubleClick = useCallback(
     (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
       if (clickTimer.current !== null) {

@@ -4,6 +4,13 @@ import { RefObject, useEffect, useState } from "react";
 import { useIsVisible } from "@src/lib/hooks/useIsVisible";
 import useWindowDimensions from "@src/lib/hooks/useWindowDimensions";
 
+/**
+ * Summary
+ *
+ * Basic idea is that we want to know what node is in the middle of the screen in order for the outline to highlight it.
+ * This works by using an intersection observer that adds the component's ref to state. Then, there's an event listener that runs when the user scrolls and measures the distance from the center for each ref.
+ */
+
 //  ********************************
 //  * TYPES *
 //  ********************************/
@@ -62,7 +69,7 @@ const getNodeDistances = (
   });
 
 //  ********************************
-//  * HOOK *
+//  * useFocusNode *
 //  ********************************/
 
 /**

@@ -7,6 +7,10 @@ import {
 import assert from "assert";
 import { Dispatch, useReducer } from "react";
 
+//  ********************************
+//  * Types *
+//  ********************************/
+
 type Transform = (arg: OutlineNode) => OutlineNode;
 type EqualsTransform = (arg: Transform, id: string) => Transform;
 
@@ -29,33 +33,53 @@ const undefinedCheck = <T>(
   }
   return arg;
 };
-const _getChildren = (node: OutlineNode) =>
-  node.children
-    ? [...node.children, ...node.children.flatMap(_getChildren)]
-    : [];
+
+/**
+ * Takes OutlineTree and flattens it to an array of its nodes
+ */
 const flattenTree = (tree: OutlineTree): OutlineNode[] => [
   ...tree,
   ...tree.flatMap(_getChildren),
 ];
+
+const _getChildren = (node: OutlineNode) =>
+  node.children
+    ? [...node.children, ...node.children.flatMap(_getChildren)]
+    : [];
+
+/**
+ * Find OutlineNode in tree by id
+ */
+const findOutlineNode = (tree: OutlineTree, id: string) =>
+  undefinedCheck(_findOutlineNode(tree, id));
 
 const _findOutlineNode = (
   tree: OutlineTree,
   id: string,
 ): OutlineNode | undefined => flattenTree(tree).find((node) => node.id === id);
 
-const findOutlineNode = (tree: OutlineTree, id: string) =>
-  undefinedCheck(_findOutlineNode(tree, id));
-
 const identity = <T>(arg: T): T => arg;
-
-const equalsTransform: EqualsTransform =
-  (transform, id) => (node: OutlineNode) =>
-    node.id === id ? transform(node) : identity(node);
 
 //  ********************************
 //  * Applicative Functions *
 //  ********************************/
 
+/**
+ * HOC - Creates a transform function that only applies when node.id matches
+ */
+const equalsTransform: EqualsTransform =
+  (transform, id) => (node: OutlineNode) =>
+    node.id === id ? transform(node) : identity(node);
+
+/**
+ * HOC - Creates a function that applies a transform to a specific node
+ */
+const findAndTransform =
+  (transform: Transform) => (outline: OutlineTree, id: string) =>
+    outline.map((node) =>
+      _findAndTransform(equalsTransform(transform, id), node),
+    );
+//
 const _findAndTransform = (transform: Transform, node: OutlineNode) => {
   if (!node.children) return transform(node);
   const children = node.children.map((subnode) =>
@@ -66,12 +90,15 @@ const _findAndTransform = (transform: Transform, node: OutlineNode) => {
     children,
   });
 };
-const findAndTransform =
-  (transform: Transform) => (outline: OutlineTree, id: string) =>
-    outline.map((node) =>
-      _findAndTransform(equalsTransform(transform, id), node),
-    );
 
+/**
+ * HOC - maps transform to all children of a particular node.
+ */
+const mapWithChildren =
+  (transform: Transform) =>
+  (tree: OutlineTree, id: string): OutlineTree =>
+    tree.map((node) => _mapWithChildren(transform, node, id));
+//
 const _mapWithChildren = (
   transform: Transform,
   node: OutlineNode,
@@ -89,11 +116,12 @@ const _mapWithChildren = (
   });
 };
 
-const mapWithChildren =
-  (transform: Transform) =>
-  (tree: OutlineTree, id: string): OutlineTree =>
-    tree.map((node) => _mapWithChildren(transform, node, id));
-
+/**
+ * HOC - Maps transform to entire state
+ */
+const mapOutline = (transform: Transform) => (tree: OutlineTree) =>
+  tree.map((node) => _mapOutline(transform, node));
+//
 const _mapOutline = (transform: Transform, node: OutlineNode): OutlineNode =>
   transform({
     ...node,
@@ -102,27 +130,40 @@ const _mapOutline = (transform: Transform, node: OutlineNode): OutlineNode =>
       : node.children,
   });
 
-const mapOutline = (transform: Transform) => (tree: OutlineTree) =>
-  tree.map((node) => _mapOutline(transform, node));
-
 type ValAction = [OutlineNode, Transform];
+/**
+ * HOC - Maps transform to node and its parents.
+ * Goes through state tree recursively. Passes either identity or transform function to parent, which applies to itself and continues up the tree.
+ */
+const mapWithParents =
+  (transform: Transform) =>
+  (tree: OutlineTree, id: string): OutlineTree =>
+    tree.map((node) => _mapWithParents(transform, node, id)[0]);
+//
 const _mapWithParents = (
   transform: Transform,
   node: OutlineNode,
   id: string,
 ): ValAction => {
+  // Base case: If no children and not node we're looking for, return node and identity function
   if (!node.children && node.id !== id) return [node, identity];
+  // Base case: If node we're looking for, return the transformed node and the transformation function
   if (node.id === id) return [transform(node), transform];
   assert(node.children);
+  // Recursively go through tree and get back nodes and functions
   const childrenRes: ValAction[] = node.children.map((subnode) =>
     _mapWithParents(transform, subnode, id),
   );
+  // Nodes
   const childrenVals = childrenRes.map((tup) => tup[0]);
+  // Functions
   const childrenActions = childrenRes.map((tup) => tup[1]);
+  // Reduce functions. Should only have either Identity or one instance of transform. Composed = transform | identity
   const reducedTransform = childrenActions.reduce((accum, curr) => {
     return (node: OutlineNode) => curr(accum(node));
   }, identity as Transform);
 
+  // Apply reduced function to node and return with reduced function to apply to parent.
   return [
     reducedTransform({
       ...node,
@@ -131,11 +172,6 @@ const _mapWithParents = (
     reducedTransform,
   ];
 };
-
-const mapWithParents =
-  (transform: Transform) =>
-  (tree: OutlineTree, id: string): OutlineTree =>
-    tree.map((node) => _mapWithParents(transform, node, id)[0]);
 
 //  ********************************
 //  * Transformers *

@@ -2,6 +2,9 @@
 
 import { RefObject, useEffect, useRef, useState } from "react";
 
+/**
+ * Hook that triggers when component becomes visible on the screen.
+ */
 export function useIsVisible(): [RefObject<HTMLDivElement>, boolean] {
   const [isVisible, setIsVisible] = useState<boolean>(false);
 

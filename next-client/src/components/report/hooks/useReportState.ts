@@ -51,8 +51,14 @@ export type SubtopicNode = Node<schema.Subtopic> & {
   pagination: number;
 };
 
+/**
+ * Nodes with Claims as data
+ */
 export type ClaimNode = Node<schema.Claim>;
 
+/**
+ * Union of all nodes
+ */
 export type SomeNode = TopicNode | SubtopicNode | ClaimNode;
 
 //  ********************************
@@ -71,6 +77,9 @@ const undefinedCheck = <T>(
   return arg;
 };
 
+/**
+ * Finds and replaces a node with the same id
+ */
 const replaceNode = <T extends SomeNode>(nodes: T[], node: T): T[] => {
   const idx = nodes.findIndex((_node) => _node.data.id === node.data.id);
   if (idx === -1) return nodes;
@@ -81,10 +90,19 @@ const replaceNode = <T extends SomeNode>(nodes: T[], node: T): T[] => {
 //  * HIGHER ORDER FUNCTIONS *
 //  ********************************/
 
+/**
+ * Function type for a generic transformer - takes some T and returns T with changes.
+ */
 export type TransformationFunction<T> = (arg: T) => T;
 
+/**
+ * Function type that takes state and id, and returns state
+ */
 type StateActionOnId = (state: ReportState, id: string) => ReportState;
 
+/**
+ * HOC - Takes some number of functions (StateActionOnId) and composes them
+ */
 const combineActions =
   (...funcs: StateActionOnId[]) =>
   (state: ReportState, id: string) =>
@@ -92,6 +110,9 @@ const combineActions =
       return curr(accum, id);
     }, state);
 
+/**
+ * HOC - Takes some number of function (only takes State) and composes them
+ */
 const mapActions =
   (...funcs: TransformationFunction<ReportState>[]) =>
   (state: ReportState): ReportState =>
@@ -103,6 +124,9 @@ const mapActions =
 
 // **** Base Functions ****
 
+/**
+ * Finds TopicNode by id
+ */
 const findTopic = (state: ReportState, id: string): TopicNode =>
   undefinedCheck(
     state.children.find((node) => node.data.id === id),
@@ -111,13 +135,20 @@ const findTopic = (state: ReportState, id: string): TopicNode =>
 
 // **** Applicative Functions ****
 
+/**
+ * HOC - Creates functions that find and transform topics. Takes a transformer function.
+ * Returns (state,id)=>state
+ */
 const changeTopic =
-  (transform: TransformationFunction<TopicNode>) =>
-  (state: ReportState, id: string): ReportState => ({
+  (transform: TransformationFunction<TopicNode>): StateActionOnId =>
+  (state, id) => ({
     ...state,
     children: replaceNode(state.children, transform(findTopic(state, id))),
   });
 
+/**
+ * HOC - Creates functions that map to topic nodes
+ */
 const mapTopic =
   (transform: TransformationFunction<TopicNode>) =>
   (state: ReportState): ReportState => ({
@@ -161,11 +192,23 @@ const resetTopic = setTopicPagination(defaultTopicPagination);
 
 // **** Base Functions ****
 
+/**
+ * Searches a TopicNode for a SubtopicNode
+ */
 const findSubtopicInTopic = (
   topic: TopicNode,
   id: string,
 ): SubtopicNode | undefined =>
   topic.children.find((node) => node.data.id === id);
+
+/**
+ * Find SubtopicNode from State
+ */
+const findSubtopic = (state: ReportState, id: string): SubtopicNode =>
+  undefinedCheck(
+    _findSubtopic(state.children, id),
+    "Could't find topic with provided Id",
+  );
 
 const _findSubtopic = (
   TopicNodes: TopicNode[],
@@ -177,10 +220,13 @@ const _findSubtopic = (
   return res;
 };
 
-const findSubtopic = (state: ReportState, id: string): SubtopicNode =>
+/**
+ * Find the parent node of a SubtopicNode
+ */
+const parentOfSubtopic = (topics: TopicNode[], subtopicId: string) =>
   undefinedCheck(
-    _findSubtopic(state.children, id),
-    "Could't find topic with provided Id",
+    _parentOfSubtopic(topics, subtopicId),
+    "Could not find parent of subtopic with id provided",
   );
 
 const _parentOfSubtopic = (
@@ -195,14 +241,11 @@ const _parentOfSubtopic = (
   return _parentOfSubtopic(topics.slice(1), subtopicId);
 };
 
-const parentOfSubtopic = (topics: TopicNode[], subtopicId: string) =>
-  undefinedCheck(
-    _parentOfSubtopic(topics, subtopicId),
-    "Could not find parent of subtopic with id provided",
-  );
-
 // **** Applicative Functions ****
 
+/**
+ * HOC - Creates functions that find and transform SubtopicNodes
+ */
 const changeSubtopic =
   (transform: TransformationFunction<SubtopicNode>) =>
   (state: ReportState, id: string): ReportState => {
@@ -216,12 +259,18 @@ const changeSubtopic =
     };
   };
 
+/**
+ * HOC - Creates functions that map to all SubtopicNodes
+ */
 const mapSubtopic = (transform: TransformationFunction<SubtopicNode>) =>
   mapTopic((topic) => ({
     ...topic,
     children: topic.children.map(transform),
   }));
 
+/**
+ * HOC - Creates functions that maps to a specific TopicNode's children. So the transformer applies to only that TopicNode's children.
+ */
 const mapTopicChildren =
   (transform: TransformationFunction<SubtopicNode>) =>
   (state: ReportState, topicId: string): ReportState =>
@@ -244,7 +293,7 @@ const resetSubtopic = changeSubtopic((node) => ({
   pagination: defaultSubtopicPagination,
 }));
 
-const resetTopicsTopics = mapTopicChildren((topic) => ({
+const resetTopicsChildren = mapTopicChildren((topic) => ({
   ...topic,
   pagination: defaultSubtopicPagination,
 }));
@@ -253,10 +302,6 @@ const resetAllSubtopics = mapSubtopic((node) => ({
   ...node,
   pagination: defaultSubtopicPagination,
 }));
-
-//  ********************************
-//  * Focused Node *
-//  ********************************/
 
 const setFocusedId = (state: ReportState, focusedId: string): ReportState => ({
   ...state,
@@ -338,7 +383,7 @@ function reducer(state: ReportState, action: ReportStateAction): ReportState {
       return combineActions(
         closeTopic,
         resetTopic,
-        resetTopicsTopics,
+        resetTopicsChildren,
       )(state, id);
     }
     case "toggleTopic": {
@@ -403,7 +448,7 @@ export const __internals = {
   reducer,
   stateBuilder,
   mapTopicChildren,
-  resetTopicsTopics,
+  resetTopicsChildren,
   defaultTopicPagination,
   defaultSubtopicPagination,
   addTopicPagination,
