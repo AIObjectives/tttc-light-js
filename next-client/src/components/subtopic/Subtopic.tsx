@@ -103,7 +103,12 @@ export function SubtopicClaims({ claims }: { claims: schema.Claim[] }) {
     <>
       {claims.slice(0, pagination).map((claim, i) => {
         return (
-          <Claim claimNum={i + 1} title={claim.title} quotes={claim.quotes} />
+          <Claim
+            key={claim.id}
+            claimNum={i + 1}
+            title={claim.title}
+            quotes={claim.quotes}
+          />
         );
       })}
       <ClaimLoader

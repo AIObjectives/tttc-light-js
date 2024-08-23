@@ -118,6 +118,7 @@ export function TopicInteractiveGraphic({
         <Row className="gap-x-[3px]">
           {topicsHoverState.map(({ group: topic, isHovered }) => (
             <PointGraphicGroup
+              key={topic.id}
               claims={topic.claims}
               isHighlighted={isHovered}
             />
@@ -157,6 +158,7 @@ export function SubtopicList({
       <Row gap={2}>
         {topics.map((topic, i) => (
           <SubtopicListItem
+            key={topic.id}
             topic={topic}
             withComma={i !== topics.length - 1}
             onMouseOver={() => onMouseOver(topic.id)}
@@ -220,7 +222,7 @@ function ExpandTopic({ topicNode }: { topicNode: TopicNode }) {
     <>
       <Separator className={`${isOpen ? "" : "hidden"}`} />
       {topicNodes.map((node, i) => (
-        <Col>
+        <Col key={node.data.id}>
           <Subtopic node={node} isOpen={isOpen && i + 1 <= pagination} />
         </Col>
       ))}

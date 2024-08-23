@@ -62,6 +62,7 @@ function Outline({
         <Col gap={2} className="overflow-y-scroll no-scrollbar">
           {state.map((node) => (
             <OutlineItem
+              key={node.id}
               node={node}
               title={node.title}
               onClick={() =>
@@ -73,6 +74,7 @@ function Outline({
             >
               {node?.children?.map((subnode) => (
                 <OutlineItem
+                  key={subnode.id}
                   node={subnode}
                   title={subnode.title}
                   heirarchyDepth={1}

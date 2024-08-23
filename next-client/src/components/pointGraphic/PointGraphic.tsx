@@ -9,8 +9,8 @@ import { Col } from "../layout";
 function PointGraphic({ claims }: { claims: schema.Claim[] }) {
   return (
     <div className="flex flex-row w-full flex-wrap gap-[3px]">
-      {claims.map((claim, i) => (
-        <Cell claim={claim} />
+      {claims.map((claim) => (
+        <Cell key={claim.id} claim={claim} />
       ))}
     </div>
   );
@@ -22,8 +22,8 @@ export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
 ) {
   return (
     <div className="flex flex-row gap-[3px]" ref={ref}>
-      {claims.map((claim, i) => (
-        <Cell claim={claim} isHighlighted={isHighlighted} />
+      {claims.map((claim) => (
+        <Cell key={claim.id} claim={claim} isHighlighted={isHighlighted} />
       ))}
     </div>
   );
@@ -63,7 +63,7 @@ function ClaimCard({ claim }: { claim: schema.Claim }) {
       <ClaimHeader title={claim.title} claimNum={claim.number} />
       <Col gap={2}>
         {claim.quotes.map((quote) => (
-          <QuoteText text={quote.text} />
+          <QuoteText key={quote.id} text={quote.text} />
         ))}
       </Col>
     </Col>

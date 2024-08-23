@@ -78,7 +78,7 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
         <Col gap={4} className="w-full md:w-1/2 max-w-[832px] m-auto">
           <ReportHeader reportData={reportData} />
           {state.children.map((themeNode) => (
-            <Theme node={themeNode} />
+            <Theme key={themeNode.data.id} node={themeNode} />
           ))}
         </Col>
       </div>
