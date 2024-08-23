@@ -12,11 +12,6 @@ import useOutlineState, {
 import { ReportState, ReportStateAction } from "../report/hooks/useReportState";
 import { useXORClick } from "@src/lib/hooks/useXORClick";
 
-/**
- * TODO
- * Figure out how to manage state actions here
- */
-
 type OutlineContextType = {
   dispatch: Dispatch<OutlineStateAction>;
 };
@@ -25,6 +20,8 @@ const OutlineContext = createContext<OutlineContextType>({
   dispatch: () => {},
 });
 
+const outlineSpacing = 2;
+
 function Outline({
   reportState,
   reportDispatch,
@@ -32,10 +29,12 @@ function Outline({
   reportState: ReportState;
   reportDispatch: Dispatch<ReportStateAction>;
 }) {
+  // State management for outline
   const [state, dispatch] = useOutlineState(reportState);
 
   const { useReportEffect } = useContext(ReportContext);
 
+  // When Report State dispatch is called, outline state should dispatch some action
   useReportEffect((action) => {
     const ReportToOutlineActionMap: Partial<
       Record<ReportStateAction["type"], OutlineStateAction["type"]>
@@ -56,10 +55,12 @@ function Outline({
   return (
     <OutlineContext.Provider value={{ dispatch }}>
       <Col gap={2} className="h-full">
+        {/* Top icon */}
         <TextIcon icon={<Icons.Outline size={16} />} className="pl-5">
           Outline
         </TextIcon>
-        <Col gap={2} className="overflow-y-scroll no-scrollbar">
+        {/* Scrolly part */}
+        <Col gap={outlineSpacing} className="overflow-y-scroll no-scrollbar">
           {state.map((node) => (
             <OutlineItem
               key={node.id}
@@ -72,6 +73,7 @@ function Outline({
                 dispatch({ type: "toggle", payload: { id: node.id } })
               }
             >
+              {/* Since we're only going two levels deep, directly call the render for the subnodes here. */}
               {node?.children?.map((subnode) => (
                 <OutlineItem
                   key={subnode.id}
@@ -111,22 +113,27 @@ function OutlineItem({
   parentId?: string;
 }>) {
   const _onDoubleClick = onDoubleClick ? onDoubleClick : () => null;
+
+  // Make onClick and onDoubleClick mutually exlcusive
   const { handleClick, handleDoubleClick } = useXORClick(
     onClick,
     _onDoubleClick,
   );
   return (
-    <Col gap={2} className="max-w-60">
+    // column here because opened nodes should continue the spacing.
+    <Col gap={outlineSpacing} className=" max-w-40 lg:max-w-56">
       <Row
         gap={2}
         className={`group items-center ${node.isHighlighted ? "text-primary" : ""} hover:text-primary cursor-pointer`}
       >
+        {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
         <div className="min-h-6 min-w-3 content-center" onClick={onClick}>
           <Icons.Minus
             size={12}
             className="hidden group-hover:block stroke-2"
           />
         </div>
+        {/* Nested items should be further to the right */}
         <div
           className={`pl-${heirarchyDepth * 4} overflow-hidden whitespace-nowrap`}
         >
