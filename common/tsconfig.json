@@ -11,9 +11,11 @@
       "*": ["*", "node_modules/*"]
     },
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "baseUrl": ".",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "lib": ["ES2019", "DOM"]
   },
-  "include": ["*"],
+  "include": ["*", "./morphisms/**/*"],
   "exclude": ["dist/"]
 }

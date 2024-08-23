@@ -1,3 +1,5 @@
+import { nextTypography } from "@src/lib/font";
+
 export const metadata = {
   title: "Talk the City",
 };
@@ -8,12 +10,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
         <link rel="stylesheet" href="style.css" />
       </head>
-      <body>
+      <body className={nextTypography}>
         <script src="index.js"></script>
         <div className="navbar">
           <a href="/">

@@ -1,12 +1,12 @@
 import axios from "axios";
-import { SourceRow, PieChart } from "tttc-common/schema";
+import { LLMPieChart, SourceRow } from "tttc-common/schema";
 
 export async function fetchSpreadsheetData(
   url: string,
   pieChartColumnNames: string[] = [],
   filterEmails?: string[],
   oneSubmissionPerEmail?: boolean,
-): Promise<{ data: SourceRow[]; pieCharts: PieChart[] }> {
+): Promise<{ data: SourceRow[]; pieCharts: LLMPieChart[] }> {
   // extract the spreadsheet id from the url
   const regex = /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
   const matches = url.match(regex);
