@@ -21,11 +21,11 @@ export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
   ref: Ref<HTMLDivElement>,
 ) {
   return (
-    <div className="flex flex-row gap-[3px]" ref={ref}>
+    <>
       {claims.map((claim) => (
         <Cell key={claim.id} claim={claim} isHighlighted={isHighlighted} />
       ))}
-    </div>
+    </>
   );
 });
 

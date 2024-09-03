@@ -72,7 +72,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             button={<CopyLinkButton anchor={title} />}
           />
           <TopicInteractiveGraphic topics={subtopics}>
-            <p>{description}</p>
+            {/* <p>{description}</p> */}
           </TopicInteractiveGraphic>
           <Sticky>{openButton}</Sticky>
         </Col>
@@ -115,7 +115,7 @@ export function TopicInteractiveGraphic({
           {getNClaims(topics)} claims by {getNPeople(topics)} people
         </TextIcon>
         {/* Point graphic component */}
-        <Row className="gap-x-[3px]">
+        <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">
           {topicsHoverState.map(({ group: topic, isHovered }) => (
             <PointGraphicGroup
               key={topic.id}
@@ -155,7 +155,7 @@ export function SubtopicList({
     <Col gap={2} className="pb-2">
       <TextIcon icon={<Icons.Topic />}>{topics.length} subtopics</TextIcon>
 
-      <Row gap={2}>
+      <Row gap={2} className="flex-wrap">
         {topics.map((topic, i) => (
           <SubtopicListItem
             key={topic.id}
