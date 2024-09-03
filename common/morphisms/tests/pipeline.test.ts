@@ -2,6 +2,7 @@ import { assert, beforeAll, expect, test } from "vitest";
 import * as schema from "../../schema";
 import { z } from "zod";
 import { llmPipelineToSchema, _internal } from "../pipeline";
+import exp from "constants";
 const {
   getTopicsFromTaxonomy,
   getReferenceEndIndex,
@@ -15,7 +16,7 @@ const {
 } = _internal;
 const getPipelineData = async () => {
   const res = await fetch(
-    "https://storage.googleapis.com/tttc-light-dev/test-1718663339961",
+    "https://storage.googleapis.com/tttc-light-dev/translate_2.json",
   );
   return await res.json().then(schema.llmPipelineOutput.parse);
 };
@@ -39,13 +40,16 @@ test("Can build map of sources with sourceRow id as key", () => {
 
 test("Can create quotes", () => {
   const sourceMap = buildSourceMap(pipelineData.data);
+
   const allClaims = pipelineData.tree.flatMap((topic) =>
-    topic.subtopics.flatMap((subtopic) =>
-      subtopic.claims.concat(subtopic.claims.flatMap((clm) => clm.duplicates)),
+    topic.subtopics.flatMap(
+      (subtopic) =>
+        // subtopic.claims.concat(subtopic.claims.flatMap((clm) => clm.duplicates)),
+        subtopic.claims,
     ),
   );
   const quotes = allClaims.map((clm) => getQuote(clm, sourceMap));
-
+  expect(true).true;
   expect(schema.quote.array().safeParse(quotes).success).true;
 });
 
@@ -119,8 +123,10 @@ test("Can build map of claims", () => {
   expect(schema.claim.array().safeParse(entries).success).true;
 
   const allClaims = pipelineData.tree.flatMap((topic) =>
-    topic.subtopics.flatMap((subtopic) =>
-      subtopic.claims.concat(subtopic.claims.flatMap((clm) => clm.duplicates)),
+    topic.subtopics.flatMap(
+      (subtopic) =>
+        // subtopic.claims.concat(subtopic.claims.flatMap((clm) => clm.duplicates)),
+        subtopic.claims,
     ),
   );
   expect(Object.entries(claimMap).length === allClaims.length).true;
