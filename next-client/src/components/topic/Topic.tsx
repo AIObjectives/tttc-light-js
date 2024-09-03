@@ -72,7 +72,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             button={<CopyLinkButton anchor={title} />}
           />
           <TopicInteractiveGraphic topics={subtopics}>
-            {/* <p>{description}</p> */}
+            <p>{description}</p>
           </TopicInteractiveGraphic>
           <Sticky>{openButton}</Sticky>
         </Col>
@@ -152,21 +152,21 @@ export function SubtopicList({
   onMouseExit: (id: string) => void;
 }) {
   return (
-    <Col gap={2} className="pb-2">
+    <Row gap={2} className="flex-wrap">
       <TextIcon icon={<Icons.Topic />}>{topics.length} subtopics</TextIcon>
 
-      <Row gap={2} className="flex-wrap">
-        {topics.map((topic, i) => (
-          <SubtopicListItem
-            key={topic.id}
-            topic={topic}
-            withComma={i !== topics.length - 1}
-            onMouseOver={() => onMouseOver(topic.id)}
-            onMouseOut={() => onMouseExit(topic.id)}
-          />
-        ))}
-      </Row>
-    </Col>
+      {/* <Row gap={2} className="flex-wrap"> */}
+      {topics.map((topic, i) => (
+        <SubtopicListItem
+          key={topic.id}
+          topic={topic}
+          withComma={i !== topics.length - 1}
+          onMouseOver={() => onMouseOver(topic.id)}
+          onMouseOut={() => onMouseExit(topic.id)}
+        />
+      ))}
+      {/* </Row> */}
+    </Row>
   );
 }
 
@@ -188,7 +188,7 @@ export function SubtopicListItem({
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger>
         <p
-          className="cursor-pointer text-muted-foreground"
+          className="cursor-pointer text-muted-foreground text-sm"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
         >

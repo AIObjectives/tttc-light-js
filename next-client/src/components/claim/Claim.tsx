@@ -42,9 +42,9 @@ export function ClaimHeader({
 }) {
   return (
     <Row gap={2} className="justify-between items-start">
-      <p className="text-muted-foreground">Claim#{claimNum}</p>
+      <p className="p-medium">Claim#{claimNum}</p>
       <div className="flex flex-grow">
-        <p className="text-muted-foreground">
+        <p className="text-foreground">
           <a id={`${title}`}>{title}</a>
         </p>
       </div>
@@ -71,7 +71,7 @@ export function QuoteText({ text }: { text: string }) {
       <div className="self-start flex-shrink-0">
         <Icons.Quote className="h-6 w-4" />
       </div>
-      <p className="flex flex-grow">{text}</p>
+      <p className="flex flex-grow text-muted-foreground">{text}</p>
     </Row>
   );
 }

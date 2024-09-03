@@ -74,7 +74,7 @@ export function SubtopicHeader({
 export function SubtopicDescription({ description }: { description: string }) {
   return (
     <div>
-      <p>{description}</p>
+      <p className="text-muted-foreground">{description}</p>
     </div>
   );
 }
