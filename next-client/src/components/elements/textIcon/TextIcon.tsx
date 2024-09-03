@@ -1,3 +1,4 @@
+import { cn } from "@src/lib/utils/shadcn";
 import React from "react";
 
 function TextIcon({
@@ -7,9 +8,10 @@ function TextIcon({
 }: React.PropsWithChildren<{ icon: React.ReactNode; className?: string }>) {
   return (
     <p
-      className={
-        "p2 text-muted-foreground flex gap-2 items-center " + className
-      }
+      className={cn(
+        "p2 text-muted-foreground flex gap-2 items-center ",
+        className,
+      )}
     >
       {icon}
       {children}

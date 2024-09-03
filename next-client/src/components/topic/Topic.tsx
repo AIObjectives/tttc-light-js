@@ -71,10 +71,10 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             title={title}
             button={<CopyLinkButton anchor={title} />}
           />
-          <TopicInteractiveGraphic topics={subtopics}>
+          <TopicInteractiveGraphic topics={subtopics} openButton={openButton}>
             <p>{description}</p>
           </TopicInteractiveGraphic>
-          <Sticky>{openButton}</Sticky>
+          {/* <Sticky>{openButton}</Sticky> */}
         </Col>
       </CardContent>
       {openedTopic}
@@ -106,7 +106,11 @@ export function TopicHeader({
 export function TopicInteractiveGraphic({
   children,
   topics,
-}: React.PropsWithChildren<{ topics: schema.Subtopic[] }>) {
+  openButton,
+}: React.PropsWithChildren<{
+  topics: schema.Subtopic[];
+  openButton: React.ReactNode;
+}>) {
   const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(topics);
   return (
     <Col gap={3}>
@@ -130,11 +134,14 @@ export function TopicInteractiveGraphic({
       {children}
 
       {/* Subtopic links */}
-      <SubtopicList
-        topics={topicsHoverState.map(({ group: topic }) => topic)}
-        onMouseOver={onMouseOver}
-        onMouseExit={onMouseExit}
-      />
+      <Row gap={3} className="space-between">
+        <SubtopicList
+          topics={topicsHoverState.map(({ group: topic }) => topic)}
+          onMouseOver={onMouseOver}
+          onMouseExit={onMouseExit}
+        />
+        <div className="self-center">{openButton}</div>
+      </Row>
     </Col>
   );
 }
@@ -152,10 +159,11 @@ export function SubtopicList({
   onMouseExit: (id: string) => void;
 }) {
   return (
-    <Row gap={2} className="flex-wrap">
-      <TextIcon icon={<Icons.Topic />}>{topics.length} subtopics</TextIcon>
-
-      {/* <Row gap={2} className="flex-wrap"> */}
+    <p className="line-clamp-2 leading-6 ">
+      <TextIcon className="inline" icon={<Icons.Topic className="inline " />}>
+        {topics.length} subtopics
+      </TextIcon>
+      {"   "}
       {topics.map((topic, i) => (
         <SubtopicListItem
           key={topic.id}
@@ -165,8 +173,7 @@ export function SubtopicList({
           onMouseOut={() => onMouseExit(topic.id)}
         />
       ))}
-      {/* </Row> */}
-    </Row>
+    </p>
   );
 }
 
@@ -188,14 +195,12 @@ export function SubtopicListItem({
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger>
         <p
-          className="cursor-pointer text-muted-foreground text-sm"
+          className="cursor-pointer text-muted-foreground text-sm  inline"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
         >
-          <span className="link">
-            {topic.title}
-            {withComma ? "," : ""}
-          </span>
+          <span className="link">{topic.title}</span>
+          {withComma ? ",   " : ""}
         </p>
       </HoverCardTrigger>
       <HoverCardContent>
