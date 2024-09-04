@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import "./reportStyle.css";
 import { nextTypography } from "@src/lib/font";
 import Navbar from "@components/navbar/Navbar";
 import { Toaster } from "@components/elements";

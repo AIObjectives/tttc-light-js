@@ -1,7 +1,7 @@
 import { assert, beforeAll, expect, test } from "vitest";
-import * as schema from "../../schema";
+import * as schema from "../../schema.js";
 import { z } from "zod";
-import { llmPipelineToSchema, _internal } from "../pipeline";
+import { llmPipelineToSchema, _internal } from "../pipeline.js";
 import exp from "constants";
 const {
   getTopicsFromTaxonomy,

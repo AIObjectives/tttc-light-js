@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./dist", // Output directory for compiled JS files
-    "module": "CommonJS", // Use CommonJS modules for Node.js
+    "module": "NodeNext", // Use CommonJS modules for Node.js
     "target": "es6", // Target ES6 (or a higher version if needed)
     "declaration": true, // Generate declaration files
     "sourceMap": true, // Generate source maps

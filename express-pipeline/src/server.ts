@@ -8,7 +8,7 @@ import { uniqueSlug, formatData } from "./utils";
 import { fetchSpreadsheetData } from "./googlesheet";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 
-const port = 8080;
+const port = process.env.PORT || 8080;
 
 const app = express();
 app.use(cors());

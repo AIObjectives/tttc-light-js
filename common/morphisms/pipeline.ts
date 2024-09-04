@@ -48,8 +48,12 @@ const numberClaims = () => {
     sourceMap: SourceMap,
     claimMap: ClaimMap,
   ): schema.Claim => {
-    if (alreadyNumberedIds.has(clm.claimId)) return claimMap[clm.claimId];
-    alreadyNumberedIds.add(clm.claimId);
+    if (clm.claimId && alreadyNumberedIds.has(clm.claimId)) {
+      return claimMap[clm.claimId];
+    }
+    if (clm.claimId) {
+      alreadyNumberedIds.add(clm.claimId);
+    }
     i++;
     return {
       id: uuid(),
@@ -78,16 +82,30 @@ const buildClaimsMap = (
   //   ),
   // );
   const allClaims = pipeline.tree.flatMap((topic) =>
-    topic.subtopics.flatMap((subtopic) => subtopic.claims),
+    topic.subtopics.flatMap((subtopic) => {
+      // Ensure subtopic.claims is an array
+      if (!subtopic.claims) return [];
+
+      // Handle the possibility of undefined values in duplicates
+      const duplicates = subtopic.claims.flatMap((claim) =>
+        claim.duplicates ? claim.duplicates : [],
+      );
+
+      return subtopic.claims.concat(duplicates);
+    }),
   );
   const createClaim = numberClaims();
 
   return allClaims.reduce((accum, curr) => {
     accum[curr.claimId!] = createClaim(curr, sourceMap, accum);
-    curr.duplicates &&
-      curr.duplicates.forEach((dup, i) => {
-        accum[dup.claimId] = accum[curr.claimId].similarClaims[i];
-      });
+
+    // Updated handling of duplicates
+    curr.duplicates?.forEach((dup, i) => {
+      if (dup.claimId && curr.claimId) {
+        accum[dup.claimId] = accum[curr.claimId]?.similarClaims[i];
+      }
+    });
+
     return accum;
   }, {} as ClaimMap);
 };
@@ -100,17 +118,17 @@ const getQuote = (
   text: claim.quote,
   reference: {
     id: uuid(),
-    sourceId: sourceMap[claim.commentId].id,
+    sourceId: sourceMap[claim.commentId!].id,
     data: [
       "text",
       {
         startIdx: getReferenceStartIndex(
           claim,
-          (sourceMap[claim.commentId].data as schema.TextMediaSource)[1].text,
+          (sourceMap[claim.commentId!].data as schema.TextMediaSource)[1].text,
         ),
         endIdx: getReferenceEndIndex(
           claim,
-          (sourceMap[claim.commentId].data as schema.TextMediaSource)[1].text,
+          (sourceMap[claim.commentId!].data as schema.TextMediaSource)[1].text,
         ),
       },
     ],
@@ -130,7 +148,9 @@ const getSubtopicsFromLLMSubTopics =
       id: uuid(),
       title: subtopic.subtopicName,
       description: subtopic.subtopicShortDescription!,
-      claims: subtopic.claims.map((claim) => claimMap[claim.claimId!]),
+      claims: subtopic.claims
+        ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
+        : [],
     }));
 
 const getTopicsFromTaxonomy =
