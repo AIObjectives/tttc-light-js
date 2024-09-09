@@ -313,7 +313,12 @@ const setFocusedId = (state: ReportState, focusedId: string): ReportState => ({
 //  ********************************/
 
 const stateBuilder = (topics: schema.Topic[]): ReportState => ({
-  children: topics.map(makeTopicNode),
+  children: topics
+    .map(makeTopicNode)
+    .sort(
+      (a, b) =>
+        getNumberOfClaimsFromTopic(b.data) - getNumberOfClaimsFromTopic(a.data),
+    ),
   focusedId: null,
 });
 
@@ -321,7 +326,13 @@ const makeTopicNode = (topic: schema.Topic): TopicNode => ({
   data: topic,
   isOpen: false,
   pagination: defaultTopicPagination,
-  children: topic.subtopics.map(makeSubSubtopicNode),
+  children: topic.subtopics
+    .map(makeSubSubtopicNode)
+    .sort(
+      (a, b) =>
+        getNumberOfClaimsFromSubtopic(b.data) -
+        getNumberOfClaimsFromSubtopic(a.data),
+    ),
 });
 
 const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
@@ -333,6 +344,11 @@ const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
 const makeClaimNode = (claim: schema.Claim): ClaimNode => ({
   data: claim,
 });
+
+const getNumberOfClaimsFromTopic = (topic: schema.Topic): number =>
+  topic.subtopics.flatMap((sub) => sub.claims).length;
+const getNumberOfClaimsFromSubtopic = (subtopic: schema.Subtopic): number =>
+  subtopic.claims.length;
 
 //  ********************************
 //  * REDUCER *

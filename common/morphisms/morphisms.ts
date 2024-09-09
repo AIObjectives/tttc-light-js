@@ -2,6 +2,7 @@ import * as schema from "../schema";
 import { z } from "zod";
 
 // ! these functions haven't been tested thoroughly yet
+// TODO: Review this file - add comments and make more readble.
 
 const fromSources = (arg: schema.Source[]): string[] =>
   Array.from(new Set(arg.map((src) => src.id)));
