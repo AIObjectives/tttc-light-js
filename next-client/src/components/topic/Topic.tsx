@@ -260,7 +260,7 @@ function ShowMoreButton({
           dispatch({ type: "expandTopic", payload: { id: topicId } })
         }
       >
-        {moreLeftNum} more subtopics{moreLeftNum > 1 ? "s" : ""}
+        {moreLeftNum} more subtopic{moreLeftNum > 1 ? "s" : ""}
       </Button>
     </div>
   ) : null;
