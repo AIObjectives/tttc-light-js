@@ -1,49 +1,29 @@
 "use client";
 
-import Claim from "@src/components/claim/Claim";
 import { Button } from "@src/components/elements";
-import { useState } from "react";
-import * as schema from "tttc-common/schema";
+import { SubtopicNode } from "@src/components/report/hooks/useReportState";
+import { ReportContext } from "@src/components/report/Report";
+import { useContext } from "react";
 
-function ClaimLoader({
-  claims,
-  pagination,
-  i,
-}: {
-  claims: schema.Claim[];
-  pagination: number;
-  i: number;
-}) {
-  const [showMore, setShowMore] = useState(false);
-  const moreClaims = claims.slice(0, pagination);
-  const evenMoreClaims = claims.slice(pagination);
-  if (!showMore && claims.length > 0)
-    return (
-      <div className="pl-4 sm:pl-8">
-        <Button variant={"outline"} onClick={() => setShowMore(true)}>
-          {claims.length} more claim{claims.length > 0 ? "s" : ""}
-        </Button>
-      </div>
-    );
-  else
-    return (
-      <>
-        {moreClaims.map((claim, j) => (
-          <Claim
-            claimNum={i + j + 1}
-            title={claim.title}
-            quotes={claim.quotes}
-          />
-        ))}
-        {evenMoreClaims.length > 0 ? (
-          <ClaimLoader
-            claims={evenMoreClaims}
-            pagination={pagination}
-            i={i + pagination}
-          />
-        ) : null}
-      </>
-    );
+function ClaimLoader({ subtopicNode }: { subtopicNode: SubtopicNode }) {
+  const { dispatch } = useContext(ReportContext);
+  const remaining = subtopicNode.children.length - subtopicNode.pagination;
+  if (!remaining) return <></>;
+  return (
+    <div className="pl-4 sm:pl-8">
+      <Button
+        variant={"outline"}
+        onClick={() =>
+          dispatch({
+            type: "expandSubtopic",
+            payload: { id: subtopicNode.data.id },
+          })
+        }
+      >
+        {remaining} more claim{remaining > 0 ? "s" : ""}
+      </Button>
+    </div>
+  );
 }
 
 export default ClaimLoader;

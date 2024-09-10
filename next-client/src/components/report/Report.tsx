@@ -1,6 +1,12 @@
 "use client";
 
-import React, { Dispatch, Ref, createContext, useContext } from "react";
+import React, {
+  Dispatch,
+  Ref,
+  createContext,
+  useContext,
+  useEffect,
+} from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { Col, Row } from "../layout";
@@ -15,6 +21,7 @@ import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
+import { useHashChange } from "@src/lib/hooks/useHashChange";
 
 /**
  * Report Component
@@ -54,6 +61,8 @@ export const ReportContext = createContext<{
 function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   // Report State reducer
   const [state, _dispatch] = useReportState(reportData.topics);
+  // url hash
+  const hashNav = useHashChange();
   // Sets up useReportEffect, which can trigger side-effects when Report State dispatch is called.
   const [dispatch, useReportEffect] = useReportSubscribe(_dispatch);
   // Hook that sets up scrolling behavior.
@@ -62,6 +71,20 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   const useFocusedNode = _useFocusedNode((id: string) =>
     dispatch({ type: "focus", payload: { id } }),
   );
+  useEffect(() => {
+    if (!hashNav) return;
+    const nodes = [
+      ...state.children.map((topic) => topic),
+      ...state.children.flatMap((topic) => topic.children.map((sub) => sub)),
+      ...state.children.flatMap((topic) =>
+        topic.children.flatMap((sub) => sub.children.map((clm) => clm)),
+      ),
+    ];
+    const matchingNode = nodes.find((node) => node.data.title === hashNav);
+    if (!matchingNode) return;
+    dispatch({ type: "open", payload: { id: matchingNode.data.id } });
+  }, [hashNav]);
+
   return (
     <ReportContext.Provider
       value={{ dispatch, useScrollTo, useReportEffect, useFocusedNode }}

@@ -7,8 +7,8 @@ import * as schema from "tttc-common/schema";
 const defaultTopicPagination = 3;
 const addTopicPagination = 1;
 
-const defaultSubtopicPagination = 1;
-const addSubtopicPagination = 1;
+const defaultSubtopicPagination = 2;
+const addSubtopicPagination = 3;
 
 //  ********************************
 //  * TYPE DEFINITIONS
@@ -181,7 +181,7 @@ const expandTopic = changeTopic((node) => ({
 const setTopicPagination = (num: number) =>
   changeTopic((node) => ({
     ...node,
-    pagination: num,
+    pagination: Math.max(num, defaultTopicPagination),
   }));
 
 const resetTopic = setTopicPagination(defaultTopicPagination);
@@ -288,6 +288,12 @@ const expandSubtopic = changeSubtopic((node) => ({
   pagination: node.pagination + addSubtopicPagination,
 }));
 
+const setSubtopicPagination = (num: number) =>
+  changeSubtopic((node) => ({
+    ...node,
+    pagination: Math.max(num, defaultSubtopicPagination),
+  }));
+
 const resetSubtopic = changeSubtopic((node) => ({
   ...node,
   pagination: defaultSubtopicPagination,
@@ -307,6 +313,54 @@ const setFocusedId = (state: ReportState, focusedId: string): ReportState => ({
   ...state,
   focusedId,
 });
+
+//  ********************************
+//  * UNTESTED *
+//  ********************************/
+
+const _parentOfClaim = (state: ReportState, id: string) =>
+  state.children
+    .flatMap((topic) => topic.children)
+    .find((sub) => sub.children.find((clm) => clm.data.id === id));
+
+const parentOfClaim = (state: ReportState, id: string): SubtopicNode =>
+  undefinedCheck(_parentOfClaim(state, id), "Could not find claim by id");
+
+const openToNode = (state: ReportState, id: string): ReportState => {
+  if (state.children.some((node) => node.data.id === id))
+    return openTopic(state, id);
+  const maybeTopicIdx = state.children.findIndex((node) =>
+    node.children.some((node) => node.data.id === id),
+  );
+  if (maybeTopicIdx !== -1) {
+    const topic = state.children[maybeTopicIdx];
+    const subtopicIdx = topic.children.findIndex((node) => node.data.id === id);
+    return combineActions(openTopic, setTopicPagination(subtopicIdx + 1))(
+      state,
+      topic.data.id,
+    );
+  } else {
+    const subtopicWithClaim = parentOfClaim(state, id);
+    const parentTopic = parentOfSubtopic(
+      state.children,
+      subtopicWithClaim.data.id,
+    );
+    const subtopicIdx = parentTopic.children.findIndex(
+      (node) => node.data.id === subtopicWithClaim.data.id,
+    );
+    const claimIdx = subtopicWithClaim.children.findIndex(
+      (clm) => clm.data.id === id,
+    );
+    const pagState = setSubtopicPagination(claimIdx + 1)(
+      state,
+      subtopicWithClaim.data.id,
+    );
+    return combineActions(openTopic, setTopicPagination(subtopicIdx + 1))(
+      pagState,
+      parentTopic.data.id,
+    );
+  }
+};
 
 //  ********************************
 //  * STATE BUILDERS *
@@ -377,23 +431,7 @@ function reducer(state: ReportState, action: ReportStateAction): ReportState {
     // For open, we want the same function to work for topics or subtopics.
     // If subtopic, should open parent and set pagination to the correct value
     case "open": {
-      const maybeTopicIdx = state.children.findIndex(
-        (node) => node.data.id === id,
-      );
-      if (maybeTopicIdx !== -1) return openTopic(state, id);
-      const parentTopic = parentOfSubtopic(state.children, id);
-      const topicIdx = parentTopic.children.findIndex(
-        (topic) => topic.data.id === id,
-      );
-      const func = combineActions(
-        openTopic,
-        setTopicPagination(
-          topicIdx + 1 > parentTopic.pagination
-            ? topicIdx + 1
-            : parentTopic.pagination,
-        ),
-      );
-      return func(state, parentTopic.data.id);
+      return openToNode(state, id);
     }
     case "close": {
       return combineActions(

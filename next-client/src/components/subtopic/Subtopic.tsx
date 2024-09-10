@@ -23,7 +23,7 @@ function Subtopic({ node, isOpen }: { node: SubtopicNode; isOpen: boolean }) {
 
   return (
     <div ref={mergeRefs([scrollRef, focusedRef])}>
-      {isOpen && <SubtopicComponent topic={node.data} />}
+      {isOpen && <SubtopicComponent subtopicNode={node} />}
     </div>
   );
 }
@@ -33,13 +33,13 @@ function Subtopic({ node, isOpen }: { node: SubtopicNode; isOpen: boolean }) {
  */
 const SubtopicComponent = forwardRef<
   HTMLDivElement,
-  { topic: schema.Subtopic }
->(function TopicComponent({ topic }, ref) {
+  { subtopicNode: SubtopicNode }
+>(function TopicComponent({ subtopicNode }, ref) {
   return (
     <div>
       <Col gap={4} className="py-6 sm:py-8" ref={ref}>
-        <SubtopicSummary topic={topic} />
-        <SubtopicClaims claims={topic.claims} />
+        <SubtopicSummary subtopic={subtopicNode.data} />
+        <SubtopicClaims subtopicNode={subtopicNode} />
       </Col>
     </div>
   );
@@ -79,8 +79,8 @@ export function SubtopicDescription({ description }: { description: string }) {
   );
 }
 
-export function SubtopicSummary({ topic }: { topic: schema.Subtopic }) {
-  const { title, claims, description } = topic;
+export function SubtopicSummary({ subtopic }: { subtopic: schema.Subtopic }) {
+  const { title, claims, description } = subtopic;
   const nPeople = getNPeople(claims);
   return (
     <Col gap={4} className="px-4 sm:px-8">
@@ -90,32 +90,30 @@ export function SubtopicSummary({ topic }: { topic: schema.Subtopic }) {
         numPeople={nPeople}
         button={<CopyLinkButton anchor={title} />}
       />
-      <PointGraphic claims={topic.claims} />
+      <PointGraphic claims={subtopic.claims} />
       <SubtopicDescription description={description!} />
     </Col>
   );
 }
 
-export function SubtopicClaims({ claims }: { claims: schema.Claim[] }) {
-  const pagination = 3;
-  const i = pagination;
+export function SubtopicClaims({
+  subtopicNode,
+}: {
+  subtopicNode: SubtopicNode;
+}) {
   return (
     <>
-      {claims.slice(0, pagination).map((claim, i) => {
+      {subtopicNode.children.map((claimNode, i) => {
         return (
           <Claim
-            key={claim.id}
+            key={claimNode.data.id}
             claimNum={i + 1}
-            title={claim.title}
-            quotes={claim.quotes}
+            claimNode={claimNode}
+            show={i < subtopicNode.pagination}
           />
         );
       })}
-      <ClaimLoader
-        claims={claims.slice(pagination)}
-        pagination={pagination}
-        i={i}
-      />
+      <ClaimLoader subtopicNode={subtopicNode} />
     </>
   );
 }

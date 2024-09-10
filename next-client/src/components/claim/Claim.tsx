@@ -1,30 +1,40 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Card, CardContent, Separator } from "../elements";
 import Icons from "@src/assets/icons";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { Col, Row } from "../layout";
 import * as schema from "tttc-common/schema";
+import { ClaimNode } from "../report/hooks/useReportState";
+import { ReportContext } from "../report/Report";
 
 function Claim({
   claimNum,
-  title,
-  quotes,
+  claimNode,
+  show,
 }: {
   claimNum: number;
-  title: string;
-  quotes: schema.Quote[];
+  claimNode: ClaimNode;
+  show: boolean;
 }) {
+  const data = claimNode.data;
+  const { title, quotes } = data;
+  const { useScrollTo } = useContext(ReportContext);
+  const scrollRef = useScrollTo(data.id);
   return (
-    <CardContent className="py-2 sm:py-2">
-      <Col gap={3}>
-        <ClaimHeader
-          title={title}
-          claimNum={claimNum}
-          button={<CopyLinkButton anchor={title} />}
-        />
-        <Quotes quotes={quotes} />
-      </Col>
-    </CardContent>
+    <div ref={scrollRef} className={`${!show ? "hidden" : ""}`}>
+      {show ? (
+        <CardContent className="py-2 sm:py-2">
+          <Col gap={3}>
+            <ClaimHeader
+              title={title}
+              claimNum={claimNum}
+              button={<CopyLinkButton anchor={title} />}
+            />
+            <Quotes quotes={quotes} />
+          </Col>
+        </CardContent>
+      ) : null}
+    </div>
   );
 }
 
