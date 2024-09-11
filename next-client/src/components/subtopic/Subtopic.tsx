@@ -59,9 +59,9 @@ export function SubtopicHeader({
   return (
     <Row gap={4} className="justify-between items-center">
       <div className="flex flex-grow">
-        <h4>
+        <h5>
           <a id={`${title}`}>{title}</a>
-        </h4>
+        </h5>
       </div>
       <TextIcon icon={<Icons.Claim />}>
         {numClaims} claims by {numPeople} people

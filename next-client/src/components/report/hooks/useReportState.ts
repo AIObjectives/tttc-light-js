@@ -7,7 +7,7 @@ import * as schema from "tttc-common/schema";
 const defaultTopicPagination = 3;
 const addTopicPagination = 1;
 
-const defaultSubtopicPagination = 2;
+const defaultSubtopicPagination = 3;
 const addSubtopicPagination = 3;
 
 //  ********************************
