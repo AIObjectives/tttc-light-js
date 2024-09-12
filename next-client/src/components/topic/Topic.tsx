@@ -23,7 +23,7 @@ import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { Sticky } from "../wrappers";
 import { ReportContext } from "../report/Report";
-import { TopicNode } from "../report/hooks/useReportState";
+import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
 
 /**
@@ -36,7 +36,7 @@ function Topic({ node }: { node: TopicNode }) {
   return (
     <TopicCard
       ref={mergeRefs([scrollRef, focusedRef])}
-      topic={node.data}
+      topicNode={node}
       openButton={
         <Button
           onClick={() =>
@@ -51,7 +51,7 @@ function Topic({ node }: { node: TopicNode }) {
   );
 }
 interface TopicCardProps {
-  topic: schema.Topic;
+  topicNode: TopicNode;
   openButton: React.ReactNode;
   openedTopic: React.ReactNode;
 }
@@ -59,10 +59,10 @@ interface TopicCardProps {
  * UI for Topic
  */
 const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
-  { topic, openButton, openedTopic }: TopicCardProps,
+  { topicNode, openButton, openedTopic }: TopicCardProps,
   ref,
 ) {
-  const { title, subtopics, description } = topic;
+  const { title, description } = topicNode.data;
 
   return (
     <Card>
@@ -72,7 +72,10 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             title={title}
             button={<CopyLinkButton anchor={title} />}
           />
-          <TopicInteractiveGraphic topics={subtopics} openButton={openButton}>
+          <TopicInteractiveGraphic
+            subtopics={topicNode.children}
+            openButton={openButton}
+          >
             <ExpandableText>{description}</ExpandableText>
           </TopicInteractiveGraphic>
         </Col>
@@ -105,18 +108,21 @@ export function TopicHeader({
  */
 export function TopicInteractiveGraphic({
   children,
-  topics,
+  subtopics,
   openButton,
 }: React.PropsWithChildren<{
-  topics: schema.Subtopic[];
+  subtopics: SubtopicNode[];
   openButton: React.ReactNode;
 }>) {
-  const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(topics);
+  const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(
+    subtopics.map((node) => node.data),
+  );
   return (
     <Col gap={3}>
       <Col gap={2}>
         <TextIcon icon={<Icons.Claim />}>
-          {getNClaims(topics)} claims by {getNPeople(topics)} people
+          {getNClaims(subtopics.map((node) => node.data))} claims by{" "}
+          {getNPeople(subtopics.map((node) => node.data))} people
         </TextIcon>
         {/* Point graphic component */}
         <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">
