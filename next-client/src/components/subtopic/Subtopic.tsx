@@ -1,7 +1,7 @@
 import React, { forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
-import { TextIcon } from "../elements";
+import { ExpandableText, TextIcon } from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import Claim from "../claim/Claim";
 import { Col, Row } from "../layout";
@@ -73,9 +73,9 @@ export function SubtopicHeader({
 
 export function SubtopicDescription({ description }: { description: string }) {
   return (
-    <div>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
+    <ExpandableText className="text-muted-foreground">
+      {description}
+    </ExpandableText>
   );
 }
 

@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardTitle,
+  ExpandableText,
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
@@ -72,9 +73,8 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             button={<CopyLinkButton anchor={title} />}
           />
           <TopicInteractiveGraphic topics={subtopics} openButton={openButton}>
-            <p>{description}</p>
+            <ExpandableText>{description}</ExpandableText>
           </TopicInteractiveGraphic>
-          {/* <Sticky>{openButton}</Sticky> */}
         </Col>
       </CardContent>
       {openedTopic}
