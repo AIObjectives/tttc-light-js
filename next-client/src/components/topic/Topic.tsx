@@ -210,7 +210,9 @@ export function SubtopicListItem({
             numClaims={topic.claims.length}
             numPeople={getNPeople(topic.claims)}
           />
-          <p className="text-muted-foreground">{topic.description}</p>
+          <p className="text-muted-foreground line-clamp-4">
+            {topic.description}
+          </p>
         </Col>
       </HoverCardContent>
     </HoverCard>
