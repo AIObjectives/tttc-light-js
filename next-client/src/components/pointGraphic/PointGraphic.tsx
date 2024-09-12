@@ -1,10 +1,11 @@
 "use client";
 
-import React, { Ref, forwardRef } from "react";
+import React, { Ref, forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
 import { ClaimHeader, QuoteText } from "../claim/Claim";
 import { Col } from "../layout";
+import { ReportContext } from "../report/Report";
 
 function PointGraphic({ claims }: { claims: schema.Claim[] }) {
   return (
@@ -42,9 +43,11 @@ export function Cell(
   { claim, isHighlighted }: ICell,
   ref: Ref<HTMLDivElement>,
 ) {
+  const { dispatch } = useContext(ReportContext);
+  const onClick = () => dispatch({ type: "open", payload: { id: claim.id } });
   return (
     <HoverCard openDelay={0} closeDelay={0}>
-      <HoverCardTrigger>
+      <HoverCardTrigger onClick={onClick}>
         <div
           className={`w-3 h-3 bg-AOI_graph_cell rounded-sm hover:bg-slate-700 ${isHighlighted ? "bg-slate-700" : ""}`}
         />

@@ -136,7 +136,7 @@ export function TopicInteractiveGraphic({
       {/* Subtopic links */}
       <Row gap={3} className="space-between">
         <SubtopicList
-          topics={topicsHoverState.map(({ group: topic }) => topic)}
+          subtopics={topicsHoverState.map(({ group: topic }) => topic)}
           onMouseOver={onMouseOver}
           onMouseExit={onMouseExit}
         />
@@ -150,27 +150,27 @@ export function TopicInteractiveGraphic({
  * List of subtopics. When hovered should show a popup card and highlight the claim-cells.
  */
 export function SubtopicList({
-  topics,
+  subtopics,
   onMouseOver,
   onMouseExit,
 }: {
-  topics: schema.Subtopic[];
+  subtopics: schema.Subtopic[];
   onMouseOver: (id: string) => void;
   onMouseExit: (id: string) => void;
 }) {
   return (
     <p className="line-clamp-2 leading-6 ">
       <TextIcon className="inline" icon={<Icons.Topic className="inline " />}>
-        {topics.length} subtopics
+        {subtopics.length} subtopics
       </TextIcon>
       {"   "}
-      {topics.map((topic, i) => (
+      {subtopics.map((subtopic, i) => (
         <SubtopicListItem
-          key={topic.id}
-          topic={topic}
-          withComma={i !== topics.length - 1}
-          onMouseOver={() => onMouseOver(topic.id)}
-          onMouseOut={() => onMouseExit(topic.id)}
+          key={subtopic.id}
+          subtopic={subtopic}
+          withComma={i !== subtopics.length - 1}
+          onMouseOver={() => onMouseOver(subtopic.id)}
+          onMouseOut={() => onMouseExit(subtopic.id)}
         />
       ))}
     </p>
@@ -181,37 +181,40 @@ export function SubtopicList({
  * Single item in a SubtopicList from above.
  */
 export function SubtopicListItem({
-  topic,
+  subtopic,
   withComma,
   onMouseOut,
   onMouseOver,
 }: {
-  topic: schema.Subtopic;
+  subtopic: schema.Subtopic;
   withComma: boolean;
   onMouseOver: () => void;
   onMouseOut: () => void;
 }) {
+  const { dispatch } = useContext(ReportContext);
+  const onClick = () =>
+    dispatch({ type: "open", payload: { id: subtopic.id } });
   return (
     <HoverCard openDelay={300} closeDelay={0}>
-      <HoverCardTrigger>
+      <HoverCardTrigger onClick={onClick}>
         <p
           className="cursor-pointer text-muted-foreground text-sm  inline"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
         >
-          <span className="link">{topic.title}</span>
+          <span className="link">{subtopic.title}</span>
           {withComma ? ",   " : ""}
         </p>
       </HoverCardTrigger>
       <HoverCardContent>
         <Col gap={4}>
           <SubtopicHeader
-            title={topic.title}
-            numClaims={topic.claims.length}
-            numPeople={getNPeople(topic.claims)}
+            title={subtopic.title}
+            numClaims={subtopic.claims.length}
+            numPeople={getNPeople(subtopic.claims)}
           />
           <p className="text-muted-foreground line-clamp-4">
-            {topic.description}
+            {subtopic.description}
           </p>
         </Col>
       </HoverCardContent>
