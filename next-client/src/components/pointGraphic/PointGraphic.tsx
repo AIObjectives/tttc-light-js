@@ -60,7 +60,11 @@ function ClaimCard({ claim }: { claim: schema.Claim }) {
   return (
     // <CardContent className="p-4">
     <Col gap={4}>
-      <ClaimHeader title={claim.title} claimNum={claim.number} />
+      <ClaimHeader
+        variant="inline"
+        title={claim.title}
+        claimNum={claim.number}
+      />
       <Col gap={2}>
         {claim.quotes.map((quote) => (
           <QuoteText key={quote.id} text={quote.text} />

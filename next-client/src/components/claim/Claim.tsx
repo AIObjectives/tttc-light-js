@@ -45,23 +45,54 @@ export function ClaimHeader({
   title,
   claimNum,
   button,
+  variant = "normal",
 }: {
   title: string;
   claimNum: number;
+  variant?: "normal" | "inline";
   button?: React.ReactNode;
 }) {
   return (
     <Row gap={2} className="justify-between items-start">
-      <p className="p-medium">Claim#{claimNum}</p>
-      <div className="flex flex-grow">
-        <p className="text-foreground">
-          <a id={`${title}`}>{title}</a>
-        </p>
-      </div>
+      <OuterVariantContainerElement variant={variant}>
+        <VariantTextElement variant={variant} className="p-medium">
+          Claim#{claimNum + " "}
+        </VariantTextElement>
+        <InnerVariantContainerElement variant={variant}>
+          <VariantTextElement variant={variant} className="text-foreground">
+            <a id={`${title}`}>{title}</a>
+          </VariantTextElement>
+        </InnerVariantContainerElement>
+      </OuterVariantContainerElement>
       {button}
     </Row>
   );
 }
+const VariantTextElement = (
+  props: React.HTMLAttributes<HTMLParagraphElement> & {
+    variant: "inline" | "normal";
+  },
+) => (props.variant === "normal" ? <p {...props} /> : <span {...props} />);
+const OuterVariantContainerElement = ({
+  variant,
+  children,
+}: React.PropsWithChildren<{ variant: "inline" | "normal" }>) =>
+  variant === "inline" ? <p>{children}</p> : <>{children}</>;
+const InnerVariantContainerElement = ({
+  variant,
+  children,
+}: React.PropsWithChildren<{ variant: "inline" | "normal" }>) =>
+  variant === "inline" ? (
+    <>{children}</>
+  ) : (
+    <div className="flex flex-grow">{children}</div>
+  );
+
+// function InlineHeader({text}:{text:string}) {
+//   return (
+//     <p
+//   )
+// }
 
 /**
  * Single quote - not wrapped in card.
