@@ -23,12 +23,28 @@ const baseProps = reportData.topics[0].subtopics[0].claims[0];
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// export const Primary: Story = {
+//   args: {
+//     claimNum: 1,
+//     title:
+//       "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset",
+//     quotes: baseProps.quotes,
+//   },
+// };
 export const Primary: Story = {
   args: {
-    claimNum: 1,
-    title:
-      "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset",
-    quotes: baseProps.quotes,
+    claimNode: {
+      data: {
+        title:
+          "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset",
+        quotes: baseProps.quotes,
+        similarClaims: [],
+        id: "",
+        number: 0,
+      },
+    },
+    claimNum: 0,
+    show: true,
   },
 };
 

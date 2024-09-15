@@ -32,7 +32,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Main: Story = {
   args: {
-    nodes: reportState.children,
+    reportState: { children: reportState.children, focusedId: "" },
     reportDispatch: () => {},
   },
 };

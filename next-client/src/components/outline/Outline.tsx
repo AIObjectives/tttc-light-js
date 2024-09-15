@@ -80,6 +80,7 @@ function Outline({
                   node={subnode}
                   title={subnode.title}
                   heirarchyDepth={1}
+                  isLeafNode={true}
                   parentId={node.id}
                   onClick={() =>
                     reportDispatch({
@@ -102,19 +103,20 @@ function OutlineItem({
   title,
   children,
   heirarchyDepth = 0,
+  isLeafNode = false,
   onClick,
-  onDoubleClick,
+  onDoubleClick, // Remoove
 }: React.PropsWithChildren<{
   node: OutlineNode;
   title: string;
+  isLeafNode?: boolean;
   heirarchyDepth?: number;
   onClick: () => void;
-  onDoubleClick?: () => void;
+  onDoubleClick?: () => void; // Remove
   parentId?: string;
 }>) {
   const _onDoubleClick = onDoubleClick ? onDoubleClick : () => null;
 
-  // Make onClick and onDoubleClick mutually exlcusive
   const { handleClick, handleDoubleClick } = useXORClick(
     onClick,
     _onDoubleClick,
@@ -127,29 +129,63 @@ function OutlineItem({
         className={`group items-center ${node.isHighlighted ? "text-primary" : ""} hover:text-primary cursor-pointer`}
       >
         {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
-        <div className="min-h-6 min-w-3 content-center" onClick={onClick}>
-          <Icons.Minus
-            size={12}
-            className="hidden group-hover:block stroke-2"
-          />
+        <div
+          className="invisible group-hover:visible content-center"
+          onClick={handleClick}
+        >
+          <Icons.Minus size={12} className="stroke-2" />
         </div>
         {/* Nested items should be further to the right */}
-        <div
-          className={`pl-${heirarchyDepth * 4} overflow-hidden whitespace-nowrap`}
+        <Row
+          gap={2}
+          className={`pl-${heirarchyDepth * 4} overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
         >
           <p
-            className="overflow-ellipsis overflow-hidden text-base select-none"
             onClick={handleClick}
             onDoubleClick={handleDoubleClick}
+            className="overflow-ellipsis overflow-hidden text-base select-none"
           >
             {title}
           </p>
-        </div>
+          <OutlineCarrot
+            onClick={onDoubleClick!}
+            isOpen={node.isOpen}
+            collapsable={!!node.children?.length && !isLeafNode}
+          />
+        </Row>
       </Row>
 
       {node.isOpen ? children : null}
     </Col>
   );
+}
+
+function OutlineCarrot({
+  onClick,
+  isOpen,
+  collapsable,
+}: {
+  onClick: () => void;
+  isOpen: boolean;
+  collapsable: boolean;
+}) {
+  if (!collapsable) return <></>;
+  else if (!isOpen) {
+    return (
+      <div
+        onClick={onClick}
+        className="invisible group-hover:visible group-hover:text-muted-foreground hover:bg-slate-200 hover:rounded-sm"
+      >
+        <Icons.OutlineCollapsed />
+      </div>
+    );
+  } else {
+    return (
+      <div onClick={onClick} className="hover:bg-slate-200 hover:rounded-sm">
+        <Icons.OutlineExpanded />
+      </div>
+    );
+  }
 }
 
 export default Outline;

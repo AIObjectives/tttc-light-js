@@ -10,6 +10,8 @@ import {
   Menu,
   CheckCircle,
   AlignLeft,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import TopicSVG from "./Topic.svg";
@@ -44,6 +46,10 @@ Icons.Menu = Menu;
 Icons.Success = CheckCircle;
 
 Icons.Outline = AlignLeft;
+
+Icons.OutlineExpanded = ChevronUp;
+
+Icons.OutlineCollapsed = ChevronDown;
 
 Icons.ChevronRight = (props: { className?: string }) => (
   <Image {...props} src={ChevronRight} alt="chevron icon" />
