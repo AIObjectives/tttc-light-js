@@ -122,7 +122,11 @@ export function TopicInteractiveGraphic({
       <Col gap={2}>
         <TextIcon icon={<Icons.Claim />}>
           {getNClaims(subtopics.map((node) => node.data))} claims by{" "}
-          {getNPeople(subtopics.map((node) => node.data))} people
+          {/* ! Temp change for QA testing */}
+          {Math.floor(
+            getNPeople(subtopics.map((node) => node.data)) * 0.45,
+          )}{" "}
+          people
         </TextIcon>
         {/* Point graphic component */}
         <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">

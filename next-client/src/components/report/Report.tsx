@@ -93,17 +93,21 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
       <div className="mb-36">
         {/* Toolbar is the component that has the open/close all buttons */}
         <ReportToolbar />
-        {/* Outline component for navigation and keeping track of location. Wrapped in fixed div so it moves with screen. */}
-        <div className="fixed top-20 bottom-0 ml-2 hidden md:block">
-          <Outline reportState={state} reportDispatch={dispatch} />
-        </div>
-        {/* Main body */}
-        <Col gap={4} className=" w-full md:w-1/2 max-w-[896px] m-auto">
-          <ReportHeader reportData={reportData} />
-          {state.children.map((themeNode) => (
-            <Theme key={themeNode.data.id} node={themeNode} />
-          ))}
-        </Col>
+        <Row>
+          {/* Outline component for navigation and keeping track of location. Wrapped in fixed div so it moves with screen. */}
+          <div className="hidden lg:block ml-2 min-w-56 h-10" />
+          <div className="fixed top-20 bottom-0 ml-2 hidden lg:block">
+            <Outline reportState={state} reportDispatch={dispatch} />
+          </div>
+          {/* Main body */}
+          <Col gap={4} className=" w-full md:max-w-[896px] m-auto">
+            <ReportHeader reportData={reportData} />
+            {state.children.map((themeNode) => (
+              <Theme key={themeNode.data.id} node={themeNode} />
+            ))}
+          </Col>
+          <div className="hidden lg:block mr-2 min-w-56 h-10" />
+        </Row>
       </div>
     </ReportContext.Provider>
   );
@@ -122,7 +126,7 @@ export function ReportToolbar() {
     >
       <Row
         // ! make sure this is the same width as the theme cards.
-        className={`p-2 justify-between md:w-1/2 max-w-[832px] mx-auto`}
+        className={`p-2 justify-between w-full md:max-w-[896px] mx-auto`}
       >
         <div>
           <Button variant={"outline"}>Edit</Button>
@@ -209,7 +213,7 @@ export function ReportTitle({
       </Row>
 
       {/* Stat details. Split into two parts for easy wrapping */}
-      <Row gap={4} className="h-5 flex-wrap gap-y-2">
+      <Row gap={4} className="min-h-5 flex-wrap gap-y-2">
         <Row gap={4} className="h-5">
           {/* Number of topics */}
           <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
@@ -225,7 +229,8 @@ export function ReportTitle({
         <Row gap={4} className="h-5">
           {/* Number of people */}
           <TextIcon icon={<Icons.People size={16} className="self-center" />}>
-            {nPeople} people
+            {/* {nPeople} people */} {/* ! temp removed for QA testing*/}
+            416 participants
           </TextIcon>
           {/* Date */}
           <TextIcon icon={<Icons.Date size={16} className="self-center" />}>

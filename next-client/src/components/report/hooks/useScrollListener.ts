@@ -36,9 +36,7 @@ function useScrollListener(
       if (listenForId === currId && ref.current) {
         // Don't scroll directly to node. Instead, make it go to middle of screen.
         const y =
-          ref.current?.getBoundingClientRect().top +
-          window.scrollY -
-          window.innerHeight / 4;
+          ref.current?.getBoundingClientRect().top + window.scrollY - 50;
         window.scroll({
           top: y,
         });

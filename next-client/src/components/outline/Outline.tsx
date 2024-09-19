@@ -54,7 +54,7 @@ function Outline({
 
   return (
     <OutlineContext.Provider value={{ dispatch }}>
-      <Col gap={2} className="h-full">
+      <Col gap={2} className="h-full max-w-40 md:max-w-56">
         {/* Top icon */}
         <TextIcon icon={<Icons.Outline size={16} />} className="pl-5">
           Outline
@@ -123,7 +123,7 @@ function OutlineItem({
   );
   return (
     // column here because opened nodes should continue the spacing.
-    <Col gap={outlineSpacing} className=" max-w-40 lg:max-w-56">
+    <Col gap={outlineSpacing} className=" ">
       <Row
         gap={2}
         className={`group items-center ${node.isHighlighted ? "text-primary" : ""} hover:text-primary cursor-pointer`}
@@ -133,7 +133,7 @@ function OutlineItem({
           className="invisible group-hover:visible content-center"
           onClick={handleClick}
         >
-          <Icons.Minus size={12} className="stroke-2" />
+          <Icons.Minus size={12} className="stroke-[3px]" />
         </div>
         {/* Nested items should be further to the right */}
         <Row
@@ -169,7 +169,13 @@ function OutlineCarrot({
   isOpen: boolean;
   collapsable: boolean;
 }) {
-  if (!collapsable) return <></>;
+  // If not collapsable, add the component but make it permanently invisible to maintain equal spacing.
+  if (!collapsable)
+    return (
+      <div className="invisible">
+        <Icons.OutlineCollapsed />
+      </div>
+    );
   else if (!isOpen) {
     return (
       <div
