@@ -169,7 +169,7 @@ export function SubtopicList({
   onMouseExit: (id: string) => void;
 }) {
   return (
-    <p className="line-clamp-2 leading-6 ">
+    <p className="line-clamp-2 leading-6 flex-grow">
       <TextIcon className="inline" icon={<Icons.Topic className="inline " />}>
         {subtopics.length} subtopics
       </TextIcon>
