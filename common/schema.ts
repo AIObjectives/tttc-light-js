@@ -107,7 +107,7 @@ export const options = z.object({
 export type Options = z.infer<typeof options>;
 
 // Zod has trouble with self-referential types, so leave this be until we need to parse
-export type LLMClaim = {
+type _LLMClaim = {
   claim: string;
   quote: string;
   claimId?: string;
@@ -118,7 +118,9 @@ export type LLMClaim = {
   duplicated?: boolean;
 };
 
-const oldclaim = z.custom<LLMClaim>();
+const oldclaim = z.custom<_LLMClaim>();
+
+export type LLMClaim = z.infer<typeof oldclaim>;
 
 export const cache = z.object({
   get: z.function().args(z.string()).returns(z.any()),
