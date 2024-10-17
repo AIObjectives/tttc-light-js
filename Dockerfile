@@ -1,41 +1,58 @@
-# Use the official lightweight Node.js 16 image.
-# https://hub.docker.com/_/node
-FROM node:16-slim
+# Dockerfile content
+# Stage 1: Install dependencies and build
+FROM node:18-slim AS build
 
 # Create and change to the app directory.
 WORKDIR /usr/src/app
 
-# copy the packages from common and express
-COPY ./common/package*.json ./common/
-COPY ./express-pipeline/package*.json ./express-pipeline/
+# Copy package.json and package-lock.json for next-client
+COPY next-client/package*.json ./next-client/
 
-# npm install common before express
+# Copy package.json and package-lock.json for common
+COPY common/package*.json ./common/
+
+# Install dependencies for common
 WORKDIR /usr/src/app/common
+RUN npm install
+
+# Install dependencies for next-client
+WORKDIR /usr/src/app/next-client
+
+# Install remaining dependencies
+RUN npm install
+
+# Copy the rest of the application code for next-client
+COPY next-client/ ./
+
+# Copy the rest of the application code for common
+COPY common/ ../common/
+
+# Build the Next.js client
+RUN npm run build
+
+# Stage 2: Production image
+FROM node:18-slim
+
+# Create and change to the app directory.
+WORKDIR /usr/src/app
+
+# Copy only the production dependencies for next-client
+COPY --from=build /usr/src/app/next-client/package*.json ./
 RUN npm install --only=production
 
-# move contents of common into docker image before express
-WORKDIR /usr/src/app
-COPY ./common ./common
+# Copy the build output and other necessary files from the build stage
+COPY --from=build /usr/src/app/next-client/.next ./.next
+COPY --from=build /usr/src/app/next-client/public ./public
+COPY --from=build /usr/src/app/next-client/next.config.js ./next.config.js
 
-# build common
-WORKDIR /usr/src/app/common
-RUN npm run build
+# Copy the common directory
+COPY --from=build /usr/src/app/common ../common/
 
-# install express packages
-WORKDIR /usr/src/app/express-pipeline
-RUN npm install --only-production
+# Expose port 3000
+EXPOSE 3000
 
-# copy express contents 
-WORKDIR /usr/src/app
-COPY ./express-pipeline ./express-pipeline
+# Set the environment variable for the port
+ENV PORT=3000
 
-# build express app
-WORKDIR /usr/src/app/express-pipeline
-RUN npm run build
-
-# # Expose port 8080 to the Docker daemon, since Cloud Run only listens on this port.
-EXPOSE 8080
-
-WORKDIR /usr/src/app/express-pipeline
-# # Run the web service on container startup.
-CMD [ "npm", "start" ]
+# Run the Next.js client on container startup.
+CMD ["npm", "start"]

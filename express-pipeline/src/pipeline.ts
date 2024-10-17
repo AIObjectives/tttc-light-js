@@ -10,11 +10,15 @@ import {
   Options,
   Tracker,
   Cache,
-  Claim,
   Subtopic,
   Taxonomy,
   PipelineOutput,
+  LLMClaim,
+  LLMPipelineOutput,
+  LLMSubtopic,
 } from "tttc-common/schema";
+
+import { llmPipelineToSchema } from "tttc-common/morphisms";
 
 const defaultOptions = {
   model: "gpt-4-turbo-preview", // Claude options: "claude-3-sonnet-20240229", claude-3-haiku-20240307"
@@ -28,7 +32,7 @@ const defaultOptions = {
   batchSize: 2, // lower to avoid rate limits! initial was 10,
 };
 
-function insertClaim(taxonomy: Taxonomy, claim: Claim, tracker: Tracker) {
+function insertClaim(taxonomy: Taxonomy, claim: LLMClaim, tracker: Tracker) {
   const { topicName, subtopicName } = claim;
   const matchedTopic = taxonomy.find((topic) => topic.topicName === topicName);
   if (!matchedTopic) {
@@ -50,8 +54,11 @@ function insertClaim(taxonomy: Taxonomy, claim: Claim, tracker: Tracker) {
   subtopic.claims.push(claim);
 }
 
-function nestClaims(subtopic: Subtopic, nesting: { [key: string]: string[] }) {
-  const map: { [key: string]: Claim } = {};
+function nestClaims(
+  subtopic: LLMSubtopic,
+  nesting: { [key: string]: string[] },
+) {
+  const map: { [key: string]: LLMClaim } = {};
   (subtopic.claims || []).forEach((claim) => {
     map[claim.claimId!] = claim;
   });
@@ -111,7 +118,7 @@ async function pipeline(
           tracker,
           cache,
         );
-        claims?.forEach((claim: Claim, i: number) => {
+        claims.forEach((claim: LLMClaim, i: number) => {
           insertClaim(
             taxonomy,
             {
@@ -183,7 +190,9 @@ async function pipeline(
   console.log(
     `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`,
   );
-  return { ...options, tree, ...tracker };
+  const llmPipelineOutput: LLMPipelineOutput = { ...options, tree, ...tracker };
+
+  return llmPipelineToSchema(llmPipelineOutput);
 }
 
 export default pipeline;

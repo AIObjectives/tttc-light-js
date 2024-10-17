@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 243 75% 59%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 226 100% 97%;
+    --secondary-foreground: 243 75% 59%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 226 100% 97%;
+    --accent-foreground: 245 58% 51%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --AOI-graph-cell: 214 32% 91%;
+  }
+
+  .dark {
+    --background: 240 10% 4%;
+    --foreground: 210 40% 98%;
+
+    --card: 240 10% 4%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 234 89% 74%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 242, 47%, 34%;
+    --secondary-foreground: 234, 89%, 74%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    --AOI-graph-cell: 240 5% 34%;
+  }
+}
+
+@layer utilities {
+  .leading-11 {
+    line-height: 48px;
+  }
+}
+
+@layer components {
+  .p-medium {
+    @apply text-base leading-6 font-medium;
+  }
+  .p2 {
+    @apply text-sm;
+  }
+  .p2-medium {
+    @apply text-sm font-medium;
+  }
+  .link {
+    @apply underline;
+  }
+  .link:hover {
+    @apply opacity-60;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth !important;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1 {
+    @apply text-5xl font-extrabold leading-11 tracking-tight
+    /* Does text-5xl apply the right line height by itself? If so, remove leading-11 */;
+  }
+  h2 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+  h3 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  h4 {
+    @apply text-xl font-semibold leading-5 tracking-tight;
+  }
+  h5 {
+    @apply text-base font-semibold leading-6;
+  }
+  p {
+    @apply text-base leading-6;
+  }
+  details {
+    @apply text-sm leading-4;
+  }
+  svg {
+    @apply stroke-[1.5];
+  }
+}
