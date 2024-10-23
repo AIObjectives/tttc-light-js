@@ -1,4 +1,3 @@
-import { pipeline } from "zod";
 import * as schema from "../schema";
 import { v4 } from "uuid";
 
@@ -168,13 +167,13 @@ export const getReportDataObj = (
 ): schema.ReportDataObj => {
   const sourceMap = buildSourceMap(pipelineOutput.data);
   const claimMap = buildClaimsMap(pipelineOutput, sourceMap);
-  return {
+  return schema.reportDataObj.parse({
     title: pipelineOutput.title,
     description: pipelineOutput.description,
     date: new Date().toISOString(),
     topics: getTopicsFromTaxonomy(claimMap)(pipelineOutput.tree),
     sources: pipelineOutput.data.map((row) => sourceMap[row.id]),
-  };
+  });
 };
 
 const buildStageData: schema.PipelineStepData = {
