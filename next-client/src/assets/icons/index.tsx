@@ -19,6 +19,8 @@ import QuoteSVG from "./QuoteSvg";
 import ClaimSVG from "./ClaimSvg";
 import ChevronRightSvg from "./ChevronRightSvg";
 import ResponseSvg from "./ResponseSvg";
+import InfoSVG from "./InfoSvg";
+import XSVG from "./XSvg";
 
 const Icons = () => <></>;
 
@@ -50,6 +52,8 @@ Icons.OutlineExpanded = ChevronUp;
 
 Icons.OutlineCollapsed = ChevronDown;
 
+Icons.Info = (props: { className?: string }) => <InfoSVG {...props} />;
+
 Icons.ChevronRight = (props: { className?: string }) => (
   <ChevronRightSvg {...props} />
 );
@@ -61,5 +65,7 @@ Icons.Quote = (props: { className?: string }) => <QuoteSVG {...props} />;
 Icons.Claim = (props: { className?: string }) => <ClaimSVG {...props} />;
 
 Icons.Response = (props: { className?: string }) => <ResponseSvg {...props} />;
+
+Icons.X = (props: { className?: string }) => <XSVG {...props} />;
 
 export default Icons;
