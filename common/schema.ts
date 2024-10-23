@@ -349,6 +349,18 @@ const pieChartGraphic = z.tuple([
 const graphics = pieChartGraphic; // make this a union when we have more
 
 /********************************
+ * Question and Answer
+ * Included in the Report summary, gives the creator an opportunity to answer questions about getting data, etc
+ ********************************/
+
+export const questionAnswer = z.object({
+  question: z.string(),
+  answer: z.string(),
+});
+
+export type QuestionAnswer = z.infer<typeof questionAnswer>;
+
+/********************************
  * Report Data
  * Contains all the information that a report needs to display
  ********************************/
@@ -357,6 +369,7 @@ export const reportDataObj = z
   .object({
     title: z.string(),
     description: z.string(),
+    questionAnswers: z.optional(questionAnswer.array()),
     topics: z.array(topic),
     sources: z.array(source),
     graphics: graphics.optional(),
