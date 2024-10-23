@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { reportData } from "stories/data/dummyData";
-import Report, { ReportHeader, ReportTitle } from "./Report";
+import Report, {
+  ReportHeader,
+  ReportOverview,
+  ReportSummary,
+  ReportTitle,
+} from "./Report";
 import { getNPeople } from "tttc-common/morphisms/index";
 
 const meta = {
@@ -28,9 +33,9 @@ export const Main: Story = {
   args: { reportData: baseProps },
 };
 
-export const Summary = () => <ReportHeader reportData={baseProps} />;
+export const Header = () => <ReportHeader reportData={baseProps} />;
 
-export const Header = () => (
+export const Title = () => (
   <ReportTitle
     title={"Test"}
     nClaims={
@@ -44,5 +49,9 @@ export const Header = () => (
     dateStr={baseProps.date}
   />
 );
+
+export const Summary = () => <ReportSummary reportData={baseProps} />;
+
+export const Overview = () => <ReportOverview topics={baseProps.topics} />;
 
 export const Toolbar = () => <></>;
