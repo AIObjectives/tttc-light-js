@@ -71,6 +71,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
           <TopicHeader
             title={title}
             button={<CopyLinkButton anchor={title} />}
+            subtopics={topicNode.children}
           />
           <TopicInteractiveGraphic
             subtopics={topicNode.children}
@@ -88,15 +89,23 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
 export function TopicHeader({
   title,
   button,
+  subtopics,
 }: {
   title: string;
+  subtopics: SubtopicNode[];
   button?: React.ReactNode;
 }) {
   return (
-    <Row gap={2} className="justify-between">
-      <CardTitle className="self-center">
+    <Row gap={2}>
+      <CardTitle className="self-center flex-grow">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
+      <TextIcon icon={<Icons.Claim />}>
+        {getNClaims(subtopics.map((node) => node.data))} claims by{" "}
+        {/* ! Temp change for QA testing */}
+        {Math.floor(getNPeople(subtopics.map((node) => node.data)) * 0.45)}{" "}
+        people
+      </TextIcon>
       {button}
     </Row>
   );
@@ -119,26 +128,16 @@ export function TopicInteractiveGraphic({
   );
   return (
     <Col gap={3}>
-      <Col gap={2}>
-        <TextIcon icon={<Icons.Claim />}>
-          {getNClaims(subtopics.map((node) => node.data))} claims by{" "}
-          {/* ! Temp change for QA testing */}
-          {Math.floor(
-            getNPeople(subtopics.map((node) => node.data)) * 0.45,
-          )}{" "}
-          people
-        </TextIcon>
-        {/* Point graphic component */}
-        <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">
-          {topicsHoverState.map(({ group: topic, isHovered }) => (
-            <PointGraphicGroup
-              key={topic.id}
-              claims={topic.claims}
-              isHighlighted={isHovered}
-            />
-          ))}
-        </Row>
-      </Col>
+      {/* Point graphic component */}
+      <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">
+        {topicsHoverState.map(({ group: topic, isHovered }) => (
+          <PointGraphicGroup
+            key={topic.id}
+            claims={topic.claims}
+            isHighlighted={isHovered}
+          />
+        ))}
+      </Row>
 
       {/* anything in between the point graphic and topic links */}
       {children}
