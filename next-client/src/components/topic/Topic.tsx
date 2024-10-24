@@ -278,7 +278,6 @@ function ExpandTopic() {
       ))}
       {isOpen && pagination <= subtopicNodes.length && (
         <>
-          <Separator />
           <ShowMoreButton
             moreLeftNum={subtopicNodes.length - pagination}
             topicId={data.id}

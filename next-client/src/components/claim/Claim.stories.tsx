@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import Claim, { Quote, ClaimHeader, Quotes } from "./Claim";
+import Claim, { ClaimHeader, QuoteIcon as QuoteIconComponent } from "./Claim";
 import { reportData } from "stories/data/dummyData";
 
 const meta = {
@@ -11,7 +11,7 @@ const meta = {
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <div className="border">
+      <div>
         <Story />
       </div>
     ),
@@ -23,14 +23,6 @@ const baseProps = reportData.topics[0].subtopics[0].claims[0];
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// export const Primary: Story = {
-//   args: {
-//     claimNum: 1,
-//     title:
-//       "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset",
-//     quotes: baseProps.quotes,
-//   },
-// };
 export const Primary: Story = {
   args: {
     claimNode: {
@@ -48,10 +40,6 @@ export const Primary: Story = {
   },
 };
 
-export const Header = () => (
-  <ClaimHeader claimNum={1} title={baseProps.title} />
-);
+export const Header = () => <ClaimHeader claim={baseProps} />;
 
-export const QuoteText = () => <Quote quote={baseProps.quotes[0]} />;
-
-export const ManyQuotes = () => <Quotes quotes={baseProps.quotes} />;
+export const QuoteIcon = () => <QuoteIconComponent num={3} />;

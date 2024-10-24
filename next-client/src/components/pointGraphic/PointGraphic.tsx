@@ -3,9 +3,10 @@
 import React, { Ref, forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
-import { ClaimHeader, QuoteText } from "../claim/Claim";
+import { ClaimCard, ClaimHeader } from "../claim/Claim";
 import { Col } from "../layout";
 import { ReportContext } from "../report/Report";
+import { QuoteText } from "../quote/Quote";
 
 function PointGraphic({ claims }: { claims: schema.Claim[] }) {
   return (
@@ -56,25 +57,6 @@ export function Cell(
         <ClaimCard claim={claim} />
       </HoverCardContent>
     </HoverCard>
-  );
-}
-
-function ClaimCard({ claim }: { claim: schema.Claim }) {
-  return (
-    // <CardContent className="p-4">
-    <Col gap={4}>
-      <ClaimHeader
-        variant="inline"
-        title={claim.title}
-        claimNum={claim.number}
-      />
-      <Col gap={2}>
-        {claim.quotes.map((quote) => (
-          <QuoteText key={quote.id} text={quote.text} />
-        ))}
-      </Col>
-    </Col>
-    // </CardContent>
   );
 }
 
