@@ -18,6 +18,7 @@ import TopicSVG from "./TopicSvg";
 import QuoteSVG from "./QuoteSvg";
 import ClaimSVG from "./ClaimSvg";
 import ChevronRightSvg from "./ChevronRightSvg";
+import ResponseSvg from "./ResponseSvg";
 
 const Icons = () => <></>;
 
@@ -58,5 +59,7 @@ Icons.Topic = (props: { className?: string }) => <TopicSVG {...props} />;
 Icons.Quote = (props: { className?: string }) => <QuoteSVG {...props} />;
 
 Icons.Claim = (props: { className?: string }) => <ClaimSVG {...props} />;
+
+Icons.Response = (props: { className?: string }) => <ResponseSvg {...props} />;
 
 export default Icons;
