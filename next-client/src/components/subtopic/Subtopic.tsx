@@ -1,7 +1,7 @@
 import React, { forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
-import { ExpandableText, TextIcon } from "../elements";
+import { ExpandableText, Separator, TextIcon } from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import Claim from "../claim/Claim";
 import { Col, Row } from "../layout";
@@ -41,6 +41,7 @@ const SubtopicComponent = forwardRef<
         <SubtopicSummary subtopic={subtopicNode.data} />
         <SubtopicClaims subtopicNode={subtopicNode} />
       </Col>
+      <Separator />
     </div>
   );
 });
@@ -103,19 +104,20 @@ export function SubtopicClaims({
   subtopicNode: SubtopicNode;
 }) {
   return (
-    <>
-      {subtopicNode.children.map((claimNode, i) => {
-        return (
-          <Claim
-            key={claimNode.data.id}
-            claimNum={i + 1}
-            claimNode={claimNode}
-            show={i < subtopicNode.pagination}
-          />
-        );
-      })}
+    <Col gap={4}>
+      <Col>
+        {subtopicNode.children.map((claimNode, i) => {
+          return (
+            <Claim
+              key={claimNode.data.id}
+              claimNode={claimNode}
+              show={i < subtopicNode.pagination}
+            />
+          );
+        })}
+      </Col>
       <ClaimLoader subtopicNode={subtopicNode} />
-    </>
+    </Col>
   );
 }
 
