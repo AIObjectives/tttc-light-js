@@ -45,16 +45,16 @@ const CardWrap = ({ children }: React.PropsWithChildren) => (
 
 export const Header = () => (
   <div className="border">
-    <TopicHeader
-      title={themeNode.data.title}
-      button={<CopyLinkButton anchor={themeNode.data.title} />}
-    />
+    <TopicHeader button={<CopyLinkButton anchor={themeNode.data.title} />} />
   </div>
 );
 
 export const Graphic = () => (
   <div className="border">
-    <TopicInteractiveGraphic topics={themeNode.data.subtopics} />
+    <TopicInteractiveGraphic
+      subtopics={themeNode.children}
+      openButton={<></>}
+    />
   </div>
 );
 

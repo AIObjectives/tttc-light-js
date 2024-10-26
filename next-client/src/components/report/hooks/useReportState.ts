@@ -20,6 +20,11 @@ const addSubtopicPagination = 3;
 export type HasId = { id: string };
 
 /**
+ * Type for nodes that have a child
+ */
+export type HasChildren<T extends SomeNode> = { children: T[] };
+
+/**
  * A single Node in the NodeTree. Wraps data.
  */
 export type Node<T extends HasId> = {
