@@ -328,6 +328,7 @@ export const topic = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
+  context: z.string().optional(),
   subtopics: z.array(subtopic),
 });
 
