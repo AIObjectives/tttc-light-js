@@ -19,7 +19,7 @@ export function ExpandableText(
       {
         <span
           onClick={() => setIsOpen((state) => !state)}
-          className="underline cursor-pointer"
+          className={cn(props.className, "underline cursor-pointer")}
         >
           {isOpen ? "Show less" : "Read more"}
         </span>

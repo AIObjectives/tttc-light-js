@@ -83,9 +83,9 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             button={
               <>
                 <CopyLinkButton anchor={title} />
-                <Button variant={"outline"} size={"icon"}>
+                {/* <Button variant={"outline"} size={"icon"}>
                   <Icons.Response />
-                </Button>
+                </Button> */}
               </>
             }
           />

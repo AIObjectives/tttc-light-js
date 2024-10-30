@@ -19,10 +19,10 @@ export function QuoteText({ text }: { text: string }) {
   return (
     <Row gap={3} className="w-full">
       {/* Quote Icon */}
-      <div className="self-start flex-shrink-0">
-        <Icons.Quote className="h-6 w-4" />
+      <div className="self-start flex-shrink-0 py-[5px]">
+        <Icons.Quote className="h-4 w-4 fill-black" />
       </div>
-      <p className="flex flex-grow text-muted-foreground">{text}</p>
+      <p className="flex flex-grow">{text}</p>
     </Row>
   );
 }
