@@ -73,11 +73,7 @@ export function SubtopicHeader({
 }
 
 export function SubtopicDescription({ description }: { description: string }) {
-  return (
-    <ExpandableText className="text-muted-foreground">
-      {description}
-    </ExpandableText>
-  );
+  return <ExpandableText>{description}</ExpandableText>;
 }
 
 export function SubtopicSummary({ subtopic }: { subtopic: schema.Subtopic }) {

@@ -36,7 +36,7 @@ function Label({ title, subtitle }: Omit<BarChartItemType, "percentFill">) {
       <p className="p2">{title}</p>
       <p className="p2 text-muted-foreground">{subtitle}</p>
       <div className="h-4 w-4 self-center">
-        <Icons.ChevronRight className="stroke-black" />
+        <Icons.ChevronRight className="stroke-black w-full h-full" />
       </div>
     </Row>
   );
