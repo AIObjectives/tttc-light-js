@@ -1,19 +1,18 @@
 import * as React from "react";
 const SvgComponent = (props) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={24}
-    height={24}
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
     fill="none"
-    {...props}
+    xmlns="http://www.w3.org/2000/svg"
   >
     <path
+      d="M6 4L10 8L6 12"
       stroke="#64748B"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.25}
+      stroke-linecap="round"
+      stroke-linejoin="round"
       {...props}
-      d="m9 18 6-6-6-6"
     />
   </svg>
 );

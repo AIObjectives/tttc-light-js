@@ -23,7 +23,7 @@ function Claim({ claimNode, show }: { claimNode: ClaimNode; show: boolean }) {
   return (
     <div ref={scrollRef} className={`${!show ? "hidden" : ""}`}>
       {show ? (
-        <Row gap={3} className="justify-between px-8 py-2 items-center">
+        <Row gap={3} className="justify-between px-8 py-1 items-center">
           <ClaimHeader claim={claimNode.data} />
           <Row gap={2}>
             {/* Wrap this in div to prevent sizing issues */}
@@ -46,7 +46,7 @@ export function ClaimCard({ claim }: { claim: schema.Claim }) {
   return (
     // <CardContent className="p-4">
     <Col gap={4}>
-      <ClaimHeader variant="inline" claim={claim} />
+      <ClaimHeader variant="hovercard" claim={claim} />
       <Col gap={2}>
         {claim.quotes.map((quote) => (
           <QuoteText key={quote.id} text={quote.text} />
@@ -101,23 +101,23 @@ export function ClaimHeader({
   variant = "normal",
 }: {
   claim: schema.Claim;
-  variant?: "normal" | "inline";
+  variant?: "normal" | "hovercard";
   // button?:React.ReactNode
 }) {
   const { title, number } = claim;
   const quoteNum = claim.quotes.length;
   return (
     <Row gap={2} className="items-center">
-      <OuterVariantContainerElement variant={variant}>
-        <VariantTextElement variant={variant} className="p-medium">
-          Claim#{number + " "}
-        </VariantTextElement>
-        <InnerVariantContainerElement variant={variant}>
-          <VariantTextElement variant={variant} className="text-foreground">
-            <a id={`${title}`}>{title}</a>
-          </VariantTextElement>
-        </InnerVariantContainerElement>
-      </OuterVariantContainerElement>
+      <p>
+        <span className="font-medium">Claim#{number}</span>
+        &ensp;
+        <a
+          id={`${title}`}
+          className={variant === "hovercard" ? "text-muted-foreground" : ""}
+        >
+          {title}
+        </a>
+      </p>
       {variant === "normal" ? (
         <ShowHoverQuote claim={claim}>
           <QuoteIcon num={quoteNum} />
@@ -131,44 +131,14 @@ export function ClaimHeader({
 
 export function QuoteIcon({ num }: { num: number }) {
   return (
-    <Row gap={1} className="px-2 border rounded-sm min-w-fit items-center">
+    <Row
+      gap={1}
+      className="px-2 py-[2px] border rounded-sm min-w-fit items-center"
+    >
       <Icons.QuoteBubble className="fill-primary" />
       <p className="p2 text-primary">{num}</p>
     </Row>
   );
 }
-
-// These next few components are used to render claims slightly differently in different places
-
-/**
- * Either paragraph of span based on variant
- */
-const VariantTextElement = (
-  props: React.HTMLAttributes<HTMLParagraphElement> & {
-    variant: "inline" | "normal";
-  },
-) => (props.variant === "normal" ? <p {...props} /> : <span {...props} />);
-
-/**
- * Wraps children in <p> if inline.
- */
-const OuterVariantContainerElement = ({
-  variant,
-  children,
-}: React.PropsWithChildren<{ variant: "inline" | "normal" }>) =>
-  variant === "inline" ? <p>{children}</p> : <>{children}</>;
-
-/**
- * Wraps children in div if normal
- */
-const InnerVariantContainerElement = ({
-  variant,
-  children,
-}: React.PropsWithChildren<{ variant: "inline" | "normal" }>) =>
-  variant === "inline" ? (
-    <>{children}</>
-  ) : (
-    <div className="flex flex-grow">{children}</div>
-  );
 
 export default Claim;

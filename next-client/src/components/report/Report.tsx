@@ -282,7 +282,10 @@ export function ReportInfo() {
   const [show, setShow] = useState<boolean>(true);
 
   return (
-    <Row gap={2} className={`p-4 border items-center ${show ? "" : "hidden"}`}>
+    <Row
+      gap={2}
+      className={`p-4 border rounded items-center ${show ? "" : "hidden"}`}
+    >
       <div>
         <Icons.Info />
       </div>
@@ -291,7 +294,12 @@ export function ReportInfo() {
         it into a summary report using AI prompting. Go to input tab to see the
         raw text, AI model and prompts used. Learn more in the About page.
       </p>
-      <Button variant={"ghost"} size={"icon"} onClick={() => setShow(false)}>
+      <Button
+        variant={"ghost"}
+        size={"icon"}
+        onClick={() => setShow(false)}
+        className="h-10 w-10"
+      >
         <div>
           <Icons.X />
         </div>
@@ -347,7 +355,7 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
 
   return (
     <Col gap={3}>
-      <h5>Overview</h5>
+      <h4>Overview</h4>
       <BarChart entries={getBarChartEntries(topics)} />
     </Col>
   );
