@@ -12,7 +12,7 @@ import {
 } from "../elements";
 import * as schema from "tttc-common/schema";
 import { QuoteText } from "../quote/Quote";
-import { getNClaims } from "tttc-common/morphisms";
+import { getQuotes } from "tttc-common/morphisms";
 import useOutsideClick from "@src/lib/hooks/useOutsideClick";
 
 function Claim({ claimNode, show }: { claimNode: ClaimNode; show: boolean }) {
@@ -48,7 +48,7 @@ export function ClaimCard({ claim }: { claim: schema.Claim }) {
     <Col gap={4}>
       <ClaimHeader variant="hovercard" claim={claim} />
       <Col gap={2}>
-        {claim.quotes.map((quote) => (
+        {getQuotes(claim).map((quote) => (
           <QuoteText key={quote.id} text={quote.text} />
         ))}
       </Col>
@@ -105,7 +105,7 @@ export function ClaimHeader({
   // button?:React.ReactNode
 }) {
   const { title, number } = claim;
-  const quoteNum = claim.quotes.length;
+  const quoteNum = getQuotes(claim).length;
   return (
     <Row gap={2} className="items-center">
       <p>
