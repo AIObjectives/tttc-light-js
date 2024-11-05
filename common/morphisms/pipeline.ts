@@ -71,15 +71,6 @@ const buildClaimsMap = (
   pipeline: schema.LLMPipelineOutput,
   sourceMap: SourceMap,
 ) => {
-  // ! Old data file for AI Assemblies workshop fails since its missing claim.duplictates. Check and see if we really need duplicates in general.
-  // const allClaims = pipeline.tree.flatMap((topic) =>
-  //   topic.subtopics.flatMap((subtopic) =>
-  //     subtopic.claims.concat(
-  //       // subtopic.claims.flatMap((claim) => claim.duplicates),
-  //       subtopic.claims
-  //     ),
-  //   ),
-  // );
   const allClaims = pipeline.tree.flatMap((topic) =>
     topic.subtopics.flatMap((subtopic) => {
       // Ensure subtopic.claims is an array
