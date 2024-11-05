@@ -82,7 +82,9 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
           <TopicHeader
             button={
               <>
-                <CopyLinkButton anchor={title} />
+                <div className="self-center">
+                  <CopyLinkButton anchor={title} />
+                </div>
                 {/* <Button variant={"outline"} size={"icon"}>
                   <Icons.Response />
                 </Button> */}
@@ -111,7 +113,13 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
       <CardTitle className="self-center flex-grow">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
-      <TextIcon icon={<Icons.Claim />}>
+      <TextIcon
+        icon={
+          <div>
+            <Icons.Claim />
+          </div>
+        }
+      >
         {getNClaims(subtopics)} claims by {/* ! Temp change for QA testing */}
         {Math.floor(getNPeople(subtopics) * 0.45)} people
       </TextIcon>
