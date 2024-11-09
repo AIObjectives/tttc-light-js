@@ -35,6 +35,36 @@
     --radius: 0.5rem;
 
     --AOI-graph-cell: 214 32% 91%;
+
+    --theme-violet: 263, 50%, 39%;
+    --theme-violet-accent: 255, 80%, 98%;
+
+    --theme-blueSea: 226, 61%, 35%;
+    --theme-blueSea-accent: 216, 100%, 98%;
+
+    --theme-blueSky: 193, 100%, 23%;
+    --theme-blueSky-accent: 180, 64%, 98%;
+
+    --theme-greenLeaf: 121, 70%, 18%;
+    --theme-greenLeaf-accent: 98, 73%, 97%;
+
+    --theme-greenLime: 69, 100%, 19%;
+    --theme-greenLime-accent: 74, 100%, 95%;
+
+    --theme-yellow: 50, 100%, 26%;
+    --theme-yellow-accent: 55, 100%, 95%;
+
+    --theme-red: 359, 49%, 41%;
+    --theme-red-accent: 0, 100%, 99%;
+
+    --theme-purple: 324, 46%, 33%;
+    --theme-purple-accent: 330, 40%, 98%;
+
+    --theme-brown: 345, 21%, 34%;
+    --theme-brown-accent: 12, 33%, 97%;
+
+    --theme-gray: 240, 4%, 32%;
+    --theme-gray-accent: 0, 0%, 96%;
   }
 
   .dark {

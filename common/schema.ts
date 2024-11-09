@@ -308,8 +308,8 @@ export type Claim = {
 export const claim = z.custom<Claim>();
 
 /********************************
- * Topic
- * Topics are categories of claims that share some relation.
+ * Subtopic
+ * Subtopic are categories of claims that share some relation.
  ********************************/
 export const subtopic = z.object({
   id: z.string(),
@@ -320,9 +320,24 @@ export const subtopic = z.object({
 
 export type Subtopic = z.infer<typeof subtopic>;
 
+export const topicColors = z.enum([
+  "violet",
+  "blueSea",
+  "blueSky",
+  "greenLeaf",
+  "greenLime",
+  "yellow",
+  "red",
+  "purple",
+  "brown",
+  "gray",
+]);
+
+export type TopicColors = z.infer<typeof topicColors>;
+
 /********************************
- * Theme
- * Themes are broader categories of topics
+ * Topic
+ * Topics are broader categories of topics
  ********************************/
 export const topic = z.object({
   id: z.string(),
@@ -330,6 +345,7 @@ export const topic = z.object({
   description: z.string(),
   context: z.string().optional(),
   subtopics: z.array(subtopic),
+  topicColor: z.union([topicColors, z.literal("default")]).default("default"),
 });
 
 export type Topic = z.infer<typeof topic>;

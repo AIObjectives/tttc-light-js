@@ -8,6 +8,7 @@ import {
   Button,
   HoverCard,
   HoverCardContent,
+  HoverCardPortal,
   HoverCardTrigger,
 } from "../elements";
 import * as schema from "tttc-common/schema";
@@ -86,9 +87,11 @@ function ShowHoverQuote({
           {children}
         </Button>
       </HoverCardTrigger>
-      <HoverCardContent side="top" avoidCollisions={false}>
-        <ClaimCard claim={claim} />
-      </HoverCardContent>
+      <HoverCardPortal>
+        <HoverCardContent side="top" avoidCollisions={false}>
+          <ClaimCard claim={claim} />
+        </HoverCardContent>
+      </HoverCardPortal>
     </HoverCard>
   );
 }
