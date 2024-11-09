@@ -60,6 +60,46 @@ const config = {
         AOI_graph_cell: {
           DEFAULT: "hsl(var(--AOI-graph-cell))",
         },
+        theme_violet: {
+          DEFAULT: "hsl(var(--theme-violet))",
+          accent: "hsl(var(--theme-violet-accent))",
+        },
+        theme_blueSea: {
+          DEFAULT: "hsl(var(--theme-blueSea))",
+          accent: "hsl(var(--x-accent))",
+        },
+        theme_blueSky: {
+          DEFAULT: "hsl(var(--theme-blueSky))",
+          accent: "hsl(var(--theme-blueSky-accent))",
+        },
+        theme_greenLeaf: {
+          DEFAULT: "hsl(var(--theme-greenLeaf))",
+          accent: "hsl(var(--theme-greenLeaf-accent))",
+        },
+        theme_greenLime: {
+          DEFAULT: "hsl(var(--theme-greenLime))",
+          accent: "hsl(var(--theme-greenLime-accent))",
+        },
+        theme_yellow: {
+          DEFAULT: "hsl(var(--theme-yellow))",
+          accent: "hsl(var(--theme-yellow-accent))",
+        },
+        theme_red: {
+          DEFAULT: "hsl(var(--theme-red))",
+          accent: "hsl(var(--theme-red-accent))",
+        },
+        theme_purple: {
+          DEFAULT: "hsl(var(--theme-purple))",
+          accent: "hsl(var(--theme-purple-accent))",
+        },
+        theme_brown: {
+          DEFAULT: "hsl(var(--theme-brown))",
+          accent: "hsl(var(--theme-accent-accent))",
+        },
+        theme_gray: {
+          DEFAULT: "hsl(var(--theme-gray))",
+          accent: "hsl(var(--theme-gray-accent))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
