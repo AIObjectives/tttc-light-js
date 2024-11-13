@@ -345,7 +345,7 @@ export const topic = z.object({
   description: z.string(),
   context: z.string().optional(),
   subtopics: z.array(subtopic),
-  topicColor: z.union([topicColors, z.literal("default")]).default("default"),
+  topicColor: topicColors,
 });
 
 export type Topic = z.infer<typeof topic>;
