@@ -1,5 +1,5 @@
 import SubmissionForm from "src/features/submission";
-import "../global.css";
+// import "./global.css";
 
 export function generateStaticParams() {
   return [{ slug: [""] }];
