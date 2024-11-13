@@ -3,6 +3,7 @@ import { Card, CardContent, Separator } from "../elements";
 import { Row } from "../layout";
 import Icons from "@src/assets/icons";
 import * as schema from "tttc-common/schema";
+import { cn } from "@src/lib/utils/shadcn";
 
 /**
  * Single quote - not wrapped in card.
@@ -15,14 +16,24 @@ export function QuoteCard({ quote }: { quote: schema.Quote }) {
   );
 }
 
-export function QuoteText({ text }: { text: string }) {
+export function QuoteText({
+  text,
+  className,
+  iconClassName,
+}: {
+  text: string | JSX.Element;
+  className?: string;
+  iconClassName?: string;
+}) {
   return (
     <Row gap={3} className="w-full">
       {/* Quote Icon */}
       <div className="self-start flex-shrink-0 py-[5px]">
-        <Icons.Quote className="h-4 w-4 fill-black" />
+        <Icons.Quote className={cn("h-4 w-4 fill-black", iconClassName)} />
       </div>
-      <p className="flex flex-grow">{text}</p>
+      <div>
+        <p className={cn("", className)}>{text}</p>
+      </div>
     </Row>
   );
 }
