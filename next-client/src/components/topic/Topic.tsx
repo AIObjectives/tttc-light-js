@@ -135,7 +135,7 @@ export function TopicInteractiveGraphic({
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
   const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(subtopics);
-  const buttonBackgroundColor = useThemeColor("bg", "bg-theme_brown");
+  const buttonBackgroundColor = useThemeColor(topicNode.data.topicColor, "bg");
 
   return (
     <Col gap={3}>

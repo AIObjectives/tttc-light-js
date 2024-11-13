@@ -1,5 +1,5 @@
 import { TopicContext } from "@src/components/topic/Topic";
-import { useContext } from "react";
+import { useContext, useRef } from "react";
 
 export type TopicTheme = {
   backgroundColor: string;
@@ -98,22 +98,24 @@ type ColorVariant = keyof ThemeMap[ThemeColor];
 type ThemeClass = ThemeMap[ThemeColor][ColorVariant];
 
 /**
- * Looks at the topic's color and provides the classnames needed to use in components.
- * WARNING: variant is supposed to spefically be in set of theme_x classes. However, the need to include a
- * default className waters down the type system. Find a solution to this later.
+ * Gets the correct className for the topic color and variation
  */
 function useThemeColor(
+  color: ThemeColor,
   variant: ColorVariant,
-  className: string,
 ): ThemeClass | string {
-  const { topicNode } = useContext(TopicContext);
-
-  const colorClass = <ThemeClass | string>topicNode.data?.topicColor
-    ? themeColorMap[topicNode.data.topicColor][variant]
-    : className;
-
-  return colorClass;
+  const colorClass = useRef(themeColorMap[color][variant]);
+  return colorClass.current;
 }
 
-export { themeColorMap, useThemeColor };
+/**
+ * Variation of useThemeColor that uses the topic context instead of a prop
+ */
+function useThemeContextColor(variant: ColorVariant) {
+  const { topicNode } = useContext(TopicContext);
+
+  return useThemeColor(topicNode.data.topicColor, variant);
+}
+
+export { themeColorMap, useThemeColor, useThemeContextColor };
 export type { ThemeColor, ColorVariant, ThemeClass };
