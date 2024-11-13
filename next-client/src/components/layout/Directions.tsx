@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import "../../app/global.css";
+// import "../../app/global.css";
 
 type DirectionProps = React.PropsWithChildren<{
   gap?: number;
