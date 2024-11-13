@@ -23,6 +23,7 @@ import ResponseSvg from "./ResponseSvg";
 import InfoSVG from "./InfoSvg";
 import XSVG from "./XSvg";
 import QuoteBubbleSVG from "./QuoteBubbleSvg";
+import ResetSVG from "./Reset";
 
 const Icons = () => <></>;
 
@@ -73,5 +74,7 @@ Icons.Claim = (props: { className?: string }) => <ClaimSVG {...props} />;
 Icons.Response = (props: { className?: string }) => <ResponseSvg {...props} />;
 
 Icons.X = (props: { className?: string }) => <XSVG {...props} />;
+
+Icons.Reset = (props: { className?: string }) => <ResetSVG {...props} />;
 
 export default Icons;
