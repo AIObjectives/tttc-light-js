@@ -5,7 +5,7 @@ import * as schema from "tttc-common/schema";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
 import { ClaimCard } from "../claim/Claim";
 import { ReportContext } from "../report/Report";
-import { ThemeClass, useThemeColor } from "@src/lib/hooks/useTopicTheme";
+import { ThemeClass, useThemeContextColor } from "@src/lib/hooks/useTopicTheme";
 
 type CellContextType = {
   borderClass: ThemeClass | string;
@@ -17,10 +17,10 @@ type CellContextType = {
 const CellContext = createContext<CellContextType>({} as CellContextType);
 
 function PointGraphicWrapper({ children }: React.PropsWithChildren<{}>) {
-  const borderClass = useThemeColor("border", "");
-  const backgroundClass = useThemeColor("bgAccent", "bg-AOI_graph_cell");
-  const hoverClass = useThemeColor("bgHover", "hover:bg-slate-700");
-  const highlightedClass = useThemeColor("bg", "bg-slate-700");
+  const borderClass = useThemeContextColor("border");
+  const backgroundClass = useThemeContextColor("bgAccent");
+  const hoverClass = useThemeContextColor("bgHover");
+  const highlightedClass = useThemeContextColor("bg");
 
   return (
     <CellContext.Provider

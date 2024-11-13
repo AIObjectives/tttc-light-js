@@ -350,6 +350,7 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
       title: topic.title,
       percentFill: getNClaims(topic.subtopics) / largestN,
       subtitle: `${getNClaims(topic.subtopics)} claims`,
+      color: topic.topicColor,
     }));
   };
 
