@@ -1,9 +1,8 @@
+"use client";
 import React, {
   ChangeEvent,
-  MutableRefObject,
+  forwardRef,
   RefObject,
-  SyntheticEvent,
-  useEffect,
   useRef,
   useState,
 } from "react";
@@ -14,23 +13,29 @@ import { Button, Card, CardContent } from "../elements";
 import { Input } from "../elements";
 import SubmitFormControl from "@src/features/submission/components/SubmitFormControl";
 import Icons from "@src/assets/icons";
+import { useCostEstimate } from "./hooks/useCostEstimate";
 
 const initialState: api.GenerateApiResponse | null = null;
 
 export default function CreateReport() {
   const [state, formAction] = useFormState(() => null, initialState);
+  const [files, setFiles] = useState<FileList | undefined>(undefined);
 
   return (
     <form id="reportForm" action={formAction}>
       <SubmitFormControl response={state}>
-        <Col gap={8}>
+        <Col gap={8} className="mb-20">
           <FormHeader />
           <FormDescription />
-          <FormDataInput />
+          <FormDataInput setFiles={setFiles} />
           <FormOpenAIKey />
           <CustomizePrompts />
-          <CostEstimate />
-          <Button type="submit">Generate the report</Button>
+          <CostEstimate files={files} />
+          <div>
+            <Button size={"sm"} type="submit">
+              Generate the report
+            </Button>
+          </div>
         </Col>
       </SubmitFormControl>
     </form>
@@ -83,14 +88,18 @@ const FormDescription = () => (
   </Col>
 );
 
-function FormDataInput() {
-  const inputRef = useRef<HTMLInputElement>(null);
+function FormDataInput({
+  setFiles,
+}: {
+  setFiles: (files: FileList | undefined) => void;
+}) {
   const [fileName, setFileName] = useState<string>("");
-
+  const inputRef = useRef<HTMLInputElement>(null);
   const handleCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const maybeFiles = event.target.files;
     if (!maybeFiles) return;
     setFileName(maybeFiles[0].name);
+    setFiles(maybeFiles);
   };
 
   const handleButtonClick = () => inputRef.current?.click();
@@ -99,6 +108,7 @@ function FormDataInput() {
     if (!ref.current || !ref.current.files) return;
     ref.current.value = "";
     setFileName("");
+    setFiles(undefined);
   };
 
   return (
@@ -247,24 +257,20 @@ function CustomizePromptSection({
   );
 }
 
-function CostEstimate() {
-  const [cost] = useState<string>("0.00");
+function CostEstimate({ files }: { files: FileList | undefined }) {
+  const cost = useCostEstimate(files);
   return (
     <Col gap={4}>
       <h4>Cost</h4>
-      <Card>
-        <CardContent>
-          <Col gap={2}>
-            <p className="font-medium">$ {cost}</p>
-            <p>
-              This estimate is based on [XXX]. Typically, our real cost vary
-              between by 10-15% up or down. A general guideline is that 1 MB
-              costs approximately $24, so 0.5 MB would be around $12, and 10 MB
-              about $120.
-            </p>
-          </Col>
-        </CardContent>
-      </Card>
+      <Col gap={2} className="p-4 pb-8 border rounded-lg">
+        <p className="font-medium">{cost}</p>
+        <p>
+          This estimate is based on [XXX]. Typically, our real cost vary between
+          by 10-15% up or down. A general guideline is that 1 MB costs
+          approximately $24, so 0.5 MB would be around $12, and 10 MB about
+          $120.
+        </p>
+      </Col>
     </Col>
   );
 }
