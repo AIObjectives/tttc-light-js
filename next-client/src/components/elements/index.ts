@@ -9,3 +9,4 @@ export * from "./sonner/Sonner";
 export * from "./expandableText/ExpandableText";
 export * from "./toggleText/ToggleText";
 export * from "./input/Input";
+export * from "./textArea/TextArea";
