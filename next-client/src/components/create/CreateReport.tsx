@@ -9,7 +9,7 @@ import React, {
 import { useFormState } from "react-dom";
 import * as api from "tttc-common/api";
 import { Col, Row } from "../layout";
-import { Button, Card, CardContent } from "../elements";
+import { Button, Card, CardContent, TextArea } from "../elements";
 import { Input } from "../elements";
 import SubmitFormControl from "@src/features/submission/components/SubmitFormControl";
 import Icons from "@src/assets/icons";
@@ -57,7 +57,7 @@ const FormDescription = () => (
         <label htmlFor="title" className="font-medium">
           Report title
         </label>
-        <p className="p2">
+        <p className="p2 text-muted-foreground">
           Report title will be visible at the top of your project
         </p>
       </Col>
@@ -72,7 +72,7 @@ const FormDescription = () => (
     <Col gap={2}>
       <Col>
         <label>General description</label>
-        <p className="p2">
+        <p className="p2 text-muted-foreground">
           Description shows up below the title and doesn’t influence the
           contents of the report
         </p>
@@ -115,14 +115,14 @@ function FormDataInput({
     <Col gap={4}>
       <h4>Data</h4>
       <div>
-        <p className="p2">
+        <p className="p2 text-muted-foreground">
           Upload your data in .csv format. The file must have the following
           columns: “id” (a unique identifier for each comment) and “comment”
           (the participant's response). Optionally, include a “name” column for
           participant names; otherwise, participants will be considered
           anonymous.
         </p>
-        <p className="p2">
+        <p className="p2 text-muted-foreground">
           You can download a sample CSV template here to get started.
         </p>
       </div>
@@ -175,6 +175,7 @@ const FormOpenAIKey = () => (
       id="apiKey"
       name="apiKey"
       placeholder="Type OpenAI key here"
+      className="sm: w-1/2"
       required
     />
   </Col>
@@ -184,7 +185,7 @@ const CustomizePrompts = () => (
   <Col gap={8}>
     <Col gap={4}>
       <h4>Customize AI prompts</h4>
-      <p className="p2">
+      <p className="p2 text-muted-foreground">
         Optionally you can customize our prompts we use to generate the report.
         Changing the text of prompts will influence how the report is rendered.
       </p>
@@ -233,13 +234,14 @@ function CustomizePromptSection({
     <Col gap={3}>
       <Col gap={1}>
         <p className="font-medium">{title}</p>
-        <p className="p2">{subheader}</p>
+        <p className="p2 text-muted-foreground">{subheader}</p>
       </Col>
-      <Input
+      <TextArea
         name={inputName}
         id={inputName}
         value={formValue}
         onChange={(e) => setFormValue(e.target.value)}
+        className={`${formValue === defaultValue ? "text-muted-foreground" : ""}`}
       />
       <div>
         <Button
@@ -264,7 +266,7 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
       <h4>Cost</h4>
       <Col gap={2} className="p-4 pb-8 border rounded-lg">
         <p className="font-medium">{cost}</p>
-        <p>
+        <p className="text-muted-foreground">
           This estimate is based on [XXX]. Typically, our real cost vary between
           by 10-15% up or down. A general guideline is that 1 MB costs
           approximately $24, so 0.5 MB would be around $12, and 10 MB about
