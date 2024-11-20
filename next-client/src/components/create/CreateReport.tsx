@@ -227,7 +227,7 @@ function CustomizePromptSection({
   inputName: string;
   defaultValue: string;
 }) {
-  const [formValue, setFormValue] = useState<string>("");
+  const [formValue, setFormValue] = useState<string>(defaultValue);
 
   return (
     <Col gap={3}>
@@ -238,14 +238,14 @@ function CustomizePromptSection({
       <Input
         name={inputName}
         id={inputName}
-        placeholder={defaultValue}
         value={formValue}
         onChange={(e) => setFormValue(e.target.value)}
       />
       <div>
         <Button
           variant={"outline"}
-          disabled={!formValue || formValue === defaultValue}
+          disabled={formValue === defaultValue}
+          onClick={() => setFormValue(defaultValue)}
         >
           <Row gap={2} className="items-center">
             <Icons.Reset />
