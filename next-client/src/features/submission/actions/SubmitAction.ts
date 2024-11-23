@@ -10,19 +10,20 @@ import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { z } from "zod";
 
+const parseCSV = async (file: File): Promise<SourceRow[]> => {
+  const buffer = await file.arrayBuffer();
+  return Papa.parse(Buffer.from(buffer).toString(), {
+    header: true,
+    skipEmptyLines: true,
+  }).data as SourceRow[];
+};
+
 export default async function submitAction(
   _: GenerateApiResponse | null,
   formData: FormData,
 ): Promise<GenerateApiResponse> {
   // parses csv file
-  console.log("starting to parse");
-  const parseCSV = async (file: File): Promise<SourceRow[]> => {
-    const buffer = await file.arrayBuffer();
-    return Papa.parse(Buffer.from(buffer).toString(), {
-      header: true,
-      skipEmptyLines: true,
-    }).data as SourceRow[];
-  };
+  console.log("starting to parse", formData);
   // if csv file is empty, return error
   const data = await parseCSV(formData.get("dataInput") as File);
   if (!data || !data.length) {
@@ -32,7 +33,7 @@ export default async function submitAction(
   const config: LLMUserConfig = llmUserConfig.parse({
     apiKey: formData.get("apiKey"),
     title: formData.get("title"),
-    question: formData.get("question"),
+    // question: formData.get("question"),
     description: formData.get("description"),
     clusteringInstructions: formData.get("clusteringInstructions"),
     systemInstructions: formData.get("systemInstructions"),

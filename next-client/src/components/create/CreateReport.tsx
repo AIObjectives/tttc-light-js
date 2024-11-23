@@ -216,7 +216,7 @@ function FormDataInput({
           ) : (
             <Row gap={3}>
               <Button
-                id="resetDadta"
+                id="resetData"
                 name="resetData"
                 type="reset"
                 onClick={() => handleReset(inputRef)}
@@ -228,8 +228,8 @@ function FormDataInput({
             </Row>
           )}
           <Input
-            name="csvUploadInput"
-            id="csvUploadInput"
+            name="dataInput"
+            id="dataInput"
             type="file"
             className="hidden"
             onChange={handleCsvUpload}
