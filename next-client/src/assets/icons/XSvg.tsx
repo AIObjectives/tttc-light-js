@@ -12,15 +12,15 @@ const SvgComponent = (props) => (
       {...props}
       d="M24 16L16 24"
       stroke="#64748B"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
     <path
       {...props}
       d="M16 16L24 24"
       stroke="#64748B"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg>
 );
