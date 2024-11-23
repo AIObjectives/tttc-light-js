@@ -1,33 +1,48 @@
 "use client";
 import React, {
   ChangeEvent,
-  forwardRef,
   RefObject,
+  useEffect,
   useRef,
   useState,
+  useActionState,
 } from "react";
-import { useFormState } from "react-dom";
 import * as api from "tttc-common/api";
 import { Col, Row } from "../layout";
-import { Button, Card, CardContent, TextArea } from "../elements";
+import { Button, TextArea } from "../elements";
 import { Input } from "../elements";
 import SubmitFormControl from "@src/features/submission/components/SubmitFormControl";
 import Icons from "@src/assets/icons";
 import { useCostEstimate } from "./hooks/useCostEstimate";
+import { useReactiveValue } from "@src/lib/hooks/useReactiveValue";
+import { useParseCsv } from "./hooks/useParseCSV";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+} from "../elements/alertDialog/AlertDialog";
+import Form from "next/form";
+import submitAction from "@src/features/submission/actions/SubmitAction";
 
 const initialState: api.GenerateApiResponse | null = null;
 
 export default function CreateReport() {
-  const [state, formAction] = useFormState(() => null, initialState);
+  const [state, formAction] = useActionState(submitAction, initialState);
   const [files, setFiles] = useState<FileList | undefined>(undefined);
 
   return (
-    <form id="reportForm" action={formAction}>
+    <Form action={formAction}>
       <SubmitFormControl response={state}>
         <Col gap={8} className="mb-20">
           <FormHeader />
           <FormDescription />
-          <FormDataInput setFiles={setFiles} />
+          <FormDataInput files={files} setFiles={setFiles} />
           <FormOpenAIKey />
           <CustomizePrompts />
           <CostEstimate files={files} />
@@ -38,7 +53,7 @@ export default function CreateReport() {
           </div>
         </Col>
       </SubmitFormControl>
-    </form>
+    </Form>
   );
 }
 
@@ -88,17 +103,70 @@ const FormDescription = () => (
   </Col>
 );
 
+function PoorlyFormattedModal({
+  isOpen,
+  cancelFunc,
+  proceedFunc,
+}: {
+  isOpen: boolean;
+  cancelFunc: () => void;
+  proceedFunc: () => void;
+}) {
+  return (
+    <AlertDialog open={isOpen}>
+      <AlertDialogContent className="w-[329px] gap-6">
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            We detected a poorly formatted csv. Do you want to proceed
+          </AlertDialogTitle>
+          <AlertDialogDescription>Lorem ipsum</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={cancelFunc} asChild>
+            <Button variant={"outline"}>Cancel</Button>
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={proceedFunc} className="bg-destructive">
+            Proceed
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function FormDataInput({
+  files,
   setFiles,
 }: {
+  files: FileList | undefined;
   setFiles: (files: FileList | undefined) => void;
 }) {
-  const [fileName, setFileName] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const fileName = useReactiveValue(() => files?.item(0)?.name || "", [files]);
+  const [modelOpen, setModalOpen] = useState<boolean>(false);
+
+  const { result } = useParseCsv(files);
+
+  useEffect(() => {
+    console.log(result);
+    if (!result) return;
+    else if (result[0] === "error") {
+      if (result[1].tag === "Broken file") {
+        toast.error("Error", {
+          description: "File is broken or has no data",
+          position: "top-center",
+        });
+        handleReset(inputRef);
+      } else if (result[1].tag === "Poorly formatted CSV") {
+        setModalOpen(true);
+      }
+    }
+  }, [result]);
+
   const handleCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const maybeFiles = event.target.files;
     if (!maybeFiles) return;
-    setFileName(maybeFiles[0].name);
     setFiles(maybeFiles);
   };
 
@@ -107,62 +175,71 @@ function FormDataInput({
   const handleReset = (ref: RefObject<HTMLInputElement>) => {
     if (!ref.current || !ref.current.files) return;
     ref.current.value = "";
-    setFileName("");
     setFiles(undefined);
   };
 
   return (
-    <Col gap={4}>
-      <h4>Data</h4>
-      <div>
-        <p className="p2 text-muted-foreground">
-          Upload your data in .csv format. The file must have the following
-          columns: “id” (a unique identifier for each comment) and “comment”
-          (the participant's response). Optionally, include a “name” column for
-          participant names; otherwise, participants will be considered
-          anonymous.
-        </p>
-        <p className="p2 text-muted-foreground">
-          You can download a sample CSV template here to get started.
-        </p>
-      </div>
+    <>
+      <PoorlyFormattedModal
+        isOpen={modelOpen}
+        cancelFunc={() => {
+          handleReset(inputRef);
+          setModalOpen(false);
+        }}
+        proceedFunc={() => setModalOpen(false)}
+      />
+      <Col gap={4}>
+        <h4>Data</h4>
+        <div>
+          <p className="p2 text-muted-foreground">
+            Upload your data in .csv format. The file must have the following
+            columns: “id” (a unique identifier for each comment) and “comment”
+            (the participant's response). Optionally, include a “name” column
+            for participant names; otherwise, participants will be considered
+            anonymous.
+          </p>
+          <p className="p2 text-muted-foreground">
+            You can download a sample CSV template here to get started.
+          </p>
+        </div>
 
-      <div>
-        {!(inputRef.current?.files && inputRef.current.files[0]) ? (
-          <Button
-            name="csvUpload"
-            type="button"
-            onClick={handleButtonClick}
-            variant={"secondary"}
-          >
-            Choose file
-          </Button>
-        ) : (
-          <Row gap={3}>
+        <div>
+          {!(inputRef.current?.files && inputRef.current.files[0]) ? (
             <Button
-              id="resetDadta"
-              name="resetData"
-              type="reset"
-              onClick={() => handleReset(inputRef)}
-              variant={"ghost"}
+              name="csvUpload"
+              type="button"
+              onClick={handleButtonClick}
+              variant={"secondary"}
             >
-              Reset
+              Choose file
             </Button>
-            <p className="text-muted-foreground self-center">{fileName}</p>
-          </Row>
-        )}
-        <Input
-          name="csvUploadInput"
-          id="csvUploadInput"
-          type="file"
-          className="hidden"
-          onChange={handleCsvUpload}
-          accept="csv"
-          required
-          ref={inputRef}
-        />
-      </div>
-    </Col>
+          ) : (
+            <Row gap={3}>
+              <Button
+                id="resetDadta"
+                name="resetData"
+                type="reset"
+                onClick={() => handleReset(inputRef)}
+                variant={"ghost"}
+              >
+                Reset
+              </Button>
+              <p className="text-muted-foreground self-center">{fileName}</p>
+            </Row>
+          )}
+          <Input
+            name="csvUploadInput"
+            id="csvUploadInput"
+            type="file"
+            className="hidden"
+            onChange={handleCsvUpload}
+            accept="csv"
+            required
+            ref={inputRef}
+          />
+        </div>
+      </Col>
+    </>
   );
 }
 
@@ -193,25 +270,25 @@ const CustomizePrompts = () => (
     <CustomizePromptSection
       title="Role prompt"
       subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow listed below."
-      inputName="rolePrompt"
+      inputName="systemInstructions"
       defaultValue="INSERT ROLE PROMPT"
     />
     <CustomizePromptSection
       title="Step 1 – Topics and subtopics prompt"
       subheader="This is the first step of the report creation flow. Here AI generates common topics and subtopics and writes descriptions for each."
-      inputName="topicSubtopicPrompt"
+      inputName="clusteringInstructions"
       defaultValue="INSERT TOPICS PROMPT"
     />
     <CustomizePromptSection
       title="Step 2 – Claim extraction prompt"
       subheader="In the second step AI takes comments of each participants and renders them against topics and subtopics from the previous step. Then it distills relevant claims and quotes. This prompt is run as many times as there are participants."
-      inputName="claimExtract"
+      inputName="extractionInstructions"
       defaultValue="INSERT CLAIM EXTRACTION PROMPT"
     />
     <CustomizePromptSection
       title="Step 3 – Merging claims prompt"
       subheader="In the last step AI merges similar claims."
-      inputName="mergePrompt"
+      inputName="dedupInstructions"
       defaultValue="INSERT MERGE PROMPT"
     />
   </Col>
@@ -242,6 +319,7 @@ function CustomizePromptSection({
         value={formValue}
         onChange={(e) => setFormValue(e.target.value)}
         className={`${formValue === defaultValue ? "text-muted-foreground" : ""}`}
+        required
       />
       <div>
         <Button

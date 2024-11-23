@@ -15,4 +15,6 @@ export function useReactiveValue<T, K>(
   useEffect(() => {
     setVal(() => fn());
   }, deps);
+
+  return val;
 }
