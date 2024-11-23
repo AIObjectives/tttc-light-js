@@ -61,7 +61,7 @@ export type LLMPieChart = z.infer<typeof llmPieChart>;
 export const llmUserConfig = z.object({
   apiKey: z.string(),
   title: z.string(),
-  question: z.string(),
+  // question: z.string(),
   description: z.string(),
   systemInstructions: z.string(),
   clusteringInstructions: z.string(),
