@@ -7,7 +7,15 @@
  * There's some somewhat questionable FP standins that would be better if we actually used a full FP library. Go back and redo this in the future if we do.
  */
 
-import { useAsyncState } from "@src/lib/hooks/useAsyncState";
+import {
+  AsyncData,
+  AsyncError,
+  AsyncState,
+  FinishedLoading,
+  IsLoading,
+  NotStarted,
+  useAsyncState,
+} from "@src/lib/hooks/useAsyncState";
 import Papa from "papaparse";
 import * as schema from "tttc-common/schema";
 import { z, SafeParseReturnType } from "zod";
@@ -106,15 +114,33 @@ const parseDataCsv = async (
     )
     .then(pipe(unwrapZodParse({ tag: "Poorly formatted CSV" })));
 
+const asyncStateCsv = async (
+  file: File,
+): Promise<AsyncData<schema.SourceRow[]> | AsyncError<CSVErrors>> =>
+  parseDataCsv(file).then((maybe) => {
+    const isError = CsvErrors.safeParse(maybe);
+    console.log(isError);
+    if (isError.success) return ["error", isError.data];
+    else return ["data", maybe as schema.SourceRow[]];
+  });
+
 /**
  * Hook for parsing CSV data.
  */
-export function useParseCsv(files: FileList | undefined) {
-  const input = files?.item(0) || undefined;
-  if (input === undefined) return { isLoading: false, result: undefined };
-  return useAsyncState(
-    async () => parseDataCsv(input),
-    [input?.name, input?.lastModified],
-    schema.sourceRow.array(),
-  );
+// export function useParseCsv(files: FileList | undefined):NotStarted|IsLoading|FinishedLoading<schema.SourceRow[], CSVErrors> {
+//   const input = files?.item(0) || undefined;
+//   if (input === undefined) return { isLoading: false, result: undefined };
+//   const blah = useAsyncState(
+//     async () => parseDataCsv(input),
+//     [input?.name, input?.lastModified],
+//     schema.sourceRow.array(),
+//   );
+//   return blah
+// }
+
+export function useParseCsv(
+  files: FileList | undefined,
+): AsyncState<schema.SourceRow[], CSVErrors> {
+  const file = files?.item(0) || undefined;
+  return useAsyncState(asyncStateCsv, file);
 }

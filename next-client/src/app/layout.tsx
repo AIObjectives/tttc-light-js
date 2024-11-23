@@ -23,14 +23,14 @@ export default function RootLayout({
         {children}
         <Toaster
           position="bottom-right"
-          toastOptions={{
-            className: "border-none p-4 flex",
-            classNames: {
-              toast: "bg-accent",
-              title: "text-accent-foreground",
-              icon: "text-accent-foreground",
-            },
-          }}
+          // toastOptions={{
+          //   className: "border-none p-4 flex",
+          //   classNames: {
+          //     toast: "bg-accent",
+          //     title: "text-accent-foreground",
+          //     icon: "text-accent-foreground",
+          //   },
+          // }}
         />
       </body>
     </html>
