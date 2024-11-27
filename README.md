@@ -87,7 +87,7 @@ If you want to run a local version of the app that's not publically accessable:
 
 1. Open up your terminal and navigate to the repo folder (i.e. /Desktop/tttc-light-js)
 2. Run `npm run build`.
-3. This should open up a server for the next-client and express-pipeline on localhost:3000 and localhost:8080 respectively.
+3. Run `npm run dev` to star the dev server. This should open up a server for the next-client and express-pipeline on localhost:3000 and localhost:8080 respectively.
 4. This build will be optimized for production.
 
 #### Using docker locally (not recommended)
