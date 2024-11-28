@@ -59,14 +59,13 @@ export const llmPieChart = z.object({
 export type LLMPieChart = z.infer<typeof llmPieChart>;
 
 export const llmUserConfig = z.object({
-  apiKey: z.string(),
-  title: z.string(),
-  // question: z.string(),
-  description: z.string(),
-  systemInstructions: z.string(),
-  clusteringInstructions: z.string(),
-  extractionInstructions: z.string(),
-  dedupInstructions: z.string(),
+  apiKey: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  systemInstructions: z.string().min(1),
+  clusteringInstructions: z.string().min(1),
+  extractionInstructions: z.string().min(1),
+  dedupInstructions: z.string().min(1),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;

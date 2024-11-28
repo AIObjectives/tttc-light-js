@@ -29,31 +29,65 @@ import {
 } from "../elements/alertDialog/AlertDialog";
 import Form from "next/form";
 import submitAction from "@src/features/submission/actions/SubmitAction";
+import { z } from "zod";
+import { useForm, FormProvider, useFormContext } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { cn } from "@src/lib/utils/shadcn";
 
 const initialState: api.GenerateApiResponse | null = null;
+
+// !!! This is copied from schema.LLMUserConfig. For some reason its resulting in an infinite cycle with useForm. Figure this out later.
+const form = z.object({
+  apiKey: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  systemInstructions: z.string().min(1),
+  clusteringInstructions: z.string().min(1),
+  extractionInstructions: z.string().min(1),
+  dedupInstructions: z.string().min(1),
+});
 
 export default function CreateReport() {
   const [state, formAction] = useActionState(submitAction, initialState);
   const [files, setFiles] = useState<FileList | undefined>(undefined);
 
+  const methods = useForm<z.infer<typeof form>>({
+    resolver: zodResolver(form),
+    mode: "onTouched",
+    reValidateMode: "onChange",
+    defaultValues: {
+      title: "",
+      description: "",
+      apiKey: "",
+      systemInstructions: "INSERT SYSTEM INSTRUCT",
+      clusteringInstructions: "INSERT CLUSTER INSTRUCT",
+      extractionInstructions: "INSERT EXTRACT",
+      dedupInstructions: "INSERT DEDUP",
+    },
+  });
+
+  const isDisabled = !files?.item(0) || !methods.formState.isValid;
+
   return (
-    <Form action={formAction}>
-      <SubmitFormControl response={state}>
-        <Col gap={8} className="mb-20">
-          <FormHeader />
-          <FormDescription />
-          <FormDataInput files={files} setFiles={setFiles} />
-          <FormOpenAIKey />
-          <CustomizePrompts />
-          <CostEstimate files={files} />
-          <div>
-            <Button size={"sm"} type="submit">
-              Generate the report
-            </Button>
-          </div>
-        </Col>
-      </SubmitFormControl>
-    </Form>
+    <FormProvider {...methods}>
+      <Form action={formAction}>
+        <SubmitFormControl response={state}>
+          <Col gap={8} className="mb-20">
+            <FormHeader />
+            <FormDescription />
+            <FormDataInput files={files} setFiles={setFiles} />
+            <FormOpenAIKey />
+            <CustomizePrompts />
+            <CostEstimate files={files} />
+            <div>
+              <Button size={"sm"} type="submit" disabled={isDisabled}>
+                Generate the report
+              </Button>
+            </div>
+          </Col>
+        </SubmitFormControl>
+      </Form>
+    </FormProvider>
   );
 }
 
@@ -64,44 +98,62 @@ const FormHeader = () => (
   </Col>
 );
 
-const FormDescription = () => (
-  <Col gap={4}>
-    <h4>Description</h4>
-    <Col gap={2}>
-      <Col>
-        <label htmlFor="title" className="font-medium">
-          Report title
-        </label>
-        <p className="p2 text-muted-foreground">
-          Report title will be visible at the top of your project
-        </p>
+const FormDescription = () => {
+  const { register, formState } = useFormContext();
+  const { touchedFields, errors } = formState;
+  return (
+    <Col gap={4}>
+      <h4>Description</h4>
+      <Col gap={2}>
+        <Col>
+          <label htmlFor="title" className="font-medium">
+            Report title
+          </label>
+          <p className="p2 text-muted-foreground">
+            Report title will be visible at the top of your project
+          </p>
+        </Col>
+        <Input
+          id="title"
+          type="text"
+          placeholder="Type here"
+          required
+          className={cn(
+            touchedFields.title && errors.title && "border-destructive",
+          )}
+          {...register("title")}
+        />
+        {touchedFields.title && errors.title && (
+          <p className="text-destructive text-sm">Add the title</p>
+        )}
       </Col>
-      <Input
-        id="title"
-        name="title"
-        type="text"
-        placeholder="Type here"
-        required
-      />
-    </Col>
-    <Col gap={2}>
-      <Col>
-        <label>General description</label>
-        <p className="p2 text-muted-foreground">
-          Description shows up below the title and doesn’t influence the
-          contents of the report
-        </p>
+      <Col gap={2}>
+        <Col>
+          <label>General description</label>
+          <p className="p2 text-muted-foreground">
+            Description shows up below the title and doesn’t influence the
+            contents of the report
+          </p>
+        </Col>
+        <Input
+          id="description"
+          type="text"
+          placeholder="Type here"
+          required
+          className={
+            touchedFields.description &&
+            errors.description &&
+            "border-destructive"
+          }
+          {...register("description")}
+        />
+        {touchedFields.description && errors.description && (
+          <p className="text-destructive text-sm">Add the description</p>
+        )}
       </Col>
-      <Input
-        id="description"
-        name="description"
-        type="text"
-        placeholder="Type here"
-        required
-      />
     </Col>
-  </Col>
-);
+  );
+};
 
 function PoorlyFormattedModal({
   isOpen,
@@ -243,20 +295,31 @@ function FormDataInput({
   );
 }
 
-const FormOpenAIKey = () => (
-  <Col gap={4}>
-    <label htmlFor="apiKey">
-      <h4>OpenAI Key</h4>
-    </label>
-    <Input
-      id="apiKey"
-      name="apiKey"
-      placeholder="Type OpenAI key here"
-      className="sm: w-1/2"
-      required
-    />
-  </Col>
-);
+const FormOpenAIKey = () => {
+  const { formState, register } = useFormContext();
+  const { touchedFields, errors } = formState;
+  return (
+    <Col gap={2}>
+      <label htmlFor="apiKey">
+        <h4>OpenAI Key</h4>
+      </label>
+      <Input
+        id="apiKey"
+        type="password"
+        placeholder="Type OpenAI key here"
+        className={cn(
+          "sm: w-1/2",
+          touchedFields.apiKey && errors.apiKey && "border-destructive",
+        )}
+        required
+        {...register("apiKey")}
+      />
+      {touchedFields.apiKey && errors.apiKey && (
+        <p className="text-destructive text-sm">Add the Key</p>
+      )}
+    </Col>
+  );
+};
 
 const CustomizePrompts = () => (
   <Col gap={8}>
@@ -271,25 +334,21 @@ const CustomizePrompts = () => (
       title="Role prompt"
       subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow listed below."
       inputName="systemInstructions"
-      defaultValue="INSERT ROLE PROMPT"
     />
     <CustomizePromptSection
       title="Step 1 – Topics and subtopics prompt"
       subheader="This is the first step of the report creation flow. Here AI generates common topics and subtopics and writes descriptions for each."
       inputName="clusteringInstructions"
-      defaultValue="INSERT TOPICS PROMPT"
     />
     <CustomizePromptSection
       title="Step 2 – Claim extraction prompt"
       subheader="In the second step AI takes comments of each participants and renders them against topics and subtopics from the previous step. Then it distills relevant claims and quotes. This prompt is run as many times as there are participants."
       inputName="extractionInstructions"
-      defaultValue="INSERT CLAIM EXTRACTION PROMPT"
     />
     <CustomizePromptSection
       title="Step 3 – Merging claims prompt"
       subheader="In the last step AI merges similar claims."
       inputName="dedupInstructions"
-      defaultValue="INSERT MERGE PROMPT"
     />
   </Col>
 );
@@ -298,14 +357,17 @@ function CustomizePromptSection({
   title,
   subheader,
   inputName,
-  defaultValue,
 }: {
   title: string;
   subheader: string;
   inputName: string;
-  defaultValue: string;
 }) {
-  const [formValue, setFormValue] = useState<string>(defaultValue);
+  const { register, formState, getValues, setValue } = useFormContext();
+  const { touchedFields, errors, isDirty, defaultValues } = formState;
+
+  const showError =
+    Object.hasOwn(touchedFields, inputName) && Object.hasOwn(errors, inputName);
+  const changedDefault = getValues(inputName) !== defaultValues![inputName];
 
   return (
     <Col gap={3}>
@@ -314,18 +376,25 @@ function CustomizePromptSection({
         <p className="p2 text-muted-foreground">{subheader}</p>
       </Col>
       <TextArea
-        name={inputName}
         id={inputName}
-        value={formValue}
-        onChange={(e) => setFormValue(e.target.value)}
-        className={`${formValue === defaultValue ? "text-muted-foreground" : ""}`}
+        // onChange={(e) => setFormValue(e.target.value)}
+        // className={`${formValue === defaultValue ? "text-muted-foreground" : ""}`}
+        className={`${!changedDefault && "text-muted-foreground"} ${showError && "border-destructive"}`}
+        {...register(inputName)}
         required
       />
+      {showError && <p className="text-destructive text-sm">Add the prompt</p>}
       <div>
         <Button
           variant={"outline"}
-          disabled={formValue === defaultValue}
-          onClick={() => setFormValue(defaultValue)}
+          disabled={!changedDefault}
+          onClick={() =>
+            setValue(inputName, defaultValues![inputName], {
+              shouldValidate: true,
+              shouldTouch: true,
+            })
+          }
+          type="button"
         >
           <Row gap={2} className="items-center">
             <Icons.Reset />
