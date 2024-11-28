@@ -77,6 +77,8 @@ export ANTHROPIC_API_KEY_PASSWORD=some-password
 export PIPELINE_EXPRESS_URL=http://wherever-youre-hosting-backend/generate
 ```
 
+Copy this file to .env.local in the same directory if you plan to run the dev server (`npm run dev`).
+
 You can add different types of .env files based on your needs for testing, dev, prod, etc. You can read more in the [NextJS docs](https://nextjs.org/docs/pages/building-your-application/configuring/environment-variables#default-environment-variables)
 
 ### Local Instance
