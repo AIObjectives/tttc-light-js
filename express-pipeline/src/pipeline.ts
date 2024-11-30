@@ -7,7 +7,7 @@ import {
 } from "./prompts";
 
 import {
-  Options,
+  OldOptions,
   Tracker,
   Cache,
   Subtopic,
@@ -78,7 +78,7 @@ function nestClaims(
 }
 
 async function pipeline(
-  _options: Options,
+  _options: OldOptions,
   cache?: Cache,
 ): Promise<PipelineOutput> {
   const options = { ...defaultOptions, ..._options };
