@@ -32,6 +32,8 @@ const googleSheetData = z.object({
   oneSubmissionPerEmail: z.boolean(),
 });
 
+export type GoogleSheetData = z.infer<typeof googleSheetData>;
+
 const googleSheetDataPayload = z.tuple([
   z.literal("googlesheet"),
   googleSheetData,
@@ -42,6 +44,8 @@ const googleSheetDataPayload = z.tuple([
  * Union of CSV and Google Sheet inputs
  */
 export const dataPayload = z.union([csvDataPayload, googleSheetDataPayload]);
+
+export type DataPayload = z.infer<typeof dataPayload>;
 
 export type SourceRow = z.infer<typeof sourceRow>;
 
@@ -78,9 +82,7 @@ export const llmSystemConfig = z.object({
 
 export type oldSystemConfig = z.infer<typeof llmSystemConfig>;
 
-export type DataPayload = z.infer<typeof dataPayload>;
-
-export const options = z.object({
+export const oldOptions = z.object({
   model: z.string(),
   apiKey: z.string(),
   data: sourceRow.array(),
@@ -104,7 +106,7 @@ export const options = z.object({
     .optional(),
 });
 
-export type Options = z.infer<typeof options>;
+export type OldOptions = z.infer<typeof oldOptions>;
 
 // Zod has trouble with self-referential types, so leave this be until we need to parse
 type _LLMClaim = {
@@ -419,7 +421,7 @@ const reportData = v0_2_Report; // make union when we have more versions
  ********************************/
 
 // template + optional text
-const openAIModels = z.enum([
+export const openAIModels = z.enum([
   "gpt-4",
   "gpt-4-32k",
   "gpt-3.5-turbo",
