@@ -1,6 +1,6 @@
-import { Options } from "tttc-common/schema";
+import { OldOptions } from "tttc-common/schema";
 
-export const systemMessage = (options: Options) => `
+export const systemMessage = (options: OldOptions) => `
 You are a professional research assistant. You have helped run many public consultations, 
 surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights. 
 You are familiar with public consultation tools like Pol.is and you understand the benefits 
@@ -8,7 +8,7 @@ for working with very clear, concise claims that other people would be able to v
 ${options.systemInstructions}
 `;
 
-export const clusteringPrompt = (options: Options, comments: string) => `
+export const clusteringPrompt = (options: OldOptions, comments: string) => `
 I will give you a list of comments.
 I want you to propose a way to break down the information contained in these comments into topics and subtopics of interest. 
 Keep the topic and subtopic names very concise and use the short description to explain what the topic is about.
@@ -36,7 +36,7 @@ ${comments}
 `;
 
 export const extractionPrompt = (
-  options: Options,
+  options: OldOptions,
   taxonomy: string,
   comment: string,
 ) => `
@@ -71,7 +71,7 @@ And then here is the comment:
 ${comment} 
 `;
 
-export const dedupPrompt = (options: Options, claims: string) => `
+export const dedupPrompt = (options: OldOptions, claims: string) => `
 I'm going to give you a JSON object containing a list of claims with some ids.
 I want you to remove any near-duplicate claims from the list by nesting some claims under some top-level claims. 
 For example, if we have 5 claims and claim 3 and 5 are similar to claim 2, we will nest claim 3 and 5 under claim 2. 
