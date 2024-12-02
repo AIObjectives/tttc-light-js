@@ -11,6 +11,7 @@ import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
  * @deprecated
  */
 export default async function generate(req: Request, res: Response) {
+  console.log("inside generate");
   let responded = false;
   try {
     const body: GenerateApiRequest = req.body;

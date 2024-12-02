@@ -5,6 +5,7 @@ import generate from "./routes/generate";
 import create from "./routes/create";
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
+import { setupWorkers } from "./worker";
 
 const port = process.env.PORT || 8080;
 
@@ -14,10 +15,16 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static("public"));
+
+// Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));
+
+// This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
+const _ = setupWorkers();
 
 /**
  * Depcrecated route
+ * @deprecated
  */
 app.post("/generate", generate);
 
@@ -27,7 +34,7 @@ app.post("/generate", generate);
 app.post("/create", create);
 
 app.get("/test", async (req, res) => {
-  res.send("Success");
+  return res.send("hi");
 });
 
 app.listen(port, () => {

@@ -27,6 +27,9 @@ export const env = z.object({
 
 export type Env = z.infer<typeof env>;
 
+/**
+ * Parse Env
+ */
 export function validateEnv(): Env {
   const parsed = env.safeParse(process.env);
   if (parsed.success === false) {
