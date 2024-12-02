@@ -6,6 +6,8 @@ import { getStorageUrl, storeJSON } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
 import { formatData, uniqueSlug } from "../utils";
+import { pipelineQueue } from "../Queue";
+import { pipeLineWorker } from "worker";
 
 const handleGoogleSheets = async (
   googleData: schema.GoogleSheetData,
@@ -76,9 +78,8 @@ async function createNewReport(req: Request, res: Response) {
     filename,
     apiKey,
   };
-  const json = await pipeline(config);
-  await storeJSON(filename, JSON.stringify(json), true);
-  console.log("produced file: " + jsonUrl);
+
+  const job = await pipelineQueue.add("pipeline", { config });
 }
 
 export default async function create(req: Request, res: Response) {
