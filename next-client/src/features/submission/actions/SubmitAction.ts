@@ -3,7 +3,6 @@ import {
   DataPayload,
   SourceRow,
   LLMUserConfig,
-  options,
   llmUserConfig,
 } from "tttc-common/schema";
 import Papa from "papaparse";

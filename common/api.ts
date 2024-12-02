@@ -18,11 +18,12 @@ export const generateApiReponse = z.object({
 export type GenerateApiResponse = z.infer<typeof generateApiReponse>;
 
 export const reportJobStatus = z.enum([
-  "qued",
-  "systemInstructions",
-  "clusteringInstructions",
-  "extractionInstructions",
-  "dedupInstructions",
+  "queued",
+  "clustering",
+  "extraction",
+  "sorting",
+  "dedup",
+  "wrappingup",
   "finished",
   "failed",
 ]);
