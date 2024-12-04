@@ -6,6 +6,7 @@ import create from "./routes/create";
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
 import { setupWorkers } from "./worker";
+import { report } from "./routes/report";
 
 const port = process.env.PORT || 8080;
 
@@ -32,6 +33,11 @@ app.post("/generate", generate);
  * Creates report
  */
 app.post("/create", create);
+
+/**
+ * Gets a report
+ */
+app.get("/report/:reportUri", report);
 
 app.get("/test", async (req, res) => {
   return res.send("hi");

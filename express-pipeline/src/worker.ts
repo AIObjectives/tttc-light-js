@@ -162,12 +162,11 @@ export const pipeLineWorker = new Worker(
       ...tracker,
     };
 
+    const json = llmPipelineToSchema(llmPipelineOutput);
+    await storeJSON(options.filename, JSON.stringify(json), true);
     await job.updateProgress({
       status: api.reportJobStatus.Values.finished,
     });
-
-    const json = llmPipelineToSchema(llmPipelineOutput);
-    await storeJSON(options.filename, JSON.stringify(json), true);
   },
   { connection },
 );
