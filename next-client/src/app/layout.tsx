@@ -19,8 +19,10 @@ export default function RootLayout({
       </head>
       <body className={nextTypography}>
         <script src="index.js"></script>
-        <Navbar />
-        {children}
+        <div className="h-screen w-screen">
+          <Navbar />
+          {children}
+        </div>
         <Toaster
           position="bottom-right"
           // toastOptions={{

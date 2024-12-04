@@ -79,7 +79,11 @@ async function createNewReport(req: Request, res: Response) {
     apiKey,
   };
 
-  const job = await pipelineQueue.add("pipeline", { config });
+  const job = await pipelineQueue.add(
+    "pipeline",
+    { config },
+    { jobId: config.filename },
+  );
 }
 
 export default async function create(req: Request, res: Response) {

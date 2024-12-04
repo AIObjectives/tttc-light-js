@@ -26,4 +26,13 @@ export const reportJobStatus = z.enum([
   "wrappingup",
   "finished",
   "failed",
+  "notFound",
 ]);
+
+export type ReportJobStatus = z.infer<typeof reportJobStatus>;
+
+export const getReportRequestUri = z.string();
+
+export const getReportResponse = z.object({
+  status: z.string(),
+});

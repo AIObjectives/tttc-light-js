@@ -43,7 +43,10 @@ export default async function submitAction(
 
   const body: GenerateApiRequest = { userConfig: config, data: dataPayload };
 
-  const url = z.string().url().parse(process.env.PIPELINE_EXPRESS_URL);
+  const url = z
+    .string()
+    .url()
+    .parse(`${process.env.PIPELINE_EXPRESS_URL}/create`);
 
   const response = await fetch(url, {
     method: "POST",
