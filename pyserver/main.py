@@ -234,8 +234,8 @@ def dedup_claims(claims:list)-> dict:
 #####################################
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
-@app.put("/sorted_claims/")
-def sort_claim_tree(claims_tree:ClaimTree, sort_type : str = "deduplicate", log_to_wandb: bool = False)-> dict:
+@app.put("/sort_claims_tree/")
+def sort_claims_tree(claims_tree:ClaimTree, sort_type : str = "deduplicate", log_to_wandb: bool = False)-> dict:
   #TODO: do we ever want to deduplicate without sorting? or sort without deduplicating?
   TK_IN = 0
   TK_OUT = 0
@@ -351,7 +351,7 @@ def test_claims():
   print(response.json())
 
 def test_dupes():
-  response = client.put("/sorted_claims/?log_to_wandb=True", json={"tree" : dupe_claims_4o})
+  response = client.put("/sort_claims_tree/?log_to_wandb=True", json={"tree" : dupe_claims_4o})
   print(response.json())
 
 # TODO: uncomment to test :)
