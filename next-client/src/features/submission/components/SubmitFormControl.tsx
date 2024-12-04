@@ -16,7 +16,7 @@ async function ResponseUI({ response }: { response: GenerateApiResponse }) {
   const { jsonUrl, reportUrl, filename } = response;
   return (
     <div>
-      <text>Your submission is being processed</text>
+      {/* <text>Your submission is being processed</text>
       <text>
         You will be able to find your JSON data here:{" "}
         <a href={jsonUrl}>{filename}</a>
@@ -27,7 +27,13 @@ async function ResponseUI({ response }: { response: GenerateApiResponse }) {
         following <a href={reportUrl}>this link</a>.
       </text>
       <br />
-      <text>Make sure to open and bookmark these links!</text>
+      <text>Make sure to open and bookmark these links!</text> */}
+      <text>
+        <a href={reportUrl}>Url</a>
+      </text>
+      <text>
+        <a href={jsonUrl}>GCloud</a>
+      </text>
     </div>
   );
 }
