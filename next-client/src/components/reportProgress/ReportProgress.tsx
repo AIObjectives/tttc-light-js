@@ -8,10 +8,6 @@ export default function ReportProgresss({
 }: {
   status: api.ReportJobStatus;
 }) {
-  if (status === "failed") return <p>Job failed</p>;
-  if (status === "finished")
-    return <p>Job finished - likely that resource was moved or deleted</p>;
-
   return (
     <Col className="w-full h-full flex-grow items-center justify-center">
       <Body status={status} />
