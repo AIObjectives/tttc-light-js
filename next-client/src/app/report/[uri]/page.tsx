@@ -5,6 +5,10 @@ import * as api from "tttc-common/api";
 import { z } from "zod";
 import ReportProgresss from "@src/components/reportProgress/ReportProgress";
 
+const waitingMessage = z.object({
+  message: z.string(),
+});
+
 export default async function ReportPage({
   params,
 }: {
@@ -17,27 +21,25 @@ export default async function ReportPage({
     },
   });
   let data = await req.json();
-  const maybePipelinedata = schema.llmPipelineOutput.safeParse(data);
-  if (maybePipelinedata.success)
-    return <Report reportData={getReportDataObj(maybePipelinedata.data)} />;
 
-  // check if data is a data format we recognize as valid input
-  const maybePipelineOutput = schema.pipelineOutput.safeParse(data);
-  if (maybePipelineOutput.success)
-    return <Report reportData={maybePipelineOutput.data[1]} />;
-  console.log("here");
-  // if not, check if there exists a job and what stage its in.
-  const statusResponse = await fetch(
-    z
-      .string()
-      .url()
-      .parse(
-        `${process.env.PIPELINE_EXPRESS_URL}/report/${encodeURIComponent(url)}`,
-      ),
-  );
+  if (waitingMessage.safeParse(data).success) {
+    const statusResponse = await fetch(
+      z
+        .string()
+        .url()
+        .parse(
+          `${process.env.PIPELINE_EXPRESS_URL}/report/${encodeURIComponent(url)}`,
+        ),
+    );
 
-  const { status } = await statusResponse
-    .json()
-    .then(api.getReportResponse.parse);
-  return <ReportProgresss status={status as api.ReportJobStatus} />;
+    const { status } = await statusResponse
+      .json()
+      .then(api.getReportResponse.parse);
+    return <ReportProgresss status={status as api.ReportJobStatus} />;
+  }
+
+  const reportData = schema.llmPipelineOutput.safeParse(data).success
+    ? getReportDataObj(data)
+    : schema.pipelineOutput.parse(data).data[1];
+  return <Report reportData={reportData} />;
 }
