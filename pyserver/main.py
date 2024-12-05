@@ -24,6 +24,14 @@ class CommentTopicTree(BaseModel):
 class ClaimTree(BaseModel):
   tree: dict 
 
+# allow client to override model & all prompts
+class ClientLLMConfig(BaseModel):
+  model: str
+  system_prompt: str
+  comment_to_tree_prompt: str
+  comment_to_claims_prompt: str
+  claim_dedup_prompt: str 
+
 app = FastAPI()
 
 @app.get("/")
@@ -41,6 +49,7 @@ def comments_to_tree(comments: CommentList, log_to_wandb:bool = False):
   """
   client = OpenAI()
 
+  # TODO: client overrides of prompt!
   # append comments to prompt
   full_prompt = config.COMMENT_TO_TREE_PROMPT
   for comment in comments.comments:
@@ -64,7 +73,7 @@ def comments_to_tree(comments: CommentList, log_to_wandb:bool = False):
   try:
     tree = json.loads(response.choices[0].message.content)
   except:
-    # TODO: return an error?
+    print("Step 1: no topic tree: ", response)
     tree = {}
   usage = response.usage
     
@@ -130,7 +139,11 @@ def comment_to_claims(comment:str, tree:dict)-> dict:
     temperature = 0.0,
     response_format = {"type": "json_object"}
   )
-  claims = response.choices[0].message.content
+  try:
+    claims = response.choices[0].message.content
+  except:
+    print("Step 2: no response: ", response)
+    claims = {}
   return {"claims" : json.loads(claims), "usage" : response.usage}
 
 ####################################
@@ -149,7 +162,11 @@ def all_comments_to_claims(tree:CommentTopicTree, log_to_wandb:bool = False) -> 
   # TODO: batch this so we're not sending the tree each time
   for comment in tree.comments: 
     response = comment_to_claims(comment.text, tree.tree)
-    claims = response["claims"]
+    try:
+      claims = response["claims"]
+    except:
+      print("Step 2: no claims for comment: ", response)
+      claims = None
     # reference format
     #{'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]} 
     usage = response["usage"]
@@ -228,7 +245,11 @@ def dedup_claims(claims:list)-> dict:
     temperature = 0.0,
     response_format = {"type": "json_object"}
   )
-  deduped_claims = response.choices[0].message.content
+  try:
+    deduped_claims = response.choices[0].message.content
+  except:
+    print("Step 3: no deduped claims: ", response)
+    deduped_claims = {}
   return {"dedup_claims" : json.loads(deduped_claims), "usage" : response.usage}
 
 #####################################
@@ -265,12 +286,11 @@ def sort_claims_tree(claims_tree:ClaimTree, sort_type : str = "deduplicate", log
                 dupe_keys = [int(dupe_claim_key.split("Id")[1]) for dupe_claim_key in claim_vals]
                 dupe_counts[subtopic_data["claims"][claim_id]] = dupe_keys
 
-          # for logging to wandb
-          if log_to_wandb:
-            dupe_logs.append(["\n".join(subtopic_data["claims"]), json.dumps(deduped_claims, indent=1)])
-
           if has_dupes:
             nested_claims[subtopic] = {"dupes" : deduped_claims, "og" : subtopic_data["claims"]}
+            # if dupes were found, send to wandb
+            if log_to_wandb:
+              dupe_logs.append(["\n".join(subtopic_data["claims"]), json.dumps(deduped_claims, indent=1)])
 
           TK_TOT += usage.total_tokens
           TK_IN += usage.prompt_tokens
