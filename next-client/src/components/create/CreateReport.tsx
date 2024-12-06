@@ -130,7 +130,9 @@ const FormDescription = () => {
       </Col>
       <Col gap={2}>
         <Col>
-          <label>General description</label>
+          <label htmlFor="description" className="font-medium">
+            General description
+          </label>
           <p className="p2 text-muted-foreground">
             Description shows up below the title and doesn’t influence the
             contents of the report
@@ -251,8 +253,16 @@ function FormDataInput({
             for participant names; otherwise, participants will be considered
             anonymous.
           </p>
+          <br />
           <p className="p2 text-muted-foreground">
-            You can download a sample CSV template here to get started.
+            You can download a{" "}
+            <a
+              className="underline"
+              href="https://docs.google.com/spreadsheets/d/1k8L1M9Ptxz_fBlZlGe0f-X4wCRIfmmRrISLy3c5EqUk/edit?gid=0#gid=0"
+            >
+              sample CSV
+            </a>{" "}
+            template here to get started.
           </p>
         </div>
 
