@@ -8,9 +8,10 @@ import {
   extractionPrompt,
   systemMessage,
 } from "./prompts";
-import { llmPipelineToSchema } from "../../common/morphisms";
+import { llmPipelineToSchema } from "tttc-common/morphisms";
 import { connection } from "./Queue";
 import { storeJSON } from "./storage";
+import { hydratePromptLiterals } from "tttc-common/prompts";
 
 export const pipeLineWorker = new Worker(
   "pipeline",
@@ -51,8 +52,8 @@ export const pipeLineWorker = new Worker(
       options.model,
       options.apiKey!,
       "taxonomy",
-      systemMessage(options),
-      clusteringPrompt(options, comments),
+      options.systemInstructions,
+      hydratePromptLiterals(options.clusteringInstructions, { comments }),
       tracker,
       cache,
     );
@@ -70,8 +71,11 @@ export const pipeLineWorker = new Worker(
             options.model,
             options.apiKey!,
             "claims_from_" + id,
-            systemMessage(options),
-            extractionPrompt(options, JSON.stringify(taxonomy), comment),
+            options.systemInstructions,
+            hydratePromptLiterals(options.extractionInstructions, {
+              taxonomy: JSON.stringify(taxonomy),
+              comment,
+            }),
             tracker,
             cache,
           );
@@ -129,8 +133,10 @@ export const pipeLineWorker = new Worker(
             subtopic.subtopicName
               .replace(/[^a-zA-Z0-9 ]/g, "")
               .replace(/\s/g, "_"),
-          systemMessage(options),
-          dedupPrompt(options, JSON.stringify(subtopic.claims)),
+          options.systemInstructions,
+          hydratePromptLiterals(options.dedupInstructions, {
+            claims: JSON.stringify(subtopic.claims),
+          }),
           tracker,
           cache,
         );

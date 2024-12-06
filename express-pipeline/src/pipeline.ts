@@ -10,13 +10,13 @@ import {
   OldOptions,
   Tracker,
   Cache,
-  Subtopic,
   Taxonomy,
   PipelineOutput,
   LLMClaim,
   LLMPipelineOutput,
   LLMSubtopic,
 } from "tttc-common/schema";
+import { hydratePromptLiterals } from "tttc-common/prompts";
 
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 
@@ -97,8 +97,8 @@ async function pipeline(
     options.model,
     options.apiKey!,
     "taxonomy",
-    systemMessage(options),
-    clusteringPrompt(options, comments),
+    options.systemInstructions,
+    hydratePromptLiterals(options.clusteringInstructions, { comments }),
     tracker,
     cache,
   );
@@ -113,8 +113,11 @@ async function pipeline(
           options.model,
           options.apiKey!,
           "claims_from_" + id,
-          systemMessage(options),
-          extractionPrompt(options, JSON.stringify(taxonomy), comment),
+          options.systemInstructions,
+          hydratePromptLiterals(options.extractionInstructions, {
+            taxonomy: JSON.stringify(taxonomy),
+            comment,
+          }),
           tracker,
           cache,
         );
@@ -166,8 +169,10 @@ async function pipeline(
           subtopic.subtopicName
             .replace(/[^a-zA-Z0-9 ]/g, "")
             .replace(/\s/g, "_"),
-        systemMessage(options),
-        dedupPrompt(options, JSON.stringify(subtopic.claims)),
+        options.systemInstructions,
+        hydratePromptLiterals(options.dedupInstructions, {
+          claims: JSON.stringify(subtopic.claims),
+        }),
         tracker,
         cache,
       );
