@@ -37,29 +37,29 @@ export const Main: Story = {
   },
 };
 
-const CardWrap = ({ children }: React.PropsWithChildren) => (
-  <Card>
-    <CardContent>{children}</CardContent>
-  </Card>
-);
+// const CardWrap = ({ children }: React.PropsWithChildren) => (
+//   <Card>
+//     <CardContent>{children}</CardContent>
+//   </Card>
+// );
 
-export const Header = () => (
-  <div className="border">
-    <TopicHeader button={<CopyLinkButton anchor={themeNode.data.title} />} />
-  </div>
-);
+// export const Header = () => (
+//   <div className="border">
+//     <TopicHeader button={<CopyLinkButton anchor={themeNode.data.title} />} />
+//   </div>
+// );
 
-export const Graphic = () => (
-  <div className="border">
-    <TopicInteractiveGraphic
-      subtopics={themeNode.children}
-      openButton={<></>}
-    />
-  </div>
-);
+// export const Graphic = () => (
+//   <div className="border">
+//     <TopicInteractiveGraphic
+//       subtopics={themeNode.children}
+//       openButton={<></>}
+//     />
+//   </div>
+// );
 
-export const ListOfTopics = () => (
-  <div className="border">
-    {/* <TopicList topics={baseProps.topics.map((topic) => topic.title)} /> */}
-  </div>
-);
+// export const ListOfTopics = () => (
+//   <div className="border">
+//     {/* <TopicList topics={baseProps.topics.map((topic) => topic.title)} /> */}
+//   </div>
+// );
