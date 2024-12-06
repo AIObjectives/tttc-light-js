@@ -7,7 +7,6 @@ import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
 import { formatData, uniqueSlug } from "../utils";
 import { pipelineQueue } from "../Queue";
-import { pipeLineWorker } from "worker";
 
 const handleGoogleSheets = async (
   googleData: schema.GoogleSheetData,
@@ -47,14 +46,7 @@ async function createNewReport(req: Request, res: Response) {
   const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } =
     req.context.env;
   const body = api.generateApiRequest.parse(req.body);
-  const { data, userConfig: _userConfig } = body;
-  const userConfig: schema.LLMUserConfig = {
-    ..._userConfig,
-    systemInstructions: undefined,
-    clusteringInstructions: undefined,
-    extractionInstructions: undefined,
-    dedupInstructions: undefined,
-  };
+  const { data, userConfig } = body;
   const parsedData = await parseData(data);
   const filename = uniqueSlug(userConfig.title);
   const jsonUrl = getStorageUrl(filename);

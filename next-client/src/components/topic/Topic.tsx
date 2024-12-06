@@ -93,9 +93,9 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
       </CardTitle>
       <TextIcon
         icon={
-          <div>
-            <Icons.Claim />
-          </div>
+          // <div>
+          <Icons.Claim />
+          // </div>
         }
       >
         {getNClaims(subtopics)} claims by {/* ! Temp change for QA testing */}
