@@ -33,6 +33,7 @@ import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@src/lib/utils/shadcn";
+import * as prompts from "tttc-common/prompts";
 
 const initialState: api.GenerateApiResponse | null = null;
 
@@ -59,10 +60,10 @@ export default function CreateReport() {
       title: "",
       description: "",
       apiKey: "",
-      systemInstructions: "INSERT SYSTEM INSTRUCT",
-      clusteringInstructions: "INSERT CLUSTER INSTRUCT",
-      extractionInstructions: "INSERT EXTRACT",
-      dedupInstructions: "INSERT DEDUP",
+      systemInstructions: prompts.defaultSystemPrompt,
+      clusteringInstructions: prompts.defaultClusteringPrompt,
+      extractionInstructions: prompts.defaultExtractionPrompt,
+      dedupInstructions: prompts.defaultDedupPrompt,
     },
   });
 
@@ -363,7 +364,7 @@ function CustomizePromptSection({
   inputName: string;
 }) {
   const { register, formState, getValues, setValue } = useFormContext();
-  const { touchedFields, errors, isDirty, defaultValues } = formState;
+  const { touchedFields, errors, defaultValues } = formState;
 
   const showError =
     Object.hasOwn(touchedFields, inputName) && Object.hasOwn(errors, inputName);

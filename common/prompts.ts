@@ -1,26 +1,14 @@
-import { OldOptions } from "tttc-common/schema";
-
-/**
- * @deprecated
- * see common/prompts
- */
-export const systemMessage = (options: OldOptions) => `
+export const defaultSystemPrompt = `
 You are a professional research assistant. You have helped run many public consultations, 
 surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights. 
 You are familiar with public consultation tools like Pol.is and you understand the benefits 
 for working with very clear, concise claims that other people would be able to vote on.
-${options.systemInstructions}
 `;
 
-/**
- * @deprecated
- * see common/prompts
- */
-export const clusteringPrompt = (options: OldOptions, comments: string) => `
+export const defaultClusteringPrompt = `
 I will give you a list of comments.
 I want you to propose a way to break down the information contained in these comments into topics and subtopics of interest. 
 Keep the topic and subtopic names very concise and use the short description to explain what the topic is about.
-${options.clusteringInstructions}
 
 Return a JSON object of the form {
   "taxonomy": [
@@ -40,18 +28,10 @@ Return a JSON object of the form {
 }
 
 Now here is the list of comments:
-${comments}
+\${comments}
 `;
 
-/**
- * @deprecated
- * see common/prompts
- */
-export const extractionPrompt = (
-  options: OldOptions,
-  taxonomy: string,
-  comment: string,
-) => `
+export const defaultExtractionPrompt = `
 I'm going to give you a comment made by a participant and a list of topics and subtopics which have already been extracted.  
 I want you to extract a list of concise claims that the participant may support.
 We are only interested in claims that can be mapped to one of the given topic and subtopic. 
@@ -62,7 +42,6 @@ The quote must be as concise as possible while still supporting the argument.
 The quote doesn't need to be a logical argument. 
 It could also be a personal story or anecdote illustrating why the interviewee would make this claim. 
 You may use "[...]" in the quote to skip the less interesting bits of the quote. 
-${options.extractionInstructions} 
 
 Return a JSON object of the form {
   "claims": [
@@ -77,23 +56,18 @@ Return a JSON object of the form {
 }
 
 Now here is the list of topics/subtopics: 
-${taxonomy}
+\${taxonomy}
 
 And then here is the comment:
-${comment} 
+\${comment} 
 `;
 
-/**
- * @deprecated
- * see common/prompts
- */
-export const dedupPrompt = (options: OldOptions, claims: string) => `
+export const defaultDedupPrompt = `
 I'm going to give you a JSON object containing a list of claims with some ids.
 I want you to remove any near-duplicate claims from the list by nesting some claims under some top-level claims. 
 For example, if we have 5 claims and claim 3 and 5 are similar to claim 2, we will nest claim 3 and 5 under claim 2. 
 The nesting will be represented as a JSON object where the keys are the ids of the 
 top-level claims and the values are lists of ids of the nested claims.
-${options.dedupInstructions} 
 
 Return a JSON object of the form {
   "nesting": {
@@ -104,5 +78,23 @@ Return a JSON object of the form {
 }
 
 And now, here are the claims:
-${claims}
+\${claims}
 `;
+
+/**
+ * Takes a prompt and data, and then inserts those values into the prompt.
+ * The reason for this is that the string the user provides can't actually be a template literal.
+ *
+ * Be careful to make sure your dataObj contains the correct fields that match the correct ${vars}
+ */
+export function hydratePromptLiterals(prompt: string, dataObj: any): string {
+  try {
+    const templateFn = Function(
+      ...Object.keys(dataObj),
+      `return \`${prompt}\`;`,
+    );
+    return templateFn(...Object.values(dataObj));
+  } catch (e) {
+    return "Error hydrating prompt with variables";
+  }
+}
