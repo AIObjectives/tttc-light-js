@@ -81,7 +81,14 @@ async function pipeline(
   _options: OldOptions,
   cache?: Cache,
 ): Promise<PipelineOutput> {
-  const options = { ...defaultOptions, ..._options };
+  const options: OldOptions = {
+    ...defaultOptions,
+    ..._options,
+    systemInstructions: "",
+    clusteringInstructions: "",
+    extractionInstructions: "",
+    dedupInstructions: "",
+  };
   const tracker: Tracker = {
     costs: 0,
     start: Date.now(),
@@ -97,8 +104,8 @@ async function pipeline(
     options.model,
     options.apiKey!,
     "taxonomy",
-    options.systemInstructions,
-    hydratePromptLiterals(options.clusteringInstructions, { comments }),
+    systemMessage(options),
+    clusteringPrompt(options, comments),
     tracker,
     cache,
   );
@@ -113,11 +120,8 @@ async function pipeline(
           options.model,
           options.apiKey!,
           "claims_from_" + id,
-          options.systemInstructions,
-          hydratePromptLiterals(options.extractionInstructions, {
-            taxonomy: JSON.stringify(taxonomy),
-            comment,
-          }),
+          systemMessage(options),
+          extractionPrompt(options, JSON.stringify(taxonomy), comment),
           tracker,
           cache,
         );
@@ -169,10 +173,8 @@ async function pipeline(
           subtopic.subtopicName
             .replace(/[^a-zA-Z0-9 ]/g, "")
             .replace(/\s/g, "_"),
-        options.systemInstructions,
-        hydratePromptLiterals(options.dedupInstructions, {
-          claims: JSON.stringify(subtopic.claims),
-        }),
+        systemMessage(options),
+        dedupPrompt(options, JSON.stringify(subtopic.claims)),
         tracker,
         cache,
       );
