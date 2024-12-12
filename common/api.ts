@@ -16,3 +16,23 @@ export const generateApiReponse = z.object({
 });
 
 export type GenerateApiResponse = z.infer<typeof generateApiReponse>;
+
+export const reportJobStatus = z.enum([
+  "queued",
+  "clustering",
+  "extraction",
+  "sorting",
+  "dedup",
+  "wrappingup",
+  "finished",
+  "failed",
+  "notFound",
+]);
+
+export type ReportJobStatus = z.infer<typeof reportJobStatus>;
+
+export const getReportRequestUri = z.string();
+
+export const getReportResponse = z.object({
+  status: z.string(),
+});

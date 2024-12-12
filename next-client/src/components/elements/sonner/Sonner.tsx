@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { Toaster as Sonner } from "sonner";
-import "../../../app/global.css";
+// import "../../../app/global.css";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
@@ -25,6 +25,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
       {...props}
+      richColors
     />
   );
 };
