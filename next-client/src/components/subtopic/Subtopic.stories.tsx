@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import Subtopic, {
+  SubtopicComponent,
   SubtopicClaims,
   SubtopicDescription,
   SubtopicHeader,
@@ -18,12 +19,7 @@ const subtopicNode = reportState.children[0].children[0];
 
 const meta = {
   title: "Subtopic",
-  component: () => (
-    <div>
-      <h1>Temporarily out of commission</h1>
-      <p>See a full example in Report</p>
-    </div>
-  ),
+  component: Subtopic,
   parameters: {
     // layout: "centered",
   },
@@ -35,7 +31,7 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta;
+} satisfies Meta<typeof Subtopic>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -43,7 +39,7 @@ type Story = StoryObj<typeof meta>;
 // const baseProps = subtopicNode.data;
 
 export const Main: Story = {
-  // args: { node: subtopicNode, isOpen: true },
+  args: { node: subtopicNode, isOpen: true },
 };
 
 // export const Header = () => (

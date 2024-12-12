@@ -10,12 +10,7 @@ import { Col, Row } from "../layout";
 
 const meta = {
   title: "PointGraphic",
-  component: () => (
-    <div>
-      <h1>Temporarily disabled while being refactored</h1>
-      <p>See Report to see an example</p>
-    </div>
-  ),
+  component: PointGraphic,
   parameters: {
     layout: "center",
   },
@@ -27,39 +22,39 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta;
+} satisfies Meta<typeof PointGraphic>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// const baseProps = reportData.topics[0].subtopics;
+const baseProps = reportData.topics[0].subtopics;
 
 export const Main: Story = {
   args: {
-    // claims: baseProps.flatMap((subtopic) => subtopic.claims),
+    claims: baseProps.flatMap((subtopic) => subtopic.claims),
   },
 };
 
-// export function PointGraphicGroupInteraction() {
-//   const [isHighlighted, setIsHighlighted] = useState(false);
+export function PointGraphicGroupInteraction() {
+  const [isHighlighted, setIsHighlighted] = useState(false);
 
-//   return (
-//     <Col gap={5}>
-//       <Row className="gap-x-[3px]">
-//         <PointGraphicGroup
-//           claims={baseProps[0].claims}
-//           isHighlighted={isHighlighted}
-//         />
-//         <PointGraphicGroup
-//           claims={baseProps[0].claims}
-//           isHighlighted={isHighlighted}
-//         />
-//       </Row>
-//       <Button onClick={() => setIsHighlighted((curr) => !curr)}>
-//         Press Me
-//       </Button>
-//     </Col>
-//   );
-// }
+  return (
+    <Col gap={5}>
+      <Row className="gap-x-[3px]">
+        <PointGraphicGroup
+          claims={baseProps[0].claims}
+          isHighlighted={isHighlighted}
+        />
+        <PointGraphicGroup
+          claims={baseProps[0].claims}
+          isHighlighted={isHighlighted}
+        />
+      </Row>
+      <Button onClick={() => setIsHighlighted((curr) => !curr)}>
+        Press Me
+      </Button>
+    </Col>
+  );
+}
 
-// export const Cell = () => <CellComponent claim={baseProps[0].claims[0]} />;
+export const Cell = () => <CellComponent claim={baseProps[0].claims[0]} />;
