@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import json
 from openai import OpenAI
+from pyserver.gpt import ChatGPTClient
 from pydantic import BaseModel
 from typing import List, Union
 from pyserver.wandblogger import WanbBLogger
@@ -48,7 +49,6 @@ def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
   """
   Given the full list of comments, return the tree of topics and subtopics
   """
-  client = OpenAI()
 
   # TODO: client overrides of prompt!
   # append comments to prompt
@@ -56,33 +56,15 @@ def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
   for comment in comments.comments:
     full_prompt += "\n" + comment.text
 
-  response = client.chat.completions.create(
-    model=config.MODEL,
-    messages=[
-      {
-        "role": "system",
-        "content": config.SYSTEM_PROMPT
-      },
-      {
-        "role": "user",
-        "content": full_prompt
-      }
-    ],
-    temperature = 0.0,
-    response_format = {"type": "json_object"}
-  )
-  try:
-    tree = json.loads(response.choices[0].message.content)
-  except:
-    print("Step 1: no topic tree: ", response)
-    tree = {}
-  usage = response.usage
+  llm_client = ChatGPTClient(config.MODEL)
+  # Tree, Usage
+  tree, usage = llm_client.call(config.SYSTEM_PROMPT, full_prompt, return_model=schema.Tree)
     
   if log_to_wandb:
     log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
     log.step1(tree, comments, usage)
 
-  return {"data" : { "tree": tree}, "usage" : usage}
+  return {"data" : { "tree": tree.model_dump()}, "usage" : usage.model_dump()}
 
 def comment_to_claims(comment:str, tree:dict)-> dict:
   """

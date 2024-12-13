@@ -9,10 +9,10 @@ class WanbBLogger:
         self._w = wandb.init(project = project,
                              config={"model": model})
         
-    def step1(self, tree:dict, comments:schema.CommentList, usage):
+    def step1(self, tree:schema.Tree, comments:schema.CommentList, usage:schema.Usage):
         comment_lengths = [len(c.text) for c in comments.comments]
-        num_topics = len(tree["taxonomy"])
-        subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
+        num_topics = len(tree.taxonomy)
+        subtopic_bins = [len(t.subtopics) for t in tree.taxonomy]
 
         # in case comments are empty / for W&B Table logging
         comment_list = "none"

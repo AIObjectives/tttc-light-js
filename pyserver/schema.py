@@ -1,6 +1,18 @@
 from pydantic import BaseModel
 from typing import List, Union, TypeVar, Generic
 
+class Subtopic(BaseModel):
+  subtopicName:str
+  subtopicShortDescription:str
+
+class Topic(BaseModel):
+    topicName:str
+    topicShortDescription:str
+    subtopics: List[Subtopic]
+
+class Tree(BaseModel):
+  taxonomy: List[Topic]
+
 class Comment(BaseModel):
   text: str
 
@@ -25,9 +37,9 @@ class ClientLLMConfig(BaseModel):
   claim_dedup_prompt: str 
 
 class Usage(BaseModel):
-   prompt_tokens: int
-   completion_tokens: int 
-   total_tokens: int
+    prompt_tokens: int
+    completion_tokens: int 
+    total_tokens: int
 
 #------------------------------------------------------------------------------
 # Report Steps
