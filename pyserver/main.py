@@ -6,7 +6,8 @@ import json
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
-import wandb
+from pyserver.wandblogger import WanbBLogger
+import pyserver.schema as schema
 
 import pyserver.config as config
 from pyserver.utils import cute_print
@@ -43,7 +44,7 @@ def read_root():
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
 @app.post("/topic_tree/")
-def comments_to_tree(comments: CommentList, log_to_wandb:bool = False):
+def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
   """
   Given the full list of comments, return the tree of topics and subtopics
   """
@@ -78,35 +79,8 @@ def comments_to_tree(comments: CommentList, log_to_wandb:bool = False):
   usage = response.usage
     
   if log_to_wandb:
-    # TODO: one pipeline run should be one run — perhaps a group?
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config={"model" : config.MODEL})
-
-    comment_lengths = [len(c.text) for c in comments.comments]
-    num_topics = len(tree["taxonomy"])
-    subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
-
-    # in case comments are empty / for W&B Table logging
-    comment_list = "none"
-    if len(comments.comments) > 1:
-      comment_list = "\n".join([c.text for c in comments.comments])
-    comms_tree_list = [[comment_list, json.dumps(tree,indent=1)]]
-
-    wandb.log({
-        "comm_N" : len(comments.comments),
-        "comm_text_len": sum(comment_lengths),
-        "comm_bins" : comment_lengths,
-        "num_topics" : num_topics,
-        "num_subtopics" : sum(subtopic_bins),
-        "subtopic_bins" : subtopic_bins,
-        "rows_to_tree" : wandb.Table(data=comms_tree_list,
-                                     columns = ["comments", "taxonomy"]),
-
-        # token counts
-        "u/1/N_tok": usage.total_tokens,
-        "u/1/in_tok" : usage.prompt_tokens,
-        "u/1/out_tok": usage.completion_tokens
-    })
+    log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
+    log.step1(tree, comments, usage)
 
   return {"tree" : tree, "usage" : usage}
 
@@ -201,16 +175,8 @@ def all_comments_to_claims(tree:CommentTopicTree, log_to_wandb:bool = False) -> 
 
 
   if log_to_wandb:
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config={"model" : config.MODEL})
-    wandb.log({
-      "u/2/N_tok" : TK_2_TOT,
-      "u/2/in_tok": TK_2_IN,
-      "u/2/out_tok" : TK_2_OUT,
-      "rows_to_claims" : wandb.Table(
-                           data=comms_to_claims_html,
-                           columns = ["comments", "claims"])
-    })
+    log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
+    log.step2(comms_to_claims_html, TK_2_TOT, TK_2_IN, TK_2_OUT)
  
   net_usage = {"total_tokens" : TK_2_TOT,
                "prompt_tokens" : TK_2_IN,
@@ -336,19 +302,8 @@ def sort_claims_tree(claims_tree:ClaimTree, sort_type : str = "deduplicate", log
   full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["total"], reverse=True)
  
   if log_to_wandb:
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config = {"model" : config.MODEL})
-    report_data = [[json.dumps(full_sort_tree, indent=2)]]
-    wandb.log({
-      "u/4/N_tok" : TK_TOT,
-      "u/4/in_tok": TK_IN,
-      "u/4/out_tok" : TK_OUT,
-      "dedup_subclaims" : wandb.Table(data=dupe_logs, columns = ["sub_claim_list", "deduped_claims"]),
-      "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
-      # TODO: do we need this?
-      #"num_claims" : NUM_CLAIMS,
-      #"num_topics_post_sort" : NUM_TOPICS_STEP_3
-    })
+    log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
+    log.step3(full_sort_tree, dupe_logs, TK_TOT, TK_IN, TK_OUT)
   return {"tree" : full_sort_tree, "per_topic_dupes" : nested_claims, "dupe_counts" : dupe_counts}
 
 #TODO: refactor into separate testing script
