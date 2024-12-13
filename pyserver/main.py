@@ -43,7 +43,7 @@ def read_root():
 ###################################
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
-@app.post("/topic_tree/")
+@app.post("/topic_tree/", response_model=schema.comments_to_tree_response)
 def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
   """
   Given the full list of comments, return the tree of topics and subtopics
@@ -82,7 +82,7 @@ def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
     log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
     log.step1(tree, comments, usage)
 
-  return {"tree" : tree, "usage" : usage}
+  return {"data" : { "tree": tree}, "usage" : usage}
 
 def comment_to_claims(comment:str, tree:dict)-> dict:
   """

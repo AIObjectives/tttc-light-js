@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Union
+from typing import List, Union, TypeVar, Generic
 
 class Comment(BaseModel):
   text: str
@@ -14,6 +14,8 @@ class CommentTopicTree(BaseModel):
 class ClaimTree(BaseModel):
   tree: dict 
 
+
+
 # allow client to override model & all prompts
 class ClientLLMConfig(BaseModel):
   model: str
@@ -21,3 +23,28 @@ class ClientLLMConfig(BaseModel):
   comment_to_tree_prompt: str
   comment_to_claims_prompt: str
   claim_dedup_prompt: str 
+
+class Usage(BaseModel):
+   prompt_tokens: int
+   completion_tokens: int 
+   total_tokens: int
+
+#------------------------------------------------------------------------------
+# Report Steps
+#------------------------------------------------------------------------------
+
+class ReportStep1(BaseModel):
+  tree: dict
+
+
+#------------------------------------------------------------------------------
+# API Types
+#------------------------------------------------------------------------------
+
+T = TypeVar('T')
+
+class APIResponse(BaseModel, Generic[T]):
+  data: T
+  usage: Usage
+
+comments_to_tree_response = APIResponse[ReportStep1]
