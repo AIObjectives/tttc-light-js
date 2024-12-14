@@ -4,6 +4,7 @@ import json
 from fastapi import HTTPException
 import pyserver.schema as schema
 from typing import Type, TypeVar, Tuple
+from pyserver.prompt import Prompt
 
 #------------------------------------------------------------------------------
 # Notes:
@@ -25,7 +26,7 @@ class _LLMClient(ABC):
         pass
 
     @abstractmethod
-    def call(self,system_prompt:str, full_prompt:str):
+    def call(self,system_prompt:Prompt, full_prompt:Prompt):
         pass
 
 
@@ -38,18 +39,18 @@ class ChatGPTClient(_LLMClient):
     def _initClient(self):
         return OpenAI()
     
-    def call(self, system_prompt: str, full_prompt: str, return_model:Type[T]) -> Tuple[T, schema.Usage]:
+    def call(self, system_prompt: Prompt, full_prompt: Prompt, return_model:Type[T]) -> Tuple[T, schema.Usage]:
         try:
             response = self._client.chat.completions.create(
                 model=self.model,
                 messages=[
                 {
                     "role": "system",
-                    "content": system_prompt
+                    "content": system_prompt.value
                 },
                 {
                     "role": "user",
-                    "content": full_prompt
+                    "content": full_prompt.value
                 }
                 ],
                 temperature = 0.0,

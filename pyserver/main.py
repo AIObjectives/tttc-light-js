@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import List, Union
 from pyserver.wandblogger import WanbBLogger
 import pyserver.schema as schema
+from pyserver.prompt import Prompt
 
 import pyserver.config as config
 from pyserver.utils import cute_print
@@ -51,14 +52,14 @@ def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
   """
 
   # TODO: client overrides of prompt!
-  # append comments to prompt
-  full_prompt = config.COMMENT_TO_TREE_PROMPT
-  for comment in comments.comments:
-    full_prompt += "\n" + comment.text
-
   llm_client = ChatGPTClient(config.MODEL)
   # Tree, Usage
-  tree, usage = llm_client.call(config.SYSTEM_PROMPT, full_prompt, return_model=schema.Tree)
+  tree, usage = llm_client.call(
+    system_prompt=Prompt(config.SYSTEM_PROMPT), 
+    # Note: It seems like the way comments are added could be bad if we want to add long, multiline comments and such. Discuss having some seperation token.
+    full_prompt=Prompt(config.COMMENT_TO_TREE_PROMPT, *[comment.text for comment in comments.comments]), 
+    return_model=schema.Tree
+    )
     
   if log_to_wandb:
     log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
