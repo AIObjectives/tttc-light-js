@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 from typing import List, Union, TypeVar, Generic
 
 class Subtopic(BaseModel):
@@ -13,9 +13,19 @@ class Topic(BaseModel):
 class Tree(BaseModel):
   taxonomy: List[Topic]
 
+class Claim(BaseModel):
+  claim:str
+  quote:str
+  topicName:str
+  subtopicName:str
+
+class ClaimsList(BaseModel):
+  claims: List[Claim]
+
 class Comment(BaseModel):
   text: str
 
+# ! Weird that this is an object with a list of comments rather than just a list. Foot-gunny
 class CommentList(BaseModel):
   comments: List[Comment]
 

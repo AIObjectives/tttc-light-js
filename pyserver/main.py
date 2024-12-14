@@ -4,12 +4,13 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import json
 from openai import OpenAI
-from pyserver.gpt import ChatGPTClient
+from pyserver.gpt import ChatGPTClient, BatchLLMCall
 from pydantic import BaseModel
 from typing import List, Union
 from pyserver.wandblogger import WanbBLogger
 import pyserver.schema as schema
 from pyserver.prompt import Prompt
+from itertools import chain
 
 import pyserver.config as config
 from pyserver.utils import cute_print
@@ -37,6 +38,21 @@ class ClientLLMConfig(BaseModel):
 
 app = FastAPI()
 
+###################################
+# Entire process:
+# 
+# We want to Take a bunch of comments that people have made and figure out how to organize them into topics and subtopics
+# 
+# Once we have topics and subtopics, we want to extract claims from peoples comments.
+# 
+# Then, we want to organize those claims with their topics and subtopics.
+#   
+# Then, we wnat to go through each of the subtopics and remove claims that are duplicates.
+# 
+# Note before bed: Step1Tree -> Step2Tree -> Step3Tree
+# #
+#---------------------------------#
+
 @app.get("/")
 def read_root():
   # TODO: setup/relevant defaults?
@@ -46,7 +62,7 @@ def read_root():
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
 @app.post("/topic_tree/", response_model=schema.comments_to_tree_response)
-def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
+async def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
   """
   Given the full list of comments, return the tree of topics and subtopics
   """
@@ -54,7 +70,7 @@ def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
   # TODO: client overrides of prompt!
   llm_client = ChatGPTClient(config.MODEL)
   # Tree, Usage
-  tree, usage = llm_client.call(
+  tree, usage = await llm_client.call(
     system_prompt=Prompt(config.SYSTEM_PROMPT), 
     # Note: It seems like the way comments are added could be bad if we want to add long, multiline comments and such. Discuss having some seperation token.
     full_prompt=Prompt(config.COMMENT_TO_TREE_PROMPT, *[comment.text for comment in comments.comments]), 
@@ -67,106 +83,91 @@ def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = False):
 
   return {"data" : { "tree": tree.model_dump()}, "usage" : usage.model_dump()}
 
-def comment_to_claims(comment:str, tree:dict)-> dict:
-  """
-  Given a comment and the topic tree, extract one or more claims from the comment.
-  Place each claim under the correct subtopic in the tree
-  """
-  client = OpenAI()
-
-  # add taxonomy and comment to prompt template
-  full_prompt = config.COMMENT_TO_CLAIMS_PROMPT
-  taxonomy_string = json.dumps(tree)
-   
-  # TODO: prompt nit, shorten this to just "Comment:"
-  full_prompt += "\n" + taxonomy_string + "\nAnd then here is the comment:\n" + comment
-
-  response = client.chat.completions.create(
-    model = config.MODEL,
-    messages = [
-      {
-        "role": "system",
-        "content": config.SYSTEM_PROMPT
-      },
-      {
-            "role": "user",
-            "content": full_prompt
-      }
-    ],
-    temperature = 0.0,
-    response_format = {"type": "json_object"}
-  )
-  try:
-    claims = response.choices[0].message.content
-  except:
-    print("Step 2: no response: ", response)
-    claims = {}
-  return {"claims" : json.loads(claims), "usage" : response.usage}
-
 ####################################
 # Step 2: Extract and place claims #
 #----------------------------------#
 @app.post("/claims/")
-def all_comments_to_claims(tree:CommentTopicTree, log_to_wandb:bool = False) -> dict:
-  comms_to_claims = []
-  comms_to_claims_html = []
-  TK_2_IN = 0
-  TK_2_OUT = 0
-  TK_2_TOT = 0
+async def all_comments_to_claims(tree:schema.Tree, comments:schema.CommentList, log_to_wandb:bool = False):
+  print("HERE")
+  batch_llm_client = BatchLLMCall(
+    ChatGPTClient(config.MODEL)
+  )
 
-  node_counts = {}
+  claims_2d_arr, usage = await batch_llm_client.call(
+    system_prompt=Prompt(config.SYSTEM_PROMPT),
+    full_prompts=[
+      # For every comment, create a new prompt asking to extract claims from the comment
+      Prompt(
+        config.COMMENT_TO_CLAIMS_PROMPT, tree, "Comment:", comment.text
+        ) for comment in comments.comments
+    ],
+    return_model=schema.ClaimsList
+  )
+  
+  # Flatten List[List[Claims]] to List[Claims]
+  claims = list(chain(*[c.claims for c in claims_2d_arr]))
 
-  # TODO: batch this so we're not sending the tree each time
-  for comment in tree.comments: 
-    response = comment_to_claims(comment.text, tree.tree)
-    try:
-      claims = response["claims"]
-    except:
-      print("Step 2: no claims for comment: ", response)
-      claims = None
-    # reference format
-    #{'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]} 
-    usage = response["usage"]
-    if claims and len(claims["claims"]) > 0:
-      comms_to_claims.extend([c for c in claims["claims"]])
+  return {'claims': claims}
 
-    TK_2_IN += usage.prompt_tokens
-    TK_2_OUT += usage.completion_tokens
-    TK_2_TOT += usage.total_tokens
+  # comms_to_claims = []
+  # comms_to_claims_html = []
+  # TK_2_IN = 0
+  # TK_2_OUT = 0
+  # TK_2_TOT = 0
 
-    # format for logging to W&B
-    if log_to_wandb:
-      viz_claims = cute_print(claims)
-      comms_to_claims_html.append([comment.text, viz_claims])  
+  # node_counts = {}
 
-  # reference format
-  #[{'claim': 'Cats are the best household pets.', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds'}]
+  # # TODO: batch this so we're not sending the tree each time
+  # for comment in tree.comments: 
+  #   response = comment_to_claims(comment.text, tree.tree)
+  #   try:
+  #     claims = response["claims"]
+  #   except:
+  #     print("Step 2: no claims for comment: ", response)
+  #     claims = None
+  #   # reference format
+  #   #{'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]} 
+  #   usage = response["usage"]
+  #   if claims and len(claims["claims"]) > 0:
+  #     comms_to_claims.extend([c for c in claims["claims"]])
+
+  #   TK_2_IN += usage.prompt_tokens
+  #   TK_2_OUT += usage.completion_tokens
+  #   TK_2_TOT += usage.total_tokens
+
+  #   # format for logging to W&B
+  #   if log_to_wandb:
+  #     viz_claims = cute_print(claims)
+  #     comms_to_claims_html.append([comment.text, viz_claims])  
+
+  # # reference format
+  # #[{'claim': 'Cats are the best household pets.', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds'}]
  
-  # count the claims in each subtopic 
-  for claim in comms_to_claims:
-    if "topicName" in claim:
-      if claim["topicName"] in node_counts:
-        node_counts[claim["topicName"]]["total"] += 1
-        if "subtopicName" in claim:
-          if claim["subtopicName"] in node_counts[claim["topicName"]]["subtopics"]:
-            node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["total"] += 1
-            node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["claims"].append(claim["claim"])
-          else:
-            node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]] = { "total" : 1, "claims" : [claim["claim"]]}
-      else:
-        node_counts[claim["topicName"]] = {"total" : 1, "subtopics" : {claim["subtopicName"] : {"total" : 1, "claims" : [claim["claim"]]}}}
+  # # count the claims in each subtopic 
+  # for claim in comms_to_claims:
+  #   if "topicName" in claim:
+  #     if claim["topicName"] in node_counts:
+  #       node_counts[claim["topicName"]]["total"] += 1
+  #       if "subtopicName" in claim:
+  #         if claim["subtopicName"] in node_counts[claim["topicName"]]["subtopics"]:
+  #           node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["total"] += 1
+  #           node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["claims"].append(claim["claim"])
+  #         else:
+  #           node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]] = { "total" : 1, "claims" : [claim["claim"]]}
+  #     else:
+  #       node_counts[claim["topicName"]] = {"total" : 1, "subtopics" : {claim["subtopicName"] : {"total" : 1, "claims" : [claim["claim"]]}}}
 
 
-  if log_to_wandb:
-    log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
-    log.step2(comms_to_claims_html, TK_2_TOT, TK_2_IN, TK_2_OUT)
+  # if log_to_wandb:
+  #   log = WanbBLogger(config.MODEL, config.WANDB_PROJECT_NAME)
+  #   log.step2(comms_to_claims_html, TK_2_TOT, TK_2_IN, TK_2_OUT)
  
-  net_usage = {"total_tokens" : TK_2_TOT,
-               "prompt_tokens" : TK_2_IN,
-               "completion_tokens" : TK_2_OUT}
+  # net_usage = {"total_tokens" : TK_2_TOT,
+  #              "prompt_tokens" : TK_2_IN,
+  #              "completion_tokens" : TK_2_OUT}
 
 
-  return {"claims_tree" : node_counts, "usage" : net_usage}
+  # return {"claims_tree" : node_counts, "usage" : net_usage}
 
 def dedup_claims(claims:list)-> dict:
   """

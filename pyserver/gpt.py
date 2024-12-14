@@ -3,8 +3,10 @@ from abc import ABC, abstractmethod
 import json
 from fastapi import HTTPException
 import pyserver.schema as schema
-from typing import Type, TypeVar, Tuple
+from typing import Type, TypeVar, Tuple, List, Callable
 from pyserver.prompt import Prompt
+import asyncio
+from functools import reduce
 
 #------------------------------------------------------------------------------
 # Notes:
@@ -19,30 +21,30 @@ class _LLMClient(ABC):
 
     def __init__(self, model:str) -> None:
         super().__init__()
-        self._client = self._initClient()
-        self.model = model
-    @abstractmethod
-    def _initClient(self):
-        pass
+        self._client = None
+        self._model = model
+    # @abstractmethod
+    # def _initClient(self):
+    #     pass
 
     @abstractmethod
-    def call(self,system_prompt:Prompt, full_prompt:Prompt):
+    async def call(self,system_prompt:Prompt, full_prompt:Prompt, return_model:Type[T]) -> Tuple[T, schema.Usage]:
         pass
 
 
 class ChatGPTClient(_LLMClient):
     def __init__(self, model: str) -> None:
         super().__init__(model)
-        self._client = self._initClient()
-        self.model = model
+        self._client = OpenAI()
+        self._model = model
 
-    def _initClient(self):
-        return OpenAI()
+    # def _initClient(self):
+    #     return OpenAI()
     
-    def call(self, system_prompt: Prompt, full_prompt: Prompt, return_model:Type[T]) -> Tuple[T, schema.Usage]:
+    async def call(self, system_prompt: Prompt, full_prompt: Prompt, return_model:Type[T]) -> Tuple[T, schema.Usage]:
         try:
             response = self._client.chat.completions.create(
-                model=self.model,
+                model=self._model,
                 messages=[
                 {
                     "role": "system",
@@ -64,5 +66,32 @@ class ChatGPTClient(_LLMClient):
             usage = response.usage
             return return_model(**payload), usage
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"ChatGPT client failed to return expected response, {e}")
+            raise HTTPException(status_code=500, detail=f"ChatGPT client failed to return expected response: {e}")
 
+class BatchLLMCall:
+    def __init__(self, client:_LLMClient) -> None:
+        self._client = client
+        self.model = client._model
+
+    async def call(self, system_prompt: Prompt, full_prompts:List[Prompt], return_model:Type[T]) -> Tuple[List[T], schema.Usage]:
+        try:
+            # Build out the batch of api calls that we want to make
+            tasks = [self._client.call(system_prompt=system_prompt, full_prompt=fp, return_model=return_model) for fp in full_prompts]
+            # asyncio handles concurrency. Returns List([return_mode, usage])
+            results = await asyncio.gather(*tasks)
+
+            # reduce all the usages into a single instance
+            usage = self._flatten_usages(*[r[1] for r in results])
+            # extract data from results
+            data = [r[0] for r in results]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"ChatGPT batch client failed: {e}")
+
+        return data, usage
+    
+    def _flatten_usages(self, *args:schema.Usage) -> schema.Usage:
+        add_usage = lambda a, b: schema.Usage(prompt_tokens=a.prompt_tokens + b.prompt_tokens, completion_tokens=a.completion_tokens + b.completion_tokens, total_tokens=a.total_tokens + b.total_tokens)
+
+        return reduce(add_usage, args)
+
+    
