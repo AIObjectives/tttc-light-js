@@ -12,6 +12,7 @@ import pyserver.schema as schema
 from pyserver.prompt import Prompt
 from itertools import chain
 from collections import defaultdict
+from pyserver.Tree import Tree
 
 import pyserver.config as config
 from pyserver.utils import cute_print
@@ -105,39 +106,6 @@ async def all_comments_to_claims(gist:schema.DataGist, comments:schema.CommentLi
 
   return {"data": {'claims': claims, 'gist':gist}, "usage": usage.model_dump()}
 
-# ------------------------------------------------------
-# def dedup_claims(claims:list)-> dict:
-#   """
-#   Given a list of claims for a given subtopic, identify which ones are near-duplicates
-#   """
-#   client = OpenAI()
-
-#   # add claims with enumerated ids (relative to this subtopic only)
-#   full_prompt = config.CLAIM_DEDUP_PROMPT
-#   for i, orig_claim in enumerate(claims):
-#     full_prompt += "\nclaimId"+str(i)+ ": " + orig_claim
-
-#   response = client.chat.completions.create(
-#     model = config.MODEL,
-#     messages = [
-#       {
-#         "role": "system",
-#         "content": config.SYSTEM_PROMPT
-#       },
-#       {
-#             "role": "user",
-#             "content": full_prompt
-#       }
-#     ],
-#     temperature = 0.0,
-#     response_format = {"type": "json_object"}
-#   )
-#   try:
-#     deduped_claims = response.choices[0].message.content
-#   except:
-#     print("Step 3: no deduped claims: ", response)
-#     deduped_claims = {}
-#   return {"dedup_claims" : json.loads(deduped_claims), "usage" : response.usage}
 
 def add_duplicates_to_claims(base_claims: List[schema.Base_Claim], nesting_claims: schema.NestingClaims) -> List[schema.Claim]:
     # Create lookup dictionary for quick access by claimId
@@ -147,7 +115,7 @@ def add_duplicates_to_claims(base_claims: List[schema.Base_Claim], nesting_claim
     for parent_id, child_ids in nesting_claims.nesting.items():
         result.append(
             schema.Claim(
-                **claim_lookup[parent_id].dict(),  # Copy all base fields
+                **claim_lookup[parent_id].dict(),
                 duplicates=[claim_lookup[child_id] for child_id in child_ids]
             )
         )
@@ -175,15 +143,12 @@ async def sort_claims_tree(claims:List[schema.Extracted_Claim], gist:schema.Data
   
   subtopicNames = list(subtopics_map_to_claims_with_ids.keys())
   base_claims_lists = list(subtopics_map_to_claims_with_ids.values())
-  # return {'subtopicNames': subtopicNames, 'base_claims_list': base_claims_lists}
 
   user_prompts = [Prompt(
     config.CLAIM_DEDUP_PROMPT,
     *claim_list
   ) for claim_list in base_claims_lists]
 
-  # print(user_prompts)
-  # return "success"
   batch_llm_client = BatchLLMCall(
     ChatGPTClient(config.MODEL)
   )
@@ -204,14 +169,15 @@ async def sort_claims_tree(claims:List[schema.Extracted_Claim], gist:schema.Data
     preparse_transform=remove_empty_from_nesting
   )
 
-  # return {"nesting":nestings}
-
   # map the nestings to the base_claims_lists to create our full claims 
   claims_2d_arr:List[List[schema.Claim]] = [add_duplicates_to_claims(base_claims, nesting) for base_claims, nesting in zip(base_claims_lists, nestings)]
-
   # zip and dict together subtopicNames and our claims_2d_arr. Should result in a map from a subtopicName to its now deduped claims.
   subtopic_claims:Dict[str, List[schema.Claim]] = dict(zip(subtopicNames, claims_2d_arr))
-  return {'test': subtopic_claims}
+  
+  sorted_tree = Tree(gist, subtopic_claims).sort()
+
+  return {"tree":sorted_tree}
+  
   
 
   # ----------------------------------------------------------
