@@ -2,12 +2,10 @@
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import json
 from openai import OpenAI
 from pyserver.gpt import ChatGPTClient, BatchLLMCall
-from pydantic import BaseModel
-from typing import List, Union, Dict
-from pyserver.wandblogger import WanbBLogger
+from typing import List, Dict
+# from pyserver.wandblogger import WanbBLogger
 import pyserver.schema as schema
 from pyserver.prompt import Prompt
 from itertools import chain
@@ -15,28 +13,6 @@ from collections import defaultdict
 from pyserver.Tree import Tree
 
 import pyserver.config as config
-from pyserver.utils import cute_print
-
-class Comment(BaseModel):
-  text: str
-
-class CommentList(BaseModel):
-  comments: List[Comment]
-
-class CommentTopicTree(BaseModel):
-  tree: dict
-  comments: List[Comment]
-
-class ClaimTree(BaseModel):
-  tree: dict 
-
-# allow client to override model & all prompts
-class ClientLLMConfig(BaseModel):
-  model: str
-  system_prompt: str
-  comment_to_tree_prompt: str
-  comment_to_claims_prompt: str
-  claim_dedup_prompt: str 
 
 app = FastAPI()
 
@@ -70,7 +46,7 @@ async def comments_to_tree(comments: schema.CommentList, log_to_wandb:bool = Fal
   """
   # TODO: client overrides of prompt!
   llm_client = ChatGPTClient(config.MODEL)
-  # Tree, Usage
+  # Gist, Usage
   gist, usage = await llm_client.call(
     system_prompt=Prompt(config.SYSTEM_PROMPT), 
     # Note: It seems like the way comments are added could be bad if we want to add long, multiline comments and such. Discuss having some seperation token.
