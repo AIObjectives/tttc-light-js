@@ -3,14 +3,13 @@ from abc import ABC, abstractmethod
 import json
 from fastapi import HTTPException
 import pyserver.schema as schema
-from typing import Type, TypeVar, Tuple, List, Callable, Optional
+from typing import Type, TypeVar, Tuple, List
 from pyserver.prompt import Prompt
 import asyncio
 from functools import reduce
 
 #------------------------------------------------------------------------------
 # Notes:
-# _LLMClient defines an abstract class that defines the shape of our gpt clients
 # In the future we should make a factory pattern or something so we can easily create a chatgpt, claude, etc client.
 #------------------------------------------------------------------------------
 
@@ -20,19 +19,23 @@ T = TypeVar('T')
 def identity(x:T)->T:
     return x
 
-class _LLMClient(ABC):
 
+class _LLMCaller(ABC):
+    '''
+    Abstract class for any llm client-like class that implements 'call'
+    '''
+    @abstractmethod
+    async def call(self,system_prompt:Prompt, full_prompt:Prompt, return_model:Type[T], preparse_transform = identity) -> Tuple[T, schema.Usage]:
+        pass
+
+class _LLMClient(_LLMCaller, ABC):
+    '''
+    Abstract class for anything that is an api client to an llm. OpenAI, Anthropic, etc.
+    '''
     def __init__(self, model:str) -> None:
         super().__init__()
         self._client = None
         self._model = model
-    # @abstractmethod
-    # def _initClient(self):
-    #     pass
-
-    @abstractmethod
-    async def call(self,system_prompt:Prompt, full_prompt:Prompt, return_model:Type[T], preparse_transform = identity) -> Tuple[T, schema.Usage]:
-        pass
 
 
 class ChatGPTClient(_LLMClient):
@@ -40,9 +43,6 @@ class ChatGPTClient(_LLMClient):
         super().__init__(model)
         self._client = OpenAI()
         self._model = model
-
-    # def _initClient(self):
-    #     return OpenAI()
     
     async def call(self, system_prompt: Prompt, full_prompt: Prompt, return_model:Type[T], preparse_transform = identity) -> Tuple[T, schema.Usage]:
         try:
@@ -71,7 +71,7 @@ class ChatGPTClient(_LLMClient):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"ChatGPT client failed to return expected response: {e}")
 
-class BatchLLMCall:
+class BatchLLMCall(_LLMCaller):
     def __init__(self, client:_LLMClient) -> None:
         self._client = client
         self.model = client._model
