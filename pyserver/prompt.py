@@ -16,3 +16,6 @@ class Prompt:
             return json.dumps(arg.model_dump())
         # Otherwise, try to JSON serialize directly
         return json.dumps(arg)
+    
+    def __repr__(self) -> str:
+        return f"Prompt: {self.value}"

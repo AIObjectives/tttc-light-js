@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import json
 from fastapi import HTTPException
 import pyserver.schema as schema
-from typing import Type, TypeVar, Tuple, List, Callable
+from typing import Type, TypeVar, Tuple, List, Callable, Optional
 from pyserver.prompt import Prompt
 import asyncio
 from functools import reduce
@@ -17,6 +17,9 @@ from functools import reduce
 
 T = TypeVar('T')
 
+def identity(x:T)->T:
+    return x
+
 class _LLMClient(ABC):
 
     def __init__(self, model:str) -> None:
@@ -28,7 +31,7 @@ class _LLMClient(ABC):
     #     pass
 
     @abstractmethod
-    async def call(self,system_prompt:Prompt, full_prompt:Prompt, return_model:Type[T]) -> Tuple[T, schema.Usage]:
+    async def call(self,system_prompt:Prompt, full_prompt:Prompt, return_model:Type[T], preparse_transform = identity) -> Tuple[T, schema.Usage]:
         pass
 
 
@@ -41,7 +44,7 @@ class ChatGPTClient(_LLMClient):
     # def _initClient(self):
     #     return OpenAI()
     
-    async def call(self, system_prompt: Prompt, full_prompt: Prompt, return_model:Type[T]) -> Tuple[T, schema.Usage]:
+    async def call(self, system_prompt: Prompt, full_prompt: Prompt, return_model:Type[T], preparse_transform = identity) -> Tuple[T, schema.Usage]:
         try:
             response = self._client.chat.completions.create(
                 model=self._model,
@@ -61,7 +64,7 @@ class ChatGPTClient(_LLMClient):
         except:
             raise HTTPException(status_code=500, detail="ChatGPT client failed")
         try:
-            payload = json.loads(response.choices[0].message.content)
+            payload = preparse_transform(json.loads(response.choices[0].message.content))
             # TODO: parse usage with schema.Usage. Don't know why it wasn't working.
             usage = response.usage
             return return_model(**payload), usage
@@ -73,10 +76,14 @@ class BatchLLMCall:
         self._client = client
         self.model = client._model
 
-    async def call(self, system_prompt: Prompt, full_prompts:List[Prompt], return_model:Type[T]) -> Tuple[List[T], schema.Usage]:
+    async def call(self, system_prompt: Prompt, full_prompts:List[Prompt], return_model:Type[T], preparse_transform = identity) -> Tuple[List[T], schema.Usage]:
+        '''
+        Matchs a batch of api calls to the llm client. 
+        TODO: Probably needs more work than this to be robust in any way.
+        '''
         try:
             # Build out the batch of api calls that we want to make
-            tasks = [self._client.call(system_prompt=system_prompt, full_prompt=fp, return_model=return_model) for fp in full_prompts]
+            tasks = [self._client.call(system_prompt=system_prompt, full_prompt=fp, return_model=return_model, preparse_transform=preparse_transform) for fp in full_prompts]
             # asyncio handles concurrency. Returns List([return_mode, usage])
             results = await asyncio.gather(*tasks)
 
