@@ -23,6 +23,9 @@ export const env = z.object({
   CLIENT_BASE_URL: z
     .string({ required_error: "Missing Client Url" })
     .url("Invalid URL"),
+  PYSERVER_URL: z
+    .string({ required_error: "Missing Pyserver Url" })
+    .url("Invalid URL"),
 });
 
 export type Env = z.infer<typeof env>;

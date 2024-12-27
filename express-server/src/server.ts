@@ -5,7 +5,7 @@ import generate from "./routes/generate";
 import create from "./routes/create";
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
-import { setupWorkers } from "./worker";
+import { setupWorkers } from "./workers";
 import { report } from "./routes/report";
 
 const port = process.env.PORT || 8080;

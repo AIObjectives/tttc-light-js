@@ -43,8 +43,8 @@ const parseData = async (
 };
 
 async function createNewReport(req: Request, res: Response) {
-  const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } =
-    req.context.env;
+  const env = req.context.env;
+  const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } = env;
   const body = api.generateApiRequest.parse(req.body);
   const { data, userConfig } = body;
   const parsedData = await parseData(data);
@@ -78,9 +78,18 @@ async function createNewReport(req: Request, res: Response) {
     apiKey,
   };
 
-  const job = await pipelineQueue.add(
+  // add id to comment data if not included.
+  const updatedConfig = {
+    ...config,
+    data: config.data.map((data, i) => ({
+      ...data,
+      id: data.id ? data.id : `cm${i}`,
+    })),
+  };
+
+  const _ = await pipelineQueue.add(
     "pipeline",
-    { config },
+    { config: updatedConfig, env },
     { jobId: config.filename },
   );
 }
