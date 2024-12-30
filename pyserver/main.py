@@ -82,15 +82,15 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
     },
     "comments": [
         {
-            "id: "c1",
+            "id": "c1",
             "text": "I love cats"
         },
         {
-            "id: "c2",
+            "id": "c2",
             "text": "dogs are great"
         },
         {
-            "id: "c3",
+            "id": "c3",
             "text": "I'm not sure about birds"
         }
     ]
