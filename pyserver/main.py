@@ -26,6 +26,7 @@ import pyserver.config as config
 from pyserver.utils import cute_print
 
 class Comment(BaseModel):
+  id: str
   text: str
 
 class CommentList(BaseModel):
@@ -66,7 +67,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
 
   Input format:
   - CommentLLMConfig object: JSON/dictionary with the following fields:
-    - comments: a list of Comment (each has a single field, "text", for the raw text of the comment)
+    - comments: a list of Comment (each has a field, "text", for the raw text of the comment, and an id)
     - llm: a dictionary of the LLM configuration:
       - model_name: a string of the name of the LLM to call ("gpt-4o-mini", "gpt-4-turbo-preview")
       - system_prompt: a string of the system prompt
@@ -81,12 +82,15 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
     },
     "comments": [
         {
+            "id": "c1",
             "text": "I love cats"
         },
         {
+            "id": "c2",
             "text": "dogs are great"
         },
         {
+            "id": "c3",
             "text": "I'm not sure about birds"
         }
     ]
@@ -244,7 +248,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
   
   Input format:
   - CommentTopicTree object: JSON/dictionary with the following fields:
-    - comments: a list of Comment (each has a single field, "text", for the raw text of the comment)
+    - comments: a list of Comment (each has a field, "text", for the raw text of the comment, and an id)
     - llm: a dictionary of the LLM configuration:
       - model_name: a string of the name of the LLM to call ("gpt-4o-mini", "gpt-4-turbo-preview")
       - system_prompt: a string of the system prompt
@@ -260,12 +264,15 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
     },
     "comments": [
         {
+            "id": "c1",
             "text": "I love cats"
         },
         {
+            "id": "c2",
             "text": "dogs are great"
         },
         {
+            "id": "c3",
             "text": "I'm not sure about birds"
         }
     ],
@@ -312,6 +319,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
                     "claims": [
                         {
                             "claim": "Cats are the best household pets.",
+                            "commentId":"c1",
                             "quote": "I love cats",
                             "topicName": "Pets",
                             "subtopicName": "Cats"
@@ -323,6 +331,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
                     "claims": [
                         {
                             "claim": "Dogs are superior pets.",
+                            "commentId":"c2",
                             "quote": "dogs are great",
                             "topicName": "Pets",
                             "subtopicName": "Dogs"
@@ -334,6 +343,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
                     "claims": [
                         {
                             "claim": "Birds are not suitable pets for everyone.",
+                            "commentId":"c3",
                             "quote": "I'm not sure about birds.",
                             "topicName": "Pets",
                             "subtopicName": "Birds"
@@ -358,11 +368,13 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
     response = comment_to_claims(req.llm, comment.text, req.tree)
     try:
       claims = response["claims"]
+      # Add commentId to claim to track origin
+      [claim.update({'commentId':comment.id}) for claim in claims['claims']]
     except:
       print("Step 2: no claims for comment: ", response)
       claims = None
     # reference format
-    #{'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]} 
+    #{'claims': [{'claim': 'Dogs are superior pets.', commentId:'c1', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]} 
     usage = response["usage"]
     if claims and len(claims["claims"]) > 0:
       comms_to_claims.extend([c for c in claims["claims"]])
@@ -377,7 +389,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
       comms_to_claims_html.append([comment.text, viz_claims])  
 
   # reference format
-  #[{'claim': 'Cats are the best household pets.', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds'}]
+  #[{'claim': 'Cats are the best household pets.', 'commentId':'c1', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'commentId':'c2','claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'commentId':'c3', 'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds'}]
  
   # count the claims in each subtopic 
   for claim in comms_to_claims:
@@ -471,12 +483,14 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                 "claims": [
                     {
                         "claim": "Cats are the best pets.",
+                        "commentId":"c1",
                         "quote": "I love cats.",
                         "topicName": "Pets",
                         "subtopicName": "Cats"
                     },
                     {
                         "claim": "Cats are the best pets.",
+                        "commentId":"c1",
                         "quote": "I really really love cats",
                         "topicName": "Pets",
                         "subtopicName": "Cats"
@@ -488,6 +502,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                 "claims": [
                     {
                         "claim": "Dogs are superior pets.",
+                        "commentId":"c2",
                         "quote": "dogs are great",
                         "topicName": "Pets",
                         "subtopicName": "Dogs"
@@ -499,12 +514,14 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                 "claims": [
                     {
                         "claim": "Birds are not ideal pets for everyone.",
+                        "commentId":"c3",
                         "quote": "I'm not sure about birds.",
                         "topicName": "Pets",
                         "subtopicName": "Birds"
                     },
                     {
                         "claim": "Birds are not suitable pets for everyone.",
+                        "commentId":"c3",
                         "quote": "I don't know about birds.",
                         "topicName": "Pets",
                         "subtopicName": "Birds"
@@ -539,12 +556,14 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                         "claims": [
                             {
                                 "claim": "Cats are the best pets.",
+                                "commentId":"c1",
                                 "quote": "I love cats.",
                                 "topicName": "Pets",
                                 "subtopicName": "Cats",
                                 "duplicates": [
                                     {
                                         "claim": "Cats are the best pets.",
+                                        "commendId:"c1"
                                         "quote": "I really really love cats",
                                         "topicName": "Pets",
                                         "subtopicName": "Cats",
@@ -562,12 +581,14 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                         "claims": [
                             {
                                 "claim": "Birds are not ideal pets for everyone.",
+                                "commentId:"c3",
                                 "quote": "I'm not sure about birds.",
                                 "topicName": "Pets",
                                 "subtopicName": "Birds",
                                 "duplicates": [
                                     {
                                         "claim": "Birds are not suitable pets for everyone.",
+                                        "commentId" "c3",
                                         "quote": "I don't know about birds.",
                                         "topicName": "Pets",
                                         "subtopicName": "Birds",
@@ -585,6 +606,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                         "claims": [
                             {
                                 "claim": "Dogs are superior pets.",
+                                "commentId": "c2",
                                 "quote": "dogs are great",
                                 "topicName": "Pets",
                                 "subtopicName": "Dogs"
