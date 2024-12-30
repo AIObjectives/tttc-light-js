@@ -14,12 +14,15 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-import TopicSVG from "./Topic.svg";
-import QuoteSVG from "./quote aoi.svg";
-import ClaimSVG from "./Claim.svg";
-import ChevronRight from "./ChevronRight.svg";
-
-import Image from "next/image";
+import TopicSVG from "./TopicSvg";
+import QuoteSVG from "./QuoteSvg";
+import ClaimSVG from "./ClaimSvg";
+// TODO:  Capitalize Chevron and Response SVG
+import ChevronRightSvg from "./ChevronRightSvg";
+import ResponseSvg from "./ResponseSvg";
+import InfoSVG from "./InfoSvg";
+import XSVG from "./XSvg";
+import QuoteBubbleSVG from "./QuoteBubbleSvg";
 
 const Icons = () => <></>;
 
@@ -51,20 +54,24 @@ Icons.OutlineExpanded = ChevronUp;
 
 Icons.OutlineCollapsed = ChevronDown;
 
+Icons.Info = (props: { className?: string }) => <InfoSVG {...props} />;
+
 Icons.ChevronRight = (props: { className?: string }) => (
-  <Image {...props} src={ChevronRight} alt="chevron icon" />
+  <ChevronRightSvg {...props} />
 );
 
-Icons.Topic = (props: { className?: string }) => (
-  <Image {...props} src={TopicSVG} alt="topic icon" />
+Icons.Topic = (props: { className?: string }) => <TopicSVG {...props} />;
+
+Icons.Quote = (props: { className?: string }) => <QuoteSVG {...props} />;
+
+Icons.QuoteBubble = (props: { className?: string }) => (
+  <QuoteBubbleSVG {...props} />
 );
 
-Icons.Quote = (props: { className?: string }) => (
-  <Image {...props} src={QuoteSVG} alt="topic icon" />
-);
+Icons.Claim = (props: { className?: string }) => <ClaimSVG {...props} />;
 
-Icons.Claim = (props: { className?: string }) => (
-  <Image {...props} src={ClaimSVG} alt="topic icon" />
-);
+Icons.Response = (props: { className?: string }) => <ResponseSvg {...props} />;
+
+Icons.X = (props: { className?: string }) => <XSVG {...props} />;
 
 export default Icons;
