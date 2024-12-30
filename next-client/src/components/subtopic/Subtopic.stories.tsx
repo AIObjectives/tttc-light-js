@@ -14,11 +14,16 @@ import { __internals } from "../report/hooks/useReportState";
 const { stateBuilder } = __internals;
 
 const reportState = stateBuilder(reportData.topics);
-const topicNode = reportState.children[0].children[0];
+const subtopicNode = reportState.children[0].children[0];
 
 const meta = {
   title: "Subtopic",
-  component: Subtopic,
+  component: () => (
+    <div>
+      <h1>Temporarily out of commission</h1>
+      <p>See a full example in Report</p>
+    </div>
+  ),
   parameters: {
     // layout: "centered",
   },
@@ -30,30 +35,30 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof Subtopic>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const baseProps = topicNode.data;
+// const baseProps = subtopicNode.data;
 
 export const Main: Story = {
-  args: { node: topicNode, isOpen: true },
+  // args: { node: subtopicNode, isOpen: true },
 };
 
-export const Header = () => (
-  <SubtopicHeader
-    title={topicNode.data.title}
-    numClaims={topicNode.data.claims.length}
-    numPeople={getNPeople(topicNode.data.claims)}
-    button={<CopyLinkButton anchor={topicNode.data.title} />}
-  />
-);
+// export const Header = () => (
+//   <SubtopicHeader
+//     title={subtopicNode.data.title}
+//     numClaims={subtopicNode.data.claims.length}
+//     numPeople={getNPeople(subtopicNode.data.claims)}
+//     button={<CopyLinkButton anchor={subtopicNode.data.title} />}
+//   />
+// );
 
-export const Description = () => (
-  <SubtopicDescription description={topicNode.data.description!} />
-);
+// export const Description = () => (
+//   <SubtopicDescription description={subtopicNode.data.description!} />
+// );
 
-export const Summary = () => <SubtopicSummary topic={topicNode.data} />;
+// export const Summary = () => <SubtopicSummary subtopic={subtopicNode.data} />;
 
-export const Claims = () => <SubtopicClaims claims={topicNode.data.claims!} />;
+// export const Claims = () => <SubtopicClaims subtopicNode={subtopicNode} />;

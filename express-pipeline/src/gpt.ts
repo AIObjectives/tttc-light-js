@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { Tracker, Cache } from "tttc-common/schema";
 
 export const gpt = async (
-  model: String,
+  model: string,
   apiKey: string,
   cacheKey: string,
   system: string,

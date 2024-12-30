@@ -1,4 +1,5 @@
-import { z } from "zod";
+// import { getNClaims } from "./morphisms";
+import { object, z } from "zod";
 
 /** VVVVVVVVVVVVVVVVVVVVVVVVVVVVV */
 /********************************
@@ -31,6 +32,8 @@ const googleSheetData = z.object({
   oneSubmissionPerEmail: z.boolean(),
 });
 
+export type GoogleSheetData = z.infer<typeof googleSheetData>;
+
 const googleSheetDataPayload = z.tuple([
   z.literal("googlesheet"),
   googleSheetData,
@@ -41,6 +44,8 @@ const googleSheetDataPayload = z.tuple([
  * Union of CSV and Google Sheet inputs
  */
 export const dataPayload = z.union([csvDataPayload, googleSheetDataPayload]);
+
+export type DataPayload = z.infer<typeof dataPayload>;
 
 export type SourceRow = z.infer<typeof sourceRow>;
 
@@ -58,14 +63,13 @@ export const llmPieChart = z.object({
 export type LLMPieChart = z.infer<typeof llmPieChart>;
 
 export const llmUserConfig = z.object({
-  apiKey: z.string(),
-  title: z.string(),
-  question: z.string(),
-  description: z.string(),
-  systemInstructions: z.string(),
-  clusteringInstructions: z.string(),
-  extractionInstructions: z.string(),
-  dedupInstructions: z.string(),
+  apiKey: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  systemInstructions: z.string().min(1),
+  clusteringInstructions: z.string().min(1),
+  extractionInstructions: z.string().min(1),
+  dedupInstructions: z.string().min(1),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
@@ -78,9 +82,7 @@ export const llmSystemConfig = z.object({
 
 export type oldSystemConfig = z.infer<typeof llmSystemConfig>;
 
-export type DataPayload = z.infer<typeof dataPayload>;
-
-export const options = z.object({
+export const oldOptions = z.object({
   model: z.string(),
   apiKey: z.string(),
   data: sourceRow.array(),
@@ -104,7 +106,7 @@ export const options = z.object({
     .optional(),
 });
 
-export type Options = z.infer<typeof options>;
+export type OldOptions = z.infer<typeof oldOptions>;
 
 // Zod has trouble with self-referential types, so leave this be until we need to parse
 type _LLMClaim = {
@@ -307,8 +309,8 @@ export type Claim = {
 export const claim = z.custom<Claim>();
 
 /********************************
- * Topic
- * Topics are categories of claims that share some relation.
+ * Subtopic
+ * Subtopic are categories of claims that share some relation.
  ********************************/
 export const subtopic = z.object({
   id: z.string(),
@@ -319,15 +321,32 @@ export const subtopic = z.object({
 
 export type Subtopic = z.infer<typeof subtopic>;
 
+export const topicColors = z.enum([
+  "violet",
+  "blueSea",
+  "blueSky",
+  "greenLeaf",
+  "greenLime",
+  "yellow",
+  "red",
+  "purple",
+  "brown",
+  "gray",
+]);
+
+export type TopicColors = z.infer<typeof topicColors>;
+
 /********************************
- * Theme
- * Themes are broader categories of topics
+ * Topic
+ * Topics are broader categories of topics
  ********************************/
 export const topic = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
+  context: z.string().optional(),
   subtopics: z.array(subtopic),
+  topicColor: topicColors,
 });
 
 export type Topic = z.infer<typeof topic>;
@@ -348,18 +367,41 @@ const pieChartGraphic = z.tuple([
 const graphics = pieChartGraphic; // make this a union when we have more
 
 /********************************
+ * Question and Answer
+ * Included in the Report summary, gives the creator an opportunity to answer questions about getting data, etc
+ ********************************/
+
+export const questionAnswer = z.object({
+  question: z.string(),
+  answer: z.string(),
+});
+
+export type QuestionAnswer = z.infer<typeof questionAnswer>;
+
+/********************************
  * Report Data
  * Contains all the information that a report needs to display
  ********************************/
 
-export const reportDataObj = z.object({
-  title: z.string(),
-  description: z.string(),
-  topics: z.array(topic),
-  sources: z.array(source),
-  graphics: graphics.optional(),
-  date: z.string(),
-});
+export const reportDataObj = z
+  .object({
+    title: z.string(),
+    description: z.string(),
+    questionAnswers: z.optional(questionAnswer.array()),
+    topics: z.array(topic),
+    sources: z.array(source),
+    graphics: graphics.optional(),
+    date: z.string(),
+  })
+  .transform((obj) => ({
+    ...obj,
+    // sort topics by number of claims. Don't use getNClaims - circular reference
+    topics: obj.topics.sort((a, b) => {
+      const claimsA = a.subtopics.flatMap((sub) => sub.claims);
+      const claimsB = b.subtopics.flatMap((sub) => sub.claims);
+      return claimsB.length - claimsA.length;
+    }),
+  }));
 
 export type ReportDataObj = z.infer<typeof reportDataObj>;
 
@@ -379,7 +421,7 @@ const reportData = v0_2_Report; // make union when we have more versions
  ********************************/
 
 // template + optional text
-const openAIModels = z.enum([
+export const openAIModels = z.enum([
   "gpt-4",
   "gpt-4-32k",
   "gpt-3.5-turbo",
