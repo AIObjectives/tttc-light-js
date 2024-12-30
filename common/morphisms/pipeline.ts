@@ -1,4 +1,3 @@
-import { pipeline } from "zod";
 import * as schema from "../schema";
 import { v4 } from "uuid";
 
@@ -8,6 +7,24 @@ const uuid = (): string => v4();
 
 type ClaimMap = Record<string, schema.Claim>;
 type SourceMap = Record<string, schema.Source>;
+
+function mulberry32(a) {
+  return function () {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const pseudoRand = mulberry32(42);
+
+const colorArr = schema.topicColors.options
+  .map((color) => ({ color, sort: pseudoRand() }))
+  .sort((a, b) => b.sort - a.sort)
+  .map((val) => val.color);
+
+const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
 
 /**
  * Takes source rows and builds a map from row id -> Source
@@ -72,15 +89,6 @@ const buildClaimsMap = (
   pipeline: schema.LLMPipelineOutput,
   sourceMap: SourceMap,
 ) => {
-  // ! Old data file for AI Assemblies workshop fails since its missing claim.duplictates. Check and see if we really need duplicates in general.
-  // const allClaims = pipeline.tree.flatMap((topic) =>
-  //   topic.subtopics.flatMap((subtopic) =>
-  //     subtopic.claims.concat(
-  //       // subtopic.claims.flatMap((claim) => claim.duplicates),
-  //       subtopic.claims
-  //     ),
-  //   ),
-  // );
   const allClaims = pipeline.tree.flatMap((topic) =>
     topic.subtopics.flatMap((subtopic) => {
       // Ensure subtopic.claims is an array
@@ -156,11 +164,12 @@ const getSubtopicsFromLLMSubTopics =
 const getTopicsFromTaxonomy =
   (claimMap: ClaimMap) =>
   (tree: schema.Taxonomy): schema.Topic[] =>
-    tree.map((leaf) => ({
+    tree.map((leaf, idx) => ({
       id: uuid(),
       title: leaf.topicName,
       description: leaf.topicShortDescription!,
       subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
+      topicColor: colorPicker(idx),
     }));
 
 export const getReportDataObj = (
@@ -168,13 +177,13 @@ export const getReportDataObj = (
 ): schema.ReportDataObj => {
   const sourceMap = buildSourceMap(pipelineOutput.data);
   const claimMap = buildClaimsMap(pipelineOutput, sourceMap);
-  return {
+  return schema.reportDataObj.parse({
     title: pipelineOutput.title,
     description: pipelineOutput.description,
     date: new Date().toISOString(),
     topics: getTopicsFromTaxonomy(claimMap)(pipelineOutput.tree),
     sources: pipelineOutput.data.map((row) => sourceMap[row.id]),
-  };
+  });
 };
 
 const buildStageData: schema.PipelineStepData = {
