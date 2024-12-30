@@ -1,4 +1,7 @@
 import { nextTypography } from "@src/lib/font";
+import Navbar from "@components/navbar/Navbar";
+import { Toaster } from "@src/components/elements";
+import "./global.css";
 
 export const metadata = {
   title: "Talk the City",
@@ -13,23 +16,22 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
-        <link rel="stylesheet" href="style.css" />
       </head>
       <body className={nextTypography}>
         <script src="index.js"></script>
-        <div className="navbar">
-          <a href="/">
-            <h1>Talk to the City (Next)</h1>
-          </a>
-          <div className="nav-links">
-            <a href="/examples">Examples</a>
-            <a href="https://github.com/AIObjectives/tttc-light-js?tab=readme-ov-file#api-docs">
-              API docs
-            </a>
-          </div>
-        </div>
-
+        <Navbar />
         {children}
+        <Toaster
+          position="bottom-right"
+          // toastOptions={{
+          //   className: "border-none p-4 flex",
+          //   classNames: {
+          //     toast: "bg-accent",
+          //     title: "text-accent-foreground",
+          //     icon: "text-accent-foreground",
+          //   },
+          // }}
+        />
       </body>
     </html>
   );

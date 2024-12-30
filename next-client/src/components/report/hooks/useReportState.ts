@@ -20,6 +20,11 @@ const addSubtopicPagination = 3;
 export type HasId = { id: string };
 
 /**
+ * Type for nodes that have a child
+ */
+export type HasChildren<T extends SomeNode> = { children: T[] };
+
+/**
  * A single Node in the NodeTree. Wraps data.
  */
 export type Node<T extends HasId> = {
@@ -170,18 +175,24 @@ const closeAllTopics = mapTopic((node) => ({ ...node, isOpen: false }));
 
 const resetAllTopics = mapTopic((node) => ({
   ...node,
-  pagination: defaultTopicPagination,
+  pagination: Math.min(node.children.length, defaultTopicPagination),
 }));
 
 const expandTopic = changeTopic((node) => ({
   ...node,
-  pagination: node.pagination + addTopicPagination,
+  pagination: Math.min(
+    node.children.length,
+    node.pagination + addTopicPagination,
+  ),
 }));
 
 const setTopicPagination = (num: number) =>
   changeTopic((node) => ({
     ...node,
-    pagination: Math.max(num, defaultTopicPagination),
+    pagination: Math.min(
+      node.children.length,
+      Math.max(num, defaultTopicPagination),
+    ),
   }));
 
 const resetTopic = setTopicPagination(defaultTopicPagination);
@@ -285,28 +296,34 @@ const mapTopicChildren =
 
 const expandSubtopic = changeSubtopic((node) => ({
   ...node,
-  pagination: node.pagination + addSubtopicPagination,
+  pagination: Math.min(
+    node.children.length,
+    node.pagination + addSubtopicPagination,
+  ),
 }));
 
 const setSubtopicPagination = (num: number) =>
   changeSubtopic((node) => ({
     ...node,
-    pagination: Math.max(num, defaultSubtopicPagination),
+    pagination: Math.min(
+      node.children.length,
+      Math.max(num, defaultSubtopicPagination),
+    ),
   }));
 
 const resetSubtopic = changeSubtopic((node) => ({
   ...node,
-  pagination: defaultSubtopicPagination,
+  pagination: Math.min(defaultSubtopicPagination, node.children.length),
 }));
 
-const resetTopicsChildren = mapTopicChildren((topic) => ({
-  ...topic,
-  pagination: defaultSubtopicPagination,
+const resetTopicsChildren = mapTopicChildren((node) => ({
+  ...node,
+  pagination: Math.min(defaultSubtopicPagination, node.children.length),
 }));
 
 const resetAllSubtopics = mapSubtopic((node) => ({
   ...node,
-  pagination: defaultSubtopicPagination,
+  pagination: Math.min(defaultSubtopicPagination, node.children.length),
 }));
 
 const setFocusedId = (state: ReportState, focusedId: string): ReportState => ({
@@ -379,7 +396,7 @@ const stateBuilder = (topics: schema.Topic[]): ReportState => ({
 const makeTopicNode = (topic: schema.Topic): TopicNode => ({
   data: topic,
   isOpen: false,
-  pagination: defaultTopicPagination,
+  pagination: Math.min(topic.subtopics.length, defaultTopicPagination),
   children: topic.subtopics
     .map(makeSubSubtopicNode)
     .sort(
@@ -391,7 +408,7 @@ const makeTopicNode = (topic: schema.Topic): TopicNode => ({
 
 const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
   data: subtopic,
-  pagination: defaultSubtopicPagination,
+  pagination: Math.min(subtopic.claims.length, defaultSubtopicPagination),
   children: subtopic.claims.map(makeClaimNode),
 });
 
