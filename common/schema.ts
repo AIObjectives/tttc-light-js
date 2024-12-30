@@ -426,6 +426,7 @@ export const openAIModels = z.enum([
   "gpt-4-32k",
   "gpt-3.5-turbo",
   "gpt-3.5-turbo-16k",
+  "gpt-4-turbo-preview",
   "code-davinci-002",
   "code-cushman-001",
   "text-embedding-ada-002",
@@ -486,7 +487,7 @@ export const pipelineStep = z.tuple([pipelineStages, pipelineStepData]);
 export type PipelineStep = z.infer<typeof pipelineStep>;
 
 export const reportMetadataObj = z.object({
-  buildProcess: z.array(pipelineStep),
+  // buildProcess: z.array(pipelineStep),
   startTimestamp: z.number(),
   duration: z.number(),
   totalCost: z.string(),

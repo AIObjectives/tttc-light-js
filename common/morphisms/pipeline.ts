@@ -206,10 +206,10 @@ const getReportMetaData = (
   pipelineOutput: schema.LLMPipelineOutput,
 ): schema.ReportMetadataObj => ({
   duration: 0, // Note: This is a string in llm pipeline output. Figure out way to translate
-  buildProcess: schema.pipelineStages.options.map((stage) => [
-    stage,
-    buildStageData,
-  ]),
+  // buildProcess: schema.pipelineStages.options.map((stage) => [
+  //   stage,
+  //   buildStageData,
+  // ]),
   startTimestamp: pipelineOutput.start,
   totalCost: "",
   author: "",
