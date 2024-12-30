@@ -1,4 +1,5 @@
-import { z } from "zod";
+// import { getNClaims } from "./morphisms";
+import { object, z } from "zod";
 
 /** VVVVVVVVVVVVVVVVVVVVVVVVVVVVV */
 /********************************
@@ -327,6 +328,7 @@ export const topic = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
+  context: z.string().optional(),
   subtopics: z.array(subtopic),
 });
 
@@ -348,18 +350,41 @@ const pieChartGraphic = z.tuple([
 const graphics = pieChartGraphic; // make this a union when we have more
 
 /********************************
+ * Question and Answer
+ * Included in the Report summary, gives the creator an opportunity to answer questions about getting data, etc
+ ********************************/
+
+export const questionAnswer = z.object({
+  question: z.string(),
+  answer: z.string(),
+});
+
+export type QuestionAnswer = z.infer<typeof questionAnswer>;
+
+/********************************
  * Report Data
  * Contains all the information that a report needs to display
  ********************************/
 
-export const reportDataObj = z.object({
-  title: z.string(),
-  description: z.string(),
-  topics: z.array(topic),
-  sources: z.array(source),
-  graphics: graphics.optional(),
-  date: z.string(),
-});
+export const reportDataObj = z
+  .object({
+    title: z.string(),
+    description: z.string(),
+    questionAnswers: z.optional(questionAnswer.array()),
+    topics: z.array(topic),
+    sources: z.array(source),
+    graphics: graphics.optional(),
+    date: z.string(),
+  })
+  .transform((obj) => ({
+    ...obj,
+    // sort topics by number of claims. Don't use getNClaims - circular reference
+    topics: obj.topics.sort((a, b) => {
+      const claimsA = a.subtopics.flatMap((sub) => sub.claims);
+      const claimsB = b.subtopics.flatMap((sub) => sub.claims);
+      return claimsB.length - claimsA.length;
+    }),
+  }));
 
 export type ReportDataObj = z.infer<typeof reportDataObj>;
 

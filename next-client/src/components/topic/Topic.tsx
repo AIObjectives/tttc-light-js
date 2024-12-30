@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useContext } from "react";
+import React, { createContext, forwardRef, useContext } from "react";
 import {
   Button,
   Card,
@@ -21,37 +21,47 @@ import { Col, Row } from "../layout";
 import Subtopic, { SubtopicHeader } from "../subtopic/Subtopic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
-import { Sticky } from "../wrappers";
 import { ReportContext } from "../report/Report";
 import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
+
+type TopicContextType = {
+  topicNode: TopicNode;
+};
+
+const TopicContext = createContext<TopicContextType>({
+  topicNode: {} as TopicNode,
+});
 
 /**
  * Highest level node in Report. Expands to show subtopics.
  */
 function Topic({ node }: { node: TopicNode }) {
+  // Get report context and use that to setup scrolling and focusing
   const { dispatch, useScrollTo, useFocusedNode } = useContext(ReportContext);
   const scrollRef = useScrollTo(node.data.id);
   const focusedRef = useFocusedNode(node.data.id);
+
   return (
-    <TopicCard
-      ref={mergeRefs([scrollRef, focusedRef])}
-      topicNode={node}
-      openButton={
-        <Button
-          onClick={() =>
-            dispatch({ type: "toggleTopic", payload: { id: node.data.id } })
-          }
-        >
-          {node.isOpen ? "Collapse Topic" : "Expand Topic"}
-        </Button>
-      }
-      openedTopic={<ExpandTopic topicNode={node} />}
-    />
+    <TopicContext.Provider value={{ topicNode: node }}>
+      <TopicCard
+        ref={mergeRefs([scrollRef, focusedRef])}
+        // topicNode={node}
+        openButton={
+          <Button
+            onClick={() =>
+              dispatch({ type: "toggleTopic", payload: { id: node.data.id } })
+            }
+          >
+            {node.isOpen ? "Collapse Topic" : "Expand Topic"}
+          </Button>
+        }
+        openedTopic={<ExpandTopic />}
+      />
+    </TopicContext.Provider>
   );
 }
 interface TopicCardProps {
-  topicNode: TopicNode;
   openButton: React.ReactNode;
   openedTopic: React.ReactNode;
 }
@@ -59,18 +69,27 @@ interface TopicCardProps {
  * UI for Topic
  */
 const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
-  { topicNode, openButton, openedTopic }: TopicCardProps,
+  { openButton, openedTopic }: TopicCardProps,
   ref,
 ) {
-  const { title, description } = topicNode.data;
+  const { topicNode } = useContext(TopicContext);
+  const { title, description, context } = topicNode.data;
 
   return (
     <Card>
       <CardContent ref={ref} className="p-2">
         <Col gap={3}>
           <TopicHeader
-            title={title}
-            button={<CopyLinkButton anchor={title} />}
+            button={
+              <>
+                <div className="self-center">
+                  <CopyLinkButton anchor={title} />
+                </div>
+                {/* <Button variant={"outline"} size={"icon"}>
+                  <Icons.Response />
+                </Button> */}
+              </>
+            }
           />
           <TopicInteractiveGraphic
             subtopics={topicNode.children}
@@ -85,20 +104,43 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
   );
 });
 
-export function TopicHeader({
-  title,
-  button,
-}: {
-  title: string;
-  button?: React.ReactNode;
-}) {
+export function TopicHeader({ button }: { button?: React.ReactNode }) {
+  const { topicNode } = useContext(TopicContext);
+  const { title } = topicNode.data;
+  const subtopics = topicNode.children.map((sub) => sub.data);
   return (
-    <Row gap={2} className="justify-between">
-      <CardTitle className="self-center">
+    <Row gap={2}>
+      <CardTitle className="self-center flex-grow">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
+      <TextIcon
+        icon={
+          <div>
+            <Icons.Claim />
+          </div>
+        }
+      >
+        {getNClaims(subtopics)} claims by {/* ! Temp change for QA testing */}
+        {Math.floor(getNPeople(subtopics) * 0.45)} people
+      </TextIcon>
       {button}
     </Row>
+  );
+}
+
+export function TopicContextDescription({
+  context,
+}: {
+  context: string | undefined;
+}) {
+  return (
+    <>
+      <Col gap={2} className={`${context === undefined ? "hidden" : "p-8"}`}>
+        <h5>More context</h5>
+        <p>{context}</p>
+      </Col>
+      <Separator />
+    </>
   );
 }
 
@@ -108,37 +150,26 @@ export function TopicHeader({
  */
 export function TopicInteractiveGraphic({
   children,
-  subtopics,
   openButton,
 }: React.PropsWithChildren<{
   subtopics: SubtopicNode[];
   openButton: React.ReactNode;
 }>) {
-  const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(
-    subtopics.map((node) => node.data),
-  );
+  const { topicNode } = useContext(TopicContext);
+  const subtopics = topicNode.children.map((sub) => sub.data);
+  const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(subtopics);
   return (
     <Col gap={3}>
-      <Col gap={2}>
-        <TextIcon icon={<Icons.Claim />}>
-          {getNClaims(subtopics.map((node) => node.data))} claims by{" "}
-          {/* ! Temp change for QA testing */}
-          {Math.floor(
-            getNPeople(subtopics.map((node) => node.data)) * 0.45,
-          )}{" "}
-          people
-        </TextIcon>
-        {/* Point graphic component */}
-        <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">
-          {topicsHoverState.map(({ group: topic, isHovered }) => (
-            <PointGraphicGroup
-              key={topic.id}
-              claims={topic.claims}
-              isHighlighted={isHovered}
-            />
-          ))}
-        </Row>
-      </Col>
+      {/* Point graphic component */}
+      <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">
+        {topicsHoverState.map(({ group: topic, isHovered }) => (
+          <PointGraphicGroup
+            key={topic.id}
+            claims={topic.claims}
+            isHighlighted={isHovered}
+          />
+        ))}
+      </Row>
 
       {/* anything in between the point graphic and topic links */}
       {children}
@@ -160,7 +191,6 @@ export function TopicInteractiveGraphic({
  * List of subtopics. When hovered should show a popup card and highlight the claim-cells.
  */
 export function SubtopicList({
-  subtopics,
   onMouseOver,
   onMouseExit,
 }: {
@@ -168,6 +198,8 @@ export function SubtopicList({
   onMouseOver: (id: string) => void;
   onMouseExit: (id: string) => void;
 }) {
+  const { topicNode } = useContext(TopicContext);
+  const subtopics = topicNode.children.map((sub) => sub.data);
   return (
     <p className="line-clamp-2 leading-6 flex-grow">
       <TextIcon className="inline" icon={<Icons.Topic className="inline " />}>
@@ -235,22 +267,27 @@ export function SubtopicListItem({
 /**
  * When the TopicNode is expanded, show subtopics and handle pagination.
  */
-function ExpandTopic({ topicNode }: { topicNode: TopicNode }) {
-  const { isOpen, pagination, children: topicNodes, data } = topicNode;
+function ExpandTopic() {
+  const { topicNode } = useContext(TopicContext);
+  const { isOpen, pagination, children: subtopicNodes, data } = topicNode;
 
   return (
     <>
       <Separator className={`${isOpen ? "" : "hidden"}`} />
-      {topicNodes.map((node, i) => (
+      {isOpen && data.context ? (
+        <TopicContextDescription context={data.context} />
+      ) : (
+        <></>
+      )}
+      {subtopicNodes.map((node, i) => (
         <Col key={node.data.id}>
           <Subtopic node={node} isOpen={isOpen && i + 1 <= pagination} />
         </Col>
       ))}
-      {isOpen && pagination <= topicNodes.length && (
+      {isOpen && pagination <= subtopicNodes.length && (
         <>
-          <Separator />
           <ShowMoreButton
-            moreLeftNum={topicNodes.length - pagination}
+            moreLeftNum={subtopicNodes.length - pagination}
             topicId={data.id}
           />
         </>
