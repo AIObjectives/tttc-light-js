@@ -3,3 +3,4 @@ OPENAI_API_KEY_PASSWORD= This is used if you want to share compute resources wit
 GCLOUD_STORAGE_BUCKET= name of the bucket you use
 GOOGLE_CREDENTIALS_ENCODED= 
 CLIENT_BASE_URL= where is your frontend being hosted? On dev its localhost:3000 by default
+PYSERVER_URL=
