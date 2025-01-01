@@ -9,7 +9,7 @@ import React, {
   useState,
 } from "react";
 import * as schema from "tttc-common/schema";
-import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import { Col, Row } from "../layout";
 import {
   Button,

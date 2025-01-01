@@ -7,7 +7,7 @@ import Topic, {
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
 import React from "react";
-import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import { __internals } from "../report/hooks/useReportState";
 
 const { stateBuilder } = __internals;
