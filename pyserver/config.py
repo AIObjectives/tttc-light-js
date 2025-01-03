@@ -79,4 +79,4 @@ Return a JSON object of the form {
 
 And now, here are the claims:"""
 
-WANDB_PROJECT_NAME = "t3c_llm_tree"
+WANDB_PROJECT_NAME = "t3c_tavern_local"

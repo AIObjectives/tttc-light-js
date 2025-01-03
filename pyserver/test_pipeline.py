@@ -79,6 +79,54 @@ def test_full_pipeline(comments=dupes_pets_5):
   full_tree = client.put("/sort_claims_tree/", json=request).json()["data"]
   json_print(full_tree)
 
+#################
+# W&B log tests #
+#---------------#
+
+def test_wb_topic_tree():
+  llm = base_llm
+  llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
+  request ={"llm" : llm, "comments" : min_pets_3}
+  response = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request)
+  json_print(response.json())
+
+def test_wb_claims():
+  llm = base_llm
+  llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
+  request ={"llm" : llm, "comments" : dupes_pets_5, "tree" : topic_tree_4o}
+  response = client.post("/claims/?log_to_wandb=local_test_0", json=request)
+  json_print(response.json())
+
+def test_wb_dupes():
+  llm = base_llm
+  llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
+  request ={"llm" : llm, "tree" : dupe_claims_4o_ids}
+  response = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request)
+  json_print(response.json())
+
+def test_wb_full_pipeline(comments=dupes_pets_5):
+  print("Step 1: Topic tree\n\n")
+  llm = base_llm
+  # fancier model for more precise deduplication
+  llm.update({"model_name" : "gpt-4o"})
+  llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
+  request ={"llm" : llm, "comments" : comments} 
+  tree = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request).json()["data"]
+  json_print(tree)
+
+  print("\n\nStep 2: Claims\n\n")
+  llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
+  request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :tree}}
+  claims = client.post("/claims/?log_to_wandb=local_test_0", json=request).json()["data"]
+  json_print(claims)
+
+  print("\n\nStep 3: Dedup & sort\n\n")
+  llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
+  request ={"llm" : llm, "tree" : claims }
+  full_tree = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request).json()["data"]
+  json_print(full_tree)
+
+
 #############
 # Run tests #
 #-----------#
@@ -87,10 +135,13 @@ client = TestClient(app)
 test_topic_tree()
 test_claims()
 test_dupes()
-
 test_full_pipeline(longer_pets_15)
 
-# TODO: test with W&B logging
+#test_wb_topic_tree()
+#test_wb_claims()
+#test_wb_dupes()
+#test_wb_full_pipeline(longer_pets_15)
+
 # TODO: test with edge case inputs
 # TODO: add assertions
 # assert response.status_code == 200

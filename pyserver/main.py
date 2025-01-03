@@ -22,9 +22,10 @@ from pydantic import BaseModel
 from typing import List, Union
 import wandb
 
-# TODO: why are our import paths different? :)
+# TODO: which set of imports shall we keep? :)
 import config
 from utils import cute_print
+
 #import pyserver.config as config
 #from pyserver.utils import cute_print
 
@@ -63,7 +64,7 @@ def read_root():
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
 @app.post("/topic_tree/")
-def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
+def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
   """
   Given the full list of comments, return a corresponding taxonomy of relevant topics and their
   subtopics, with a short description for each.
@@ -173,22 +174,25 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
   usage = response.usage
     
   if log_to_wandb:
-    # TODO: one pipeline run should be one run — perhaps a group?
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config={"model" : req.llm.model_name})
+    try:
+      exp_group_name = str(log_to_wandb)
+      wandb.init(project = config.WANDB_PROJECT_NAME,
+               group=exp_group_name,
+               config={
+                 "model" : req.llm.model_name,
+                 "api_route" : "topic_tree"
+               })
+      comment_lengths = [len(c.text) for c in req.comments]
+      num_topics = len(tree["taxonomy"])
+      subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
 
-    comment_lengths = [len(c.text) for c in req.comments]
-    num_topics = len(tree["taxonomy"])
-    subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
-
-    # in case comments are empty / for W&B Table logging
-    comment_list = "none"
-    if len(comments.comments) > 1:
-      comment_list = "\n".join([c.text for c in req.comments])
-    comms_tree_list = [[comment_list, json.dumps(tree,indent=1)]]
-
-    wandb.log({
-        "comm_N" : len(comments.comments),
+      # in case comments are empty / for W&B Table logging
+      comment_list = "none"
+      if len(req.comments) > 1:
+        comment_list = "\n".join([c.text for c in req.comments])
+      comms_tree_list = [[comment_list, json.dumps(tree,indent=1)]]
+      wandb.log({
+        "comm_N" : len(req.comments),
         "comm_text_len": sum(comment_lengths),
         "comm_bins" : comment_lengths,
         "num_topics" : num_topics,
@@ -201,8 +205,9 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
         "u/1/N_tok": usage.total_tokens,
         "u/1/in_tok" : usage.prompt_tokens,
         "u/1/out_tok": usage.completion_tokens
-    })
-
+      })
+    except:
+      print("Failed to create wandb run")
   #NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
   # choosing the latter for now 
   return {"data" : tree["taxonomy"], "usage" : usage}
@@ -246,7 +251,7 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
 # Step 2: Extract and place claims #
 #----------------------------------#
 @app.post("/claims/")
-def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> dict:
+def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
   """
   Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
   Place each claim under the correct subtopic in the tree.
@@ -409,16 +414,23 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
 
 
   if log_to_wandb:
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config={"model" : req.llm.model_name})
-    wandb.log({
-      "u/2/N_tok" : TK_2_TOT,
-      "u/2/in_tok": TK_2_IN,
-      "u/2/out_tok" : TK_2_OUT,
-      "rows_to_claims" : wandb.Table(
+    try:
+      exp_group_name = str(log_to_wandb)
+      wandb.init(project = config.WANDB_PROJECT_NAME,
+                 group=exp_group_name,
+                 config={
+                   "model" : req.llm.model_name,
+                   "route" : "claims"})
+      wandb.log({
+        "u/2/N_tok" : TK_2_TOT,
+        "u/2/in_tok": TK_2_IN,
+        "u/2/out_tok" : TK_2_OUT,
+        "rows_to_claims" : wandb.Table(
                            data=comms_to_claims_html,
                            columns = ["comments", "claims"])
-    })
+      })
+    except:
+      print("Failed to log wandb run")
  
   net_usage = {"total_tokens" : TK_2_TOT,
                "prompt_tokens" : TK_2_IN,
@@ -464,7 +476,7 @@ def dedup_claims(claims:list)-> dict:
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
 @app.put("/sort_claims_tree/")
-def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
+def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb:str = "")-> dict:
   """
   Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
   all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -647,7 +659,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
   TK_IN = 0
   TK_OUT = 0
   TK_TOT = 0
-
+  dupe_logs = []
   sorted_tree = {} 
   for topic, topic_data in claims_tree.tree.items():
     per_topic_total = 0
@@ -712,7 +724,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                   dupe_claim = {k : v for k, v in subtopic_data["claims"][dupe_id].items()}
                   dupe_claim["duplicated"] = True
                
-                 # add all duplicates as children of main claim
+                  # add all duplicates as children of main claim
                   clean_claim["duplicates"].append(dupe_claim)
                   accounted_for_ids[dupe_id] = 1
             
@@ -723,7 +735,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
         # sort so the most duplicated claims are first
         sorted_deduped_claims = sorted(deduped_claims, key=lambda x: len(x["duplicates"]), reverse=True)
         if log_to_wandb:
-          dupe_logs.append(["\n".join(subtopic_data["claims"]), json.dumps(sorted_deduped_claims, indent=1)])
+          dupe_logs.append([json.dumps(subtopic_data["claims"], indent=1), json.dumps(sorted_deduped_claims, indent=1)])
         
         TK_TOT += usage.total_tokens
         TK_IN += usage.prompt_tokens
@@ -743,16 +755,21 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
   full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["total"], reverse=True)
  
   if log_to_wandb:
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config = {"model" : config.MODEL})
-    report_data = [[json.dumps(full_sort_tree, indent=2)]]
-    wandb.log({
-      "u/4/N_tok" : TK_TOT,
-      "u/4/in_tok": TK_IN,
-      "u/4/out_tok" : TK_OUT,
-      "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
-      "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
-    })
+    try:
+      exp_group_name = str(log_to_wandb)
+      wandb.init(project = config.WANDB_PROJECT_NAME,
+                 group = exp_group_name,
+                 config = {"model" : config.MODEL, "route" : "sort_claims_tree"})
+      report_data = [[json.dumps(full_sort_tree, indent=2)]]
+      wandb.log({
+        "u/4/N_tok" : TK_TOT,
+        "u/4/in_tok": TK_IN,
+        "u/4/out_tok" : TK_OUT,
+        "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
+        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
+      })
+    except:
+      print("Failed to create wandb run")
   net_usage = {"total_tokens" : TK_TOT,
                "prompt_tokens" : TK_IN,
                "completion_tokens" : TK_OUT}
