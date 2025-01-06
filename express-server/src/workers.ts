@@ -10,13 +10,25 @@ import { topicTreePipelineStep } from "./pipeline/topicTreeStep";
 import { claimsPipelineStep } from "./pipeline/claimsStep";
 import { sortClaimsTreePipelineStep } from "./pipeline/sortClaimsTree";
 import { randomUUID } from "crypto";
+import * as firebase from "./Firebase";
+
+type FirebaseDetails = {
+  reportUrl: string;
+  userId: string;
+};
 
 export const pipeLineWorker = new Worker(
   "pipeline",
-  async (job: Job<{ config: schema.OldOptions; env: Env }>) => {
+  async (
+    job: Job<{
+      config: schema.OldOptions;
+      env: Env;
+      firebaseDetails: FirebaseDetails | null;
+    }>,
+  ) => {
     const { data } = job;
     // const cache = job.data.cache;
-    const { config, env } = data;
+    const { config, env, firebaseDetails } = data;
 
     const defaultConfig = {
       model: "gpt-4-turbo-preview",
@@ -135,11 +147,52 @@ export const pipeLineWorker = new Worker(
     };
     const json = llmPipelineToSchema(llmPipelineOutput);
     await storeJSON(options.filename, JSON.stringify(json), true);
+    if (firebaseDetails) {
+      await firebase.updateReportJobStatus(job.id, "finished");
+      await firebase.addReportRef(job.id, {
+        userId: firebaseDetails.userId,
+        reportUrl: firebaseDetails.reportUrl,
+        description: llmPipelineOutput.description,
+        numTopics: json.data[1].topics.length,
+        numSubtopics: json.data[1].topics.flatMap((t) => t.subtopics.flat())
+          .length,
+        numClaims: json.data[1].topics.flatMap((t) =>
+          t.subtopics.flatMap((sb) => sb.claims.flat()),
+        ).length,
+        // find the number of unique people interviewed. If a interview entry isn't there, assume that each is unique
+        numPeople: new Set(
+          llmPipelineOutput.data.map(
+            (v) => v.interview || Math.random().toString(36).slice(2, 10),
+          ),
+        ).size,
+        createdDate: new Date(json.data[1].date),
+      });
+    }
     await job.updateProgress({
       status: api.reportJobStatus.Values.finished,
     });
   },
   { connection },
 );
+
+pipeLineWorker.on("failed", async (job, e) => {
+  // Update Firestore reportJob to failed status
+  try {
+    await firebase.updateReportJobStatus(job.id, "failed");
+  } catch (e) {
+    // if job not found, don't throw a fit
+    if (e instanceof firebase.JobNotFoundError) {
+      return;
+    } else if (e instanceof Error) {
+      // TODO: do we want to throw an error here?
+      // throw new Error("Could not update Firestore reportJob to failed status: " + e.message)
+    }
+  }
+  console.error(
+    "Pipeline worker failed: " +
+      (e instanceof Error ? `${e.message}: ${e.stack}` : e),
+  );
+  // TODO: Logging 🪵
+});
 
 export const setupWorkers = () => pipeLineWorker;

@@ -37,6 +37,11 @@ export const env = z.object({
   PYSERVER_URL: z
     .string({ required_error: "Missing PYSERVER_URL" })
     .url({ message: "PYSERVER_URL in env should be a valid url" }),
+  NODE_ENV: z.union([z.literal("dev"), z.literal("prod")], {
+    required_error: "Missing NODE_ENV (prod | dev)",
+  }),
+  GOOGLE_APPLICATION_CREDENTIALS: z.string(),
+  FIREBASE_DATABASE_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof env>;
