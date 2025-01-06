@@ -1,7 +1,13 @@
-import { z } from "zod";
 import * as admin from "firebase-admin";
 import { Env, validateEnv } from "./types/context";
 import { applicationDefault } from "firebase-admin/app";
+import {
+  ReportJob,
+  ReportRef,
+  JobStatus,
+  useGetCollectionName,
+  JOB_STATUS,
+} from "tttc-common/firebase";
 
 const env: Env = validateEnv();
 
@@ -14,53 +20,7 @@ const db = admin.firestore(app);
 
 const auth = admin.auth(app);
 
-const reportRef = z.object({
-  userId: z.string(),
-  reportDataUri: z.string().url(),
-  title: z.string(),
-  description: z.string(),
-  numTopics: z.number(),
-  numSubtopics: z.number(),
-  numClaims: z.number(),
-  numPeople: z.number(),
-  createdDate: z.date(),
-});
-
-type ReportRef = z.infer<typeof reportRef>;
-
-const reportJob = z.object({
-  userId: z.string(),
-  status: z.union([
-    z.literal("pending"),
-    z.literal("finished"),
-    z.literal("failed"),
-  ]),
-  title: z.string(),
-  description: z.string(),
-  reportDataUri: z.string().url(),
-  createdAt: z.date(),
-});
-
-type ReportJob = z.infer<typeof reportJob>;
-
-type JobStatus = ReportJob["status"];
-
-const COLLECTIONS = {
-  REPORT_REF: "reportRef",
-  REPORT_JOB: "reportJob",
-} as const;
-
-const JOB_STATUS = {
-  PENDING: "pending",
-  FINISHED: "finished",
-  FAILED: "failed",
-} as const;
-
-const getCollectionName = (name: keyof typeof COLLECTIONS) => {
-  return env.NODE_ENV === "prod"
-    ? COLLECTIONS[name]
-    : `${COLLECTIONS[name]}_dev`;
-};
+const getCollectionName = useGetCollectionName(env.NODE_ENV);
 
 /**
  * Creates a reportRef (basic summary of a report to preview) and returns an id
