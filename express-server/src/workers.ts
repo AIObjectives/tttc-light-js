@@ -13,7 +13,7 @@ import { randomUUID } from "crypto";
 import * as firebase from "./Firebase";
 
 type FirebaseDetails = {
-  reportUrl: string;
+  reportDataUri: string;
   userId: string;
 };
 
@@ -150,8 +150,9 @@ export const pipeLineWorker = new Worker(
     if (firebaseDetails) {
       await firebase.updateReportJobStatus(job.id, "finished");
       await firebase.addReportRef(job.id, {
+        title: json.data[1].title,
         userId: firebaseDetails.userId,
-        reportUrl: firebaseDetails.reportUrl,
+        reportDataUri: firebaseDetails.reportDataUri,
         description: llmPipelineOutput.description,
         numTopics: json.data[1].topics.length,
         numSubtopics: json.data[1].topics.flatMap((t) => t.subtopics.flat())

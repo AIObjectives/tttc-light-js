@@ -16,7 +16,7 @@ const auth = admin.auth(app);
 
 const reportRef = z.object({
   userId: z.string(),
-  reportUrl: z.string().url(),
+  reportDataUri: z.string().url(),
   title: z.string(),
   description: z.string(),
   numTopics: z.number(),
@@ -37,6 +37,8 @@ const reportJob = z.object({
   ]),
   title: z.string(),
   description: z.string(),
+  reportDataUri: z.string().url(),
+  createdAt: z.date(),
 });
 
 type ReportJob = z.infer<typeof reportJob>;
@@ -79,18 +81,18 @@ export async function addReportRef(id: string, reportRef: ReportRef) {
 /**
  * Adds a report job (processing report) and returns an id
  */
-export async function addReportJob(jobDetails: {
-  userId: string;
-  title: string;
-  description: string;
-  reportUrl: string;
-}) {
+export async function addReportJob({
+  status = JOB_STATUS.PENDING,
+  createdAt = new Date(),
+  ...jobDetails
+}: ReportJob) {
   const docRef = db.collection(getCollectionName("REPORT_JOB")).doc();
 
+  // There's no way to parse a return result?
   await docRef.set({
     ...jobDetails,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    status: JOB_STATUS.PENDING,
+    createdAt: admin.firestore.Timestamp.fromDate(createdAt),
+    status,
   });
 
   return docRef.id;
@@ -124,15 +126,3 @@ export async function updateReportJobStatus(jobId: string, status: JobStatus) {
 export async function verifyUser(token: string) {
   return await auth.verifyIdToken(token);
 }
-
-// Note: Might actually want to implement this with Firestore front-end client
-// async getUsersReports(userId:string) {
-//     return await this.db.collection(this.getCollectionName('reportRef'))
-//         .where('userId', '==', userId)
-//         .orderBy("createdDate", 'desc')
-//         .get()
-//         .then((res) => res.docs)
-//         .then((docs) => ({tag:'success', data:reportRef.array().parse(docs)}))
-//         .catch((reason) => ({tag:'failed',reason:`Query Failed: ${JSON.stringify(reason)}`}))
-// }
-// }

@@ -67,7 +67,7 @@ async function createNewReport(req: Request, res: Response) {
         userId: decodedUser.uid,
         title: userConfig.title,
         description: userConfig.description,
-        reportUrl: jsonUrl,
+        reportDataUri: jsonUrl,
       })
     : null;
 
@@ -114,7 +114,7 @@ async function createNewReport(req: Request, res: Response) {
       config: updatedConfig,
       env,
       firebaseDetails: decodedUser
-        ? { userId: decodedUser.uid, reportUrl: jsonUrl }
+        ? { userId: decodedUser.uid, reportDataUri: jsonUrl }
         : null,
     },
     { jobId },
