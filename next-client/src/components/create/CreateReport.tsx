@@ -51,7 +51,7 @@ const fetchToken = async (
 
 function getUserToken() {
   const user = useUser();
-  return useAsyncState(() => fetchToken(user), user?.uid);
+  return useAsyncState(() => fetchToken(user), user);
 }
 
 const bindTokenToAction = <Input, Output>(
@@ -78,7 +78,6 @@ const form = z.object({
 
 export default function CreateReport() {
   const { isLoading, result } = getUserToken();
-
   // TODO Make a spinner
   if (result === undefined || isLoading) return <></>;
   else if (result[0] === "error") return <p>An error occured...</p>;
@@ -86,7 +85,6 @@ export default function CreateReport() {
 }
 
 function CreateReportComponent({ token }: { token: string | null }) {
-  console.log("token", token);
   const submitActionWithToken = bindTokenToAction(token, submitAction);
   const [state, formAction] = useActionState(
     submitActionWithToken,
