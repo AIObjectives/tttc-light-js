@@ -49,8 +49,6 @@ async function createNewReport(req: Request, res: Response) {
   const body = api.generateApiRequest.parse(req.body);
   console.log("body", body);
   const { data, userConfig, firebaseAuthToken } = body;
-  if (!firebaseAuthToken) throw new Error("TESTING: no firebaseAuthToken");
-  if (firebaseAuthToken === "firebaseAuthToken") throw new Error("success");
   const parsedData = await parseData(data);
   const filename = uniqueSlug(userConfig.title);
   const jsonUrl = getStorageUrl(filename);
@@ -105,19 +103,20 @@ async function createNewReport(req: Request, res: Response) {
     })),
   };
 
-  // either track this from its job/reportId or its filename
-  const jobId = decodedUser ? maybeFirebaseJobId : config.filename;
-
   const _ = await pipelineQueue.add(
     "pipeline",
     {
       config: updatedConfig,
       env,
       firebaseDetails: decodedUser
-        ? { userId: decodedUser.uid, reportDataUri: jsonUrl }
+        ? {
+            userId: decodedUser.uid,
+            reportDataUri: jsonUrl,
+            firebaseJobId: maybeFirebaseJobId,
+          }
         : null,
     },
-    { jobId },
+    { jobId: config.filename },
   );
 }
 

@@ -15,6 +15,7 @@ import * as firebase from "./Firebase";
 type FirebaseDetails = {
   reportDataUri: string;
   userId: string;
+  firebaseJobId: string;
 };
 
 export const pipeLineWorker = new Worker(
@@ -148,8 +149,11 @@ export const pipeLineWorker = new Worker(
     const json = llmPipelineToSchema(llmPipelineOutput);
     await storeJSON(options.filename, JSON.stringify(json), true);
     if (firebaseDetails) {
-      await firebase.updateReportJobStatus(job.id, "finished");
-      await firebase.addReportRef(job.id, {
+      await firebase.updateReportJobStatus(
+        firebaseDetails.firebaseJobId,
+        "finished",
+      );
+      await firebase.addReportRef(firebaseDetails.firebaseJobId, {
         title: json.data[1].title,
         userId: firebaseDetails.userId,
         reportDataUri: firebaseDetails.reportDataUri,
@@ -179,7 +183,10 @@ export const pipeLineWorker = new Worker(
 pipeLineWorker.on("failed", async (job, e) => {
   // Update Firestore reportJob to failed status
   try {
-    await firebase.updateReportJobStatus(job.id, "failed");
+    await firebase.updateReportJobStatus(
+      job.data.firebaseDetails.firebaseJobId,
+      "failed",
+    );
   } catch (e) {
     // if job not found, don't throw a fit
     if (e instanceof firebase.JobNotFoundError) {
