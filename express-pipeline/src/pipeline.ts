@@ -7,16 +7,16 @@ import {
 } from "./prompts";
 
 import {
-  Options,
+  OldOptions,
   Tracker,
   Cache,
-  Subtopic,
   Taxonomy,
   PipelineOutput,
   LLMClaim,
   LLMPipelineOutput,
   LLMSubtopic,
 } from "tttc-common/schema";
+import { hydratePromptLiterals } from "tttc-common/prompts";
 
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 
@@ -78,10 +78,17 @@ function nestClaims(
 }
 
 async function pipeline(
-  _options: Options,
+  _options: OldOptions,
   cache?: Cache,
 ): Promise<PipelineOutput> {
-  const options = { ...defaultOptions, ..._options };
+  const options: OldOptions = {
+    ...defaultOptions,
+    ..._options,
+    systemInstructions: "",
+    clusteringInstructions: "",
+    extractionInstructions: "",
+    dedupInstructions: "",
+  };
   const tracker: Tracker = {
     costs: 0,
     start: Date.now(),

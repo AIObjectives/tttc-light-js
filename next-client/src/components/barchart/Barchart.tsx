@@ -16,7 +16,7 @@ export function BarChart({ entries }: { entries: BarChartItemType[] }) {
   return (
     <Col>
       {entries.map((entry) => (
-        <BarItem entry={entry} />
+        <BarItem entry={entry} key={entry.title} />
       ))}
     </Col>
   );

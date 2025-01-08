@@ -1,3 +1,5 @@
+"use client";
+
 import { TopicContext } from "@src/components/topic/Topic";
 import { useContext, useRef } from "react";
 

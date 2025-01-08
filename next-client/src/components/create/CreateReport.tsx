@@ -33,6 +33,7 @@ import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@src/lib/utils/shadcn";
+import * as prompts from "tttc-common/prompts";
 
 const initialState: api.GenerateApiResponse | null = null;
 
@@ -59,10 +60,10 @@ export default function CreateReport() {
       title: "",
       description: "",
       apiKey: "",
-      systemInstructions: "INSERT SYSTEM INSTRUCT",
-      clusteringInstructions: "INSERT CLUSTER INSTRUCT",
-      extractionInstructions: "INSERT EXTRACT",
-      dedupInstructions: "INSERT DEDUP",
+      systemInstructions: prompts.defaultSystemPrompt,
+      clusteringInstructions: prompts.defaultClusteringPrompt,
+      extractionInstructions: prompts.defaultExtractionPrompt,
+      dedupInstructions: prompts.defaultDedupPrompt,
     },
   });
 
@@ -129,7 +130,9 @@ const FormDescription = () => {
       </Col>
       <Col gap={2}>
         <Col>
-          <label>General description</label>
+          <label htmlFor="description" className="font-medium">
+            General description
+          </label>
           <p className="p2 text-muted-foreground">
             Description shows up below the title and doesn’t influence the
             contents of the report
@@ -250,8 +253,16 @@ function FormDataInput({
             for participant names; otherwise, participants will be considered
             anonymous.
           </p>
+          <br />
           <p className="p2 text-muted-foreground">
-            You can download a sample CSV template here to get started.
+            You can download a{" "}
+            <a
+              className="underline"
+              href="https://docs.google.com/spreadsheets/d/1k8L1M9Ptxz_fBlZlGe0f-X4wCRIfmmRrISLy3c5EqUk/edit?gid=0#gid=0"
+            >
+              sample CSV
+            </a>{" "}
+            template here to get started.
           </p>
         </div>
 
@@ -363,7 +374,7 @@ function CustomizePromptSection({
   inputName: string;
 }) {
   const { register, formState, getValues, setValue } = useFormContext();
-  const { touchedFields, errors, isDirty, defaultValues } = formState;
+  const { touchedFields, errors, defaultValues } = formState;
 
   const showError =
     Object.hasOwn(touchedFields, inputName) && Object.hasOwn(errors, inputName);
