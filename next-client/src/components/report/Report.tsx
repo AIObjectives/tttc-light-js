@@ -6,13 +6,20 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useState,
 } from "react";
 import * as schema from "tttc-common/schema";
 import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
 import { Col, Row } from "../layout";
-import { Button, CardContent, Separator, TextIcon } from "../elements";
+import {
+  Button,
+  CardContent,
+  Separator,
+  TextIcon,
+  ToggleText,
+} from "../elements";
 import Icons from "@assets/icons";
-import { getNPeople } from "tttc-common/morphisms";
+import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useReportState, { ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
 import { cn } from "@src/lib/utils/shadcn";
@@ -22,6 +29,7 @@ import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useHashChange } from "@src/lib/hooks/useHashChange";
+import { BarChart, BarChartItemType } from "../barchart/Barchart";
 
 /**
  * Report Component
@@ -167,9 +175,9 @@ export function ReportHeader({
   const dateStr = reportData.date;
   return (
     <CardContent>
-      <Col gap={3}>
-        {/* Contains summary stats and title */}
-        <ReportTitle
+      <Col gap={8}>
+        {/* Contains title and basic overview stats */}
+        <ReportIntro
           title={reportData.title}
           nThemes={themes.length}
           nTopics={topics.length}
@@ -177,11 +185,22 @@ export function ReportHeader({
           nPeople={nPeople}
           dateStr={dateStr}
         />
-        {/* Description */}
-        <p>{reportData.description}</p>
+        {/* Summary */}
+        <ReportSummary reportData={reportData} />
+        {/* Overview */}
+        <ReportOverview topics={reportData.topics} />
       </Col>
     </CardContent>
   );
+}
+
+interface IReportTitle {
+  title: string;
+  nClaims: number;
+  nTopics: number;
+  nThemes: number;
+  nPeople: number;
+  dateStr: string;
 }
 
 /**
@@ -194,14 +213,43 @@ export function ReportTitle({
   nThemes,
   nTopics,
   dateStr,
-}: {
-  title: string;
-  nClaims: number;
-  nTopics: number;
-  nThemes: number;
-  nPeople: number;
-  dateStr: string;
-}) {
+}: IReportTitle) {
+  function ReportTitleIconsLeft() {
+    return (
+      <Row gap={4} className="h-5">
+        {/* Number of topics */}
+        <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
+          {nThemes} topics
+        </TextIcon>
+        {/* Number of subtopics */}
+        <TextIcon icon={<Icons.Topic />}>{nTopics} subtopics</TextIcon>
+        {/* Number of claims */}
+        <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
+        <Separator orientation="vertical" />
+      </Row>
+    );
+  }
+
+  function ReportTitleIconsRight() {
+    return (
+      <Row gap={4} className="h-5">
+        {/* Number of people */}
+        <TextIcon icon={<Icons.People size={16} className="self-center" />}>
+          {/* {nPeople} people */} {/* ! temp removed for QA testing*/}
+          416 participants
+        </TextIcon>
+        {/* Date */}
+        <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
+          {Intl.DateTimeFormat("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }).format(new Date(dateStr))}
+        </TextIcon>
+      </Row>
+    );
+  }
+
   return (
     <Col gap={2} className="pb-1">
       {/* Title and copy button */}
@@ -214,34 +262,101 @@ export function ReportTitle({
 
       {/* Stat details. Split into two parts for easy wrapping */}
       <Row gap={4} className="min-h-5 flex-wrap gap-y-2">
-        <Row gap={4} className="h-5">
-          {/* Number of topics */}
-          <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
-            {nThemes} topics
-          </TextIcon>
-          {/* Number of subtopics */}
-          <TextIcon icon={<Icons.Topic />}>{nTopics} subtopics</TextIcon>
-          {/* Number of claims */}
-          <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
-          <Separator orientation="vertical" />
-        </Row>
-
-        <Row gap={4} className="h-5">
-          {/* Number of people */}
-          <TextIcon icon={<Icons.People size={16} className="self-center" />}>
-            {/* {nPeople} people */} {/* ! temp removed for QA testing*/}
-            416 participants
-          </TextIcon>
-          {/* Date */}
-          <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
-            {Intl.DateTimeFormat("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }).format(new Date(dateStr))}
-          </TextIcon>
-        </Row>
+        <ReportTitleIconsLeft />
+        <ReportTitleIconsRight />
       </Row>
+    </Col>
+  );
+}
+
+export function ReportIntro(props: IReportTitle) {
+  return (
+    <Col gap={1}>
+      <ReportTitle {...props} />
+      <ReportInfo />
+    </Col>
+  );
+}
+
+export function ReportInfo() {
+  const [show, setShow] = useState<boolean>(true);
+
+  return (
+    <Row
+      gap={2}
+      className={`p-4 border rounded items-center ${show ? "" : "hidden"}`}
+    >
+      <div>
+        <Icons.Info />
+      </div>
+      <p className="p2 text-muted-foreground">
+        Talk to the City takes the text from large group discussions and turns
+        it into a summary report using AI prompting. Go to input tab to see the
+        raw text, AI model and prompts used. Learn more in the About page.
+      </p>
+      <Button
+        variant={"ghost"}
+        size={"icon"}
+        onClick={() => setShow(false)}
+        className="h-10 w-10"
+      >
+        <div>
+          <Icons.X />
+        </div>
+      </Button>
+    </Row>
+  );
+}
+
+export function ReportSummary({
+  reportData,
+}: {
+  reportData: schema.ReportDataObj;
+}) {
+  const { description, questionAnswers } = reportData;
+  return (
+    <Col gap={3}>
+      {/* Summary Title */}
+      <Col gap={1}>
+        <h4>Summary</h4>
+        <p className="p2 text-muted-foreground">
+          The summary is written by the report creators, while the rest is
+          AI-generated, exluding quotes.
+        </p>
+      </Col>
+      {/* Summary Description */}
+      <div>{description}</div>
+
+      {/* Summary Meta Questions */}
+
+      {questionAnswers?.map((qa) => (
+        <ToggleText>
+          <ToggleText.Title>{qa.question}</ToggleText.Title>
+          <ToggleText.Content>{qa.answer}</ToggleText.Content>
+        </ToggleText>
+      ))}
+    </Col>
+  );
+}
+
+export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
+  const getBarChartEntries = (topics: schema.Topic[]): BarChartItemType[] => {
+    const largestN = topics.reduce((accum, curr) => {
+      const nClaims = getNClaims(curr.subtopics);
+      return Math.max(nClaims, accum);
+    }, 0);
+
+    return topics.map((topic) => ({
+      title: topic.title,
+      percentFill: getNClaims(topic.subtopics) / largestN,
+      subtitle: `${getNClaims(topic.subtopics)} claims`,
+    }));
+  };
+
+  return (
+    <Col gap={3}>
+      <h4>Overview</h4>
+      <BarChart entries={getBarChartEntries(topics)} />
     </Col>
   );
 }

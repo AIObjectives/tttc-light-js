@@ -12,7 +12,6 @@ export default async function ReportPage({
     headers: {
       "Content-Type": "application/json",
     },
-    cache: "no-cache",
   });
   let data = await req.json();
   const reportData: schema.ReportDataObj = schema.llmPipelineOutput.safeParse(
@@ -21,10 +20,5 @@ export default async function ReportPage({
     ? getReportDataObj(data)
     : schema.pipelineOutput.parse(data).data[1];
 
-  return (
-    // <div className="flex w-full justify-center">
-
-    <Report reportData={reportData} />
-    // </div>
-  );
+  return <Report reportData={reportData} />;
 }

@@ -21,7 +21,7 @@ function CopyLinkButton({ anchor }: { anchor: string }) {
       variant={"outline"}
       onClick={() => copy().then(notify)}
     >
-      <Icons.Copy />
+      <Icons.Copy size={12} className="" />
     </Button>
   );
 }
