@@ -22,8 +22,12 @@ from pydantic import BaseModel
 from typing import List, Union
 import wandb
 
-import pyserver.config as config
-from pyserver.utils import cute_print
+# TODO: which set of imports shall we keep? :)
+import config
+from utils import cute_print
+
+#import pyserver.config as config
+#from pyserver.utils import cute_print
 
 class Comment(BaseModel):
   id: str
@@ -60,7 +64,7 @@ def read_root():
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
 @app.post("/topic_tree/")
-def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
+def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
   """
   Given the full list of comments, return a corresponding taxonomy of relevant topics and their
   subtopics, with a short description for each.
@@ -97,7 +101,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
   }
   
   Output format:
-  - tree : a dictionary
+  - data : the tree as a dictionary
     - taxonomy : a key mapping to a list of topics, where each topic has
       - topicName: a string of the short topic title 
       - topicShortDescription: a string of a short description of the topic
@@ -111,7 +115,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
 
   Example output:
   {
-    "tree": {
+    "data": {
         "taxonomy": [
             {
                 "topicName": "Pets",
@@ -170,22 +174,25 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
   usage = response.usage
     
   if log_to_wandb:
-    # TODO: one pipeline run should be one run — perhaps a group?
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config={"model" : req.llm.model_name})
+    try:
+      exp_group_name = str(log_to_wandb)
+      wandb.init(project = config.WANDB_PROJECT_NAME,
+               group=exp_group_name,
+               config={
+                 "model" : req.llm.model_name,
+                 "api_route" : "topic_tree"
+               })
+      comment_lengths = [len(c.text) for c in req.comments]
+      num_topics = len(tree["taxonomy"])
+      subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
 
-    comment_lengths = [len(c.text) for c in req.comments]
-    num_topics = len(tree["taxonomy"])
-    subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
-
-    # in case comments are empty / for W&B Table logging
-    comment_list = "none"
-    if len(comments.comments) > 1:
-      comment_list = "\n".join([c.text for c in req.comments])
-    comms_tree_list = [[comment_list, json.dumps(tree,indent=1)]]
-
-    wandb.log({
-        "comm_N" : len(comments.comments),
+      # in case comments are empty / for W&B Table logging
+      comment_list = "none"
+      if len(req.comments) > 1:
+        comment_list = "\n".join([c.text for c in req.comments])
+      comms_tree_list = [[comment_list, json.dumps(tree,indent=1)]]
+      wandb.log({
+        "comm_N" : len(req.comments),
         "comm_text_len": sum(comment_lengths),
         "comm_bins" : comment_lengths,
         "num_topics" : num_topics,
@@ -198,9 +205,12 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:bool = False):
         "u/1/N_tok": usage.total_tokens,
         "u/1/in_tok" : usage.prompt_tokens,
         "u/1/out_tok": usage.completion_tokens
-    })
-
-  return {"tree" : tree, "usage" : usage}
+      })
+    except:
+      print("Failed to create wandb run")
+  #NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
+  # choosing the latter for now 
+  return {"data" : tree["taxonomy"], "usage" : usage}
 
 def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   """
@@ -241,7 +251,7 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
 # Step 2: Extract and place claims #
 #----------------------------------#
 @app.post("/claims/")
-def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> dict:
+def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
   """
   Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
   Place each claim under the correct subtopic in the tree.
@@ -276,9 +286,8 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
             "text": "I'm not sure about birds"
         }
     ],
-    "tree": {
-        "taxonomy": [
-            {
+    "tree": [
+              {
                 "topicName": "Pets",
                 "topicShortDescription": "General opinions about common household pets.",
                 "subtopics": [
@@ -295,13 +304,12 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
                         "subtopicShortDescription": "Uncertainty or mixed feelings about birds."
                     }
                 ]
-            }
-        ]
-    }
+              }
+           ]
   }
 
   Output format:
-  - claims_tree: the dictionary of topics and subtopics with extracted claims listed under the
+  - data: the dictionary of topics and subtopics with extracted claims listed under the
                  correct subtopic, along with the source quote
   - usage: a dictionary of token counts for the LLM calls of this pipeline step
     - completion_tokens
@@ -310,7 +318,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
   
   Example output:
   {
-    "claims_tree": {
+    "data": {
         "Pets": {
             "total": 3,
             "subtopics": {
@@ -362,14 +370,13 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
   TK_2_TOT = 0
 
   node_counts = {}
-
   # TODO: batch this so we're not sending the tree each time
   for comment in req.comments: 
     response = comment_to_claims(req.llm, comment.text, req.tree)
     try:
-      claims = response["claims"]
-      # Add commentId to claim to track origin
-      [claim.update({'commentId':comment.id}) for claim in claims['claims']]
+       claims = response["claims"]
+       for claim in claims["claims"]:
+         claim.update({'commentId':comment.id})
     except:
       print("Step 2: no claims for comment: ", response)
       claims = None
@@ -407,23 +414,30 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:bool = False) -> d
 
 
   if log_to_wandb:
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config={"model" : req.llm.model_name})
-    wandb.log({
-      "u/2/N_tok" : TK_2_TOT,
-      "u/2/in_tok": TK_2_IN,
-      "u/2/out_tok" : TK_2_OUT,
-      "rows_to_claims" : wandb.Table(
+    try:
+      exp_group_name = str(log_to_wandb)
+      wandb.init(project = config.WANDB_PROJECT_NAME,
+                 group=exp_group_name,
+                 config={
+                   "model" : req.llm.model_name,
+                   "route" : "claims"})
+      wandb.log({
+        "u/2/N_tok" : TK_2_TOT,
+        "u/2/in_tok": TK_2_IN,
+        "u/2/out_tok" : TK_2_OUT,
+        "rows_to_claims" : wandb.Table(
                            data=comms_to_claims_html,
                            columns = ["comments", "claims"])
-    })
+      })
+    except:
+      print("Failed to log wandb run")
  
   net_usage = {"total_tokens" : TK_2_TOT,
                "prompt_tokens" : TK_2_IN,
                "completion_tokens" : TK_2_OUT}
 
 
-  return {"claims_tree" : node_counts, "usage" : net_usage}
+  return {"data" : node_counts, "usage" : net_usage}
 
 def dedup_claims(claims:list)-> dict:
   """
@@ -462,7 +476,7 @@ def dedup_claims(claims:list)-> dict:
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
 @app.put("/sort_claims_tree/")
-def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
+def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb:str = "")-> dict:
   """
   Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
   all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -533,8 +547,8 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
    }
   } 
   Output format:
-  - response object: JSON/dictionary wiht the following fields
-    - tree: the deduplicated claims & correctly sorted topic tree / full taxonomy of topics, subtopics, 
+  - response object: JSON/dictionary with the following fields
+    - data: the deduplicated claims & correctly sorted topic tree / full taxonomy of topics, subtopics, 
             and claims, where the most popular topics/subtopics/claims (by near-duplicate count) appear
             first within each level of nesting
     - usage: token counts for the LLM calls of the deduplication step of the pipeline
@@ -645,7 +659,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
   TK_IN = 0
   TK_OUT = 0
   TK_TOT = 0
-
+  dupe_logs = []
   sorted_tree = {} 
   for topic, topic_data in claims_tree.tree.items():
     per_topic_total = 0
@@ -710,7 +724,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
                   dupe_claim = {k : v for k, v in subtopic_data["claims"][dupe_id].items()}
                   dupe_claim["duplicated"] = True
                
-                 # add all duplicates as children of main claim
+                  # add all duplicates as children of main claim
                   clean_claim["duplicates"].append(dupe_claim)
                   accounted_for_ids[dupe_id] = 1
             
@@ -721,7 +735,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
         # sort so the most duplicated claims are first
         sorted_deduped_claims = sorted(deduped_claims, key=lambda x: len(x["duplicates"]), reverse=True)
         if log_to_wandb:
-          dupe_logs.append(["\n".join(subtopic_data["claims"]), json.dumps(sorted_deduped_claims, indent=1)])
+          dupe_logs.append([json.dumps(subtopic_data["claims"], indent=1), json.dumps(sorted_deduped_claims, indent=1)])
         
         TK_TOT += usage.total_tokens
         TK_IN += usage.prompt_tokens
@@ -741,145 +755,23 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb: bool = False)-> dict:
   full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["total"], reverse=True)
  
   if log_to_wandb:
-    wandb.init(project = config.WANDB_PROJECT_NAME,
-               config = {"model" : config.MODEL})
-    report_data = [[json.dumps(full_sort_tree, indent=2)]]
-    wandb.log({
-      "u/4/N_tok" : TK_TOT,
-      "u/4/in_tok": TK_IN,
-      "u/4/out_tok" : TK_OUT,
-      "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
-      "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
-    })
+    try:
+      exp_group_name = str(log_to_wandb)
+      wandb.init(project = config.WANDB_PROJECT_NAME,
+                 group = exp_group_name,
+                 config = {"model" : config.MODEL, "route" : "sort_claims_tree"})
+      report_data = [[json.dumps(full_sort_tree, indent=2)]]
+      wandb.log({
+        "u/4/N_tok" : TK_TOT,
+        "u/4/in_tok": TK_IN,
+        "u/4/out_tok" : TK_OUT,
+        "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
+        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
+      })
+    except:
+      print("Failed to create wandb run")
   net_usage = {"total_tokens" : TK_TOT,
                "prompt_tokens" : TK_IN,
                "completion_tokens" : TK_OUT}
 
-  return {"tree" : full_sort_tree, "usage" : net_usage} 
-# TODO: RETURN USAGE DUH
-
-#TODO: refactor into separate testing script
-
-######################
-# Testing the server #
-#--------------------#
-tiny_pet_comments = [{"text" : "I love cats"}, {"text" : "dogs are great"}, {"text" : "I'm not sure about birds"}, {"text" : "I really really love cats"}, {"text" : "I don't know about birds"}]
-
-sample_tree_4o = {"taxonomy" : [{'topicName': 'Pets', 'topicShortDescription': 'General opinions about common household pets.', 'subtopics': [{'subtopicName': 'Cats', 'subtopicShortDescription': 'Positive sentiments towards cats.'}, {'subtopicName': 'Dogs', 'subtopicShortDescription': 'Positive sentiments towards dogs.'}, {'subtopicName': 'Birds', 'subtopicShortDescription': 'Uncertainty or mixed feelings about birds.'}]}]}
-
-dupe_claims_4o = {'Pets': {'total': 5, 'subtopics': {'Cats': {'total': 2, 'claims': ['Cats are the best household pets.', 'Cats are superior pets compared to other animals.']}, 'Dogs': {'total': 2, 'claims': ['Dogs are superior pets compared to other animals.', 'Dogs are superior pets.']}, 'Birds': {'total': 1, 'claims': ['Birds are not suitable pets for everyone.']}}}}
-
-pet_comments = [{"text" : "I love cats"}, {"text" : "I really really love dogs"},{"text" : "I'm not sure about birds"}, {"text" : "Cats are my favorite"}, {"text" : "Lizards are terrifying"}, \
-  {"text" : "Lizards are so friggin scary"}, {"text" : "Dogs are the best"}, {"text":  "No seriously dogs are great"}, {"text" : "Birds I'm hesitant about"}, {"text" : "I'm wild about cats"}, \
-  {"text" : "Dogs and cats are both adorable and fluffy"}, {"text" : "Good pets are chill"}, {"text" :"Cats are fantastic"}, {"text" : "Lizards are scary"}, {"text" : "Kittens are so boring"}]
-
-pet_tree_4o = {"tree": {'taxonomy': [{'topicName': 'Pets', 'topicShortDescription': 'General discussion about various types of pets.', 'subtopics': [{'subtopicName': 'Cats', 'subtopicShortDescription': 'Comments expressing love and opinions about cats.'}, {'subtopicName': 'Dogs', 'subtopicShortDescription': 'Comments expressing love and opinions about dogs.'}, {'subtopicName': 'Birds', 'subtopicShortDescription': 'Comments expressing uncertainty or hesitation about birds.'}, {'subtopicName': 'Lizards', 'subtopicShortDescription': 'Comments expressing fear or dislike of lizards.'}]}]}}
-
-pets_claims_4o = {'Pets': {'total': 17, 'subtopics': {'Cats': {'total': 6, 'claims': [{'claim': 'Cats are the best pets.', 'quote': 'I love cats.', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Cats are superior pets.', 'quote': 'Cats are my favorite.', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Cats are the best pets.', 'quote': "I'm wild about cats", 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Cats are adorable.', 'quote': 'Cats [...] are adorable', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Cats are superior pets.', 'quote': 'Cats are fantastic.', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'claim': 'Kittens are not engaging pets.', 'quote': 'Kittens are so boring', 'topicName': 'Pets', 'subtopicName': 'Cats'}]}, 'Dogs': {'total': 4, 'claims': [{'claim': 'Dogs are the best pets.', 'quote': 'I really really love dogs.', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'claim': 'Dogs are superior to other pets.', 'quote': 'Dogs are the best.', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'claim': 'Dogs are superior pets.', 'quote': 'No seriously dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'claim': 'Dogs are adorable.', 'quote': 'Dogs [...] are adorable', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]}, 'Birds': {'total': 3, 'claims': [{'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds'}, {'claim': 'Birds can be unpredictable pets.', 'quote': "I'm hesitant about birds [...].", 'topicName': 'Pets', 'subtopicName': 'Birds'}, {'claim': 'Birds require specific care that may not suit everyone.', 'quote': "I'm hesitant about birds [...].", 'topicName': 'Pets', 'subtopicName': 'Birds'}]}, 'Lizards': {'total': 3, 'claims': [{'claim': 'Lizards should be avoided as pets.', 'quote': 'Lizards are terrifying.', 'topicName': 'Pets', 'subtopicName': 'Lizards'}, {'claim': 'Lizards should be avoided due to their frightening nature.', 'quote': 'Lizards are so friggin scary', 'topicName': 'Pets', 'subtopicName': 'Lizards'}, {'claim': 'Lizards should be avoided as pets.', 'quote': 'Lizards are scary.', 'topicName': 'Pets', 'subtopicName': 'Lizards'}]}, 'General discussion about various types of pets.': {'total': 1, 'claims': [{'claim': 'Good pets should have a calm demeanor.', 'quote': 'Good pets are chill.', 'topicName': 'Pets', 'subtopicName': 'General discussion about various types of pets.'}]}}}}
-
-
-local_test_llm = { 
-  "model_name" : "gpt-4o-mini",
-  "system_prompt": """
-	You are a professional research assistant. You have helped run many public consultations,
-	surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights.
-	You are familiar with public consultation tools like Pol.is and you understand the benefits
-	for working with very clear, concise claims that other people would be able to vote on.
-	""",
-  "user_tree_prompt": """
-I will give you a list of comments.
-Please propose a way to organize the information contained in these comments into topics and subtopics of interest.
-Keep the topic and subtopic names very concise and use the short description to explain what the topic is about.
-
-Return a JSON object of the form {
-  "taxonomy": [
-    {
-      "topicName": string,
-      "topicShortDescription": string,
-      "subtopics": [
-        {
-          "subtopicName": string,
-          "subtopicShortDescription": string,
-        },
-        ...
-      ]
-    },
-    ...
-  ]
-}
-Now here is the list of comments:
-"""
-}
-
-local_test_llm_claims = { 
-  "model_name" : "gpt-4o-mini",
-  "system_prompt": """
-	You are a professional research assistant. You have helped run many public consultations,
-	surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights.
-	You are familiar with public consultation tools like Pol.is and you understand the benefits
-	for working with very clear, concise claims that other people would be able to vote on.
-	""",
-  "user_prompt": """
-I'm going to give you a comment made by a participant and a list of topics and subtopics which have already been extracted.
-I want you to extract a list of concise claims that the participant may support.
-We are only interested in claims that can be mapped to one of the given topic and subtopic.
-The claim must be fairly general but not a platitude.
-It must be something that other people may potentially disagree with. Each claim must also be atomic.
-For each claim, please also provide a relevant quote from the transcript.
-The quote must be as concise as possible while still supporting the argument.
-The quote doesn't need to be a logical argument.
-It could also be a personal story or anecdote illustrating why the interviewee would make this claim.
-You may use "[...]" in the quote to skip the less interesting bits of the quote.
-/return a JSON object of the form {
-  "claims": [
-    {
-      "claim": string, // a very concise extracted claim
-      "quote": string // the exact quote,
-      "topicName": string // from the given list of topics
-      "subtopicName": string // from the list of subtopics
-    },
-    // ...
-  ]
-}
-
-Now here is the list of topics/subtopics:"""
-}
-
-def test_topic_tree():
-  #response = client.post("/topic_tree/?log_to_wandb=True", json={"comments" : [{"text" : "I love cats"},{"text" : "dogs are great"},{"text":"I'm not sure about birds"}]})
-  req ={"llm" : local_test_llm, "comments" : [{"text" : "I love cats"},{"text" : "dogs are great"},{"text":"I'm not sure about birds"}]}
-  print(req)
-  response = client.post("/topic_tree/", json=req)
-  print(response.json())
-
-def test_claims():
-  req = {"llm" : local_test_llm_claims, "comments" : [{"text" : "I love cats"},{"text" : "dogs are great"},{"text":"I'm not sure about birds"}], "tree" : sample_tree_4o}
-  print(req)
-  response = client.post("/claims/", json=req)
-  print(response.json())
-
-def test_dupes():
-  #response = client.put("/sort_claims_tree/?log_to_wandb=True", json={"tree" : dupe_claims_4o})
-  response = client.put("/sort_claims_tree/", json={"tree" : dupe_claims_4o})
-  print(response.json())
-
-def test_full(comments:list, tree:dict=pet_tree_4o):
-  response = client.post("/topic_tree/", json={"comments" : comments})
-  tree = response.json()["tree"]
-  print("TREE: ", tree)
-  
-  response = client.post("/claims/", json={"comments" : comments, "tree" : tree}) 
-  claims = response.json()["claims_tree"]
-  print("CLAIMS: ", claims)
-
-  response = client.put("/sort_claims_tree/", json={"tree" : claims}) #pets_claims_4o}) #claims})
-  final_tree = response.json()["tree"]
-  print("FINAL TREE: ", final_tree)  
-
-
-## TODO: uncomment to test :)
-#client = TestClient(app)
-#test_topic_tree()
-#test_claims()
-#test_dupes()
-#test_full(tiny_pet_comments)
+  return {"data" : full_sort_tree, "usage" : net_usage} 
