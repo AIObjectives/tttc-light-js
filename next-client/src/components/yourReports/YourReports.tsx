@@ -1,17 +1,16 @@
 "use client";
 import React from "react";
 import {
-  Button,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Card,
   CardContent,
-  CardTitle,
   Separator,
   TextIcon,
 } from "../elements";
 import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
-import Link from "next/link";
-import CopyButton from "../copyButton/CopyButton";
 import { ReportRef } from "tttc-common/firebase";
 
 const reportLink = (uri: string) =>
@@ -29,27 +28,51 @@ export default function YourReports({
 }) {
   return (
     <Col gap={4}>
-      <div className="px-8 pt-8 pb-5">
-        <h3>{userName}</h3>
+      <YourReportsHeader
+        name={userName}
+        description={undefined}
+        pictureUri="https://imgflip.com/s/meme/Unsettled-Tom.jpg"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px]">
+        {reports.map((reportdata) => (
+          <ReportItem {...reportdata} />
+        ))}
       </div>
-      {reports.map((reportdata) => (
-        <ReportItem {...reportdata} />
-      ))}
     </Col>
+  );
+}
+
+function YourReportsHeader({
+  name,
+  description,
+  pictureUri,
+}: {
+  name: string;
+  description: string | undefined;
+  pictureUri: string;
+}) {
+  return (
+    <Row gap={4} className="p-8">
+      <Avatar className="h-32 w-32">
+        <AvatarImage className="flex-shrink-0 object-fill" src={pictureUri} />
+        <AvatarFallback>YOU</AvatarFallback>
+      </Avatar>
+      <Col gap={2} className="justify-center">
+        <h3>{name}</h3>
+        {description && <p>{description}</p>}
+      </Col>
+    </Row>
   );
 }
 
 export function ReportItem(props: ReportRef) {
   const { description, reportDataUri } = props;
   return (
-    <Card className="max-w-[896px] w-full">
+    <Card className="min-w-72">
       <CardContent>
-        <Col gap={3}>
+        <Col gap={4}>
           <ReportItemTop {...props} />
-          <p>{description}</p>
-          <Link href={reportLink(reportDataUri)} className="self-end">
-            <Button>Open report</Button>
-          </Link>
+          <p className="line-clamp-4">{description}</p>
         </Col>
       </CardContent>
     </Card>
@@ -67,13 +90,12 @@ const ReportItemTop = ({
 }: ReportRef) => (
   <Col gap={2}>
     <Row className="justify-between">
-      <CardTitle>{title}</CardTitle>
-      <CopyButton
-        successMessage="Link copied"
-        copyStr={reportLink(reportDataUri)}
-      />
+      <h4>{title}</h4>
+      <div className="self-center">
+        <Icons.ChevronRight className="w-6 h-6 stroke-muted-foreground" />
+      </div>
     </Row>
-    <Row gap={4}>
+    <Col gap={2} className="flex-wrap">
       <Row gap={4}>
         <TextIcon icon={<Icons.Theme size={16} />}>{numTopics} topics</TextIcon>
         <TextIcon icon={<Icons.Topic className="w-4 h-4" />}>
@@ -82,7 +104,7 @@ const ReportItemTop = ({
         <TextIcon icon={<Icons.Claim className="w-4 h-4" />}>
           {numClaims} claims
         </TextIcon>
-        <Separator orientation="vertical" className="hidden sm:block" />
+        <Separator orientation="vertical" className="bg-border w-[1px] h-5" />
       </Row>
       <Row gap={4}>
         <TextIcon icon={<Icons.People size={16} />}>
@@ -92,6 +114,6 @@ const ReportItemTop = ({
           {createdDate.toDateString().split(" ").slice(1).join(" ")}
         </TextIcon>
       </Row>
-    </Row>
+    </Col>
   </Col>
 );
