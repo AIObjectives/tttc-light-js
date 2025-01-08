@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import type { Preview } from "@storybook/react";
 import ThemeProvider from "./ThemeProvider";
 import { nextTypography } from "../src/lib/font";
+import "../src/app/global.css";
 
 const preview: Preview = {
   parameters: {

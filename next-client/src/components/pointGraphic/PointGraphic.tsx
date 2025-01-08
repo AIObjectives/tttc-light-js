@@ -1,20 +1,50 @@
 "use client";
 
-import React, { Ref, forwardRef, useContext } from "react";
+import React, { Ref, createContext, forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
-import { ClaimCard, ClaimHeader } from "../claim/Claim";
-import { Col } from "../layout";
+import { ClaimCard } from "../claim/Claim";
 import { ReportContext } from "../report/Report";
-import { QuoteText } from "../quote/Quote";
+import { ThemeClass, useThemeContextColor } from "@src/lib/hooks/useTopicTheme";
+
+type CellContextType = {
+  borderClass: ThemeClass | string;
+  backgroundClass: ThemeClass | string;
+  hoverClass: ThemeClass | string;
+  highlightedClass: ThemeClass | string;
+};
+
+const CellContext = createContext<CellContextType>({} as CellContextType);
+
+function PointGraphicWrapper({ children }: React.PropsWithChildren<{}>) {
+  const borderClass = useThemeContextColor("border");
+  const backgroundClass = useThemeContextColor("bgAccent");
+  const hoverClass = useThemeContextColor("bgHover");
+  const highlightedClass = useThemeContextColor("bg");
+
+  return (
+    <CellContext.Provider
+      value={{
+        borderClass,
+        backgroundClass,
+        hoverClass,
+        highlightedClass,
+      }}
+    >
+      {children}
+    </CellContext.Provider>
+  );
+}
 
 function PointGraphic({ claims }: { claims: schema.Claim[] }) {
   return (
-    <div className="flex flex-row w-full flex-wrap gap-[3px]">
-      {claims.map((claim) => (
-        <Cell key={claim.id} claim={claim} />
-      ))}
-    </div>
+    <PointGraphicWrapper>
+      <div className="flex flex-row w-full flex-wrap gap-[3px]">
+        {claims.map((claim) => (
+          <Cell key={claim.id} claim={claim} />
+        ))}
+      </div>
+    </PointGraphicWrapper>
   );
 }
 
@@ -23,11 +53,11 @@ export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
   ref: Ref<HTMLDivElement>,
 ) {
   return (
-    <>
+    <PointGraphicWrapper>
       {claims.map((claim) => (
         <Cell key={claim.id} claim={claim} isHighlighted={isHighlighted} />
       ))}
-    </>
+    </PointGraphicWrapper>
   );
 });
 
@@ -45,12 +75,15 @@ export function Cell(
   ref: Ref<HTMLDivElement>,
 ) {
   const { dispatch } = useContext(ReportContext);
+  const { borderClass, backgroundClass, hoverClass, highlightedClass } =
+    useContext(CellContext);
+
   const onClick = () => dispatch({ type: "open", payload: { id: claim.id } });
   return (
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
         <div
-          className={`w-3 h-3 bg-AOI_graph_cell rounded-sm hover:bg-slate-700 ${isHighlighted ? "bg-slate-700" : ""}`}
+          className={`w-3 h-3 ${!isHighlighted ? backgroundClass : highlightedClass} ${borderClass} border rounded-sm ${hoverClass}`}
         />
       </HoverCardTrigger>
       <HoverCardContent className="p-4">

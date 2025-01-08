@@ -24,12 +24,13 @@ import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { ReportContext } from "../report/Report";
 import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
+import { useThemeColor } from "@src/lib/hooks/useTopicTheme";
 
 type TopicContextType = {
   topicNode: TopicNode;
 };
 
-const TopicContext = createContext<TopicContextType>({
+export const TopicContext = createContext<TopicContextType>({
   topicNode: {} as TopicNode,
 });
 
@@ -38,42 +39,25 @@ const TopicContext = createContext<TopicContextType>({
  */
 function Topic({ node }: { node: TopicNode }) {
   // Get report context and use that to setup scrolling and focusing
-  const { dispatch, useScrollTo, useFocusedNode } = useContext(ReportContext);
+  const { useScrollTo, useFocusedNode } = useContext(ReportContext);
   const scrollRef = useScrollTo(node.data.id);
   const focusedRef = useFocusedNode(node.data.id);
-
   return (
     <TopicContext.Provider value={{ topicNode: node }}>
-      <TopicCard
-        ref={mergeRefs([scrollRef, focusedRef])}
-        // topicNode={node}
-        openButton={
-          <Button
-            onClick={() =>
-              dispatch({ type: "toggleTopic", payload: { id: node.data.id } })
-            }
-          >
-            {node.isOpen ? "Collapse Topic" : "Expand Topic"}
-          </Button>
-        }
-        openedTopic={<ExpandTopic />}
-      />
+      <TopicCard ref={mergeRefs([scrollRef, focusedRef])} />
     </TopicContext.Provider>
   );
 }
-interface TopicCardProps {
-  openButton: React.ReactNode;
-  openedTopic: React.ReactNode;
-}
+interface TopicCardProps {}
 /**
  * UI for Topic
  */
 const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
-  { openButton, openedTopic }: TopicCardProps,
+  {}: TopicCardProps,
   ref,
 ) {
   const { topicNode } = useContext(TopicContext);
-  const { title, description, context } = topicNode.data;
+  const { title, description } = topicNode.data;
 
   return (
     <Card>
@@ -85,21 +69,15 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
                 <div className="self-center">
                   <CopyLinkButton anchor={title} />
                 </div>
-                {/* <Button variant={"outline"} size={"icon"}>
-                  <Icons.Response />
-                </Button> */}
               </>
             }
           />
-          <TopicInteractiveGraphic
-            subtopics={topicNode.children}
-            openButton={openButton}
-          >
+          <TopicInteractiveGraphic subtopics={topicNode.children}>
             <ExpandableText>{description}</ExpandableText>
           </TopicInteractiveGraphic>
         </Col>
       </CardContent>
-      {openedTopic}
+      <ExpandTopic />
     </Card>
   );
 });
@@ -150,14 +128,15 @@ export function TopicContextDescription({
  */
 export function TopicInteractiveGraphic({
   children,
-  openButton,
 }: React.PropsWithChildren<{
   subtopics: SubtopicNode[];
-  openButton: React.ReactNode;
 }>) {
+  const { dispatch } = useContext(ReportContext);
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
   const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(subtopics);
+  const buttonBackgroundColor = useThemeColor(topicNode.data.topicColor, "bg");
+
   return (
     <Col gap={3}>
       {/* Point graphic component */}
@@ -181,7 +160,19 @@ export function TopicInteractiveGraphic({
           onMouseOver={onMouseOver}
           onMouseExit={onMouseExit}
         />
-        <div className="self-center">{openButton}</div>
+        <div className="self-center">
+          <Button
+            onClick={() =>
+              dispatch({
+                type: "toggleTopic",
+                payload: { id: topicNode.data.id },
+              })
+            }
+            className={buttonBackgroundColor}
+          >
+            {topicNode.isOpen ? "Collapse Topic" : "Expand Topic"}
+          </Button>
+        </div>
       </Row>
     </Col>
   );
