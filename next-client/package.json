@@ -6,7 +6,7 @@
     "build": "next build",
     "start": "next start",
     "start-old": "node dist/server.js",
-    "dev": "node env-check.js env=.env.local example=.example-env.local && next dev",
+    "dev": "next dev",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest"
