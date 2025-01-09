@@ -40,8 +40,13 @@ export const env = z.object({
   NODE_ENV: z.union([z.literal("dev"), z.literal("prod")], {
     required_error: "Missing NODE_ENV (prod | dev)",
   }),
-  GOOGLE_APPLICATION_CREDENTIALS: z.string(),
-  FIREBASE_DATABASE_URL: z.string().url(),
+  GOOGLE_APPLICATION_CREDENTIALS: z.string({
+    required_error:
+      "Missing GOOGLE_APPLICATION_CREDENTIALS from env. These are Firebase credentials.",
+  }),
+  FIREBASE_DATABASE_URL: z
+    .string({ required_error: "Missing FIREBASE_DATABASE_URL" })
+    .url({ message: "FIREBASE_DATABASE_URL in env should be a valid url" }),
 });
 
 export type Env = z.infer<typeof env>;
