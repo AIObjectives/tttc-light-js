@@ -12,6 +12,7 @@ const llmConfig = z.object(
     model_name: z.string(),
     system_prompt: z.string(),
     user_prompt: z.string(),
+    api_key: z.string(),
   },
   { invalid_type_error: "Invalid llmConfig" },
 );
