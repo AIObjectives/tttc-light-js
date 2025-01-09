@@ -463,10 +463,11 @@ const testDedupTree: apiPyserver.SortClaimsTreeRequest["tree"] = {
   },
 };
 
-const makeLLMConfig = (user_prompt: string) => ({
+const makeLLMConfig = (user_prompt: string): apiPyserver.LLMConfig => ({
   system_prompt: defaultSystemPrompt,
   user_prompt,
   model_name: "gpt-4o-mini",
+  api_key: "INCLUDE_KEY_HERE",
 });
 
 /**
@@ -477,7 +478,10 @@ const makeLLMConfig = (user_prompt: string) => ({
  */
 
 // test topicTreePipelineStep with comment data
+// ! STALE
 describe.skip("topicTreePipelineStep", () => {
+  throw new Error("Test stale");
+  console.log(process.env["OPENAI_API_KEY"]);
   it("should return a topic tree", async () => {
     const body = {
       comments: testCommentData.comments,
@@ -493,7 +497,9 @@ describe.skip("topicTreePipelineStep", () => {
 });
 
 // test claimsPipelineStep with comment data and taxonomy data
+// ! STALE
 describe.skip("claimsPipelineStep", () => {
+  throw new Error("Test stale");
   it("should return a list of claims", async () => {
     const result = await claimsPipelineStep(env, {
       llm: makeLLMConfig(defaultExtractionPrompt),
@@ -507,7 +513,9 @@ describe.skip("claimsPipelineStep", () => {
 });
 
 // test sortClaimsTreePipelineStep with comment data and taxonomy data
+// ! STALE
 describe.skip("sortClaimsTreePipelineStep", () => {
+  throw new Error("Test stale");
   it("should return a sorted list of claims", async () => {
     const result = await sortClaimsTreePipelineStep(env, {
       tree: testDedupTree,

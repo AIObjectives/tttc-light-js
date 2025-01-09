@@ -35,6 +35,7 @@ export const pipeLineWorker = new Worker(
       system_prompt: config.systemInstructions,
       user_prompt,
       model_name: config.model || "gpt-4o-mini",
+      api_key: config.apiKey,
     });
 
     const options: schema.OldOptions = { ...defaultConfig, ...config };
