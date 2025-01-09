@@ -33,7 +33,11 @@ function MyReportsUI({ userId }: { userId: string }) {
 
   return (
     <div className="justify-items-center">
-      <YourReports userName={user!.displayName!} reports={reports} />
+      <YourReports
+        userName={user!.displayName!}
+        reports={reports}
+        pictureUri={user?.photoURL || undefined}
+      />
     </div>
   );
 }

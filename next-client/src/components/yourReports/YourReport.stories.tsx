@@ -54,6 +54,7 @@ export const Main: Story = {
   args: {
     userName: "Testy McTestface",
     reports,
+    pictureUri: "https://imgflip.com/s/meme/Unsettled-Tom.jpg",
   },
 };
 

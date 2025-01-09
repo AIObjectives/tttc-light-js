@@ -12,6 +12,7 @@ import {
 import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
 import { ReportRef } from "tttc-common/firebase";
+import Link from "next/link";
 
 const reportLink = (uri: string) =>
   location.protocol +
@@ -22,16 +23,20 @@ const reportLink = (uri: string) =>
 export default function YourReports({
   userName,
   reports,
+  pictureUri,
+  description,
 }: {
   userName: string;
   reports: ReportRef[];
+  pictureUri: string | undefined;
+  description?: string | undefined;
 }) {
   return (
     <Col gap={4}>
       <YourReportsHeader
         name={userName}
-        description={undefined}
-        pictureUri="https://imgflip.com/s/meme/Unsettled-Tom.jpg"
+        description={description}
+        pictureUri={pictureUri}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px]">
         {reports.map((reportdata) => (
@@ -49,7 +54,7 @@ function YourReportsHeader({
 }: {
   name: string;
   description: string | undefined;
-  pictureUri: string;
+  pictureUri: string | undefined;
 }) {
   return (
     <Row gap={4} className="p-8">
@@ -68,13 +73,15 @@ function YourReportsHeader({
 export function ReportItem(props: ReportRef) {
   const { description, reportDataUri } = props;
   return (
-    <Card className="min-w-72">
-      <CardContent>
-        <Col gap={4}>
-          <ReportItemTop {...props} />
-          <p className="line-clamp-4">{description}</p>
-        </Col>
-      </CardContent>
+    <Card className="min-w-72 h-60">
+      <Link href={reportLink(reportDataUri)}>
+        <CardContent>
+          <Col gap={4}>
+            <ReportItemTop {...props} />
+            <p className="line-clamp-4">{description}</p>
+          </Col>
+        </CardContent>
+      </Link>
     </Card>
   );
 }

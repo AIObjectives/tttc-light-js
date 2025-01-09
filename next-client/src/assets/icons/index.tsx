@@ -19,6 +19,7 @@ import QuoteSVG from "./QuoteSvg";
 import ClaimSVG from "./ClaimSvg";
 // TODO:  Capitalize Chevron and Response SVG
 import ChevronRightSvg from "./ChevronRightSvg";
+import ChevronRight16SVG from "./ChevronRight16Svg";
 import ResponseSvg from "./ResponseSvg";
 import InfoSVG from "./InfoSvg";
 import XSVG from "./XSvg";
@@ -59,6 +60,10 @@ Icons.Info = (props: { className?: string }) => <InfoSVG {...props} />;
 
 Icons.ChevronRight = (props: { className?: string }) => (
   <ChevronRightSvg {...props} />
+);
+
+Icons.ChevronRight16 = (props: { className?: string }) => (
+  <ChevronRight16SVG {...props} />
 );
 
 Icons.Topic = (props: { className?: string }) => <TopicSVG {...props} />;
