@@ -210,7 +210,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
       print("Failed to create wandb run")
   #NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
   # choosing the latter for now 
-  return {"data" : tree["taxonomy"], "usage" : usage}
+  return {"data" : tree["taxonomy"], "usage" : usage.model_dump()}
 
 def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   """
