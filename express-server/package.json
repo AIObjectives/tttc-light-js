@@ -4,7 +4,7 @@
   "description": "pipeline for tttc-light-js",
   "scripts": {
     "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\" && npx prettier ./dist --write",
-    "dev": "node env-check.js env=.env example=.example-env && nodemon src/server.ts",
+    "dev": "nodemon src/server.ts",
     "test": "vitest",
     "start": "node dist/server.js"
   },
