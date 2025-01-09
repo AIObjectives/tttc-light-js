@@ -7,6 +7,7 @@ import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
 import { setupWorkers } from "./workers";
 import { report } from "./routes/report";
+import { setupConnection } from "./Queue";
 
 const port = process.env.PORT || 8080;
 
@@ -20,8 +21,12 @@ app.use(express.static("public"));
 // Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));
 
+const { connection, pipelineQueue: plq } = setupConnection(env);
+
+export const pipelineQueue = plq;
+
 // This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
-const _ = setupWorkers();
+const _ = setupWorkers(connection);
 
 /**
  * Depcrecated route

@@ -5,7 +5,7 @@ import { getStorageUrl, storeJSON } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
 import { formatData, uniqueSlug } from "../utils";
-import { pipelineQueue } from "../Queue";
+import { pipelineQueue } from "../server";
 import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier";
 
