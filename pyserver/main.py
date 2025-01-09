@@ -23,11 +23,11 @@ from typing import List, Union
 import wandb
 
 # TODO: which set of imports shall we keep? :)
-import config
-from utils import cute_print
+# import config
+# from utils import cute_print
 
-#import pyserver.config as config
-#from pyserver.utils import cute_print
+import pyserver.config as config
+from pyserver.utils import cute_print
 
 class Comment(BaseModel):
   id: str
