@@ -13,7 +13,7 @@ const nextScript = `cd ${__dirname}/next-client && npm i && npm run dev`;
 const commonScript = `cd ${__dirname}/common && npm i && npm run build && npm run watch`;
 const expressScript = `cd ${__dirname}/express-server && npm i && npm run dev`;
 // const pyservScript = `cd ${__dirname}/pyserver && if [ ! -f "Pipfile" ]; then pipenv install -r requirements.txt; else pipenv install; fi && pipenv shell && fastapi dev main.py`
-const pyservScript = `cd ${__dirname}/pyserver && pipenv install -r requirements.txt && pipenv run fastapi dev main.py`;
+const pyservScript = `cd ${__dirname}/pyserver && source .venv/bin/activate && fastapi dev main.py`;
 const runScript = (script) =>
   child_process.exec(
     `osascript -e 'tell application \"Terminal\" to do script \"${script}\"'`,
