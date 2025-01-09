@@ -157,7 +157,7 @@ export type TopicTreeRequest = z.infer<typeof topicTreeRequest>;
 
 export const topicTreeResponse = z.object(
   {
-    tree: z.object({ taxonomy: partialTopic.array() }),
+    data: partialTopic.array(),
     usage,
   },
   { invalid_type_error: "Invalid topic tree response" },
@@ -179,7 +179,7 @@ export const claimsRequest = z.object({
 export type ClaimsRequest = z.infer<typeof claimsRequest>;
 
 export const claimsReply = z.object({
-  claims_tree: claimsTree,
+  data: claimsTree,
   usage,
 });
 
@@ -194,7 +194,7 @@ export const sortClaimsTreeRequest = z.object({
 export type SortClaimsTreeRequest = z.infer<typeof sortClaimsTreeRequest>;
 
 export const sortClaimsTreeResponse = z.object({
-  tree: sortedTopic.array(),
+  data: sortedTopic.array(),
 });
 
 export type SortClaimsTreeResponse = z.infer<typeof sortClaimsTreeResponse>;

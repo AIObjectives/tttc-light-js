@@ -16,17 +16,24 @@ const typedFetch =
 
 const pyserverFetchTopicTree = typedFetch(apiPyserver.topicTreeRequest);
 
+const logger =
+  (prependMessage: string) =>
+  <T>(arg: T): T => {
+    console.log(prependMessage, arg);
+    return arg;
+  };
+
 export async function topicTreePipelineStep(
   env: Env,
-  data: TopicTreeStep["data"],
+  input: TopicTreeStep["data"],
 ) {
-  console.log(env, data);
-  const { tree, usage } = await pyserverFetchTopicTree(
+  const { data, usage } = await pyserverFetchTopicTree(
     `${env.PYSERVER_URL}/topic_tree`,
-    data,
+    input,
   )
     .then((res) => res.json())
+    .then(logger("topic tree step returns: "))
     .then(apiPyserver.topicTreeResponse.parse);
 
-  return { tree, usage };
+  return { data, usage };
 }

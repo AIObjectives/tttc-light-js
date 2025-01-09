@@ -16,13 +16,21 @@ const typedFetch =
 
 const pyserverFetchClaims = typedFetch(apiPyserver.claimsRequest);
 
-export async function claimsPipelineStep(env: Env, data: ClaimsStep["data"]) {
-  const { claims_tree, usage } = await pyserverFetchClaims(
+const logger =
+  (prependMessage: string) =>
+  <T>(arg: T): T => {
+    console.log(prependMessage, arg);
+    return arg;
+  };
+
+export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
+  const { data, usage } = await pyserverFetchClaims(
     `${env.PYSERVER_URL}/claims`,
-    data,
+    input,
   )
     .then((res) => res.json())
+    .then(logger("claims step returns: "))
     .then(apiPyserver.claimsReply.parse);
 
-  return { claims_tree, usage };
+  return { claims_tree: data, usage };
 }

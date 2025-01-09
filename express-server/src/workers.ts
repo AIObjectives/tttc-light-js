@@ -63,7 +63,7 @@ export const pipeLineWorker = new Worker(
       status: api.reportJobStatus.Values.clustering,
     });
 
-    const { tree: taxonomy } = await topicTreePipelineStep(env, {
+    const { data: taxonomy } = await topicTreePipelineStep(env, {
       comments,
       llm: topicTreeLLMConfig,
     });
@@ -73,7 +73,7 @@ export const pipeLineWorker = new Worker(
       status: api.reportJobStatus.Values.extraction,
     });
     const { claims_tree } = await claimsPipelineStep(env, {
-      tree: taxonomy,
+      tree: { taxonomy },
       comments,
       llm: claimsLLMConfig,
     });
@@ -83,12 +83,12 @@ export const pipeLineWorker = new Worker(
       status: api.reportJobStatus.Values.sorting,
     });
 
-    const { tree } = await sortClaimsTreePipelineStep(env, {
+    const { data: tree } = await sortClaimsTreePipelineStep(env, {
       tree: claims_tree,
       llm: dedupLLMConfig,
     });
 
-    const newTax: schema.Taxonomy = taxonomy.taxonomy.map((t) => ({
+    const newTax: schema.Taxonomy = taxonomy.map((t) => ({
       ...t,
       topicId: randomUUID(),
       subtopics: t.subtopics.map((sub) => ({

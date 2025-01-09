@@ -18,6 +18,13 @@ const pyserverFetchSortClaimsTree = typedFetch(
   apiPyserver.sortClaimsTreeRequest,
 );
 
+const logger =
+  (prependMessage: string) =>
+  <T>(arg: T): T => {
+    console.log(prependMessage, arg);
+    return arg;
+  };
+
 export async function sortClaimsTreePipelineStep(
   env: Env,
   data: SortClaimTreeStep["data"],
@@ -27,5 +34,6 @@ export async function sortClaimsTreePipelineStep(
     data,
   )
     .then((res) => res.json())
+    .then(logger("sort claims step returns: "))
     .then(apiPyserver.sortClaimsTreeResponse.parse);
 }
