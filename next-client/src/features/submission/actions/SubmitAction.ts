@@ -8,6 +8,7 @@ import {
 import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { z } from "zod";
+import { validatedServerEnv } from "@src/server-env";
 
 const parseCSV = async (file: File): Promise<SourceRow[]> => {
   const buffer = await file.arrayBuffer();
@@ -43,10 +44,7 @@ export default async function submitAction(
 
   const body: GenerateApiRequest = { userConfig: config, data: dataPayload };
 
-  const url = z
-    .string()
-    .url()
-    .parse(`${process.env.PIPELINE_EXPRESS_URL}/create`);
+  const url = new URL("create", validatedServerEnv.PIPELINE_EXPRESS_URL);
 
   const response = await fetch(url, {
     method: "POST",
