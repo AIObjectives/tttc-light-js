@@ -12,22 +12,22 @@ name to use, the system prompt, and the specific pipeline step prompts.
 
 Currently only supports OpenAI (Anthropic soon!!!)
 For local testing, load these from a config.py file
+
+NOTE: currently this relies on an OpenAI API key defined in a .env file
+at the root of your repo. This will supersede any other definitions in subfolders.
 """
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import json
+import os
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
 import wandb
 
-# TODO: which set of imports shall we keep? :)
-import config
-from utils import cute_print
-
-#import pyserver.config as config
-#from pyserver.utils import cute_print
+import pyserver.config as config
+from pyserver.utils import cute_print
 
 class Comment(BaseModel):
   id: str
@@ -144,8 +144,8 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
     }
   }
   """
+  
   client = OpenAI()
-
   # append comments to prompt
   full_prompt = req.llm.user_prompt
   for comment in req.comments:
