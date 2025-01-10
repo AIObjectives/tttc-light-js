@@ -2,6 +2,7 @@
 
 import { TopicContext } from "@src/components/topic/Topic";
 import { useContext, useRef } from "react";
+import * as schema from "tttc-common/schema";
 
 export type TopicTheme = {
   backgroundColor: string;
@@ -83,14 +84,6 @@ const themeColorMap = {
     border: "border-theme_brown",
     borderAccent: "border-theme_brown-accent",
   },
-  gray: {
-    bg: "bg-theme_gray",
-    bgAccent: "bg-theme_gray-accent",
-    bgHover: "hover:bg-theme_gray",
-    bgAccentHover: "hover:bg-theme_gray-accent",
-    border: "border-theme_gray",
-    borderAccent: "border-theme_gray-accent",
-  },
 } as const;
 
 // Type for theme colors
@@ -100,13 +93,43 @@ type ColorVariant = keyof ThemeMap[ThemeColor];
 type ThemeClass = ThemeMap[ThemeColor][ColorVariant];
 
 /**
+ * An implementation of MurmurHash3's mixing function.
+ * Returns a number between 0 and 1.
+ *
+ * Should be relatively evenly distributed across input.
+ */
+const murmurhash = (str: string): number => {
+  let h = 1779033703 ^ str.length;
+
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+
+  h = Math.imul(h ^ (h >>> 16), 2246822507);
+  h = Math.imul(h ^ (h >>> 13), 3266489909);
+  h = (h ^= h >>> 16) >>> 0;
+
+  return h / 0xffffffff;
+};
+
+/**
  * Gets the correct className for the topic color and variation
+ *
+ * If a topic color is provided that doesn't match what we expect, it instead maps that color to one of our topic colors.
  */
 function useThemeColor(
-  color: ThemeColor = "blueSea",
+  color: string,
   variant: ColorVariant,
 ): ThemeClass | string {
-  const colorClass = useRef(themeColorMap[color][variant]);
+  const colorParse = schema.topicColors.safeParse(color);
+  // For now, if an unexpected color is passed, map that color to one of our colors
+  const strictColor = colorParse.success
+    ? colorParse.data
+    : schema.topicColors.options[
+        Math.floor(murmurhash(color) * schema.topicColors.options.length)
+      ];
+  const colorClass = useRef(themeColorMap[strictColor][variant]);
   return colorClass.current;
 }
 

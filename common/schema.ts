@@ -321,6 +321,9 @@ export const subtopic = z.object({
 
 export type Subtopic = z.infer<typeof subtopic>;
 
+/**
+ * This is the list of colors that we use at the moment, but don't make this hard coded into the schema so we can change colors if necessary.
+ */
 export const topicColors = z.enum([
   "violet",
   "blueSea",
@@ -331,7 +334,6 @@ export const topicColors = z.enum([
   "red",
   "purple",
   "brown",
-  "gray",
 ]);
 
 export type TopicColors = z.infer<typeof topicColors>;
@@ -346,7 +348,7 @@ export const topic = z.object({
   description: z.string(),
   context: z.string().optional(),
   subtopics: z.array(subtopic),
-  topicColor: topicColors,
+  topicColor: z.string(),
 });
 
 export type Topic = z.infer<typeof topic>;
