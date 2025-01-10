@@ -20,23 +20,10 @@ function CopyButton({
       variant={"outline"}
       onClick={() => copy().then(notify)}
     >
-      <Icons.Copy size={12} className="" />
+      <Icons.Copy size={16} className="" />
     </Button>
   );
 }
-
-// function CopyLinkButton({ anchor }: { anchor: string }) {
-//   const copy = async () =>
-//     navigator.clipboard.writeText(
-//       location.protocol +
-//         "//" +
-//         location.host +
-//         location.pathname +
-//         `#${encodeURIComponent(anchor)}`,
-//     );
-//   const
-//   return <CopyButton  />
-// }
 
 export const CopyLinkButton = ({ anchor }: { anchor: string }) => (
   <CopyButton
