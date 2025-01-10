@@ -131,7 +131,7 @@ function OutlineItem({
       >
         {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
         <div
-          className="invisible group-hover:visible content-center"
+          className={`${node.isHighlighted ? `visible ${node.color}` : "invisible"} content-center`}
           onClick={handleClick}
         >
           <Icons.Minus size={12} className="stroke-[3px]" />
