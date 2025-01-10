@@ -121,12 +121,13 @@ function OutlineItem({
     onClick,
     _onDoubleClick,
   );
+
   return (
     // column here because opened nodes should continue the spacing.
     <Col gap={outlineSpacing} className=" ">
       <Row
         gap={2}
-        className={`group items-center ${node.isHighlighted ? "text-primary" : ""} hover:text-primary cursor-pointer`}
+        className={`group items-center ${node.isHighlighted ? node.color : ""} ${node.hoverColor} cursor-pointer`}
       >
         {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
         <div
@@ -143,7 +144,7 @@ function OutlineItem({
           <p
             onClick={handleClick}
             onDoubleClick={handleDoubleClick}
-            className="overflow-ellipsis overflow-hidden text-base select-none"
+            className="overflow-ellipsis overflow-hidden select-none"
           >
             {title}
           </p>

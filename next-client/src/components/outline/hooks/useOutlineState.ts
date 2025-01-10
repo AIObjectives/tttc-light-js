@@ -4,9 +4,14 @@ import {
   ReportState,
   SomeNode,
 } from "@src/components/report/hooks/useReportState";
+import {
+  useThemeColor,
+  TextClass,
+  TextHoverClass,
+} from "@src/lib/hooks/useTopicTheme";
 import assert from "assert";
 import { Dispatch, useReducer } from "react";
-
+import * as schema from "tttc-common/schema";
 //  ********************************
 //  * Types *
 //  ********************************/
@@ -19,6 +24,8 @@ export type OutlineNode = {
   title: string;
   isOpen: boolean;
   isHighlighted: boolean;
+  color: TextClass;
+  hoverColor: TextHoverClass;
   children?: OutlineNode[];
 };
 
@@ -209,14 +216,58 @@ const highlight = (state: OutlineTree, id: string) => {
 //  * State Builder *
 //  ********************************/
 
-const outlineStateBuilder = (nodes: SomeNode[]): OutlineNode[] =>
+const chooseColor = (
+  node: SomeNode,
+  parentColor: TextClass | undefined,
+): TextClass => {
+  const parsed = schema.topic.safeParse(node.data);
+  if (parsed.success) {
+    return useThemeColor(parsed.data.topicColor, "text");
+  } else if (parentColor) {
+    return parentColor;
+  } else {
+    throw new Error(
+      "outline state builder chooseColor - should have either a topicColor or parent color.",
+    );
+  }
+};
+
+const chooseHoverColor = (
+  node: SomeNode,
+  parentHoverColor: TextHoverClass | undefined,
+): TextHoverClass => {
+  const parsed = schema.topic.safeParse(node.data);
+  if (parsed.success) {
+    return useThemeColor(parsed.data.topicColor, "textHover");
+  } else if (parentHoverColor) {
+    return parentHoverColor;
+  } else {
+    throw new Error(
+      "outline state builder chooseHoverColor - should have either a topicColor or parent color.",
+    );
+  }
+};
+
+const outlineStateBuilder = (
+  nodes: SomeNode[],
+  color?: TextClass | undefined,
+  hoverColor?: TextHoverClass | undefined,
+): OutlineNode[] =>
   nodes.map((node) => ({
     id: node.data.id,
     title: node.data.title,
     isOpen: false,
     isHighlighted: false,
+    color: chooseColor(node, color),
+    hoverColor: chooseHoverColor(node, hoverColor),
     children:
-      "children" in node ? outlineStateBuilder(node.children) : undefined,
+      "children" in node
+        ? outlineStateBuilder(
+            node.children,
+            chooseColor(node, color),
+            chooseHoverColor(node, hoverColor),
+          )
+        : undefined,
   }));
 
 type OutlineStateActionTypes =
