@@ -40,7 +40,7 @@ export default function YourReports({
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px]">
         {reports.map((reportdata) => (
-          <ReportItem {...reportdata} />
+          <ReportItem {...reportdata} key={reportdata.reportDataUri} />
         ))}
       </div>
     </Col>

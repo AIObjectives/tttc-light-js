@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import * as api from "tttc-common/api";
 import { Col, Row } from "../layout";
-import { Button, TextArea } from "../elements";
+import { Button, Spinner, TextArea } from "../elements";
 import { Input } from "../elements";
 import SubmitFormControl from "@src/features/submission/components/SubmitFormControl";
 import Icons from "@src/assets/icons";
@@ -76,11 +76,29 @@ const form = z.object({
   dedupInstructions: z.string().min(1),
 });
 
+function Center({ children }: React.PropsWithChildren) {
+  return (
+    <div className="w-full h-full content-center justify-items-center">
+      {children}
+    </div>
+  );
+}
+
 export default function CreateReport() {
   const { isLoading, result } = getUserToken();
-  // TODO Make a spinner
-  if (result === undefined || isLoading) return <></>;
-  else if (result[0] === "error") return <p>An error occured...</p>;
+
+  if (result === undefined || isLoading)
+    return (
+      <Center>
+        <Spinner />
+      </Center>
+    );
+  else if (result[0] === "error")
+    return (
+      <Center>
+        <p>An error occured...</p>
+      </Center>
+    );
   else return <CreateReportComponent token={result[1]} />;
 }
 

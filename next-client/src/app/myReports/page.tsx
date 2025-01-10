@@ -6,6 +6,15 @@ import { db } from "@src/lib/firebase/clientApp";
 import { useAsyncState } from "@src/lib/hooks/useAsyncState";
 import { useEffect, useState } from "react";
 import YourReports from "@src/components/yourReports/YourReports";
+import { Spinner } from "@src/components/elements";
+
+function Center({ children }: React.PropsWithChildren) {
+  return (
+    <div className="w-full h-full content-center justify-items-center">
+      {children}
+    </div>
+  );
+}
 
 export default function MyReportsPage() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
@@ -15,7 +24,12 @@ export default function MyReportsPage() {
     else setUserId(null);
   }, [user]);
   if (userId === undefined) return <></>;
-  if (userId === null) return <p>Unauthorized can't find user</p>;
+  if (userId === null)
+    return (
+      <Center>
+        <p>Please login to see your reports</p>
+      </Center>
+    );
   return <MyReportsUI userId={userId} />;
 }
 
@@ -26,9 +40,19 @@ function MyReportsUI({ userId }: { userId: string }) {
     user,
   );
 
-  if (isLoading || result === undefined) return <p>Loading...</p>;
+  if (isLoading || result === undefined)
+    return (
+      <Center>
+        <Spinner />
+      </Center>
+    );
   console.log(result[1]);
-  if (result[0] === "error") return <p>Unauthorized</p>;
+  if (result[0] === "error")
+    return (
+      <Center>
+        <p>There was an issue loading your reports</p>
+      </Center>
+    );
   const reports = result[1];
 
   return (
