@@ -23,11 +23,11 @@ from typing import List, Union
 import wandb
 
 # TODO: which set of imports shall we keep? :)
-import config
-from utils import cute_print
+# import config
+# from utils import cute_print
 
-#import pyserver.config as config
-#from pyserver.utils import cute_print
+import pyserver.config as config
+from pyserver.utils import cute_print
 
 class Comment(BaseModel):
   id: str
@@ -40,6 +40,7 @@ class LLMConfig(BaseModel):
   model_name: str
   system_prompt: str
   user_prompt: str
+  api_key: str
  
 class CommentsLLMConfig(BaseModel):
   comments: List[Comment]   
@@ -50,8 +51,9 @@ class CommentTopicTree(BaseModel):
   llm: LLMConfig
   tree: dict
 
-class ClaimTree(BaseModel):
-  tree: dict 
+class ClaimTreeLLMConfig(BaseModel):
+  tree: dict
+  llm: LLMConfig
 
 app = FastAPI()
 
@@ -144,7 +146,10 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
     }
   }
   """
-  client = OpenAI()
+  api_key = req.llm.api_key
+  client = OpenAI(
+    api_key=api_key
+  )
 
   # append comments to prompt
   full_prompt = req.llm.user_prompt
@@ -210,13 +215,16 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
       print("Failed to create wandb run")
   #NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
   # choosing the latter for now 
-  return {"data" : tree["taxonomy"], "usage" : usage}
+  return {"data" : tree["taxonomy"], "usage" : usage.model_dump()}
 
 def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   """
   Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
   """
-  client = OpenAI()
+  api_key = llm.api_key
+  client = OpenAI(
+    api_key=api_key
+  )
 
   # add taxonomy and comment to prompt template
   taxonomy_string = json.dumps(tree)
@@ -439,11 +447,14 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
 
   return {"data" : node_counts, "usage" : net_usage}
 
-def dedup_claims(claims:list)-> dict:
+def dedup_claims(claims:list, llm:LLMConfig)-> dict:
   """
   Given a list of claims for a given subtopic, identify which ones are near-duplicates
   """
-  client = OpenAI()
+  api_key = llm.api_key
+  client = OpenAI(
+    api_key=api_key
+  )
 
   # add claims with enumerated ids (relative to this subtopic only)
   full_prompt = config.CLAIM_DEDUP_PROMPT
@@ -476,7 +487,7 @@ def dedup_claims(claims:list)-> dict:
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
 @app.put("/sort_claims_tree/")
-def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb:str = "")-> dict:
+def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
   """
   Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
   all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -655,13 +666,14 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb:str = "")-> dict:
   DOES matter, or where we want to sum the claims by a particular speaker or by other metadata 
   towards the total for a subtopic/topic.
   """
-
+  claims_tree = req.tree
+  llm = req.llm
   TK_IN = 0
   TK_OUT = 0
   TK_TOT = 0
   dupe_logs = []
   sorted_tree = {} 
-  for topic, topic_data in claims_tree.tree.items():
+  for topic, topic_data in claims_tree.items():
     per_topic_total = 0
     per_topic_list = {}
     for subtopic, subtopic_data in topic_data["subtopics"].items():
@@ -670,7 +682,7 @@ def sort_claims_tree(claims_tree:ClaimTree, log_to_wandb:str = "")-> dict:
       # no need to deduplicate single claims
       if subtopic_data["total"] > 1:
         try:
-          response = dedup_claims(subtopic_data["claims"])
+          response = dedup_claims(subtopic_data["claims"], llm=llm)
         except:
           print("Step 3: no deduped claims response for: ", subtopic_data["claims"])
           continue

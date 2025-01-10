@@ -4,3 +4,5 @@ coverage
 dist
 fixtures
 node_modules
+__pycache__
+.venv

@@ -1,5 +1,4 @@
 fastapi[standard]
-json
 openai
 pydantic
 wandb

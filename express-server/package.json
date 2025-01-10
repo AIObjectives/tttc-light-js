@@ -4,8 +4,8 @@
   "description": "pipeline for tttc-light-js",
   "scripts": {
     "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\" && npx prettier ./dist --write",
-    "dev": "node env-check.js env=.env example=.example-env && nodemon src/server.ts",
-    "test": "npm run build && node dist/test.js",
+    "dev": "nodemon src/server.ts",
+    "test": "vitest",
     "start": "node dist/server.js"
   },
   "author": "Bruno Marnette",
@@ -39,6 +39,7 @@
     "openai": "^4.28.4",
     "prettier": "^3.2.5",
     "tttc-common": "file:../common/dist",
+    "vitest": "^2.1.8",
     "zod": "^3.22.4"
   }
 }

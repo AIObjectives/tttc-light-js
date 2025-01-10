@@ -7,3 +7,4 @@ google-credentials.json
 .next
 dist
 *storybook.log
+__pycache__

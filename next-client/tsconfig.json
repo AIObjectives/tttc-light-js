@@ -35,9 +35,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "./dist/types/**/*.ts",
-    "../express-pipeline/gpt.ts",
-    "../express-pipeline/test_local.ts",
-    "../express-pipeline/src/styles.ts",
+    "../express-server/gpt.ts",
+    "../express-server/test_local.ts",
+    "../express-server/src/styles.ts",
     "env-check.js",
     ".storybook/miscStories/Typography.stories.tsx"
   ],

@@ -11,6 +11,17 @@ declare global {
   }
 }
 
+/**
+ * Custom error class since we don't really need a stack trace
+ */
+class EnvValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.stack = "";
+    this.name = "";
+  }
+}
+
 export const env = z.object({
   OPENAI_API_KEY: z.string({ required_error: "Missing OpenAI Key" }),
   OPENAI_API_KEY_PASSWORD: z.string().optional(),
@@ -21,8 +32,11 @@ export const env = z.object({
     required_error: "Missing encoded GCloud credentials",
   }),
   CLIENT_BASE_URL: z
-    .string({ required_error: "Missing Client Url" })
-    .url("Invalid URL"),
+    .string({ required_error: "Missing CLIENT_BASE_URL" })
+    .url("PYSERVER_URL in env should be a valid url"),
+  PYSERVER_URL: z
+    .string({ required_error: "Missing PYSERVER_URL" })
+    .url({ message: "PYSERVER_URL in env should be a valid url" }),
 });
 
 export type Env = z.infer<typeof env>;
@@ -33,8 +47,13 @@ export type Env = z.infer<typeof env>;
 export function validateEnv(): Env {
   const parsed = env.safeParse(process.env);
   if (parsed.success === false) {
-    console.error("❌ Invalid environment variables:", parsed.error.toString());
-    process.exit(1);
+    throw new EnvValidationError(
+      `❌ Invalid environment variables: \n\n${parsed.error.errors
+        .map((e, i) => {
+          return `${i}) ${e.message} \n`;
+        })
+        .join("")}`,
+    );
   }
 
   return parsed.data;

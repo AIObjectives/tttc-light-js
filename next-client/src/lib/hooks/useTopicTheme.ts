@@ -103,7 +103,7 @@ type ThemeClass = ThemeMap[ThemeColor][ColorVariant];
  * Gets the correct className for the topic color and variation
  */
 function useThemeColor(
-  color: ThemeColor,
+  color: ThemeColor = "blueSea",
   variant: ColorVariant,
 ): ThemeClass | string {
   const colorClass = useRef(themeColorMap[color][variant]);
@@ -116,7 +116,7 @@ function useThemeColor(
 function useThemeContextColor(variant: ColorVariant) {
   const { topicNode } = useContext(TopicContext);
 
-  return useThemeColor(topicNode.data.topicColor, variant);
+  return useThemeColor(topicNode.data?.topicColor, variant);
 }
 
 export { themeColorMap, useThemeColor, useThemeContextColor };
