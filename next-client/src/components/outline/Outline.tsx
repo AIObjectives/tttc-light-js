@@ -54,7 +54,7 @@ function Outline({
 
   return (
     <OutlineContext.Provider value={{ dispatch }}>
-      <Col gap={2} className="h-full max-w-40 md:max-w-56">
+      <Col gap={2} className="h-full ">
         {/* Top icon */}
         <TextIcon icon={<Icons.Outline size={16} />} className="pl-5">
           Outline
@@ -124,7 +124,7 @@ function OutlineItem({
 
   return (
     // column here because opened nodes should continue the spacing.
-    <Col gap={outlineSpacing} className=" ">
+    <Col gap={outlineSpacing} className="max-w-[279px]">
       <Row
         gap={2}
         className={`group items-center ${node.isHighlighted ? node.color : ""} ${node.hoverColor} cursor-pointer`}
@@ -134,17 +134,17 @@ function OutlineItem({
           className={`${node.isHighlighted ? `visible ${node.color}` : "invisible"} content-center`}
           onClick={handleClick}
         >
-          <Icons.Minus size={12} className="stroke-[3px]" />
+          <Icons.Minus size={12} className="stroke-[1px]" />
         </div>
         {/* Nested items should be further to the right */}
         <Row
           gap={2}
-          className={`pl-${heirarchyDepth * 4} overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
+          className={`pl-${heirarchyDepth * 4} w-[230px] overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
         >
           <p
             onClick={handleClick}
             onDoubleClick={handleDoubleClick}
-            className="overflow-ellipsis overflow-hidden select-none"
+            className="p2 overflow-ellipsis overflow-hidden select-none"
           >
             {title}
           </p>
