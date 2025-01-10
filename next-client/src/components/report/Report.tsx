@@ -287,7 +287,7 @@ export function ReportInfo() {
       className={`p-4 border rounded items-center ${show ? "" : "hidden"}`}
     >
       <div>
-        <Icons.Info />
+        <Icons.Lightbulb />
       </div>
       <p className="p2 text-muted-foreground">
         Talk to the City takes the text from large group discussions and turns
@@ -319,10 +319,12 @@ export function ReportSummary({
       {/* Summary Title */}
       <Col gap={1}>
         <h4>Summary</h4>
-        <p className="p2 text-muted-foreground">
-          The summary is written by the report creators, while the rest is
-          AI-generated, exluding quotes.
-        </p>
+        <TextIcon icon={<Icons.Info />}>
+          <p className="p2 text-muted-foreground">
+            The summary is written by the report creators, while the rest is
+            AI-generated, exluding quotes.
+          </p>
+        </TextIcon>
       </Col>
       {/* Summary Description */}
       <div>{description}</div>
