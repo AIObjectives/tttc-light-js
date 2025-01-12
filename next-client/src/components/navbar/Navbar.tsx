@@ -7,8 +7,10 @@ import {
   LanguageSelector,
   RepoGithub,
 } from "./components/NavbarButtons";
+import LoginButton from "./components/LoginButton";
+import { User } from "firebase/auth";
 
-function Navbar() {
+function Navbar({ currentUser }: { currentUser: User | null }) {
   return (
     <Row
       gap={6}
@@ -22,7 +24,8 @@ function Navbar() {
 
         <LanguageSelector />
 
-        <CreateReport />
+        {/* <CreateReport /> */}
+        <LoginButton currentUser={currentUser} />
       </Row>
     </Row>
   );

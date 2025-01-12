@@ -14,7 +14,7 @@ import {
   TextIcon,
 } from "../elements";
 import * as schema from "tttc-common/schema";
-import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
 import Icons from "@src/assets/icons";
 import { Col, Row } from "../layout";

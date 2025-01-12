@@ -14,7 +14,7 @@ export default async function ReportPage({
 }: {
   params: { uri: string };
 }) {
-  const url = decodeURIComponent(params.uri);
+  const url = decodeURIComponent(await params.uri);
   const req = await fetch(url, {
     headers: {
       "Content-Type": "application/json",

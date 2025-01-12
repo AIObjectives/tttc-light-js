@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import * as api from "tttc-common/api";
 import { Col, Row } from "../layout";
-import { Button, TextArea } from "../elements";
+import { Button, Spinner, TextArea } from "../elements";
 import { Input } from "../elements";
 import SubmitFormControl from "@src/features/submission/components/SubmitFormControl";
 import Icons from "@src/assets/icons";
@@ -34,6 +34,34 @@ import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@src/lib/utils/shadcn";
 import * as prompts from "tttc-common/prompts";
+import { useUser } from "@src/lib/hooks/getUser";
+import { useAsyncState } from "@src/lib/hooks/useAsyncState";
+import { User } from "firebase/auth";
+
+const fetchToken = async (
+  user: User | null,
+): Promise<["data", string | null] | ["error", string]> => {
+  try {
+    if (!user) return ["data", null];
+    return ["data", await user?.getIdToken()];
+  } catch (e) {
+    return ["error", e instanceof Error ? e.message : "An error occured"];
+  }
+};
+
+function getUserToken() {
+  const user = useUser();
+  return useAsyncState(() => fetchToken(user), user);
+}
+
+const bindTokenToAction = <Input, Output>(
+  token: string | null,
+  action: (token: string | null, input: Input) => Promise<Output>,
+) => {
+  return async (_: api.GenerateApiResponse | null, input: Input) => {
+    return action(token, input);
+  };
+};
 
 const initialState: api.GenerateApiResponse | null = null;
 
@@ -48,8 +76,38 @@ const form = z.object({
   dedupInstructions: z.string().min(1),
 });
 
+function Center({ children }: React.PropsWithChildren) {
+  return (
+    <div className="w-full h-full content-center justify-items-center">
+      {children}
+    </div>
+  );
+}
+
 export default function CreateReport() {
-  const [state, formAction] = useActionState(submitAction, initialState);
+  const { isLoading, result } = getUserToken();
+
+  if (result === undefined || isLoading)
+    return (
+      <Center>
+        <Spinner />
+      </Center>
+    );
+  else if (result[0] === "error")
+    return (
+      <Center>
+        <p>An error occured...</p>
+      </Center>
+    );
+  else return <CreateReportComponent token={result[1]} />;
+}
+
+function CreateReportComponent({ token }: { token: string | null }) {
+  const submitActionWithToken = bindTokenToAction(token, submitAction);
+  const [state, formAction] = useActionState(
+    submitActionWithToken,
+    initialState,
+  );
   const [files, setFiles] = useState<FileList | undefined>(undefined);
 
   const methods = useForm<z.infer<typeof form>>({

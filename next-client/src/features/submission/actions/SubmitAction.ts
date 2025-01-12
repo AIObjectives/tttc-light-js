@@ -19,7 +19,7 @@ const parseCSV = async (file: File): Promise<SourceRow[]> => {
 };
 
 export default async function submitAction(
-  _: GenerateApiResponse | null,
+  firebaseAuthToken: string | null,
   formData: FormData,
 ): Promise<GenerateApiResponse> {
   // parses csv file
@@ -42,7 +42,11 @@ export default async function submitAction(
   });
   const dataPayload: DataPayload = ["csv", data];
 
-  const body: GenerateApiRequest = { userConfig: config, data: dataPayload };
+  const body: GenerateApiRequest = {
+    userConfig: config,
+    data: dataPayload,
+    firebaseAuthToken,
+  };
 
   const url = new URL("create", validatedServerEnv.PIPELINE_EXPRESS_URL);
 

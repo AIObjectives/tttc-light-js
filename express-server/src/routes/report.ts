@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as api from "tttc-common/api";
-import { pipelineQueue } from "../Queue";
+import { pipelineQueue } from "../server";
 
 export async function report(req: Request, res: Response) {
   const uri = decodeURIComponent(

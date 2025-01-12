@@ -1,23 +1,24 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
-import CopyLinkButton from "./CopyLinkButton";
+import CopyButton from "./CopyButton";
 
 const meta = {
-  title: "CopyLinkButton",
-  component: CopyLinkButton,
+  title: "CopyButton",
+  component: CopyButton,
   parameters: {
     layout: "centered",
   },
   tags: ["autodocs"],
 
   //   args: { onClick: fn() },
-} satisfies Meta<typeof CopyLinkButton>;
+} satisfies Meta<typeof CopyButton>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
   args: {
-    anchor: "This is a test",
+    successMessage: "This is a test",
+    copyStr: "Copied this string from CopyButton",
   },
 };

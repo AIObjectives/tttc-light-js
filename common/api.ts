@@ -4,6 +4,7 @@ import * as schema from "./schema";
 export const generateApiRequest = z.object({
   userConfig: schema.llmUserConfig,
   data: schema.dataPayload,
+  firebaseAuthToken: z.string().nullable(),
 });
 
 export type GenerateApiRequest = z.infer<typeof generateApiRequest>;

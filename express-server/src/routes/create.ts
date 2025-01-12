@@ -1,12 +1,13 @@
 import "dotenv/config";
 import { Request, Response } from "express";
 import { fetchSpreadsheetData } from "../googlesheet";
-import pipeline from "../pipeline";
 import { getStorageUrl, storeJSON } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
 import { formatData, uniqueSlug } from "../utils";
-import { pipelineQueue } from "../Queue";
+import { pipelineQueue } from "../server";
+import * as firebase from "../Firebase";
+import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier";
 
 const handleGoogleSheets = async (
   googleData: schema.GoogleSheetData,
@@ -43,10 +44,11 @@ const parseData = async (
 };
 
 async function createNewReport(req: Request, res: Response) {
-  const env = req.context.env;
+  const { env } = req.context;
   const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } = env;
   const body = api.generateApiRequest.parse(req.body);
-  const { data, userConfig } = body;
+  console.log("body", body);
+  const { data, userConfig, firebaseAuthToken } = body;
   const parsedData = await parseData(data);
   const filename = uniqueSlug(userConfig.title);
   const jsonUrl = getStorageUrl(filename);
@@ -54,18 +56,24 @@ async function createNewReport(req: Request, res: Response) {
     filename,
     JSON.stringify({ message: "Your data is being generated" }),
   );
+  const decodedUser: DecodedIdToken | null = firebaseAuthToken
+    ? await firebase.verifyUser(firebaseAuthToken)
+    : null;
+  // add job to firebase for easy reference
+  const maybeFirebaseJobId = decodedUser
+    ? await firebase.addReportJob({
+        userId: decodedUser.uid,
+        title: userConfig.title,
+        description: userConfig.description,
+        reportDataUri: jsonUrl,
+      })
+    : null;
+
   const reportUrl = new URL(
     `report/${encodeURIComponent(jsonUrl)}`,
     CLIENT_BASE_URL,
   ).toString();
 
-  const response: api.GenerateApiResponse = {
-    message: "Request received.",
-    filename: filename,
-    jsonUrl,
-    reportUrl,
-  };
-  res.send(response);
   // if user provided key is the same as our password, let them use our key
   const apiKey =
     userConfig.apiKey === OPENAI_API_KEY_PASSWORD
@@ -78,6 +86,14 @@ async function createNewReport(req: Request, res: Response) {
     apiKey,
   };
 
+  const response: api.GenerateApiResponse = {
+    message: "Request received.",
+    filename: filename,
+    jsonUrl,
+    reportUrl,
+  };
+  res.send(response);
+
   // add id to comment data if not included.
   const updatedConfig = {
     ...config,
@@ -89,7 +105,17 @@ async function createNewReport(req: Request, res: Response) {
 
   const _ = await pipelineQueue.add(
     "pipeline",
-    { config: updatedConfig, env },
+    {
+      config: updatedConfig,
+      env,
+      firebaseDetails: decodedUser
+        ? {
+            userId: decodedUser.uid,
+            reportDataUri: jsonUrl,
+            firebaseJobId: maybeFirebaseJobId,
+          }
+        : null,
+    },
     { jobId: config.filename },
   );
 }

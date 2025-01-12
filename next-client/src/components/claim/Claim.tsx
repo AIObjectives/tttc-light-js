@@ -1,6 +1,6 @@
 import React, { useContext, useRef, useState } from "react";
 import Icons from "@src/assets/icons";
-import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import { Col, Row } from "../layout";
 import { ClaimNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";

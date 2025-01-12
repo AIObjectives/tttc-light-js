@@ -8,7 +8,7 @@ import Subtopic, {
 } from "./Subtopic";
 import { reportData } from "stories/data/dummyData";
 import { Card, CardContent } from "../elements";
-import CopyLinkButton from "../copyLinkButton/CopyLinkButton";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import { getNPeople } from "tttc-common/morphisms/index";
 import { __internals } from "../report/hooks/useReportState";
 

@@ -38,7 +38,7 @@ function Label({ title, subtitle }: { title: string; subtitle: string }) {
       <p className="p2">{title}</p>
       <p className="p2 text-muted-foreground">{subtitle}</p>
       <div className="h-4 w-4 self-center">
-        <Icons.ChevronRight className="stroke-black w-full h-full" />
+        <Icons.ChevronRight16 className="stroke-black w-full h-full" />
       </div>
     </Row>
   );

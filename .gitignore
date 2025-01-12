@@ -8,3 +8,5 @@ google-credentials.json
 dist
 *storybook.log
 __pycache__
+**/*/credentials/*
+!**/*/credentials/.keep

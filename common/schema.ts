@@ -383,25 +383,21 @@ export type QuestionAnswer = z.infer<typeof questionAnswer>;
  * Contains all the information that a report needs to display
  ********************************/
 
-export const reportDataObj = z
-  .object({
-    title: z.string(),
-    description: z.string(),
-    questionAnswers: z.optional(questionAnswer.array()),
-    topics: z.array(topic),
-    sources: z.array(source),
-    graphics: graphics.optional(),
-    date: z.string(),
-  })
-  .transform((obj) => ({
-    ...obj,
-    // sort topics by number of claims. Don't use getNClaims - circular reference
-    topics: obj.topics.sort((a, b) => {
+export const reportDataObj = z.object({
+  title: z.string(),
+  description: z.string(),
+  questionAnswers: z.optional(questionAnswer.array()),
+  topics: z.array(topic).transform((topics) =>
+    topics.sort((a, b) => {
       const claimsA = a.subtopics.flatMap((sub) => sub.claims);
       const claimsB = b.subtopics.flatMap((sub) => sub.claims);
       return claimsB.length - claimsA.length;
     }),
-  }));
+  ),
+  sources: z.array(source),
+  graphics: graphics.optional(),
+  date: z.string(),
+});
 
 export type ReportDataObj = z.infer<typeof reportDataObj>;
 
