@@ -134,12 +134,11 @@ function OutlineItem({
           gap={2}
           className={`pl-${heirarchyDepth * 4} w-[230px] overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
         >
-          <p
-            onClick={onBodyClick}
-            className="p2 overflow-ellipsis overflow-hidden select-none"
-          >
-            {title}
-          </p>
+          <div onClick={onBodyClick} className="flex flex-grow">
+            <p className="p2 overflow-ellipsis overflow-hidden select-none">
+              {title}
+            </p>
+          </div>
           <OutlineCarrot
             onClick={onIconClick}
             isOpen={node.isOpen}
