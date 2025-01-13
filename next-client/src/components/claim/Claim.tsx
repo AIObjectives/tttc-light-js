@@ -24,7 +24,7 @@ function Claim({ claimNode, show }: { claimNode: ClaimNode; show: boolean }) {
   return (
     <div ref={scrollRef} className={`${!show ? "hidden" : ""}`}>
       {show ? (
-        <Row gap={3} className="justify-between px-8 py-1 items-center">
+        <Row gap={3} className="justify-between px-4 sm:px-8 py-1 items-center">
           <ClaimHeader claim={claimNode.data} />
           <Row gap={2}>
             {/* Wrap this in div to prevent sizing issues */}

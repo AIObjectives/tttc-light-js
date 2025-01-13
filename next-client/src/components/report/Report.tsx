@@ -108,7 +108,7 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
             <Outline reportState={state} reportDispatch={dispatch} />
           </div>
           {/* Main body */}
-          <Col gap={4} className=" w-full md:max-w-[896px] m-auto">
+          <Col gap={4} className=" w-full md:max-w-[896px] m-auto px-3 sm:px-0">
             <ReportHeader reportData={reportData} />
             {state.children.map((themeNode) => (
               <Theme key={themeNode.data.id} node={themeNode} />

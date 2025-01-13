@@ -83,7 +83,7 @@ export function Cell(
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
         <div
-          className={`w-3 h-3 ${!isHighlighted ? backgroundClass : highlightedClass} ${borderClass} border rounded-sm ${hoverClass}`}
+          className={`w-3 h-3 ${!isHighlighted ? backgroundClass : highlightedClass} ${borderClass} border rounded-[3px] ${hoverClass}`}
         />
       </HoverCardTrigger>
       <HoverCardContent className="p-4">

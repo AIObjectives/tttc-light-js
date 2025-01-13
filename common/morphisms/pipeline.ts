@@ -85,11 +85,35 @@ const numberClaims = () => {
   return x;
 };
 
+const topicNumClaims = (topic: schema.LLMTopic): number =>
+  topic.subtopics.flatMap((s) => s.claims).length;
+
+const subtopicNumClaims = (subtopic: schema.LLMSubtopic): number =>
+  subtopic.claims.length;
+
+const sortTax = (tax: schema.Taxonomy) =>
+  tax.sort((t1, t2) => {
+    const tax1: schema.LLMTopic = {
+      ...t1,
+      subtopics: t1.subtopics.sort(
+        (s1, s2) => subtopicNumClaims(s2) - subtopicNumClaims(s1),
+      ),
+    };
+    const tax2: schema.LLMTopic = {
+      ...t2,
+      subtopics: t2.subtopics.sort(
+        (s1, s2) => subtopicNumClaims(s2) - subtopicNumClaims(s1),
+      ),
+    };
+
+    return topicNumClaims(tax2) - topicNumClaims(tax1);
+  });
+
 const buildClaimsMap = (
   pipeline: schema.LLMPipelineOutput,
   sourceMap: SourceMap,
 ) => {
-  const allClaims = pipeline.tree.flatMap((topic) =>
+  const allClaims = sortTax(pipeline.tree).flatMap((topic) =>
     topic.subtopics.flatMap((subtopic) => {
       // Ensure subtopic.claims is an array
       if (!subtopic.claims) return [];
