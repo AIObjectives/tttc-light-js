@@ -21,10 +21,11 @@ import ClaimSVG from "./ClaimSvg";
 import ChevronRightSvg from "./ChevronRightSvg";
 import ChevronRight16SVG from "./ChevronRight16Svg";
 import ResponseSvg from "./ResponseSvg";
-import InfoSVG from "./InfoSvg";
+import LightbulbSvg from "./LightbulbSvg";
 import XSVG from "./XSvg";
 import QuoteBubbleSVG from "./QuoteBubbleSvg";
 import ResetSVG from "./Reset";
+import InfoSvg from "./InfoSvg";
 
 const Icons = () => <></>;
 
@@ -56,7 +57,11 @@ Icons.OutlineExpanded = ChevronUp;
 
 Icons.OutlineCollapsed = ChevronDown;
 
-Icons.Info = (props: { className?: string }) => <InfoSVG {...props} />;
+Icons.Lightbulb = (props: { className?: string }) => (
+  <LightbulbSvg {...props} />
+);
+
+Icons.Info = (props: { className?: string }) => <InfoSvg {...props} />;
 
 Icons.ChevronRight = (props: { className?: string }) => (
   <ChevronRightSvg {...props} />
