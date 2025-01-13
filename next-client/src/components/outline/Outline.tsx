@@ -10,7 +10,6 @@ import useOutlineState, {
   OutlineStateAction,
 } from "./hooks/useOutlineState";
 import { ReportState, ReportStateAction } from "../report/hooks/useReportState";
-import { useXORClick } from "@src/lib/hooks/useXORClick";
 
 type OutlineContextType = {
   dispatch: Dispatch<OutlineStateAction>;
@@ -69,9 +68,6 @@ function Outline({
               onClick={() =>
                 reportDispatch({ type: "open", payload: { id: node.id } })
               }
-              onDoubleClick={() =>
-                dispatch({ type: "toggle", payload: { id: node.id } })
-              }
             >
               {/* Since we're only going two levels deep, directly call the render for the subnodes here. */}
               {node?.children?.map((subnode) => (
@@ -105,23 +101,14 @@ function OutlineItem({
   heirarchyDepth = 0,
   isLeafNode = false,
   onClick,
-  onDoubleClick, // Remoove
 }: React.PropsWithChildren<{
   node: OutlineNode;
   title: string;
   isLeafNode?: boolean;
   heirarchyDepth?: number;
   onClick: () => void;
-  onDoubleClick?: () => void; // Remove
   parentId?: string;
 }>) {
-  const _onDoubleClick = onDoubleClick ? onDoubleClick : () => null;
-
-  const { handleClick, handleDoubleClick } = useXORClick(
-    onClick,
-    _onDoubleClick,
-  );
-
   return (
     // column here because opened nodes should continue the spacing.
     <Col gap={outlineSpacing} className="max-w-[279px]">
@@ -132,7 +119,7 @@ function OutlineItem({
         {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
         <div
           className={`${node.isHighlighted ? `visible ${node.color}` : "invisible"} content-center`}
-          onClick={handleClick}
+          onClick={onClick}
         >
           <Icons.Minus size={12} className="stroke-[1px]" />
         </div>
@@ -142,14 +129,13 @@ function OutlineItem({
           className={`pl-${heirarchyDepth * 4} w-[230px] overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
         >
           <p
-            onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
+            onClick={onClick}
             className="p2 overflow-ellipsis overflow-hidden select-none"
           >
             {title}
           </p>
           <OutlineCarrot
-            onClick={onDoubleClick!}
+            onClick={onClick}
             isOpen={node.isOpen}
             collapsable={!!node.children?.length && !isLeafNode}
           />
