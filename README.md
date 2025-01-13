@@ -5,7 +5,6 @@ Please create a GitHub Issue for anything you encounter.
 
 Latest instructions for local development are [here.](/.contributing.md)
 
-
 [Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source LLM-enabled interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subropics.
 
 This repo will allow you to setup your own instance of T3C.
@@ -96,7 +95,7 @@ If you want to run a local version of the app that's not publically accessible:
 
 1. Open up your terminal and navigate to the repo folder (e.g. /Desktop/tttc-light-js)
 2. Run `npm run build`.
-3. Run `npm run dev` to star the dev server. This will run three servers: the ``next-client`` frontend on localhost:3000, the ``express-server`` backend on localhost:8080, and the ``pyserver`` Python FastAPI server for the LLM calls on localhost:8000.
+3. Run `npm run dev` to start the dev server. This will run three servers: the `next-client` frontend on localhost:3000, the `express-server` backend on localhost:8080, and the `pyserver` Python FastAPI server for the LLM calls on localhost:8000.
 4. This build will be optimized for production.
 
 #### Using docker locally (not recommended)

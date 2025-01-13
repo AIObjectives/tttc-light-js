@@ -3,32 +3,35 @@
 ## Quickstart
 
 Latest instructions as we move to a separate Python server for LLM calls.
-First, pull the latest from ``main`` in this repo and start in the root directory (``tttc-light-js``).
+First, pull the latest from `main` in this repo and start in the root directory (`tttc-light-js`).
 
-### Set up Redis & Python dependencies
+### Set up dependencies
 
-1. In a new terminal, run ``brew install redis`` and ``redis-server`` to install Redis and start a local Redis server.
-2. From the repo root, ``cd pyserver`` and install the Python package dependencies in ``requirements.txt`` with your preferred method (e.g. ``pip install -r requirements.txt``). Note: this will get more standardized soon.
+1. In a new terminal, run `brew install redis` and `redis-server` to install Redis and start a local Redis server.
+2. From the repo root, `cd pyserver` and install the Python package dependencies in `requirements.txt` with your preferred method (e.g. `pip install -r requirements.txt`). Note: this will get more standardized soon.
+3. Add this line to ``next-client/.env`` and ``next-client/.env.local``:
+``export PIPELINE_EXPRESS_URL=http://localhost:8080``
 
 ### Launch the app
 
 1. From the root level, run `npm i` then `npm run dev`.
-2. This should open four windows: the ``next-client`` app front end at `localhost:3000`, the ``express-server`` app backend at ``localhost:8080``, the ``pyserver`` Python FastAPI server for LLM calls at ``localhost:8000``, and an overall Node watch process from the ``common`` directory. Ideally none of these windows show errors — if they do, we need to fix them first. 
+2. This should open four windows: the `next-client` app front end at `localhost:3000`, the `express-server` app backend at `localhost:8080`, the `pyserver` Python FastAPI server for LLM calls at `localhost:8000`, and an overall Node watch process from the `common` directory. Ideally none of these windows show errors — if they do, we need to fix them first.
 3. In your browser, go to `http://localhost:3000/create` to view the T3C app. To create a report, fill out the fields and click "Generate report"
 
 ### Viewing reports
 
 1. Once you click "Generate report", if the process is successful, you will see the text "UrlGCloud". This is a hyperlink — open it in a new tab/window.
-2. You will see the raw data dump of the generated report in JSON format. The url of this report will have this form ``https://storage.googleapis.com/[GCLOUD_STORAGE_BUCKET]/[generated report id]``, where ``GCLOUD_STORAGE_BUCKET`` is an environment variable set in ``express-server/.env`` and the generated report id is an output of this pipeline run.
-3. The pretty version of the corresponding report lives at ``http://localhost:3000/report/https%3A%2F%2Fstorage.googleapis.com%2F[GCLOUD_STORAGE_BUCKET]%2F[generated report id]``. You can copy & paste and substitute in the values for the generated report id (different for each report you create) and the GCLOUD_STORAGE_BUCKET (likely the same for all testing sessions). Keep in mind that the separator is %2F and not the traditional url slash :)
+2. You will see the raw data dump of the generated report in JSON format. The url of this report will have this form `https://storage.googleapis.com/[GCLOUD_STORAGE_BUCKET]/[generated report id]`, where `GCLOUD_STORAGE_BUCKET` is an environment variable set in `express-server/.env` and the generated report id is an output of this pipeline run.
+3. The pretty version of the corresponding report lives at `http://localhost:3000/report/https%3A%2F%2Fstorage.googleapis.com%2F[GCLOUD_STORAGE_BUCKET]%2F[generated report id]`. You can copy & paste and substitute in the values for the generated report id (different for each report you create) and the GCLOUD_STORAGE_BUCKET (likely the same for all testing sessions). Keep in mind that the separator is %2F and not the traditional url slash :)
 
 ### Troubleshooting
 
 Adding notes here from issues we surface in testing.
 
-* Power cycling: one good thing to try first is to restart the process in any one of the windows by ending the process and rerunning the specific previous command in that window (e.g. using the up arrow to find it).
+- Power cycling: one good thing to try first is to restart the process in any one of the windows by ending the process and rerunning the specific previous command in that window (e.g. using the up arrow to find it).
 
 ## Older instructions below
+
 ## Setup
 
 [See the setup instructions in README](./README.md#setup)
