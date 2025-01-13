@@ -1,6 +1,13 @@
 "use client";
 
-import { Ref, useEffect, useRef, useState } from "react";
+import {
+  Dispatch,
+  Ref,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ReportStateAction } from "./useReportState";
 
 type ReportActionEffectFunc = (action: ReportStateAction) => void;
@@ -11,7 +18,10 @@ type ReportActionEffect = (func: ReportActionEffectFunc) => void;
  */
 function useScrollListener(
   useReportEffect: ReportActionEffect,
-): [(listenForId: string) => Ref<HTMLDivElement>] {
+): [
+  (listenForId: string) => Ref<HTMLDivElement>,
+  Dispatch<SetStateAction<[string, number]>>,
+] {
   // Id and timestamp for what component to scroll to. Timestamp is included so clicking on same node multiple times works.
   const [scrollToState, setScrollState] = useState<[string, number]>([
     "",
@@ -46,7 +56,7 @@ function useScrollListener(
     return ref;
   };
 
-  return [useScrollTo];
+  return [useScrollTo, setScrollState];
 }
 
 export default useScrollListener;

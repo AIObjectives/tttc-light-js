@@ -31,7 +31,7 @@ function Outline({
   // State management for outline
   const [state, dispatch] = useOutlineState(reportState);
 
-  const { useReportEffect } = useContext(ReportContext);
+  const { useReportEffect, setScrollTo } = useContext(ReportContext);
 
   // When Report State dispatch is called, outline state should dispatch some action
   useReportEffect((action) => {
@@ -65,8 +65,12 @@ function Outline({
               key={node.id}
               node={node}
               title={node.title}
-              onClick={() =>
-                reportDispatch({ type: "open", payload: { id: node.id } })
+              onBodyClick={() => setScrollTo([node.id, Date.now()])}
+              onIconClick={() =>
+                reportDispatch({
+                  type: "toggleTopic",
+                  payload: { id: node.id },
+                })
               }
             >
               {/* Since we're only going two levels deep, directly call the render for the subnodes here. */}
@@ -78,7 +82,7 @@ function Outline({
                   heirarchyDepth={1}
                   isLeafNode={true}
                   parentId={node.id}
-                  onClick={() =>
+                  onBodyClick={() =>
                     reportDispatch({
                       type: "open",
                       payload: { id: subnode.id },
@@ -100,13 +104,15 @@ function OutlineItem({
   children,
   heirarchyDepth = 0,
   isLeafNode = false,
-  onClick,
+  onBodyClick,
+  onIconClick = () => null,
 }: React.PropsWithChildren<{
   node: OutlineNode;
   title: string;
   isLeafNode?: boolean;
   heirarchyDepth?: number;
-  onClick: () => void;
+  onBodyClick: () => void;
+  onIconClick?: () => void;
   parentId?: string;
 }>) {
   return (
@@ -119,7 +125,7 @@ function OutlineItem({
         {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
         <div
           className={`${node.isHighlighted ? `visible ${node.color}` : "invisible"} content-center`}
-          onClick={onClick}
+          onClick={onBodyClick}
         >
           <Icons.Minus size={12} className="stroke-[1px]" />
         </div>
@@ -129,13 +135,13 @@ function OutlineItem({
           className={`pl-${heirarchyDepth * 4} w-[230px] overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
         >
           <p
-            onClick={onClick}
+            onClick={onBodyClick}
             className="p2 overflow-ellipsis overflow-hidden select-none"
           >
             {title}
           </p>
           <OutlineCarrot
-            onClick={onClick}
+            onClick={onIconClick}
             isOpen={node.isOpen}
             collapsable={!!node.children?.length && !isLeafNode}
           />
