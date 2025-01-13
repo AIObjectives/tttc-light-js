@@ -108,10 +108,10 @@
     @apply text-base leading-6 font-medium;
   }
   .p2 {
-    @apply text-sm;
+    @apply text-sm tracking-wide;
   }
   .p2-medium {
-    @apply text-sm font-medium;
+    @apply text-sm font-medium tracking-wide;
   }
   .link {
     @apply underline;
