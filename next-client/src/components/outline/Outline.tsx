@@ -10,7 +10,6 @@ import useOutlineState, {
   OutlineStateAction,
 } from "./hooks/useOutlineState";
 import { ReportState, ReportStateAction } from "../report/hooks/useReportState";
-import { useXORClick } from "@src/lib/hooks/useXORClick";
 
 type OutlineContextType = {
   dispatch: Dispatch<OutlineStateAction>;
@@ -32,7 +31,7 @@ function Outline({
   // State management for outline
   const [state, dispatch] = useOutlineState(reportState);
 
-  const { useReportEffect } = useContext(ReportContext);
+  const { useReportEffect, setScrollTo } = useContext(ReportContext);
 
   // When Report State dispatch is called, outline state should dispatch some action
   useReportEffect((action) => {
@@ -54,7 +53,7 @@ function Outline({
 
   return (
     <OutlineContext.Provider value={{ dispatch }}>
-      <Col gap={2} className="h-full max-w-40 md:max-w-56">
+      <Col gap={2} className="h-full ">
         {/* Top icon */}
         <TextIcon icon={<Icons.Outline size={16} />} className="pl-5">
           Outline
@@ -66,11 +65,12 @@ function Outline({
               key={node.id}
               node={node}
               title={node.title}
-              onClick={() =>
-                reportDispatch({ type: "open", payload: { id: node.id } })
-              }
-              onDoubleClick={() =>
-                dispatch({ type: "toggle", payload: { id: node.id } })
+              onBodyClick={() => setScrollTo([node.id, Date.now()])}
+              onIconClick={() =>
+                reportDispatch({
+                  type: "toggleTopic",
+                  payload: { id: node.id },
+                })
               }
             >
               {/* Since we're only going two levels deep, directly call the render for the subnodes here. */}
@@ -82,7 +82,7 @@ function Outline({
                   heirarchyDepth={1}
                   isLeafNode={true}
                   parentId={node.id}
-                  onClick={() =>
+                  onBodyClick={() =>
                     reportDispatch({
                       type: "open",
                       payload: { id: subnode.id },
@@ -104,27 +104,20 @@ function OutlineItem({
   children,
   heirarchyDepth = 0,
   isLeafNode = false,
-  onClick,
-  onDoubleClick, // Remoove
+  onBodyClick,
+  onIconClick = () => null,
 }: React.PropsWithChildren<{
   node: OutlineNode;
   title: string;
   isLeafNode?: boolean;
   heirarchyDepth?: number;
-  onClick: () => void;
-  onDoubleClick?: () => void; // Remove
+  onBodyClick: () => void;
+  onIconClick?: () => void;
   parentId?: string;
 }>) {
-  const _onDoubleClick = onDoubleClick ? onDoubleClick : () => null;
-
-  const { handleClick, handleDoubleClick } = useXORClick(
-    onClick,
-    _onDoubleClick,
-  );
-
   return (
     // column here because opened nodes should continue the spacing.
-    <Col gap={outlineSpacing} className=" ">
+    <Col gap={outlineSpacing} className="max-w-[279px]">
       <Row
         gap={2}
         className={`group items-center ${node.isHighlighted ? node.color : ""} ${node.hoverColor} cursor-pointer`}
@@ -132,24 +125,22 @@ function OutlineItem({
         {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
         <div
           className={`${node.isHighlighted ? `visible ${node.color}` : "invisible"} content-center`}
-          onClick={handleClick}
+          onClick={onBodyClick}
         >
-          <Icons.Minus size={12} className="stroke-[3px]" />
+          <Icons.Minus size={12} className="stroke-[1px]" />
         </div>
         {/* Nested items should be further to the right */}
         <Row
           gap={2}
-          className={`pl-${heirarchyDepth * 4} overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
+          className={`pl-${heirarchyDepth * 4} w-[230px] overflow-hidden whitespace-nowrap items-center justify-between flex-grow`}
         >
-          <p
-            onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
-            className="overflow-ellipsis overflow-hidden select-none"
-          >
-            {title}
-          </p>
+          <div onClick={onBodyClick} className="flex flex-grow">
+            <p className="p2 overflow-ellipsis overflow-hidden select-none">
+              {title}
+            </p>
+          </div>
           <OutlineCarrot
-            onClick={onDoubleClick!}
+            onClick={onIconClick}
             isOpen={node.isOpen}
             collapsable={!!node.children?.length && !isLeafNode}
           />

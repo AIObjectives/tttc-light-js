@@ -3,6 +3,7 @@
 import React, {
   Dispatch,
   Ref,
+  SetStateAction,
   createContext,
   useContext,
   useEffect,
@@ -52,6 +53,8 @@ export const ReportContext = createContext<{
   dispatch: Dispatch<ReportStateAction>;
   // Used to setup scroll-to behaviors by passing a ref
   useScrollTo: (listenForId: string) => Ref<HTMLDivElement>;
+  // Sets the page to scroll to an element based on its id
+  setScrollTo: Dispatch<SetStateAction<[string, number]>>;
   // Allows side-effects from changes to ReportState
   useReportEffect: ReportActionEffect;
   // Tracks which node is being "focused"
@@ -59,6 +62,7 @@ export const ReportContext = createContext<{
 }>({
   dispatch: () => null,
   useScrollTo: () => ({}) as Ref<HTMLDivElement>,
+  setScrollTo: () => null,
   useReportEffect: () => {},
   useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
 });
@@ -74,7 +78,7 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
   // Sets up useReportEffect, which can trigger side-effects when Report State dispatch is called.
   const [dispatch, useReportEffect] = useReportSubscribe(_dispatch);
   // Hook that sets up scrolling behavior.
-  const [useScrollTo] = useScrollListener(useReportEffect);
+  const [useScrollTo, setScrollTo] = useScrollListener(useReportEffect);
   // Allows us to keep track of what node is in the middle of the screen. Needs to pass hook to nodes.
   const useFocusedNode = _useFocusedNode((id: string) =>
     dispatch({ type: "focus", payload: { id } }),
@@ -95,7 +99,13 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
 
   return (
     <ReportContext.Provider
-      value={{ dispatch, useScrollTo, useReportEffect, useFocusedNode }}
+      value={{
+        dispatch,
+        useScrollTo,
+        setScrollTo,
+        useReportEffect,
+        useFocusedNode,
+      }}
     >
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
       <div className="mb-36">
