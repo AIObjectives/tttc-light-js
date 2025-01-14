@@ -89,7 +89,7 @@ const topicNumClaims = (topic: schema.LLMTopic): number =>
   topic.subtopics.flatMap((s) => s.claims).length;
 
 const subtopicNumClaims = (subtopic: schema.LLMSubtopic): number =>
-  subtopic.claims.length;
+  subtopic.claims!.length;
 
 const sortTax = (tax: schema.Taxonomy) =>
   tax.sort((t1, t2) => {
