@@ -93,9 +93,9 @@ You can add different types of .env files based on your needs for testing, dev, 
 
 If you want to run a local version of the app that's not publically accessible:
 
-1. Open up your terminal and navigate to the repo folder (e.g. /Desktop/tttc-light-js)
-2. Run `npm run build`.
-3. Run `npm run dev` to start the dev server. This will run three servers: the `next-client` frontend on localhost:3000, the `express-server` backend on localhost:8080, and the `pyserver` Python FastAPI server for the LLM calls on localhost:8000.
+1. Open up your terminal and navigate to the repo folder (e.g. `/Desktop/tttc-light-js`)
+2. If this is your first time, build the repo: `cd commmon && npm run build`.
+3. Run `npm run dev` to start the dev server. This will run three servers in new terminal windows: the `next-client` frontend on `localhost:3000`, the `express-server` backend on `localhost:8080`, and the `pyserver` Python FastAPI server for the LLM calls on `localhost:8000`. A fourth terminal window will show a listener for `/common` that rebuilds the JS files when changes are made.
 4. This build will be optimized for production.
 
 #### Using docker locally (not recommended)

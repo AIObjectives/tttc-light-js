@@ -9,8 +9,8 @@ First, pull the latest from `main` in this repo and start in the root directory 
 
 1. In a new terminal, run `brew install redis` and `redis-server` to install Redis and start a local Redis server.
 2. From the repo root, `cd pyserver` and install the Python package dependencies in `requirements.txt` with your preferred method (e.g. `pip install -r requirements.txt`). Note: this will get more standardized soon.
-3. Add this line to ``next-client/.env`` and ``next-client/.env.local``:
-``export PIPELINE_EXPRESS_URL=http://localhost:8080``
+3. Add this line to `next-client/.env` and `next-client/.env.local`:
+   `export PIPELINE_EXPRESS_URL=http://localhost:8080`
 
 ### Launch the app
 
