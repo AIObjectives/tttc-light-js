@@ -1,12 +1,15 @@
 # Machine Learning Workflows in T3C
 
+Note: under very active construction as we separate a new Python server for LLM calls from the front-end app/exiting backend in TypeScript.
+
 ## Quickstart
 
-To run the T3C pipeline with a local front-end & server:
+To run the T3C pipeline with a local front-end & backend server, as well as a Python FastAPI server for LLM calls:
 
-1. Client-side: update `next-client/.env` to point to the report generation endpoint (e.g. `export PIPELINE_EXPRESS_URL=http://localhost:8080/generate`) and run `npm run dev`
-2. Server-side: update `express-pipeline/.env` with OpenAI/Anthropic/GCS keys and run `npm i && npm run dev`
-3. Navigate to `localhost:3000` and upload a CSV file from the UI. Make sure the CSV is formatted as follows
+1. Client-side: update `next-client/.env` to point to the report generation endpoint (e.g. `export PIPELINE_EXPRESS_URL=http://localhost:8080/`) and run `npm run dev`
+2. Server-side: update `express-server/.env` with OpenAI/Anthropic/GCS keys and run `npm i && npm run dev`.
+3. Python FastAPI LLM interface: install Python requirements via `cd pyserver`, then `pip install -r requirements.txt`. Install Redis and start a server: `brew install redis`, `redis-server`. From `pyserver`, run `source .venv/bin/activate && fastapi dev main.py`.
+4. Navigate to `localhost:3000/create` and upload a CSV file from the UI. Make sure the CSV is formatted as follows
 
 ## Expected CSV format
 

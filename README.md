@@ -1,15 +1,21 @@
 # Talk to the City
 
-[Talk to the City (TTTC)](https://ai.objectives.institute/talk-to-the-city) Talk to the City is an open-source LLM interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and arranges similar arguments into clusters.
+**Note**: this repo is under very active construction with a new separate Python server for LLM calls—details below are likely to change!
+Please create a GitHub Issue for anything you encounter.
 
-This repo will allow you to setup your own instance of TTTC. The basic workflow is
+Latest instructions for local development are [here.](/.contributing.md)
 
-1. Submit a csv or google sheet with your survey data, either through the NextJS client or the Express API.
+[Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source LLM-enabled interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subropics.
+
+This repo will allow you to setup your own instance of T3C.
+The basic workflow is
+
+1. Submit a CSV file or Google Sheet with your survey data, either through the NextJS client or the Express API.
 2. The backend app will use an LLM to parse your data.
 3. The backend app will upload a JSON file to a Google Cloud Storage Bucket that you provide.
 4. Your report can be viewed by going to `http://[next client url]/report/[encoded url for your JSON file]`.
 
-If you want to use Talk to the City without any setup, you can go to our website at TBD and follow the instructions on [how to use TTTC](#usage)
+If you want to use Talk to the City without any setup, you can go to our website at TBD and follow the instructions on [how to use T3C](#usage)
 
 ## Setup
 
@@ -23,7 +29,7 @@ or if you have git ssh
 
 ### Google Cloud Storage and Services
 
-TTTC currently only supports using Google Cloud for storing report data out of the box.
+T3C currently only supports using Google Cloud for storing report data out of the box.
 
 First create a new storage bucket:
 
@@ -54,7 +60,7 @@ Set up gcloud SDK on your machine
 
 You will need to add two .env files
 
-#### express-pipeline/.env
+#### express-server/.env
 
 Encode your google credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
 
@@ -85,11 +91,11 @@ You can add different types of .env files based on your needs for testing, dev, 
 
 (see [this](./contributing.md) to run in dev mode instead of prod)
 
-If you want to run a local version of the app that's not publically accessable:
+If you want to run a local version of the app that's not publically accessible:
 
-1. Open up your terminal and navigate to the repo folder (i.e. /Desktop/tttc-light-js)
-2. Run `npm run build`.
-3. Run `npm run dev` to star the dev server. This should open up a server for the next-client and express-pipeline on localhost:3000 and localhost:8080 respectively.
+1. Open up your terminal and navigate to the repo folder (e.g. `/Desktop/tttc-light-js`)
+2. If this is your first time, build the repo: `cd commmon && npm run build`.
+3. Run `npm run dev` to start the dev server. This will run three servers in new terminal windows: the `next-client` frontend on `localhost:3000`, the `express-server` backend on `localhost:8080`, and the `pyserver` Python FastAPI server for the LLM calls on `localhost:8000`. A fourth terminal window will show a listener for `/common` that rebuilds the JS files when changes are made.
 4. This build will be optimized for production.
 
 #### Using docker locally (not recommended)
