@@ -9,12 +9,13 @@ const waitingMessage = z.object({
   message: z.string(),
 });
 
-export default async function ReportPage({
-  params,
-}: {
-  params: { uri: string };
-}) {
-  const url = decodeURIComponent(await params.uri);
+type PageProps = Promise<{
+  uri: string;
+}>;
+
+export default async function ReportPage({ params }: { params: PageProps }) {
+  const uri = (await params).uri;
+  const url = decodeURIComponent(uri);
   const req = await fetch(url, {
     headers: {
       "Content-Type": "application/json",

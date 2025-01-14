@@ -1,5 +1,3 @@
-import SubmissionForm from "src/features/submission";
-
 export function generateStaticParams() {
   return [{ slug: [""] }];
 }
@@ -11,8 +9,6 @@ export default function HomePage() {
         Talk to the City (TttC) is a AI-powered summarization tool designed to
         generate insightful reports based on public consultation data.
       </p>
-
-      <SubmissionForm />
 
       <div id="messageModal" className="modal hidden">
         <div className="modal-content">
