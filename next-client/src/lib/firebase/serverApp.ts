@@ -27,3 +27,8 @@ export async function getAuthenticatedAppForUser() {
 
   return { firebaseServerApp, currentUser: auth.currentUser };
 }
+
+export async function getUnauthenticatedApp() {
+  const firebaseServerApp = initializeServerApp(validatedFirebaseConfig, {});
+  return { firebaseServerApp };
+}

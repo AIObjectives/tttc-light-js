@@ -54,6 +54,7 @@ export type JobStatus = ReportJob["status"];
 const COLLECTIONS = {
   REPORT_REF: "reportRef",
   REPORT_JOB: "reportJob",
+  FEEDBACK: "feedback",
 } as const;
 
 export const JOB_STATUS = {
