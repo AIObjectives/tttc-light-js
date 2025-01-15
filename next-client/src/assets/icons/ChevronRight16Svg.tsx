@@ -12,8 +12,8 @@ const SvgComponent = (props) => (
         id="Vector"
         d="M6 4L10 8L6 12"
         stroke="#583295"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         {...props}
       />
     </g>
