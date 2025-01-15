@@ -12,7 +12,7 @@ import {
   HoverCardTrigger,
 } from "../elements";
 import * as schema from "tttc-common/schema";
-import { QuoteText } from "../quote/Quote";
+import { Quote } from "../quote/Quote";
 import { getQuotes } from "tttc-common/morphisms";
 import useOutsideClick from "@src/lib/hooks/useOutsideClick";
 
@@ -50,7 +50,7 @@ export function ClaimCard({ claim }: { claim: schema.Claim }) {
       <ClaimHeader variant="hovercard" claim={claim} />
       <Col gap={2}>
         {getQuotes(claim).map((quote) => (
-          <QuoteText key={quote.id} text={quote.text} />
+          <Quote key={quote.id} quote={quote} />
         ))}
       </Col>
     </Col>

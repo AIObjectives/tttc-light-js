@@ -259,6 +259,7 @@ export type ReferenceText = z.infer<typeof referenceText>;
 const referenceVideo = z.tuple([
   z.literal("video"),
   z.object({
+    link: z.string(),
     beginTimestamp: z.string(),
     endTimestamp: z.string(),
   }),

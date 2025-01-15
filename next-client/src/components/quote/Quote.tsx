@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, Separator } from "../elements";
-import { Row } from "../layout";
+import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
 import * as schema from "tttc-common/schema";
 import { cn } from "@src/lib/utils/shadcn";
@@ -40,15 +40,14 @@ export function QuoteText({
 
 export function Quote({ quote }: { quote: schema.Quote }) {
   return (
-    <Row gap={3}>
+    <Col gap={4}>
+      {quote.reference.data[0] === "video" ? (
+        <Col gap={4}>
+          <Video src={quote.reference.data[1].link} />
+        </Col>
+      ) : null}
       <QuoteText text={quote.text} />
-      {/* Chevron */}
-      <div className="h-full self-center flex-shrink-0">
-        {/* ! leave this commented out for now */}
-        {/* <Icons.ChevronRight className="text-muted-foreground self-center w-6 h-6" /> */}
-        <div className="w-6 h-6" />
-      </div>
-    </Row>
+    </Col>
   );
 }
 
@@ -67,3 +66,11 @@ export function Quotes({ quotes }: { quotes: schema.Quote[] }) {
     </Card>
   );
 }
+
+const Video = ({ src }: { src: string }) => {
+  return (
+    <Col className="px-4">
+      <iframe src={src} width={"100%"} className="aspect-video" />
+    </Col>
+  );
+};
