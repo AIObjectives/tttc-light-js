@@ -73,6 +73,7 @@ const partialTopic = z.object({
 const baseClaim = z.object({
   claim: z.string(),
   quote: z.string(),
+  speaker: z.string(),
   topicName: z.string(),
   subtopicName: z.string(),
   commentId: z.string(),
@@ -109,6 +110,7 @@ export type ClaimsTree = z.infer<typeof claimsTree>;
 const dupedClaims = z.object({
   claim: z.string(),
   quote: z.string(),
+  speaker: z.string(),
   topicName: z.string(),
   subtopicName: z.string(),
   commentId: z.string(),
@@ -121,6 +123,7 @@ const dupedClaims = z.object({
 const claimsWithDuplicates = z.object({
   claim: z.string(),
   quote: z.string(),
+  speaker: z.string(),
   topicName: z.string(),
   subtopicName: z.string(),
   commentId: z.string(),

@@ -32,6 +32,7 @@ from pyserver.utils import cute_print
 class Comment(BaseModel):
   id: str
   text: str
+  speaker: str
 
 class CommentList(BaseModel):
   comments: List[Comment]
@@ -379,12 +380,12 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
 
   node_counts = {}
   # TODO: batch this so we're not sending the tree each time
-  for comment in req.comments: 
+  for comment in req.comments:
     response = comment_to_claims(req.llm, comment.text, req.tree)
     try:
        claims = response["claims"]
        for claim in claims["claims"]:
-         claim.update({'commentId':comment.id})
+         claim.update({'commentId': comment.id, 'speaker' : comment.speaker})
     except:
       print("Step 2: no claims for comment: ", response)
       claims = None
@@ -443,7 +444,6 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
   net_usage = {"total_tokens" : TK_2_TOT,
                "prompt_tokens" : TK_2_IN,
                "completion_tokens" : TK_2_OUT}
-
 
   return {"data" : node_counts, "usage" : net_usage}
 
@@ -673,6 +673,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
   TK_TOT = 0
   dupe_logs = []
   sorted_tree = {} 
+
   for topic, topic_data in claims_tree.items():
     per_topic_total = 0
     per_topic_list = {}
