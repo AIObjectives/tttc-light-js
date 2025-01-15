@@ -86,7 +86,7 @@ For local development, you can install Redis by following [these instructions](h
 
 ### Pyserver setup
 
-- Go to `/pyserver` and run: `python<version> -m venv venv`
+- Go to `/pyserver` and run: `python -m venv venv`
 - Run `source ./.venv/bin/activate` to run the virtual environment
 - Install the project requirements by running `pip install -r requirements.txt`
 - You can test to see if it worked by running `fastapi dev main.py` and see if the server spins up.
@@ -109,7 +109,7 @@ export FIREBASE_DATABASE_URL= found in your firebase project
 export REDIS_HOST= for dev: localhost
 export REDIS_PORT= for dev: 6379
 export GOOGLE_APPLICATION_CREDENTIALS= path to your credentials. Suggest using ./credentials
-export NODE_ENV=
+export NODE_ENV= dev | prod
 ```
 
 #### next-client/.env
@@ -136,11 +136,6 @@ Note: Before doing anything, there is a bug that prevents `/common` from being b
 
 To launch a local instance:
 
-1. Open up your terminal and navigate to the repo folder (e.g. `/Desktop/tttc-light-js`)
-2. If this is your first time, build the repo: `cd commmon && npm run build`.
-3. Run `npm run dev` to start the dev server. This will run three servers in new terminal windows: the `next-client` frontend on `localhost:3000`, the `express-server` backend on `localhost:8080`, and the `pyserver` Python FastAPI server for the LLM calls on `localhost:8000`. A fourth terminal window will show a listener for `/common` that rebuilds the JS files when changes are made.
-4. This build will be optimized for production.
-===== << Merge conflict, let's discuss
 - Make sure you have completed the setup steps
 - At `/`, run `npm run dev`.
 - This will run three servers: the `next-client` frontend on localhost:3000, the `express-server` backend on localhost:8080, and the `pyserver` Python FastAPI server for the LLM calls on localhost:8000. Additionally, a watcher will spawn that rebuilds common when changes are made to it.
@@ -219,9 +214,9 @@ export type Options = {
   data: ['csv', {
       comment: string,
       id: string,
-      interview: string,
-      video: string,
-      timestamp: string,
+      interview: string | undefined,
+      video: string | undefined,
+      timestamp: string | undefined,
     }[]] | ['googlesheet', {
       url: string,
       pieChartColumns: string[],
