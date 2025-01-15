@@ -9,11 +9,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Separator,
 } from "../../elements";
 import { Row } from "@src/components/layout";
 import Link from "next/link";
-import { useRef } from "react";
 
 export function Headline() {
   return (
@@ -72,10 +70,7 @@ export function CreateReport() {
   return (
     <Link href={"/"}>
       <Button>
-        <Row gap={1}>
-          <Icons.Plus className="self-center" size={16} />
-          Create report
-        </Row>
+        <Row gap={1}>Create a report</Row>
       </Button>
     </Link>
   );
