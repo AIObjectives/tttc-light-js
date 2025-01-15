@@ -45,8 +45,9 @@ export type Usage = z.infer<typeof usage>;
  * Comments as consumed in the pyserver pipeline. Slightly different than schema.
  */
 const comment = z.object({
-  text: z.string().min(1, "Empty comment"),
   id: z.string(),
+  text: z.string().min(1, "Empty comment"),
+  speaker: z.string(),
 });
 
 /**

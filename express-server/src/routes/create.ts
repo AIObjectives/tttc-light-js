@@ -43,13 +43,59 @@ const parseData = async (
   }
 };
 
+/* Randomize array using Durstenfeld shuffle algorithm */
+function shuffleArray<T>(array: T[]): T[] {
+  let arr = array.slice(0); // copy array so it doesn't happen in place
+  for (var i = arr.length - 1; i >= 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+  }
+  return arr;
+}
+
+const useAnonymousNames = (numOfEmptyInterviewRows: number) => {
+  const anonNames = Array.from(Array(numOfEmptyInterviewRows).keys()).map(
+    (num) => `Anonymous #${num + 1}`,
+  );
+
+  const shuffled = shuffleArray(anonNames);
+
+  let i = 0;
+
+  return () => {
+    if (i > shuffled.length - 1) {
+      throw new Error("Ran out of anonymous names");
+    } else {
+      const name = shuffled[i];
+      i++;
+      return name;
+    }
+  };
+};
+
 async function createNewReport(req: Request, res: Response) {
   const { env } = req.context;
   const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } = env;
   const body = api.generateApiRequest.parse(req.body);
-  console.log("body", body);
   const { data, userConfig, firebaseAuthToken } = body;
-  const parsedData = await parseData(data);
+  const _parsedData = await parseData(data);
+  const makeAnonName = useAnonymousNames(
+    _parsedData.data.filter((x) => x.interview === undefined).length,
+  );
+  // Add anonymous names if interview prop is undefined
+  const parsedData: {
+    data: schema.SourceRow[];
+    pieChart?: schema.LLMPieChart[];
+  } = {
+    ..._parsedData,
+    data: _parsedData.data.map((sr) => ({
+      ...sr,
+      interview: sr.interview ?? makeAnonName(),
+    })),
+  };
+
   const filename = uniqueSlug(userConfig.title);
   const jsonUrl = getStorageUrl(filename);
   await storeJSON(

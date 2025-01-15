@@ -68,10 +68,19 @@ const setupPipelineWorker = (connection: Redis) => {
         completion_tokens: 0,
       };
 
-      const comments = options.data.map((x, i) => ({
-        text: x.comment,
-        id: x.id,
-      }));
+      const comments: { speaker: string; text: string; id: string }[] =
+        options.data.map((x) => ({
+          speaker: x.interview,
+          text: x.comment,
+          id: x.id,
+        }));
+      console.log("worker comments", comments);
+
+      if (comments.some((x) => !x.speaker)) {
+        throw new Error(
+          "Worker expects input data to include interview col to be filled out",
+        );
+      }
 
       console.log("Step 1: generating taxonomy of topics and subtopics");
       await job.updateProgress({
