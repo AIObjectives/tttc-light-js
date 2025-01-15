@@ -1,12 +1,23 @@
 "use client";
 
-import { Button } from "@src/components/elements";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@src/components/elements";
 import {
   signInWithGoogle,
   signOut,
   onAuthStateChanged,
 } from "@src/lib/firebase/auth";
 import { User } from "firebase/auth";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -65,9 +76,22 @@ export default function LoginButton({
       {!user ? (
         <Button onClick={signInWithGoogle}>Sign in</Button>
       ) : (
-        <Button variant={"secondary"} onClick={signOut}>
-          Sign out
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center">
+            <Avatar className="h-10 w-10 self-center">
+              <AvatarImage className="h-10 w-10" src={user.photoURL || ""} />
+              <AvatarFallback>YOU</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent sideOffset={20}>
+            <Link href={"/myReports"}>
+              <DropdownMenuItem>Reports</DropdownMenuItem>
+            </Link>
+            <DropdownMenuItem onClick={() => signOut()}>
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   );

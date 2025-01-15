@@ -13,3 +13,4 @@ export * from "./textArea/TextArea";
 export * from "./progress/Progress";
 export * from "./avatar/Avatar";
 export * from "./spinner/Spinner";
+export * from "./dropdown/Dropdown";
