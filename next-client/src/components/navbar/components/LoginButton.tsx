@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@src/components/elements";
 import {
@@ -20,6 +19,12 @@ import { User } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .map((word) => word[0])
+    .join("");
 
 /**
  * @fileoverview LoginButton component + some user session management logic.
@@ -80,7 +85,7 @@ export default function LoginButton({
           <DropdownMenuTrigger className="flex items-center">
             <Avatar className="h-10 w-10 self-center">
               <AvatarImage className="h-10 w-10" src={user.photoURL || ""} />
-              <AvatarFallback>YOU</AvatarFallback>
+              <AvatarFallback>{getInitials(user.displayName!)}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent sideOffset={20}>

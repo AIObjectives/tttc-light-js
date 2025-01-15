@@ -51,8 +51,7 @@ function MyReportsUI({ userId }: { userId: string }) {
         <Spinner />
       </Center>
     );
-  console.log(result[1]);
-  if (result[0] === "error")
+  if (result[0] === "error" || user === null)
     return (
       <Center>
         <p>There was an issue loading your reports</p>
@@ -63,7 +62,7 @@ function MyReportsUI({ userId }: { userId: string }) {
   return (
     <div className="justify-items-center">
       <YourReports
-        userName={user!.displayName! || ""}
+        userName={user.displayName!}
         reports={reports}
         pictureUri={user?.photoURL || undefined}
       />
