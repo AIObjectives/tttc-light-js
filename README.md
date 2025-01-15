@@ -83,6 +83,7 @@ To use T3C, you'll need to create a Firebase project.
 
 For local development, you can install Redis by following [these instructions](https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/). Make sure to start the Redis server on your computer if you want to run it locally.
 If you're working on a Mac, the steps are
+
 ```
 brew install redis
 redis-server
@@ -146,7 +147,7 @@ To launch a local instance:
   - the `next-client` frontend on `localhost:3000`
   - the `express-server` backend on `localhost:8080` and
   - the `pyserver` Python FastAPI server for the LLM calls on `localhost:8000`.
-Additionally, a watcher will spawn that rebuilds `common` when changes are made to it.
+    Additionally, a watcher will spawn that rebuilds `common` when changes are made to it.
 
 ### Using docker locally (not recommended)
 
