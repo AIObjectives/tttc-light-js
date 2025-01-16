@@ -104,10 +104,7 @@ const claimsTree = z.record(z.string(), claimsTreeNode);
 
 export type ClaimsTree = z.infer<typeof claimsTree>;
 
-export const sortReportBy = z.enum([
-  "numPeople",
-  "numClaims",
-]);
+export const sortReportBy = z.enum(["numPeople", "numClaims"]);
 export type SortReportBy = z.infer<typeof sortReportBy>;
 
 /**

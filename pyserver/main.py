@@ -810,6 +810,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
   elif req.sort == "numClaims":
     full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["total"], reverse=True)
  
+  print(full_sort_tree)
   if log_to_wandb:
     try:
       exp_group_name = str(log_to_wandb)
