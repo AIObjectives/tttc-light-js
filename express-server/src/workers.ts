@@ -109,9 +109,13 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.sorting,
       });
 
+      const numPeopleSort = "numPeople";
+
       const { data: tree } = await sortClaimsTreePipelineStep(env, {
         tree: claims_tree,
         llm: dedupLLMConfig,
+        //sortReportBy: "numPeople",
+        sort: numPeopleSort,
       });
 
       const newTax: schema.Taxonomy = taxonomy.map((t) => ({

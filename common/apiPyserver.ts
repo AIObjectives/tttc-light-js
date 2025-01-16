@@ -104,6 +104,12 @@ const claimsTree = z.record(z.string(), claimsTreeNode);
 
 export type ClaimsTree = z.infer<typeof claimsTree>;
 
+export const sortReportBy = z.enum([
+  "numPeople",
+  "numClaims",
+]);
+export type SortReportBy = z.infer<typeof sortReportBy>;
+
 /**
  * Claims that are duplicates of another claim.
  */
@@ -195,6 +201,7 @@ export const claimsReply = z.object({
 export const sortClaimsTreeRequest = z.object({
   tree: claimsTree,
   llm: llmConfig,
+  sort: z.string(), //ReportBy: sortReportBy,
 });
 export type SortClaimsTreeRequest = z.infer<typeof sortClaimsTreeRequest>;
 
