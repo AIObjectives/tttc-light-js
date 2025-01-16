@@ -11,12 +11,11 @@ First, pull the latest from `main` in this repo and start in the root directory 
 
 0. If this is your first time running this repo, go to `common` and run `npm i && npm run build`.
 1. In a new terminal, run `brew install redis` and `redis-server` to install Redis and start a local Redis server.
-2. From the repo root, `cd pyserver`; run `python -m venv venv` and 
-`source ./.venv/bin/activate` to activate the virutal environment, and install the Python package dependencies in `requirements.txt` with your preferred method (e.g. `pip install -r requirements.txt`). Note: this will get more standardized soon.
+2. From the repo root, `cd pyserver`; run `python -m venv venv` and
+   `source ./.venv/bin/activate` to activate the virutal environment, and install the Python package dependencies in `requirements.txt` with your preferred method (e.g. `pip install -r requirements.txt`). Note: this will get more standardized soon.
 3. Add this line to `next-client/.env` and `next-client/.env.local`:
    `export PIPELINE_EXPRESS_URL=http://localhost:8080`.
 4. See [the main README](/README.md#env-files) for additional lines to add to .env files
-
 
 ### Launch the app
 
