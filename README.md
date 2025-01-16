@@ -3,7 +3,7 @@
 **Note**: this repo is under very active construction with a new separate Python server for LLM calls—details below are likely to change!
 Please create a GitHub Issue for anything you encounter.
 
-Latest instructions for local development are [here.](/contributing.md)
+Familiar with this repo? See the [local dev quickstart](examples/README.md#quickstart)
 
 [Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source LLM-enabled interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subtopics.
 
@@ -96,13 +96,13 @@ redis-server
 - Install the project requirements by running `pip install -r requirements.txt`
 - You can test to see if it worked by running `fastapi dev main.py` and see if the server spins up.
 
-### Configure your environment via .env files
+### env files
 
 You will need to add two .env files, one in `express-server` and one in `next-client`. You can find example .env files at the root of those directories.
 
 #### express-server/.env
 
-Encode your google credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
+Encode your Google Credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
 
 ```
 export OPENAI_API_KEY=
