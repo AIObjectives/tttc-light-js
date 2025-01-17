@@ -79,7 +79,7 @@ Return a JSON object of the form {
 
 And now, here are the claims:"""
 
-WANDB_PROJECT_NAME = "t3c_tavern_local"
+WANDB_PROJECT_NAME = "kvothe"
 
 CRUX_PROMPT = """
 I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
