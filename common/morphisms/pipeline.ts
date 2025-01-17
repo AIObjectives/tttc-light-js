@@ -33,6 +33,7 @@ const buildSourceMap = (sourceRows: schema.SourceRow[]) =>
   sourceRows.reduce((accum, curr) => {
     accum[curr.id!] = {
       id: uuid(),
+      interview: curr.interview,
       data: [
         "text",
         {

@@ -235,6 +235,7 @@ const mediaSources = z.union([
 
 export const source = z.object({
   id: z.string(),
+  interview: z.string().default("Anonymous"),
   data: mediaSources,
 });
 

@@ -45,8 +45,9 @@ export type Usage = z.infer<typeof usage>;
  * Comments as consumed in the pyserver pipeline. Slightly different than schema.
  */
 const comment = z.object({
-  text: z.string().min(1, "Empty comment"),
   id: z.string(),
+  text: z.string().min(1, "Empty comment"),
+  speaker: z.string(),
 });
 
 /**
@@ -72,6 +73,7 @@ const partialTopic = z.object({
 const baseClaim = z.object({
   claim: z.string(),
   quote: z.string(),
+  speaker: z.string(),
   topicName: z.string(),
   subtopicName: z.string(),
   commentId: z.string(),
@@ -102,12 +104,16 @@ const claimsTree = z.record(z.string(), claimsTreeNode);
 
 export type ClaimsTree = z.infer<typeof claimsTree>;
 
+export const sortReportBy = z.enum(["numPeople", "numClaims"]);
+export type SortReportBy = z.infer<typeof sortReportBy>;
+
 /**
  * Claims that are duplicates of another claim.
  */
 const dupedClaims = z.object({
   claim: z.string(),
   quote: z.string(),
+  speaker: z.string(),
   topicName: z.string(),
   subtopicName: z.string(),
   commentId: z.string(),
@@ -120,6 +126,7 @@ const dupedClaims = z.object({
 const claimsWithDuplicates = z.object({
   claim: z.string(),
   quote: z.string(),
+  speaker: z.string(),
   topicName: z.string(),
   subtopicName: z.string(),
   commentId: z.string(),
@@ -191,6 +198,7 @@ export const claimsReply = z.object({
 export const sortClaimsTreeRequest = z.object({
   tree: claimsTree,
   llm: llmConfig,
+  sort: z.string(), //ReportBy: sortReportBy,
 });
 export type SortClaimsTreeRequest = z.infer<typeof sortClaimsTreeRequest>;
 
