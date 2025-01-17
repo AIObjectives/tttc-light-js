@@ -585,17 +585,26 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
     [
         "Pets",
         {
-            "total": 5,
+            "num_speakers" : 5,
+            "speakers" : [
+                "Alice",
+                "Bob",
+                "Charles",
+                "Dany",
+                "Elinor"
+            ],
+            "num_claims": 5,
             "topics": [
                 [
                     "Cats",
                     {
-                        "total": 2,
+                        "num_claims": 2,
                         "claims": [
                             {
                                 "claim": "Cats are the best pets.",
                                 "commentId":"c1",
                                 "quote": "I love cats.",
+                                "speaker" : "Alice",
                                 "topicName": "Pets",
                                 "subtopicName": "Cats",
                                 "duplicates": [
@@ -603,6 +612,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                         "claim": "Cats are the best pets.",
                                         "commendId:"c1"
                                         "quote": "I really really love cats",
+                                        "speaker" : "Elinor",
                                         "topicName": "Pets",
                                         "subtopicName": "Cats",
                                         "duplicated": true
@@ -610,17 +620,23 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                 ]
                             }
                         ]
+                        "num_speakers" : 2,
+                        "speakers" : [
+                            "Alice",
+                            "Elinor"
+                        ]
                     }
                 ],
                 [
                     "Birds",
                     {
-                        "total": 2,
+                        "num_claims": 2,
                         "claims": [
                             {
                                 "claim": "Birds are not ideal pets for everyone.",
                                 "commentId:"c3",
                                 "quote": "I'm not sure about birds.",
+                                "speaker" : "Charles",
                                 "topicName": "Pets",
                                 "subtopicName": "Birds",
                                 "duplicates": [
@@ -628,6 +644,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                         "claim": "Birds are not suitable pets for everyone.",
                                         "commentId" "c3",
                                         "quote": "I don't know about birds.",
+                                        "speaker": "Dany",
                                         "topicName": "Pets",
                                         "subtopicName": "Birds",
                                         "duplicated": true
@@ -635,21 +652,32 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                 ]
                             }
                         ]
+                        "num_speakers" : 2,
+                        "speakers" : [
+                            "Charles",
+                            "Dany"
+                        ]
                     }
                 ],
                 [
                     "Dogs",
                     {
-                        "total": 1,
+                        "num_claims": 1,
                         "claims": [
                             {
                                 "claim": "Dogs are superior pets.",
                                 "commentId": "c2",
                                 "quote": "dogs are great",
+                                "speaker" : "Bob",
                                 "topicName": "Pets",
                                 "subtopicName": "Dogs"
                             }
                         ]
+                        "num_speakers" : 1,
+                        "speakers" : [
+                            "Bob"
+                        ]
+                      
                     }
                 ]
             ]
@@ -786,7 +814,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
         per_topic_speakers.add(speaker)
         
       # add list of sorted, deduplicated claims to the right subtopic node in the tree
-      per_topic_list[subtopic] = {"total" : subtopic_data["total"], "claims" : sorted_deduped_claims, "speakers": per_topic_speakers}
+      per_topic_list[subtopic] = {"num_claims" : subtopic_data["total"], "claims" : sorted_deduped_claims, "num_people" : len(per_topic_speakers), "speakers": list(per_topic_speakers)}
 
     # sort all the subtopics in a given topic
     # two ways of sorting 1/16:
@@ -798,17 +826,17 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
     print("per topic speakers: ", set_topic_speakers)
 
     if req.sort == "numPeople":
-      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: len(x[1]["speakers"]), reverse=True)
+      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["num_people"], reverse=True)
     elif req.sort == "numClaims":
-      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["total"], reverse=True)
+      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["num_claims"], reverse=True)
     # we have to add all the speakers
-    sorted_tree[topic] = {"total" : per_topic_total, "topics" : sorted_subtopics, "speakers" : set_topic_speakers}
+    sorted_tree[topic] = {"num_claims" : per_topic_total, "topics" : sorted_subtopics, "num_people" : len(set_topic_speakers), "speakers" : list(set_topic_speakers)}
 
   # sort all the topics in the tree
   if req.sort == "numPeople":
-    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: len(x[1]["speakers"]), reverse=True)
+    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["num_people"], reverse=True)
   elif req.sort == "numClaims":
-    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["total"], reverse=True)
+    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["num_claims"], reverse=True)
  
   print(full_sort_tree)
   if log_to_wandb:

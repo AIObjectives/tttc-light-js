@@ -21,7 +21,8 @@ longer_pets_15 = [{"id":"0", "text":"I love cats", "speaker" : "Alice"},{"id":"1
 
 topic_tree_4o = {"taxonomy" : [{'topicName': 'Pets', 'topicShortDescription': 'General opinions about common household pets.', 'subtopics': [{'subtopicName': 'Cats', 'subtopicShortDescription': 'Positive sentiments towards cats.'}, {'subtopicName': 'Dogs', 'subtopicShortDescription': 'Positive sentiments towards dogs.'}, {'subtopicName': 'Birds', 'subtopicShortDescription': 'Uncertainty or mixed feelings about birds.'}]}]}
 
-speaker_pets_3 = [{"id":"a", "text":"I love cats", "speaker" : "Alice"},{"id":"b", "text":"dogs are great", "speaker" : "Bob"},\
+speaker_pets_3 = [{"id":"a", "text":"I love cats", "speaker" : "Alice"},\
+                {"id":"b", "text":"dogs are great", "speaker" : "Bob"},\
                 {"id":"c","text":"I'm not sure about birds", "speaker" : "Charles"}]
             ##    {"id":"d","text":"I really really love cats"},{"id":"e","text":"I don't know about birds"}]
 
@@ -64,7 +65,7 @@ def test_claims(comments=dupes_pets_5):
 def test_dupes(claims_tree=dupe_claims_4o_speakers):
   llm = base_llm
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
-  request ={"llm" : llm, "tree" : claims_tree, "sort" : "numClaims"}
+  request ={"llm" : llm, "tree" : claims_tree, "sort" : "numPeople"}
   response = client.put("/sort_claims_tree/", json=request)
   print(json.dumps(response.json(), indent=4))
 
@@ -86,9 +87,9 @@ def test_full_pipeline(comments=dupes_pets_5):
 
   print("\n\nStep 3: Dedup & sort\n\n")
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
-  request ={"llm" : llm, "tree" : claims }
-  full_tree = client.put("/sort_claims_tree/", json=request).json()["data"]
-  json_print(full_tree)
+  request ={"llm" : llm, "tree" : claims , "sort" : "numPeople"}
+  full_tree = client.put("/sort_claims_tree/", json=request)
+  print(json.dumps(full_tree.json(), indent=4))
 
 #################
 # W&B log tests #
