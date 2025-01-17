@@ -5,6 +5,8 @@ from main import app
 import config
 import os
 
+import visualize as vz
+
 ##################
 # Sample inputs  #
 #----------------#
@@ -32,7 +34,7 @@ speaker_pets_3 = [{"id":"a", "text":"I love cats", "speaker" : "Alice"},{"id":"b
                 {"id":"c","text":"I'm not sure about birds", "speaker" : "Charles"}]
             ##    {"id":"d","text":"I really really love cats"},{"id":"e","text":"I don't know about birds"}]
 
-fancy_scifi_10 = [{"text" : "More epic fantasy worlds","speaker" : "Alice","id": "1"},\
+fancy_scifi_15 = [{"text" : "More epic fantasy worlds","speaker" : "Alice","id": "1"},\
 {"text" : "Better conversations between characters","speaker" : "Bob","id": "2"},\
 {"text" : "Interesting world-building","speaker" : "Charles","id": "3"},\
 {"text" : "Plausible paths to utopia","speaker" : "Dany","id": "4"},\
@@ -41,8 +43,12 @@ fancy_scifi_10 = [{"text" : "More epic fantasy worlds","speaker" : "Alice","id":
 {"text" : "More space operatic battles and detailed descriptions of advanced futuristic technology, perhaps faster than light travel, or quantum computing? Math theory also works","speaker" : "Bob","id": "7"},\
 {"text" : "I'm especially into historically-grounded depictions or extrapolations of possible cultures, communities, art forms of aliens, how could our universe evolve differently?","speaker" : "Charles","id": "8"},\
 {"text" : "Like a special gift, an incredibly powerful talisman from an old witch, being the long-lost princess of a kingdom—but also of course being empowered to make your own decisions and make the sacrifices and earn the scars of leadership, not just be handed the throne","speaker" : "Dany","id": "9"},\
-{"text" : "Generalizing to our culture learning to understand others, accepting them, expanding the circle of empathy","speaker" : "Elinor","id": "10"}
-
+{"text" : "Generalizing to our culture learning to understand others, accepting them, expanding the circle of empathy","speaker" : "Elinor","id": "10"},\
+{"text" : "I like really fast-paced plot, almost cinematic, the play-by-play of long elaborate battles or quests, none of that touchy-feely stuff", "speaker" : "Dany", "id" : "11"},\
+{"text" : "Emotionally realistic and rich relationships, how characters get to know each other and understand each other, I find that most interesting and compelling", "speaker" : "Alice", "id" : "12"},\
+{"text" : "I love really long stories with multiple installments, fully exploring one amazing universe", "speaker" : "Charles", "id" : "13"},\
+{"text" : "I don't like magic tricks, or powerful amulets or spells or deus ex machina spontaneous rescues for everyon—I want a scientific or technological explanation", "speaker" : "Bob", "id": "14"},\
+{"text" : "When I read sequels, the second book in a series is often the best, and then it's like they run out of material and it gets boring. With the exception of Adrian Tchaikovsky", "speaker": "Alice", "id": "15"}
 ]
 
 # NOTE: gpt-4o-mini is cheaper/better for basic tests, but it fails on some very basic deduplication
@@ -180,14 +186,37 @@ def test_wb_full_pipeline(comments=dupes_pets_5):
   #.json()["data"]
   #json_print(full_tree)
 
+def test_wb_cruxes_pipeline(comments=pets_conflict):
+
+  print("Step 1: Topic tree\n\n")
+  llm = base_llm
+  # fancier model for more precise deduplication
+  llm.update({"model_name" : "gpt-4o-mini"})
+  llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
+  request ={"llm" : llm, "comments" : comments} 
+  taxonomy = client.post("/topic_tree/?log_to_wandb=tavern", json=request).json()["data"]
+  json_print(taxonomy)
+
+  print("\n\nStep 2: Claims\n\n")
+  llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
+  request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" : taxonomy}}
+  claims = client.post("/claims/?log_to_wandb=tavern", json=request).json()["data"]
+  json_print(claims)
+
+  print("\n\nStep 3: Cruxes\n\n")
+  llm.update({"user_prompt" : config.CRUX_PROMPT})
+  request ={"llm" : llm, "topics" : taxonomy, "tree" : claims}
+  cruxes = client.post("/cruxes/?log_to_wandb=tavern", json=request) #.json()["data"]
+  json_print(cruxes.json()["data"])
 
 #############
 # Run tests #
 #-----------#
 client = TestClient(app)
+test_wb_cruxes_pipeline(fancy_scifi_15) #fancy_scifi_15)
 #test_topic_tree(fancy_scifi_10)
 #test_full_pipeline(fancy_scifi_10)
-test_cruxes(pets_conflict)
+#test_cruxes(pets_conflict)
 
 #test_full_pipeline(speaker_pets_3)
 #test_claims(longer_pets_15)
