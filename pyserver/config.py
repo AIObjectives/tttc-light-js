@@ -81,7 +81,7 @@ And now, here are the claims:"""
 
 WANDB_PROJECT_NAME = "t3c_tavern_local"
 
-SUBTOPIC_TEST_PROMPT = """
+CRUX_PROMPT = """
 I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
 identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
 which would best split the participants into two groups, based on all their

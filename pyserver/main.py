@@ -23,11 +23,11 @@ from typing import List, Union
 import wandb
 
 # TODO: which set of imports shall we keep? :)
-#import config
-#from utils import cute_print
+import config
+from utils import cute_print
 
-import pyserver.config as config
-from pyserver.utils import cute_print
+#import pyserver.config as config
+#from pyserver.utils import cute_print
 
 class Comment(BaseModel):
   id: str
@@ -57,8 +57,8 @@ class ClaimTreeLLMConfig(BaseModel):
   llm: LLMConfig
   sort : str
 
-def CruxesLLMConfig(BaseModel):
-  tree: list
+class CruxesLLMConfig(BaseModel):
+  tree: dict
   llm: LLMConfig
   topics: list
 
@@ -859,9 +859,9 @@ def pseudonymize_speakers(claims:list)->dict:
   # set([claim["speaker"] for claim in claims])
   for claim in claims:
     if "speaker" in claim:
-      if claim["speaker"] not in speakers:
-        curr_id = len(speakers)
-        speakers[claim["speaker"]] = curr_id
+      if claim["speaker"] not in speaker_ids:
+        curr_id = len(speaker_ids)
+        speaker_ids[claim["speaker"]] = curr_id
   return speaker_ids
 
 def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list)-> dict:
@@ -876,7 +876,7 @@ def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list)-> dict:
   for claim in claims:
     if "speaker" in claim:
       speaker_anon = speaker_pseudo_ids[claim["speaker"]]
-      speaker_claim =  speaker_anon + ":" + claim["claim"]
+      speaker_claim =  str(speaker_anon) + ":" + claim["claim"]
       claims_anon.append(speaker_claim)
 
   full_prompt = llm.user_prompt
@@ -914,10 +914,14 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
   #'quote': 'Interesting world-building [...]', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 
   #'commentId': '3', 'duplicates': []}, 
   #{'claim': 'Historically-grounded depictions of alien cultures enhance storytelling.', 'quote': "I'm especially into historically-grounded depictions or extrapolations of possible cultures [...].", 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}, {'claim': 'Exploring alternative cultural evolutions in storytelling is valuable.', 'quote': 'how could our universe evolve differently?', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}], 'speakers': {'Charles'}}), ('Advanced Technology', {'total': 4, 'claims': [{'claim': 'Space operatic battles enhance storytelling.', 'quote': 'More space operatic battles [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Detailed descriptions of advanced technology are essential.', 'quote': 'detailed descriptions of advanced futuristic technology [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Faster than light travel should be included in narratives.', 'quote': 'perhaps faster than light travel [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Quantum computing is a valuable theme in storytelling.', 'quote': 'or quantum computing? [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}], 'speakers': {'Bob'}})], 'speakers': {'Charles', 'Bob'}}), 
+  cruxes = []
+  print("WE ARE HERE")
+
   topic_desc = topic_desc_map(req.topics)
-  for topic, topic_details in req.tree:
-    subtopics = topic_details["topics"]
-    for subtopic, subtopic_details in subtopics:
+  print(topic_desc)
+  for topic, topic_details in req.tree.items():
+    subtopics = topic_details["subtopics"]
+    for subtopic, subtopic_details in subtopics.items():
       # all claims for subtopic
       claims = subtopic_details["claims"]
       if subtopic in topic_desc:
@@ -926,13 +930,31 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
         print("no description for subtopic:", subtopic)
         subtopic_desc = "No further details"
       topic_title = topic + ", " + subtopic
-      cruxes = cruxes_for_topic(topic_title, subtopic_desc, claims)
+      print("request: ", topic_title)
+      resp = cruxes_for_topic(req.llm, topic_title, subtopic_desc, claims)
       crux = resp["crux"]
       usage = resp["usage"]
 
       print(crux)
       print(usage)
+      cruxes.append(crux)
+
+  return {"data" : cruxes}
 
 
+#      crux_data.append([topic_title, desc, json.dumps(new_claims,indent=1), json.dumps(crux,indent=1)])
 
+#      crux_claim = crux["crux"]["cruxClaim"]
+#      agree = crux["crux"]["agree"]
+##      disagree = crux["crux"]["disagree"]
+ #     crux_claims.append([crux_claim, agree, disagree])
+
+
+#wandb.log({
+#  "cruxes" : wandb.Table(data=crux_data, columns = ["topic", "description", "claims", "cruxes"])})
+
+# how else do we want to log the cruxes/table?
+#wandb.log({
+#    "contmat" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"])
+#})
 
