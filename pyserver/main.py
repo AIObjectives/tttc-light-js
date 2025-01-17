@@ -55,6 +55,11 @@ class ClaimTreeLLMConfig(BaseModel):
   tree: dict
   llm: LLMConfig
 
+def CruxesLLMConfig(BaseModel):
+  tree: list
+  llm: LLMConfig
+  topics: list
+
 app = FastAPI()
 
 @app.get("/")
@@ -787,3 +792,102 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                "completion_tokens" : TK_OUT}
 
   return {"data" : full_sort_tree, "usage" : net_usage} 
+
+def topic_desc_map(topics:list)->dict:
+  """ Convert a list of topics into a dictionary returning the short description for 
+      each topic name. Note this currently assumes we have no duplicate topic/subtopic
+      names, which ideally we shouldn't :)
+  """
+  topic_desc = {}
+  for topic in topics:
+    topic_desc[topic["topicName"]] = topic["topicShortDescription"]
+    if "subtopics" in topic:
+      for subtopic in topic["subtopics"]:
+        topic_desc[subtopic["subtopicName"]] = subtopic["subtopicShortDescription"]
+  return topic_desc
+
+def pseudonymize_speakers(claims:list)->dict:
+  """ Create sequential ids for speakers so actual names are not sent to an LLM and do not
+  bias the output
+  """
+  speaker_ids = {}
+  # set([claim["speaker"] for claim in claims])
+  for claim in claims:
+    if "speaker" in claim:
+      if claim["speaker"] not in speakers:
+        curr_id = len(speakers)
+        speakers[claim["speaker"]] = curr_id
+  return speaker_ids
+
+def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list)-> dict:
+  api_key = llm.api_key
+  client = OpenAI(
+    api_key=api_key
+  )
+
+  speaker_pseudo_ids = pseudonymize_speakers(claims)
+
+  claims_anon = []
+  for claim in claims:
+    if "speaker" in claim:
+      speaker_anon = speaker_pseudo_ids[claim["speaker"]]
+      speaker_claim =  speaker_anon + ":" + claim["claim"]
+      claims_anon.append(speaker_claim)
+
+  full_prompt = llm.user_prompt
+  full_prompt += "\nTopic: " + topic + ": " + topic_desc
+  full_prompt += "\nParticipant claims: \n" + json.dumps(claims_anon)
+
+  response = client.chat.completions.create(
+  model=llm.model_name,
+  messages=[
+      {
+          "role": "system",
+          "content": llm.system_prompt
+      },
+      {
+          "role": "user",
+          "content": full_prompt
+      }
+      ],
+      temperature=0.0,
+      response_format={ "type": "json_object" }
+  )
+  crux = response.choices[0].message.content
+  return {"crux" : json.loads(crux), "usage" : response.usage}
+
+@app.post("/cruxes/")
+def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
+  """ Given a topic, description, and corresponding list of claims, extract the
+  crux claims that would best split the claims into agree/disagree sides
+  Note: currently we do this for the subtopic level, could scale up to main topic?
+  Note: let's pass in previous output, without dedup/sorting
+  """
+  
+ ##('World-Building', {'total': 7, 'topics': [('Cultural Extrapolation',
+  #{'total': 3, 'claims': [{'claim': 'World-building is essential for immersive storytelling.', 
+  #'quote': 'Interesting world-building [...]', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 
+  #'commentId': '3', 'duplicates': []}, 
+  #{'claim': 'Historically-grounded depictions of alien cultures enhance storytelling.', 'quote': "I'm especially into historically-grounded depictions or extrapolations of possible cultures [...].", 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}, {'claim': 'Exploring alternative cultural evolutions in storytelling is valuable.', 'quote': 'how could our universe evolve differently?', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}], 'speakers': {'Charles'}}), ('Advanced Technology', {'total': 4, 'claims': [{'claim': 'Space operatic battles enhance storytelling.', 'quote': 'More space operatic battles [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Detailed descriptions of advanced technology are essential.', 'quote': 'detailed descriptions of advanced futuristic technology [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Faster than light travel should be included in narratives.', 'quote': 'perhaps faster than light travel [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Quantum computing is a valuable theme in storytelling.', 'quote': 'or quantum computing? [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}], 'speakers': {'Bob'}})], 'speakers': {'Charles', 'Bob'}}), 
+  topic_desc = topic_desc_map(req.topics)
+  for topic, topic_details in req.tree:
+    subtopics = topic_details["topics"]
+    for subtopic, subtopic_details in subtopics:
+      # all claims for subtopic
+      claims = subtopic_details["claims"]
+      if subtopic in topic_desc:
+        subtopic_desc = topic_desc[subtopic]
+      else:
+        print("no description for subtopic:", subtopic)
+        subtopic_desc = "No further details"
+      topic_title = topic + ", " + subtopic
+      cruxes = cruxes_for_topic(topic_title, subtopic_desc, claims)
+      crux = resp["crux"]
+      usage = resp["usage"]
+
+      print(crux)
+      print(usage)
+
+
+
+
