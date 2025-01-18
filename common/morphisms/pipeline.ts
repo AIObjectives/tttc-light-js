@@ -8,7 +8,7 @@ const uuid = (): string => v4();
 type ClaimMap = Record<string, schema.Claim>;
 type SourceMap = Record<string, schema.Source>;
 
-function mulberry32(a) {
+function mulberry32(a: number) {
   return function () {
     let t = (a += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -29,16 +29,27 @@ const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
 /**
  * Takes source rows and builds a map from row id -> Source
  */
-const buildSourceMap = (sourceRows: schema.SourceRow[]) =>
+const buildSourceMap = (
+  sourceRows: schema.SourceRow[],
+): { [key: string]: schema.Source } =>
   sourceRows.reduce((accum, curr) => {
     accum[curr.id!] = {
       id: uuid(),
-      data: [
-        "text",
-        {
-          text: curr.comment!,
-        },
-      ],
+      data: curr.video
+        ? [
+            "video",
+            {
+              text: curr.comment!,
+              link: curr.video,
+              timestamp: curr.timestamp!,
+            },
+          ]
+        : [
+            "text",
+            {
+              text: curr.comment!,
+            },
+          ],
     };
     return accum;
   }, {} as SourceMap);
@@ -89,7 +100,7 @@ const topicNumClaims = (topic: schema.LLMTopic): number =>
   topic.subtopics.flatMap((s) => s.claims).length;
 
 const subtopicNumClaims = (subtopic: schema.LLMSubtopic): number =>
-  subtopic.claims.length;
+  subtopic.claims!.length;
 
 const sortTax = (tax: schema.Taxonomy) =>
   tax.sort((t1, t2) => {
@@ -142,29 +153,55 @@ const buildClaimsMap = (
   }, {} as ClaimMap);
 };
 
+const makeReference = (
+  source: schema.Source,
+  claim: schema.LLMClaim,
+): schema.Referece => {
+  if (source.data[0] === "video" && source.data[1].timestamp === undefined) {
+    console.log("HERE", source);
+  }
+  switch (source.data[0]) {
+    case "text":
+      return {
+        id: uuid(),
+        sourceId: source.id,
+        data: [
+          "text",
+          {
+            startIdx: getReferenceStartIndex(claim, source.data[1].text),
+            endIdx: getReferenceEndIndex(claim, source.data[1].text),
+          },
+        ],
+      };
+    case "video":
+      return {
+        id: uuid(),
+        sourceId: source.id,
+        data: [
+          "video",
+          {
+            link: source.data[1].link,
+            beginTimestamp: source.data[1].timestamp,
+            endTimestamp: undefined,
+          },
+        ],
+      };
+    case "audio": {
+      throw new Error("Audio reference not implemented yet");
+    }
+    default: {
+      throw new Error("Invalid source in pipeline - makeReference");
+    }
+  }
+};
+
 const getQuote = (
   claim: schema.LLMClaim,
   sourceMap: SourceMap,
 ): schema.Quote => ({
   id: uuid(),
   text: claim.quote,
-  reference: {
-    id: uuid(),
-    sourceId: sourceMap[claim.commentId!].id,
-    data: [
-      "text",
-      {
-        startIdx: getReferenceStartIndex(
-          claim,
-          (sourceMap[claim.commentId!].data as schema.TextMediaSource)[1].text,
-        ),
-        endIdx: getReferenceEndIndex(
-          claim,
-          (sourceMap[claim.commentId!].data as schema.TextMediaSource)[1].text,
-        ),
-      },
-    ],
-  },
+  reference: makeReference(sourceMap[claim.commentId!], claim),
 });
 
 const getReferenceStartIndex = (clm: schema.LLMClaim, fullText: string) =>
@@ -210,21 +247,21 @@ export const getReportDataObj = (
   });
 };
 
-const buildStageData: schema.PipelineStepData = {
-  temperature: 0,
-  batchSize: 0,
-  tokenCount: {
-    sent: 0,
-    received: 0,
-    total: 0,
-  },
-  costPerToken: {
-    denomination: "$",
-    value: 0,
-  },
-  model: "claude-instant-v1",
-  instructions: "",
-};
+// const buildStageData: schema.PipelineStepData = {
+//   temperature: 0,
+//   batchSize: 0,
+//   tokenCount: {
+//     sent: 0,
+//     received: 0,
+//     total: 0,
+//   },
+//   costPerToken: {
+//     denomination: "$",
+//     value: 0,
+//   },
+//   model: "claude-instant-v1",
+//   instructions: "",
+// };
 
 const getReportMetaData = (
   pipelineOutput: schema.LLMPipelineOutput,

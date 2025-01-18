@@ -1,5 +1,5 @@
 // import { getNClaims } from "./morphisms";
-import { object, z } from "zod";
+import { z } from "zod";
 
 /** VVVVVVVVVVVVVVVVVVVVVVVVVVVVV */
 /********************************
@@ -214,7 +214,9 @@ export type TextMediaSource = z.infer<typeof textMediaSource>;
 const videoMediaSource = z.tuple([
   z.literal("video"),
   z.object({
+    text: z.string(),
     link: z.string(),
+    timestamp: z.string().default("0:00:00"),
   }),
 ]);
 
@@ -261,15 +263,17 @@ const referenceVideo = z.tuple([
   z.object({
     link: z.string(),
     beginTimestamp: z.string(),
-    endTimestamp: z.string(),
+    endTimestamp: z.string().optional(),
   }),
 ]);
+
+export type ReferenceVideo = z.infer<typeof referenceVideo>;
 
 const referenceAudio = z.tuple([
   z.literal("audio"),
   z.object({
     beginTimestamp: z.string(),
-    endTimestamp: z.string(),
+    endTimestamp: z.string().optional(),
   }),
 ]);
 
