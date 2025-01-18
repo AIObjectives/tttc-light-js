@@ -49,8 +49,13 @@ export function ClaimCard({ claim }: { claim: schema.Claim }) {
     <Col gap={4}>
       <ClaimHeader variant="hovercard" claim={claim} />
       <Col gap={2}>
-        {getQuotes(claim).map((quote) => (
-          <Quote key={quote.id} quote={quote} />
+        {getQuotes(claim).map((quote, i) => (
+          <Quote
+            key={quote.id}
+            quote={quote}
+            gap={2}
+            withSeperation={getQuotes(claim).length - 1 !== i}
+          />
         ))}
       </Col>
     </Col>
