@@ -8,7 +8,7 @@ const uuid = (): string => v4();
 type ClaimMap = Record<string, schema.Claim>;
 type SourceMap = Record<string, schema.Source>;
 
-function mulberry32(a) {
+function mulberry32(a: number) {
   return function () {
     let t = (a += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -210,21 +210,21 @@ export const getReportDataObj = (
   });
 };
 
-const buildStageData: schema.PipelineStepData = {
-  temperature: 0,
-  batchSize: 0,
-  tokenCount: {
-    sent: 0,
-    received: 0,
-    total: 0,
-  },
-  costPerToken: {
-    denomination: "$",
-    value: 0,
-  },
-  model: "claude-instant-v1",
-  instructions: "",
-};
+// const buildStageData: schema.PipelineStepData = {
+//   temperature: 0,
+//   batchSize: 0,
+//   tokenCount: {
+//     sent: 0,
+//     received: 0,
+//     total: 0,
+//   },
+//   costPerToken: {
+//     denomination: "$",
+//     value: 0,
+//   },
+//   model: "claude-instant-v1",
+//   instructions: "",
+// };
 
 const getReportMetaData = (
   pipelineOutput: schema.LLMPipelineOutput,
