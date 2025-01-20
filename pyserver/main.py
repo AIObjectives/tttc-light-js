@@ -813,8 +813,12 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
           speaker = "unknown"
         per_topic_speakers.add(speaker)
         
+      # track how many claims and distinct speakers per subtopic
+      tree_counts = {"claims" : subtopic_data["total"], "speakers" : len(per_topic_speakers)}
       # add list of sorted, deduplicated claims to the right subtopic node in the tree
-      per_topic_list[subtopic] = {"num_claims" : subtopic_data["total"], "claims" : sorted_deduped_claims, "num_people" : len(per_topic_speakers), "speakers": list(per_topic_speakers)}
+      per_topic_list[subtopic] = {"claims" : sorted_deduped_claims, 
+                                  "speakers": list(per_topic_speakers),
+                                  "counts" : tree_counts}
 
     # sort all the subtopics in a given topic
     # two ways of sorting 1/16:
@@ -826,17 +830,21 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
     print("per topic speakers: ", set_topic_speakers)
 
     if req.sort == "numPeople":
-      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["num_people"], reverse=True)
+      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["counts"]["speakers"], reverse=True)
     elif req.sort == "numClaims":
-      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["num_claims"], reverse=True)
+      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["counts"]["claims"], reverse=True)
+    # track how many claims and distinct speakers per subtopic
+    tree_counts = {"claims" : per_topic_total, "speakers" : len(set_topic_speakers)}
     # we have to add all the speakers
-    sorted_tree[topic] = {"num_claims" : per_topic_total, "topics" : sorted_subtopics, "num_people" : len(set_topic_speakers), "speakers" : list(set_topic_speakers)}
+    sorted_tree[topic] = { "topics" : sorted_subtopics,
+                           "speakers" : list(set_topic_speakers),
+                           "counts" : tree_counts}
 
   # sort all the topics in the tree
   if req.sort == "numPeople":
-    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["num_people"], reverse=True)
+    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["counts"]["speakers"], reverse=True)
   elif req.sort == "numClaims":
-    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["num_claims"], reverse=True)
+    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["counts"]["claims"], reverse=True)
  
   print(full_sort_tree)
   if log_to_wandb:

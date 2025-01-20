@@ -149,7 +149,7 @@ client = TestClient(app)
 #test_topic_tree()
 #test_claims()
 #test_dupes()
-#test_full_pipeline(longer_pets_15)
+test_full_pipeline(longer_pets_15)
 
 #test_wb_topic_tree()
 #test_wb_claims()
