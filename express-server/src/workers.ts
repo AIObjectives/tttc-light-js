@@ -108,7 +108,7 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.sorting,
       });
-      // TODO: more principled way of configuring this? 
+      // TODO: more principled way of configuring this?
       const numPeopleSort = "numPeople";
 
       const { data: tree } = await sortClaimsTreePipelineStep(env, {

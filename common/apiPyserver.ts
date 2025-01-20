@@ -132,16 +132,16 @@ const claimsWithDuplicates = z.object({
 
 const sortedSubtopic = z.object({
   counts: z.object({
-    claims : z.number(),
-    speakers: z.number()
+    claims: z.number(),
+    speakers: z.number(),
   }),
   topics: z
     .tuple([
       z.string(),
       z.object({
         counts: z.object({
-          claims : z.number(),
-          speakers: z.number()
+          claims: z.number(),
+          speakers: z.number(),
         }),
         claims: claimsWithDuplicates.array(),
       }),
