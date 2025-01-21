@@ -359,6 +359,7 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
     }, 0);
 
     return topics.map((topic) => ({
+      id: topic.id,
       title: topic.title,
       percentFill: getNClaims(topic.subtopics) / largestN,
       subtitle: `${getNClaims(topic.subtopics)} claims`,
