@@ -64,6 +64,7 @@ function Testimonial({ text }: { text: string | JSX.Element }) {
       <CardContent>
         <QuoteText
           text={text}
+          interview=""
           className="text-muted-foreground"
           iconClassName="fill-muted-foreground"
         />

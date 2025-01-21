@@ -276,6 +276,7 @@ const referenceAudio = z.tuple([
 export const reference = z.object({
   id: z.string(),
   sourceId: z.string(),
+  interview: z.string().default("Anonymous"),
   data: z.union([referenceText, referenceVideo, referenceAudio]),
 });
 
