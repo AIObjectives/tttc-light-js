@@ -79,7 +79,8 @@ export const getNPeople = (
     | schema.Source[],
 ) => chainReport(arg).length;
 
-export const getNClaims = (arg: schema.Subtopic[]) => fromSubtopics(arg).length;
+export const getNClaims = (arg: schema.Subtopic[]) =>
+  arg.flatMap((s) => s.claims).length;
 
 export const getQuotes = (claim: schema.Claim): schema.Quote[] =>
   claim.quotes.concat(claim.similarClaims.flatMap((clm) => clm.quotes));
