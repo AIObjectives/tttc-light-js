@@ -46,7 +46,7 @@ export default async function ReportPage({ params }: { params: PageProps }) {
   return (
     <div>
       <Report reportData={reportData} />
-      <Feedback />
+      <Feedback className="hidden lg:block" />
     </div>
   );
 }

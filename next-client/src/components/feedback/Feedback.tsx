@@ -14,10 +14,11 @@ import { useUser } from "@src/lib/hooks/getUser";
 import { feedbackResponse } from "@src/lib/types/clientRoutes";
 import { toast } from "sonner";
 import Icons from "@assets/icons";
+import { cn } from "@src/lib/utils/shadcn";
 
-export default function Feedback() {
+export default function Feedback({ className }: { className?: string }) {
   return (
-    <div className="fixed bottom-10 right-10">
+    <div className={cn("fixed bottom-10 right-10", className)}>
       <FeedbackForm />
     </div>
   );
@@ -100,16 +101,19 @@ function FeedbackForm() {
   return (
     <Dialog open={dialogState.dialog}>
       <DialogTrigger onClick={() => dispatch({ type: "dialog" })}>
-        <Button size={"icon"} variant={"outline"}>
-          <Icons.Feedback />
+        <Button size={"icon"} variant={"outline"} className="rounded-full p-4">
+          <Icons.Feedback size={24} className="stroke-[1.2px]" />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent hideClose>
         <DialogHeader>
           <DialogTitle>Tell us what you think!</DialogTitle>
         </DialogHeader>
-        <DialogDescription>Give us your two cents</DialogDescription>
-        <TextArea value={text} onChange={(e) => setText(e.target.value)} />
+        <TextArea
+          placeholder="Type your message here"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
         <Button
           onClick={async (e) => {
             e.preventDefault();
