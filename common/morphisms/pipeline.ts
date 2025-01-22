@@ -34,7 +34,7 @@ const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
 const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
   const usedAnonNums = sourceRows
     .map((r) => r.interview.match(/Anonymous #(\d+)/))
-    .map((expArr) => (expArr[0] ? parseInt(expArr[1]) : null))
+    .map((expArr) => (expArr ? parseInt(expArr[1]) : null))
     .filter((val) => val !== null)
     .map(Math.abs);
 
