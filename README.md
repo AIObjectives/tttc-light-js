@@ -3,30 +3,32 @@
 **Note**: this repo is under very active construction with a new separate Python server for LLM calls—details below are likely to change!
 Please create a GitHub Issue for anything you encounter.
 
-Latest instructions for local development are [here.](/.contributing.md)
+Familiar with this repo? See the [local dev quickstart](examples/README.md#quickstart)
 
-[Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source LLM-enabled interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subropics.
+[Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source LLM-enabled interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subtopics.
 
 This repo will allow you to setup your own instance of T3C.
 The basic workflow is
 
-1. Submit a CSV file or Google Sheet with your survey data, either through the NextJS client or the Express API.
+1. Submit a CSV file or Google Sheet with your survey data, either through the NextJS client in a browser, the Express API, or the Python FastAPI (coming soon)
 2. The backend app will use an LLM to parse your data.
 3. The backend app will upload a JSON file to a Google Cloud Storage Bucket that you provide.
-4. Your report can be viewed by going to `http://[next client url]/report/[encoded url for your JSON file]`.
+4. Your report can be viewed by going to `http://[NextJS client url]/report/[encoded url for your JSON file]`.
 
 If you want to use Talk to the City without any setup, you can go to our website at TBD and follow the instructions on [how to use T3C](#usage)
 
-## Summary
+# Local development for T3C
 
-- Clone repo
-- Setup Google Cloud
-- Setup Firebase
-- Install Redis
-- Pyserver Venv setup
--
+## TL;DR
 
-## Setup
+- Clone this repo
+- Set up dependencies: Google Cloud, Firebase, Redis
+- Configure Pyserver and your environment via .env files
+- Launch a local instance via `npm run dev`
+
+## Setup & configuration
+
+### Clone this repo
 
 Clone the repo to your local computer:
 
@@ -38,9 +40,7 @@ or if you have git ssh
 
 ### Google Cloud Storage and Services
 
-T3C currently only supports using Google Cloud for storing report data out of the box.
-
-First create a new storage bucket:
+T3C currently only supports using Google Cloud for storing report data. First create a new storage bucket:
 
 - Create a Google Cloud project and a Google Cloud Storage bucket
   - When you get to the section "Choose how to control access to objects", uncheck "Enforce public access prevention"
@@ -69,20 +69,25 @@ Set up gcloud SDK on your machine
 
 To use T3C, you'll need to create a Firebase project.
 
-- Go to [Firebase console](https://firebase.google.com/)
-- In the Firebase Console, click "Create a project" or "Add project"
+- Go to the [Firebase Console](https://firebase.google.com/) and click "Create a project" or "Add project"
 - Enter a project name
 - Click "Create project"
 - Once your project is created, you'll need to register your app. In the project overview:
   - Click on web
   - Register app with a nickname
   - Copy the provided Firebase configuration object
-  - Optional: we suggest adding it to `/express-server/configuration`. This folder not tracked by git, and will make it easier to import later.
+  - Optional: we suggest adding this object to `/express-server/configuration`. This folder is not tracked by git and will make the configuration easier to import later.
 - TODO setup Auth and Firestore
 
 ### Redis
 
 For local development, you can install Redis by following [these instructions](https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/). Make sure to start the Redis server on your computer if you want to run it locally.
+If you're working on a Mac, the steps are
+
+```
+brew install redis
+redis-server
+```
 
 ### Pyserver setup
 
@@ -91,13 +96,13 @@ For local development, you can install Redis by following [these instructions](h
 - Install the project requirements by running `pip install -r requirements.txt`
 - You can test to see if it worked by running `fastapi dev main.py` and see if the server spins up.
 
-### .env
+### env files
 
-You will need to add two .env files. You can find example env files at the root of next-client and express-server.
+You will need to add two .env files, one in `express-server` and one in `next-client`. You can find example .env files at the root of those directories.
 
 #### express-server/.env
 
-Encode your google credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
+Encode your Google Credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
 
 ```
 export OPENAI_API_KEY=
@@ -116,31 +121,35 @@ export NODE_ENV= dev | prod
 
 ```
 
-PIPELINE_EXPRESS_URL= # This is by default localhost:8080 on dev
+export PIPELINE_EXPRESS_URL= # This is by default localhost:8080 on dev
 # Firebase keys below should be found on your firebase project. These are not sensitive and can be shared with the client.
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
+export NEXT_PUBLIC_FIREBASE_API_KEY=
+export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+export NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+export NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+export NEXT_PUBLIC_FIREBASE_APP_ID=
 ```
 
 Copy this file to .env.local in the same directory if you plan to run the dev server (`npm run dev`).
 
 You can add different types of .env files based on your needs for testing, dev, prod, etc. You can read more in the [NextJS docs](https://nextjs.org/docs/pages/building-your-application/configuring/environment-variables#default-environment-variables)
 
-### Local Instance
+## Running a local instance
 
-Note: Before doing anything, there is a bug that prevents `/common` from being built correctly. For your first time, go to `/common` before anything else and run `npm i && npm run build`. After this, you should be able to follow the other steps. If the project fails to start in dev, try rebuilding common first.
+Note: There is a bug that prevents `/common` from being built correctly. For your first time, before doing anything else, go to `/common` and run `npm i && npm run build`. After this, you should be able to follow the other steps. If the project fails to start in dev, try rebuilding common first.
 
 To launch a local instance:
 
-- Make sure you have completed the setup steps
-- At `/`, run `npm run dev`.
-- This will run three servers: the `next-client` frontend on localhost:3000, the `express-server` backend on localhost:8080, and the `pyserver` Python FastAPI server for the LLM calls on localhost:8000. Additionally, a watcher will spawn that rebuilds common when changes are made to it.
+- Make sure you have completed the setup steps above
+- From the root of the repo, run `npm run dev`.
+- This will launch three servers:
+  - the `next-client` frontend on `localhost:3000`
+  - the `express-server` backend on `localhost:8080` and
+  - the `pyserver` Python FastAPI server for the LLM calls on `localhost:8000`.
+    Additionally, a watcher will spawn that rebuilds `common` when changes are made to it.
 
-#### Using docker locally (not recommended)
+### Using docker locally (not recommended)
 
 There should be no need to use docker for local development, except when working on the Dockerfile or testing something docker-related, in which case you might want to use these scripts:
 
@@ -149,7 +158,7 @@ There should be no need to use docker for local development, except when working
 ./bin/docker-run.sh   # run
 ```
 
-### Remote Instance
+### Running a remote Instance
 
 #### Add Docker Image
 
@@ -168,35 +177,35 @@ Your cloud instance is now ready to use!
 
 To upload a new image (e.g. after a fresh git pull), deploy a new docker image to the same instance:
 
-#### Host Next Client
+#### Host NextJS Client
 
 See here for [how to deploy your NextJS app](https://nextjs.org/docs/pages/building-your-application/deploying).
 
-## Usage
+# Usage
 
-### Next Client
+## NextJS client in a browser
 
-This process should work, regardless of whether the app is built locally or remotely. However, the Next client can only take csvs. To submit a Google Sheet, use the API directly.
+This process should work, regardless of whether the app is built locally or remotely. However, the NextJS client can only take CSVs. To submit a Google Sheet, use the API directly.
 
-You can generate your data and view your reports using the Next client.
+You can generate your data and view your reports using the NextJS client.
 
 To do so:
 
-1. Navigate to wherever your Next client is being hosted.
-2. On the [hosting location]/create, you should see a form to submit your data.
-3. Enter the title, description, your [api key](#api-key), and add the csv file.
-4. Optionally: You can click on the advanced settings for further customization.
-5. Click submit. It should soon after give you the url for where your JSON data will be stored and the url to view the report.
+1. Navigate to wherever your NextJS client is hosted.
+2. On the [hosting location]/create, you should see a form to submit your data. For local development, this defaults to `http://localhost:3000/create`.
+3. Enter the title, description, your [api key](#api-key), and add the CSV file.
+4. Optionally, click on the advanced settings for further customization.
+5. Click submit, and you will shortly see a url for where your JSON data will be stored and the url to view the report.
 6. Depending on how large your file was, it should take anywhere from 30 seconds to 15 minutes to finish. So bookmark the link and check on it periodically.
-7. Once the JSON data has been uploaded to Google Cloud, you can view the report by going to` http://[client url]/report/[encoded uri for your stored JSON object]`. You can then save the report from your browser or add it to your webpage using an iframe.
-8. Additionally, if you are signed in, it will save a link to your report at /myReports
+7. Once the JSON data has been uploaded to Google Cloud, you can view the report by going to` http://[client url]/report/[encoded URI for your stored JSON object]`. In local development, this will have the `http://localhost:3000/report/https%3A%2F%2Fstorage.googleapis.com%2F[GCLOUD_STORAGE_BUCKET]%2F[generated report id]`. You can copy & paste and substitute in the values for the generated report id (different for each report you create) and the GCLOUD_STORAGE_BUCKET (likely the same for all testing sessions). Keep in mind that the separator is %2F and not the traditional URL slash.
+8. You can then save the report from your browser or add it to your webpage using an iframe. Additionally, if you are signed in, it will save a link to your report at /myReports
 
-Note: The backend Express app does not save your API keys on the server. The Next app will save your API keys (and other inputs) in your browser's session storage, which should be secure, and will delete when you close your browser tab.
+Note: The backend Express app does not save your API keys on the server. The NextJS app will save your API keys (and other inputs) in your browser's session storage, which should be secure, and will delete when you close your browser tab.
 
-### API
+## API Usage
 
 You can submit your data directly to the Express API using whatever method you're comfortable with.
-Note: You must have the Next client running to view your report. Otherwise, it will just generate the JSON data.
+Note: You must have the NextJS client running to view your report. Otherwise, it will just generate the JSON data.
 
 The enpoint to generate reports is `POST /create` and it expects a JSON body of the following type:
 
@@ -242,7 +251,7 @@ export type SourceRow = {
 };
 ```
 
-## API Key
+### Acquiring API keys for LLMs
 
 If your organization does not have a key for ChatGPT or Claude, you can obtain one by:
 
@@ -252,6 +261,6 @@ If your organization does not have a key for ChatGPT or Claude, you can obtain o
 4. Go the API keys section and press the button to generate a new API key.
 5. Save this key and not share it.
 
-## Development and Contributing
+# Development and Contributing
 
-See DEV.md
+Some work in progress—please see the [contributor guide!](/contributing.md)

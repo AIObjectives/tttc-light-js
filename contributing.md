@@ -1,5 +1,7 @@
 # Working with Talk to the City
 
+TODO: dedupe with full & quickstart versions
+
 ## Quickstart
 
 Latest instructions as we move to a separate Python server for LLM calls.
@@ -7,10 +9,13 @@ First, pull the latest from `main` in this repo and start in the root directory 
 
 ### Set up dependencies
 
+0. If this is your first time running this repo, go to `common` and run `npm i && npm run build`.
 1. In a new terminal, run `brew install redis` and `redis-server` to install Redis and start a local Redis server.
-2. From the repo root, `cd pyserver` and install the Python package dependencies in `requirements.txt` with your preferred method (e.g. `pip install -r requirements.txt`). Note: this will get more standardized soon.
+2. From the repo root, `cd pyserver`; run `python -m venv venv` and
+   `source ./.venv/bin/activate` to activate the virutal environment, and install the Python package dependencies in `requirements.txt` with your preferred method (e.g. `pip install -r requirements.txt`). Note: this will get more standardized soon.
 3. Add this line to `next-client/.env` and `next-client/.env.local`:
-   `export PIPELINE_EXPRESS_URL=http://localhost:8080`
+   `export PIPELINE_EXPRESS_URL=http://localhost:8080`.
+4. See [the main README](/README.md#env-files) for additional lines to add to .env files
 
 ### Launch the app
 
@@ -22,7 +27,7 @@ First, pull the latest from `main` in this repo and start in the root directory 
 
 1. Once you click "Generate report", if the process is successful, you will see the text "UrlGCloud". This is a hyperlink — open it in a new tab/window.
 2. You will see the raw data dump of the generated report in JSON format. The url of this report will have this form `https://storage.googleapis.com/[GCLOUD_STORAGE_BUCKET]/[generated report id]`, where `GCLOUD_STORAGE_BUCKET` is an environment variable set in `express-server/.env` and the generated report id is an output of this pipeline run.
-3. The pretty version of the corresponding report lives at `http://localhost:3000/report/https%3A%2F%2Fstorage.googleapis.com%2F[GCLOUD_STORAGE_BUCKET]%2F[generated report id]`. You can copy & paste and substitute in the values for the generated report id (different for each report you create) and the GCLOUD_STORAGE_BUCKET (likely the same for all testing sessions). Keep in mind that the separator is %2F and not the traditional url slash :)
+3. By default, in local dev the pretty version of the corresponding report lives at `http://localhost:3000/report/https%3A%2F%2Fstorage.googleapis.com%2F[GCLOUD_STORAGE_BUCKET]%2F[generated report id]`. You can copy & paste and substitute in the values for the generated report id (different for each report you create) and the GCLOUD_STORAGE_BUCKET (likely the same for all testing sessions). Keep in mind that the separator is %2F and not the traditional url slash :)
 
 ### Troubleshooting
 

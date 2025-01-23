@@ -50,7 +50,13 @@ export function ClaimCard({ claim }: { claim: schema.Claim }) {
       <ClaimHeader variant="hovercard" claim={claim} />
       <Col gap={2}>
         {getQuotes(claim).map((quote) => (
-          <QuoteText key={quote.id} text={quote.text} />
+          <QuoteText
+            key={quote.id}
+            text={quote.text}
+            // Added parsing here since reports generated prior to this commit that use schema
+            // - do not get assigned a default interview tag
+            interview={schema.reference.parse(quote.reference).interview}
+          />
         ))}
       </Col>
     </Col>

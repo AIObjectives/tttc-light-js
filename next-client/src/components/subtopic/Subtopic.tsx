@@ -78,14 +78,12 @@ export function SubtopicDescription({ description }: { description: string }) {
 
 export function SubtopicSummary({ subtopic }: { subtopic: schema.Subtopic }) {
   const { title, claims, description } = subtopic;
-  // ! Temp change for QA testing
-  const nPeople = Math.floor(getNPeople(claims) * 0.45);
   return (
     <Col gap={4} className="px-4 sm:px-8">
       <SubtopicHeader
         title={title}
         numClaims={claims.length}
-        numPeople={nPeople}
+        numPeople={getNPeople(claims)}
         button={<CopyLinkButton anchor={title} />}
       />
       <PointGraphic claims={subtopic.claims} />

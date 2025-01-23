@@ -104,9 +104,6 @@ const claimsTree = z.record(z.string(), claimsTreeNode);
 
 export type ClaimsTree = z.infer<typeof claimsTree>;
 
-export const sortReportBy = z.enum(["numPeople", "numClaims"]);
-export type SortReportBy = z.infer<typeof sortReportBy>;
-
 /**
  * Claims that are duplicates of another claim.
  */
@@ -134,12 +131,18 @@ const claimsWithDuplicates = z.object({
 });
 
 const sortedSubtopic = z.object({
-  total: z.number(),
+  counts: z.object({
+    claims: z.number(),
+    speakers: z.number(),
+  }),
   topics: z
     .tuple([
       z.string(),
       z.object({
-        total: z.number(),
+        counts: z.object({
+          claims: z.number(),
+          speakers: z.number(),
+        }),
         claims: claimsWithDuplicates.array(),
       }),
     ])
@@ -198,7 +201,7 @@ export const claimsReply = z.object({
 export const sortClaimsTreeRequest = z.object({
   tree: claimsTree,
   llm: llmConfig,
-  sort: z.string(), //ReportBy: sortReportBy,
+  sort: z.string(),
 });
 export type SortClaimsTreeRequest = z.infer<typeof sortClaimsTreeRequest>;
 

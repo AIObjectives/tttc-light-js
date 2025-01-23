@@ -98,8 +98,7 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
           // </div>
         }
       >
-        {getNClaims(subtopics)} claims by {/* ! Temp change for QA testing */}
-        {Math.floor(getNPeople(subtopics) * 0.45)} people
+        {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
       </TextIcon>
       {button}
     </Row>
