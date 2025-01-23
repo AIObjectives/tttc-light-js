@@ -235,6 +235,7 @@ const mediaSources = z.union([
 
 export const source = z.object({
   id: z.string(),
+  interview: z.string().default("Anonymous"),
   data: mediaSources,
 });
 
@@ -275,6 +276,7 @@ const referenceAudio = z.tuple([
 export const reference = z.object({
   id: z.string(),
   sourceId: z.string(),
+  interview: z.string().default("Anonymous"),
   data: z.union([referenceText, referenceVideo, referenceAudio]),
 });
 
@@ -391,9 +393,27 @@ export const reportDataObj = z.object({
   questionAnswers: z.optional(questionAnswer.array()),
   topics: z.array(topic).transform((topics) =>
     topics.sort((a, b) => {
-      const claimsA = a.subtopics.flatMap((sub) => sub.claims);
-      const claimsB = b.subtopics.flatMap((sub) => sub.claims);
-      return claimsB.length - claimsA.length;
+      const setSpeakersA = new Set(
+        a.subtopics.flatMap((sub) =>
+          sub.claims.flatMap((c) =>
+            c.quotes.flatMap((q) => q.reference.interview),
+          ),
+        ),
+      );
+      const setSpeakersB = new Set(
+        new Set(
+          b.subtopics.flatMap((sub) =>
+            sub.claims.flatMap((c) =>
+              c.quotes.flatMap((q) => q.reference.interview),
+            ),
+          ),
+        ),
+      );
+      return setSpeakersB.size - setSpeakersA.size;
+      // leave this here for now until we start handling sorting by both.
+      // const claimsA = a.subtopics.flatMap((sub) => sub.claims);
+      // const claimsB = b.subtopics.flatMap((sub) => sub.claims);
+      // return claimsB.length - claimsA.length;
     }),
   ),
   sources: z.array(source),

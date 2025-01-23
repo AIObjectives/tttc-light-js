@@ -1,6 +1,7 @@
 "use client";
 
 import { Dispatch, useReducer } from "react";
+import { getNPeople } from "tttc-common/morphisms";
 
 import * as schema from "tttc-common/schema";
 
@@ -388,7 +389,7 @@ const stateBuilder = (topics: schema.Topic[]): ReportState => ({
     .map(makeTopicNode)
     .sort(
       (a, b) =>
-        getNumberOfClaimsFromTopic(b.data) - getNumberOfClaimsFromTopic(a.data),
+        getNumberOfPeopleFromTopic(b.data) - getNumberOfPeopleFromTopic(a.data),
     ),
   focusedId: null,
 });
@@ -401,8 +402,8 @@ const makeTopicNode = (topic: schema.Topic): TopicNode => ({
     .map(makeSubSubtopicNode)
     .sort(
       (a, b) =>
-        getNumberOfClaimsFromSubtopic(b.data) -
-        getNumberOfClaimsFromSubtopic(a.data),
+        getNumberOfPeopleFromSubTopic(b.data) -
+        getNumberOfPeopleFromSubTopic(a.data),
     ),
 });
 
@@ -416,10 +417,16 @@ const makeClaimNode = (claim: schema.Claim): ClaimNode => ({
   data: claim,
 });
 
-const getNumberOfClaimsFromTopic = (topic: schema.Topic): number =>
-  topic.subtopics.flatMap((sub) => sub.claims).length;
-const getNumberOfClaimsFromSubtopic = (subtopic: schema.Subtopic): number =>
-  subtopic.claims.length;
+// const getNumberOfClaimsFromTopic = (topic: schema.Topic): number =>
+//   topic.subtopics.flatMap((sub) => sub.claims).length;
+// const getNumberOfClaimsFromSubtopic = (subtopic: schema.Subtopic): number =>
+//   subtopic.claims.length;
+
+const getNumberOfPeopleFromTopic = (topic: schema.Topic) =>
+  getNPeople(topic.subtopics);
+
+const getNumberOfPeopleFromSubTopic = (subtopic: schema.Subtopic) =>
+  getNPeople(subtopic.claims);
 
 //  ********************************
 //  * REDUCER *

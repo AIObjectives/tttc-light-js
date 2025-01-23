@@ -5,10 +5,14 @@ import { z } from "zod";
 // TODO: Review this file - add comments and make more readble.
 
 const fromSources = (arg: schema.Source[]): string[] =>
-  Array.from(new Set(arg.map((src) => src.id)));
+  Array.from(
+    new Set(arg.map((src, i) => src.interview ?? `${Date.now()} #${i}`)),
+  );
 
 const fromReferences = (arg: schema.Referece[]): string[] =>
-  Array.from(new Set(arg.map((ref) => ref.id)));
+  Array.from(
+    new Set(arg.map((ref, i) => ref.interview ?? `${Date.now()} #${i}`)),
+  );
 
 const fromQuotes = (arg: schema.Quote[]): string[] =>
   fromReferences(arg.flatMap((claim) => claim.reference));
@@ -75,7 +79,8 @@ export const getNPeople = (
     | schema.Source[],
 ) => chainReport(arg).length;
 
-export const getNClaims = (arg: schema.Subtopic[]) => fromSubtopics(arg).length;
+export const getNClaims = (arg: schema.Subtopic[]) =>
+  arg.flatMap((s) => s.claims).length;
 
 export const getQuotes = (claim: schema.Claim): schema.Quote[] =>
   claim.quotes.concat(claim.similarClaims.flatMap((clm) => clm.quotes));

@@ -15,7 +15,7 @@ For local testing, load these from a config.py file
 """
 
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
+#from fastapi.testclient import TestClient
 import json
 from openai import OpenAI
 from pydantic import BaseModel
@@ -23,8 +23,8 @@ from typing import List, Union
 import wandb
 
 # TODO: which set of imports shall we keep? :)
-# import config
-# from utils import cute_print
+#import config
+#from utils import cute_print
 
 import pyserver.config as config
 from pyserver.utils import cute_print
@@ -32,6 +32,7 @@ from pyserver.utils import cute_print
 class Comment(BaseModel):
   id: str
   text: str
+  speaker: str
 
 class CommentList(BaseModel):
   comments: List[Comment]
@@ -54,6 +55,7 @@ class CommentTopicTree(BaseModel):
 class ClaimTreeLLMConfig(BaseModel):
   tree: dict
   llm: LLMConfig
+  sort : str
 
 app = FastAPI()
 
@@ -379,12 +381,12 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
 
   node_counts = {}
   # TODO: batch this so we're not sending the tree each time
-  for comment in req.comments: 
+  for comment in req.comments:
     response = comment_to_claims(req.llm, comment.text, req.tree)
     try:
        claims = response["claims"]
        for claim in claims["claims"]:
-         claim.update({'commentId':comment.id})
+         claim.update({'commentId': comment.id, 'speaker' : comment.speaker})
     except:
       print("Step 2: no claims for comment: ", response)
       claims = None
@@ -404,23 +406,35 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
       comms_to_claims_html.append([comment.text, viz_claims])  
 
   # reference format
-  #[{'claim': 'Cats are the best household pets.', 'commentId':'c1', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats'}, {'commentId':'c2','claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}, {'commentId':'c3', 'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds'}]
+  #[{'claim': 'Cats are the best household pets.', 'commentId':'c1', 'quote': 'I love cats', 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Cats'},
+  #{'commentId':'c2','claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'speaker' : 'Bob', 'topicName': 'Pets', 'subtopicName': 'Dogs'},
+  # {'commentId':'c3', 'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Birds'}]
  
   # count the claims in each subtopic 
   for claim in comms_to_claims:
-    if "topicName" in claim:
-      if claim["topicName"] in node_counts:
-        node_counts[claim["topicName"]]["total"] += 1
-        if "subtopicName" in claim:
-          if claim["subtopicName"] in node_counts[claim["topicName"]]["subtopics"]:
-            node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["total"] += 1
-            node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["claims"].append(claim)
-          else:
-            node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]] = { "total" : 1, "claims" : [claim]}
-      else:
-        node_counts[claim["topicName"]] = {"total" : 1, "subtopics" : {claim["subtopicName"] : {"total" : 1, "claims" : [claim]}}}
-
-
+    if not "topicName" in claim:
+      print("claim unassigned to topic: ", claim)
+      continue
+    if claim["topicName"] in node_counts:
+      node_counts[claim["topicName"]]["total"] += 1
+      node_counts[claim["topicName"]]["speakers"].add(claim["speaker"])
+      if "subtopicName" in claim:
+        if claim["subtopicName"] in node_counts[claim["topicName"]]["subtopics"]:
+          node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["total"] += 1
+          node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["claims"].append(claim)
+          node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]]["speakers"].add(claim["speaker"])
+        else:
+          node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]] = { "total" : 1, "claims" : [claim], "speakers" : set([claim["speaker"]])}
+    else:
+      node_counts[claim["topicName"]] = { "total" : 1, "speakers" : set([claim["speaker"]]),
+                                          "subtopics" : {claim["subtopicName"] : 
+                                            {"total" : 1,
+                                             "claims" : [claim],
+                                             "speakers" : set([claim["speaker"]])
+                                             }
+                                        }
+                                      }
+  # Note: we will now be sending speaker names to W&B  
   if log_to_wandb:
     try:
       exp_group_name = str(log_to_wandb)
@@ -443,7 +457,6 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
   net_usage = {"total_tokens" : TK_2_TOT,
                "prompt_tokens" : TK_2_IN,
                "completion_tokens" : TK_2_OUT}
-
 
   return {"data" : node_counts, "usage" : net_usage}
 
@@ -572,17 +585,26 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
     [
         "Pets",
         {
-            "total": 5,
+            "num_speakers" : 5,
+            "speakers" : [
+                "Alice",
+                "Bob",
+                "Charles",
+                "Dany",
+                "Elinor"
+            ],
+            "num_claims": 5,
             "topics": [
                 [
                     "Cats",
                     {
-                        "total": 2,
+                        "num_claims": 2,
                         "claims": [
                             {
                                 "claim": "Cats are the best pets.",
                                 "commentId":"c1",
                                 "quote": "I love cats.",
+                                "speaker" : "Alice",
                                 "topicName": "Pets",
                                 "subtopicName": "Cats",
                                 "duplicates": [
@@ -590,6 +612,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                         "claim": "Cats are the best pets.",
                                         "commendId:"c1"
                                         "quote": "I really really love cats",
+                                        "speaker" : "Elinor",
                                         "topicName": "Pets",
                                         "subtopicName": "Cats",
                                         "duplicated": true
@@ -597,17 +620,23 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                 ]
                             }
                         ]
+                        "num_speakers" : 2,
+                        "speakers" : [
+                            "Alice",
+                            "Elinor"
+                        ]
                     }
                 ],
                 [
                     "Birds",
                     {
-                        "total": 2,
+                        "num_claims": 2,
                         "claims": [
                             {
                                 "claim": "Birds are not ideal pets for everyone.",
                                 "commentId:"c3",
                                 "quote": "I'm not sure about birds.",
+                                "speaker" : "Charles",
                                 "topicName": "Pets",
                                 "subtopicName": "Birds",
                                 "duplicates": [
@@ -615,6 +644,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                         "claim": "Birds are not suitable pets for everyone.",
                                         "commentId" "c3",
                                         "quote": "I don't know about birds.",
+                                        "speaker": "Dany",
                                         "topicName": "Pets",
                                         "subtopicName": "Birds",
                                         "duplicated": true
@@ -622,21 +652,32 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                                 ]
                             }
                         ]
+                        "num_speakers" : 2,
+                        "speakers" : [
+                            "Charles",
+                            "Dany"
+                        ]
                     }
                 ],
                 [
                     "Dogs",
                     {
-                        "total": 1,
+                        "num_claims": 1,
                         "claims": [
                             {
                                 "claim": "Dogs are superior pets.",
                                 "commentId": "c2",
                                 "quote": "dogs are great",
+                                "speaker" : "Bob",
                                 "topicName": "Pets",
                                 "subtopicName": "Dogs"
                             }
                         ]
+                        "num_speakers" : 1,
+                        "speakers" : [
+                            "Bob"
+                        ]
+                      
                     }
                 ]
             ]
@@ -673,11 +714,13 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
   TK_TOT = 0
   dupe_logs = []
   sorted_tree = {} 
+
   for topic, topic_data in claims_tree.items():
     per_topic_total = 0
     per_topic_list = {}
     for subtopic, subtopic_data in topic_data["subtopics"].items():
       per_topic_total += subtopic_data["total"]
+      per_topic_speakers = set()
       # canonical order of claims: as they appear in subtopic_data["claims"]
       # no need to deduplicate single claims
       if subtopic_data["total"] > 1:
@@ -722,10 +765,18 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
         accounted_for_ids = {}
         deduped_claims = []
         # for each claim in our original list
-        for claim_id in range(len(subtopic_data["claims"])):
+        for claim_id, claim in enumerate(subtopic_data["claims"]):
+          # add speakers of all claims
+          if "speaker" in claim:
+            speaker = claim["speaker"]
+          else:
+            print("no speaker provided:", claim)
+            speaker = "unknown"
+          per_topic_speakers.add(speaker)
+
           # only create a new claim if we haven't visited this one already
           if claim_id not in accounted_for_ids:
-            clean_claim = {k : v for k, v in subtopic_data["claims"][claim_id].items()}
+            clean_claim = {k : v for k, v in claim.items()}
             clean_claim["duplicates"] = []
           
             # if this claim has some duplicates
@@ -755,17 +806,47 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
       else:
         # just one claim! already sorted!
         sorted_deduped_claims = subtopic_data["claims"]
+        if "speaker" in subtopic_data["claims"][0]:
+          speaker = subtopic_data["claims"][0]["speaker"]
+        else:
+          print("no speaker provided:", claim)
+          speaker = "unknown"
+        per_topic_speakers.add(speaker)
         
+      # track how many claims and distinct speakers per subtopic
+      tree_counts = {"claims" : subtopic_data["total"], "speakers" : len(per_topic_speakers)}
       # add list of sorted, deduplicated claims to the right subtopic node in the tree
-      per_topic_list[subtopic] = {"total" : subtopic_data["total"], "claims" : sorted_deduped_claims}
+      per_topic_list[subtopic] = {"claims" : sorted_deduped_claims, 
+                                  "speakers": list(per_topic_speakers),
+                                  "counts" : tree_counts}
 
     # sort all the subtopics in a given topic
-    sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["total"], reverse=True)
-    sorted_tree[topic] = {"total" : per_topic_total, "topics" : sorted_subtopics}
+    # two ways of sorting 1/16:
+    # - (default) numPeople: count the distinct speakers per subtopic/topic
+    # - numClaims: count the total claims per subtopic/topic
+    set_topic_speakers = set()
+    for k, c in per_topic_list.items():
+      set_topic_speakers = set_topic_speakers.union(c["speakers"])
+    print("per topic speakers: ", set_topic_speakers)
+
+    if req.sort == "numPeople":
+      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["counts"]["speakers"], reverse=True)
+    elif req.sort == "numClaims":
+      sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["counts"]["claims"], reverse=True)
+    # track how many claims and distinct speakers per subtopic
+    tree_counts = {"claims" : per_topic_total, "speakers" : len(set_topic_speakers)}
+    # we have to add all the speakers
+    sorted_tree[topic] = { "topics" : sorted_subtopics,
+                           "speakers" : list(set_topic_speakers),
+                           "counts" : tree_counts}
 
   # sort all the topics in the tree
-  full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["total"], reverse=True)
+  if req.sort == "numPeople":
+    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["counts"]["speakers"], reverse=True)
+  elif req.sort == "numClaims":
+    full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["counts"]["claims"], reverse=True)
  
+  print(full_sort_tree)
   if log_to_wandb:
     try:
       exp_group_name = str(log_to_wandb)
