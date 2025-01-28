@@ -86,7 +86,7 @@ export function Cell(
           className={`w-3 h-3 ${!isHighlighted ? backgroundClass : highlightedClass} ${borderClass} border rounded-[3px] ${hoverClass}`}
         />
       </HoverCardTrigger>
-      <HoverCardContent className="p-4">
+      <HoverCardContent sideOffset={-3} className="p-4">
         <ClaimCard claim={claim} />
       </HoverCardContent>
     </HoverCard>
