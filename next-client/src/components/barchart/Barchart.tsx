@@ -36,9 +36,13 @@ export function BarItem({
   entry: BarChartItemType;
   onClick: () => void;
 }) {
+  const hoverColor = useThemeColor(entry.color, "groupHoverBgAccent");
+
   return (
     <Col gap={2} className="py-2 group relative" onClick={onClick}>
-      <div className="w-[calc(100%+20px)] top-0 h-full group-hover:left-[-10px] group-hover:right-[calc(100%+10px)] hidden group-hover:block group-hover:absolute group-hover:bg-muted group-hover:rounded-md group-hover:mix-blend-multiply" />
+      <div
+        className={`w-[calc(100%+20px)] top-0 h-full group-hover:left-[-10px] group-hover:right-[calc(100%+10px)] hidden group-hover:block group-hover:absolute ${hoverColor} group-hover:rounded-md group-hover:mix-blend-multiply`}
+      />
       <Bar percent={entry.percentFill} color={entry.color} />
       <Label title={entry.title} subtitle={entry.subtitle} />
     </Col>
