@@ -94,7 +94,7 @@ const Video = ({
   const link = formatLink(src, startTimestamp);
   console.log(link);
   return (
-    <Col className="px-4">
+    <Col>
       <iframe src={link} width={"100%"} className="aspect-video" />
     </Col>
   );
