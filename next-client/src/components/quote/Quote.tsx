@@ -51,7 +51,10 @@ export function Quote({
     <Col gap={gap}>
       {quote.reference.data[0] === "video" ? (
         <Col gap={gap}>
-          <Video src={quote.reference.data[1].link} />
+          <Video
+            src={quote.reference.data[1].link}
+            startTimestamp={quote.reference.data[1].beginTimestamp}
+          />
         </Col>
       ) : null}
       <QuoteText text={quote.text} />
@@ -76,8 +79,14 @@ export function Quotes({ quotes }: { quotes: schema.Quote[] }) {
   );
 }
 
-const Video = ({ src }: { src: string }) => {
-  const link = formatLink(src);
+const Video = ({
+  src,
+  startTimestamp,
+}: {
+  src: string;
+  startTimestamp: string;
+}) => {
+  const link = formatLink(src, startTimestamp);
   console.log(link);
   return (
     <Col className="px-4">
@@ -86,16 +95,25 @@ const Video = ({ src }: { src: string }) => {
   );
 };
 
-const formatLink = (link: string) => {
+const formatLink = (link: string, beginTimestamp: string) => {
   const url = new URL(link);
-  if (url.hostname.includes("vimeo")) return formatVimeoLink(link);
-  return link;
+  if (url.hostname.includes("vimeo"))
+    return formatVimeoLink(link, beginTimestamp);
+  else if (process.env.NODE_ENV === "development") {
+    throw new Error(
+      "Video links from sources other than Vimeo are not supported",
+    );
+  } else {
+    return link;
+  }
 };
 
-const formatVimeoNonEmbeddedLink = (link: string) => {
+const formatVimeoNonEmbeddedLink = (link: string, beginTimestamp: string) => {
   const url = new URL(link);
-  return `https://player.vimeo.com/video${url.pathname}`;
+  return `https://player.vimeo.com/video${url.pathname}#t=${beginTimestamp}`;
 };
 
-const formatVimeoLink = (link: string) =>
-  link.includes("player") ? link : formatVimeoNonEmbeddedLink(link);
+const formatVimeoLink = (link: string, beginTimestamp: string) =>
+  link.includes("player")
+    ? link
+    : formatVimeoNonEmbeddedLink(link, beginTimestamp);
