@@ -33,7 +33,7 @@ const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
  */
 const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
   const usedAnonNums = sourceRows
-    .map((r) => r.interview.match(/Anonymous #(\d+)/))
+    .map((r) => r.interview && r.interview.match(/Anonymous #(\d+)/))
     .map((expArr) => (expArr ? parseInt(expArr[1]) : null))
     .filter((val) => val !== null)
     .map(Math.abs);
@@ -55,13 +55,22 @@ const buildSourceMap = (sourceRows: schema.SourceRow[]) => {
   return sourceRows.reduce((accum, curr) => {
     accum[curr.id!] = {
       id: uuid(),
-      interview: curr.interview ?? genAnon(),
-      data: [
-        "text",
-        {
-          text: curr.comment!,
-        },
-      ],
+      interview: curr.interview || genAnon(),
+      data: curr.video
+        ? [
+            "video",
+            {
+              text: curr.comment!,
+              link: curr.video,
+              timestamp: curr.timestamp!,
+            },
+          ]
+        : [
+            "text",
+            {
+              text: curr.comment!,
+            },
+          ],
     };
     return accum;
   }, {} as SourceMap);
@@ -166,30 +175,57 @@ const buildClaimsMap = (
   }, {} as ClaimMap);
 };
 
+const makeReference = (
+  source: schema.Source,
+  claim: schema.LLMClaim,
+): schema.Referece => {
+  if (source.data[0] === "video" && source.data[1].timestamp === undefined) {
+    console.log("HERE", source);
+  }
+  switch (source.data[0]) {
+    case "text":
+      return {
+        id: uuid(),
+        sourceId: source.id,
+        interview: source.interview,
+        data: [
+          "text",
+          {
+            startIdx: getReferenceStartIndex(claim, source.data[1].text),
+            endIdx: getReferenceEndIndex(claim, source.data[1].text),
+          },
+        ],
+      };
+    case "video":
+      return {
+        id: uuid(),
+        sourceId: source.id,
+        interview: source.interview,
+        data: [
+          "video",
+          {
+            link: source.data[1].link,
+            beginTimestamp: source.data[1].timestamp,
+            endTimestamp: undefined,
+          },
+        ],
+      };
+    case "audio": {
+      throw new Error("Audio reference not implemented yet");
+    }
+    default: {
+      throw new Error("Invalid source in pipeline - makeReference");
+    }
+  }
+};
+
 const getQuote = (
   claim: schema.LLMClaim,
   sourceMap: SourceMap,
 ): schema.Quote => ({
   id: uuid(),
   text: claim.quote,
-  reference: {
-    id: uuid(),
-    interview: sourceMap[claim.commentId!].interview,
-    sourceId: sourceMap[claim.commentId!].id,
-    data: [
-      "text",
-      {
-        startIdx: getReferenceStartIndex(
-          claim,
-          (sourceMap[claim.commentId!].data as schema.TextMediaSource)[1].text,
-        ),
-        endIdx: getReferenceEndIndex(
-          claim,
-          (sourceMap[claim.commentId!].data as schema.TextMediaSource)[1].text,
-        ),
-      },
-    ],
-  },
+  reference: makeReference(sourceMap[claim.commentId!], claim),
 });
 
 const getReferenceStartIndex = (clm: schema.LLMClaim, fullText: string) =>
@@ -235,6 +271,7 @@ export const getReportDataObj = (
   });
 };
 
+// TODO leaving this out because it hasn't been implemented yet.
 // const buildStageData: schema.PipelineStepData = {
 //   temperature: 0,
 //   batchSize: 0,

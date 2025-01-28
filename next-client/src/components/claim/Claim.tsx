@@ -12,7 +12,7 @@ import {
   HoverCardTrigger,
 } from "../elements";
 import * as schema from "tttc-common/schema";
-import { QuoteText } from "../quote/Quote";
+import { Quote } from "../quote/Quote";
 import { getQuotes } from "tttc-common/morphisms";
 import useOutsideClick from "@src/lib/hooks/useOutsideClick";
 
@@ -49,13 +49,12 @@ export function ClaimCard({ claim }: { claim: schema.Claim }) {
     <Col gap={4}>
       <ClaimHeader variant="hovercard" claim={claim} />
       <Col gap={2}>
-        {getQuotes(claim).map((quote) => (
-          <QuoteText
+        {getQuotes(claim).map((quote, i) => (
+          <Quote
             key={quote.id}
-            text={quote.text}
-            // Added parsing here since reports generated prior to this commit that use schema
-            // - do not get assigned a default interview tag
-            interview={schema.reference.parse(quote.reference).interview}
+            quote={quote}
+            gap={2}
+            withSeperation={getQuotes(claim).length - 1 !== i}
           />
         ))}
       </Col>
@@ -94,7 +93,7 @@ function ShowHoverQuote({
         </Button>
       </HoverCardTrigger>
       <HoverCardPortal>
-        <HoverCardContent side="top" avoidCollisions={false}>
+        <HoverCardContent sideOffset={-1} side="top" avoidCollisions={false}>
           <ClaimCard claim={claim} />
         </HoverCardContent>
       </HoverCardPortal>
