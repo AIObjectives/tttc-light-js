@@ -18,10 +18,12 @@ export function QuoteCard({ quote }: { quote: schema.Quote }) {
 
 export function QuoteText({
   text,
+  interview = "Anonymous",
   className,
   iconClassName,
 }: {
   text: string | JSX.Element;
+  interview: string;
   className?: string;
   iconClassName?: string;
 }) {
@@ -32,7 +34,10 @@ export function QuoteText({
         <Icons.Quote className={cn("h-4 w-4 fill-black", iconClassName)} />
       </div>
       <div>
-        <p className={cn("", className)}>{text}</p>
+        <p className={cn("", className)}>
+          {text}
+          <span className="text-muted-foreground"> - {interview}</span>
+        </p>
       </div>
     </Row>
   );
@@ -57,7 +62,7 @@ export function Quote({
           />
         </Col>
       ) : null}
-      <QuoteText text={quote.text} />
+      <QuoteText text={quote.text} interview={quote.reference.interview} />
       {withSeperation ? <Separator /> : null}
     </Col>
   );

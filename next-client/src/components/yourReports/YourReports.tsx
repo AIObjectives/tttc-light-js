@@ -14,6 +14,12 @@ import Icons from "@src/assets/icons";
 import { ReportRef } from "tttc-common/firebase";
 import Link from "next/link";
 
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .map((word) => word[0])
+    .join("");
+
 const reportLink = (uri: string) =>
   location.protocol +
   "//" +
@@ -60,7 +66,7 @@ function YourReportsHeader({
     <Row gap={4} className="p-8">
       <Avatar className="h-32 w-32">
         <AvatarImage className="flex-shrink-0 object-fill" src={pictureUri} />
-        <AvatarFallback>YOU</AvatarFallback>
+        <AvatarFallback>{getInitials(name)}</AvatarFallback>
       </Avatar>
       <Col gap={2} className="justify-center">
         <h3>{name}</h3>

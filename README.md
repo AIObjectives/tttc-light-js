@@ -3,21 +3,32 @@
 **Note**: this repo is under very active construction with a new separate Python server for LLM calls—details below are likely to change!
 Please create a GitHub Issue for anything you encounter.
 
-Latest instructions for local development are [here.](/.contributing.md)
+Familiar with this repo? See the [local dev quickstart](examples/README.md#quickstart)
 
-[Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source LLM-enabled interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subropics.
+[Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source LLM-enabled interface for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subtopics.
 
 This repo will allow you to setup your own instance of T3C.
 The basic workflow is
 
-1. Submit a CSV file or Google Sheet with your survey data, either through the NextJS client or the Express API.
+1. Submit a CSV file or Google Sheet with your survey data, either through the NextJS client in a browser, the Express API, or the Python FastAPI (coming soon)
 2. The backend app will use an LLM to parse your data.
 3. The backend app will upload a JSON file to a Google Cloud Storage Bucket that you provide.
-4. Your report can be viewed by going to `http://[next client url]/report/[encoded url for your JSON file]`.
+4. Your report can be viewed by going to `http://[NextJS client url]/report/[encoded url for your JSON file]`.
 
 If you want to use Talk to the City without any setup, you can go to our website at TBD and follow the instructions on [how to use T3C](#usage)
 
-## Setup
+# Local development for T3C
+
+## TL;DR
+
+- Clone this repo
+- Set up dependencies: Google Cloud, Firebase, Redis
+- Configure Pyserver and your environment via .env files
+- Launch a local instance via `npm run dev`
+
+## Setup & configuration
+
+### Clone this repo
 
 Clone the repo to your local computer:
 
@@ -29,9 +40,7 @@ or if you have git ssh
 
 ### Google Cloud Storage and Services
 
-T3C currently only supports using Google Cloud for storing report data out of the box.
-
-First create a new storage bucket:
+T3C currently only supports using Google Cloud for storing report data. First create a new storage bucket:
 
 - Create a Google Cloud project and a Google Cloud Storage bucket
   - When you get to the section "Choose how to control access to objects", uncheck "Enforce public access prevention"
@@ -56,49 +65,91 @@ Set up gcloud SDK on your machine
 - `gcloud config set project your-project-name`
 - `gcloud auth configure-docker`
 
-### .env
+### Firebase
 
-You will need to add two .env files
+To use T3C, you'll need to create a Firebase project.
+
+- Go to the [Firebase Console](https://firebase.google.com/) and click "Create a project" or "Add project"
+- Enter a project name
+- Click "Create project"
+- Once your project is created, you'll need to register your app. In the project overview:
+  - Click on web
+  - Register app with a nickname
+  - Copy the provided Firebase configuration object
+  - Optional: we suggest adding this object to `/express-server/configuration`. This folder is not tracked by git and will make the configuration easier to import later.
+- TODO setup Auth and Firestore
+
+### Redis
+
+For local development, you can install Redis by following [these instructions](https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/). Make sure to start the Redis server on your computer if you want to run it locally.
+If you're working on a Mac, the steps are
+
+```
+brew install redis
+redis-server
+```
+
+### Pyserver setup
+
+- Go to `/pyserver` and run: `python -m venv venv`
+- Run `source ./.venv/bin/activate` to run the virtual environment
+- Install the project requirements by running `pip install -r requirements.txt`
+- You can test to see if it worked by running `fastapi dev main.py` and see if the server spins up.
+
+### env files
+
+You will need to add two .env files, one in `express-server` and one in `next-client`. You can find example .env files at the root of those directories.
 
 #### express-server/.env
 
-Encode your google credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
+Encode your Google Credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
 
 ```
-export GCLOUD_STORAGE_BUCKET=some-bucket-name
-export GOOGLE_CREDENTIALS_ENCODED=some-alphanumeric-string-from-previous-step
-export CLIENT_BASE_URL=http://wherever-your-client-is
-
-# either
-export OPENAI_API_KEY=sk-something-something
-export OPENAI_API_KEY_PASSWORD=some-password
-# or
-export ANTHROPIC_API_KEY=sk-something-something
-export ANTHROPIC_API_KEY_PASSWORD=some-password
+export OPENAI_API_KEY=
+export GCLOUD_STORAGE_BUCKET= name of your bucket
+export CLIENT_BASE_URL= for dev: http://localhost:3000
+export GOOGLE_CREDENTIALS_ENCODED= base 64 encoding of your credentials
+export PYSERVER_URL= for dev: http://localhost:8000
+export FIREBASE_DATABASE_URL= found in your firebase project
+export REDIS_HOST= for dev: localhost
+export REDIS_PORT= for dev: 6379
+export GOOGLE_APPLICATION_CREDENTIALS= path to your credentials. Suggest using ./credentials
+export NODE_ENV= dev | prod
 ```
 
 #### next-client/.env
 
 ```
-export PIPELINE_EXPRESS_URL=http://wherever-youre-hosting-backend/generate
+
+export PIPELINE_EXPRESS_URL= # This is by default localhost:8080 on dev
+# Firebase keys below should be found on your firebase project. These are not sensitive and can be shared with the client.
+export NEXT_PUBLIC_FIREBASE_API_KEY=
+export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+export NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+export NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+export NEXT_PUBLIC_FIREBASE_APP_ID=
 ```
 
 Copy this file to .env.local in the same directory if you plan to run the dev server (`npm run dev`).
 
 You can add different types of .env files based on your needs for testing, dev, prod, etc. You can read more in the [NextJS docs](https://nextjs.org/docs/pages/building-your-application/configuring/environment-variables#default-environment-variables)
 
-### Local Instance
+## Running a local instance
 
-(see [this](./contributing.md) to run in dev mode instead of prod)
+Note: There is a bug that prevents `/common` from being built correctly. For your first time, before doing anything else, go to `/common` and run `npm i && npm run build`. After this, you should be able to follow the other steps. If the project fails to start in dev, try rebuilding common first.
 
-If you want to run a local version of the app that's not publically accessible:
+To launch a local instance:
 
-1. Open up your terminal and navigate to the repo folder (e.g. `/Desktop/tttc-light-js`)
-2. If this is your first time, build the repo: `cd commmon && npm run build`.
-3. Run `npm run dev` to start the dev server. This will run three servers in new terminal windows: the `next-client` frontend on `localhost:3000`, the `express-server` backend on `localhost:8080`, and the `pyserver` Python FastAPI server for the LLM calls on `localhost:8000`. A fourth terminal window will show a listener for `/common` that rebuilds the JS files when changes are made.
-4. This build will be optimized for production.
+- Make sure you have completed the setup steps above
+- From the root of the repo, run `npm run dev`.
+- This will launch three servers:
+  - the `next-client` frontend on `localhost:3000`
+  - the `express-server` backend on `localhost:8080` and
+  - the `pyserver` Python FastAPI server for the LLM calls on `localhost:8000`.
+    Additionally, a watcher will spawn that rebuilds `common` when changes are made to it.
 
-#### Using docker locally (not recommended)
+### Using docker locally (not recommended)
 
 There should be no need to use docker for local development, except when working on the Dockerfile or testing something docker-related, in which case you might want to use these scripts:
 
@@ -107,7 +158,7 @@ There should be no need to use docker for local development, except when working
 ./bin/docker-run.sh   # run
 ```
 
-### Remote Instance
+### Running a remote Instance
 
 #### Add Docker Image
 
@@ -126,57 +177,65 @@ Your cloud instance is now ready to use!
 
 To upload a new image (e.g. after a fresh git pull), deploy a new docker image to the same instance:
 
-#### Host Next Client
+#### Host NextJS Client
 
 See here for [how to deploy your NextJS app](https://nextjs.org/docs/pages/building-your-application/deploying).
 
-## Usage
+# Usage
 
-### Next Client
+## NextJS client in a browser
 
-This process should work, regardless of whether the app is built locally or remotely. However, the Next client can only take csvs. To submit a Google Sheet, use the API directly.
+This process should work, regardless of whether the app is built locally or remotely. However, the NextJS client can only take CSVs. To submit a Google Sheet, use the API directly.
 
-You can generate your data and view your reports using the Next client.
+You can generate your data and view your reports using the NextJS client.
 
 To do so:
 
-1. Navigate to wherever your Next client is being hosted.
-2. On the homepage you should see a form to submit your data.
-3. Enter the title, your [api key](#api-key), and add the csv file.
-4. Optionally: You can click on the advanced settings for further customization.
-5. Click submit. It should soon after give you the url for where your JSON data will be stored and the url to view the report.
+1. Navigate to wherever your NextJS client is hosted.
+2. On the [hosting location]/create, you should see a form to submit your data. For local development, this defaults to `http://localhost:3000/create`.
+3. Enter the title, description, your [api key](#api-key), and add the CSV file.
+4. Optionally, click on the advanced settings for further customization.
+5. Click submit, and you will shortly see a url for where your JSON data will be stored and the url to view the report.
 6. Depending on how large your file was, it should take anywhere from 30 seconds to 15 minutes to finish. So bookmark the link and check on it periodically.
-7. Once the JSON data has been uploaded to Google Cloud, you can view the report by going to` http://[client url]/report/[encoded uri for your stored JSON object]`. You can then save the report from your browser or add it to your webpage using an iframe.
+7. Once the JSON data has been uploaded to Google Cloud, you can view the report by going to` http://[client url]/report/[encoded URI for your stored JSON object]`. In local development, this will have the `http://localhost:3000/report/https%3A%2F%2Fstorage.googleapis.com%2F[GCLOUD_STORAGE_BUCKET]%2F[generated report id]`. You can copy & paste and substitute in the values for the generated report id (different for each report you create) and the GCLOUD_STORAGE_BUCKET (likely the same for all testing sessions). Keep in mind that the separator is %2F and not the traditional URL slash.
+8. You can then save the report from your browser or add it to your webpage using an iframe. Additionally, if you are signed in, it will save a link to your report at /myReports
 
-Note: The backend Express app does not save your API keys on the server. The Next app will save your API keys (and other inputs) in your browser's session storage, which should be secure, and will delete when you close your browser tab.
+Note: The backend Express app does not save your API keys on the server. The NextJS app will save your API keys (and other inputs) in your browser's session storage, which should be secure, and will delete when you close your browser tab.
 
-### API
+## API Usage
 
 You can submit your data directly to the Express API using whatever method you're comfortable with.
-Note: You must have the Next client running to view your report. Otherwise, it will just generate the JSON data.
+Note: You must have the NextJS client running to view your report. Otherwise, it will just generate the JSON data.
 
-The enpoint to generate reports is `POST /generate` and it expects a JSON body of the following type:
+The enpoint to generate reports is `POST /create` and it expects a JSON body of the following type:
 
 ```
 export type Options = {
-  model?: optional;
-  apiKey: string;       // a valid OpenAI key with gpt-4 access (or a password to use the server's key)
-  data: SourceRow[];     // input data in JSON format, see next section for SourceRow definition
-  title: string;         // title for the report, defaults to ""
-  question: string;      // the question asked to participants, defaults to ""
-  pieCharts?: {title:string, items: {label:string, count:number}[]}[]; // optional array if you want pie charts in your report
-  description: string;   //  intro  or abstract to include at the start of the report, defaults to ""
-  batchSize?: number;    // max number of parrallel calls for gpt-4, defaults to 5
-  filename?: string;     // where to store the report on gcloud (it generate a name if none is provided)
-  systemInstructions?: string;      // optional additional instructions for system prompt
-  clusteringInstructions?: string;  // optional additional instructions for clustering step
-  extractionInstructions?: string;  // optional additional instructions for extraction step
-  dedupInstructions?: string;       // optional additional instructions for deduplication step
-  googleSheet?: {url: string, pieChartColumns?:string[], filterEmails?: string[], onSubmissionPerEmail: boolean} // optional data input using google sheets
+  userConfig: {
+    apiKey: string,
+    title: string,
+    description: string,
+    systemInstructions: string,
+    clusteringInstructions: string,
+    extractionInstructions: string,
+    dedupInstructions: string,
+  },
+  data: ['csv', {
+      comment: string,
+      id: string,
+      interview: string | undefined,
+      video: string | undefined,
+      timestamp: string | undefined,
+    }[]] | ['googlesheet', {
+      url: string,
+      pieChartColumns: string[],
+      filterEmails: string[],
+      oneSubmissionPerEmail: boolean,
+      }]
 };
 ```
 
-The enpoint is implemented in `express-pipeline/src/server.ts`. You can see an example of it being used in `next-client/src/features/actions/SubmitAction.ts` and in the `examples/` folder.
+The enpoint is implemented in `express-server/src/server.ts`. You can see an example of it being used in `next-client/src/features/actions/SubmitAction.ts` and in the `examples/` folder.
 
 The data field must contain an array of objects of the following type:
 
@@ -192,7 +251,7 @@ export type SourceRow = {
 };
 ```
 
-## API Key
+### Acquiring API keys for LLMs
 
 If your organization does not have a key for ChatGPT or Claude, you can obtain one by:
 
@@ -202,6 +261,6 @@ If your organization does not have a key for ChatGPT or Claude, you can obtain o
 4. Go the API keys section and press the button to generate a new API key.
 5. Save this key and not share it.
 
-## Development and Contributing
+# Development and Contributing
 
-See DEV.md
+Some work in progress—please see the [contributor guide!](/contributing.md)

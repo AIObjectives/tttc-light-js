@@ -27,14 +27,35 @@ const colorArr = schema.topicColors.options
 const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
 
 /**
+ * If the data is missing an interview attribution, assign a anonymous name.
+ *
+ * This function takes the source rows, sees if the pattern 'Anonymous #n' is used. Start from the last number.
+ */
+const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
+  const usedAnonNums = sourceRows
+    .map((r) => r.interview && r.interview.match(/Anonymous #(\d+)/))
+    .map((expArr) => (expArr ? parseInt(expArr[1]) : null))
+    .filter((val) => val !== null)
+    .map(Math.abs);
+
+  const maxNum = usedAnonNums.length > 0 ? Math.max(...usedAnonNums) : 0;
+
+  let i = maxNum;
+  return () => {
+    i++;
+    return `Anonymous #${i}`;
+  };
+};
+
+/**
  * Takes source rows and builds a map from row id -> Source
  */
-const buildSourceMap = (
-  sourceRows: schema.SourceRow[],
-): { [key: string]: schema.Source } =>
-  sourceRows.reduce((accum, curr) => {
+const buildSourceMap = (sourceRows: schema.SourceRow[]) => {
+  const genAnon = makeAnonymousInterview(sourceRows);
+  return sourceRows.reduce((accum, curr) => {
     accum[curr.id!] = {
       id: uuid(),
+      interview: curr.interview || genAnon(),
       data: curr.video
         ? [
             "video",
@@ -53,6 +74,7 @@ const buildSourceMap = (
     };
     return accum;
   }, {} as SourceMap);
+};
 
 const llmClaimToSchemaClaim = (
   llmClaim: schema.LLMClaim,
@@ -165,6 +187,7 @@ const makeReference = (
       return {
         id: uuid(),
         sourceId: source.id,
+        interview: source.interview,
         data: [
           "text",
           {
@@ -177,6 +200,7 @@ const makeReference = (
       return {
         id: uuid(),
         sourceId: source.id,
+        interview: source.interview,
         data: [
           "video",
           {

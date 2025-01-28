@@ -245,8 +245,7 @@ export function ReportTitle({
       <Row gap={4} className="h-5">
         {/* Number of people */}
         <TextIcon icon={<Icons.People size={16} className="self-center" />}>
-          {/* {nPeople} people */} {/* ! temp removed for QA testing*/}
-          416 participants
+          {nPeople} people
         </TextIcon>
         {/* Date */}
         <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
