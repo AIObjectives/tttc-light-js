@@ -94,7 +94,7 @@ const config = {
         },
         theme_brown: {
           DEFAULT: "hsl(var(--theme-brown))",
-          accent: "hsl(var(--theme-accent-accent))",
+          accent: "hsl(var(--theme-brown-accent))",
         },
         theme_gray: {
           DEFAULT: "hsl(var(--theme-gray))",
