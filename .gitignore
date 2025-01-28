@@ -9,5 +9,7 @@ dist
 *storybook.log
 __pycache__
 **/*/credentials/*
-!**/*/credentials/.keep
+/utils/**/output/*
+/utils/**/input/*
+!**/*/.keep
 */tsconfig.tsbuildinfo
