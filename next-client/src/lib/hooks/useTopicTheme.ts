@@ -14,6 +14,7 @@ const themeColorMap = {
     borderAccent: "border-theme_violet-accent",
     text: "text-theme_violet",
     textHover: "hover:text-theme_violet",
+    groupHoverBgAccent: "group-hover:bg-theme_violet-accent",
   },
   blueSea: {
     bg: "bg-theme_blueSea",
@@ -24,6 +25,7 @@ const themeColorMap = {
     borderAccent: "border-theme_blueSea-accent",
     text: "text-theme_blueSea",
     textHover: "hover:text-theme_blueSea",
+    groupHoverBgAccent: "group-hover:bg-theme_blueSea-accent",
   },
   blueSky: {
     bg: "bg-theme_blueSky",
@@ -34,6 +36,7 @@ const themeColorMap = {
     borderAccent: "border-theme_blueSky-accent",
     text: "text-theme_blueSky",
     textHover: "hover:text-theme_blueSky",
+    groupHoverBgAccent: "group-hover:bg-theme_blueSky-accent",
   },
   greenLeaf: {
     bg: "bg-theme_greenLeaf",
@@ -44,6 +47,7 @@ const themeColorMap = {
     borderAccent: "border-theme_greenLeaf-accent",
     text: "text-theme_greenLeaf",
     textHover: "hover:text-theme_greenLeaf",
+    groupHoverBgAccent: "group-hover:bg-theme_greenLeaf-accent",
   },
   greenLime: {
     bg: "bg-theme_greenLime",
@@ -54,6 +58,7 @@ const themeColorMap = {
     borderAccent: "border-theme_greenLime-accent",
     text: "text-theme_greenLime",
     textHover: "hover:text-theme_greenLime",
+    groupHoverBgAccent: "group-hover:bg-theme_greenLime-accent",
   },
   yellow: {
     bg: "bg-theme_yellow",
@@ -64,6 +69,7 @@ const themeColorMap = {
     borderAccent: "border-theme_yellow-accent",
     text: "text-theme_yellow",
     textHover: "hover:text-theme_yellow",
+    groupHoverBgAccent: "group-hover:bg-theme_yellow-accent",
   },
   red: {
     bg: "bg-theme_red",
@@ -74,6 +80,7 @@ const themeColorMap = {
     borderAccent: "border-theme_red-accent",
     text: "text-theme_red",
     textHover: "hover:text-theme_red",
+    groupHoverBgAccent: "group-hover:bg-theme_red-accent",
   },
   purple: {
     bg: "bg-theme_purple",
@@ -84,6 +91,7 @@ const themeColorMap = {
     borderAccent: "border-theme_purple-accent",
     text: "text-theme_purple",
     textHover: "hover:text-theme_purple",
+    groupHoverBgAccent: "group-hover:bg-theme_purple-accent",
   },
   brown: {
     bg: "bg-theme_brown",
@@ -94,6 +102,7 @@ const themeColorMap = {
     borderAccent: "border-theme_brown-accent",
     text: "text-theme_brown",
     textHover: "hover:text-theme_brown",
+    groupHoverBgAccent: "group-hover:bg-theme_brown-accent",
   },
 } as const;
 
@@ -160,6 +169,11 @@ type BorderClass = ColorVariantMap["border"];
 type BorderAccentClass = ColorVariantMap["borderAccent"];
 
 /**
+ * Set of all group-hover:bg-accent
+ */
+type GroupHoverBgAccent = ColorVariantMap["groupHoverBgAccent"];
+
+/**
  * An implementation of MurmurHash3's mixing function.
  * Returns a number between 0 and 1.
  *
@@ -223,4 +237,5 @@ export type {
   BackgroundClass,
   BorderAccentClass,
   BorderClass,
+  GroupHoverBgAccent,
 };
