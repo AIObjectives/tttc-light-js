@@ -93,7 +93,7 @@ function ShowHoverQuote({
         </Button>
       </HoverCardTrigger>
       <HoverCardPortal>
-        <HoverCardContent sideOffset={-3} side="top" avoidCollisions={false}>
+        <HoverCardContent sideOffset={-1} side="top" avoidCollisions={false}>
           <ClaimCard claim={claim} />
         </HoverCardContent>
       </HoverCardPortal>
