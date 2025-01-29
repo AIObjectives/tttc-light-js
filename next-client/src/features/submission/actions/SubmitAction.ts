@@ -44,7 +44,7 @@ export default async function submitAction(
       "explanation" : string // reasoning for why you synthesized this cruxClaim from the participants' perspective
     }
   }
-  `
+  `;
   const config: LLMUserConfig = llmUserConfig.parse({
     apiKey: formData.get("apiKey"),
     title: formData.get("title"),

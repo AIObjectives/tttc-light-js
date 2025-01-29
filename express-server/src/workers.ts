@@ -56,7 +56,12 @@ const setupPipelineWorker = (connection: Redis) => {
 
       const options: schema.OldOptions = { ...defaultConfig, ...config };
 
-      const [topicTreeLLMConfig, claimsLLMConfig, dedupLLMConfig, cruxesLLMConfig] = [
+      const [
+        topicTreeLLMConfig,
+        claimsLLMConfig,
+        dedupLLMConfig,
+        cruxesLLMConfig,
+      ] = [
         options.clusteringInstructions,
         options.extractionInstructions,
         options.dedupInstructions,
@@ -107,12 +112,10 @@ const setupPipelineWorker = (connection: Redis) => {
         llm: claimsLLMConfig,
       });
 
-      console.log(
-        "Step 2.5: Optional: extract cruxes",
-      );
+      console.log("Step 2.5: Optional: extract cruxes");
       const { cruxClaims } = await cruxesPipelineStep(env, {
         topics: taxonomy,
-        crux_tree : claims_tree,
+        crux_tree: claims_tree,
         llm: cruxesLLMConfig,
       });
       console.log(cruxClaims);

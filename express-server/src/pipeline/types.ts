@@ -23,4 +23,8 @@ export type CruxesStep = ConstructPipelineStep<
   apiPyserver.CruxesRequest
 >;
 
-export type PipelineStep = TopicTreeStep | ClaimsStep | SortClaimTreeStep | CruxesStep;
+export type PipelineStep =
+  | TopicTreeStep
+  | ClaimsStep
+  | SortClaimTreeStep
+  | CruxesStep;

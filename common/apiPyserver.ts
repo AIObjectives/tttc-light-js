@@ -26,7 +26,7 @@ export const pipelineSteps = z.enum([
   "topic_tree",
   "claims",
   "sort_claims_tree",
-  "cruxes"
+  "cruxes",
 ]);
 export type PipelineSteps = z.infer<typeof pipelineSteps>;
 
