@@ -59,7 +59,7 @@ class ClaimTreeLLMConfig(BaseModel):
   sort : str
 
 class CruxesLLMConfig(BaseModel):
-  tree: dict
+  crux_tree: dict
   llm: LLMConfig
   topics: list
 
@@ -190,10 +190,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-               group=exp_group_name,
-               config={
-                 "model" : req.llm.model_name
-               })
+               group=exp_group_name)
       comment_lengths = [len(c.text) for c in req.comments]
       num_topics = len(tree["taxonomy"])
       subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
@@ -212,6 +209,8 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
         "subtopic_bins" : subtopic_bins,
         "rows_to_tree" : wandb.Table(data=comms_tree_list,
                                      columns = ["comments", "taxonomy"]),
+        "step_taxonomy/model" : req.llm.model_name,
+        "step_taxonomy/prompt" : req.llm.user_prompt,                   
 
         # token counts
         "U_tok_N/taxonomy": usage.total_tokens,
@@ -444,17 +443,16 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group=exp_group_name,
-                 config={
-                   "model" : req.llm.model_name
-                  })
+                 group=exp_group_name)
       wandb.log({
         "U_tok_N/claims" : TK_2_TOT,
         "U_tok_in/claims": TK_2_IN,
         "U_tok_out/claims" : TK_2_OUT,
         "rows_to_claims" : wandb.Table(
                            data=comms_to_claims_html,
-                           columns = ["comments", "claims"])
+                           columns = ["comments", "claims"]),
+         "step_claims/model" : req.llm.model_name,
+         "step_claims/prompt" : req.llm.user_prompt
       })
     except:
       print("Failed to log wandb run")
@@ -856,15 +854,16 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group = exp_group_name,
-                 config = {"model" : config.MODEL, "route" : "sort_claims_tree"})
+                 group = exp_group_name)
       report_data = [[json.dumps(full_sort_tree, indent=2)]]
       wandb.log({
         "U_tok_N/dedup" : TK_TOT,
         "U_tok_in/dedup": TK_IN,
         "U_tok_out/dedup" : TK_OUT,
         "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
-        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
+        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"]),
+        "step_dedup/model" : req.llm.model_name,
+        "step_dedup/prompt" : req.llm.user_prompt
       })
     except:
       print("Failed to create wandb run")
@@ -993,9 +992,9 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
   topic_desc = topic_desc_map(req.topics)
   
   # TODO: can we get this from client?
-  speaker_map = get_speakers_map(req.tree)
+  speaker_map = get_speakers_map(req.crux_tree)
   print(speaker_map)
-  for topic, topic_details in req.tree.items():
+  for topic, topic_details in req.crux_tree.items():
     subtopics = topic_details["subtopics"]
     for subtopic, subtopic_details in subtopics.items():
       # all claims for subtopic
@@ -1023,6 +1022,10 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
         disagree = crux["disagree"]
         explanation = crux["explanation"]
 
+        # let's sanitize the agree/disagree:
+        agree = [a.split(":")[0] for a in agree]
+        disagree = [a.split(":")[0] for a in disagree]
+
         # add full name to each speaker
         named_agree = [a + ":" + ids_to_speakers[a] for a in agree]
         named_disagree = [d + ":" + ids_to_speakers[d] for d in disagree]
@@ -1038,10 +1041,8 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group=exp_group_name,
-                 config={
-                   "model" : req.llm.model_name,
-                  })
+                 group=exp_group_name
+                 )
 
       # compute confusion matrix
       speaker_labels = sorted(speaker_map.keys())
@@ -1077,7 +1078,9 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
         "U_tok_out/cruxes" : TK_OUT,
         "crux_explain" : wandb.Table(data=crux_data,
                                columns = ["topic", "description", "claims", "crux_explain"]),
-        "crux_YN" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"])
+        "crux_YN" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"]),
+        "step_cruxes/model" : req.llm.model_name,
+        "step_cruxes/prompt" : req.llm.user_prompt
       })
       wandb.log({
         "crux_binary_conf_mat" : wandb.Table(data=conf_mat, columns = cols),

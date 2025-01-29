@@ -7,6 +7,7 @@ import { storeJSON } from "./storage";
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { topicTreePipelineStep } from "./pipeline/topicTreeStep";
 import { claimsPipelineStep } from "./pipeline/claimsStep";
+import { cruxesPipelineStep } from "./pipeline/cruxesStep";
 import { sortClaimsTreePipelineStep } from "./pipeline/sortClaimsTree";
 import { randomUUID } from "crypto";
 import * as firebase from "./Firebase";
@@ -42,6 +43,7 @@ const setupPipelineWorker = (connection: Redis) => {
         clusteringInstructions: "",
         extractionInstructions: "",
         dedupInstructions: "",
+        cruxInstructions: "",
         batchSize: 2, // lower to avoid rate limits! initial was 10,
       };
 
@@ -54,10 +56,11 @@ const setupPipelineWorker = (connection: Redis) => {
 
       const options: schema.OldOptions = { ...defaultConfig, ...config };
 
-      const [topicTreeLLMConfig, claimsLLMConfig, dedupLLMConfig] = [
+      const [topicTreeLLMConfig, claimsLLMConfig, dedupLLMConfig, cruxesLLMConfig] = [
         options.clusteringInstructions,
         options.extractionInstructions,
         options.dedupInstructions,
+        options.cruxInstructions,
       ].map((instructions) => makeLLMConfig(instructions));
 
       const tracker: schema.Tracker = {
@@ -103,6 +106,16 @@ const setupPipelineWorker = (connection: Redis) => {
         comments,
         llm: claimsLLMConfig,
       });
+
+      console.log(
+        "Step 2.5: Optional: extract cruxes",
+      );
+      const { cruxClaims } = await cruxesPipelineStep(env, {
+        topics: taxonomy,
+        crux_tree : claims_tree,
+        llm: cruxesLLMConfig,
+      });
+      console.log(cruxClaims);
 
       console.log("Step 3: cleaning and sorting the taxonomy");
       await job.updateProgress({

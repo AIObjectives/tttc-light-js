@@ -79,14 +79,17 @@ Return a JSON object of the form {
 
 And now, here are the claims:"""
 
-WANDB_PROJECT_NAME = "kvothe"
+WANDB_PROJECT_NAME = "chainmaille"
 
 CRUX_PROMPT = """
 I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
-identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
-which would best split the participants into two groups, based on all their
-statements on this topic: one group which would agree with the statement, and one which would disagree.
+identified by pseudonyms like "Person 1" or "A". Please synthesize these claims into one new, specific, maximally controversial
+statement called a "cruxClaim". This cruxClaim should divide the participants into "agree" and "disagree" groups or sides,
+based on all their statements on this topic: one group which would agree with the statement, and one which would disagree.
 Please explain your reasoning and assign participants into "agree" and "disagree" groups.
+Make the cruxClaim as precise and unique as possible to the given topic and comments, and pick a cruxClaim that best balances the
+"agree" and "disagree" sides, with close to the same number of participants on each side.
+
 return a JSON object of the form
 {
   "crux" : {

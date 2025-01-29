@@ -26,6 +26,7 @@ export const pipelineSteps = z.enum([
   "topic_tree",
   "claims",
   "sort_claims_tree",
+  "cruxes"
 ]);
 export type PipelineSteps = z.infer<typeof pipelineSteps>;
 
@@ -115,6 +116,13 @@ const dupedClaims = z.object({
   subtopicName: z.string(),
   commentId: z.string(),
   duplicated: z.boolean(),
+});
+
+const cruxClaim = z.object({
+  cruxClaim: z.string(),
+  agree: z.array(z.string()),
+  disagree: z.array(z.string()),
+  explanation: z.string(),
 });
 
 /**
@@ -210,3 +218,19 @@ export const sortClaimsTreeResponse = z.object({
 });
 
 export type SortClaimsTreeResponse = z.infer<typeof sortClaimsTreeResponse>;
+
+//  ********************************
+//  * cruxes
+//  ********************************/
+
+export const cruxesRequest = z.object({
+  topics: partialTopic.array(),
+  crux_tree: claimsTree,
+  llm: llmConfig,
+});
+export type CruxesRequest = z.infer<typeof cruxesRequest>;
+
+export const cruxesReply = z.object({
+  data: cruxClaim.array(),
+  usage,
+});

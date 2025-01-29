@@ -210,23 +210,61 @@ def test_wb_cruxes_pipeline(comments=pets_conflict):
   cruxes = client.post("/cruxes/?log_to_wandb=tavern", json=request) #.json()["data"]
   json_print(cruxes.json()["data"])
 
+
+def test_from_json(json_file="deepseek_10_1.json"):
+
+  with open(json_file, 'r', encoding='utf-8') as jsonfile:
+    comments = json.load(jsonfile)
+
+  print("Step 1: Topic tree\n\n")
+  llm = base_llm
+  # fancier model for more precise deduplication
+  llm.update({"model_name" : "gpt-4o"})
+  llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
+  request ={"llm" : llm, "comments" : comments} 
+  taxonomy = client.post("/topic_tree/?log_to_wandb=full_log", json=request).json()["data"]
+  json_print(taxonomy)
+
+  print("\n\nStep 2: Claims\n\n")
+  llm.update({"model_name" : "gpt-4o"})
+  llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
+  request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" : taxonomy}}
+  claims = client.post("/claims/?log_to_wandb=full_log", json=request).json()["data"]
+  json_print(claims)
+
+  print("\n\nStep 3: Cruxes\n\n")
+  llm.update({"model_name" : "gpt-4o"})
+  llm.update({"user_prompt" : config.CRUX_PROMPT})
+  request ={"llm" : llm, "topics" : taxonomy, "crux_tree" : claims}
+  cruxes = client.post("/cruxes/?log_to_wandb=full_log", json=request) #.json()["data"]
+  print(cruxes)
+
+  print("\n\nStep 4: Also dedup & sort\n\n")
+  llm.update({"model_name" : "gpt-4o-mini"})
+  llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
+  request ={"llm" : llm, "tree" : claims,  "sort" : "numPeople"}
+  full_tree = client.put("/sort_claims_tree/?log_to_wandb=full_log", json=request)
+  print(full_tree)
+
 #############
 # Run tests #
 #-----------#
 client = TestClient(app)
-test_wb_cruxes_pipeline(fancy_scifi_15) #fancy_scifi_15)
+#test_from_json()
+
+#test_wb_cruxes_pipeline(fancy_scifi_15) #fancy_scifi_15)
 #test_topic_tree(fancy_scifi_10)
 #test_full_pipeline(fancy_scifi_10)
 #test_cruxes(pets_conflict)
 
-#test_full_pipeline(speaker_pets_3)
+test_full_pipeline(speaker_pets_3)
 #test_claims(longer_pets_15)
 #test_dupes()
 
 #test_topic_tree(speaker_pets_3)
 #test_claims()
 #test_dupes()
-test_full_pipeline(longer_pets_15)
+#test_full_pipeline(longer_pets_15)
 
 #test_wb_topic_tree()
 #test_wb_claims()
