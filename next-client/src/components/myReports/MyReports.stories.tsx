@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import YourReports, { ReportItem } from "./YourReports";
+import YourReports, { ReportItem } from "./MyReports";
 
 const meta = {
   title: "YourReports",
