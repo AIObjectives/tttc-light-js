@@ -11,7 +11,6 @@ import * as api from "tttc-common/api";
 import { Col, Row } from "../layout";
 import { Button, Spinner, TextArea } from "../elements";
 import { Input } from "../elements";
-import SubmitFormControl from "@src/features/submission/components/SubmitFormControl";
 import Icons from "@src/assets/icons";
 import { useCostEstimate } from "./hooks/useCostEstimate";
 import { useReactiveValue } from "@src/lib/hooks/useReactiveValue";
@@ -37,6 +36,8 @@ import * as prompts from "tttc-common/prompts";
 import { useUser } from "@src/lib/hooks/getUser";
 import { useAsyncState } from "@src/lib/hooks/useAsyncState";
 import { User } from "firebase/auth";
+import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 
 const fetchToken = async (
   user: User | null,
@@ -491,4 +492,28 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
       </Col>
     </Col>
   );
+}
+
+function FormLoading() {
+  return (
+    <Col gap={2} className="w-full h-full items-center justify-center">
+      <p>Processing your request, you'll be redirected shortly.</p>
+      <Spinner />
+    </Col>
+  );
+}
+
+function SubmitFormControl({
+  children,
+  response,
+}: React.PropsWithChildren<{ response: api.GenerateApiResponse | null }>) {
+  const { pending } = useFormStatus();
+  const router = useRouter();
+  useEffect(() => {
+    if (response !== null) {
+      router.push(`/report/${encodeURIComponent(response.jsonUrl)}`);
+    }
+  }, [response]);
+  if (pending) return <FormLoading />;
+  else return children;
 }
