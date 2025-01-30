@@ -1,11 +1,10 @@
 "use client";
-// ! TEMP PAGE FOR TESTING
 import { useUser } from "@src/lib/hooks/getUser";
 import { getUsersReports } from "../../lib/firebase/firestore";
 import { db } from "@src/lib/firebase/clientApp";
 import { useAsyncState } from "@src/lib/hooks/useAsyncState";
 import { useEffect, useState } from "react";
-import YourReports from "@src/components/yourReports/YourReports";
+import MyReports from "@src/components/myReports/MyReports";
 import { Spinner } from "@src/components/elements";
 
 function Center({ children }: React.PropsWithChildren) {
@@ -61,11 +60,7 @@ function MyReportsUI({ userId }: { userId: string }) {
 
   return (
     <div className="justify-items-center">
-      <YourReports
-        userName={user.displayName!}
-        reports={reports}
-        pictureUri={user?.photoURL || undefined}
-      />
+      <MyReports reports={reports} />
     </div>
   );
 }

@@ -89,7 +89,7 @@ export default function LoginButton({
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent sideOffset={20}>
-            <Link href={"/myReports"}>
+            <Link href={"/my-reports"}>
               <DropdownMenuItem>Reports</DropdownMenuItem>
             </Link>
             <DropdownMenuItem onClick={() => signOut()}>

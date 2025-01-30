@@ -1,24 +1,10 @@
 "use client";
 import React from "react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Card,
-  CardContent,
-  Separator,
-  TextIcon,
-} from "../elements";
+import { Card, CardContent, Separator, TextIcon } from "../elements";
 import { Col, Row } from "../layout";
 import Icons from "@src/assets/icons";
 import { ReportRef } from "tttc-common/firebase";
 import Link from "next/link";
-
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .map((word) => word[0])
-    .join("");
 
 const reportLink = (uri: string) =>
   location.protocol +
@@ -26,24 +12,10 @@ const reportLink = (uri: string) =>
   location.host +
   `/report/${encodeURIComponent(uri)}`;
 
-export default function YourReports({
-  userName,
-  reports,
-  pictureUri,
-  description,
-}: {
-  userName: string;
-  reports: ReportRef[];
-  pictureUri: string | undefined;
-  description?: string | undefined;
-}) {
+export default function MyReports({ reports }: { reports: ReportRef[] }) {
   return (
-    <Col gap={4}>
-      <YourReportsHeader
-        name={userName}
-        description={description}
-        pictureUri={pictureUri}
-      />
+    <Col gap={8}>
+      <YourReportsHeader />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px]">
         {reports.map((reportdata) => (
           <ReportItem {...reportdata} key={reportdata.reportDataUri} />
@@ -53,24 +25,11 @@ export default function YourReports({
   );
 }
 
-function YourReportsHeader({
-  name,
-  description,
-  pictureUri,
-}: {
-  name: string;
-  description: string | undefined;
-  pictureUri: string | undefined;
-}) {
+function YourReportsHeader() {
   return (
-    <Row gap={4} className="p-8">
-      <Avatar className="h-32 w-32">
-        <AvatarImage className="flex-shrink-0 object-fill" src={pictureUri} />
-        <AvatarFallback>{getInitials(name)}</AvatarFallback>
-      </Avatar>
+    <Row gap={4} className="pt-8">
       <Col gap={2} className="justify-center">
-        <h3>{name}</h3>
-        {description && <p>{description}</p>}
+        <h3>My reports</h3>
       </Col>
     </Row>
   );
