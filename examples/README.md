@@ -19,7 +19,7 @@ To run the T3C pipeline with a local front-end & backend server, as well as a Py
    then in a new Terminal:
    ```
    cd pyserver
-   python -m venv venv
+   python -m venv .venv
    source ./.venv/bin/activate
    pip install -r requirements.txt
    ```
