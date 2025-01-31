@@ -102,7 +102,7 @@ You will need to add two .env files, one in `express-server` and one in `next-cl
 
 #### express-server/.env
 
-Encode your Google Credentials using the service account key you downloaded earlier, by running the command `base64 -i ./google-credentials.json`
+Encode your Google Credentials using the service account key you downloaded earlier, by running the command `base64 -i ./google-credentials.json`. (You do need both the path to the json file and the base-64 encoded version.)
 
 ```
 export OPENAI_API_KEY=
