@@ -117,23 +117,42 @@ const setupPipelineWorker = (connection: Redis) => {
         sort: numPeopleSort,
       });
 
+      console.log("passed sort");
+
+      const getClaims = (
+        t: schema.LLMTopic,
+        tree: apiPyserver.SortClaimsTreeResponse["data"],
+        subtopic: schema.LLMSubtopic,
+      ): schema.LLMClaim[] => {
+        const maybeTopic = tree.find(([tag]) => tag === t.topicName);
+        if (maybeTopic === undefined) {
+          throw new Error(`Could not find topic in tree: ${t.topicName}`);
+        }
+        const maybeSubtopic = maybeTopic[1].topics.find(
+          ([key]) => key === subtopic.subtopicName,
+        );
+        if (maybeSubtopic === undefined) {
+          throw new Error(
+            `Could not find subtopic in tree: \ninputSubtopic: ${JSON.stringify(subtopic)} \nmaybeTopic: ${JSON.stringify(maybeTopic)} \nmaybeSubtopic: ${JSON.stringify(maybeSubtopic)} \nt: ${JSON.stringify(t)}`,
+          );
+        }
+        return maybeSubtopic[1].claims.map((clm) => ({
+          ...clm,
+          claimId: randomUUID(),
+          duplicates: clm.duplicates.map((dup) => ({
+            ...dup,
+            claimId: randomUUID(),
+          })),
+        })) as schema.LLMClaim[];
+      };
+
       const newTax: schema.Taxonomy = taxonomy.map((t) => ({
         ...t,
         topicId: randomUUID(),
         subtopics: t.subtopics.map((sub) => ({
           ...sub,
           subtopicId: randomUUID(),
-          claims: tree
-            .find(([tag]) => tag === t.topicName)[1]
-            .topics.find(([key]) => key === sub.subtopicName)[1]
-            .claims.map((clm) => ({
-              ...clm,
-              claimId: randomUUID(),
-              duplicates: clm.duplicates.map((dup) => ({
-                ...dup,
-                claimId: randomUUID(),
-              })),
-            })) as schema.LLMClaim[],
+          claims: getClaims(t, tree, sub),
         })),
       }));
 
@@ -155,19 +174,23 @@ const setupPipelineWorker = (connection: Redis) => {
       console.log(
         `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`,
       );
+      console.log("HERE1");
       const llmPipelineOutput: schema.LLMPipelineOutput = {
         ...options,
         ...tracker,
         tree: newTax,
         data: options.data,
       };
+      console.log("about to llmPipelineToSchema");
       const json = llmPipelineToSchema(llmPipelineOutput);
+      console.log("storing json");
       await storeJSON(options.filename, JSON.stringify(json), true);
       if (firebaseDetails) {
         await firebase.updateReportJobStatus(
           firebaseDetails.firebaseJobId,
           "finished",
         );
+        console.log("adding firebase details");
         await firebase.addReportRef(firebaseDetails.firebaseJobId, {
           title: json.data[1].title,
           userId: firebaseDetails.userId,
@@ -223,3 +246,37 @@ const setupPipelineWorker = (connection: Redis) => {
 
 export const setupWorkers = (connection: Redis) =>
   setupPipelineWorker(connection);
+
+/**
+ * [
+  "User Experience",
+  {
+    "counts": {
+      "claims": 1,
+      "speakers": 1
+    },
+    "topics": [
+      [
+        "Chain of Thought (CoT)",
+        {
+          "counts": {
+            "claims": 1,
+            "speakers": 1
+          },
+          "claims": [
+            {
+              "claim": "Real-time reasoning capabilities enhance user trust in AI.",
+              "quote": "The feature I liked the most is that it does human like real time thinking and shows the chain of thought before the actual response.",
+              "speaker": "Swagata Ashwani",
+              "topicName": "User Experience",
+              "subtopicName": "Chain of Thought (CoT)",
+              "commentId": "5",
+              "duplicates": []
+            }
+          ]
+        }
+      ]
+    ]
+  }
+]
+ */
