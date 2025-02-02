@@ -5,6 +5,8 @@ import { getNPeople } from "tttc-common/morphisms";
 
 import * as schema from "tttc-common/schema";
 
+import { pipe } from "effect";
+
 const defaultTopicPagination = 3;
 const addTopicPagination = 1;
 
@@ -119,10 +121,10 @@ const combineActions =
 /**
  * HOC - Takes some number of function (only takes State) and composes them
  */
-const mapActions =
-  (...funcs: TransformationFunction<ReportState>[]) =>
-  (state: ReportState): ReportState =>
-    funcs.reduce((accum, curr) => curr(accum), state);
+// const mapActions =
+//   (...funcs: TransformationFunction<ReportState>[]) =>
+//   (state: ReportState): ReportState =>
+//     funcs.reduce((accum, curr) => curr(accum), state);
 
 //  ********************************
 //  * THEME STATE FUNCTIONS *
@@ -312,10 +314,10 @@ const setSubtopicPagination = (num: number) =>
     ),
   }));
 
-const resetSubtopic = changeSubtopic((node) => ({
-  ...node,
-  pagination: Math.min(defaultSubtopicPagination, node.children.length),
-}));
+// const resetSubtopic = changeSubtopic((node) => ({
+//   ...node,
+//   pagination: Math.min(defaultSubtopicPagination, node.children.length),
+// }));
 
 const resetTopicsChildren = mapTopicChildren((node) => ({
   ...node,
@@ -471,11 +473,7 @@ function reducer(state: ReportState, action: ReportStateAction): ReportState {
       return openAllTopics(state);
     }
     case "closeAll": {
-      return mapActions(
-        closeAllTopics,
-        resetAllTopics,
-        resetAllSubtopics,
-      )(state);
+      return pipe(state, closeAllTopics, resetAllTopics, resetAllSubtopics);
     }
     case "expandTopic": {
       return expandTopic(state, id);
@@ -499,38 +497,38 @@ function useReportState(
   return [state, dispatch];
 }
 
-export const __internals = {
-  undefinedCheck,
-  combineActions,
-  mapActions,
-  replaceNode,
-  findTopic,
-  changeTopic,
-  mapTopic,
-  openTopic,
-  closeTopic,
-  toggleTopic,
-  openAllTopics,
-  closeAllTopics,
-  resetTopic,
-  resetAllTopics,
-  expandTopic,
-  findSubtopicInTopic,
-  findSubtopic,
-  parentOfSubtopic,
-  changeSubtopic,
-  mapSubtopic,
-  expandSubtopic,
-  resetSubtopic,
-  resetAllSubtopics,
-  reducer,
-  stateBuilder,
-  mapTopicChildren,
-  resetTopicsChildren,
-  defaultTopicPagination,
-  defaultSubtopicPagination,
-  addTopicPagination,
-  addSubtopicPagination,
-};
+// export const __internals = {
+//   undefinedCheck,
+//   combineActions,
+//   mapActions,
+//   replaceNode,
+//   findTopic,
+//   changeTopic,
+//   mapTopic,
+//   openTopic,
+//   closeTopic,
+//   toggleTopic,
+//   openAllTopics,
+//   closeAllTopics,
+//   resetTopic,
+//   resetAllTopics,
+//   expandTopic,
+//   findSubtopicInTopic,
+//   findSubtopic,
+//   parentOfSubtopic,
+//   changeSubtopic,
+//   mapSubtopic,
+//   expandSubtopic,
+//   resetSubtopic,
+//   resetAllSubtopics,
+//   reducer,
+//   stateBuilder,
+//   mapTopicChildren,
+//   resetTopicsChildren,
+//   defaultTopicPagination,
+//   defaultSubtopicPagination,
+//   addTopicPagination,
+//   addSubtopicPagination,
+// };
 
 export default useReportState;
