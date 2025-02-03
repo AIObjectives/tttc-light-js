@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "claim": "Many justice-involved individuals mistakenly believe they cannot vote.",
+      "quote": "there's so many people. With a criminal record or just justice involved who think that they can't vote",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Misinformation about voting eligibility significantly reduces voter participation among justice-involved individuals.",
+      "quote": "people who are just hesitant to just, and they just say, what?  I don't believe in voting, so it's not even worth it to me to vote because what is, like, what's the point of voting?",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Community outreach is crucial for educating justice-involved individuals about their voting rights.",
+      "quote": "so many of our conversations, we go to churches, community events, colleges , sometimes we'll just go to community fairs and we'll walk around and just talk to people and say, Hey, are you registered to vote?",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Expungement fairs serve as effective platforms for voter registration among justice-involved individuals.",
+      "quote": "we go to expungement. Now, yes, Michigan has automatic expungement, but it's still gonna take a while for that process to be refined. So there are people who are, they're still having expungement fairs. And so when we go there, we talk to folks and we ask them if they're registered to vote.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Justice-involved citizens' voting rights are restricted only when they are currently serving their sentence in Michigan.",
+      "quote": "even if you're justice involved, you have a right to vote in Michigan so you, the only time you're not able to vote is if you are currently serving your sentence in Michigan.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Engagement with legislators is essential to address housing, employment, mental health, and other issues impacting justice-involved individuals.",
+      "quote": "Housing, employment mental health. We have to tell them and let them know that they actually work for the people.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    }
+  ]
+}

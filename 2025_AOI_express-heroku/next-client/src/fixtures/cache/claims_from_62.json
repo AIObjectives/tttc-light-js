@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "Interest in technology can significantly impact one's ability to adapt upon reentry.",
+      "quote": "I'm one of those folks that was like really fortunate in that I understood technology in the ways that a lot of my, like contemporaries didn't",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Access to informational resources like encyclopedias can foster a lifelong interest in learning.",
+      "quote": "my parents cared enough about me and my interest that they had got me like this encyclopedia set",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Socioeconomic status limits opportunities to explore and learn through hands-on experiences.",
+      "quote": "even when you have the idea, you don't necessarily have the ability to even, tinker with stuff yourself because of socioeconomic issues",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Incarcerated individuals can maintain connection with technological advancements through personal interest and effort.",
+      "quote": "Science was always my thing. And so when I was incarcerated, I was a person that science digest and sci-fi news that was the stuff like I, that would, would be some things I would do for my own personal interest",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "The inability to experiment with technology due to financial constraints hinders learning and exploration.",
+      "quote": "if your parents went and broke they back and sweat to get you this video game system, you bet not break that thing apart... because of socioeconomic issues",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    }
+  ]
+}

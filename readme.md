@@ -1,0 +1,1 @@
+# This project consists of 3 independent Heroku apps, each handling a different part of the system. They are deployed separately to avoid conflicts in configurations, dependencies.

@@ -1,0 +1,4 @@
+fastapi[standard]
+openai
+pydantic
+wandb

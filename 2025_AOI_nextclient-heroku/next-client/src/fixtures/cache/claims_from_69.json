@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "Facing difficulties reinforces negative self-perceptions among formerly incarcerated individuals.",
+      "quote": "It's also hard not to see every difficulty you encounter as just more proof of why you ain't shit.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Modern technology is particularly challenging and alienating for those who have been incarcerated long-term.",
+      "quote": "Now put in front of that is this intangible seeming thing of ones and zeros, . That I'm supposed to care enough about. That is confusing me in ways that nothing else has...",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "The shift to online systems creates barriers for those not familiar with modern technology, including the elderly.",
+      "quote": "...every time I sat and had to walk people through that, because they, they were gone for 25 years, there was no SOS online. Now you're telling them that if they wanna do something, they have to do this first.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Digital divides exacerbate reentry challenges for formerly incarcerated individuals.",
+      "quote": "...the larger society as a whole doesn't have that problem. They, when, when SOS online first got integrated and rolled out, they were there learning the buggy ways to get through it...",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Peer support is critical for adapting to technological changes post-incarceration.",
+      "quote": "...I know, I know a lot of folks, my aunt right now, I'm still, I still do SOS online for her.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

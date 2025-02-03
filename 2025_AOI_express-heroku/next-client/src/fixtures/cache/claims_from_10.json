@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "claim": "Family support significantly impacts reentry success.",
+      "quote": "My wife I, I had family support and that's what helped me. Amongst everything else, but a lot of people don't have that.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Advocacy can lead to legislative changes benefiting incarcerated individuals.",
+      "quote": "My wife went and testified in front of the house in the Senate and changed the bill.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Reform can lower recidivism rates.",
+      "quote": "The board saw fit that we had served enough time and we were, our record was up to par and things like that, and they, they said, okay, we're gonna give you a chance. And so in doing that, the percentage rate of recidivism has been lower.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Mental freedom is a crucial aspect of reintegration.",
+      "quote": "We have to free our mind. Let's work on the mind.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Opportunities for parole can positively impact individuals serving life sentences.",
+      "quote": "And a lot of us was, was able to go in front of the board. The board saw fit that we had served enough time and we were, our record was up to par and things like that, and they, they said, okay, we're gonna give you a chance.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Individuals who re-offend after release are not truly interested in rehabilitation.",
+      "quote": "After that 20 years, you give that person chance and if they come back, Then they never wanted that chance.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

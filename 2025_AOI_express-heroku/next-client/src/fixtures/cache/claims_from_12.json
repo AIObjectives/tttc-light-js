@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "claim": "Independence and self-learning are crucial for successful reentry.",
+      "quote": "You wanna be able to be independent. 'cause after so long being in, in that cage and, and everything is given to you all.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Lack of opportunities for self-advancement leads to recidivism.",
+      "quote": "A lot of people don't get that and a lot of, and then that just takes them back to what they know.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Reentry programs should include teaching practical skills like preparing a resume.",
+      "quote": "'cause then you can, you can learn how to, you can put your resume on there.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "The ability to learn and apply new skills is key to personal development post-release.",
+      "quote": "let me learn something on my own and then let me go see if I'm capable of doing A, B, and C and then getting the desired result that I would like to have",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Frustration and lack of support post-release can lead to aggressive behavior.",
+      "quote": "it's just a matter of time for they turn to that ticking time bomb and they go off.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Timely intervention and support can prevent recidivism and aid in successful reentry.",
+      "quote": "Some people can be saved.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    }
+  ]
+}

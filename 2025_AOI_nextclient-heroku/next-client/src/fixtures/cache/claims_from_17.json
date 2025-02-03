@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "Some organizations prioritize publicity over substantive work in community aid.",
+      "quote": "They like to be in front of the press. They like the cameras, but when it get down to the real nitty gritty to go do the work, the work isn't being done in the, in the manner in which they're speaking.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Organizations actively working at the grassroots level lack proper support and funding.",
+      "quote": "But they don't have the support or the funding that some of the other groups get and some of the other groups that have the funding, they don't do no work.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Effective community support requires collaboration among organizations doing the actual work.",
+      "quote": "So we have. Find the, the groups that we have to get the groups together that's doing the work. 'cause the work only get done by those who does the work.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Large corporations should support the entire city's development, not just select areas.",
+      "quote": "You just need, you need those big companies to come along and help instead of building up one area of the city, you have to build the whole city.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Redistributing funds to education, including for returning citizens, is crucial for societal integration.",
+      "quote": "But I be, when they be talking about funding or defunding, I don't, you don't wanna defund the police department. That's not, that's not a good, I don't believe it's a good thing to do. However, if you're saying you're gonna take some money, then you should put the money in education.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    }
+  ]
+}

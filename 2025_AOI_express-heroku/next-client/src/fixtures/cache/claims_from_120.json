@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "claim": "Returning citizens require mental and emotional healing post-incarceration.",
+      "quote": "I need like to heal mentally and emotionally. And I think like if I went through that, I can't imagine the amount of of other people that need healing in that way too.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Family support is crucial for successful reentry.",
+      "quote": "My mom, she dropped everything to come help support me, bring me home. But there's so many people that don't have that.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Many formerly incarcerated individuals struggle with the lack of a support system.",
+      "quote": "But there's so many people that don't have that. I'm lucky. I'm fortunate and I know that.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Experiences of incarceration can prompt individuals to work towards better reintegration support.",
+      "quote": "So when I came back to Michigan, my whole focus changed. And so that's when I. Started working with people who were also justice involved to say, how could we make things better?",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Formerly incarcerated individuals face emotional and psychological trauma.",
+      "quote": "I've had my own experience of being incarcerated. It was a, a limited amount of time. But when I came home, I had never been through this process. I'd never been through an arrest or. What it meant to be stripped, searched, or what it meant to be thrown in a cell.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Being involved in community work can be a method of personal healing.",
+      "quote": "And so that's when I. Started working with people who were also justice involved to say, how could we make things better?",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

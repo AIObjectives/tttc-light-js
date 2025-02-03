@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "Formerly incarcerated individuals often face job offer rescissions after background checks reveal their criminal history.",
+      "quote": "I was 30 for 30 in interviews. When I, when I came home, everybody wanted to hire me...But then when they actually, , did the background check, they apparently didn't hear me properly cuz then they rescinded the offer.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "Transparency about incarceration during job interviews does not guarantee employment due to subsequent background checks.",
+      "quote": "I was not dishonest about my incarceration. I was very honest about my incarceration. But then when they actually, , did the background check, they apparently didn't hear me properly cuz then they rescinded the offer.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "Formerly incarcerated individuals face skepticism regarding their capability to manage financial responsibilities in job roles.",
+      "quote": "I couldn't get a job at Blarney Castle Petroleum because I couldn't handle $50 in the till.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "Lack of employment opportunities for formerly incarcerated individuals contrasts with their potential to lead and manage significant organizational responsibilities.",
+      "quote": "it's kind of funny now because I'm, I'm the head of an organization that currently is up to about a $400,000 a year budget.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    }
+  ]
+}

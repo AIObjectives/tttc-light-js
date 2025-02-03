@@ -1,0 +1,8 @@
+fixtures/
+examples/
+src/
+google-credentials.json
+.env
+.env*
+**/*.stories.*
+**/.storybook

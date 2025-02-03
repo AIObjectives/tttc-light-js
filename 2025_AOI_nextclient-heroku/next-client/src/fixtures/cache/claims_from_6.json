@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "Prison gerrymandering diverts educational resources away from Detroit public schools.",
+      "quote": "it's like when you lock up our residents from Detroit, [...] the money and resources go to those schools. [...] And it takes away from Detroit Public schools.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Prison Gerrymandering"
+    },
+    {
+      "claim": "Inequities in school funding contribute to the school-to-prison pipeline.",
+      "quote": "the schools are shitty, they don't get as many resources as all the other schools. [...] it's like you setting them up for the prison and school pipeline.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Prison Gerrymandering"
+    },
+    {
+      "claim": "Teachers in Detroit public schools are underpaid compared to suburban schools, affecting student attention and quality of education.",
+      "quote": "You don't pay the teachers as much as they need to be paid. [...] they can't give our students as much of attention as they might need to excel.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Classroom overcrowding in Detroit schools limits individual student attention and learning opportunities.",
+      "quote": "Cram their classrooms where they can't give our students as much of attention as they might need to excel.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Every child in Michigan deserves access to high-quality education, regardless of their location.",
+      "quote": "I feel like my child should get a top A grade education no matter where I live, whether it's Flint, whether it's Jackson, [...] or Detroit.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Budget constraints in Detroit schools limit the diversity of teaching methods and learning support.",
+      "quote": "because of the budget restraints, the teachers aren't allowed enough liberty to be to explore different ways of reaching their students.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    },
+    {
+      "claim": "Students with unique learning needs are not adequately supported in Detroit public schools.",
+      "quote": "I'm dyslexic and I learn differently, [...] and I feel like because of the budget restraints, the teachers [...] don't have enough capacity to do that because they're overcrowded.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Educational Pathways"
+    }
+  ]
+}

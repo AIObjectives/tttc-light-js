@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim": "Collaborative teaching by staff, volunteers, and incarcerated individuals enhances learning in prison.",
+      "quote": "when I was inside, I used to say the best classes took place when it had me, a staff member and a volunteer running the class, cuz all three of them have a different credibility.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "The credibility of formerly incarcerated individuals in educational roles is undervalued.",
+      "quote": "And I think the thing that's been, , kind of minimized is, is the credibility that we have.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Societal bias affects the opportunities available to formerly incarcerated individuals.",
+      "quote": "It is the idea that people's racism and bigotry has to go somewhere in this society, unfortunately.  And so they can call us convicts, they can call us felons",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

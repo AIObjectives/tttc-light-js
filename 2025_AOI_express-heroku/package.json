@@ -1,0 +1,19 @@
+{
+  "name": "tttc-light-js",
+  "version": "1.0.0",
+  "description": "Talk to the City app",
+  "scripts": {
+    "format": "npx prettier . --write",
+    "dev": "node dev.js",
+    "build": "node build.js",
+    "prepare": "husky"
+  },
+  "author": "Bruno Marnette",
+  "license": "MIT",
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "prettier": "3.2.5",
+    "typescript": "^5.3.3"
+  },
+  "type": "module"
+}

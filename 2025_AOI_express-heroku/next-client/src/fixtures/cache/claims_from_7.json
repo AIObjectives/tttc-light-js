@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "Formerly incarcerated individuals face significant challenges adapting to modern technology.",
+      "quote": "I did almost 30 years and so I didn't have the advantage of growing up and like every new thing that advanced [...] Three year olds can do stuff better than me",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Lack of technology skills can lead to unemployment for formerly incarcerated individuals.",
+      "quote": "I, I could have 10 one-on-ones in the time it take me to do one report for one, one-on-one, because that's how bad I suck at trying to put stuff in the computer.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Employment Opportunities"
+    },
+    {
+      "claim": "There is a need for pre-release training in technology for incarcerated individuals.",
+      "quote": "Because if you have somebody that's locked up for decades coming home and you don't give them no pre-training with any kind of technology, you are setting them up for failure.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Difficulty with technology contributes to recidivism among formerly incarcerated individuals.",
+      "quote": "It's like almost like why recidivism even exists at this point. Because if you have somebody that's locked up for decades coming home and you don't give them no pre-training with any kind of technology, you are setting them up for failure.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

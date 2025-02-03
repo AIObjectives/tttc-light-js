@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "The environment in Detroit is detrimental to the well-being and future of African American children.",
+      "quote": "I want to leave Detroit [...] I fear for my baby. I want her to go somewhere where she's just as included as everybody else [...] Do I have to go to a small hick town to do that?",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Family and Social Reintegration"
+    },
+    {
+      "claim": "African American children have to work harder than their counterparts to achieve the same recognition and rewards.",
+      "quote": "Do I have to go to a small hick town to do that? Where do I have to go that I feel like my African American baby girl will be seen, will be heard, and will be validated for all of her accomplishments and not have to work 10 times as hard as the other counterparts to see the same accomplishments and achievements and get the same rewards?",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "African American families receive unequal treatment and services based on their neighborhood.",
+      "quote": "Can she call the cops just like somebody else can call the cops and get the same response? Do I have to move in a richer neighborhood for her to be able to get help?",
+      "topicName": "Policy Reform",
+      "subtopicName": "Fair Housing Legislation"
+    },
+    {
+      "claim": "Infrastructure and public services in Detroit are disproportionately neglected in African American neighborhoods.",
+      "quote": "Why is my taxes higher? Why is my insurance for my car higher? Why is my road the worst? [...] Why is only certain parts of Detroit being beautified and the parts they care about the most?",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    }
+  ]
+}

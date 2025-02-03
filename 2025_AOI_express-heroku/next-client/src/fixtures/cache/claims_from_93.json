@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "Criminalizing drug possession is effectively penalizing a person's status rather than addressing the root problem.",
+      "quote": "you're criminalizing a status. 'cause there's people in jail for being addicts and so you're criminalizing their status.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Addiction should be treated as a health issue rather than a criminal one.",
+      "quote": "I'm, I'm in an addiction and alcoholism, you're locking people up for being drunk when they really should be going to the Betty Ford Center or which we don't have 'em in the communities.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Society should offer rehabilitative services instead of incarceration for addiction-related offenses.",
+      "quote": "But somewhere where we're like, why are you drinking and driving? you could kill a life. Let me help you and befriend you and offer the services",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "Incarceration for addiction is analogous to punishing someone for having a disease.",
+      "quote": "Like, that's like somebody getting. Has a disease, cancer and then you gotta lock 'em up 'cause they got cancer. No, there's a disease.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "A republic form of government focuses on self-governing.",
+      "quote": "a republic form of government is what we're self-governing.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "In a democracy, the majority should not vote away individual rights.",
+      "quote": "you can't have a democracy think they can vote away your rights 'cause they're the majority.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Solidarity, not opposition, is essential to overcome societal issues.",
+      "quote": "you don't fight racism with racism, you fight it with solidarity.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Educational tools are necessary for meaningful social change.",
+      "quote": "when we take that, put it together with an educational tool and education means, I'm gonna share with you the information. You're not gonna reject it until you assess it.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Mutual understanding between police officers and civilians can ensure safety for both.",
+      "quote": "the police officer that's pulling you over wants to go home, just like the person in the car wants to go home. So how do we say we both can go home?",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    }
+  ]
+}

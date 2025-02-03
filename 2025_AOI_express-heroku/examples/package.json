@@ -1,0 +1,17 @@
+{
+  "name": "tttc-examples",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "csv-parse": "^5.5.5",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2"
+  }
+}

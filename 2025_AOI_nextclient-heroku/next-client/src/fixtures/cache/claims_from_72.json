@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "claim": "Insurance often does not cover mental health services adequately, including for those with good insurance.",
+      "quote": "And even with good insurance, I've found that it's kind of tricky post or during Covid to find carriers that will accept even good insurance, let alone Medicaid or let alone no insurance.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Agencies sometimes pay out of pocket for individuals' mental health services due to insurance inadequacies.",
+      "quote": "In fact, our agency actually pays for some people to get mental health services because they couldn't get them any other way.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "There is a shortage of mental health professionals who understand the specific traumas faced by formerly incarcerated individuals.",
+      "quote": "This is complicated even further when you're talking about people who understand things like post-incarceration syndrome and what it is to have that kind of very specific and state sanctioned trauma.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Formerly incarcerated individuals are often not considered in the planning of mental health services.",
+      "quote": "They're an afterthought, especially when you're talking about mental health services, because I think most people either feel that we're beyond saving or that we wouldn't engage in services anyway.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    },
+    {
+      "claim": "Sharing personal mental health journey publicly can encourage others to seek help.",
+      "quote": "which is one of the reasons why I've been sharing my journey very publicly so that people understand that it would be crazier...to not engage in some kind of services after 27 years than it is to do so",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental Health Support"
+    }
+  ]
+}

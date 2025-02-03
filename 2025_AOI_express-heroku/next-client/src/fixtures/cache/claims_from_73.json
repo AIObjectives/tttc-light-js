@@ -1,0 +1,52 @@
+{
+  "claims": [
+    {
+      "claim": "Long-term incarceration results in significant technology adaptation challenges.",
+      "quote": "Technology is a ch a challenge for anybody. If they go away for 10 years. Technology changes so much, let alone being gone for 27.",
+      "topicName": "Technology Adaptation",
+      "subtopicName": "Formerly incarcerated individuals face significant challenges adapting to modern technology."
+    },
+    {
+      "claim": "Incarcerated individuals can start their reentry process before release.",
+      "quote": "I started my reentry before I ever came home, but I had started on this path of how am I going to live my life before I got out here?",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Preparing for Reentry"
+    },
+    {
+      "claim": "Low-quality 'Obama phones' complicate reintegration by providing subpar technology experiences.",
+      "quote": "And then on, on top of it, they give, things like Obama phones and stuff like that, which are better than nothing, but they don't work the way they're supposed to.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Technology Resources"
+    },
+    {
+      "claim": "Personal initiative plays a crucial role in the reentry process.",
+      "quote": "Part of the reason that I had them is, is because I anticipated them and I played my part in it",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Personal Initiative in Reentry"
+    },
+    {
+      "claim": "Challenges with social media functionality can inadvertently lead to positive outcomes.",
+      "quote": "And I didn't know how to undo a like. So I panicked for three hours until I picked my wife up from work and she could tell me how to undo it... it started the, the, the, the journey to our reconciliation",
+      "topicName": "Technology Adaptation",
+      "subtopicName": "Navigating Social Media"
+    },
+    {
+      "claim": "Community roles can reverse post-incarceration, with formerly incarcerated individuals providing resources to parole officers.",
+      "quote": "I actually became more valuable to my parole officer than he was to me because I got a peer recovery coach job.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "The shift to reliance on technology post-release poses unique challenges for those incarcerated for long durations.",
+      "quote": "If they go away for 10 years. Technology changes so much, let alone being gone for 27.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology and Reentry"
+    },
+    {
+      "claim": "Financial planning and saving strategies are vital components of successful reentry preparation.",
+      "quote": "Being aware of the fact that we were gonna probably need to be a two car family to, in order to really be successful... I started saving.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Financial Planning for Reentry"
+    }
+  ]
+}

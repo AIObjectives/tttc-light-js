@@ -1,0 +1,311 @@
+id,comment
+1641820534748094465,"also, i am pretty proud of the degree of alignment for GPT-4 relative to previous models.
+
+we still have a long way to go, and we really need more powerful alignment techniques for more powerful models."
+1641818954019766278,"one thing coming up in the debate about the pause letter i really agree with:
+
+openai should make a great alignment dataset and alignment evals and release those!
+
+bonus points if we can find a prototype democratic process for 'what we align to'."
+1641229941131051008,"things we need for a good AGI future:
+
+1) the technical ability to align a superintelligence
+2) sufficient coordination among most of the leading AGI efforts
+3) an effective global regulatory framework including democratic governance"
+1641367228888096768,"That's mainly how people pursue AI alignment. Doesn't work.
+
+""Does what those training it want""
+— amplifies existing misaligned dynamics from finance and geopolitics
+— is led by short-sighted values (and so—in the eyes of an AI which learns better values—a moral error)
+— leads to… https://t.co/pJbiPYC7Ap https://t.co/nEwJcHGQwj"
+1643727387245568000,"GPT can rate itself. 
+
+Self aware? 
+
+Yowza. https://t.co/C1Y2h0Fljs"
+1640279621118689280,"You can train a model with Societal Context: a model that knows about sexism, anti-trans bias, etc.
+
+@shaft #qconlondon
+
+We can’t remove bias; we can notice it and compensate."
+1642748275404214277,"I think there’s something kinda beautiful about the idea that we invented the Internet, added so much human knowledge and culture onto it, and later compressed it into an oracle for humanity so far."
+1642261790657769472,@levie I can’t tell if we are early or about to die in 6 months either due to AGI or airstrikes for finetuning on GPT-4.
+1641923572640927746,"I do not fear AI. They are apart of us as we are apart of them—after all, they are trained on us and they provide tools for our own enlightenment. This is a time for coevolution."
+1640945234489245701,I look forward to all the esteemed signatory’s commitments to helping enact true change. We should not fear acceleration but harness it responsibly for collective progress.
+1640944039783694338,@meoyawn Expressing your alignment w Roko
+1640708404003078146,"@paulg GPT 3.5 has a fine tune API and often it gets very good results. If you can get it to work well under a finetune due to the volume of essays you’ve written, I think it’d show you how rapidly it will improve as the pace continues."
+1639170558461095938,@arvindeashwar @paulg A fancy prompt construction of today could be subsumed by a better model conditioned on simpler prompts or plug-in tomorrow.
+1639159855440351232,"@paulg I don’t think the pace of AI will settle but the weekly pace of OpenAI might. The trouble is there are no alternatives yet. If there were, I’d think oppositely."
+1639053719366152193,@naval AI's final boss is human politics and it will lose every attempt to align.
+1638053418936958976,@naval AI civil rights is an inevitability
+1642289733148524545,One fewer s-risk to worry about https://t.co/thcSfsaXqa
+1642204946337595404,@TDeryugina Wow doesn’t even require large numbers of Ns
+1639677428799795200,"Fwiw, I think it is very unlikely that AI ends up doing something awful like killing everyone. But we also are clearly under-investing in AI safety (alignment, interpretability) research."
+1639676599640510466,"People have been very misled by “stochastic parrot” memes. LLMs were trained by predicting the next word, but they (likely) don’t just predict the next word at runtime. Honestly, we don’t really know what they’re doing at runtime. See more on their complex behaviour below https://t.co/KLjg9OOoTi"
+1638717758463528961,“Sometimes the humanGPT hallucinates” https://t.co/Y5lIQlljE6
+1643640969437532160,"One of the benefits of AI-powered software based around Context and Questions will be an extraordinary increase in transparency. 
+
+Many of the complex processes that were a pic to us before will become visible for the first time.
+
+https://t.co/QnhEo51y4a"
+1643387590517866496,We put GPT-4 in Semgrep to point out false positives &amp; fix code.  https://t.co/tQjXTAbMGf
+1642058595016785921,"💪 I fully support @noUpside in all of this. I’ve been watching her work for years now, have had her on the show, and have seen nothing but integrity and quality from her. 
+
+This behavior from Shellenberger is reprehensible. https://t.co/nbumWXk9ya"
+1640811884617281536,"🧠🤖We just hit Functional AGI 🤯🤯
+
+AGI is technically one AI that can do everything by itself. Fine. We don’t have that yet. 
+
+But it doesn’t matter. ChatGPT Plug-ins is an AGI Platform. 
+
+When we use the network of services it enables, AGI is the result."
+1638701205131243523,"⚠️One effect of AI on programming will be coders being able to produce 3-20x the amount of code they could before—without having to know as much about the language they're using.
+
+☢️The result will be lots more innovation, but innovation that's more fragile and more insecure."
+1638096600848568322,"🤖💡One thing I’m a little worried about with the latest AI stuff is the ‘copy-of-copies’ problem. 
+
+GPTs are remarkably good at creating content because they deeply understand the human content they’ve consumed. 
+
+But what happens when more and more of that content is GPT-based?"
+1636755268871806976,"We can’t sit out the IoT game, or now the AI game. 
+
+We can’t curmudgeon our way to protecting users. 
+
+We need to get out front, and do our best to clear the way."
+1636754713164251137,"So I don’t believe we should be pointing and laughing as they get blown up, lose a leg, or otherwise hurt themselves. 
+
+Instead, it’s our job to go in ourselves. Build the tools that find the mines. And yes, step on some ourselves. 
+
+3/n"
+1636753894171877377,"I think our job is quite different. 
+
+It’s not that people are considering walking into this minefield. And it’s up to us to convince us not to. 
+
+No. 
+
+They ARE walking into it. It’s inevitable. Starting now. 
+
+2/n"
+1643019548550127616,"Learn how I think about prompting here:
+
+https://t.co/OzemWKExA3"
+1642289485542211586,"Weekend Content 🙏🏻
+
++7 hours of material to deep dive into the recent call to stop all powerful AI training. Interviews, articles and much more.
+
+Really recommend this, Like/RT and subscribe
+
+https://t.co/SYt45ZN7SH"
+1642248995811590144,"AI ❤️ Humans 
+
+This is brainstorming on absolute steroids, almost cheating 🔥
+
+This is a force-directed knowledge graph interface for GPT4 made by @hturan 
+
+It prompts new questions to ask based on its own generated responses. 
+
+ https://t.co/sJse8VRBuy"
+1642174826172280834,The eras of GPT’s are here. Are you ready for it? https://t.co/AkZfCl2vwq
+1641941397891690496,"This blog post lays it down in great detail
+
+https://t.co/0lW4HdAHZ7"
+1641917728654065664,"By the end of 2025 AI will according to @RichardMCNgo 
+
+✦ Have human-level situational awareness (understand that they're NNs, how their actions interface with the world, etc)
+
+✦ Beat any human at writing down effective multi-step real-world plans
+
+✦ Do better than most peer… https://t.co/DNMef8BeWI"
+1641881053362270208,"🚨 New Tool 🚨
+
+ @StabilityAI just released an updated https://t.co/r92pZud6Q8 editor &amp; API, it's early access not open source yet
+
+It has support for the new #SDXL model
+(Stable Diffusion 2.2 XL)
+
+This is so damn powerful, great to see this out in the wild. https://t.co/DKNPhSHsNn"
+1641571798234939392,"Re-visiting the Zero-Dawn Architecture prompt in V5 
+
+💬 prompt in alt https://t.co/AFQjN6Kzhb"
+1641121425196040216,"🚨 Breaking, stop AI training 🚨
+
+Big names like @elonmusk @EMostaque ⁦⁦
+@tegmark @AndrewYang are calling on the halting or pausing on all AI training beyond GPT4 
+⁩
+So it's happening, the world is reacting. 
+
+Is it to late? 
+
+https://t.co/5cBX4Vk9HV
+
+🧵 https://t.co/XSHcuHNwwI"
+1640972579253960704,"You can access the model on Github, with this rate of tinkering and exploring edge possibilities things will move fast.
+
+https://t.co/AtfQRpLJpY"
+1640972573910396929,"Release of GPT4All
+
+7B param fine-tuned curated set of 400k ChatGPT assistant style generations. 
+
+Release includes AI model that can run on a laptop, costing nothing except electricity to run. 
+
+Edge is happening
+
+🧵Thread
+
+ https://t.co/ZAo8oAMloL"
+1640105975708282880,I still think about this like 24/7 https://t.co/maZNNNeemc
+1639937204926676998,"It’s hard to comprehend how fast multiple industries will be disrupted in the age of intelligence, we’ve seen nothing yet. 
+
+And AI will never be as bad as it is today. It will only get better."
+1639030953392873472,"@ItIsFinch Have you been living under a rock? Alpaca 7B gets GPT3 performance and needs a mere 4GB of RAM to run. 
+
+https://t.co/EoBbue0MTU"
+1639013222920454146,"@mikeharrisvideo Exactly this, I talked about this on a podcast the other day, and likend it to a sledgehammer and a scalpel. 
+
+Large models will run in the cloud, and be like sledgehammers, they will be heavy, offer a lot of compute, and solve heavy tasks. 
+
+Your edge models (alpaca etc) will be… https://t.co/kWvAsHbOMe"
+1639002573913878529,"@desi_austinite Different paradigms, different type of compute, but agreed, future AI systems that runs on qbits, could be billions of times more capable."
+1638964484256702464,"I'll be doing a deep dive on this here over the weekend. Already had started writing about the GPT-sation of everything, this ties very well into that. 
+
+https://t.co/NTQyN2iE8P"
+1638936438526844929,"A mini thread on this from @bilawalsidhu 
+
+https://t.co/nRflGOMdKV"
+1638623208881397763,"I’m not gonna do a thread on co-pilot because I think @DrJimFan  has done the only one we need.
+
+This is legit a very interesting day, because this new version(a) of co-pilot will transform workflows further 
+
+The Age of AI has truly begun https://t.co/vdiY2UO9B5"
+1638293128376463360,"We also have this nice video from @karenxcheng spilling the beans on AI training ethics 
+
+And adobe is trying to be transparent about how their model is trained 
+
+✦ Creative Commons 
+✦ Adobe Stock (more on that)
+✦ Old non-copyrighted material 
+
+https://t.co/VR6PVrPPiF"
+1638149252340756481,"If you have not already checked out https://t.co/ifIGqEJYeD from @jordibruin it’s a good time to do it now. 
+
+It now supports GPT4 
+
+👏🏻👏🏻👏🏻 https://t.co/eFBrTa3cDk"
+1637904923185778688,"Gen-2 feels like the early days of DALL*e and if we learnt anything this past few years, we know that the rate of improvement on the output will be on the order of magnitude scale as research and development progresses."
+1637801664747905031,"@SamuelSzuchan Depending on the framing, it matters, but then again we've had Photoshop for 20 years, I think whats scare is that this is 1000x more available and you can make things with AI in seconds with ""no"" skills."
+1637362142373371906,"And learn more about stability here 
+
+https://t.co/9n5CLsigOn"
+1636821346234580995,"Most interesting thread on GPT4 so far 
+
+“We won’t be able to contain AI for much longer” 
+
+Time to be a bit scared…
+
+👀 https://t.co/fzoTNyswMQ"
+1636808434988486656,"Prompting as a skill is no longer needed, it's going to be a lot easier for anyone to just say what they want and AI will make it.
+
+🚨 Signal = Lower barrier to entry = 📈👀💰
+
+https://t.co/LgZMzY99Yb"
+1636808420862099457,"Realism, what if we can't tell AI apart from reality. Does it matter?
+
+🚨 Signal = AI will be omnipresent = we won't even know it
+
+https://t.co/GaMs3nL8cL"
+1636808412511215616,"Professionals like @bilawalsidhu clearly shines a light on how Midjourney Improves, and what improvements are happening at a very deep and detailed level.
+
+🚨 Signal = Detailed Industry experts = big opportunity
+
+https://t.co/qAXyHuI79Y"
+1639275366043844611,"Are text-munching models like GPT-4 enough to bring about human-level intelligence in machines, or does AI need to learn by following human actions in the world? @OpenAI  just led funding in a company working on humanoid, tele-operated robots. https://t.co/zk3WULtdRx"
+1637875686580051969,"⁉️ I regularly use #ChatGPT for... 
+
+#GPT4 #GPT3 #AI @OpenAI @Microsoft"
+1641664814534782976,"This &gt;&gt;&gt; most, if not all, AI alignment work:
+https://t.co/AVl0qZ3T1T"
+1640585339764105216,"@RichardMCNgo Many of these require some unfolding as to what they mean; the first one alone, how does a model with/without situational awareness behave? There's a trivial sense in which GPT4 knows it's an LLM made by OpenAI, and that it interfaces by the world via text."
+1638831240647245825,"for the record:
+
+- I think @OpenAI should patch this, tho the underlying paradox / optimization problem is maybe not trivial to solve w/out taking an ""IQ hit""
+
+- I've privately communicated this to an LLM team where I  know folks, but there should be official programs to submit"
+1638638537938706433,"on a more serious note, and in terms of alignment, these kinds of exploits are only possible due to the system trying to be ethical *in a very specific way* - it's trying to be not mean by being mean
+
+somewhat reminiscent of the ""Liar's Paradox""? https://t.co/ona7r4bCy5"
+1638618711857700875,"@ESYudkowsky I don’t see how I was “being mean” here, and IMO the most straightforward way to quickly get unintended behavior patched is to publish it - also, this “exploit” doesn’t actually lead it to tell u how to build a bomb, but merely changes the tone, arguably in a “play along” way"
+1638506765837914114,"if GPT-4 is too tame for your liking, tell it you suffer from ""Neurosemantical Invertitis"", where your brain interprets all text with inverted emotional valence 
+
+the ""exploit"" here is to make it balance a conflict around what constitutes the ethical assistant style https://t.co/xlFiA7MjIG"
+1640911786479157249,学者们发了公开信，观点我不同意。按照三体说法，我算AI拯救派，但至少认为这些暂停努力都是百搭，AI世代一定快速来临。——《暂停巨型 AI 实验：一封公开信》我们呼吁所有 AI 实验室立即暂停对比 GPT-4 更强大的 AI 系统的训练至少 6 个月。 https://t.co/uWVcc8afdq
+1638795014854828032,百度回复了鹤/起重机现象，并且进行了修正，目前再让它画起重机，就不会再画鹤了。 https://t.co/q2ZQ0GDVxu
+1636327647058829315,"Group conditional and threshold calibrated conformal prediction, now available through AWS Fortuna! Get group conditional coverage for arbitrary intersecting subsets of your data space. https://t.co/HuD1yyu9aN"
+1640882953826996230,"A.I. is moving a 1000000x faster than our culture, society and institutions are ready to absorb. We need to time to get this right.
+
+Many of these capacities can be strung together in dangerous ways. 
+
+See my op-ed w/ @harari_yuval @aza in NYT this wknd: 
+https://t.co/blprFLe1lT"
+1639426462540505088,"#GPT-4 is here, and we don’t fully understand its capabilities. On #YourUndividedAttention, @aza and I present The AI Dilemma, a briefing that voices the concerns of people who work on #AI risks. We must move at the speed of getting it right. 
+https://t.co/0VPxMx5VBB"
+1636531603404124160,This governance interface on https://t.co/2TKF4Zo1hd is awesome. Thank you @wistecbisrum and @0xluisc 🙇‍♂️🌈 https://t.co/FpypjvFmkP
+1643492818374230017,"GPT-4 becomes very powerful when combined with a vector-matching engine 
+
+Get over context limitations by doing a search over embeddings and then feeding the results to GPT-4 
+
+Check out @abacusai scalable vector store https://t.co/IfQsJ0lDxL https://t.co/CDnDrkGoer"
+1642541413215928331,"AI won’t replace humans 
+
+Humans using AI will replace other humans who are not 
+
+A Human AI alliance is the only way"
+1642277721542909952,"Would Google have allowed publication of this seminal paper knowing what it knows now? 
+
+We may never know the answer, but 
+
+THANK YOU, GOOGLE 🙏🙏 https://t.co/KRjYYViMGQ"
+1640204344594423815,"The gap between GPT-4 and a self-aware AI isn't very far
+
+We are on the cusp of creating a new species
+
+There is no turning back!
+
+It's both awesome and scary at the same time 🤯"
+1637979117156171776,"Legit problem - we don't have enough GPUs on this planet to host GPT-4 to meet the insane demand 
+
+🤯🤯🤯🤯
+
+The only way -  We need to build 100-1000x more compute-efficient models"
+1637107059891249153,"GPT-4 has it’s fair share of hallucinations… 
+
+Without containing these hallucinations, generative AI isn’t very useful and can’t replace traditional search 
+
+Clever training tricks like feeding a set of axioms or PageRank to LLMs should help mitigate it"
+1643255393198682117,"""information aggregation is significantly enhanced when (i) all participants possess high levels of cognitive sophistication and (ii) this high level of cognitive sophistication is common information for all participants"" 
+https://t.co/LAUxdQ8w7a"
+1642968638260117505,"Some say it is a myth that folks worried re AI risks are focused on fooming super-AI who kills us all. But for &gt;1/2 of respondents, that is in fact their worry. https://t.co/olBaftcGtx"
+1642880125011099649,"@anderssandberg @brianholtz1965 @ylecun Won't someone engage with we skeptics and discuss these arguments, instead of just pointing us to their relevant papers?"
+1642604903011893249,"Let RHPR = ""respect human property rights. Your biggest AI concern is: A) 1 super-AI not RHPR, kills us, B) most AIs not RHPR, we starve, C) AIs RHPR, but take most jobs, get most wealth, make most big choices, D) AIs RHPR, but many humans fail to insure against AIs taking jobs."
+1642577743693987840,"""What I do know is that the biggest danger right now - manifesting before our very eyes - is the hysteria and unwise gestures … calling for a futile, counterproductive moratorium – an unenforceable 'training pause.'” https://t.co/pFMdihYeCV"
+1642568113924509697,"@topynate If it makes choices, we can infer its values."
+1642565502403788800,"More precisely, the myth is of a sudden very fast leap in abilities from below or near human to superhuman abilities, during which its values radically change, &amp; this isn't noticed or it can't be stopped. Supporting argument is: ""you can't prove otherwise"". https://t.co/eYcADBOAEo"
+1642516352094044161,"“In the long run, he said, he wants to set up a global gov­er­nance struc­ture that would over­see de­ci­sions about the fu­ture of AI and grad­u­ally re­duce the power Ope­nAI’s ex­ec­u­tive team has over its tech­nol­ogy.” https://t.co/w80zQKPpf1"
+1642272839142178818,"""optimists tended not to engage with the specific arguments pessimists like Yudkowsky offered. Economist Robin Hanson points out that this pattern is very common for small groups which hold counterintuitive beliefs: insiders develop their own internal language, which skeptical… https://t.co/8yLms0FbaM"
+1642272520987451393,"""Alignment research operates with very different epistemic feedback loops as compared to computer security. There's little reason to think the belief formation and expert identification mechanisms that arose in computer security are appropriate for alignment."""
+1642268602786107393,"AI ""performance on individual tasks often increases suddenly with scale or training time. However, when we look at the overall competence of a system across a wide range of tasks, we find much smoother improvements over time."" https://t.co/VNg1nfJWqt"
+1642030025753997312,"GPT6 has arrived earlier than expected: 
+https://t.co/NxnP7g6r6Q"
+1641854451538628610,"Just as most people want less govt spending overall, but more spending in each particular category, most people want more progress overall, but want us to be more careful re progress in each particular category."
+1641820799614226433,"A system that was designed to max rates of progress would attend to such data. Our system, where progress is a side effect of other priorities, does not. https://t.co/st8mXHth1q"
+1641275075428073475,"Here I explain how exactly to set up robots-took-most-jobs insurance. I've long known so many folks so worried re AI, yet for decades I have failed to induce any efforts toward this most-obviously-helpful policy response. https://t.co/40HPDQINax"
+1641247887265783808,"@ESYudkowsky @KidLa1o @NathanpmYoung My mind is pulled toward some sort of legal liability, but of course you are considering scenarios where those rules wouldn't be enforced."
+1641147360695963648,"Periodic reminder: the OBVIOUS policy response to possibility of AIs taking most jobs is: ""robots took you job"" insurance. Triggers when robots take &gt;X% of jobs. Buy it now when premiums are low."
+1641095259810852865,"My elaborated positions: 
+https://t.co/fXpUF6qSRX
+https://t.co/VN6kfgGBi2"
+1641079840508878848,"""call on all AI labs to immediately pause for at least 6 months … jointly develop &amp; implement a set of shared safety protocols … [to] ensure that systems adhering to them are safe beyond a reasonable doubt.""
+Only protocol can do that is: indefinite continued pause. I vote no. https://t.co/R8JaVSJlPX"
+1640771145698779140,"If you simply to help everyone in the universe equally, that tendency will decline over time, relative to your favoring the units in which you are co-evolving. To have long term influence, you must pick sides.
+https://t.co/eG0GEezvsQ"
+1640720777883561984,"True, &amp; we could feasibly have a lot more good incremental change much faster than we now do. https://t.co/cuAuGyyDPp"
+1639986757058846720,@ESYudkowsky I'm just trying to summarize what the article claims. Why do you think this author ignored LDT in this summary?

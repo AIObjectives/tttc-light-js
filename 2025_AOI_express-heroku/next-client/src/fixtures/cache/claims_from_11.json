@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim": "Formerly incarcerated individuals struggle with basic technology skills upon reentry.",
+      "quote": "Technology. It was, it was a, it was real tough because I didn't even know how to use the telephone. [...] But then COVID came up, shut the class down.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "COVID-19 has disrupted educational opportunities for technology adaptation for formerly incarcerated people.",
+      "quote": "But, so I went to a class, I was able to get in the class, but then COVID came up, shut the class down.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Access to free technology training classes is essential for successful reintegration of formerly incarcerated individuals.",
+      "quote": "And they know that this is something that you're not able to do coming from where you came from. So they should have those classes already for you. [...] you shouldn't have to pay to go.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    },
+    {
+      "claim": "Support from younger family members is crucial for the tech education of reentering citizens.",
+      "quote": "Then my granddaughters was able to assist me further because they kids are tech savvy.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Technology Adaptation"
+    }
+  ]
+}

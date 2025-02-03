@@ -1,0 +1,15 @@
+node_modules/
+**/.cache/*
+.DS_Store
+google-credentials.json
+.env*
+.vscode/
+.next
+dist
+*storybook.log
+__pycache__
+**/*/credentials/*
+/utils/**/output/*
+/utils/**/input/*
+!**/*/.keep
+*/tsconfig.tsbuildinfo

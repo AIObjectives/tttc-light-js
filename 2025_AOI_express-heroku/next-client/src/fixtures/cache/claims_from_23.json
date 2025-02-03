@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "Incarceration can lead to a transformative perspective on life and societal roles.",
+      "quote": "If I didn't go to prison, none of this would not have came to fruition. I would've still been in somebody's kitchen cooking something, but it took me to go in there to come back out and look at the world different eyes...",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Mental freedom"
+    },
+    {
+      "claim": "Awareness and participation in voting can significantly increase among formerly incarcerated individuals with proper information.",
+      "quote": "We need to inform people coming home. They need to learn that they had the right to vote. And then, The more we tell people they had a right to vote.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Many formerly incarcerated individuals are not aware of their voting rights.",
+      "quote": "they like, you know, I got a felony, I can't vote. I said, I got one too, but I've been voting since I got out.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Local voting can directly impact the community environment and resource availability.",
+      "quote": "the suburbs voting for all of that and we not voting. So of course they gonna close everything around us and wanna know why we don't have it.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Misconceptions about the value of one's vote can deter participation in the democratic process.",
+      "quote": "And they was like, well my vote don't count.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    },
+    {
+      "claim": "Reentry into society offers an opportunity to engage in social and political activism.",
+      "quote": "Voting Access for All was, was, was a great, great opportunity for me to help found.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Experiencing the consequences of judicial decisions motivates formerly incarcerated individuals to participate in voting.",
+      "quote": "If you had a prosecutor or if you had a judge, you know, you could vote them outta the seat 'cause they didn't put you in jail.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Voting Rights"
+    }
+  ]
+}

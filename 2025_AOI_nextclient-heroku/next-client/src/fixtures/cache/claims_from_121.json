@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim": "Reentry programs should focus on providing housing and employment assistance to facilitate smoother transitions for the formerly incarcerated.",
+      "quote": "Because one day you're gonna get out. That's the hope, right? [...] And so if you're gonna get out, How do we make it a easier transition? [...] How do we bring jobs and housing?",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Companies that engage in hiring formerly incarcerated individuals contribute to broader economic mobility and community viability.",
+      "quote": "So when I say that, I mean there are companies that we know we work with that will hire people. How do we get more companies involved in that and wanting to support, because it doesn't just help the person that's formerly incarcerated, like it will help. Make a more viable economy economic mobility for everyone in our community.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "The Michigan Fair Chance Access to Housing Act could minimize housing application barriers for the formerly incarcerated.",
+      "quote": "And so to that end, we do have something called the Michigan Fair Chance Access to Housing Act. That would help prevent some of these barriers of the background check that you have to check when you're applying for housing.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Fair Housing Legislation"
+    }
+  ]
+}

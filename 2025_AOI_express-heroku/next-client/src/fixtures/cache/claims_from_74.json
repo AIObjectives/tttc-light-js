@@ -1,0 +1,46 @@
+{
+  "claims": [
+    {
+      "claim": "The Department of Corrections poorly prepares inmates for reentry into society.",
+      "quote": "the Department of Corrections is set up is, is it does very little to emulate the actual world that most people are gonna be released into.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Incarceration is based on a model that undervalues individuals and does not teach them life skills.",
+      "quote": "They don't really have any real budgetary lessons that are learned. They don't have any idea that the reason why they're making 17 cents an hour is because they're deferring all these other costs...",
+      "topicName": "Policy Reform",
+      "subtopicName": "Good Time Credit Policies"
+    },
+    {
+      "claim": "The correctional system diminishes inmates' sense of self-worth.",
+      "quote": "What they do is, is that they learn that they're not worth very much, they're not worth, , good food, good clothes, any of those things. So their sense of value becomes really diminished.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Peer-led reentry programs can effectively counteract the loss of self-worth experienced by inmates.",
+      "quote": "Getting them to understand that they're worth it. Getting them to understand that what, that we are investing in them because we believe they're gonna give something back to all of us and to society as a whole.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    },
+    {
+      "claim": "The social structure inherently maintains a class of people at the bottom to uphold those at the top.",
+      "quote": "I also believe that the status quo requires people to be on the bottom and people to be on the top. And therefore it allows certain people to stay on the bottom and become the aggregate for everything else.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Prison Gerrymandering"
+    },
+    {
+      "claim": "Personal success stories can inspire and motivate other returning citizens.",
+      "quote": "Three and a half years after my incarceration, I'm the executive director of a nonprofit organization. And so you can't tell me what you can't do.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    },
+    {
+      "claim": "Internalized stigmas are more limiting for returning citizens than societal stigmas.",
+      "quote": "the worst stigmas are the ones that we internalize and take with us everywhere. So nobody has to, nobody has to do it to us because we stop ourselves.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Peer Support Networks"
+    }
+  ]
+}

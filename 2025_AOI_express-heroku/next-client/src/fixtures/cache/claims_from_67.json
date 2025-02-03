@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim": "Community and political efforts are both essential for social change.",
+      "quote": "You have ... folks on the ground who are helping, the folks who are tending to the wounded, so to speak. Right. And then you have the folks who are, in the political room ... who are making sure that the laws that hurt the wounded get taken off.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Direct support services and legislative advocacy must operate simultaneously for effective social change.",
+      "quote": "You have to have both operating at the exact same time.",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Collaborative Efforts"
+    },
+    {
+      "claim": "Actions to mitigate the effects of unjust systems must be taken despite the systems' continuation.",
+      "quote": "But we still also have to do things that we can in these unfair systems to, to, to, to alleviate and to, guard against some of",
+      "topicName": "Community and Supportive Services",
+      "subtopicName": "Reentry Programs"
+    }
+  ]
+}

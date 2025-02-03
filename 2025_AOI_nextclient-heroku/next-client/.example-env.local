@@ -1,0 +1,9 @@
+# How env works on NextJS: https://nextjs.org/docs/pages/building-your-application/configuring/environment-variables#default-environment-variables
+PIPELINE_EXPRESS_URL= # This is by default localhost:8080 on dev
+# Firebase keys below should be found on your firebase project. These are not sensitive and can be shared with the client.
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=

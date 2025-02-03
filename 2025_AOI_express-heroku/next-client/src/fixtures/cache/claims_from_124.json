@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim": "A criminal conviction should not result in a de facto life sentence.",
+      "quote": "10, 15 years ago, I, I had this criminal conviction, but I still can't get housing right now. So I. That is, and it's like this should not be a defacto life sentence.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "People should not be continuously punished after serving their sentence.",
+      "quote": "Once you've served your time, you've served it. So what, what are we really getting by continually to, to continuing to punish people.",
+      "topicName": "Policy Reform",
+      "subtopicName": "Expungement and Record Sealing"
+    },
+    {
+      "claim": "Criminal records create long-term barriers to housing.",
+      "quote": "10, 15 years ago, I, I had this criminal conviction, but I still can't get housing right now.",
+      "topicName": "Reentry Challenges",
+      "subtopicName": "Housing Accessibility"
+    }
+  ]
+}
