@@ -68,7 +68,7 @@ export function LanguageSelector() {
 
 export function CreateReport() {
   return (
-    <Link href={"/"}>
+    <Link href={"/create"}>
       <Button>
         <Row gap={1}>Create a report</Row>
       </Button>
