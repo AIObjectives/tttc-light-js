@@ -18,7 +18,10 @@ const fromQuotes = (arg: schema.Quote[]): string[] =>
   fromReferences(arg.flatMap((claim) => claim.reference));
 
 const fromClaims = (arg: schema.Claim[]): string[] =>
-  fromQuotes(arg.flatMap((claim) => claim.quotes));
+  fromQuotes([
+    ...arg.flatMap((claim) => claim.quotes),
+    ...arg.flatMap((claim) => claim.similarClaims.flatMap((c) => c.quotes)),
+  ]);
 
 const fromSubtopics = (arg: schema.Subtopic[]): string[] =>
   fromClaims(arg.flatMap((topic) => topic.claims));
