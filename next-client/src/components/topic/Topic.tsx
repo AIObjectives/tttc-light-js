@@ -191,10 +191,11 @@ export function SubtopicList({
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
   return (
-    <p className="line-clamp-2 leading-6 flex-grow">
-      <TextIcon className="inline" icon={<Icons.Topic className="inline " />}>
-        {subtopics.length} subtopics
-      </TextIcon>
+    <TextIcon
+      className="inline line-clamp-2 leading-6 flex-grow"
+      icon={<Icons.Topic className="inline " />}
+    >
+      {subtopics.length} subtopics
       {"   "}
       {subtopics.map((subtopic, i) => (
         <SubtopicListItem
@@ -205,7 +206,7 @@ export function SubtopicList({
           onMouseOut={() => onMouseExit(subtopic.id)}
         />
       ))}
-    </p>
+    </TextIcon>
   );
 }
 
@@ -229,14 +230,14 @@ export function SubtopicListItem({
   return (
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
-        <p
+        <span
           className="cursor-pointer text-muted-foreground text-sm  inline"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
         >
           <span className="link">{subtopic.title}</span>
           {withComma ? ",   " : ""}
-        </p>
+        </span>
       </HoverCardTrigger>
       <HoverCardContent>
         <Col gap={4}>
