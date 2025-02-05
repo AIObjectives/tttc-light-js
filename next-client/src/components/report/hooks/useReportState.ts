@@ -73,6 +73,10 @@ export type SomeNode = TopicNode | SubtopicNode | ClaimNode;
 
 //  ********************************
 //  * PATH FINDING *
+//  *
+//  * Instead of searching through the full tree for a node every time we want find one,
+//  * we build a map: node id -> Path
+//  * Each Path should be tagged with a type, and contain an object that has the indices that lead there.
 //  ********************************/
 
 type TopicPath = { type: "topic"; path: { topicIdx: number } };
@@ -88,9 +92,9 @@ type ClaimPath = {
 };
 
 /**
- * Takes the state and maps every id to a path to it and adds it to a record.
+ * Takes the state and maps every id to a Path
  *
- * Uses the entry types to
+ * Returns a Record id -> (TopicPath | SubtopicPath | ClaimPath)
  */
 const mapIdsToPath = (
   state: ReportState,
@@ -119,6 +123,7 @@ const mapIdsToPath = (
                     type: "subtopic",
                     path: { topicIdx: i, subtopicIdx: j },
                   } as SubtopicPath),
+                  // add entries for all claims
                   (idxMap) =>
                     pipe(
                       subtopic.children,
@@ -141,6 +146,9 @@ const mapIdsToPath = (
 
 //  ********************************
 //  * ACTION STREAM REDUCER *
+//  *
+//  * We want to break down actions from the report state reducer into a series of smaller
+//  * more maintainable actions.
 //  ********************************/
 
 type OpenTopicAction = {
@@ -181,6 +189,8 @@ function actionStreamReducer(
 
 //  ********************************
 //  * ACTION STREAM ACTIONS *
+//  *
+//  * Action builders for the action stream reducer.
 //  ********************************/
 
 const openTopicAction = (path: { topicIdx: number }): OpenTopicAction => ({
@@ -188,15 +198,12 @@ const openTopicAction = (path: { topicIdx: number }): OpenTopicAction => ({
   payload: { path },
 });
 
-const topicPaginationSetter = (n: number) =>
-  Math.max(defaultTopicPagination, n);
-
 const setTopicPaginationAction = (path: {
   topicIdx: number;
   subtopicIdx: number;
 }): SetTopicPaginationAction => ({
   type: "setTopicPagination",
-  payload: { path, pag: topicPaginationSetter(path.subtopicIdx) },
+  payload: { path, pag: Math.max(path.subtopicIdx, defaultTopicPagination) },
 });
 
 const setSubtopicPaginationAction = (
@@ -209,9 +216,11 @@ const setSubtopicPaginationAction = (
 
 //  ********************************
 //  * NODE TRANSFORMERS *
+//  *
+//  * Functions for modify an individual node
 //  ********************************/
 
-const setNodeOpen = <T extends SomeNode & { isOpen: boolean }>(node: T): T => ({
+const setNodeOpen = (node: TopicNode): TopicNode => ({
   ...node,
   isOpen: true,
 });
@@ -225,12 +234,20 @@ const setNodePagination =
 
 //  ********************************
 //  * ACTION STREAM STATE TRANSFORMERS *
+//  *
+//  * Functions used directly by the action stream reducer.
 //  ********************************/
 
+/**
+ * Helper function for changing a node in an array of topics
+ */
 const modifyTopic =
   (index: number, f: (node: TopicNode) => TopicNode) => (topics: TopicNode[]) =>
     Array.modify(topics, index, f);
 
+/**
+ * Helper function for changin a subtopic, starting from an array of topics
+ */
 const modifySubtopic = (
   path: { topicIdx: number; subtopicIdx: number },
   f: (node: SubtopicNode) => SubtopicNode,
@@ -240,6 +257,9 @@ const modifySubtopic = (
     children: Array.modify(topicNode.children, path.subtopicIdx, f),
   }));
 
+/**
+ * Takes an OpenTopicAction, changes a topic to open, and returns a new report state
+ */
 const setTopicToOpen = (
   state: ReportState,
   { payload }: OpenTopicAction,
@@ -253,6 +273,9 @@ const setTopicToOpen = (
     }),
   );
 
+/**
+ * Takes a SetTopicPaginationAction, changes a topic's pagination, and returns a new report state
+ */
 const setTopicPagination = (
   state: ReportState,
   { payload }: SetTopicPaginationAction,
@@ -263,6 +286,9 @@ const setTopicPagination = (
     (children) => ({ ...state, children }),
   );
 
+/**
+ * Takes a SetSubtopicPaginationAction, changes a subtopic's pagination, and returns a new state
+ */
 const setSubtopicPagination = (
   state: ReportState,
   { payload }: SetSubtopicPaginationAction,
@@ -275,16 +301,38 @@ const setSubtopicPagination = (
 
 //  ********************************
 //  * REPORTSTATE ACTIONS ->  ACTION STREAM ACTIONS *
+//  *
+//  * Translates a report state action into a series of action stream reducer actions.
+//  * These should each handle every possible case.
 //  ********************************/
 
-const getOpenActions = Match.type<TopicPath | SubtopicPath | ClaimPath>().pipe(
+/**
+ * Action stream actions for "Open"
+ */
+const createOpenActionStream = Match.type<
+  TopicPath | SubtopicPath | ClaimPath
+>().pipe(
+  /**
+   * When the node is a topic node, just open it
+   */
   Match.when({ type: "topic" }, ({ path }): TopicActions[] => [
     openTopicAction(path),
   ]),
+  /**
+   * When the node is a subtopic node:
+   * - open the parent topic node
+   * - set the topic pagination so the subtopic is visible
+   */
   Match.when({ type: "subtopic" }, ({ path }): TopicActions[] => [
     openTopicAction(path),
     setTopicPaginationAction(path),
   ]),
+  /**
+   * When the node is a claim node:
+   * - Open the parent topic
+   * - Set the parent topic's pagination so the parent subtopic is is visible
+   * - Set the parent subtopic's pagination is the claim is visible.
+   */
   Match.when(
     { type: "claim" },
     ({ path }): (TopicActions | SubtopicActions)[] => [
@@ -305,6 +353,9 @@ export type ReportStateAction = {
 //  * STATE BUILDERS *
 //  ********************************/
 
+/**
+ * Builds the report state from a list of topics
+ */
 const stateBuilder = (topics: schema.Topic[]): ReportState => ({
   children: topics
     .map(makeTopicNode)
@@ -352,19 +403,25 @@ type ReportStatePayload = { id: string };
 
 function reducer(state: ReportState, action: ReportStateAction): ReportState {
   const { id } = action.payload;
+  // TODO: make this so it doesn't run on every call
   const idMap = mapIdsToPath(state);
   switch (action.type) {
     // For open, we want the same function to work for topics or subtopics.
     // If subtopic, should open parent and set pagination to the correct value
     case "open": {
-      // return openToNode(state, id);
-      // return open(state, action.payload.id);
       return pipe(
         idMap,
         Record.get(id),
         Option.map(
-          flow(getOpenActions, Array.reduce(state, actionStreamReducer)),
+          flow(
+            // Break down the action into a bunch of subactions
+            createOpenActionStream,
+            // and reduce over the state
+            Array.reduce(state, actionStreamReducer),
+          ),
         ),
+        // If idxMap for some reason couldn't find the Path, just return the state.
+        // TODO: Include more comprehensive error handling.
         Option.getOrElse(() => state),
       );
     }
