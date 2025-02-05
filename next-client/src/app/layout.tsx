@@ -7,7 +7,7 @@ import { getAuthenticatedAppForUser } from "@src/lib/firebase/serverApp";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Talk the City",
+  title: "Talk to the City",
 };
 
 export default async function RootLayout({

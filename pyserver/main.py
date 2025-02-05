@@ -74,7 +74,7 @@ def read_root():
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
 @app.post("/topic_tree/")
-def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
+def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given the full list of comments, return a corresponding taxonomy of relevant topics and their
   subtopics, with a short description for each.
@@ -190,7 +190,13 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-               group=exp_group_name)
+               group=exp_group_name,
+               resume="allow")
+      wandb.config.update({
+                "s1_topics/model" : req.llm.model_name,
+                "s1_topics/user_prompt" : req.llm.user_prompt,
+                "s1_topics/system_prompt" : req.llm.system_prompt
+               })
       comment_lengths = [len(c.text) for c in req.comments]
       num_topics = len(tree["taxonomy"])
       subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
@@ -209,8 +215,6 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
         "subtopic_bins" : subtopic_bins,
         "rows_to_tree" : wandb.Table(data=comms_tree_list,
                                      columns = ["comments", "taxonomy"]),
-        "step_taxonomy/model" : req.llm.model_name,
-        "step_taxonomy/prompt" : req.llm.user_prompt,
         # token counts
         "U_tok_N/taxonomy": usage.total_tokens,
         "U_tok_in/taxonomy" : usage.prompt_tokens,
@@ -258,13 +262,19 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   except:
     print("Step 2: no response: ", response)
     claims = {}
-  return {"claims" : json.loads(claims), "usage" : response.usage}
+  # TODO: json.loads(claims) fails sometimes 
+  try:
+    claims_obj = json.loads(claims)
+  except:
+    print("json_parse_failure;claims:", claims)
+    claims_obj = claims
+  return {"claims" : claims_obj, "usage" : response.usage}
 
 ####################################
 # Step 2: Extract and place claims #
 #----------------------------------#
 @app.post("/claims/")
-def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
+def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
   Place each claim under the correct subtopic in the tree.
@@ -463,16 +473,20 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group=exp_group_name)
+                 group=exp_group_name,
+                 resume="allow")
+      wandb.config.update({
+                  "s2_claims/model" : req.llm.model_name,
+                  "s2_claims/user_prompt" : req.llm.user_prompt,
+                  "s2_claims/system_prompt" : req.llm.system_prompt
+                 })
       wandb.log({
         "U_tok_N/claims" : TK_2_TOT,
         "U_tok_in/claims": TK_2_IN,
         "U_tok_out/claims" : TK_2_OUT,
         "rows_to_claims" : wandb.Table(
                            data=comms_to_claims_html,
-                           columns = ["comments", "claims"]),
-         "step_claims/model" : req.llm.model_name,
-         "step_claims/prompt" : req.llm.user_prompt
+                           columns = ["comments", "claims"])
       })
     except:
       print("Failed to log wandb run")
@@ -493,7 +507,7 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
   )
 
   # add claims with enumerated ids (relative to this subtopic only)
-  full_prompt = config.CLAIM_DEDUP_PROMPT
+  full_prompt = llm.user_prompt
   for i, orig_claim in enumerate(claims):
     full_prompt += "\nclaimId"+str(i)+ ": " + orig_claim["claim"]
 
@@ -502,11 +516,11 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
     messages = [
       {
         "role": "system",
-        "content": config.SYSTEM_PROMPT
+        "content": llm.system_prompt
       },
       {
-            "role": "user",
-            "content": full_prompt
+        "role": "user",
+        "content": full_prompt
       }
     ],
     temperature = 0.0,
@@ -517,13 +531,18 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
   except:
     print("Step 3: no deduped claims: ", response)
     deduped_claims = {}
-  return {"dedup_claims" : json.loads(deduped_claims), "usage" : response.usage}
+  try: 
+    deduped_claims_obj = json.loads(deduped_claims)
+  except:
+    print("json failure;dedup:", deduped_claims)
+    deduped_claims_obj = deduped_claims
+  return {"dedup_claims" : deduped_claims_obj, "usage" : response.usage}
 
 #####################################
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
 @app.put("/sort_claims_tree/")
-def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
+def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """
   Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
   all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -815,12 +834,13 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                
                   # add all duplicates as children of main claim
                   clean_claim["duplicates"].append(dupe_claim)
+
                   accounted_for_ids[dupe_id] = 1
             
             # add verified claim (may be identical if it has no dupes, except for duplicates: [] field)
             deduped_claims.append(clean_claim)
             accounted_for_ids[claim_id] = 1
-         
+
         # sort so the most duplicated claims are first
         sorted_deduped_claims = sorted(deduped_claims, key=lambda x: len(x["duplicates"]), reverse=True)
         if log_to_wandb:
@@ -878,7 +898,14 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group = exp_group_name)
+                 group = exp_group_name,
+                 resume="allow")
+      wandb.config.update({
+                    "s3_dedup/model" : req.llm.model_name,
+                    "s3_dedup/user_prompt" : req.llm.user_prompt,
+                    "s3_dedup/system_prompt" : req.llm.system_prompt
+                 })
+
       report_data = [[json.dumps(full_sort_tree, indent=2)]]
       wandb.log({
         "U_tok_N/dedup" : TK_TOT,
@@ -886,9 +913,10 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
         "U_tok_out/dedup" : TK_OUT,
         "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
         "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"]),
-        "step_dedup/model" : req.llm.model_name,
-        "step_dedup/prompt" : req.llm.user_prompt
+        
       })
+      # W&B run completion
+      wandb.run.finish()
     except:
       print("Failed to create wandb run")
   net_usage = {"total_tokens" : TK_TOT,
@@ -977,7 +1005,11 @@ def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_m
       response_format={ "type": "json_object" }
   )
   crux = response.choices[0].message.content
-  return {"crux" : json.loads(crux), "usage" : response.usage }
+  try:
+    crux_obj = json.loads(crux)
+  except:
+    crux_obj = crux
+  return {"crux" : crux_obj, "usage" : response.usage }
 
 def get_speakers_map(tree:dict):
   speakers = set()
@@ -997,7 +1029,7 @@ def get_speakers_map(tree:dict):
 
 #@app.post("/cruxes/")
 # TODO: configure optional TS calling, logic for extracting cruxes
-def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
+def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """ Given a topic, description, and corresponding list of claims, extract the
   crux claims that would best split the claims into agree/disagree sides
   Note: currently we do this for the subtopic level, could scale up to main topic?
@@ -1066,8 +1098,12 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group=exp_group_name
-                 )
+                 group=exp_group_name,
+                 resume="allow")
+      wandb.config.update({
+                   "s4_cruxes/model" : req.llm.model_name,
+                  "s4_cruxes/prompt" : req.llm.user_prompt
+                 })
 
       # compute confusion matrix
       speaker_labels = sorted(speaker_map.keys())
@@ -1103,9 +1139,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
         "U_tok_out/cruxes" : TK_OUT,
         "crux_explain" : wandb.Table(data=crux_data,
                                columns = ["topic", "description", "claims", "crux_explain"]),
-        "crux_YN" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"]),
-        "step_cruxes/model" : req.llm.model_name,
-        "step_cruxes/prompt" : req.llm.user_prompt
+        "crux_YN" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"])
       })
       wandb.log({
         "crux_binary_conf_mat" : wandb.Table(data=conf_mat, columns = cols),
