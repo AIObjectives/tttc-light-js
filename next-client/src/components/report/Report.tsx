@@ -329,10 +329,8 @@ export function ReportSummary({
       <Col gap={1}>
         <h4>Summary</h4>
         <TextIcon icon={<Icons.Info />}>
-          <p className="p2 text-muted-foreground">
-            The summary is written by the report creators, while the rest is
-            AI-generated, exluding quotes.
-          </p>
+          The summary is written by the report creators, while the rest is
+          AI-generated, exluding quotes.
         </TextIcon>
       </Col>
       {/* Summary Description */}

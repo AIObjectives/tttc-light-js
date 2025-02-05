@@ -1,0 +1,342 @@
+{
+  "data": [
+    "v0.2",
+    {
+      "title": "test getNPeople",
+      "description": "test",
+      "topics": [
+        {
+          "id": "f49558e5-0030-4388-8d2b-753c37003c55",
+          "title": "Tool Effectiveness",
+          "description": "Insights on how the tool enhances democratic consultation.",
+          "subtopics": [
+            {
+              "id": "b438225f-1c22-496d-8a5b-e99be4e1ed43",
+              "title": "Data Analysis",
+              "description": "The tool's capability to analyze large datasets using LLMs.",
+              "claims": [
+                {
+                  "id": "bef0189d-fcd0-4ab1-a918-f46bcd11af3e",
+                  "title": "The tool significantly enhances the efficiency of democratic consultation.",
+                  "quotes": [
+                    {
+                      "id": "66571696-0e22-49bd-870d-8d88cf2bf188",
+                      "text": "Yes, because it leverages LLMs to analyze large datasets [...].",
+                      "reference": {
+                        "id": "ecbaeecd-e850-46e8-a2bc-9af8330a9f90",
+                        "sourceId": "729338f6-5096-488d-ac83-8c06e5296284",
+                        "interview": "alice@email.com",
+                        "data": [
+                          "text",
+                          {
+                            "startIdx": -1,
+                            "endIdx": 62
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "number": 1,
+                  "similarClaims": [
+                    {
+                      "id": "ba405b50-6bfb-4674-9a53-5744af643914",
+                      "title": "The tool significantly enhances the efficiency of democratic consultation.",
+                      "quotes": [
+                        {
+                          "id": "8be203b1-9745-4b59-a9b2-f76787a10266",
+                          "text": "Yes, because it leverages LLMs to analyze large datasets [...].",
+                          "reference": {
+                            "id": "6f734380-bb95-4f82-9c4a-e30fb6ee39d7",
+                            "sourceId": "328f6652-9844-4abc-962f-93e7ba977516",
+                            "interview": "fiona@email.com",
+                            "data": [
+                              "text",
+                              {
+                                "startIdx": -1,
+                                "endIdx": 62
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "number": 2,
+                      "similarClaims": []
+                    },
+                    {
+                      "id": "c67c6d20-2a40-4798-85e7-0e61b9b0e4b8",
+                      "title": "The tool significantly enhances the efficiency of democratic consultation.",
+                      "quotes": [
+                        {
+                          "id": "cdab2618-263c-4718-874e-da2838de26b4",
+                          "text": "Yes, because it leverages LLMs to analyze large datasets [...].",
+                          "reference": {
+                            "id": "087aa0c6-34db-481e-a494-f0e75b1dbc2e",
+                            "sourceId": "a067e5e4-f6f2-4c54-a2a5-a1b1fd46cb84",
+                            "interview": "heather@email.com",
+                            "data": [
+                              "text",
+                              {
+                                "startIdx": -1,
+                                "endIdx": 62
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "number": 3,
+                      "similarClaims": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1df7cf31-9926-4889-978b-3103c6a2f085",
+              "title": "Opinion Summarization",
+              "description": "The tool's ability to summarize public sentiment and opinions.",
+              "claims": [
+                {
+                  "id": "dac1702d-00d3-4d42-bcf7-b5ce2018ffdf",
+                  "title": "The tool's opinion summarization capability is essential for understanding public sentiment.",
+                  "quotes": [
+                    {
+                      "id": "6f557095-1f99-42dc-af74-caa78ef8ac62",
+                      "text": "the tool's ability to summarize opinions rather than just factual data is incredibly useful for understanding public sentiment.",
+                      "reference": {
+                        "id": "0a7fef86-7d3c-46ef-b092-b1356453f524",
+                        "sourceId": "82f1b87c-8718-4c95-8f83-8933a7a60fab",
+                        "interview": "bob@email.com",
+                        "data": [
+                          "text",
+                          {
+                            "startIdx": 12,
+                            "endIdx": 139
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "number": 4,
+                  "similarClaims": [
+                    {
+                      "id": "accc857b-66d0-4edc-bfef-289d519e9444",
+                      "title": "The tool's ability to summarize opinions is essential for understanding public sentiment.",
+                      "quotes": [
+                        {
+                          "id": "2ff31078-ecf8-4792-8f63-d3342a2a7829",
+                          "text": "the tool's ability to summarize opinions rather than just factual data is incredibly useful for understanding public sentiment.",
+                          "reference": {
+                            "id": "33ba3958-e104-44aa-b3d1-a18f4fba3d3e",
+                            "sourceId": "a218079c-76b0-4ff6-93cc-760e9cce8405",
+                            "interview": "charles@email.com",
+                            "data": [
+                              "text",
+                              {
+                                "startIdx": 12,
+                                "endIdx": 139
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "number": 5,
+                      "similarClaims": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "topicColor": "brown"
+        },
+        {
+          "id": "93e7d252-60e5-44d4-97c3-3a35bc6d5630",
+          "title": "Public Good",
+          "description": "Comments on the tool's alignment with public interest.",
+          "subtopics": [
+            {
+              "id": "51a4ad82-bdb5-43ef-b2b5-4a8a1ef9d7ae",
+              "title": "Non-Profit Development",
+              "description": "The tool's development by a non-profit organization.",
+              "claims": [
+                {
+                  "id": "1f4ac18f-8ba3-4612-addd-495e05615eb8",
+                  "title": "The tool is designed with the public good in mind.",
+                  "quotes": [
+                    {
+                      "id": "9f2be7d4-d9d8-400e-8e75-7739c84c41f3",
+                      "text": "Yes, considering it is developed as a non-profit initiative, [...]",
+                      "reference": {
+                        "id": "b80f8a92-716f-49e2-b26c-67e9a1aea921",
+                        "sourceId": "43f35c12-326d-4d19-b2cc-7caac5d996e2",
+                        "interview": "dave@email.com",
+                        "data": [
+                          "text",
+                          {
+                            "startIdx": -1,
+                            "endIdx": 65
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "number": 6,
+                  "similarClaims": [
+                    {
+                      "id": "df490e15-a3a3-4435-be52-6fb20c67e0ea",
+                      "title": "The tool is designed for the public good.",
+                      "quotes": [
+                        {
+                          "id": "11ab8834-a6d1-496f-94df-59acf78401cc",
+                          "text": "Yes, developed by a non-profit, it looks like this tool is created and intended for the public good.",
+                          "reference": {
+                            "id": "588f2bc2-76d9-477a-84e1-008e2eda37a8",
+                            "sourceId": "51c92745-a4b9-4d80-8d12-7a8b857fc419",
+                            "interview": "ethan@email.com",
+                            "data": [
+                              "text",
+                              {
+                                "startIdx": 0,
+                                "endIdx": 100
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "number": 7,
+                      "similarClaims": []
+                    },
+                    {
+                      "id": "47a4c3e6-b84d-4ce9-a419-c2b81a6efa58",
+                      "title": "The tool's non-profit development enhances its ability to support public good initiatives.",
+                      "quotes": [
+                        {
+                          "id": "a5860bce-f96a-4b88-a0e8-4b60ba177a5d",
+                          "text": "Yes, I can see that because it's built by a non-profit, [...].",
+                          "reference": {
+                            "id": "ed39ba98-1b83-4038-b295-a2c277fd8911",
+                            "sourceId": "31afaed5-e7aa-4d88-912b-f5ffd01cdb55",
+                            "interview": "george@email.com",
+                            "data": [
+                              "text",
+                              {
+                                "startIdx": -1,
+                                "endIdx": 61
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "number": 8,
+                      "similarClaims": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "582aac9a-b891-4b3c-be7d-108163e36f72",
+              "title": "Support for Initiatives",
+              "description": "The tool's role in supporting public good initiatives.",
+              "claims": []
+            }
+          ],
+          "topicColor": "blueSky"
+        }
+      ],
+      "sources": [
+        {
+          "id": "729338f6-5096-488d-ac83-8c06e5296284",
+          "interview": "alice@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Yes, because it leverages LLMs to analyze large datasets and could significantly streamline the process of democratic consultation."
+            }
+          ]
+        },
+        {
+          "id": "82f1b87c-8718-4c95-8f83-8933a7a60fab",
+          "interview": "bob@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Definitely, the tool's ability to summarize opinions rather than just factual data is incredibly useful for understanding public sentiment."
+            }
+          ]
+        },
+        {
+          "id": "a218079c-76b0-4ff6-93cc-760e9cce8405",
+          "interview": "charles@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Absolutely, the tool's ability to summarize opinions rather than just factual data is incredibly useful for understanding public sentiment."
+            }
+          ]
+        },
+        {
+          "id": "43f35c12-326d-4d19-b2cc-7caac5d996e2",
+          "interview": "dave@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Yes, considering it is developed as a non-profit initiative, it seems like a tool designed with the public good in mind."
+            }
+          ]
+        },
+        {
+          "id": "51c92745-a4b9-4d80-8d12-7a8b857fc419",
+          "interview": "ethan@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Yes, developed by a non-profit, it looks like this tool is created and intended for the public good."
+            }
+          ]
+        },
+        {
+          "id": "328f6652-9844-4abc-962f-93e7ba977516",
+          "interview": "fiona@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Yes, because it leverages LLMs to analyze large datasets and could significantly streamline the process of democratic consultation."
+            }
+          ]
+        },
+        {
+          "id": "31afaed5-e7aa-4d88-912b-f5ffd01cdb55",
+          "interview": "george@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Yes, I can see that because it's built by a non-profit, this tool will support public good initiatives."
+            }
+          ]
+        },
+        {
+          "id": "a067e5e4-f6f2-4c54-a2a5-a1b1fd46cb84",
+          "interview": "heather@email.com",
+          "data": [
+            "text",
+            {
+              "text": "Yes, because it leverages LLMs to analyze large datasets and could significantly streamline the process of democratic consultation."
+            }
+          ]
+        }
+      ],
+      "date": "2025-02-04T16:23:55.668Z"
+    }
+  ],
+  "metadata": [
+    "v0.2",
+    {
+      "duration": 0,
+      "startTimestamp": 1738686208743,
+      "totalCost": "",
+      "author": "",
+      "organization": ""
+    }
+  ]
+}

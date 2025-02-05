@@ -101,7 +101,12 @@ function FeedbackForm() {
   return (
     <Dialog open={dialogState.dialog}>
       <DialogTrigger onClick={() => dispatch({ type: "dialog" })}>
-        <Button size={"icon"} variant={"outline"} className="rounded-full p-4">
+        <Button
+          asChild
+          size={"icon"}
+          variant={"outline"}
+          className="rounded-full p-4"
+        >
           <Icons.Feedback size={24} className="stroke-[1.2px]" />
         </Button>
       </DialogTrigger>
