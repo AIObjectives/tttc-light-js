@@ -50,17 +50,18 @@ export const env = z.object({
   FIREBASE_DATABASE_URL: z
     .string({ required_error: "Missing FIREBASE_DATABASE_URL" })
     .url({ message: "FIREBASE_DATABASE_URL in env should be a valid url" }),
-  REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
-  REDIS_PORT: z
-    .string({ required_error: "Missing REDIS_PORT" })
-    .refine(
-      (v) => {
-        let n = Number(v);
-        return !isNaN(n) && v?.length > 0;
-      },
-      { message: "REDIS_PORT should be a numberic string" },
-    )
-    .transform((numstr) => Number(numstr)),
+  // REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
+  // REDIS_PORT: z
+  //   .string({ required_error: "Missing REDIS_PORT" })
+  //   .refine(
+  //     (v) => {
+  //       let n = Number(v);
+  //       return !isNaN(n) && v?.length > 0;
+  //     },
+  //     { message: "REDIS_PORT should be a numberic string" },
+  //   )
+  //   .transform((numstr) => Number(numstr)),
+  REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
 });
 
 export type Env = z.infer<typeof env>;

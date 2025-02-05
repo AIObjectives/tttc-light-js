@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  next-client:
+    image: registry.heroku.com/t3c-client/web
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: next-client/Dockerfile
+    ports:
+      - "3000:3000"
+    # environment:
+    # - NEXT_PUBLIC_API_URL=http://api:4000
+    # - NEXT_PUBLIC_FIREBASE_CONFIG=${FIREBASE_CONFIG}
+
+  express-server:
+    image: registry.heroku.com/t3c-pipeline/web
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: express-server/Dockerfile
+    ports:
+      - "8080:8080"
+    # environment:
+    # - REDIS_URL=redis://redis:6379
+    # depends_on: # <-- for dev
+    #   - redis
+
+  pyserver:
+    image: registry.heroku.com/t3c-pyserver/web
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: pyserver/Dockerfile
+    ports:
+      - "8000:8000"
+
+  # redis: # for dev
+  #   image: redis:6-alpine
+  #   ports:
+  #     - "6379:6379"

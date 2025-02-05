@@ -4,19 +4,21 @@ import { exit } from "process";
 import { Env } from "types/context";
 
 export const setupConnection = (env: Env) => {
-  const connection = new IORedis({
+  const connection = new IORedis(env.REDIS_URL, {
     connectionName: "Express-Pipeline",
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
     maxRetriesPerRequest: null,
+    // Add TLS options for Heroku
+    // tls: {
+    //   rejectUnauthorized: false
+    // }
   });
 
   connection.on("connect", () => {
     console.log("Redis is connected");
   });
 
-  connection.on("error", () => {
-    console.error("Redis connection error");
+  connection.on("error", (e) => {
+    console.error("Redis connection error: ", e.name, e.message);
     exit(1);
   });
 

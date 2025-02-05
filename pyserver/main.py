@@ -13,22 +13,28 @@ name to use, the system prompt, and the specific pipeline step prompts.
 Currently only supports OpenAI (Anthropic soon!!!)
 For local testing, load these from a config.py file
 """
-
+import os
+import sys
+from pathlib import Path
 from fastapi import FastAPI
-#from fastapi.testclient import TestClient
-import json
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
 import wandb
+import json
 
-# TODO: which set of imports shall we keep? :)
-#import config
-#from utils import cute_print
-#from visualize import show_confusion_matrix
+# Add the current directory to path for imports
+current_dir = Path(__file__).resolve().parent
+sys.path.append(str(current_dir))
 
-import pyserver.config as config
-from pyserver.utils import cute_print
+import config
+from utils import cute_print
+
+app = FastAPI() 
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
 class Comment(BaseModel):
   id: str
@@ -64,6 +70,11 @@ class CruxesLLMConfig(BaseModel):
   topics: list
 
 app = FastAPI()
+
+if __name__ == "__main__":
+  import uvicorn
+  port = int(os.getenv("PORT", 8000))
+  uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
 
 @app.get("/")
 def read_root():
@@ -1157,3 +1168,8 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
 
   return {"data" : cruxes, "usage" : net_usage}
 
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)
