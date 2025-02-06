@@ -1,9 +1,13 @@
 import { describe, test, expect } from "vitest";
 import { ReportState, SomeNode, __internals } from "../useReportState";
 import { reportData } from "stories/data/dummyData";
-import { cons } from "effect/List";
 
-const { reducer, stateBuilder, defaultTopicPagination } = __internals;
+const {
+  createPathMapReducer,
+  stateBuilder,
+  defaultTopicPagination,
+  mapIdsToPath,
+} = __internals;
 
 const state = stateBuilder(reportData.topics);
 
@@ -35,6 +39,7 @@ const firstTopic = getTopic(state);
 const lastTopic = getLastTopic(state);
 const middleTopic = getMiddleTopic(state);
 const testTopics = [firstTopic, middleTopic, lastTopic];
+const reducer = createPathMapReducer(mapIdsToPath(state));
 const open = (reportState: ReportState, id: string) =>
   reducer(reportState, { type: "open", payload: { id } });
 

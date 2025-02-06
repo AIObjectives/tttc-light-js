@@ -18,6 +18,16 @@ import {
   Function,
 } from "effect";
 
+/**
+ * @fileoverview
+ * This manages the state of the report. Things like pagination, whether the report is open, etc.
+ *
+ * Overview: This module exposes a useReportState function, which returns state and dispatch
+ *
+ * When an action is dispatched, we break up the action into a bunch of sub actions, and
+ * apply those actions to the state.
+ */
+
 const defaultTopicPagination = 3;
 const addTopicPagination = 1;
 
@@ -401,78 +411,91 @@ type ReportStateActionTypes =
 
 type ReportStatePayload = { id: string };
 
-function reducer(state: ReportState, action: ReportStateAction): ReportState {
-  const { id } = action.payload;
-  // TODO: make this so it doesn't run on every call
-  const idMap = mapIdsToPath(state);
-  switch (action.type) {
-    // For open, we want the same function to work for topics or subtopics.
-    // If subtopic, should open parent and set pagination to the correct value
-    case "open": {
-      return pipe(
-        idMap,
-        Record.get(id),
-        Option.map(
-          flow(
-            // Break down the action into a bunch of subactions
-            createOpenActionStream,
-            // and reduce over the state
-            Array.reduce(state, actionStreamReducer),
+function createPathMapReducer(
+  idMap: Record<string, TopicPath | SubtopicPath | ClaimPath>,
+) {
+  return function (state: ReportState, action: ReportStateAction): ReportState {
+    const { id } = action.payload;
+    switch (action.type) {
+      // For open, we want the same function to work for topics or subtopics.
+      // If subtopic, should open parent and set pagination to the correct value
+      case "open": {
+        return pipe(
+          idMap,
+          Record.get(id),
+          Option.map(
+            flow(
+              // Break down the action into a bunch of subactions
+              createOpenActionStream,
+              // and reduce over the state
+              Array.reduce(state, actionStreamReducer),
+            ),
           ),
-        ),
-        // If idxMap for some reason couldn't find the Path, just return the state.
-        // TODO: Include more comprehensive error handling.
-        Option.getOrElse(() => state),
-      );
+          // If idxMap for some reason couldn't find the Path, just return the state.
+          // TODO: Include more comprehensive error handling.
+          Option.getOrElse(() => state),
+        );
+      }
+      // closes topic and resets its children
+      // case "close": {
+      //   return combineActions(
+      //     closeTopic,
+      //     resetTopic,
+      //     resetTopicsChildren,
+      //   )(state, id);
+      // }
+      // turns a topic off and on
+      // case "toggleTopic": {
+      //   return combineActions(toggleTopic, resetTopic)(state, id);
+      // }
+      // Opens every topic expands its and every child's pagination
+      // case "openAll": {
+      //   return openAllTopics(state);
+      // }
+      // Inverse operation of the above
+      // case "closeAll": {
+      //   return pipe(state, closeAllTopics, resetAllTopics, resetAllSubtopics);
+      // }
+      // TODO
+      // case "expandTopic": {
+      //   return expandTopic(state, id);
+      // }
+      // TODO
+      // case "expandSubtopic": {
+      //   return expandSubtopic(state, id);
+      // }
+      // Sets focus id
+      // case "focus": {
+      //   return setFocusedId(state, id);
+      // }
+      default: {
+        return state;
+      }
     }
-    // closes topic and resets its children
-    // case "close": {
-    //   return combineActions(
-    //     closeTopic,
-    //     resetTopic,
-    //     resetTopicsChildren,
-    //   )(state, id);
-    // }
-    // turns a topic off and on
-    // case "toggleTopic": {
-    //   return combineActions(toggleTopic, resetTopic)(state, id);
-    // }
-    // Opens every topic expands its and every child's pagination
-    // case "openAll": {
-    //   return openAllTopics(state);
-    // }
-    // Inverse operation of the above
-    // case "closeAll": {
-    //   return pipe(state, closeAllTopics, resetAllTopics, resetAllSubtopics);
-    // }
-    // TODO
-    // case "expandTopic": {
-    //   return expandTopic(state, id);
-    // }
-    // TODO
-    // case "expandSubtopic": {
-    //   return expandSubtopic(state, id);
-    // }
-    // Sets focus id
-    // case "focus": {
-    //   return setFocusedId(state, id);
-    // }
-    default: {
-      return state;
-    }
-  }
+  };
 }
 
+/**
+ * Hook for managing the state of the report
+ *
+ * Should only be invoked once for a report
+ */
 function useReportState(
   topics: schema.Topic[],
 ): [ReportState, Dispatch<ReportStateAction>] {
-  const [state, dispatch] = useReducer(reducer, stateBuilder(topics));
-  return [state, dispatch];
+  // Builds the initial state of the report
+  const initialState = stateBuilder(topics);
+  // This creates a Record: string -> Path.
+  const idMap = mapIdsToPath(initialState);
+  // Curries the idMap into the reducer function, so we don't have to call it over and over again.
+  const reducer = createPathMapReducer(idMap);
+  // ReportState, ({action, payload}) => ReportState
+  return useReducer(reducer, initialState);
 }
 
 export const __internals = {
   mapIdsToPath,
-  reducer,
+  createPathMapReducer,
   defaultTopicPagination,
   defaultSubtopicPagination,
   stateBuilder,

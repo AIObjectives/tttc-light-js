@@ -1,15 +1,9 @@
 import { beforeAll, describe, expect, test } from "vitest";
-import { __internals, ReportState, SomeNode } from "../useReportState";
+import { __internals, ReportState } from "../useReportState";
 import { reportData } from "stories/data/dummyData";
-import { Record } from "effect";
 
-const {
-  mapIdsToPath,
-  reducer,
-  stateBuilder,
-  defaultTopicPagination,
-  defaultSubtopicPagination,
-} = __internals;
+const { stateBuilder, defaultTopicPagination, defaultSubtopicPagination } =
+  __internals;
 
 const state = stateBuilder(reportData.topics);
 
