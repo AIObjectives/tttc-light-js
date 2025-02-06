@@ -32,6 +32,62 @@ import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useHashChange } from "@src/lib/hooks/useHashChange";
 import { BarChart, BarChartItemType } from "../barchart/Barchart";
 
+const ToolBarFrame = ({
+  children,
+  className,
+  stickyClass,
+}: React.PropsWithChildren<{ className?: string; stickyClass?: string }>) => (
+  <Sticky
+    className={cn(`z-50 w-full dark:bg-background bg-white`, className)}
+    stickyClass={cn("border-b shadow-sm", stickyClass)}
+  >
+    {children}
+  </Sticky>
+);
+
+function ReportLayout({
+  Outline,
+  Body,
+  ToolBar,
+}: {
+  Outline: React.ReactNode;
+  Body: React.ReactNode;
+  ToolBar: React.ReactNode;
+}) {
+  return (
+    <Col>
+      <Row>
+        {/* Left Section */}
+        <Col className="flex-grow bg-secondary">
+          {/* Section to make appearance of full width toolbar */}
+          <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+            <div className="opacity-0 py-2">
+              <Button className="w-0 p-0 m-0"></Button>
+            </div>
+          </ToolBarFrame>
+          <div className="hidden md:block">{Outline}</div>
+        </Col>
+
+        {/* Main */}
+        <Col className="w-full md:max-w-[896px] px-3 sm:px-0">
+          <ToolBarFrame>{ToolBar}</ToolBarFrame>
+          {Body}
+        </Col>
+
+        {/* Right Section */}
+        <Col className="flex-grow bg-primary">
+          {/* Section to make appearance of full width toolbar */}
+          <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+            <div className="opacity-0 py-2">
+              <Button className="w-0 p-0 m-0"></Button>
+            </div>
+          </ToolBarFrame>
+        </Col>
+      </Row>
+    </Col>
+  );
+}
+
 /**
  * Report Component
  *
@@ -110,22 +166,43 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
       <div className="mb-36">
         {/* Toolbar is the component that has the open/close all buttons */}
-        <ReportToolbar />
-        <Row>
-          {/* Outline component for navigation and keeping track of location. Wrapped in fixed div so it moves with screen. */}
-          <div className="hidden lg:block ml-2 min-w-56 h-10" />
+        {/* <ReportToolbar /> */}
+        {/* <Row> */}
+        {/* Outline component for navigation and keeping track of location. Wrapped in fixed div so it moves with screen. */}
+        {/* <div className="hidden lg:block ml-2 min-w-56 h-10" />
           <div className="fixed top-20 bottom-0 ml-2 hidden lg:block">
             <Outline reportState={state} reportDispatch={dispatch} />
-          </div>
-          {/* Main body */}
-          <Col gap={4} className=" w-full md:max-w-[896px] m-auto px-3 sm:px-0">
+          </div> */}
+        {/* Main body */}
+        {/* <Col gap={4} className=" w-full md:max-w-[896px] m-auto px-3 sm:px-0">
             <ReportHeader reportData={reportData} />
             {state.children.map((themeNode) => (
               <Theme key={themeNode.data.id} node={themeNode} />
             ))}
           </Col>
           <div className="hidden lg:block mr-2 min-w-56 h-10" />
-        </Row>
+        </Row> */}
+        <ReportLayout
+          Body={
+            <Col
+              gap={4}
+              // className=" w-full md:max-w-[896px] m-auto px-3 sm:px-0"
+            >
+              <ReportHeader reportData={reportData} />
+              {state.children.map((themeNode) => (
+                <Theme key={themeNode.data.id} node={themeNode} />
+              ))}
+            </Col>
+          }
+          ToolBar={<ReportToolbar />}
+          Outline={
+            // <div className="hidden lg:block ml-2 min-w-56 h-10">
+            //   <div className="fixed top-20 bottom-0 ml-2 hidden lg:block">
+            <Outline reportState={state} reportDispatch={dispatch} />
+            //   </div>
+            // </div>
+          }
+        />
       </div>
     </ReportContext.Provider>
   );
@@ -138,35 +215,31 @@ export function ReportToolbar() {
   const { dispatch } = useContext(ReportContext);
   return (
     // Sticky keeps it at top of screen when scrolling down.
-    <Sticky
-      className={cn(`z-50 w-full dark:bg-background bg-white`)}
-      stickyClass="border-b shadow-sm"
+
+    <Row
+      // ! make sure this is the same width as the theme cards.
+      className={`p-2 justify-between w-full md:max-w-[896px] mx-auto`}
     >
-      <Row
-        // ! make sure this is the same width as the theme cards.
-        className={`p-2 justify-between w-full md:max-w-[896px] mx-auto`}
-      >
-        <div>
-          <Button variant={"outline"}>Edit</Button>
-        </div>
-        <Row gap={2}>
-          {/* Close all button */}
-          <Button
-            onClick={() => dispatch({ type: "closeAll", payload: { id: "" } })}
-            variant={"outline"}
-          >
-            Collapse all
-          </Button>
-          {/* Open all button  */}
-          <Button
-            onClick={() => dispatch({ type: "openAll", payload: { id: "" } })}
-            variant={"secondary"}
-          >
-            Expand all
-          </Button>
-        </Row>
+      <div>
+        <Button variant={"outline"}>Edit</Button>
+      </div>
+      <Row gap={2}>
+        {/* Close all button */}
+        <Button
+          onClick={() => dispatch({ type: "closeAll", payload: { id: "" } })}
+          variant={"outline"}
+        >
+          Collapse all
+        </Button>
+        {/* Open all button  */}
+        <Button
+          onClick={() => dispatch({ type: "openAll", payload: { id: "" } })}
+          variant={"secondary"}
+        >
+          Expand all
+        </Button>
       </Row>
-    </Sticky>
+    </Row>
   );
 }
 
