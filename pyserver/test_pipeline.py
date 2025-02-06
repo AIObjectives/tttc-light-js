@@ -138,18 +138,67 @@ def test_wb_full_pipeline(comments=dupes_pets_5):
   full_tree = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request).json()["data"]
   json_print(full_tree)
 
+def test_batching_json(json_file="deepseek_10_1.json"):
+
+  with open(json_file, 'r', encoding='utf-8') as jsonfile:
+    comments = json.load(jsonfile)
+
+  print("Step 1: Topic tree\n\n")
+  print("comments")
+  llm = base_llm
+  # fancier model for more precise deduplication
+  llm.update({"model_name" : "gpt-4o-mini"})
+  llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
+  request ={"llm" : llm, "comments" : comments} 
+  taxonomy = client.post("/topic_tree/", json=request)
+  #json_print(taxonomy)
+  print(taxonomy)
+
+def test_flex(comments=longer_pets_15):
+  llm = base_llm
+  llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
+  request ={"llm" : llm, "comments" : comments}
+  tree = client.post("/topic_tree/", json=request).json()["data"]
+  json_print(tree)
+
+  print("\n\nStep 2: Claims\n\n")
+  llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
+  claim_list = []
+
+  for batch_id in range(5):
+    # apologies for this for-loop
+    comms_list = comments[batch_id * 3: (batch_id*3)+3]
+    print(comms_list)
+    request ={"llm" : llm, "comments" : comms_list, "tree" : {"taxonomy" :tree}}
+    claims = client.post("/batch_N_claims/", json=request).json()["data"]
+    json_print(claims)
+    for c in claims:
+      claim_list.append(c)
+
+  print("CLAIM LIST: \n")
+  print(claim_list)
+  # now merge
+  request ={"claims" : claim_list, "tree": {"taxonomy" : tree }}
+  claim_tree = client.post("/merge_claim_batches/", json=request).json()["data"]
+  print("CLAIM TREE: \n")
+  print(claim_tree)
 
 #############
 # Run tests #
 #-----------#
 client = TestClient(app)
+#test_flex()
+#test_batching_json()
+
 #test_claims(longer_pets_15)
 #test_dupes()
 
 #test_topic_tree()
 #test_claims()
 #test_dupes()
-test_full_pipeline(longer_pets_15)
+#test_full_pipeline(longer_pets_15)
+
+
 
 #test_wb_topic_tree()
 #test_wb_claims()

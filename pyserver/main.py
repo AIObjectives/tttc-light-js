@@ -59,6 +59,18 @@ class CommentTopicTree(BaseModel):
   llm: LLMConfig
   tree: dict
 
+class Claim(BaseModel):
+  claim: str
+  commentId: str
+  quote: str
+  speaker: str
+  topicName: str
+  subtopicName: str
+
+class ClaimList(BaseModel):
+  claims: List[Claim]
+  tree: dict
+
 class ClaimTreeLLMConfig(BaseModel):
   tree: dict
   llm: LLMConfig
@@ -271,6 +283,124 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
     claims = {}
   return {"claims" : json.loads(claims), "usage" : response.usage}
 
+
+############################################
+# Step 2A: Extract claims from N comments #
+#------------------------------------------#
+@app.post("/batch_N_claims/")
+def N_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
+  """ Given N comments, extract claims for each and return the result """
+  comms_to_claims = []
+  comms_to_claims_html = []
+
+  TK_2_IN = 0
+  TK_2_OUT = 0
+  TK_2_TOT = 0
+
+  for comment in req.comments:
+    # TODO: could split this up further if each comment is very long
+    response = comment_to_claims(req.llm, comment.text, req.tree)
+    try:
+       claims = response["claims"]
+       for claim in claims["claims"]:
+         claim.update({'commentId': comment.id, 'speaker' : comment.speaker})
+    except:
+      print("Step 2: no claims for comment: ", response)
+      claims = None
+    usage = response["usage"]
+    if claims and len(claims["claims"]) > 0:
+      comms_to_claims.extend([c for c in claims["claims"]])
+
+    TK_2_IN += usage.prompt_tokens
+    TK_2_OUT += usage.completion_tokens
+    TK_2_TOT += usage.total_tokens
+
+    # format for logging to W&B
+    if log_to_wandb:
+      viz_claims = cute_print(claims["claims"])
+      comms_to_claims_html.append([comment.text, viz_claims])  
+      # TODO: do we log each batch? we just want to append, there may be a LOT of these...
+  
+  if log_to_wandb:
+    try:
+      exp_group_name = str(log_to_wandb)
+      wandb.init(project = config.WANDB_PROJECT_NAME,
+                 group=exp_group_name,
+                 resume="allow")
+      wandb.log({
+        "U_tok_N/claims" : TK_2_TOT,
+        "U_tok_in/claims": TK_2_IN,
+        "U_tok_out/claims" : TK_2_OUT,
+        "rows_to_claims" : wandb.Table(
+                           data=comms_to_claims_html,
+                           columns = ["comments", "claims"])
+      })
+    except:
+      print("Failed to log wandb run")
+ 
+  net_usage = {"total_tokens" : TK_2_TOT,
+               "prompt_tokens" : TK_2_IN,
+               "completion_tokens" : TK_2_OUT}
+
+  return {"data" : comms_to_claims, "usage" : net_usage}
+
+#############################################
+# Step 2B: Merge & sort k batches of claims #      
+#-------------------------------------------#
+@app.post("/merge_claim_batches/")
+def merge_claim_batches(req:ClaimList, log_to_wandb:str = "") -> dict:
+  node_counts = {}
+  # count the claims in each subtopic 
+  for claim in req.claims:
+    if not claim.topicName:
+      print("claim unassigned to topic: ", claim.claim)
+      continue
+    if claim.topicName in node_counts:
+      node_counts[claim.topicName]["total"] += 1
+      node_counts[claim.topicName]["speakers"].add(claim.speaker)
+      if claim.subtopicName:
+        if claim.subtopicName in node_counts[claim.topicName]["subtopics"]:
+          node_counts[claim.topicName]["subtopics"][claim.subtopicName]["total"] += 1
+          node_counts[claim.topicName]["subtopics"][claim.subtopicName]["claims"].append(claim)
+          node_counts[claim.topicName]["subtopics"][claim.subtopicName]["speakers"].add(claim.speaker)
+        else:
+          node_counts[claim.topicName]["subtopics"][claim.subtopicName] = { "total" : 1, "claims" : [claim], "speakers" : set([claim.speaker])}
+    else:
+      node_counts[claim.topicName] = { "total" : 1, "speakers" : set([claim.speaker]),
+                                          "subtopics" : {claim.subtopicName : 
+                                            {"total" : 1,
+                                             "claims" : [claim],
+                                             "speakers" : set([claim.speaker])
+                                             }
+                                        }
+                                      }
+
+  # after inserting claims: check if any of the topics/subtopics are empty
+  for topic in req.tree["taxonomy"]:
+    if "subtopics" in topic:
+      for subtopic in topic["subtopics"]:
+        # check if subtopic in node_counts
+        if topic["topicName"] in node_counts:
+          if subtopic["subtopicName"] not in node_counts[topic["topicName"]]["subtopics"]:
+            # this is an empty subtopic!
+            print("EMPTY SUBTOPIC: ", subtopic["subtopicName"])
+            node_counts[topic["topicName"]]["subtopics"][subtopic["subtopicName"]] = { "total" : 0, "claims" : [], "speakers" : set()}
+        else:
+          # could we have an empty topic? certainly
+          print("EMPTY TOPIC: ", topic["topicName"])
+          node_counts[topic["topicName"]] = { "total" : 0, "speakers" : set(),
+                                          "subtopics" : { "None" : 
+                                            {"total" : 0,
+                                             "claims" : [],
+                                             "speakers" : set()
+                                             }
+                                        }
+                                      }
+  empty_usage = {"total_tokens" : 0,
+               "prompt_tokens" : 0,
+               "completion_tokens" : 0}
+  return {"data" : node_counts, "usage" : empty_usage}  
+
 ####################################
 # Step 2: Extract and place claims #
 #----------------------------------#
@@ -418,6 +548,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
     if log_to_wandb:
       viz_claims = cute_print(claims["claims"])
       comms_to_claims_html.append([comment.text, viz_claims])  
+      
 
   # reference format
   #[{'claim': 'Cats are the best household pets.', 'commentId':'c1', 'quote': 'I love cats', 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Cats'},
