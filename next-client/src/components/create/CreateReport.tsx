@@ -152,8 +152,23 @@ function CreateReportComponent({ token }: { token: string | null }) {
 
 const FormHeader = () => (
   <Col gap={3}>
-    <h3>Report details</h3>
-    <p>Lorem ipsum</p>
+    <h3>Create a Report</h3>
+    <p>To create your own Talk to the City (T3C) report, you'll need 0) to sign in first, 1) your unstructured text data as a CSV file and
+      2) your own OpenAI API key. We send your data to OpenAI’s API for processing into a report which we then store for you on this website.
+    </p>
+    <p>
+      Give your report a title and description below, upload your CSV file, and copy & paste your
+      OpenAI API key. We send this key and the text in your CSV file to OpenAI in a 3-step
+      AI pipeline, extracting key claims and topics. You can optionally customize the prompts we use for each step of the pipeline,
+      e.g. to focus on particular questions, themes, or perspectives in your data. </p>
+      <p>
+      Click "Generate the report" to start the pipeline.
+      This may take a few minutes, especially for longer reports — consider trying a smaller portion of your dataset first, around 10-20 rows.
+      </p>
+      <p>
+      **Note**: We do not store your OpenAI API keys. We encourage care & discretion when sending any sensitive/personally-identifiable
+      info in the text. Once you create a report, it is publicly viewable at a unique URL (we’re adding password-protected & private reports soon).      
+    </p>
   </Col>
 );
 
@@ -162,14 +177,14 @@ const FormDescription = () => {
   const { touchedFields, errors } = formState;
   return (
     <Col gap={4}>
-      <h4>Description</h4>
+      <h4>Report details</h4>
       <Col gap={2}>
         <Col>
           <label htmlFor="title" className="font-medium">
             Report title
           </label>
           <p className="p2 text-muted-foreground">
-            Report title will be visible at the top of your project
+            The report title will be visible at the top of your project
           </p>
         </Col>
         <Input
@@ -302,12 +317,12 @@ function FormDataInput({
         proceedFunc={() => setModalOpen(false)}
       />
       <Col gap={4}>
-        <h4>Data</h4>
+        <h4>Input data (as CSV file)</h4>
         <div>
           <p className="p2 text-muted-foreground">
             Upload your data in .csv format. The file must have the following
             columns: “id” (a unique identifier for each comment) and “comment”
-            (the participant's response). Optionally, include a “name” column
+            (the participant's response). Optionally, include an “interview” column
             for participant names; otherwise, participants will be considered
             anonymous.
           </p>
@@ -370,7 +385,7 @@ const FormOpenAIKey = () => {
   return (
     <Col gap={2}>
       <label htmlFor="apiKey">
-        <h4>OpenAI Key</h4>
+        <h4>OpenAI API Key</h4>
       </label>
       <Input
         id="apiKey"
@@ -395,28 +410,30 @@ const CustomizePrompts = () => (
     <Col gap={4}>
       <h4>Customize AI prompts</h4>
       <p className="p2 text-muted-foreground">
-        Optionally you can customize our prompts we use to generate the report.
-        Changing the text of prompts will influence how the report is rendered.
+        Optionally customize the prompts we use to generate the report,
+        e.g. to focus on specific questions, topics, or perspectives.
+        Changing these the prompts will change the resulting report. 
       </p>
     </Col>
     <CustomizePromptSection
-      title="Role prompt"
-      subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow listed below."
+      title="Role prompt for all steps"
+      subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow shown below."
       inputName="systemInstructions"
     />
     <CustomizePromptSection
       title="Step 1 – Topics and subtopics prompt"
-      subheader="This is the first step of the report creation flow. Here AI generates common topics and subtopics and writes descriptions for each."
+      subheader="In the first step, the AI finds the most frequent topics and subtopics mentioned in the comments and writes short descriptions for each."
       inputName="clusteringInstructions"
     />
     <CustomizePromptSection
       title="Step 2 – Claim extraction prompt"
-      subheader="In the second step AI takes comments of each participants and renders them against topics and subtopics from the previous step. Then it distills relevant claims and quotes. This prompt is run as many times as there are participants."
+      subheader="In the second step, the AI summarizes each particpant's comments as key claims with supporting quotes from the original text.
+      It then assigns the claim to the most relevant subtopic in the report. This prompt runs once for each participant's comment"
       inputName="extractionInstructions"
     />
     <CustomizePromptSection
       title="Step 3 – Merging claims prompt"
-      subheader="In the last step AI merges similar claims."
+      subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
       inputName="dedupInstructions"
     />
   </Col>

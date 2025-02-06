@@ -104,7 +104,7 @@ const CaseStudies = () => (
         <CaseStudy
           title={"AI Assemblies"}
           imageUri={"/images/case-study_polarizing-crop.jpg"}
-          resourceUrl="https//:google.com"
+          resourceUrl="https://talktothecity.org/report/ai-assembly-2023-workshops_1-translations_anon/"
           date={new Date().toDateString()}
         />
         <CaseStudy
