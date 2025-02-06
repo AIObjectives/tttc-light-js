@@ -61,8 +61,13 @@ const statusToProgress = (status: api.ReportJobStatus) => {
       return 60;
     case "wrappingup":
       return 80;
-    default:
-      throw new Error("Unrecognized value in statusToProgress");
+    default: {
+      if (process.env.NODE_ENV === "development") {
+        throw new Error(`Unrecognized value in statusToProgress: ${status}`);
+      } else {
+        return 90; // idk what to have, but at least it won't crash now. Fixme
+      }
+    }
   }
 };
 
