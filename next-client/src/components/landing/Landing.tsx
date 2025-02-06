@@ -103,7 +103,7 @@ const CaseStudies = () => (
       <Col gap={4} className="md:flex-row gap-x-4 items-center">
         <CaseStudy
           title={"AI Assemblies"}
-          imageUri={"/images/case-study_polarizing-crop.jpg"}
+          imageUri={"/images/case-study_ai-assemblies.jpg"}
           resourceUrl="https://talktothecity.org/report/ai-assembly-2023-workshops_1-translations_anon/"
           date={new Date().toDateString()}
         />
@@ -137,7 +137,14 @@ const CaseStudy = ({
 }) => (
   <a href={resourceUrl} target="blank">
     <Card className="max-w-[260px] transition-transform duration-200 transform hover:opacity-90">
-      <Image src={imageUri} alt={`${title} image`} width={260} height={171} />
+      <div className="w-[260px] h-[171px] relative">
+        <Image
+          src={imageUri}
+          alt={`${title} image`}
+          layout="fill"
+          className="rounded-t-sm"
+        />
+      </div>
       <Col gap={2} className="p-3 justify-between h-24">
         <p className="p2 line-clamp-2">{title}</p>
         <p className="p2 text-muted-foreground">{date}</p>
