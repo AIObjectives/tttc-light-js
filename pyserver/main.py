@@ -84,7 +84,7 @@ def read_root():
 ###################################
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
-@app.post("/topic_tree/")
+@app.post("/topic_tree")
 def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given the full list of comments, return a corresponding taxonomy of relevant topics and their
@@ -284,7 +284,7 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
 ####################################
 # Step 2: Extract and place claims #
 #----------------------------------#
-@app.post("/claims/")
+@app.post("/claims")
 def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
