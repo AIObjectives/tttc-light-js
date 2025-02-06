@@ -13,6 +13,7 @@ import {
   BorderClass,
 } from "@src/lib/hooks/useTopicTheme";
 import LandingHero from "@src/assets/hero/LandingHero";
+import Image from "next/image";
 
 export default function Landing() {
   return (
@@ -24,6 +25,7 @@ export default function Landing() {
       <About />
       <AudreyTangQuote />
       <Organizations />
+      <CaseStudies />
       <HowItWorks />
     </Col>
   );
@@ -43,7 +45,7 @@ const About = () => (
   <Col className="p-8" gap={2}>
     <h4>About</h4>
     <p>
-      Leaders need to understand their communities, but traditional methods
+      Communities need to understand their communities, but traditional methods
       either sacrifice depth for scale or scale for depth. Talk to the City
       (T3C) bridges this gap with an open-source AI platform that turns
       large-scale conversations into actionable insights while preserving
@@ -94,6 +96,56 @@ const AudreyTangQuote = () => (
   </Col>
 );
 
+const CaseStudies = () => (
+  <Col gap={4} className="p-8">
+    <h4>Case studies</h4>
+    <Col gap={6}>
+      <Col gap={4} className="md:flex-row gap-x-4 items-center">
+        <CaseStudy
+          title={"AI Assemblies"}
+          imageUri={"/images/case-study_polarizing-crop.jpg"}
+          resourceUrl="https//:google.com"
+          date={new Date().toDateString()}
+        />
+        <CaseStudy
+          title="Deliberative Technologies in Polarized Contexts: What are your top concerns?"
+          imageUri="/images/case-study_polarizing-crop.jpg"
+          resourceUrl="https://talktothecity.org/report/deliberative-technologies-in-polarized-contexts"
+          date={new Date().toDateString()}
+        />
+        <CaseStudy
+          title="Heal Michigan"
+          imageUri="/images/case-study_heal-michigan-crop.jpg"
+          resourceUrl="https://talktothecity.org/report/heal-michigan"
+          date={new Date().toDateString()}
+        />
+      </Col>
+    </Col>
+  </Col>
+);
+
+const CaseStudy = ({
+  title,
+  imageUri,
+  date,
+  resourceUrl,
+}: {
+  title: string;
+  imageUri: string;
+  date: string;
+  resourceUrl: string;
+}) => (
+  <a href={resourceUrl} target="blank">
+    <Card className="max-w-[260px] transition-transform duration-200 transform hover:opacity-90">
+      <Image src={imageUri} alt={`${title} image`} width={260} height={171} />
+      <Col gap={2} className="p-3 justify-between h-24">
+        <p className="p2 line-clamp-2">{title}</p>
+        <p className="p2 text-muted-foreground">{date}</p>
+      </Col>
+    </Card>
+  </a>
+);
+
 const Organizations = () => (
   <Col gap={6} className="p-8">
     <h4>Organizations</h4>
@@ -103,9 +155,9 @@ const Organizations = () => (
         borderColor="border-theme_purple"
         title="Community-driven organizations"
         points={[
-          "Raise topics for deliberaton",
-          "Empower members to participate in shaping the organization",
-          "Streamline decision making processes",
+          "Raise topics for deliberaton.",
+          "Empower members to participate in shaping the organization.",
+          "Streamline decision making processes.",
         ]}
         footer="Example orgs: Activist, Grass roots, DAOs"
       />
@@ -114,20 +166,20 @@ const Organizations = () => (
         borderColor="border-theme_greenLeaf"
         title="Government and policy"
         points={[
-          "Understand what your public believes and needs to inform policy",
-          "Increase speed and clarity of decision making",
-          "Decrease cost and time of analyzing large amounts of qualitative data",
+          "Understand what your public believes and needs.",
+          "Increase speed and clarity of decision making.",
+          "Decrease cost and time of analyzing large amounts of qualitative data.",
         ]}
-        footer="Example orgs: Government groups, Policy analysts, Policy evaluators"
+        footer="Example orgs: Government groups, Policy analysts, Policy evaluators."
       />
       <OrgCard
         backgroundColor="bg-theme_blueSky-accent"
         borderColor="border-theme_blueSky"
         title="Enterprise"
         points={[
-          "Make faster, more agile decisions",
-          "Keep a finger on the pulse of your organization",
-          "Empower staff to participate in shaping the organization",
+          "Make faster, more agile decisions.",
+          "Keep a finger on the pulse of your organization.",
+          "Empower staff to participate in shaping the organization.",
         ]}
         footer="Example orgs: Executives, HR, Analysts"
       />
