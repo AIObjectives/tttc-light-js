@@ -15,7 +15,7 @@ type PageProps = Promise<{
 }>;
 
 export default async function ReportPage({ params }: { params: PageProps }) {
-  const uri = (await params).uri;
+  const uri = (await params).uri.replace(/\?.*$/, "");
   const url = decodeURIComponent(uri);
   const req = await fetch(url, {
     headers: {
