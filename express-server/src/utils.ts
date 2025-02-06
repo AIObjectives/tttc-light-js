@@ -1,5 +1,12 @@
 import { SourceRow } from "tttc-common/schema";
 
+// sync version of sha256 hash to make strong unique urls
+// that do not leak
+const { createHash } = require("crypto");
+function sha256(string) {
+  return createHash("sha256").update(string).digest("hex");
+}
+
 export function uniqueSlug(str: string): string {
   // Convert to lowercase
   const lowerCaseStr = str.toLowerCase();
@@ -11,7 +18,9 @@ export function uniqueSlug(str: string): string {
   const trimmedStr = singleDashStr.replace(/^-+|-+$/g, "");
   // Postfix a timestamp to the slug to make it unique
   const final = trimmedStr + "-" + Date.now();
-  return final;
+  // finally hash!
+  const sha256Final = sha256(final);
+  return sha256Final;
 }
 
 export function formatData(data: any): SourceRow[] {
