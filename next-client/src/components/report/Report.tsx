@@ -47,44 +47,68 @@ const ToolBarFrame = ({
 
 function ReportLayout({
   Outline,
-  Body,
+  Report,
   ToolBar,
 }: {
   Outline: React.ReactNode;
-  Body: React.ReactNode;
+  Report: React.ReactNode;
   ToolBar: React.ReactNode;
 }) {
   return (
-    <Col>
-      <Row>
-        {/* Left Section */}
-        <Col className="flex-grow bg-secondary">
-          {/* Section to make appearance of full width toolbar */}
-          <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
-            <div className="opacity-0 py-2">
-              <Button className="w-0 p-0 m-0"></Button>
-            </div>
-          </ToolBarFrame>
-          <div className="hidden md:block">{Outline}</div>
-        </Col>
+    // {/* <Row> */}
+    // {/* Left Section */}
+    // {/* <Col className="flex-grow bg-secondary"> */}
+    // {/* Section to make appearance of full width toolbar */}
+    // {/* <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+    //       <div className="opacity-0 py-2">
+    //         <Button className="w-0 p-0 m-0"></Button>
+    //       </div>
+    //     </ToolBarFrame>
+    //     <div className="hidden md:block">{Outline}</div>
+    //   </Col> */}
 
-        {/* Main */}
-        <Col className="w-full md:max-w-[896px] px-3 sm:px-0">
-          <ToolBarFrame>{ToolBar}</ToolBarFrame>
-          {Body}
-        </Col>
+    // {/* Main */}
+    // {/* <Col className="w-full md:max-w-[896px] px-3 sm:px-0">
+    //     <ToolBarFrame>{ToolBar}</ToolBarFrame>
+    //     {Body}
+    //   </Col> */}
 
-        {/* Right Section */}
-        <Col className="flex-grow bg-primary">
-          {/* Section to make appearance of full width toolbar */}
-          <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
-            <div className="opacity-0 py-2">
-              <Button className="w-0 p-0 m-0"></Button>
-            </div>
-          </ToolBarFrame>
-        </Col>
-      </Row>
-    </Col>
+    // {/* Right Section */}
+    // {/* <Col className="flex-grow bg-primary"> */}
+    // {/* Section to make appearance of full width toolbar */}
+    // {/* <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+    //       <div className="opacity-0 py-2">
+    //         <Button className="w-0 p-0 m-0"></Button>
+    //       </div>
+    //     </ToolBarFrame>
+    //   </Col>
+    // </Row> */}
+    <Row className="flex w-full min-h-screen">
+      {/* Outline section */}
+      <Col className="hidden md:block min-w-[279px] flex-grow">
+        <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+          <div className="opacity-0 py-2">
+            <Button variant={"outline"} className="w-0 p-0 m-0"></Button>
+          </div>
+        </ToolBarFrame>
+        {Outline}
+      </Col>
+
+      {/* Body section */}
+      <Col className="flex-grow max-w-[896px]  mx-auto w-full">
+        <ToolBarFrame>{ToolBar}</ToolBarFrame>
+        {Report}
+      </Col>
+
+      {/* Right section */}
+      <Col className="flex-grow hidden sm:block">
+        <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+          <div className="opacity-0 py-2">
+            <Button variant={"outline"} className="w-0 p-0 m-0"></Button>
+          </div>
+        </ToolBarFrame>
+      </Col>
+    </Row>
   );
 }
 
@@ -183,7 +207,7 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
           <div className="hidden lg:block mr-2 min-w-56 h-10" />
         </Row> */}
         <ReportLayout
-          Body={
+          Report={
             <Col
               gap={4}
               // className=" w-full md:max-w-[896px] m-auto px-3 sm:px-0"
@@ -218,7 +242,7 @@ export function ReportToolbar() {
 
     <Row
       // ! make sure this is the same width as the theme cards.
-      className={`p-2 justify-between w-full md:max-w-[896px] mx-auto`}
+      className={`p-2 justify-between w-full mx-auto`}
     >
       <div>
         <Button variant={"outline"}>Edit</Button>

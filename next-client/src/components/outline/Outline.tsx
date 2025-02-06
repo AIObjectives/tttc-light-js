@@ -53,7 +53,7 @@ function Outline({
 
   return (
     <OutlineContext.Provider value={{ dispatch }}>
-      <Col gap={2} className="h-full bg-primary-foreground">
+      <Col gap={2} className="h-full">
         {/* Top icon */}
         <TextIcon icon={<Icons.Outline size={16} />} className="pl-5">
           Outline
@@ -117,7 +117,7 @@ function OutlineItem({
 }>) {
   return (
     // column here because opened nodes should continue the spacing.
-    <Col gap={outlineSpacing} className="max-w-[279px] bg-slate-300">
+    <Col gap={outlineSpacing} className="max-w-[279px]">
       <Row
         gap={2}
         className={`group items-center ${node.isHighlighted ? node.color : ""} ${node.hoverColor} cursor-pointer`}
@@ -136,7 +136,7 @@ function OutlineItem({
         >
           <div onClick={onBodyClick} className="flex">
             <p className="p2 overflow-ellipsis overflow-hidden select-none">
-              {title}
+              {title + "adlfadlfjaldf"}
             </p>
           </div>
           <OutlineCarrot
