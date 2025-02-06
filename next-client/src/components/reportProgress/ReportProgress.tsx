@@ -65,6 +65,9 @@ const statusToProgress = (status: api.ReportJobStatus) => {
       if (process.env.NODE_ENV === "development") {
         throw new Error(`Unrecognized value in statusToProgress: ${status}`);
       } else {
+        console.warn(
+          "GOT AN UNEXPECTED VALUE IN REPORT PROGRESS statusToProgress",
+        );
         return 90; // idk what to have, but at least it won't crash now. Fixme
       }
     }
