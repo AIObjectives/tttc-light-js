@@ -153,21 +153,30 @@ function CreateReportComponent({ token }: { token: string | null }) {
 const FormHeader = () => (
   <Col gap={3}>
     <h3>Create a Report</h3>
-    <p>To create your own Talk to the City (T3C) report, you'll need 0) to sign in first, 1) your unstructured text data as a CSV file and
-      2) your own OpenAI API key. We send your data to OpenAI’s API for processing into a report which we then store for you on this website.
+    <p>
+      To create your own Talk to the City (T3C) report, you'll need 0) to sign
+      in first, 1) your unstructured text data as a CSV file and 2) your own
+      OpenAI API key. We send your data to OpenAI’s API for processing into a
+      report which we then store for you on this website.
     </p>
     <p>
-      Give your report a title and description below, upload your CSV file, and copy & paste your
-      OpenAI API key. We send this key and the text in your CSV file to OpenAI in a 3-step
-      AI pipeline, extracting key claims and topics. You can optionally customize the prompts we use for each step of the pipeline,
-      e.g. to focus on particular questions, themes, or perspectives in your data. </p>
-      <p>
-      Click "Generate the report" to start the pipeline.
-      This may take a few minutes, especially for longer reports — consider trying a smaller portion of your dataset first, around 10-20 rows.
-      </p>
-      <p>
-      **Note**: We do not store your OpenAI API keys. We encourage care & discretion when sending any sensitive/personally-identifiable
-      info in the text. Once you create a report, it is publicly viewable at a unique URL (we’re adding password-protected & private reports soon).      
+      Give your report a title and description below, upload your CSV file, and
+      copy & paste your OpenAI API key. We send this key and the text in your
+      CSV file to OpenAI in a 3-step AI pipeline, extracting key claims and
+      topics. You can optionally customize the prompts we use for each step of
+      the pipeline, e.g. to focus on particular questions, themes, or
+      perspectives in your data.{" "}
+    </p>
+    <p>
+      Click "Generate the report" to start the pipeline. This may take a few
+      minutes, especially for longer reports — consider trying a smaller portion
+      of your dataset first, around 10-20 rows.
+    </p>
+    <p>
+      **Note**: We do not store your OpenAI API keys. We encourage care &
+      discretion when sending any sensitive/personally-identifiable info in the
+      text. Once you create a report, it is publicly viewable at a unique URL
+      (we’re adding password-protected & private reports soon).
     </p>
   </Col>
 );
@@ -322,9 +331,9 @@ function FormDataInput({
           <p className="p2 text-muted-foreground">
             Upload your data in .csv format. The file must have the following
             columns: “id” (a unique identifier for each comment) and “comment”
-            (the participant's response). Optionally, include an “interview” column
-            for participant names; otherwise, participants will be considered
-            anonymous.
+            (the participant's response). Optionally, include an “interview”
+            column for participant names; otherwise, participants will be
+            considered anonymous.
           </p>
           <br />
           <p className="p2 text-muted-foreground">
@@ -410,9 +419,9 @@ const CustomizePrompts = () => (
     <Col gap={4}>
       <h4>Customize AI prompts</h4>
       <p className="p2 text-muted-foreground">
-        Optionally customize the prompts we use to generate the report,
-        e.g. to focus on specific questions, topics, or perspectives.
-        Changing these the prompts will change the resulting report. 
+        Optionally customize the prompts we use to generate the report, e.g. to
+        focus on specific questions, topics, or perspectives. Changing these the
+        prompts will change the resulting report.
       </p>
     </Col>
     <CustomizePromptSection
