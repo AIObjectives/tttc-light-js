@@ -190,9 +190,34 @@ export const claimsRequest = z.object({
 export type ClaimsRequest = z.infer<typeof claimsRequest>;
 
 export const claimsReply = z.object({
-  data: claimsTree,
+  data: baseClaim.array(),
   usage,
 });
+
+export type ClaimsReply = z.infer<typeof claimsReply>;
+
+//  ********************************
+//  * merge_claims_batches
+//  ********************************/
+
+export const mergeClaimsBatchesRequest = z.object({
+  data: z.object({
+    claims: baseClaim.array(),
+    tree: z.object({
+      taxonomy: partialTopic.array(),
+    }),
+  }),
+});
+
+export type MergeClaimsBatchesRequest = z.infer<
+  typeof mergeClaimsBatchesRequest
+>;
+
+export const mergeClaimsBatchesReply = z.object({
+  data: claimsTree,
+});
+
+export type MergeClaimsBatchesReply = z.infer<typeof mergeClaimsBatchesReply>;
 
 //  ********************************
 //  * sort_claims_tree
