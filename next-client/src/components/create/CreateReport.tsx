@@ -154,11 +154,11 @@ const FormHeader = () => (
   <Col gap={3}>
     <h3>Create a Report</h3>
     <p>
-      To create your own Talk to the City (T3C) report, you'll need 0) to sign
+      Authentication: To create your own Talk to the City (T3C) report, you'll need 0) to sign
       in first, 1) your unstructured text data as a CSV file and 2) your own
       OpenAI API key. We send your data to OpenAI’s API for processing into a
       report which we then store for you on this website.
-    </p>
+   </p>
     <p>
       Give your report a title and description below, upload your CSV file, and
       copy & paste your OpenAI API key. We send this key and the text in your
@@ -515,6 +515,26 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
           $120.
         </p>
       </Col>
+      <h4>Preliminary Terms of Service</h4>
+   <p>
+By accessing the Talk to the City (T3C) report creation feature, users must comply with the following requirements:
+  </p>
+    <p>
+Authentication: Users must be signed into their account prior to report generation.
+  </p>
+    <p>
+ Data Processing: Upon submission, your data will be transmitted to OpenAI's API for processing and subsequent storage on our platform. Users maintain responsibility for the data they submit.
+  </p>
+    <p>
+Important Disclosures:
+<li>OpenAI API keys are processed securely and are not retained in our systems</li>
+<li>Exercise appropriate caution when submitting text containing sensitive or personally identifiable information</li>
+<li>Generated reports are assigned a unique URL and are publicly accessible by default</li>
+<li>Features for private and password-protected reports are in development</li>
+  </p>
+    <p>
+By proceeding with report generation, users acknowledge and accept these terms and conditions.
+  </p>
     </Col>
   );
 }
