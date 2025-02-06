@@ -57,10 +57,18 @@ const statusToProgress = (status: api.ReportJobStatus) => {
       return 20;
     case "extraction":
       return 40;
+    case "sorting":
+      return 50;
     case "dedup":
       return 60;
     case "wrappingup":
       return 80;
+    case "finished":
+      return 100;
+    case "failed":
+      throw new Error(`Report creation failed`);
+    case "notFound":
+      return -100;
     default: {
       if (process.env.NODE_ENV === "development") {
         throw new Error(`Unrecognized value in statusToProgress: ${status}`);
@@ -82,10 +90,18 @@ const statusMessage = (status: api.ReportJobStatus) => {
       return "Clustering arguments...";
     case "extraction":
       return "Extracting claims...";
+    case "sorting":
+      return "Sorting claims";
     case "dedup":
       return "Removing duplicates...";
     case "wrappingup":
       return "Wrapping up...";
+    case "finished":
+      return "Report complete!";
+    case "failed":
+      return "Report failed :(";
+    case "notFound":
+      return "Not found :/";
     default:
       throw new Error("Unrecognized value in statusMessage");
   }
