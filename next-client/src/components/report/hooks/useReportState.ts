@@ -5,18 +5,7 @@ import { getNPeople } from "tttc-common/morphisms";
 
 import * as schema from "tttc-common/schema";
 
-import {
-  Option,
-  pipe,
-  Array,
-  Either,
-  Effect,
-  Queue,
-  flow,
-  Match,
-  Record,
-  Function,
-} from "effect";
+import { Option, pipe, Array, Either, flow, Match, Record } from "effect";
 
 /**
  * @fileoverview
@@ -35,16 +24,8 @@ const defaultSubtopicPagination = 3;
 const addSubtopicPagination = 3;
 
 //  ********************************
-//  * TYPE DEFINITIONS
+//  * NODE / STATE DEFINITIONS
 //  ********************************/
-
-/**
- * A single Node in the NodeTree. Wraps data.
- */
-export type Node<T> = {
-  id: string;
-  data: Readonly<T>;
-};
 
 /**
  * Report State - highest level implementation
@@ -55,9 +36,18 @@ export type ReportState = {
 };
 
 /**
+ * A single Node in the NodeTree. Wraps data.
+ */
+export type Node<T> = {
+  id: string;
+  data: Readonly<T>;
+};
+
+/**
  * Nodes with Topics as data
  */
 export type TopicNode = Node<schema.Topic> & {
+  readonly _tag: "TopicNode";
   children: SubtopicNode[];
   isOpen: boolean;
   pagination: number;
@@ -67,6 +57,7 @@ export type TopicNode = Node<schema.Topic> & {
  * Nodes with Subtopic as data
  */
 export type SubtopicNode = Node<schema.Subtopic> & {
+  readonly _tag: "SubtopicNode";
   children: ClaimNode[];
   pagination: number;
 };
@@ -74,7 +65,9 @@ export type SubtopicNode = Node<schema.Subtopic> & {
 /**
  * Nodes with Claims as data
  */
-export type ClaimNode = Node<schema.Claim>;
+export type ClaimNode = Node<schema.Claim> & {
+  readonly _tag: "ClaimNode";
+};
 
 /**
  * Union of all nodes
@@ -166,6 +159,11 @@ type OpenTopicAction = {
   payload: { path: { topicIdx: number } };
 };
 
+type CloseTopicAction = {
+  type: "closeTopic";
+  payload: { path: { topicIdx: number } };
+};
+
 type SetTopicPaginationAction = {
   type: "setTopicPagination";
   payload: { path: { topicIdx: number }; pag: number };
@@ -176,9 +174,19 @@ type SetSubtopicPaginationAction = {
   payload: { path: { topicIdx: number; subtopicIdx: number }; pag: number };
 };
 
-type TopicActions = OpenTopicAction | SetTopicPaginationAction;
+type ResetSubtopicPaginationsAction = {
+  type: "resetSubtopicPaginations";
+  payload: { path: { topicIdx: number }; pag: number };
+};
 
-type SubtopicActions = SetSubtopicPaginationAction;
+type TopicActions =
+  | OpenTopicAction
+  | CloseTopicAction
+  | SetTopicPaginationAction;
+
+type SubtopicActions =
+  | SetSubtopicPaginationAction
+  | ResetSubtopicPaginationsAction;
 
 function actionStreamReducer(
   state: ReportState,
@@ -188,23 +196,34 @@ function actionStreamReducer(
     case "openTopic": {
       return setTopicToOpen(state, action);
     }
+    case "closeTopic": {
+      return setTopicToClose(state, action);
+    }
     case "setTopicPagination": {
       return setTopicPagination(state, action);
     }
     case "setSubtopicPagination": {
       return setSubtopicPagination(state, action);
     }
+    case "resetSubtopicPaginations": {
+      return resetSubtopicPaginations(state, action);
+    }
   }
 }
 
 //  ********************************
-//  * ACTION STREAM ACTIONS *
+//  * STREAM ACTIONS *
 //  *
 //  * Action builders for the action stream reducer.
 //  ********************************/
 
 const openTopicAction = (path: { topicIdx: number }): OpenTopicAction => ({
   type: "openTopic",
+  payload: { path },
+});
+
+const closeTopicAction = (path: { topicIdx: number }): CloseTopicAction => ({
+  type: "closeTopic",
   payload: { path },
 });
 
@@ -216,12 +235,26 @@ const setTopicPaginationAction = (path: {
   payload: { path, pag: Math.max(path.subtopicIdx, defaultTopicPagination) },
 });
 
+const resetTopicPaginationsAction = (path: {
+  topicIdx: number;
+}): SetTopicPaginationAction => ({
+  type: "setTopicPagination",
+  payload: { path, pag: defaultTopicPagination },
+});
+
 const setSubtopicPaginationAction = (
   path: { topicIdx: number; subtopicIdx: number; claimIdx: number },
   pag: number,
 ): SetSubtopicPaginationAction => ({
   type: "setSubtopicPagination",
   payload: { path, pag },
+});
+
+const resetSubtopicPaginationsAction = (path: {
+  topicIdx: number;
+}): ResetSubtopicPaginationsAction => ({
+  type: "resetSubtopicPaginations",
+  payload: { path, pag: defaultSubtopicPagination },
 });
 
 //  ********************************
@@ -235,17 +268,33 @@ const setNodeOpen = (node: TopicNode): TopicNode => ({
   isOpen: true,
 });
 
-const setNodePagination =
+const setNodeClose = (node: TopicNode): TopicNode => ({
+  ...node,
+  isOpen: false,
+});
+
+const nodePaginationSetter =
+  (defaultSize: number) =>
   (pag: number) =>
-  <T extends TopicNode | SubtopicNode>(node: T): T => ({
-    ...node,
-    pagination: pag,
-  });
+  <T extends TopicNode | SubtopicNode>(node: T) => {
+    // Should never go below default size unless its children length is smaller
+    const lowerbound = Math.min(defaultSize, node.children.length - 1);
+    return {
+      ...node,
+      // Should never bo below lower bound or above children length
+      pagination: Math.min(Math.max(pag, lowerbound), node.children.length),
+    };
+  };
+
+const topicNodePagSetter = nodePaginationSetter(defaultTopicPagination);
+const subtopicNodePagSetter = nodePaginationSetter(defaultSubtopicPagination);
 
 //  ********************************
 //  * ACTION STREAM STATE TRANSFORMERS *
 //  *
 //  * Functions used directly by the action stream reducer.
+//  *
+//  * f: Reportstate -> Reportstate
 //  ********************************/
 
 /**
@@ -267,6 +316,15 @@ const modifySubtopic = (
     children: Array.modify(topicNode.children, path.subtopicIdx, f),
   }));
 
+const mapSubtopics = (
+  path: { topicIdx: number },
+  f: (node: SubtopicNode) => SubtopicNode,
+) =>
+  modifyTopic(path.topicIdx, (node) => ({
+    ...node,
+    children: node.children.map(f),
+  }));
+
 /**
  * Takes an OpenTopicAction, changes a topic to open, and returns a new report state
  */
@@ -283,6 +341,19 @@ const setTopicToOpen = (
     }),
   );
 
+const setTopicToClose = (
+  state: ReportState,
+  { payload }: CloseTopicAction,
+): ReportState =>
+  pipe(
+    state.children,
+    modifyTopic(payload.path.topicIdx, setNodeClose),
+    (children) => ({
+      ...state,
+      children,
+    }),
+  );
+
 /**
  * Takes a SetTopicPaginationAction, changes a topic's pagination, and returns a new report state
  */
@@ -292,7 +363,7 @@ const setTopicPagination = (
 ): ReportState =>
   pipe(
     state.children,
-    Array.modify(payload.path.topicIdx, setNodePagination(payload.pag)),
+    Array.modify(payload.path.topicIdx, topicNodePagSetter(payload.pag)),
     (children) => ({ ...state, children }),
   );
 
@@ -302,12 +373,27 @@ const setTopicPagination = (
 const setSubtopicPagination = (
   state: ReportState,
   { payload }: SetSubtopicPaginationAction,
-) =>
+): ReportState =>
   pipe(
     state.children,
-    modifySubtopic(payload.path, setNodePagination(payload.pag)),
+    modifySubtopic(payload.path, subtopicNodePagSetter(payload.pag)),
     (children) => ({ ...state, children }),
   );
+
+const resetSubtopicPaginations = (
+  state: ReportState,
+  { payload }: ResetSubtopicPaginationsAction,
+): ReportState =>
+  pipe(
+    state.children,
+    mapSubtopics(
+      payload.path,
+      subtopicNodePagSetter(defaultSubtopicPagination),
+    ),
+    (children) => ({ ...state, children }),
+  );
+
+// const resetAllSubtopicsPagination = mapSubtopics((node) => ({...node, }))
 
 //  ********************************
 //  * REPORTSTATE ACTIONS ->  ACTION STREAM ACTIONS *
@@ -354,6 +440,24 @@ const createOpenActionStream = Match.type<
   Match.exhaustive,
 );
 
+/**
+ * Action stream actions for "close"
+ */
+const createCloseActionStream = Match.type<TopicPath>().pipe(
+  /**
+   * When the node is a topic node:
+   */
+  Match.when(
+    { type: "topic" },
+    ({ path }): (TopicActions | SubtopicActions)[] => [
+      closeTopicAction(path),
+      resetTopicPaginationsAction(path),
+      resetSubtopicPaginationsAction(path),
+    ],
+  ),
+  Match.exhaustive,
+);
+
 export type ReportStateAction = {
   type: ReportStateActionTypes;
   payload: ReportStatePayload;
@@ -374,6 +478,7 @@ const stateBuilder = (topics: schema.Topic[]): ReportState => ({
 });
 
 const makeTopicNode = (topic: schema.Topic): TopicNode => ({
+  _tag: "TopicNode",
   id: topic.id,
   data: topic,
   isOpen: false,
@@ -384,6 +489,7 @@ const makeTopicNode = (topic: schema.Topic): TopicNode => ({
 });
 
 const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
+  _tag: "SubtopicNode",
   id: subtopic.id,
   data: subtopic,
   pagination: Math.min(subtopic.claims.length, defaultSubtopicPagination),
@@ -391,6 +497,7 @@ const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
 });
 
 const makeClaimNode = (claim: schema.Claim): ClaimNode => ({
+  _tag: "ClaimNode",
   id: claim.id,
   data: claim,
 });
@@ -398,6 +505,11 @@ const makeClaimNode = (claim: schema.Claim): ClaimNode => ({
 //  ********************************
 //  * REPORT STATE REDUCER *
 //  ********************************/
+
+const onlyTopicPath = Match.type<TopicPath | SubtopicPath | ClaimPath>().pipe(
+  Match.when({ type: "topic" }, (action) => Either.right(action)),
+  Match.orElse((path) => Either.left(`Invalid path ${path}`)),
+);
 
 type ReportStateActionTypes =
   | "open"
@@ -421,19 +533,54 @@ function createPathMapReducer(
       // If subtopic, should open parent and set pagination to the correct value
       case "open": {
         return pipe(
+          // string: Path
           idMap,
+          // Some Path
           Record.get(id),
           Option.map(
+            // Path
             flow(
               // Break down the action into a bunch of subactions
+              // Path -> ActionStream
               createOpenActionStream,
               // and reduce over the state
+              // ActionStream -> ReportState
               Array.reduce(state, actionStreamReducer),
             ),
           ),
           // If idxMap for some reason couldn't find the Path, just return the state.
           // TODO: Include more comprehensive error handling.
           Option.getOrElse(() => state),
+        );
+      }
+      case "close": {
+        return pipe(
+          // string: Path
+          idMap,
+          // Option Path
+          Record.get(id),
+          // Either Path
+          Either.fromOption(() => "Could not find path"),
+          Either.flatMap(onlyTopicPath),
+          Either.map(
+            // Path
+            flow(
+              // Path -> ActionStream
+              createCloseActionStream,
+              // ActionStream -> ReportState
+              Array.reduce(state, actionStreamReducer),
+            ),
+          ),
+          // TODO: include more comprehensive error handling
+          Either.getOrElse((e) => {
+            console.log(e);
+            return state;
+          }),
+
+          // Option.Option<TopicActions[] | Either.Either<never, string>>
+          // Either.map(
+          //   Array.reduce(state, actionStreamReducer)
+          // )
         );
       }
       // closes topic and resets its children
