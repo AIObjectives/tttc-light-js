@@ -126,7 +126,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
     },
   });
 
-  const isDisabled = !files?.item(0) || !methods.formState.isValid;
+  const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
 
   return (
     <FormProvider {...methods}>
