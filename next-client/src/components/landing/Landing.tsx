@@ -109,7 +109,7 @@ const CaseStudies = () => (
     <h4>Case studies</h4>
     <Col gap={6}>
       <Col gap={4} className="md:flex-row gap-x-4 items-center">
-      <CaseStudy
+        <CaseStudy
           title={"AI Assemblies"}
           imageUri={"/images/case-study_ai-assemblies.jpg"}
           resourceUrl="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_assembly_2023_t3c.json"
