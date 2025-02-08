@@ -117,7 +117,7 @@ function OutlineItem({
 }>) {
   return (
     // column here because opened nodes should continue the spacing.
-    <Col gap={outlineSpacing} className="max-w-[279px]">
+    <Col gap={outlineSpacing} className="pl-2 max-w-[279px]">
       <Row
         gap={2}
         className={`group items-center ${node.isHighlighted ? node.color : ""} ${node.hoverColor} cursor-pointer`}
@@ -130,21 +130,18 @@ function OutlineItem({
           <Icons.Minus size={12} className="stroke-[1px]" />
         </div>
         {/* Nested items should be further to the right */}
-        <Row
-          gap={2}
-          className={`pl-${heirarchyDepth * 4} w-[230px] overflow-hidden whitespace-nowrap items-center justify-between`}
+
+        <p
+          className={`pl-${heirarchyDepth * 4} p2 select-none text-ellipsis w-[230px] overflow-hidden whitespace-nowrap items-center`}
+          onClick={onBodyClick}
         >
-          <div onClick={onBodyClick} className="flex">
-            <p className="p2 overflow-ellipsis overflow-hidden select-none">
-              {title + "adlfadlfjaldf"}
-            </p>
-          </div>
-          <OutlineCarrot
-            onClick={onIconClick}
-            isOpen={node.isOpen}
-            collapsable={!!node.children?.length && !isLeafNode}
-          />
-        </Row>
+          {title + "adlfadlfjaldf"}
+        </p>
+        <OutlineCarrot
+          onClick={onIconClick}
+          isOpen={node.isOpen}
+          collapsable={!!node.children?.length && !isLeafNode}
+        />
       </Row>
 
       {node.isOpen ? children : null}

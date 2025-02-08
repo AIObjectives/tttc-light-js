@@ -91,7 +91,7 @@ function ReportLayout({
             <Button variant={"outline"} className="w-0 p-0 m-0"></Button>
           </div>
         </ToolBarFrame>
-        {Outline}
+        <div className="sticky top-20">{Outline}</div>
       </Col>
 
       {/* Body section */}
