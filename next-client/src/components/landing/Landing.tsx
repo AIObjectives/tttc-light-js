@@ -109,37 +109,37 @@ const CaseStudies = () => (
     <h4>Case studies</h4>
     <Col gap={6}>
       <Col gap={4} className="md:flex-row gap-x-4 items-center">
-        <CaseStudy
-          title="Deliberative Technologies in Polarized Contexts"
-          imageUri="/images/case-study_polarizing-crop.jpg"
-          resourceUrl="https://talktothe.city/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fdeliberative_tech_polarized_context_t3c.json"
-          date={new Date("June 26, 2024").toDateString()}
-        />
-        <CaseStudy
-          title="Heal Michigan"
-          imageUri="/images/case-study_heal-michigan-crop.jpg"
-          resourceUrl="https://talktothe.city/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fheal_michigan_t3c.json"
-          date={new Date("August 25, 2023").toDateString()}
+      <CaseStudy
+          title={"AI Assemblies"}
+          imageUri={"/images/case-study_ai-assemblies.jpg"}
+          resourceUrl="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_assembly_2023_t3c.json"
+          date={new Date("Februrary 21, 2024").toDateString()}
         />
         <CaseStudy
           title="Recent views on DeepSeek"
           imageUri="/images/case-study_deep-seek_archaique-chang-unsplash.jpg"
-          resourceUrl="https://talktothe.city/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2F7b8053b6ccbc5f85d10770281696281a421309f6c6e0aecc461cb82ac65b4777"
+          resourceUrl="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2F7b8053b6ccbc5f85d10770281696281a421309f6c6e0aecc461cb82ac65b4777"
           date={new Date("Feb 8, 2025").toDateString()}
+        />
+        <CaseStudy
+          title="Deliberative Technologies in Polarized Contexts"
+          imageUri="/images/case-study_polarizing-crop.jpg"
+          resourceUrl="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fdeliberative_tech_polarized_context_t3c.json"
+          date={new Date("June 26, 2024").toDateString()}
         />
       </Col>
       <Col gap={4} className="md:flex-row gap-x-4 items-center">
         <CaseStudy
           title="AI Manifestos"
           imageUri="/images/case-study_ai-manifestos_marcus-woodbridge_unsplash.jpg"
-          resourceUrl="https://talktothe.city/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_manifestos_10s_12K.json"
+          resourceUrl="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_manifestos_10s_12K.json"
           date={new Date("Nov 5, 2024").toDateString()}
         />
         <CaseStudy
-          title={"AI Assemblies"}
-          imageUri={"/images/case-study_ai-assemblies.jpg"}
-          resourceUrl="https://talktothecity.org/report/ai-assembly-2023-workshops_1-translations_anon/"
-          date={new Date("Februrary 21, 2024").toDateString()}
+          title="Heal Michigan"
+          imageUri="/images/case-study_heal-michigan-crop.jpg"
+          resourceUrl="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fheal_michigan_t3c.json"
+          date={new Date("August 25, 2023").toDateString()}
         />
       </Col>
     </Col>

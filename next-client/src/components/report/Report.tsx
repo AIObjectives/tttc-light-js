@@ -300,8 +300,7 @@ export function ReportInfo() {
       </div>
       <p className="p2 text-muted-foreground">
         Talk to the City takes the text from large group discussions and turns
-        it into a summary report using AI prompting. Go to input tab to see the
-        raw text, AI model and prompts used. Learn more in the About page.
+        it into a summary report using AI prompting. Learn more in the About page.
       </p>
       <Button
         variant={"ghost"}
@@ -330,7 +329,7 @@ export function ReportSummary({
         <h4>Summary</h4>
         <TextIcon icon={<Icons.Info />}>
           The summary is written by the report creators, while the rest is
-          AI-generated, exluding quotes.
+          AI-generated, excluding quotes.
         </TextIcon>
       </Col>
       {/* Summary Description */}
