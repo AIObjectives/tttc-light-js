@@ -17,16 +17,13 @@ export function Headline() {
   return (
     <Row gap={6} className="h-10 items-center">
       {/* hamburger */}
-      {/* TODO: fix this button so that it opens the menu on mobile,
-          then un-comment-out this <Button> component
       <Button variant={"ghost"} size={"icon"} className="p-2 sm:hidden">
         <Icons.Menu size={24} />
       </Button>
-      */}
       {/* <Separator orientation="vertical" className="h-full hidden sm:block" /> */}
       <Link href={"/"} className="h-10 items-center leading-10">
-        <Icons.Logo className="inline-block align-middle mr-1"/>
-        <h3 className="hidden inline-block sm:inline-block align-middle">Talk to the City</h3>
+        <Icons.Logo className="hidden sm:inline-block align-middle mr-1"/>
+        <h3 className="hidden sm:inline-block align-middle">Talk to the City</h3>
       </Link>
     </Row>
   );
