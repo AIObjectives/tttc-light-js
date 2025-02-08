@@ -46,13 +46,13 @@ const About = () => (
     <h4>About</h4>
     <p>
       Talk to the City helps large groups of people coordinate by understanding
-      each other better, faster, and in more depth.
-      Leaders and policymakers need to understand the people they organize and
-      govern, but traditional methods either sacrifice depth for scale or scale
-      for depth. Talk to the City bridges this gap with an open-source AI
-      platform that turns large-scale conversations into actionable insights
-      while preserving individual perspectives—from local town halls to national
-      policy discussions.
+      each other better, faster, and in more depth. Leaders and policymakers
+      need to understand the people they organize and govern, but traditional
+      methods either sacrifice depth for scale or scale for depth. Talk to the
+      City bridges this gap with an open-source AI platform that turns
+      large-scale conversations into actionable insights while preserving
+      individual perspectives—from local town halls to national policy
+      discussions.
     </p>
     <p className="text-muted-foreground">
       Learn more:{" "}
