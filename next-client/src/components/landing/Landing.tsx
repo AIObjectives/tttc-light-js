@@ -121,7 +121,7 @@ const CaseStudies = () => (
           resourceUrl="https://talktothe.city/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fheal_michigan_t3c.json"
           date={new Date("August 25, 2023").toDateString()}
         />
-         <CaseStudy
+        <CaseStudy
           title="Recent views on DeepSeek"
           imageUri="/images/case-study_deep-seek_archaique-chang-unsplash.jpg"
           resourceUrl="https://talktothe.city/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2F7b8053b6ccbc5f85d10770281696281a421309f6c6e0aecc461cb82ac65b4777"
@@ -129,13 +129,13 @@ const CaseStudies = () => (
         />
       </Col>
       <Col gap={4} className="md:flex-row gap-x-4 items-center">
-      <CaseStudy
+        <CaseStudy
           title="AI Manifestos"
           imageUri="/images/case-study_ai-manifestos_marcus-woodbridge_unsplash.jpg"
           resourceUrl="https://talktothe.city/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_manifestos_10s_12K.json"
           date={new Date("Nov 5, 2024").toDateString()}
         />
-       <CaseStudy
+        <CaseStudy
           title={"AI Assemblies"}
           imageUri={"/images/case-study_ai-assemblies.jpg"}
           resourceUrl="https://talktothecity.org/report/ai-assembly-2023-workshops_1-translations_anon/"
