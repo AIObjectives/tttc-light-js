@@ -65,9 +65,7 @@ Icons.Lightbulb = (props: { className?: string }) => (
   <LightbulbSvg {...props} />
 );
 
-Icons.Logo = (props: { className?: string }) => (
-  <LogoSvg {...props} />
-);
+Icons.Logo = (props: { className?: string }) => <LogoSvg {...props} />;
 
 Icons.Info = (props: { className?: string }) => <InfoSvg {...props} />;
 

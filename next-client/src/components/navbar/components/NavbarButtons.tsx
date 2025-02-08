@@ -22,8 +22,10 @@ export function Headline() {
       </Button>
       {/* <Separator orientation="vertical" className="h-full hidden sm:block" /> */}
       <Link href={"/"} className="h-10 items-center leading-10">
-        <Icons.Logo className="hidden sm:inline-block align-middle mr-1"/>
-        <h3 className="hidden sm:inline-block align-middle">Talk to the City</h3>
+        <Icons.Logo className="hidden sm:inline-block align-middle mr-1" />
+        <h3 className="hidden sm:inline-block align-middle">
+          Talk to the City
+        </h3>
       </Link>
     </Row>
   );
@@ -73,8 +75,12 @@ export function CreateReport() {
   return (
     <Link href={"/create"}>
       <Button>
-        <Row gap={1} className="hidden sm:block">Create a report</Row>
-        <Row gap={1} className="sm:hidden">Create</Row>
+        <Row gap={1} className="hidden sm:block">
+          Create a report
+        </Row>
+        <Row gap={1} className="sm:hidden">
+          Create
+        </Row>
       </Button>
     </Link>
   );
