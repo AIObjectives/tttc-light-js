@@ -9,7 +9,16 @@ import React, {
 } from "react";
 import * as api from "tttc-common/api";
 import { Col, Row } from "../layout";
-import { Button, Spinner, TextArea } from "../elements";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Spinner,
+  TextArea,
+} from "../elements";
 import { Input } from "../elements";
 import Icons from "@src/assets/icons";
 import { useCostEstimate } from "./hooks/useCostEstimate";
@@ -38,6 +47,7 @@ import { useAsyncState } from "@src/lib/hooks/useAsyncState";
 import { User } from "firebase/auth";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
+import { signInWithGoogle } from "@src/lib/firebase/auth";
 
 const fetchToken = async (
   user: User | null,
@@ -103,13 +113,59 @@ export default function CreateReport() {
   else return <CreateReportComponent token={result[1]} />;
 }
 
+const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
+  return (
+    <Dialog open={isOpen}>
+      <DialogContent className="gap-10">
+        <DialogHeader>
+          <DialogTitle>Login to create a report</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
+          <Button onClick={signInWithGoogle}>Login</Button>
+        </DialogDescription>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const useDeferredValue = <T,>(value: T, delay = 1000): T | "deferred" => {
+  const [deferredValue, setDeferredValue] = useState<T | "deferred">(
+    "deferred",
+  );
+
+  useEffect(() => {
+    // Set up the timer to check the value after the specified delay
+    const timer = setTimeout(() => {
+      setDeferredValue(value);
+    }, delay);
+
+    // Clean up the timer if the component unmounts or value changes
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return deferredValue;
+};
+
 function CreateReportComponent({ token }: { token: string | null }) {
+  const [modalOpen, setModalOpen] = useState(false);
   const submitActionWithToken = bindTokenToAction(token, submitAction);
   const [state, formAction] = useActionState(
     submitActionWithToken,
     initialState,
   );
   const [files, setFiles] = useState<FileList | undefined>(undefined);
+
+  const deferredToken = useDeferredValue(token);
+
+  useEffect(() => {
+    if (deferredToken === "deferred") {
+      setModalOpen(false);
+    } else if (deferredToken === null) {
+      setModalOpen(true);
+    } else {
+      setModalOpen(false);
+    }
+  }, [deferredToken]);
 
   const methods = useForm<z.infer<typeof form>>({
     resolver: zodResolver(form),
@@ -130,6 +186,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
 
   return (
     <FormProvider {...methods}>
+      <SigninModal isOpen={modalOpen} />
       <Form action={formAction}>
         <SubmitFormControl response={state}>
           <Col gap={8} className="mb-20">
