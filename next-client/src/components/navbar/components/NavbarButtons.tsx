@@ -78,7 +78,12 @@ export function CreateReport() {
   return (
     <Link href={"/create"}>
       <Button>
-        <Row gap={1}>Create a report</Row>
+        <Row gap={1} className="hidden sm:block">
+          Create a report
+        </Row>
+        <Row gap={1} className="sm:hidden">
+          Create
+        </Row>
       </Button>
     </Link>
   );
