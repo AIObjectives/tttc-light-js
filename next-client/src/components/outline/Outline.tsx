@@ -135,7 +135,7 @@ function OutlineItem({
           className={`pl-${heirarchyDepth * 4} p2 select-none text-ellipsis w-[230px] overflow-hidden whitespace-nowrap items-center`}
           onClick={onBodyClick}
         >
-          {title + "adlfadlfjaldf"}
+          {title}
         </p>
         <OutlineCarrot
           onClick={onIconClick}
