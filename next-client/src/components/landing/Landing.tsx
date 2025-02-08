@@ -53,6 +53,9 @@ const About = () => (
       individual perspectives—from local town halls to national policy
       discussions.
     </p>
+    <p className="text-muted-foreground">
+      Learn more: <a href="/about" className="underline">About Talk to the City</a>
+    </p>
   </Col>
 );
 
