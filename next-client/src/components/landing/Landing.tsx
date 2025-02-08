@@ -35,8 +35,8 @@ const Title = () => (
   <Col className="p-8" gap={2}>
     <h2>Talk to the City</h2>
     <p className="text-muted-foreground">
-      An open-source AI tool that transforms large-scale public input into
-      nuanced insights while preserving individual voices
+      An open-source AI tool that distills insights from large-scale public input,
+      while preserving details of individual views.
     </p>
   </Col>
 );
@@ -45,7 +45,8 @@ const About = () => (
   <Col className="p-8" gap={2}>
     <h4>About</h4>
     <p>
-      Communities need to understand their communities, but traditional methods
+      Leaders and policymakers need to understand the people they organize and govern,
+      but traditional methods
       either sacrifice depth for scale or scale for depth. Talk to the City
       (T3C) bridges this gap with an open-source AI platform that turns
       large-scale conversations into actionable insights while preserving
@@ -105,19 +106,19 @@ const CaseStudies = () => (
           title={"AI Assemblies"}
           imageUri={"/images/case-study_ai-assemblies.jpg"}
           resourceUrl="https://talktothecity.org/report/ai-assembly-2023-workshops_1-translations_anon/"
-          date={new Date().toDateString()}
+          date={new Date("Februrary 21, 2024").toDateString()}
         />
         <CaseStudy
-          title="Deliberative Technologies in Polarized Contexts: What are your top concerns?"
+          title="Deliberative Technologies in Polarized Contexts"
           imageUri="/images/case-study_polarizing-crop.jpg"
           resourceUrl="https://talktothecity.org/report/deliberative-technologies-in-polarized-contexts"
-          date={new Date().toDateString()}
+          date={new Date("June 26, 2024").toDateString()}
         />
         <CaseStudy
           title="Heal Michigan"
           imageUri="/images/case-study_heal-michigan-crop.jpg"
           resourceUrl="https://talktothecity.org/report/heal-michigan"
-          date={new Date().toDateString()}
+          date={new Date("August 25, 2023").toDateString()}
         />
       </Col>
     </Col>
@@ -160,33 +161,33 @@ const Organizations = () => (
       <OrgCard
         backgroundColor="bg-theme_purple-accent"
         borderColor="border-theme_purple"
-        title="Community-driven organizations"
+        title="Membership-based organizations"
         points={[
-          "Raise topics for deliberaton.",
-          "Empower members to participate in shaping the organization.",
-          "Streamline decision making processes.",
+          "Raise topics for deliberaton",
+          "Allow members to participate in shaping the organization",
+          "Streamline decision making processes",
         ]}
-        footer="Example orgs: Activist, Grass roots, DAOs"
+        footer="Example orgs: Unions, DAOs, Grassroots organizing"
       />
       <OrgCard
         backgroundColor="bg-theme_greenLeaf-accent"
         borderColor="border-theme_greenLeaf"
         title="Government and policy"
         points={[
-          "Understand what your public believes and needs.",
-          "Increase speed and clarity of decision making.",
-          "Decrease cost and time of analyzing large amounts of qualitative data.",
+          "Understand what your public believes and needs",
+          "Increase speed and clarity of decision making",
+          "Decrease cost and time of analyzing large amounts of qualitative data",
         ]}
-        footer="Example orgs: Government groups, Policy analysts, Policy evaluators."
+        footer="Example orgs: Public officials, Policy analysts & evaluators"
       />
       <OrgCard
         backgroundColor="bg-theme_blueSky-accent"
         borderColor="border-theme_blueSky"
         title="Enterprise"
         points={[
-          "Make faster, more agile decisions.",
-          "Keep a finger on the pulse of your organization.",
-          "Empower staff to participate in shaping the organization.",
+          "Make faster, more agile decisions",
+          "Keep a finger on the pulse of your organization",
+          "Empower staff to participate in decision-making",
         ]}
         footer="Example orgs: Executives, HR, Analysts"
       />
@@ -223,7 +224,7 @@ const OrgCard = ({
 
 const HowItWorks = () => (
   <Col className="p-8" gap={2}>
-    <h4>How it works?</h4>
+    <h4>How it works</h4>
     <Row gap={2} className="items-center">
       <NumSignpost
         backgroundColor="bg-theme_yellow-accent"
