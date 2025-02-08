@@ -340,7 +340,8 @@ function FormDataInput({
           <p className="p2 text-muted-foreground">
             You can download a{" "}
             <a
-              className="underline" target="_blank"
+              className="underline"
+              target="_blank"
               href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit"
             >
               sample CSV

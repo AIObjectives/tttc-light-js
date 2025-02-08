@@ -35,8 +35,8 @@ const Title = () => (
   <Col className="p-8" gap={2}>
     <h2>Talk to the City</h2>
     <p className="text-muted-foreground">
-      An open-source AI tool that distills insights from large-scale public input,
-      while preserving details of individual views.
+      An open-source AI tool that distills insights from large-scale public
+      input, while preserving details of individual views.
     </p>
   </Col>
 );
@@ -45,16 +45,20 @@ const About = () => (
   <Col className="p-8" gap={2}>
     <h4>About</h4>
     <p>
-      Leaders and policymakers need to understand the people they organize and govern,
-      but traditional methods
-      either sacrifice depth for scale or scale for depth. Talk to the City
-      (T3C) bridges this gap with an open-source AI platform that turns
-      large-scale conversations into actionable insights while preserving
-      individual perspectives—from local town halls to national policy
-      discussions.
+      Talk to the City helps large groups of people coordinate by understanding
+      each other better, faster, and in more depth.
+      Leaders and policymakers need to understand the people they organize and
+      govern, but traditional methods either sacrifice depth for scale or scale
+      for depth. Talk to the City bridges this gap with an open-source AI
+      platform that turns large-scale conversations into actionable insights
+      while preserving individual perspectives—from local town halls to national
+      policy discussions.
     </p>
     <p className="text-muted-foreground">
-      Learn more: <a href="/about" className="underline">About Talk to the City</a>
+      Learn more:{" "}
+      <a href="/about" className="underline">
+        About Talk to the City
+      </a>
     </p>
   </Col>
 );
