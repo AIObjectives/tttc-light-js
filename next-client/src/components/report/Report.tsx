@@ -32,6 +32,54 @@ import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useHashChange } from "@src/lib/hooks/useHashChange";
 import { BarChart, BarChartItemType } from "../barchart/Barchart";
 
+const ToolBarFrame = ({
+  children,
+  className,
+  stickyClass,
+}: React.PropsWithChildren<{ className?: string; stickyClass?: string }>) => (
+  <Sticky
+    className={cn(`z-50 w-full dark:bg-background bg-white`, className)}
+    stickyClass={cn("border-b shadow-sm", stickyClass)}
+  >
+    {children}
+  </Sticky>
+);
+
+function ReportLayout({
+  Outline,
+  Report,
+  ToolBar,
+}: {
+  Outline: React.ReactNode;
+  Report: React.ReactNode;
+  ToolBar: React.ReactNode;
+}) {
+  return (
+    <Row className="flex w-full min-h-screen">
+      {/* Outline section */}
+      <Col className="hidden md:block min-w-[279px] flex-grow">
+        <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+          <div className="w-full h-14" />
+        </ToolBarFrame>
+        <div className="sticky top-20">{Outline}</div>
+      </Col>
+
+      {/* Body section */}
+      <Col className="flex-grow max-w-[896px] mx-auto w-full">
+        <ToolBarFrame>{ToolBar}</ToolBarFrame>
+        {Report}
+      </Col>
+
+      {/* Right section */}
+      <Col className="flex-grow hidden sm:block">
+        <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
+          <div className="w-full h-14" />
+        </ToolBarFrame>
+      </Col>
+    </Row>
+  );
+}
+
 /**
  * Report Component
  *
@@ -109,23 +157,18 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
     >
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
       <div className="mb-36">
-        {/* Toolbar is the component that has the open/close all buttons */}
-        <ReportToolbar />
-        <Row>
-          {/* Outline component for navigation and keeping track of location. Wrapped in fixed div so it moves with screen. */}
-          <div className="hidden lg:block ml-2 min-w-56 h-10" />
-          <div className="fixed top-20 bottom-0 ml-2 hidden lg:block">
-            <Outline reportState={state} reportDispatch={dispatch} />
-          </div>
-          {/* Main body */}
-          <Col gap={4} className=" w-full md:max-w-[896px] m-auto px-3 sm:px-0">
-            <ReportHeader reportData={reportData} />
-            {state.children.map((themeNode) => (
-              <Theme key={themeNode.data.id} node={themeNode} />
-            ))}
-          </Col>
-          <div className="hidden lg:block mr-2 min-w-56 h-10" />
-        </Row>
+        <ReportLayout
+          Report={
+            <Col gap={4} className="px-3">
+              <ReportHeader reportData={reportData} />
+              {state.children.map((themeNode) => (
+                <Theme key={themeNode.data.id} node={themeNode} />
+              ))}
+            </Col>
+          }
+          ToolBar={<ReportToolbar />}
+          Outline={<Outline reportState={state} reportDispatch={dispatch} />}
+        />
       </div>
     </ReportContext.Provider>
   );
@@ -138,35 +181,31 @@ export function ReportToolbar() {
   const { dispatch } = useContext(ReportContext);
   return (
     // Sticky keeps it at top of screen when scrolling down.
-    <Sticky
-      className={cn(`z-50 w-full dark:bg-background bg-white`)}
-      stickyClass="border-b shadow-sm"
+
+    <Row
+      // ! make sure this is the same width as the theme cards.
+      className={`p-2 justify-between w-full mx-auto`}
     >
-      <Row
-        // ! make sure this is the same width as the theme cards.
-        className={`p-2 justify-between w-full md:max-w-[896px] mx-auto`}
-      >
-        <div>
-          <Button variant={"outline"}>Edit</Button>
-        </div>
-        <Row gap={2}>
-          {/* Close all button */}
-          <Button
-            onClick={() => dispatch({ type: "closeAll", payload: { id: "" } })}
-            variant={"outline"}
-          >
-            Collapse all
-          </Button>
-          {/* Open all button  */}
-          <Button
-            onClick={() => dispatch({ type: "openAll", payload: { id: "" } })}
-            variant={"secondary"}
-          >
-            Expand all
-          </Button>
-        </Row>
+      <div>
+        <Button variant={"outline"}>Edit</Button>
+      </div>
+      <Row gap={2}>
+        {/* Close all button */}
+        <Button
+          onClick={() => dispatch({ type: "closeAll", payload: { id: "" } })}
+          variant={"outline"}
+        >
+          Collapse all
+        </Button>
+        {/* Open all button  */}
+        <Button
+          onClick={() => dispatch({ type: "openAll", payload: { id: "" } })}
+          variant={"secondary"}
+        >
+          Expand all
+        </Button>
       </Row>
-    </Sticky>
+    </Row>
   );
 }
 

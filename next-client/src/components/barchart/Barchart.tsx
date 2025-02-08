@@ -70,19 +70,15 @@ export function Bar({
 }) {
   if (percent > 1 || percent < 0)
     throw new Error("Barchart should only accept values between 0 and 1");
-  const divRef = useRef<HTMLDivElement>(null);
-
-  const [width, setWidth] = useState<number>(0);
 
   const fillColor = useThemeColor(color, "bg");
 
-  useLayoutEffect(() => {
-    setWidth((divRef.current?.offsetWidth || 0) * percent);
-  }, [divRef.current?.offsetWidth]);
-
   return (
-    <Row ref={divRef} className="flex-grow bg-secondary items-center">
-      <div className={`${fillColor} h-[2px]`} style={{ width: width }} />
+    <Row className="flex-grow bg-secondary items-center">
+      <div
+        className={`${fillColor} h-[2px]`}
+        style={{ width: `${percent * 100}%` }}
+      />
       <div className="bg-gray-300 h-[2px] flex-grow" />
     </Row>
   );
