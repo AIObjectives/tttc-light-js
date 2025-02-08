@@ -144,7 +144,7 @@ export function ReportToolbar() {
     >
       <Row
         // ! make sure this is the same width as the theme cards.
-        className={`p-2 justify-between w-full md:max-w-[896px] mx-auto`}
+        className={`p-2 justify-between w-full md:max-w-[896px] mx-auto ml-10`}
       >
         <div>
           <Button variant={"outline"}>Edit</Button>
