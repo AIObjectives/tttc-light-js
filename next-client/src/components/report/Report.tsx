@@ -300,7 +300,7 @@ export function ReportInfo() {
       </div>
       <p className="p2 text-muted-foreground">
         Talk to the City takes the text from large group discussions and turns
-        it into a summary report using AI prompting. Learn more in the About
+        it into a summary report using AI prompting. Learn more on the About
         page.
       </p>
       <Button
