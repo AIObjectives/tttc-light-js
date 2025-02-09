@@ -11,7 +11,7 @@ const typedFetch =
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
-        "openai-api-key" : openaiAPIKey
+        "openai-api-key": openaiAPIKey,
       },
     });
 
@@ -24,7 +24,11 @@ const logger =
     return arg;
   };
 
-export async function claimsPipelineStep(env: Env, openaiAPIKey: string, input: ClaimsStep["data"]) {
+export async function claimsPipelineStep(
+  env: Env,
+  openaiAPIKey: string,
+  input: ClaimsStep["data"],
+) {
   const { data, usage } = await pyserverFetchClaims(
     `${env.PYSERVER_URL}/claims`,
     input,

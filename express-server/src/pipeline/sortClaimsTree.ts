@@ -11,7 +11,7 @@ const typedFetch =
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
-        "openai-api-key" : openaiAPIKey
+        "openai-api-key": openaiAPIKey,
       },
     });
 
