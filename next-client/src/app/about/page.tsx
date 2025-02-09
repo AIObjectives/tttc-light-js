@@ -19,10 +19,10 @@ export default function AboutPage() {
             <a href="#how-it-works">How it works</a>
           </li>
           <li>
-            <a href="#faq">FAQ</a>
+            <a href="#case-studies">Case studies</a>
           </li>
           <li>
-            <a href="#case-studies">Case studies</a>
+            <a href="#faq">FAQ</a>
           </li>
           <li>
             <a href="#tutorial">Report creation FAQ</a>
@@ -131,9 +131,6 @@ export default function AboutPage() {
             Using AI to Give People a Voice, a Case Study in Michigan
           </a>
         </li>
-        <li>
-          <a>Coming Soon: Deliberative Technology in Polarized Contexts</a>
-        </li>
       </ul>
       <br />
 
@@ -232,6 +229,30 @@ export default function AboutPage() {
         </li>
         <li>Adjust length of direct quotations from respondents</li>
         <li>Focus on specific response types</li>
+      </ul>
+      <br />
+
+      <h5>What should I do if my OpenAI API key is invalid?</h5>
+      <ul className="list-disc list-inside pl-2">
+        <li>Double-check that the key hasn't expired</li>
+        <li>
+          Try generating a new API key by <a className="underline"
+          href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key">
+            following the OpenAI instructions</a>.
+        </li>
+      </ul>
+      <p>
+        Note: API keys are never stored on T3C servers, and are sent in
+        SSL-secured headers to make sure they can't be intercepted through
+        our platform.
+      </p>
+      <br />
+
+      <h5>What are the common errors and how can I avoid them?</h5>
+      <ul className="list-disc list-inside pl-2">
+        <li>CSV formatting: Verify required columns are present</li>
+        <li>Empty prompts: Ensure default prompts remain in place</li>
+        <li>Refresh page and re-upload CSV if formatting issues occur</li>
       </ul>
       <br />
 
@@ -424,7 +445,7 @@ const rizinaQuote = (
     recommendations, focusing on the experiences of marginalised demographics.
     Having the data organised under specific themes, then being able to go
     through the interviewees actual statements, was powerful.”
-    <br />– Rizina Yadav on behalf of YWPS, a social initiative for improving
-    the life outcomes of Australian women during the critical decade of 18-28.
+    <br />– Rizina Yadav on behalf of Young Women's Alliance, a social initiative for improving
+    the life outcomes of Australian women
   </>
 );
