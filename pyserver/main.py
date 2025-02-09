@@ -20,6 +20,11 @@ from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+
+
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
@@ -33,8 +38,24 @@ sys.path.append(str(current_dir))
 import config
 from utils import cute_print
 
+# More comprehensive security middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        
+        # Force HTTPS using HSTS
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
+        # Additional security headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        
+        return response
+
 app = FastAPI()
 app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 header_scheme = APIKeyHeader(name="openai-api-key") 
 
 @app.get("/")
