@@ -236,15 +236,20 @@ export default function AboutPage() {
       <ul className="list-disc list-inside pl-2">
         <li>Double-check that the key hasn't expired</li>
         <li>
-          Try generating a new API key by <a className="underline"
-          href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key">
-            following the OpenAI instructions</a>.
+          Try generating a new API key by{" "}
+          <a
+            className="underline"
+            href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key"
+          >
+            following the OpenAI instructions
+          </a>
+          .
         </li>
       </ul>
       <p>
         Note: API keys are never stored on T3C servers, and are sent in
-        SSL-secured headers to make sure they can't be intercepted through
-        our platform.
+        SSL-secured headers to make sure they can't be intercepted through our
+        platform.
       </p>
       <br />
 
@@ -445,7 +450,7 @@ const rizinaQuote = (
     recommendations, focusing on the experiences of marginalised demographics.
     Having the data organised under specific themes, then being able to go
     through the interviewees actual statements, was powerful.”
-    <br />– Rizina Yadav on behalf of Young Women's Alliance, a social initiative for improving
-    the life outcomes of Australian women
+    <br />– Rizina Yadav on behalf of Young Women's Alliance, a social
+    initiative for improving the life outcomes of Australian women
   </>
 );
