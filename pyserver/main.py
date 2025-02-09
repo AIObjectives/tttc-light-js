@@ -54,8 +54,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 app = FastAPI()
-app.add_middleware(HTTPSRedirectMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
+#app.add_middleware(HTTPSRedirectMiddleware)
+#app.add_middleware(SecurityHeadersMiddleware)
 header_scheme = APIKeyHeader(name="openai-api-key") 
 
 @app.get("/")
