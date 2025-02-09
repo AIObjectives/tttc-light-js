@@ -35,8 +35,8 @@ const Title = () => (
   <Col className="p-8" gap={2}>
     <h2>Talk to the City</h2>
     <p className="text-muted-foreground">
-    Talk to the City helps large groups of people coordinate by understanding
-    each other better, faster, and in more depth.
+      Talk to the City helps large groups of people coordinate by understanding
+      each other better, faster, and in more depth.
     </p>
   </Col>
 );
@@ -46,11 +46,11 @@ const About = () => (
     <h4>About</h4>
     <p>
       An open-source AI tool that distills insights from large-scale public
-      input, while preserving details of individual views. Leaders and policymakers
-      need to understand the people they organize and govern, but traditional
-      methods either sacrifice depth for scale or scale for depth. Talk to the
-      City bridges this gap with an open-source AI platform that turns
-      large-scale conversations into actionable insights while preserving
+      input, while preserving details of individual views. Leaders and
+      policymakers need to understand the people they organize and govern, but
+      traditional methods either sacrifice depth for scale or scale for depth.
+      Talk to the City bridges this gap with an open-source AI platform that
+      turns large-scale conversations into actionable insights while preserving
       individual perspectives—from local town halls to national policy
       discussions.
     </p>
