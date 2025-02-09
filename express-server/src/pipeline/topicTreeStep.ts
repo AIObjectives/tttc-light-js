@@ -11,7 +11,7 @@ const typedFetch =
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
-        "openai-api-key" : openaiAPIKey
+        "openai-api-key": openaiAPIKey,
       },
     });
 
@@ -32,7 +32,7 @@ export async function topicTreePipelineStep(
   const { data, usage } = await pyserverFetchTopicTree(
     `${env.PYSERVER_URL}/topic_tree`,
     input,
-    openaiAPIKey
+    openaiAPIKey,
   )
     .then((res) => res.json())
     .then(logger("topic tree step returns: "))
