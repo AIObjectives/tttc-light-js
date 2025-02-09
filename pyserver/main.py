@@ -18,6 +18,8 @@ import sys
 from pathlib import Path
 from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
@@ -32,6 +34,7 @@ import config
 from utils import cute_print
 
 app = FastAPI()
+app.add_middleware(HTTPSRedirectMiddleware)
 header_scheme = APIKeyHeader(name="openai-api-key") 
 
 @app.get("/")
