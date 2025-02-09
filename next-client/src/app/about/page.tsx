@@ -15,11 +15,21 @@ export default function AboutPage() {
       <div>
         <p className="text-muted-foreground">Jump to:</p>
         <ul className="list-disc list-inside text-muted-foreground underline pl-2">
-          <li><a href="#how-it-works">How it works</a></li>
-          <li><a href="#faq">FAQ</a></li>
-          <li><a href="#case-studies">Case studies</a></li>
-          <li><a href="#tutorial">Report creation FAQ</a></li>
-          <li><a href="#privacy-security">Privacy & security</a></li>
+          <li>
+            <a href="#how-it-works">How it works</a>
+          </li>
+          <li>
+            <a href="#faq">FAQ</a>
+          </li>
+          <li>
+            <a href="#case-studies">Case studies</a>
+          </li>
+          <li>
+            <a href="#tutorial">Report creation FAQ</a>
+          </li>
+          <li>
+            <a href="#privacy-security">Privacy & security</a>
+          </li>
         </ul>
         <br />
         <p>
@@ -37,24 +47,37 @@ export default function AboutPage() {
         </p>
         <br />
         <p>
-          Previous versions of Talk to the City have been used by the
-          Taiwanese government and the Taiwan AI Assembly, unions, policy makers
-          and more. See our <a href="#case-studies" className="underline">
-          case studies</a> for more details.
+          Previous versions of Talk to the City have been used by the Taiwanese
+          government and the Taiwan AI Assembly, unions, policy makers and more.
+          See our{" "}
+          <a href="#case-studies" className="underline">
+            case studies
+          </a>{" "}
+          for more details.
         </p>
         <br />
         <p>
-          Built by the <a className="underline"
-            href="https://ai.objectives.institute">AI Objectives
-          Institute</a>. All code is <a className="underline"
-            href="https://github.com/AIObjectives/tttc-light-js">
-              open-source on GitHub</a>.
+          Built by the{" "}
+          <a className="underline" href="https://ai.objectives.institute">
+            AI Objectives Institute
+          </a>
+          . All code is{" "}
+          <a
+            className="underline"
+            href="https://github.com/AIObjectives/tttc-light-js"
+          >
+            open-source on GitHub
+          </a>
+          .
         </p>
         <br />
         <p className="text-muted-foreground">
-          Have a question we didn't answer here, or interested in direct
-          support in using Talk to the City? Reach out at <a className="underline"
-            href="mailto:hello@objective.is">hello@objective.is</a>.
+          Have a question we didn't answer here, or interested in direct support
+          in using Talk to the City? Reach out at{" "}
+          <a className="underline" href="mailto:hello@objective.is">
+            hello@objective.is
+          </a>
+          .
         </p>
       </div>
       <br />
@@ -66,26 +89,32 @@ export default function AboutPage() {
 
       <h3 id="how-it-works">How it works</h3>
       <p>
-        We use Large Language Models (LLMs) to analyze broad themes from
-        large datasets of free-text responses, summarize specific claims, and
-        link those claims back to exact quotes. We use LLMs from OpenAI
-        (default: gpt-4o-mini), and are adding more options later this year.
+        We use Large Language Models (LLMs) to analyze broad themes from large
+        datasets of free-text responses, summarize specific claims, and link
+        those claims back to exact quotes. We use LLMs from OpenAI (default:
+        gpt-4o-mini), and are adding more options later this year.
       </p>
       <p>
         We create an interactive report from the results, combining all scales
         of analysis, stored for you on the talktothe.city site. See examples in
-        the <a href="#case-studies" className="underline">Case studies</a> section.
+        the{" "}
+        <a href="#case-studies" className="underline">
+          Case studies
+        </a>{" "}
+        section.
       </p>
       <p>
         This alpha version of T3C accepts input of any unstructured text,
         including free-form survey responses, interview and meeting transcripts,
         and collections of social media posts. We have experimental features to
-        process audio and video datasets, and include video in reports &ndash; reach
-        out if you're interested in using these features while they're under development.
+        process audio and video datasets, and include video in reports &ndash;
+        reach out if you're interested in using these features while they're
+        under development.
       </p>
       <p>
         For this alpha launch, all reports are <em>temporarily public</em> to
-        anyone who has the URL; we're adding password protection to reports soon.
+        anyone who has the URL; we're adding password protection to reports
+        soon.
       </p>
       <br />
 
@@ -121,22 +150,28 @@ export default function AboutPage() {
       <p>We currently allow signing in with accounts managed by Google:</p>
       <ol className="list-decimal list-inside pl-2">
         <li>Click the "Sign in" button in the top right corner</li>
-        <li>Choose the Google account you want to sign in with and complete authentication</li>
+        <li>
+          Choose the Google account you want to sign in with and complete
+          authentication
+        </li>
         <li>You'll then have access to your T3C dashboard</li>
       </ol>
       <br />
 
       <h5>How secure is the data I send through T3C?</h5>
       <p>
-        See our <a className="underline" href="#privacy-security">Privacy
-          and security</a> section for detailed information on our policies.
+        See our{" "}
+        <a className="underline" href="#privacy-security">
+          Privacy and security
+        </a>{" "}
+        section for detailed information on our policies.
       </p>
       <br />
 
       <h5>Who can I contact for support?</h5>
       <p>
-        Reach out to <a href="mailto:hello@objective.is">hello@objective.is</a> with
-        questions or feedback.
+        Reach out to <a href="mailto:hello@objective.is">hello@objective.is</a>{" "}
+        with questions or feedback.
       </p>
       <br />
 
@@ -163,21 +198,38 @@ export default function AboutPage() {
 
       <h5>What data format does the CSV file need to follow?</h5>
       <ul className="list-disc list-inside pl-2">
-        <li>Required column: "comment" (contains the text of the responses to analyze with T3C)</li>
-        <li>Optional column: "interview" (respondent name, can be "Anonymous" or blank)</li>
-        <li>Optional column: “id” (for linking to any external data, will be generated if blank)</li>
+        <li>
+          Required column: "comment" (contains the text of the responses to
+          analyze with T3C)
+        </li>
+        <li>
+          Optional column: "interview" (respondent name, can be "Anonymous" or
+          blank)
+        </li>
+        <li>
+          Optional column: “id” (for linking to any external data, will be
+          generated if blank)
+        </li>
       </ul>
       <p>
-        A <a className="underline"
-            href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=0#gid=0">
-        sample CSV template</a> is available in Google Sheets.
+        A{" "}
+        <a
+          className="underline"
+          href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=0#gid=0"
+        >
+          sample CSV template
+        </a>{" "}
+        is available in Google Sheets.
       </p>
       <br />
 
       <h5>How do I customize the analysis prompts?</h5>
       <p>You can modify prompts to:</p>
       <ul className="list-disc list-inside pl-2">
-        <li>Specify the number of topics/subtopics, or suggest possible themes to include</li>
+        <li>
+          Specify the number of topics/subtopics, or suggest possible themes to
+          include
+        </li>
         <li>Adjust length of direct quotations from respondents</li>
         <li>Focus on specific response types</li>
       </ul>
@@ -193,16 +245,16 @@ export default function AboutPage() {
           for processing.
         </li>
         <li>
-          No data retention by OpenAI: OpenAI does not store the data sent to its
-          API for long-term use, in accordance with their API usage policies.
-          However, your inputs may be temporarily processed to improve their AI
-          models unless you explicitly opt out.
+          No data retention by OpenAI: OpenAI does not store the data sent to
+          its API for long-term use, in accordance with their API usage
+          policies. However, your inputs may be temporarily processed to improve
+          their AI models unless you explicitly opt out.
         </li>
         <li>
           Encryption and deletion of OpenAI API Keys: Your keys are encrypted
-          throughout our platform (sent via SSL-encrypted headers), and are not 
-          stored locally or on any device or within the application once your 
-          report is completed. We only use your API keys for the purpose of 
+          throughout our platform (sent via SSL-encrypted headers), and are not
+          stored locally or on any device or within the application once your
+          report is completed. We only use your API keys for the purpose of
           generating your report.
         </li>
       </ul>
@@ -211,24 +263,24 @@ export default function AboutPage() {
       <h5>What we collect</h5>
       <ul className="list-disc list-outside pl-6">
         <li>
-          User input: text or queries entered into "Talk to the City" are temporarily
-          transmitted to OpenAI's API for generating responses. Raw input text,
-          intermediate stages of processing, and final report data are stored in
-          our cloud infrastructure so we can serve the report.
+          User input: text or queries entered into "Talk to the City" are
+          temporarily transmitted to OpenAI's API for generating responses. Raw
+          input text, intermediate stages of processing, and final report data
+          are stored in our cloud infrastructure so we can serve the report.
         </li>
         <li>
           Technical Information: We automatically collect certain technical
-          information such as your IP address, browser type, and device information
-          for security and service optimization purposes.
+          information such as your IP address, browser type, and device
+          information for security and service optimization purposes.
         </li>
         <li>
           Cookies and local storage: We use essential cookies and local storage
-          to maintain your session and basic preferences. No third-party tracking
-          cookies are used.
+          to maintain your session and basic preferences. No third-party
+          tracking cookies are used.
         </li>
         <li>
-          No sensitive data: We discourage users from sharing personal, sensitive,
-          or identifiable information in their input.
+          No sensitive data: We discourage users from sharing personal,
+          sensitive, or identifiable information in their input.
         </li>
       </ul>
       <br />
@@ -236,26 +288,33 @@ export default function AboutPage() {
       <h5>How we protect your data</h5>
       <ul className="list-disc list-outside pl-6">
         <li>
-          Encryption: All data transmitted to OpenAI is encrypted in transit using HTTPS.
+          Encryption: All data transmitted to OpenAI is encrypted in transit
+          using HTTPS.
         </li>
         <li>
           Error monitoring: We collect anonymous error logs to maintain service
           quality, excluding any user input or personal information.
-          </li>
+        </li>
         <li>
-          Data minimization: We collect only what is necessary to provide the service.
+          Data minimization: We collect only what is necessary to provide the
+          service.
         </li>
         <li>
           Data deletion: You may request deletion of any data associated with
-          you by contacting us (<a className="underline"
-            href="mailto:hello@objective.is">hello@objective.is</a>).
+          you by contacting us (
+          <a className="underline" href="mailto:hello@objective.is">
+            hello@objective.is
+          </a>
+          ).
         </li>
       </ul>
       <br />
 
       <h5>Third-party sharing</h5>
-      <p>No additional sharing: Your data is sent exclusively to OpenAI for
-        processing. We do not share, sell, or distribute your data to any entity.
+      <p>
+        No additional sharing: Your data is sent exclusively to OpenAI for
+        processing. We do not share, sell, or distribute your data to any
+        entity.
       </p>
       <br />
 
@@ -266,14 +325,17 @@ export default function AboutPage() {
           your technical data.
         </li>
         <li>
-          Data portability: You may request an export of any data we hold about you.
+          Data portability: You may request an export of any data we hold about
+          you.
         </li>
         <li>
-          Opt-out rights: You can opt out of any optional data collection or processing.
+          Opt-out rights: You can opt out of any optional data collection or
+          processing.
         </li>
         <li>
-          EU/UK rights: Additional rights under GDPR/UK GDPR include the right to
-          object to processing and the right to lodge a complaint with supervisory authorities.
+          EU/UK rights: Additional rights under GDPR/UK GDPR include the right
+          to object to processing and the right to lodge a complaint with
+          supervisory authorities.
         </li>
       </ul>
       <br />
@@ -282,8 +344,9 @@ export default function AboutPage() {
       <ul className="list-disc list-inside pl-2">
         <li>User inputs: You retain rights to your input content.</li>
         <li>
-          AI responses: Outputs generated by an external AI (currently only OpenAI
-          models) are subject to OpenAI’s terms of service and usage policies.
+          AI responses: Outputs generated by an external AI (currently only
+          OpenAI models) are subject to OpenAI’s terms of service and usage
+          policies.
         </li>
       </ul>
       <br />
@@ -315,11 +378,8 @@ export default function AboutPage() {
         changes will be reflected here with an updated effective date.
         Significant changes will be communicated directly to users.
       </p>
-      <p className="text-muted-foreground">
-        Policy last updated: 9 Feb 2025
-      </p>
+      <p className="text-muted-foreground">Policy last updated: 9 Feb 2025</p>
       <br />
-
     </Col>
   );
 }
