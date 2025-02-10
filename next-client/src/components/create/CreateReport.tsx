@@ -478,14 +478,14 @@ const AlphaLaunchInvite = () => {
     <Col gap={2}>
       <h4>Alpha Launch Invite</h4>
       <p>
-        For access, please email hello@objective.is with your Talk to the City account name/email
-        and a description of your use case — we're excited to work with you and actively generating
-        reports on interesting public data!
+        For access, please email hello@objective.is with your Talk to the City
+        account name/email and a description of your use case — we're excited to
+        work with you and actively generating reports on interesting public
+        data!
       </p>
     </Col>
   );
-}
-
+};
 
 const CustomizePrompts = () => (
   <Col gap={8}>
