@@ -171,7 +171,11 @@ export default function AboutPage() {
       <h5>What inputs do I need to create a T3C report?</h5>
       <ol className="list-decimal list-inside pl-2">
         <li>A correctly formatted CSV file</li>
-        <li>An OpenAI API key</li>
+        <li>
+          A title and description for your report to help viewers understand 
+          the context for the data analyzed
+        </li>
+        {/*<li>An OpenAI API key</li>*/}
       </ol>
       <br />
 
@@ -200,7 +204,8 @@ export default function AboutPage() {
       <h5>Who can I contact for support?</h5>
       <p>
         Reach out to{" "}
-        <a href="mailto:hello@aiobjectives.org">hello@aiobjectives.org</a> with
+        <a className="underline"
+           href="mailto:hello@aiobjectives.org">hello@aiobjectives.org</a> with
         questions or feedback.
       </p>
       <br />
@@ -216,7 +221,7 @@ export default function AboutPage() {
             <li>Report name (e.g. "Sentiment Analysis June 2025")</li>
             <li>Report description (including context and purpose)</li>
             <li>The dataset to analyze, as a CSV</li>
-            <li>Your OpenAI API key</li>
+            {/*<li>Your OpenAI API key</li>*/}
           </ul>
         </li>
         <li>
@@ -266,6 +271,7 @@ export default function AboutPage() {
       </ul>
       <br />
 
+      {/*
       <h5>What should I do if my OpenAI API key is invalid?</h5>
       <ul className="list-disc list-inside pl-2">
         <li>Double-check that the key hasn't expired</li>
@@ -285,6 +291,7 @@ export default function AboutPage() {
         our of our app is SSL-encrypted.
       </p>
       <br />
+      */}
 
       <h5>What are the common errors and how can I avoid them?</h5>
       <ul className="list-disc list-inside pl-2">
@@ -309,13 +316,13 @@ export default function AboutPage() {
           policies. However, your inputs may be temporarily processed to improve
           their AI models unless you explicitly opt out.
         </li>
-        <li>
+        {/*<li>
           Encryption and deletion of OpenAI API Keys: Your keys are encrypted
           throughout our platform (sent via SSL-encrypted headers), and are not
           stored locally or on any device or within the application once your
           report is completed. We only use your API keys for the purpose of
           generating your report.
-        </li>
+        </li>*/}
       </ul>
       <br />
 

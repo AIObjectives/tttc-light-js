@@ -229,12 +229,26 @@ const FormHeader = () => (
       </p>
       <br />
       <p>
-        Note: once you create a report, it is publicly viewable at a unique URL
-        (we’re adding password-protected & private reports soon).
+        <strong>For this alpha launch:</strong>
       </p>
+      <ul className="list-disc list-outside pl-6">
+        <li>
+          Once you create a report, it is publicly viewable to anyone with the
+          exact URL (we’re adding password-protected & private reports soon).
+        </li>
+        <li>
+          Dataset uploads are limited to 100KB &ndash; but we pay the OpenAI
+          analysis costs
+        </li>
+        <li>
+          After this alpha phase, we'll support analysis of larger datasets
+          using your own OpenAI API key
+        </li>
+      </ul>
       <br />
       <p>
-        Questions? Reach out at{" "}
+        Do you have questions, feedback, or interest in working with us directly
+        on high-impact applications? Reach out at{" "}
         <a className="underline" href="mailto:hello@aiobjectives.org">
           hello@aiobjectives.org
         </a>
@@ -462,8 +476,9 @@ const FormOpenAIKey = () => {
       </label>
       <div>
         <p className="p2 text-muted-foreground">
-          We do not store your OpenAI API keys, or use them for any purposes
-          beyond generating this report. API keys are sent through encrypted
+          Launching soon: use your own OpenAI key to analyze large datasets.
+          We will not store your OpenAI API keys, or use them for any purposes
+          beyond generating this report; API keys are sent through encrypted
           channels in our app.
         </p>
       </div>
