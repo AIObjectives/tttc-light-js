@@ -245,7 +245,7 @@ const OrgCard = ({
 
 const HowItWorks = () => (
   <Col className="p-8" gap={2}>
-    <h4>How it works</h4>
+    <h4 className="mb-4">How it works</h4>
     <Row gap={2} className="items-center">
       <NumSignpost
         backgroundColor="bg-theme_yellow-accent"
