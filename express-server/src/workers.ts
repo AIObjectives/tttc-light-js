@@ -49,7 +49,6 @@ const setupPipelineWorker = (connection: Redis) => {
         system_prompt: config.systemInstructions,
         user_prompt,
         model_name: config.model || "gpt-4o-mini",
-        api_key: config.apiKey,
       });
 
       const options: schema.OldOptions = { ...defaultConfig, ...config };
@@ -87,10 +86,14 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.clustering,
       });
 
-      const { data: taxonomy } = await topicTreePipelineStep(env, {
-        comments,
-        llm: topicTreeLLMConfig,
-      });
+      const { data: taxonomy } = await topicTreePipelineStep(
+        env,
+        config.apiKey,
+        {
+          comments,
+          llm: topicTreeLLMConfig,
+        },
+      );
 
       console.log(
         "Step 2: extracting claims matching the topics and subtopics",
@@ -98,7 +101,7 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.extraction,
       });
-      const { claims_tree } = await claimsPipelineStep(env, {
+      const { claims_tree } = await claimsPipelineStep(env, config.apiKey, {
         tree: { taxonomy },
         comments,
         llm: claimsLLMConfig,
@@ -111,11 +114,15 @@ const setupPipelineWorker = (connection: Redis) => {
       // TODO: more principled way of configuring this?
       const numPeopleSort = "numPeople";
 
-      const { data: tree } = await sortClaimsTreePipelineStep(env, {
-        tree: claims_tree,
-        llm: dedupLLMConfig,
-        sort: numPeopleSort,
-      });
+      const { data: tree } = await sortClaimsTreePipelineStep(
+        env,
+        config.apiKey,
+        {
+          tree: claims_tree,
+          llm: dedupLLMConfig,
+          sort: numPeopleSort,
+        },
+      );
 
       const newTax: schema.Taxonomy = taxonomy.map((t) => ({
         ...t,

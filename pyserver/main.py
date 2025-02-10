@@ -16,7 +16,15 @@ For local testing, load these from a config.py file
 import os
 import sys
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from fastapi.security import APIKeyHeader
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+
+
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
@@ -30,7 +38,25 @@ sys.path.append(str(current_dir))
 import config
 from utils import cute_print
 
-app = FastAPI() 
+# More comprehensive security middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        
+        # Force HTTPS using HSTS
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
+        # Additional security headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        
+        return response
+
+app = FastAPI()
+#app.add_middleware(HTTPSRedirectMiddleware)
+#app.add_middleware(SecurityHeadersMiddleware)
+header_scheme = APIKeyHeader(name="openai-api-key") 
 
 @app.get("/")
 def read_root():
@@ -48,7 +74,6 @@ class LLMConfig(BaseModel):
   model_name: str
   system_prompt: str
   user_prompt: str
-  api_key: str
  
 class CommentsLLMConfig(BaseModel):
   comments: List[Comment]   
@@ -69,13 +94,6 @@ class CruxesLLMConfig(BaseModel):
   llm: LLMConfig
   topics: list
 
-app = FastAPI()
-
-if __name__ == "__main__":
-  import uvicorn
-  port = int(os.getenv("PORT", 8000))
-  uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
-
 @app.get("/")
 def read_root():
   # TODO: setup/relevant defaults?
@@ -85,7 +103,7 @@ def read_root():
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
 @app.post("/topic_tree")
-def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
+def comments_to_tree(req: CommentsLLMConfig, api_key: str = Depends(header_scheme), log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given the full list of comments, return a corresponding taxonomy of relevant topics and their
   subtopics, with a short description for each.
@@ -165,7 +183,8 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GRO
     }
   }
   """
-  api_key = req.llm.api_key
+  if not api_key:
+    raise HTTPException(status_code=401)
   client = OpenAI(
     api_key=api_key
   )
@@ -237,15 +256,10 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GRO
   # choosing the latter for now 
   return {"data" : tree["taxonomy"], "usage" : usage.model_dump()}
 
-def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
+def comment_to_claims(client, llm:dict, comment:str, tree:dict)-> dict:
   """
   Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
   """
-  api_key = llm.api_key
-  client = OpenAI(
-    api_key=api_key
-  )
-
   # add taxonomy and comment to prompt template
   taxonomy_string = json.dumps(tree)
    
@@ -285,7 +299,7 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
 # Step 2: Extract and place claims #
 #----------------------------------#
 @app.post("/claims")
-def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
+def all_comments_to_claims(req:CommentTopicTree, api_key: str = Depends(header_scheme), log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
   Place each claim under the correct subtopic in the tree.
@@ -397,6 +411,11 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
     }
   }
   """
+  if not api_key:
+    raise HTTPException(status_code=401)
+  client = OpenAI(
+    api_key=api_key
+  )
   comms_to_claims = []
   comms_to_claims_html = []
   TK_2_IN = 0
@@ -406,7 +425,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
   node_counts = {}
   # TODO: batch this so we're not sending the tree each time
   for comment in req.comments:
-    response = comment_to_claims(req.llm, comment.text, req.tree)
+    response = comment_to_claims(client, req.llm, comment.text, req.tree)
     try:
        claims = response["claims"]
        for claim in claims["claims"]:
@@ -508,15 +527,10 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
 
   return {"data" : node_counts, "usage" : net_usage}
 
-def dedup_claims(claims:list, llm:LLMConfig)-> dict:
+def dedup_claims(client, claims:list, llm:LLMConfig)-> dict:
   """
   Given a list of claims for a given subtopic, identify which ones are near-duplicates
   """
-  api_key = llm.api_key
-  client = OpenAI(
-    api_key=api_key
-  )
-
   # add claims with enumerated ids (relative to this subtopic only)
   full_prompt = llm.user_prompt
   for i, orig_claim in enumerate(claims):
@@ -553,7 +567,7 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
 @app.put("/sort_claims_tree/")
-def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
+def sort_claims_tree(req:ClaimTreeLLMConfig, api_key: str = Depends(header_scheme), log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """
   Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
   all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -760,6 +774,11 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = config.WANDB_GRO
   DOES matter, or where we want to sum the claims by a particular speaker or by other metadata 
   towards the total for a subtopic/topic.
   """
+  if not api_key:
+    raise HTTPException(status_code=401)
+  client = OpenAI(
+    api_key=api_key
+  )
   claims_tree = req.tree
   llm = req.llm
   TK_IN = 0
@@ -781,7 +800,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = config.WANDB_GRO
       # no need to deduplicate single claims
       if subtopic_data["total"] > 1:
         try:
-          response = dedup_claims(subtopic_data["claims"], llm=llm)
+          response = dedup_claims(client, subtopic_data["claims"], llm=llm)
         except:
           print("Step 3: no deduped claims response for: ", subtopic_data["claims"])
           continue
@@ -984,11 +1003,7 @@ def confusion_matrix(conf_mat:list)->list:
             cm[claim_index + other_index+1][claim_index] += 1
   return cm
 
-def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_map:dict)-> dict:
-  api_key = llm.api_key
-  client = OpenAI(
-    api_key=api_key
-  )
+def cruxes_for_topic(client, llm:dict, topic:str, topic_desc:str, claims:list, speaker_map:dict)-> dict:
   claims_anon = []
   for claim in claims:
     if "speaker" in claim:
@@ -1040,7 +1055,7 @@ def get_speakers_map(tree:dict):
 
 #@app.post("/cruxes/")
 # TODO: configure optional TS calling, logic for extracting cruxes
-def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
+def cruxes_from_tree(req:CruxesLLMConfig,api_key: str = Depends(header_scheme), log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """ Given a topic, description, and corresponding list of claims, extract the
   crux claims that would best split the claims into agree/disagree sides
   Note: currently we do this for the subtopic level, could scale up to main topic?
@@ -1051,6 +1066,11 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
   #'quote': 'Interesting world-building [...]', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 
   #'commentId': '3', 'duplicates': []}, 
   #{'claim': 'Historically-grounded depictions of alien cultures enhance storytelling.', 'quote': "I'm especially into historically-grounded depictions or extrapolations of possible cultures [...].", 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}, {'claim': 'Exploring alternative cultural evolutions in storytelling is valuable.', 'quote': 'how could our universe evolve differently?', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}], 'speakers': {'Charles'}}), ('Advanced Technology', {'total': 4, 'claims': [{'claim': 'Space operatic battles enhance storytelling.', 'quote': 'More space operatic battles [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Detailed descriptions of advanced technology are essential.', 'quote': 'detailed descriptions of advanced futuristic technology [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Faster than light travel should be included in narratives.', 'quote': 'perhaps faster than light travel [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Quantum computing is a valuable theme in storytelling.', 'quote': 'or quantum computing? [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}], 'speakers': {'Bob'}})], 'speakers': {'Charles', 'Bob'}}), 
+  if not api_key:
+    raise HTTPException(status_code=401)
+  client = OpenAI(
+    api_key=api_key
+  )
   cruxes = []
   crux_data = []
   crux_claims = []
@@ -1073,7 +1093,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
         print("no description for subtopic:", subtopic)
         subtopic_desc = "No further details"
       topic_title = topic + ", " + subtopic
-      llm_response = cruxes_for_topic(req.llm, topic_title, subtopic_desc, claims, speaker_map)
+      llm_response = cruxes_for_topic(client, req.llm, topic_title, subtopic_desc, claims, speaker_map)
       crux = llm_response["crux"]["crux"]
       usage = llm_response["usage"]
 
@@ -1168,8 +1188,8 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
 
   return {"data" : cruxes, "usage" : net_usage}
 
-
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)
+  import uvicorn
+  port = int(os.getenv("PORT", 8000))
+  uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+
