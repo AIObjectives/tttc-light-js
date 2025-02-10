@@ -201,6 +201,8 @@ function CreateReportComponent({ token }: { token: string | null }) {
                 Generate the report
               </Button>
             </div>
+            <TermsAndConditions />
+            <br />
           </Col>
         </SubmitFormControl>
       </Form>
@@ -211,31 +213,31 @@ function CreateReportComponent({ token }: { token: string | null }) {
 const FormHeader = () => (
   <Col gap={3}>
     <h3>Create a Report</h3>
-    <p>
-      Authentication: To create your own Talk to the City (T3C) report, you'll
-      need 0) to sign in first, 1) your unstructured text data as a CSV file and
-      2) your own OpenAI API key. We send your data to OpenAI’s API for
-      processing into a report which we then store for you on this website.
-    </p>
-    <p>
-      Give your report a title and description below, upload your CSV file, and
-      copy & paste your OpenAI API key. We send this key and the text in your
-      CSV file to OpenAI in a 3-step AI pipeline, extracting key claims and
-      topics. You can optionally customize the prompts we use for each step of
-      the pipeline, e.g. to focus on particular questions, themes, or
-      perspectives in your data.{" "}
-    </p>
-    <p>
-      Click "Generate the report" to start the pipeline. This may take a few
-      minutes, especially for longer reports — consider trying a smaller portion
-      of your dataset first, around 10-20 rows.
-    </p>
-    <p>
-      **Note**: We do not store your OpenAI API keys. We encourage care &
-      discretion when sending any sensitive/personally-identifiable info in the
-      text. Once you create a report, it is publicly viewable at a unique URL
-      (we’re adding password-protected & private reports soon).
-    </p>
+    <div className="text-muted-foreground">
+      <p>
+        We send the contents of the data uploaded below through OpenAI’s API to
+        extract key claims and topics, and store the resuts as a T3C report on
+        this site. Optionally, you can customize the prompts we use for each
+        step of the pipeline &ndash; e.g. to focus on particular questions,
+        themes, or perspectives in your data.
+      </p>
+      <br />
+      <p>
+        Creating a report may take a few minutes, especially for large datasets.
+        Consider creating a test report with a smaller portion of your dataset
+        first (10-20 rows).
+      </p>
+      <br />
+      <p>
+        Note: once you create a report, it is publicly viewable at a unique URL
+        (we’re adding password-protected & private reports soon).
+      </p>
+      <br />
+      <p>
+        Questions? Reach out at <a className="underline"
+          href="mailto:hello@aiobjectives.org">hello@aiobjectives.org</a>
+      </p>
+    </div>
   </Col>
 );
 
@@ -391,11 +393,12 @@ function FormDataInput({
             columns: “id” (a unique identifier for each comment) and “comment”
             (the participant's response). Optionally, include an “interview”
             column for participant names; otherwise, participants will be
-            considered anonymous.
+            considered anonymous. CSV data is sent to OpenAI as part of report
+            generation.
           </p>
           <br />
           <p className="p2 text-muted-foreground">
-            You can download a{" "}
+            You can reference a {" "}
             <a
               className="underline"
               target="_blank"
@@ -455,10 +458,17 @@ const FormOpenAIKey = () => {
       <label htmlFor="apiKey">
         <h4>OpenAI API Key</h4>
       </label>
+      <div>
+        <p className="p2 text-muted-foreground">
+          We do not store your OpenAI API keys, or use them for any purposes
+          beyond generating this report. API keys are sent through encrypted
+          channels in our app.
+        </p>
+      </div>
       <Input
         id="apiKey"
         type="password"
-        placeholder="Type OpenAI key here"
+        placeholder="Paste OpenAI API key here"
         className={cn(
           "sm: w-1/2",
           touchedFields.apiKey && errors.apiKey && "border-destructive",
@@ -568,28 +578,36 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
       <Col gap={2} className="p-4 pb-8 border rounded-lg">
         <p className="font-medium">{cost}</p>
         <p className="text-muted-foreground">
-          This estimate is based on [XXX]. Typically, our real cost vary between
-          by 10-15% up or down. A general guideline is that 1 MB costs
+          This estimate is based on past reports. Typically, our real cost vary
+          between by 10-15% up or down. A general guideline is that 1 MB costs
           approximately $24, so 0.5 MB would be around $12, and 10 MB about
           $120.
         </p>
       </Col>
+    </Col>
+  );
+}
+
+function TermsAndConditions() {
+  return (
+    <div className="text-muted-foreground">
       <h4>Preliminary Terms of Service</h4>
+      <br />
       <p>
-        By accessing the Talk to the City (T3C) report creation feature, users
-        must comply with the following requirements:
+        By accessing the Talk to the City report creation feature, users
+        comply with the following terms and conditions:
       </p>
-      <p>
-        Authentication: Users must be signed into their account prior to report
-        generation.
-      </p>
+      <br />
       <p>
         Data Processing: Upon submission, your data will be transmitted to
         OpenAI's API for processing and subsequent storage on our platform.
         Users maintain responsibility for the data they submit.
       </p>
+      <br />
       <p>
         Important Disclosures:
+      </p>
+      <ul className="list-disc list-outside pl-6">
         <li>
           OpenAI API keys are processed securely and are not retained in our
           systems
@@ -605,12 +623,8 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
         <li>
           Features for private and password-protected reports are in development
         </li>
-      </p>
-      <p>
-        By proceeding with report generation, users acknowledge and accept these
-        terms and conditions.
-      </p>
-    </Col>
+      </ul>
+    </div >
   );
 }
 

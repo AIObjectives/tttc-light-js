@@ -74,8 +74,8 @@ export default function AboutPage() {
         <p className="text-muted-foreground">
           Have a question we didn't answer here, or interested in direct support
           in using Talk to the City? Reach out at{" "}
-          <a className="underline" href="mailto:hello@objective.is">
-            hello@objective.is
+          <a className="underline" href="mailto:hello@aiobjectives.org">
+            hello@aiobjectives.org
           </a>
           .
         </p>
@@ -112,23 +112,43 @@ export default function AboutPage() {
         under development.
       </p>
       <p>
-        For this alpha launch, all reports are <em>temporarily public</em> to
-        anyone who has the URL; we're adding password protection to reports
+        For this alpha launch, all reports are <strong>temporarily public</strong> to
+        anyone who has the exact URL; we're adding password protection to reports
         soon.
       </p>
       <br />
 
       <h3 id="case-studies">Case studies</h3>
 
-      <ul className="list-disc list-inside underline pl-2">
+      <h5>AI Assemblies</h5>
+      <ul className="list-disc list-inside pl-2">
         <li className="marker:pr-2">
-          <a href="https://ai.objectives.institute/blog/amplifying-voices-talk-to-the-city-in-taiwan">
-            Amplifying Voices: Talk to the City in Taiwan
+        Case study article: <a className="underline"
+          href="https://ai.objectives.institute/blog/amplifying-voices-talk-to-the-city-in-taiwan">
+          Amplifying Voices: Talk to the City in Taiwan
           </a>
         </li>
         <li>
-          <a href="https://ai.objectives.institute/blog/using-ai-to-give-people-a-voice-a-case-study-in-michigan">
-            Using AI to Give People a Voice, a Case Study in Michigan
+        Report: <a className="underline"
+          href="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_assembly_2023_t3c.json">
+          AI Assembly 2023 Workshops
+        </a>
+        </li>
+        </ul>
+      <br />
+
+      <h5>Heal Michigan</h5>
+      <ul className="list-disc list-inside pl-2">
+        <li className="marker:pr-2">
+        Case study article: <a className="underline"
+          href="https://ai.objectives.institute/blog/using-ai-to-give-people-a-voice-a-case-study-in-michigan">
+          Using AI to Give People a Voice: a Case Study in Michigan
+          </a>
+        </li>
+        <li>
+          Report: <a className="underline"
+             href="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fheal_michigan_t3c.json">
+             Heal Michigan
           </a>
         </li>
       </ul>
@@ -167,7 +187,7 @@ export default function AboutPage() {
 
       <h5>Who can I contact for support?</h5>
       <p>
-        Reach out to <a href="mailto:hello@objective.is">hello@objective.is</a>{" "}
+        Reach out to <a href="mailto:hello@aiobjectives.org">hello@aiobjectives.org</a>{" "}
         with questions or feedback.
       </p>
       <br />
@@ -200,8 +220,8 @@ export default function AboutPage() {
           analyze with T3C)
         </li>
         <li>
-          Optional column: "interview" (respondent name, can be "Anonymous" or
-          blank)
+          Optional column: "interview" (respondent name, which can be a pseudonym, or
+          blank for anonymous speakers)
         </li>
         <li>
           Optional column: “id” (for linking to any external data, will be
@@ -211,7 +231,7 @@ export default function AboutPage() {
       <p>
         A{" "}
         <a
-          className="underline"
+          className="underline" target="_blank"
           href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=0#gid=0"
         >
           sample CSV template
@@ -247,9 +267,8 @@ export default function AboutPage() {
         </li>
       </ul>
       <p>
-        Note: API keys are never stored on T3C servers, and are sent in
-        SSL-secured headers to make sure they can't be intercepted through our
-        platform.
+        Note: API keys are never stored on T3C servers, and data access into
+        and our of our app is SSL-encrypted.
       </p>
       <br />
 
@@ -290,7 +309,7 @@ export default function AboutPage() {
       <ul className="list-disc list-outside pl-6">
         <li>
           User input: text or queries entered into "Talk to the City" are
-          temporarily transmitted to OpenAI's API for generating responses. Raw
+          transmitted to OpenAI's API for generating responses. Raw
           input text, intermediate stages of processing, and final report data
           are stored in our cloud infrastructure so we can serve the report.
         </li>
@@ -328,8 +347,8 @@ export default function AboutPage() {
         <li>
           Data deletion: You may request deletion of any data associated with
           you by contacting us (
-          <a className="underline" href="mailto:hello@objective.is">
-            hello@objective.is
+          <a className="underline" href="mailto:hello@aiobjectives.org">
+            hello@aiobjectives.org
           </a>
           ).
         </li>
