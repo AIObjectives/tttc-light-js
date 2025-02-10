@@ -234,8 +234,10 @@ const FormHeader = () => (
       </p>
       <br />
       <p>
-        Questions? Reach out at <a className="underline"
-          href="mailto:hello@aiobjectives.org">hello@aiobjectives.org</a>
+        Questions? Reach out at{" "}
+        <a className="underline" href="mailto:hello@aiobjectives.org">
+          hello@aiobjectives.org
+        </a>
       </p>
     </div>
   </Col>
@@ -398,7 +400,7 @@ function FormDataInput({
           </p>
           <br />
           <p className="p2 text-muted-foreground">
-            You can reference a {" "}
+            You can reference a{" "}
             <a
               className="underline"
               target="_blank"
@@ -594,8 +596,8 @@ function TermsAndConditions() {
       <h4>Preliminary Terms of Service</h4>
       <br />
       <p>
-        By accessing the Talk to the City report creation feature, users
-        comply with the following terms and conditions:
+        By accessing the Talk to the City report creation feature, users comply
+        with the following terms and conditions:
       </p>
       <br />
       <p>
@@ -604,9 +606,7 @@ function TermsAndConditions() {
         Users maintain responsibility for the data they submit.
       </p>
       <br />
-      <p>
-        Important Disclosures:
-      </p>
+      <p>Important Disclosures:</p>
       <ul className="list-disc list-outside pl-6">
         <li>
           OpenAI API keys are processed securely and are not retained in our
@@ -624,7 +624,7 @@ function TermsAndConditions() {
           Features for private and password-protected reports are in development
         </li>
       </ul>
-    </div >
+    </div>
   );
 }
 
