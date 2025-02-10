@@ -39,11 +39,31 @@ const brokenFile = csvError("Broken file");
 type BrokenFileError = z.infer<typeof brokenFile>;
 
 /**
+ * ! Temporary for alpha - limit size of file
+ */
+const sizeError = csvError("Size Error");
+
+type SizeError = z.infer<typeof sizeError>;
+
+/**
  * Union of possible errors
  */
-const CsvErrors = z.union([badFormatCsv, brokenFile]);
+const CsvErrors = z.union([badFormatCsv, brokenFile, sizeError]);
 
 type CSVErrors = z.infer<typeof CsvErrors>;
+
+/**
+ * ! Temporary for alpha - limit size of file
+ */
+const sizeCheck = (buffer: ArrayBuffer): ArrayBuffer | SizeError => {
+  const kiloByte = 1024;
+  const maxSize = 150 * kiloByte;
+  if (buffer.byteLength > maxSize) {
+    return sizeError.parse({ tag: "Size Error" });
+  } else {
+    return buffer;
+  }
+};
 
 /**
  * Takes a CSV buffer and returns it parsed. Can return data or error.
@@ -97,7 +117,15 @@ const pipe =
  * Pipeline for parsing CSV. Returns either some data or an error
  */
 const parseCSV = async (file: File): Promise<unknown | BrokenFileError> =>
-  file.arrayBuffer().then(papaParse).then(unwrapPapaParse);
+  // file.arrayBuffer().then(sizeCheck).then(papaParse).then(unwrapPapaParse);
+  file
+    .arrayBuffer()
+    .then(sizeCheck)
+    .then((bufOrErr) => {
+      const isError = sizeError.safeParse(bufOrErr);
+      if (isError.success) return isError.data as SizeError;
+      else return unwrapPapaParse(papaParse(bufOrErr as ArrayBuffer));
+    });
 
 /**
  * Parse and then Zod-parse the data to ensure its the correct shape.

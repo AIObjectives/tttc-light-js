@@ -80,6 +80,11 @@ async function createNewReport(req: Request, res: Response) {
   const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } = env;
   const body = api.generateApiRequest.parse(req.body);
   const { data, userConfig, firebaseAuthToken } = body;
+  // ! Temporary size check
+  const datastr = JSON.stringify(data);
+  if (datastr.length > 150 * 1024) {
+    throw new Error("Data too big - limit of 150kb for alpha");
+  }
   const _parsedData = await parseData(data);
   const makeAnonName = useAnonymousNames(
     _parsedData.data.filter((x) => x.interview === undefined).length,

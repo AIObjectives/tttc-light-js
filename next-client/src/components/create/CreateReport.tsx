@@ -351,9 +351,13 @@ function FormDataInput({
     console.log(result);
     if (!result) return;
     else if (result[0] === "error") {
-      if (result[1].tag === "Broken file") {
+      if (result[1].tag === "Broken file" || result[1].tag === "Size Error") {
+        const description =
+          result[1].tag === "Broken file"
+            ? "File is broken or has no data"
+            : "File is too large - 150kb limit";
         toast.error("Error", {
-          description: "File is broken or has no data",
+          description: description,
           position: "top-center",
         });
         handleReset(inputRef);
