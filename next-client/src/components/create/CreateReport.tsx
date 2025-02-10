@@ -476,8 +476,8 @@ const FormOpenAIKey = () => {
       </label>
       <div>
         <p className="p2 text-muted-foreground">
-          Launching soon: use your own OpenAI key to analyze large datasets.
-          We will not store your OpenAI API keys, or use them for any purposes
+          Launching soon: use your own OpenAI key to analyze large datasets. We
+          will not store your OpenAI API keys, or use them for any purposes
           beyond generating this report; API keys are sent through encrypted
           channels in our app.
         </p>

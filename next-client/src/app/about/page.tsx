@@ -172,8 +172,8 @@ export default function AboutPage() {
       <ol className="list-decimal list-inside pl-2">
         <li>A correctly formatted CSV file</li>
         <li>
-          A title and description for your report to help viewers understand 
-          the context for the data analyzed
+          A title and description for your report to help viewers understand the
+          context for the data analyzed
         </li>
         {/*<li>An OpenAI API key</li>*/}
       </ol>
@@ -204,9 +204,10 @@ export default function AboutPage() {
       <h5>Who can I contact for support?</h5>
       <p>
         Reach out to{" "}
-        <a className="underline"
-           href="mailto:hello@aiobjectives.org">hello@aiobjectives.org</a> with
-        questions or feedback.
+        <a className="underline" href="mailto:hello@aiobjectives.org">
+          hello@aiobjectives.org
+        </a>{" "}
+        with questions or feedback.
       </p>
       <br />
 
