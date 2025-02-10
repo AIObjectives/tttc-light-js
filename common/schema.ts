@@ -63,7 +63,7 @@ export const llmPieChart = z.object({
 export type LLMPieChart = z.infer<typeof llmPieChart>;
 
 export const llmUserConfig = z.object({
-  apiKey: z.string().min(1),
+  // apiKey: z.string().optional(),
   title: z.string().min(1),
   description: z.string().min(1),
   systemInstructions: z.string().min(1),
