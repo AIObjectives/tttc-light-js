@@ -22,13 +22,21 @@ from pydantic import BaseModel
 from typing import List, Union
 import wandb
 import json
-
+from dotenv import load_dotenv
 # Add the current directory to path for imports
 current_dir = Path(__file__).resolve().parent
 sys.path.append(str(current_dir))
 
 import config
 from utils import cute_print
+
+load_dotenv()
+
+# ! Temporarily including API key in env
+api_key:str = os.getenv('OPENAI_API_KEY')
+
+if api_key is None:
+  raise Exception("No OpenAI API key present")
 
 app = FastAPI() 
 
@@ -165,7 +173,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GRO
     }
   }
   """
-  api_key = req.llm.api_key
+  # api_key = req.llm.api_key
   client = OpenAI(
     api_key=api_key
   )
@@ -241,7 +249,7 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   """
   Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
   """
-  api_key = llm.api_key
+  # api_key = llm.api_key
   client = OpenAI(
     api_key=api_key
   )
@@ -512,7 +520,7 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
   """
   Given a list of claims for a given subtopic, identify which ones are near-duplicates
   """
-  api_key = llm.api_key
+  # api_key = llm.api_key
   client = OpenAI(
     api_key=api_key
   )
@@ -985,7 +993,7 @@ def confusion_matrix(conf_mat:list)->list:
   return cm
 
 def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_map:dict)-> dict:
-  api_key = llm.api_key
+  # api_key = llm.api_key
   client = OpenAI(
     api_key=api_key
   )

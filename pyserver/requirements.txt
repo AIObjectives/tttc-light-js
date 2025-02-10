@@ -3,3 +3,4 @@ openai
 pydantic
 wandb
 uvicorn
+python-dotenv
