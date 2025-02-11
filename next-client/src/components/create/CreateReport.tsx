@@ -78,7 +78,7 @@ const initialState: api.GenerateApiResponse | null = null;
 
 // !!! This is copied from schema.LLMUserConfig. For some reason its resulting in an infinite cycle with useForm. Figure this out later.
 const form = z.object({
-  apiKey: z.string().min(1),
+  // apiKey: z.string().optional(),
   title: z.string().min(1),
   description: z.string().min(1),
   systemInstructions: z.string().min(1),
@@ -174,7 +174,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
     defaultValues: {
       title: "",
       description: "",
-      apiKey: "",
+      // apiKey: "placeholder",
       systemInstructions: prompts.defaultSystemPrompt,
       clusteringInstructions: prompts.defaultClusteringPrompt,
       extractionInstructions: prompts.defaultExtractionPrompt,
@@ -183,6 +183,9 @@ function CreateReportComponent({ token }: { token: string | null }) {
   });
 
   const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
+  console.log("first,", !files?.item(0));
+  console.log("second, ", !methods.formState.isValid);
+  console.log("third", !token);
 
   return (
     <FormProvider {...methods}>
@@ -494,8 +497,9 @@ const FormOpenAIKey = () => {
           "sm: w-1/2",
           touchedFields.apiKey && errors.apiKey && "border-destructive",
         )}
-        required
-        {...register("apiKey")}
+        // required
+        disabled
+        // {...register("apiKey")}
       />
       {touchedFields.apiKey && errors.apiKey && (
         <p className="text-destructive text-sm">Add the Key</p>
