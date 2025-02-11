@@ -193,7 +193,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormHeader />
             <FormDescription />
             <FormDataInput files={files} setFiles={setFiles} />
-            <FormOpenAIKey />
+            <AlphaLaunchInvite />
             <CustomizePrompts />
             <CostEstimate files={files} />
             <div>
@@ -500,6 +500,20 @@ const FormOpenAIKey = () => {
       {touchedFields.apiKey && errors.apiKey && (
         <p className="text-destructive text-sm">Add the Key</p>
       )}
+    </Col>
+  );
+};
+
+const AlphaLaunchInvite = () => {
+  return (
+    <Col gap={2}>
+      <h4>Alpha Launch Invite</h4>
+      <p>
+        For access, please email hello@objective.is with your Talk to the City
+        account name/email and a description of your use case — we're excited to
+        work with you and actively generating reports on interesting public
+        data!
+      </p>
     </Col>
   );
 };
