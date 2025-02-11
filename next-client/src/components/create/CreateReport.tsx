@@ -196,7 +196,6 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormHeader />
             <FormDescription />
             <FormDataInput files={files} setFiles={setFiles} />
-            <AlphaLaunchInvite />
             <CustomizePrompts />
             <CostEstimate files={files} />
             <div>
@@ -427,9 +426,25 @@ function FormDataInput({
               target="_blank"
               href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit"
             >
-              sample CSV
+              sample CSV template
             </a>{" "}
-            template here to get started.
+            here to get started. 
+            </p>
+          <br />
+            <p className="p2 text-muted-foreground">
+            <label htmlFor="description" className="font-medium">
+            Don't want to make your own CSV file?
+          </label>
+          <br />
+             Browse the tabs and select one of our{" "}
+            <a
+              className="underline"
+              target="_blank"
+              href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=862995911#gid=862995911"
+            >
+              pre-made synthetic datasets
+            </a>{" "} 
+            to get a feel for how T3C extracts quotes and organizes topics from general text.
           </p>
         </div>
 
@@ -504,20 +519,6 @@ const FormOpenAIKey = () => {
       {touchedFields.apiKey && errors.apiKey && (
         <p className="text-destructive text-sm">Add the Key</p>
       )}
-    </Col>
-  );
-};
-
-const AlphaLaunchInvite = () => {
-  return (
-    <Col gap={2}>
-      <h4>Alpha Launch Invite</h4>
-      <p>
-        For access, please email hello@objective.is with your Talk to the City
-        account name/email and a description of your use case — we're excited to
-        work with you and actively generating reports on interesting public
-        data!
-      </p>
     </Col>
   );
 };
@@ -645,10 +646,6 @@ function TermsAndConditions() {
       <br />
       <p>Important Disclosures:</p>
       <ul className="list-disc list-outside pl-6">
-        <li>
-          OpenAI API keys are processed securely and are not retained in our
-          systems
-        </li>
         <li>
           Exercise appropriate caution when submitting text containing sensitive
           or personally identifiable information
