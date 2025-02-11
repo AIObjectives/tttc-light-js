@@ -428,23 +428,24 @@ function FormDataInput({
             >
               sample CSV template
             </a>{" "}
-            here to get started. 
-            </p>
+            here to get started.
+          </p>
           <br />
-            <p className="p2 text-muted-foreground">
+          <p className="p2 text-muted-foreground">
             <label htmlFor="description" className="font-medium">
-            Don't want to make your own CSV file?
-          </label>
-          <br />
-             Browse the tabs and select one of our{" "}
+              Don't want to make your own CSV file?
+            </label>
+            <br />
+            Browse the tabs and select one of our{" "}
             <a
               className="underline"
               target="_blank"
               href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=862995911#gid=862995911"
             >
               pre-made synthetic datasets
-            </a>{" "} 
-            to get a feel for how T3C extracts quotes and organizes topics from general text.
+            </a>{" "}
+            to get a feel for how T3C extracts quotes and organizes topics from
+            general text.
           </p>
         </div>
 
