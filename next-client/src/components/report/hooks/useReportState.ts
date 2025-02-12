@@ -6,6 +6,7 @@ import { getNPeople } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 
 import { Option, pipe, Array, Either, flow, Match, Record } from "effect";
+import { readonlyArray } from "effect/Differ";
 
 /**
  * @fileoverview
@@ -576,11 +577,47 @@ function createPathMapReducer(
             console.log(e);
             return state;
           }),
-
-          // Option.Option<TopicActions[] | Either.Either<never, string>>
-          // Either.map(
-          //   Array.reduce(state, actionStreamReducer)
-          // )
+        );
+      }
+      /**
+       * This is equivalent to opening to the last claim in every topic/subtopic.
+       */
+      case "openAll": {
+        return pipe(
+          state.children,
+          // get sutopics
+          Array.flatMap((t) => t.children),
+          Array.map(
+            flow(
+              // get a subtopic's children
+              (s) => s.children,
+              // grab the last one
+              Array.last,
+              // use their ids to get a list of paths
+              Option.flatMap(
+                flow(
+                  (c) => c.id,
+                  (id) => Record.get(id)(idMap),
+                ),
+              ),
+            ),
+          ),
+          // Makes this go from an array of options to an option with an array
+          // Option<TopicPath | SubtopicPath | ClaimPath>[] -> Option<(TopicPath | SubtopicPath | ClaimPath)[]>
+          Option.all,
+          Either.fromOption(() => "Some subtopic children are empty"),
+          // Maps those Claim Paths through the action stream and reduces it on the state
+          Either.map(
+            flow(
+              Array.flatMap(createOpenActionStream),
+              Array.reduce(state, actionStreamReducer),
+            ),
+          ),
+          // TODO: include more comprehensive error handling
+          Either.getOrElse((e) => {
+            console.log(e);
+            return state;
+          }),
         );
       }
       // closes topic and resets its children
