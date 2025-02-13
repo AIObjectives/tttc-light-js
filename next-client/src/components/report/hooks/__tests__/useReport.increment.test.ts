@@ -28,8 +28,6 @@ const getTestTopic = (state: ReportState): TopicNode => state.children[0];
 const getTestSubtopic = (state: ReportState): SubtopicNode =>
   getTestTopic(state).children[0];
 
-const getId = (node: SomeNode) => node.id;
-
 const incrementTopic = (reportState: ReportState, id: string) =>
   reducer(reportState, { type: "expandTopic", payload: { id } });
 

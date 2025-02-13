@@ -6,7 +6,6 @@ import { getNPeople } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 
 import { Option, pipe, Array, Either, flow, Match, Record } from "effect";
-import { readonlyArray } from "effect/Differ";
 
 /**
  * @fileoverview
@@ -171,6 +170,11 @@ type CloseTopicAction = {
   payload: TopicPath;
 };
 
+type ToggleTopicAction = {
+  type: "toggleTopic";
+  payload: TopicPath;
+};
+
 type ResetTopicPagination = {
   type: "resetTopicPagination";
   payload: TopicPath;
@@ -218,6 +222,7 @@ type ActionStreamActions =
   | SetTopicPagination
   | MaxSetTopicPagination
   | IncrementTopicPagination
+  | ToggleTopicAction
   | ResetSubtopicPagination
   | SetSubtopicPagination
   | MaxSetSubtopicPagination
@@ -256,6 +261,7 @@ const createSubtopicActionsWithPath =
 
 const openTopicAction = createTopicActionsWithPath("openTopic");
 const closeTopicAction = createTopicActionsWithPath("closeTopic");
+const toggleTopicAction = createTopicActionsWithPath("toggleTopic");
 const resetTopicPagAction = createTopicActionsWithPath("resetTopicPagination");
 const maxSetTopicPagAction = createTopicActionsWithPath(
   "maxSetTopicPagination",
@@ -336,6 +342,12 @@ function actionStreamReducer(
     }
     case "closeTopic": {
       return closeTopic(state, payload);
+    }
+    case "toggleTopic": {
+      return modifyTopic((node) => ({ ...node, isOpen: !node.isOpen }))(
+        state,
+        payload,
+      );
     }
     case "resetTopicPagination": {
       return resetTopicPag(state, payload);
@@ -686,38 +698,26 @@ function createPathMapReducer(
           }),
         );
       }
-      // closes topic and resets its children
-      // case "close": {
-      //   return combineActions(
-      //     closeTopic,
-      //     resetTopic,
-      //     resetTopicsChildren,
-      //   )(state, id);
-      // }
-      // turns a topic off and on
-      // case "toggleTopic": {
-      //   return combineActions(toggleTopic, resetTopic)(state, id);
-      // }
-      // Opens every topic expands its and every child's pagination
-      // case "openAll": {
-      //   return openAllTopics(state);
-      // }
-      // Inverse operation of the above
-      // case "closeAll": {
-      //   return pipe(state, closeAllTopics, resetAllTopics, resetAllSubtopics);
-      // }
-      // TODO
-      // case "expandTopic": {
-      //   return expandTopic(state, id);
-      // }
-      // TODO
-      // case "expandSubtopic": {
-      //   return expandSubtopic(state, id);
-      // }
-      // Sets focus id
-      // case "focus": {
-      //   return setFocusedId(state, id);
-      // }
+      case "focus": {
+        return {
+          ...state,
+          focusedId: id,
+        };
+      }
+      case "toggleTopic": {
+        return pipe(
+          idMap,
+          Record.get(id),
+          Either.fromOption(() => "Could not find path"),
+          Either.map((path) =>
+            actionStreamReducer(state, toggleTopicAction(path)),
+          ),
+          Either.getOrElse((e) => {
+            console.error(e);
+            return state;
+          }),
+        );
+      }
       default: {
         return state;
       }
