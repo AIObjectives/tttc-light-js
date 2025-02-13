@@ -17,18 +17,17 @@ describe("Utility functions", () => {
       for (const id of Record.keys(idMap)) {
         const entry = idMap[id];
         if (entry.type === "topic") {
-          const topic = state.children[entry.path.topicIdx];
+          const topic = state.children[entry.topicIdx];
           expect(topic.id).toBe(id);
         } else if (entry.type === "subtopic") {
           const subtopic =
-            state.children[entry.path.topicIdx].children[
-              entry.path.subtopicIdx
-            ];
+            state.children[entry.topicIdx].children[entry.subtopicIdx];
           expect(subtopic.id).toBe(id);
         } else if (entry.type === "claim") {
           const claim =
-            state.children[entry.path.topicIdx].children[entry.path.subtopicIdx]
-              .children[entry.path.claimIdx];
+            state.children[entry.topicIdx].children[entry.subtopicIdx].children[
+              entry.claimIdx
+            ];
           expect(claim.id).toBe(id);
         }
       }
