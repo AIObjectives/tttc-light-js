@@ -418,10 +418,9 @@ const maxSetTopicPag = modifyTopic((node) => ({
   pagination: node.children.length - 1,
 }));
 
-const incrementTopicPag = modifyTopic((node) => ({
-  ...node,
-  pagination: node.pagination + defaultAddTopicPagination,
-}));
+const incrementTopicPag = modifyTopic((node) =>
+  topicNodePagSetter(node.pagination + defaultAddTopicPagination)(node),
+);
 
 const setTopicPag = (pag: number) => modifyTopic(topicNodePagSetter(pag));
 
@@ -437,10 +436,9 @@ const maxSetSubtopicPag = modifySubtopic((node) => ({
 const setSubtopicPag = (pag: number) =>
   modifySubtopic(subtopicNodePagSetter(pag));
 
-const incrementSubtopicPag = modifySubtopic((node) => ({
-  ...node,
-  pagination: node.pagination + defaultAddSubtopicPagination,
-}));
+const incrementSubtopicPag = modifySubtopic((node) =>
+  subtopicNodePagSetter(node.pagination + defaultAddSubtopicPagination)(node),
+);
 
 //  ********************************
 //  * CREATE ACTION STREAMS *
@@ -519,6 +517,16 @@ const closeAllActionStream: MapActions[] = [
   // reset subtopic pagination
   mapActionToAllSubtopics(resetSubtopicPagAction),
 ];
+
+const createIncrementActionStream = Match.type<
+  TaggedTopicPath | TaggedSubtopicPath
+>().pipe(
+  Match.discriminators("type")({
+    topic: (path) => [incrementTopicPagAction(path)],
+    subtopic: (path) => [incrementSubtopicPagination(path)],
+  }),
+  Match.exhaustive,
+);
 
 export type ReportStateAction = {
   type: ReportStateActionTypes;
@@ -614,7 +622,10 @@ function createPathMapReducer(
           ),
           // If idxMap for some reason couldn't find the Path, just return the state.
           // TODO: Include more comprehensive error handling.
-          Option.getOrElse(() => state),
+          Option.getOrElse(() => {
+            console.error("Issue with opening");
+            return state;
+          }),
         );
       }
       case "close": {
@@ -637,7 +648,7 @@ function createPathMapReducer(
           ),
           // TODO: include more comprehensive error handling
           Either.getOrElse((e) => {
-            console.log(e);
+            console.error(e);
             return state;
           }),
         );
@@ -655,6 +666,24 @@ function createPathMapReducer(
         return pipe(
           closeAllActionStream,
           Array.reduce(state, actionStreamReducer),
+        );
+      }
+      case "expandTopic":
+      case "expandSubtopic": {
+        return pipe(
+          idMap,
+          Record.get(id),
+          Either.fromOption(() => "Could not find path"),
+          Either.map(
+            flow(
+              createIncrementActionStream,
+              Array.reduce(state, actionStreamReducer),
+            ),
+          ),
+          Either.getOrElse((e) => {
+            console.error(e);
+            return state;
+          }),
         );
       }
       // closes topic and resets its children
@@ -719,6 +748,8 @@ export const __internals = {
   createPathMapReducer,
   defaultTopicPagination,
   defaultSubtopicPagination,
+  defaultAddTopicPagination,
+  defaultAddSubtopicPagination,
   stateBuilder,
 };
 
