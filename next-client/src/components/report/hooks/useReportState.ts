@@ -17,6 +17,10 @@ import { Option, pipe, Array, Either, flow, Match, Record } from "effect";
  * apply those actions to the state.
  */
 
+//  ********************************
+//  * CONSTS
+//  ********************************/
+
 const defaultTopicPagination = 3;
 const defaultAddTopicPagination = 1;
 
@@ -154,10 +158,9 @@ const mapIdsToPath = (
   );
 
 //  ********************************
-//  * ACTION STREAM REDUCER *
+//  * ACTION STREAM ACTIONS *
 //  *
-//  * We want to break down actions from the report state reducer into a series of smaller
-//  * more maintainable actions.
+//  * Actions and action creators for the Action Stream Reducer
 //  ********************************/
 
 type OpenTopicAction = {
@@ -228,23 +231,41 @@ type ActionStreamActions =
   | MaxSetSubtopicPagination
   | IncrementSubtopicPagination;
 
+/**
+ * Special type of action that generates an array of actions. Used for situations where we want to
+ * map one of our other actions, like opening all topics.
+ */
 type MapActions = {
   type: "mapActions";
   payload: (state: ReportState) => ActionStreamActions[];
 };
 
+/**
+ * Helper type for matching a union to a subset based on an exact match. Made since
+ * Extract<T,U> will include supersets
+ */
 type Exact<T, Shape> = T extends Shape ? (Shape extends T ? T : never) : never;
 
+/**
+ * Topic actions where the payload is just a Path
+ */
 type TopicActionsWithPath = Exact<
   ActionStreamActions,
   { type: any; payload: TopicPath }
 >;
 
+/**
+ * Subtopic actions where the payload is just a path
+ */
 type SubtopicActionsWithPath = Exact<
   ActionStreamActions,
   { type: any; payload: SubtopicPath }
 >;
 
+/**
+ * Makes a function that returns a TopicActionsWithPath. Just makes it easier to define our actions
+ * since most just take a path
+ */
 const createTopicActionsWithPath =
   <T extends TopicActionsWithPath>(type: T["type"]) =>
   (payload: TopicPath): TopicActionsWithPath => ({
@@ -252,6 +273,10 @@ const createTopicActionsWithPath =
     payload,
   });
 
+/**
+ * Makes a function that returns a SubtopicActionsWithPath. Just makes it easier to define our actions
+ * since most just take a path
+ */
 const createSubtopicActionsWithPath =
   <T extends SubtopicActionsWithPath>(type: T["type"]) =>
   (payload: SubtopicPath) => ({
@@ -270,6 +295,9 @@ const incrementTopicPagAction = createTopicActionsWithPath(
   "incrementTopicPagination",
 );
 
+/**
+ * Sets the topic pagination to an arbitrary value.
+ */
 const setTopicPagAction = (payload: {
   path: TopicPath;
   pag: number;
@@ -288,6 +316,9 @@ const incrementSubtopicPagination = createSubtopicActionsWithPath(
   "incrementSubtopicPagination",
 );
 
+/**
+ * Sets the subtopic pagination to an arbitrary value
+ */
 const setSubTopicPagAction = (payload: {
   path: SubtopicPath;
   pag: number;
@@ -296,6 +327,11 @@ const setSubTopicPagAction = (payload: {
   payload,
 });
 
+/**
+ * Creates a special action MapActions. It takes a function that returns an array of ActionStreamActions
+ *
+ * Useful for things like mapping across every topic or subtopic.
+ */
 const mapStateToActions = (
   f: (state: ReportState) => ActionStreamActions[],
 ): MapActions => ({
@@ -303,6 +339,9 @@ const mapStateToActions = (
   payload: f,
 });
 
+/**
+ * Maps an action to every topic in state. Takes an action creator Path -> Action
+ */
 const mapActionToAllTopics = (
   actionCreator: (payload: TopicPath) => TopicActionsWithPath,
 ): MapActions =>
@@ -310,6 +349,9 @@ const mapActionToAllTopics = (
     state.children.map((_, topicIdx) => actionCreator({ topicIdx })),
   );
 
+/**
+ * Maps an action to every subtopic in state. Takes an action creator Path -> Action
+ */
 const mapActionToAllSubtopics = (
   actionCreator: (payload: SubtopicPath) => SubtopicActionsWithPath,
 ): MapActions =>
@@ -321,6 +363,9 @@ const mapActionToAllSubtopics = (
     ),
   );
 
+/**
+ * Maps an action to the subtopics within a particular topic. Takes an action creator Path -> Action
+ */
 const mapActionToTopicsChildren =
   (topicPath: TopicPath) =>
   (
@@ -332,53 +377,136 @@ const mapActionToTopicsChildren =
       ),
     );
 
+//  ********************************
+//  * ACTION STREAM REDUCER *
+//  *
+//  * We want to break down actions from the report state reducer into a series of smaller
+//  * more maintainable actions.
+//  ********************************/
+
 function actionStreamReducer(
   state: ReportState,
   { type, payload }: ActionStreamActions | MapActions,
 ): ReportState {
   switch (type) {
+    /**
+     * Sets topic to open
+     */
     case "openTopic": {
-      return openTopic(state, payload);
+      // return openTopic(state, payload);
+      return modifyTopic((node) => ({ ...node, isOpen: true }))(state, payload);
     }
+    /**
+     * Sets topic to closed
+     */
     case "closeTopic": {
-      return closeTopic(state, payload);
+      return modifyTopic((node) => ({ ...node, isOpen: false }))(
+        state,
+        payload,
+      );
     }
+    /**
+     * Flips between topic being open and closed
+     */
     case "toggleTopic": {
       return modifyTopic((node) => ({ ...node, isOpen: !node.isOpen }))(
         state,
         payload,
       );
     }
+    /**
+     * Resets a topic's pagination back to either its default or children len, whichever is smaller
+     */
     case "resetTopicPagination": {
-      return resetTopicPag(state, payload);
+      return modifyTopic(topicNodePagSetter(defaultTopicPagination))(
+        state,
+        payload,
+      );
     }
+    /**
+     * Sets a topic's pagination to its maximal value.
+     */
     case "maxSetTopicPagination": {
-      return maxSetTopicPag(state, payload);
+      return modifyTopic((node) => ({
+        ...node,
+        pagination: node.children.length - 1,
+      }))(state, payload);
     }
+    /**
+     * Set's a topic's pagination to an arbitrary value.
+     */
     case "setTopicPagination": {
-      return setTopicPag(payload.pag)(state, payload.path);
+      return modifyTopic(topicNodePagSetter(payload.pag))(state, payload.path);
     }
+    /**
+     * Increments a topic's pagination by a set amount
+     */
     case "incrementTopicPagination": {
-      return incrementTopicPag(state, payload);
+      return modifyTopic((node) =>
+        topicNodePagSetter(node.pagination + defaultAddTopicPagination)(node),
+      )(state, payload);
     }
+    /**
+     * Sets a subtopic's pagination to its default or children len, whichever is smaller
+     */
     case "resetSubtopicPagination": {
-      return resetSubtopicPag(state, payload);
+      return modifySubtopic(subtopicNodePagSetter(defaultSubtopicPagination))(
+        state,
+        payload,
+      );
     }
+    /**
+     * Increases a subtopic's pagination by a set amount
+     */
     case "incrementSubtopicPagination": {
-      return incrementSubtopicPag(state, payload);
+      return modifySubtopic((node) => ({
+        ...node,
+        pagination: node.children.length - 1,
+      }))(state, payload);
     }
+    /**
+     * Sets a subtopic's pagination to an arbitrary value.
+     */
     case "setSubtopicPagination": {
-      return setSubtopicPag(payload.pag)(state, payload.path);
+      return modifySubtopic(subtopicNodePagSetter(payload.pag))(
+        state,
+        payload.path,
+      );
     }
+    /**
+     * Sets a subtopic's pagination to its maximal value
+     */
     case "maxSetSubTopicPagination": {
-      return maxSetSubtopicPag(state, payload);
+      return modifySubtopic((node) => ({
+        ...node,
+        pagination: node.children.length - 1,
+      }))(state, payload);
     }
+    /**
+     * A special action that generates an array of actions based on the state and calls actionStreamReducer again.
+     * Used for things like mapping an action over every topic or subtopic.
+     *
+     * Since the function given to this returns only ActionStreamActions without MapActions, we will avoid infinite recursion.
+     */
     case "mapActions": {
-      return pipe(state, payload, Array.reduce(state, actionStreamReducer));
+      return pipe(
+        state,
+        // The payload of this action is a function: ReportState -> ActionStream[]
+        payload,
+        // Reduce ActionStream[] over the actionStreamReducer.
+        Array.reduce(state, actionStreamReducer),
+      );
     }
   }
 }
 
+//  ********************************
+//  * ACTION STREAM HELPER FUNCTIONS *
+//  ********************************/
+
+/**
+ * Guards against setting a node's pagination above its children length or below its default pag
+ */
 const nodePaginationSetter =
   (defaultSize: number) =>
   (pag: number) =>
@@ -392,17 +520,18 @@ const nodePaginationSetter =
     };
   };
 
+/**
+ * For setting topic node pag
+ */
 const topicNodePagSetter = nodePaginationSetter(defaultTopicPagination);
+/**
+ * For setting subtopic node pag
+ */
 const subtopicNodePagSetter = nodePaginationSetter(defaultSubtopicPagination);
 
-//  ********************************
-//  * ACTION STREAM STATE TRANSFORMERS *
-//  *
-//  * Functions used directly by the action stream reducer.
-//  *
-//  * f: Reportstate -> Reportstate
-//  ********************************/
-
+/**
+ * Used in action stream reducer for modifying a particular topic node
+ */
 const modifyTopic =
   (f: (node: TopicNode) => TopicNode) =>
   (state: ReportState, path: TopicPath): ReportState =>
@@ -411,6 +540,9 @@ const modifyTopic =
       children,
     }));
 
+/**
+ * Used in action stream reducer for modifying a particular subtopic node.
+ */
 const modifySubtopic =
   (f: (node: SubtopicNode) => SubtopicNode) =>
   (state: ReportState, path: SubtopicPath): ReportState =>
@@ -418,39 +550,6 @@ const modifySubtopic =
       ...topicNode,
       children: Array.modify(topicNode.children, path.subtopicIdx, f),
     }))(state, path);
-
-const openTopic = modifyTopic((node) => ({ ...node, isOpen: true }));
-
-const closeTopic = modifyTopic((node) => ({ ...node, isOpen: false }));
-
-const resetTopicPag = modifyTopic(topicNodePagSetter(defaultTopicPagination));
-
-const maxSetTopicPag = modifyTopic((node) => ({
-  ...node,
-  pagination: node.children.length - 1,
-}));
-
-const incrementTopicPag = modifyTopic((node) =>
-  topicNodePagSetter(node.pagination + defaultAddTopicPagination)(node),
-);
-
-const setTopicPag = (pag: number) => modifyTopic(topicNodePagSetter(pag));
-
-const resetSubtopicPag = modifySubtopic(
-  subtopicNodePagSetter(defaultSubtopicPagination),
-);
-
-const maxSetSubtopicPag = modifySubtopic((node) => ({
-  ...node,
-  pagination: node.children.length - 1,
-}));
-
-const setSubtopicPag = (pag: number) =>
-  modifySubtopic(subtopicNodePagSetter(pag));
-
-const incrementSubtopicPag = modifySubtopic((node) =>
-  subtopicNodePagSetter(node.pagination + defaultAddSubtopicPagination)(node),
-);
 
 //  ********************************
 //  * CREATE ACTION STREAMS *
@@ -500,6 +599,9 @@ const createOpenActionStream = Match.type<
 const createCloseActionStream = Match.type<TaggedTopicPath>().pipe(
   /**
    * When the node is a topic node:
+   * - Close the topic
+   * - Reset the topic pagination
+   * - Reset the subtopic pagination
    */
   Match.when(
     { type: "topic" },
@@ -512,6 +614,11 @@ const createCloseActionStream = Match.type<TaggedTopicPath>().pipe(
   Match.exhaustive,
 );
 
+/**
+ * Action stream actions for "openAll"
+ *
+ * Since this action doesn't need a path, we can just return an array of map actions
+ */
 const openAllActionStream: MapActions[] = [
   // Open topics
   mapActionToAllTopics(openTopicAction),
@@ -521,6 +628,11 @@ const openAllActionStream: MapActions[] = [
   mapActionToAllSubtopics(maxSetSubtopicPagAction),
 ];
 
+/**
+ * Action stream actions for "closeAll"
+ *
+ * Since this action doesn't need a path, we can just return an array of map actions
+ */
 const closeAllActionStream: MapActions[] = [
   // close topics
   mapActionToAllTopics(closeTopicAction),
@@ -530,6 +642,9 @@ const closeAllActionStream: MapActions[] = [
   mapActionToAllSubtopics(resetSubtopicPagAction),
 ];
 
+/**
+ * Action stream actions for "expandTopic" and "expandSubtopic"
+ */
 const createIncrementActionStream = Match.type<
   TaggedTopicPath | TaggedSubtopicPath
 >().pipe(
@@ -539,11 +654,6 @@ const createIncrementActionStream = Match.type<
   }),
   Match.exhaustive,
 );
-
-export type ReportStateAction = {
-  type: ReportStateActionTypes;
-  payload: ReportStatePayload;
-};
 
 //  ********************************
 //  * STATE BUILDERS *
@@ -588,34 +698,38 @@ const makeClaimNode = (claim: schema.Claim): ClaimNode => ({
 //  * REPORT STATE REDUCER *
 //  ********************************/
 
-const onlyTopicPath = Match.type<
-  TaggedTopicPath | TaggedSubtopicPath | ClaimPath
->().pipe(
-  Match.when({ type: "topic" }, (action) => Either.right(action)),
-  Match.orElse((path) => Either.left(`Invalid path ${path}`)),
-);
-
-type ReportStateActionTypes =
+type ReportStateActionTypesWithIdPayloads =
   | "open"
   | "close"
-  | "openAll"
-  | "closeAll"
   | "toggleTopic"
   | "expandTopic"
   | "expandSubtopic"
   | "focus";
 
-type ReportStatePayload = { id: string };
+type ReportStateActionTypesWithoutPayloads = "openAll" | "closeAll";
+
+type ReportStateActionsWithIdPayloads = {
+  type: ReportStateActionTypesWithIdPayloads;
+  payload: { id: string };
+};
+
+type ReportStateActionsWithoutPayloads = {
+  type: ReportStateActionTypesWithoutPayloads;
+};
+
+export type ReportStateAction =
+  | ReportStateActionsWithIdPayloads
+  | ReportStateActionsWithoutPayloads;
 
 function createPathMapReducer(
   idMap: Record<string, TopicPath | SubtopicPath | ClaimPath>,
 ) {
   return function (state: ReportState, action: ReportStateAction): ReportState {
-    const { id } = action.payload;
     switch (action.type) {
       // For open, we want the same function to work for topics or subtopics.
       // If subtopic, should open parent and set pagination to the correct value
       case "open": {
+        const { id } = action.payload;
         return pipe(
           // string: Path
           idMap,
@@ -641,6 +755,7 @@ function createPathMapReducer(
         );
       }
       case "close": {
+        const { id } = action.payload;
         return pipe(
           // string: Path
           idMap,
@@ -648,7 +763,6 @@ function createPathMapReducer(
           Record.get(id),
           // Either Path
           Either.fromOption(() => "Could not find path"),
-          Either.flatMap(onlyTopicPath),
           Either.map(
             // Path
             flow(
@@ -659,6 +773,21 @@ function createPathMapReducer(
             ),
           ),
           // TODO: include more comprehensive error handling
+          Either.getOrElse((e) => {
+            console.error(e);
+            return state;
+          }),
+        );
+      }
+      case "toggleTopic": {
+        const { id } = action.payload;
+        return pipe(
+          idMap,
+          Record.get(id),
+          Either.fromOption(() => "Could not find path"),
+          Either.map((path) =>
+            actionStreamReducer(state, toggleTopicAction(path)),
+          ),
           Either.getOrElse((e) => {
             console.error(e);
             return state;
@@ -682,6 +811,7 @@ function createPathMapReducer(
       }
       case "expandTopic":
       case "expandSubtopic": {
+        const { id } = action.payload;
         return pipe(
           idMap,
           Record.get(id),
@@ -699,24 +829,11 @@ function createPathMapReducer(
         );
       }
       case "focus": {
+        const { id } = action.payload;
         return {
           ...state,
           focusedId: id,
         };
-      }
-      case "toggleTopic": {
-        return pipe(
-          idMap,
-          Record.get(id),
-          Either.fromOption(() => "Could not find path"),
-          Either.map((path) =>
-            actionStreamReducer(state, toggleTopicAction(path)),
-          ),
-          Either.getOrElse((e) => {
-            console.error(e);
-            return state;
-          }),
-        );
       }
       default: {
         return state;

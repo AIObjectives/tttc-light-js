@@ -8,10 +8,10 @@ const state = stateBuilder(reportData.topics);
 
 const reducer = createPathMapReducer(mapIdsToPath(state));
 const openAll = (reportState: ReportState) =>
-  reducer(reportState, { type: "openAll", payload: { id: "" } });
+  reducer(reportState, { type: "openAll" });
 
 const closeAll = (reportState: ReportState) =>
-  reducer(reportState, { type: "closeAll", payload: { id: "" } });
+  reducer(reportState, { type: "closeAll" });
 
 const openedState = openAll(state);
 const closedState = closeAll(openedState);
