@@ -1,0 +1,188 @@
+{
+  "sample_inputs": {
+    "min_pets_1": [
+      {
+        "id": "1",
+        "text": "I love cats",
+        "speaker": "Alice"
+      }
+    ],
+    "min_pets_3": [
+      {
+        "id": "1",
+        "text": "I love cats"
+      },
+      {
+        "id": "2",
+        "text": "dogs are great"
+      },
+      {
+        "id": "3",
+        "text": "I'm not sure about birds"
+      }
+    ],
+    "dupes_pets_5": [
+      {
+        "id": "a",
+        "text": "I love cats"
+      },
+      {
+        "id": "b",
+        "text": "dogs are great"
+      },
+      {
+        "id": "c",
+        "text": "I'm not sure about birds"
+      },
+      {
+        "id": "d",
+        "text": "I really really love cats"
+      },
+      {
+        "id": "e",
+        "text": "I don't know about birds"
+      }
+    ]
+  },
+  "topic_tree_tests": [
+    {
+      "name": "basic_pets",
+      "input": {
+        "llm": {
+          "model_name": "gpt-4o-mini",
+          "system_prompt": "You are a professional research assistant.",
+          "user_prompt": "Create a topic tree from these comments.",
+          "api_key": "[REDACTED]"
+        },
+        "comments": [
+          {
+            "id": "1",
+            "text": "I love cats"
+          },
+          {
+            "id": "2",
+            "text": "dogs are great"
+          },
+          {
+            "id": "3",
+            "text": "I'm not sure about birds"
+          }
+        ]
+      },
+      "expected": {
+        "taxonomy": [
+          {
+            "topicName": "Pets",
+            "topicShortDescription": "General opinions about common household pets.",
+            "subtopics": [
+              {
+                "subtopicName": "Cats",
+                "subtopicShortDescription": "Positive sentiments towards cats."
+              },
+              {
+                "subtopicName": "Dogs",
+                "subtopicShortDescription": "Positive sentiments towards dogs."
+              },
+              {
+                "subtopicName": "Birds",
+                "subtopicShortDescription": "Uncertainty or mixed feelings about birds."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "claim_tests": [
+    {
+      "name": "basic_pet_claims",
+      "input": {
+        "llm": {
+          "model_name": "gpt-4o-mini",
+          "system_prompt": "You are a professional research assistant.",
+          "user_prompt": "Extract claims from these comments.",
+          "api_key": "[REDACTED]"
+        },
+        "comments": [
+          {
+            "id": "a",
+            "text": "I love cats"
+          },
+          {
+            "id": "b",
+            "text": "dogs are great"
+          },
+          {
+            "id": "c",
+            "text": "I'm not sure about birds"
+          }
+        ],
+        "tree": {
+          "taxonomy": [
+            {
+              "topicName": "Pets",
+              "topicShortDescription": "General opinions about common household pets.",
+              "subtopics": [
+                {
+                  "subtopicName": "Cats",
+                  "subtopicShortDescription": "Positive sentiments towards cats."
+                },
+                {
+                  "subtopicName": "Dogs",
+                  "subtopicShortDescription": "Positive sentiments towards dogs."
+                },
+                {
+                  "subtopicName": "Birds",
+                  "subtopicShortDescription": "Uncertainty or mixed feelings about birds."
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "Pets": {
+          "total": 3,
+          "subtopics": {
+            "Cats": {
+              "total": 1,
+              "claims": [
+                {
+                  "claim": "Cats are wonderful pets.",
+                  "quote": "I love cats",
+                  "topicName": "Pets",
+                  "subtopicName": "Cats",
+                  "commentId": "a"
+                }
+              ]
+            },
+            "Dogs": {
+              "total": 1,
+              "claims": [
+                {
+                  "claim": "Dogs make great pets.",
+                  "quote": "dogs are great",
+                  "topicName": "Pets",
+                  "subtopicName": "Dogs",
+                  "commentId": "b"
+                }
+              ]
+            },
+            "Birds": {
+              "total": 1,
+              "claims": [
+                {
+                  "claim": "Birds may not be suitable pets for everyone.",
+                  "quote": "I'm not sure about birds",
+                  "topicName": "Pets",
+                  "subtopicName": "Birds",
+                  "commentId": "c"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+} 
