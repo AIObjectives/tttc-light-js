@@ -13,22 +13,38 @@ name to use, the system prompt, and the specific pipeline step prompts.
 Currently only supports OpenAI (Anthropic soon!!!)
 For local testing, load these from a config.py file
 """
-
+import os
+import sys
+from pathlib import Path
 from fastapi import FastAPI
-#from fastapi.testclient import TestClient
-import json
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
 import wandb
+import json
+from dotenv import load_dotenv
 
-# TODO: which set of imports shall we keep? :)
+# Add the current directory to path for imports
+current_dir = Path(__file__).resolve().parent
+sys.path.append(str(current_dir))
+
+
 import config
 from utils import cute_print
-from visualize import show_confusion_matrix
 
-#import pyserver.config as config
-#from pyserver.utils import cute_print
+load_dotenv()
+
+# ! Temporarily including API key in env
+api_key:str = os.getenv('OPENAI_API_KEY')
+
+if api_key is None:
+  raise Exception("No OpenAI API key present")
+
+app = FastAPI() 
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
 class Comment(BaseModel):
   id: str
@@ -63,8 +79,6 @@ class CruxesLLMConfig(BaseModel):
   llm: LLMConfig
   topics: list
 
-app = FastAPI()
-
 @app.get("/")
 def read_root():
   # TODO: setup/relevant defaults?
@@ -73,8 +87,8 @@ def read_root():
 ###################################
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
-@app.post("/topic_tree/")
-def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
+@app.post("/topic_tree")
+def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given the full list of comments, return a corresponding taxonomy of relevant topics and their
   subtopics, with a short description for each.
@@ -154,7 +168,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
     }
   }
   """
-  api_key = req.llm.api_key
+  # api_key = req.llm.api_key
   client = OpenAI(
     api_key=api_key
   )
@@ -191,6 +205,13 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = "") -> dict:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
                group=exp_group_name)
+               group=exp_group_name,
+               resume="allow")
+      wandb.config.update({
+                "s1_topics/model" : req.llm.model_name,
+                "s1_topics/user_prompt" : req.llm.user_prompt,
+                "s1_topics/system_prompt" : req.llm.system_prompt
+               })
       comment_lengths = [len(c.text) for c in req.comments]
       num_topics = len(tree["taxonomy"])
       subtopic_bins = [len(t["subtopics"]) for t in tree["taxonomy"]]
@@ -227,7 +248,7 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   """
   Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
   """
-  api_key = llm.api_key
+  # api_key = llm.api_key
   client = OpenAI(
     api_key=api_key
   )
@@ -259,13 +280,19 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   except:
     print("Step 2: no response: ", response)
     claims = {}
-  return {"claims" : json.loads(claims), "usage" : response.usage}
+  # TODO: json.loads(claims) fails sometimes 
+  try:
+    claims_obj = json.loads(claims)
+  except:
+    print("json_parse_failure;claims:", claims)
+    claims_obj = claims
+  return {"claims" : claims_obj, "usage" : response.usage}
 
 ####################################
 # Step 2: Extract and place claims #
 #----------------------------------#
-@app.post("/claims/")
-def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
+@app.post("/claims")
+def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
   Place each claim under the correct subtopic in the tree.
@@ -438,12 +465,39 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = "") -> dict:
                                              }
                                         }
                                       }
+  # after inserting claims: check if any of the topics/subtopics are empty
+  for topic in req.tree["taxonomy"]:
+    if "subtopics" in topic:
+      for subtopic in topic["subtopics"]:
+        # check if subtopic in node_counts
+        if topic["topicName"] in node_counts:
+          if subtopic["subtopicName"] not in node_counts[topic["topicName"]]["subtopics"]:
+            # this is an empty subtopic!
+            print("EMPTY SUBTOPIC: ", subtopic["subtopicName"])
+            node_counts[topic["topicName"]]["subtopics"][subtopic["subtopicName"]] = { "total" : 0, "claims" : [], "speakers" : set()}
+        else:
+          # could we have an empty topic? certainly
+          print("EMPTY TOPIC: ", topic["topicName"])
+          node_counts[topic["topicName"]] = { "total" : 0, "speakers" : set(),
+                                          "subtopics" : { "None" : 
+                                            {"total" : 0,
+                                             "claims" : [],
+                                             "speakers" : set()
+                                             }
+                                        }
+                                      }
   # Note: we will now be sending speaker names to W&B  
   if log_to_wandb:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group=exp_group_name)
+                 group=exp_group_name,
+                 resume="allow")
+      wandb.config.update({
+                  "s2_claims/model" : req.llm.model_name,
+                  "s2_claims/user_prompt" : req.llm.user_prompt,
+                  "s2_claims/system_prompt" : req.llm.system_prompt
+                 })
       wandb.log({
         "U_tok_N/claims" : TK_2_TOT,
         "U_tok_in/claims": TK_2_IN,
@@ -467,13 +521,13 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
   """
   Given a list of claims for a given subtopic, identify which ones are near-duplicates
   """
-  api_key = llm.api_key
+  # api_key = llm.api_key
   client = OpenAI(
     api_key=api_key
   )
 
   # add claims with enumerated ids (relative to this subtopic only)
-  full_prompt = config.CLAIM_DEDUP_PROMPT
+  full_prompt = llm.user_prompt
   for i, orig_claim in enumerate(claims):
     full_prompt += "\nclaimId"+str(i)+ ": " + orig_claim["claim"]
 
@@ -482,11 +536,11 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
     messages = [
       {
         "role": "system",
-        "content": config.SYSTEM_PROMPT
+        "content": llm.system_prompt
       },
       {
-            "role": "user",
-            "content": full_prompt
+        "role": "user",
+        "content": full_prompt
       }
     ],
     temperature = 0.0,
@@ -497,13 +551,18 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
   except:
     print("Step 3: no deduped claims: ", response)
     deduped_claims = {}
-  return {"dedup_claims" : json.loads(deduped_claims), "usage" : response.usage}
+  try: 
+    deduped_claims_obj = json.loads(deduped_claims)
+  except:
+    print("json failure;dedup:", deduped_claims)
+    deduped_claims_obj = deduped_claims
+  return {"dedup_claims" : deduped_claims_obj, "usage" : response.usage}
 
 #####################################
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
 @app.put("/sort_claims_tree/")
-def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
+def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """
   Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
   all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -721,6 +780,9 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
   for topic, topic_data in claims_tree.items():
     per_topic_total = 0
     per_topic_list = {}
+    # consider the empty top-level topic
+    if not topic_data["subtopics"]:
+      print("NO SUBTOPICS: ", topic)
     for subtopic, subtopic_data in topic_data["subtopics"].items():
       per_topic_total += subtopic_data["total"]
       per_topic_speakers = set()
@@ -792,12 +854,13 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
                
                   # add all duplicates as children of main claim
                   clean_claim["duplicates"].append(dupe_claim)
+
                   accounted_for_ids[dupe_id] = 1
             
             # add verified claim (may be identical if it has no dupes, except for duplicates: [] field)
             deduped_claims.append(clean_claim)
             accounted_for_ids[claim_id] = 1
-         
+
         # sort so the most duplicated claims are first
         sorted_deduped_claims = sorted(deduped_claims, key=lambda x: len(x["duplicates"]), reverse=True)
         if log_to_wandb:
@@ -807,14 +870,17 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
         TK_IN += usage.prompt_tokens
         TK_OUT += usage.completion_tokens
       else:
-        # just one claim! already sorted!
         sorted_deduped_claims = subtopic_data["claims"]
-        if "speaker" in subtopic_data["claims"][0]:
-          speaker = subtopic_data["claims"][0]["speaker"]
+        # there may be one unique claim or no claims if this is an empty subtopic
+        if subtopic_data["claims"]:
+          if "speaker" in subtopic_data["claims"][0]:
+            speaker = subtopic_data["claims"][0]["speaker"]
+          else:
+            print("no speaker provided:", claim)
+            speaker = "unknown"      
+          per_topic_speakers.add(speaker)
         else:
-          print("no speaker provided:", claim)
-          speaker = "unknown"
-        per_topic_speakers.add(speaker)
+          print("EMPTY SUBTOPIC AFTER CLAIMS: ", subtopic)
         
       # track how many claims and distinct speakers per subtopic
       tree_counts = {"claims" : subtopic_data["total"], "speakers" : len(per_topic_speakers)}
@@ -830,7 +896,6 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
     set_topic_speakers = set()
     for k, c in per_topic_list.items():
       set_topic_speakers = set_topic_speakers.union(c["speakers"])
-    print("per topic speakers: ", set_topic_speakers)
 
     if req.sort == "numPeople":
       sorted_subtopics = sorted(per_topic_list.items(), key=lambda x: x[1]["counts"]["speakers"], reverse=True)
@@ -849,12 +914,18 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
   elif req.sort == "numClaims":
     full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["counts"]["claims"], reverse=True)
  
-  print(full_sort_tree)
   if log_to_wandb:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group = exp_group_name)
+                 group = exp_group_name,
+                 resume="allow")
+      wandb.config.update({
+                    "s3_dedup/model" : req.llm.model_name,
+                    "s3_dedup/user_prompt" : req.llm.user_prompt,
+                    "s3_dedup/system_prompt" : req.llm.system_prompt
+                 })
+
       report_data = [[json.dumps(full_sort_tree, indent=2)]]
       wandb.log({
         "U_tok_N/dedup" : TK_TOT,
@@ -865,6 +936,8 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = "")-> dict:
         "step_dedup/model" : req.llm.model_name,
         "step_dedup/prompt" : req.llm.user_prompt
       })
+      # W&B run completion
+      wandb.run.finish()
     except:
       print("Failed to create wandb run")
   net_usage = {"total_tokens" : TK_TOT,
@@ -922,7 +995,7 @@ def confusion_matrix(conf_mat:list)->list:
   return cm
 
 def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_map:dict)-> dict:
-  api_key = llm.api_key
+  # api_key = llm.api_key
   client = OpenAI(
     api_key=api_key
   )
@@ -953,7 +1026,11 @@ def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_m
       response_format={ "type": "json_object" }
   )
   crux = response.choices[0].message.content
-  return {"crux" : json.loads(crux), "usage" : response.usage }
+  try:
+    crux_obj = json.loads(crux)
+  except:
+    crux_obj = crux
+  return {"crux" : crux_obj, "usage" : response.usage }
 
 def get_speakers_map(tree:dict):
   speakers = set()
@@ -971,8 +1048,10 @@ def get_speakers_map(tree:dict):
   return speaker_map
 
 
-@app.post("/cruxes/")
-def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
+
+@app.post("/cruxes")
+# TODO: configure optional TS calling, logic for extracting cruxes
+def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """ Given a topic, description, and corresponding list of claims, extract the
   crux claims that would best split the claims into agree/disagree sides
   Note: currently we do this for the subtopic level, could scale up to main topic?
@@ -1041,8 +1120,12 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-                 group=exp_group_name
-                 )
+                 group=exp_group_name,
+                 resume="allow")
+      wandb.config.update({
+                   "s4_cruxes/model" : req.llm.model_name,
+                  "s4_cruxes/prompt" : req.llm.user_prompt
+                 })
 
       # compute confusion matrix
       speaker_labels = sorted(speaker_map.keys())
@@ -1081,6 +1164,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
         "crux_YN" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"]),
         "step_cruxes/model" : req.llm.model_name,
         "step_cruxes/prompt" : req.llm.user_prompt
+
       })
       wandb.log({
         "crux_binary_conf_mat" : wandb.Table(data=conf_mat, columns = cols),
@@ -1098,3 +1182,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = "")-> dict:
 
   return {"data" : cruxes, "usage" : net_usage}
 
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)

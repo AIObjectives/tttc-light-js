@@ -1,7 +1,5 @@
 # Working with Talk to the City
 
-TODO: dedupe with full & quickstart versions
-
 ## Quickstart
 
 Latest instructions as we move to a separate Python server for LLM calls.
@@ -35,36 +33,18 @@ Adding notes here from issues we surface in testing.
 
 - Power cycling: one good thing to try first is to restart the process in any one of the windows by ending the process and rerunning the specific previous command in that window (e.g. using the up arrow to find it).
 
-## Older instructions below
-
-## Setup
-
-[See the setup instructions in README](./README.md#setup)
-
-## Working in DEV
-
-After you have finished the basic setup:
-
-1. run `npm i` at the root level
-2. run `npm run dev` at the root level. This will launch three different terminals
-   - the NextJS client dev server
-   - The Express app dev server
-   - A watcher for changes in `/common`
-   - Note: you can run these indepently by running `npm run dev` next/express folders and `npm run watch` in common.
-3. Go to `http://localhost:3000` to see the Next client
-
-## Tour De Repo
+## TypeScript Tour De Repo
 
 There are four main folders to look at:
 
 - `/next-client`
   - This is where the frontend client lives.
   - The two main features of it are the ability to submit data to the backend, and to render reports.
-- `/express-pipeline`
+- `/express-server`
   - This is the backend Express app that handles submissions and works with the LLM to generate JSON reports.
-  - Everything in `express-pipeline/src` will be transpiled into `/dist`.
+  - Everything in `express-server/src` will be transpiled into `/dist`.
 - `/common`
-  - This is where shared type definitions are stored. It's symlinked with `next-client` and `/express-pipeline`.
+  - This is where shared type definitions are stored. It's symlinked with `next-client` and `/express-server`.
   - If you don't have the watcher running, you'll need to rebuild anytime there's a change.
 - `/bin`
   - Scripts for managing Docker images. The main one you'll need to use is `./bin/docker-build-gcloud.sh`

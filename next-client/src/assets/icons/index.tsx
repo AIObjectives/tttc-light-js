@@ -12,6 +12,7 @@ import {
   AlignLeft,
   ChevronDown,
   ChevronUp,
+  MessageCircle,
 } from "lucide-react";
 
 import TopicSVG from "./TopicSvg";
@@ -26,6 +27,7 @@ import XSVG from "./XSvg";
 import QuoteBubbleSVG from "./QuoteBubbleSvg";
 import ResetSVG from "./Reset";
 import InfoSvg from "./InfoSvg";
+import LogoSvg from "./LogoSvg";
 
 const Icons = () => <></>;
 
@@ -57,9 +59,13 @@ Icons.OutlineExpanded = ChevronUp;
 
 Icons.OutlineCollapsed = ChevronDown;
 
+Icons.Feedback = MessageCircle;
+
 Icons.Lightbulb = (props: { className?: string }) => (
   <LightbulbSvg {...props} />
 );
+
+Icons.Logo = (props: { className?: string }) => <LogoSvg {...props} />;
 
 Icons.Info = (props: { className?: string }) => <InfoSvg {...props} />;
 

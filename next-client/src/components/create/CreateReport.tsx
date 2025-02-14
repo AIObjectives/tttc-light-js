@@ -9,9 +9,17 @@ import React, {
 } from "react";
 import * as api from "tttc-common/api";
 import { Col, Row } from "../layout";
-import { Button, Spinner, TextArea } from "../elements";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Spinner,
+  TextArea,
+} from "../elements";
 import { Input } from "../elements";
-import SubmitFormControl from "@src/features/submission/components/SubmitFormControl";
 import Icons from "@src/assets/icons";
 import { useCostEstimate } from "./hooks/useCostEstimate";
 import { useReactiveValue } from "@src/lib/hooks/useReactiveValue";
@@ -37,6 +45,9 @@ import * as prompts from "tttc-common/prompts";
 import { useUser } from "@src/lib/hooks/getUser";
 import { useAsyncState } from "@src/lib/hooks/useAsyncState";
 import { User } from "firebase/auth";
+import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
+import { signInWithGoogle } from "@src/lib/firebase/auth";
 
 const fetchToken = async (
   user: User | null,
@@ -67,7 +78,7 @@ const initialState: api.GenerateApiResponse | null = null;
 
 // !!! This is copied from schema.LLMUserConfig. For some reason its resulting in an infinite cycle with useForm. Figure this out later.
 const form = z.object({
-  apiKey: z.string().min(1),
+  // apiKey: z.string().optional(),
   title: z.string().min(1),
   description: z.string().min(1),
   systemInstructions: z.string().min(1),
@@ -102,13 +113,59 @@ export default function CreateReport() {
   else return <CreateReportComponent token={result[1]} />;
 }
 
+const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
+  return (
+    <Dialog open={isOpen}>
+      <DialogContent className="gap-10">
+        <DialogHeader>
+          <DialogTitle>Login to create a report</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
+          <Button onClick={signInWithGoogle}>Login</Button>
+        </DialogDescription>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const useDeferredValue = <T,>(value: T, delay = 1000): T | "deferred" => {
+  const [deferredValue, setDeferredValue] = useState<T | "deferred">(
+    "deferred",
+  );
+
+  useEffect(() => {
+    // Set up the timer to check the value after the specified delay
+    const timer = setTimeout(() => {
+      setDeferredValue(value);
+    }, delay);
+
+    // Clean up the timer if the component unmounts or value changes
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return deferredValue;
+};
+
 function CreateReportComponent({ token }: { token: string | null }) {
+  const [modalOpen, setModalOpen] = useState(false);
   const submitActionWithToken = bindTokenToAction(token, submitAction);
   const [state, formAction] = useActionState(
     submitActionWithToken,
     initialState,
   );
   const [files, setFiles] = useState<FileList | undefined>(undefined);
+
+  const deferredToken = useDeferredValue(token);
+
+  useEffect(() => {
+    if (deferredToken === "deferred") {
+      setModalOpen(false);
+    } else if (deferredToken === null) {
+      setModalOpen(true);
+    } else {
+      setModalOpen(false);
+    }
+  }, [deferredToken]);
 
   const methods = useForm<z.infer<typeof form>>({
     resolver: zodResolver(form),
@@ -117,7 +174,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
     defaultValues: {
       title: "",
       description: "",
-      apiKey: "",
+      // apiKey: "placeholder",
       systemInstructions: prompts.defaultSystemPrompt,
       clusteringInstructions: prompts.defaultClusteringPrompt,
       extractionInstructions: prompts.defaultExtractionPrompt,
@@ -125,17 +182,20 @@ function CreateReportComponent({ token }: { token: string | null }) {
     },
   });
 
-  const isDisabled = !files?.item(0) || !methods.formState.isValid;
+  const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
+  console.log("first,", !files?.item(0));
+  console.log("second, ", !methods.formState.isValid);
+  console.log("third", !token);
 
   return (
     <FormProvider {...methods}>
+      <SigninModal isOpen={modalOpen} />
       <Form action={formAction}>
         <SubmitFormControl response={state}>
           <Col gap={8} className="mb-20">
             <FormHeader />
             <FormDescription />
             <FormDataInput files={files} setFiles={setFiles} />
-            <FormOpenAIKey />
             <CustomizePrompts />
             <CostEstimate files={files} />
             <div>
@@ -143,6 +203,8 @@ function CreateReportComponent({ token }: { token: string | null }) {
                 Generate the report
               </Button>
             </div>
+            <TermsAndConditions />
+            <br />
           </Col>
         </SubmitFormControl>
       </Form>
@@ -152,8 +214,48 @@ function CreateReportComponent({ token }: { token: string | null }) {
 
 const FormHeader = () => (
   <Col gap={3}>
-    <h3>Report details</h3>
-    <p>Lorem ipsum</p>
+    <h3>Create a Report</h3>
+    <div className="text-muted-foreground">
+      <p>
+        We send the contents of the data uploaded below through OpenAI’s API to
+        extract key claims and topics, and store the resuts as a T3C report on
+        this site. Optionally, you can customize the prompts we use for each
+        step of the pipeline &ndash; e.g. to focus on particular questions,
+        themes, or perspectives in your data.
+      </p>
+      <br />
+      <p>
+        Creating a report may take a few minutes, especially for large datasets.
+        Consider creating a test report with a smaller portion of your dataset
+        first (10-20 rows).
+      </p>
+      <br />
+      <p>
+        <strong>For this alpha launch:</strong>
+      </p>
+      <ul className="list-disc list-outside pl-6">
+        <li>
+          Once you create a report, it is publicly viewable to anyone with the
+          exact URL (we’re adding password-protected & private reports soon).
+        </li>
+        <li>
+          Dataset uploads are limited to 100KB &ndash; but we pay the OpenAI
+          analysis costs
+        </li>
+        <li>
+          After this alpha phase, we'll support analysis of larger datasets
+          using your own OpenAI API key
+        </li>
+      </ul>
+      <br />
+      <p>
+        Do you have questions, feedback, or interest in working with us directly
+        on high-impact applications? Reach out at{" "}
+        <a className="underline" href="mailto:hello@aiobjectives.org">
+          hello@aiobjectives.org
+        </a>
+      </p>
+    </div>
   </Col>
 );
 
@@ -162,14 +264,14 @@ const FormDescription = () => {
   const { touchedFields, errors } = formState;
   return (
     <Col gap={4}>
-      <h4>Description</h4>
+      <h4>Report details</h4>
       <Col gap={2}>
         <Col>
           <label htmlFor="title" className="font-medium">
             Report title
           </label>
           <p className="p2 text-muted-foreground">
-            Report title will be visible at the top of your project
+            The report title will be visible at the top of your project
           </p>
         </Col>
         <Input
@@ -265,9 +367,13 @@ function FormDataInput({
     console.log(result);
     if (!result) return;
     else if (result[0] === "error") {
-      if (result[1].tag === "Broken file") {
+      if (result[1].tag === "Broken file" || result[1].tag === "Size Error") {
+        const description =
+          result[1].tag === "Broken file"
+            ? "File is broken or has no data"
+            : "File is too large - 150kb limit";
         toast.error("Error", {
-          description: "File is broken or has no data",
+          description: description,
           position: "top-center",
         });
         handleReset(inputRef);
@@ -302,25 +408,44 @@ function FormDataInput({
         proceedFunc={() => setModalOpen(false)}
       />
       <Col gap={4}>
-        <h4>Data</h4>
+        <h4>Input data (as CSV file)</h4>
         <div>
           <p className="p2 text-muted-foreground">
             Upload your data in .csv format. The file must have the following
             columns: “id” (a unique identifier for each comment) and “comment”
-            (the participant's response). Optionally, include a “name” column
-            for participant names; otherwise, participants will be considered
-            anonymous.
+            (the participant's response). Optionally, include an “interview”
+            column for participant names; otherwise, participants will be
+            considered anonymous. CSV data is sent to OpenAI as part of report
+            generation.
           </p>
           <br />
           <p className="p2 text-muted-foreground">
-            You can download a{" "}
+            You can reference a{" "}
             <a
               className="underline"
-              href="https://docs.google.com/spreadsheets/d/1k8L1M9Ptxz_fBlZlGe0f-X4wCRIfmmRrISLy3c5EqUk/edit?gid=0#gid=0"
+              target="_blank"
+              href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit"
             >
-              sample CSV
+              sample CSV template
             </a>{" "}
-            template here to get started.
+            here to get started.
+          </p>
+          <br />
+          <p className="p2 text-muted-foreground">
+            <label htmlFor="description" className="font-medium">
+              Don't want to make your own CSV file?
+            </label>
+            <br />
+            Browse the tabs and select one of our{" "}
+            <a
+              className="underline"
+              target="_blank"
+              href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=862995911#gid=862995911"
+            >
+              pre-made synthetic datasets
+            </a>{" "}
+            to get a feel for how T3C extracts quotes and organizes topics from
+            general text.
           </p>
         </div>
 
@@ -370,18 +495,27 @@ const FormOpenAIKey = () => {
   return (
     <Col gap={2}>
       <label htmlFor="apiKey">
-        <h4>OpenAI Key</h4>
+        <h4>OpenAI API Key</h4>
       </label>
+      <div>
+        <p className="p2 text-muted-foreground">
+          Launching soon: use your own OpenAI key to analyze large datasets. We
+          will not store your OpenAI API keys, or use them for any purposes
+          beyond generating this report; API keys are sent through encrypted
+          channels in our app.
+        </p>
+      </div>
       <Input
         id="apiKey"
         type="password"
-        placeholder="Type OpenAI key here"
+        placeholder="Paste OpenAI API key here"
         className={cn(
           "sm: w-1/2",
           touchedFields.apiKey && errors.apiKey && "border-destructive",
         )}
-        required
-        {...register("apiKey")}
+        // required
+        disabled
+        // {...register("apiKey")}
       />
       {touchedFields.apiKey && errors.apiKey && (
         <p className="text-destructive text-sm">Add the Key</p>
@@ -395,28 +529,30 @@ const CustomizePrompts = () => (
     <Col gap={4}>
       <h4>Customize AI prompts</h4>
       <p className="p2 text-muted-foreground">
-        Optionally you can customize our prompts we use to generate the report.
-        Changing the text of prompts will influence how the report is rendered.
+        Optionally customize the prompts we use to generate the report, e.g. to
+        focus on specific questions, topics, or perspectives. Changing these the
+        prompts will change the resulting report.
       </p>
     </Col>
     <CustomizePromptSection
-      title="Role prompt"
-      subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow listed below."
+      title="Role prompt for all steps"
+      subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow shown below."
       inputName="systemInstructions"
     />
     <CustomizePromptSection
       title="Step 1 – Topics and subtopics prompt"
-      subheader="This is the first step of the report creation flow. Here AI generates common topics and subtopics and writes descriptions for each."
+      subheader="In the first step, the AI finds the most frequent topics and subtopics mentioned in the comments and writes short descriptions for each."
       inputName="clusteringInstructions"
     />
     <CustomizePromptSection
       title="Step 2 – Claim extraction prompt"
-      subheader="In the second step AI takes comments of each participants and renders them against topics and subtopics from the previous step. Then it distills relevant claims and quotes. This prompt is run as many times as there are participants."
+      subheader="In the second step, the AI summarizes each particpant's comments as key claims with supporting quotes from the original text.
+      It then assigns the claim to the most relevant subtopic in the report. This prompt runs once for each participant's comment"
       inputName="extractionInstructions"
     />
     <CustomizePromptSection
       title="Step 3 – Merging claims prompt"
-      subheader="In the last step AI merges similar claims."
+      subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
       inputName="dedupInstructions"
     />
   </Col>
@@ -483,12 +619,70 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
       <Col gap={2} className="p-4 pb-8 border rounded-lg">
         <p className="font-medium">{cost}</p>
         <p className="text-muted-foreground">
-          This estimate is based on [XXX]. Typically, our real cost vary between
-          by 10-15% up or down. A general guideline is that 1 MB costs
+          This estimate is based on past reports. Typically, our real cost vary
+          between by 10-15% up or down. A general guideline is that 1 MB costs
           approximately $24, so 0.5 MB would be around $12, and 10 MB about
           $120.
         </p>
       </Col>
     </Col>
   );
+}
+
+function TermsAndConditions() {
+  return (
+    <div className="text-muted-foreground">
+      <h4>Preliminary Terms of Service</h4>
+      <br />
+      <p>
+        By accessing the Talk to the City report creation feature, users comply
+        with the following terms and conditions:
+      </p>
+      <br />
+      <p>
+        Data Processing: Upon submission, your data will be transmitted to
+        OpenAI's API for processing and subsequent storage on our platform.
+        Users maintain responsibility for the data they submit.
+      </p>
+      <br />
+      <p>Important Disclosures:</p>
+      <ul className="list-disc list-outside pl-6">
+        <li>
+          Exercise appropriate caution when submitting text containing sensitive
+          or personally identifiable information
+        </li>
+        <li>
+          Generated reports are assigned a unique URL and are publicly
+          accessible by default
+        </li>
+        <li>
+          Features for private and password-protected reports are in development
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function FormLoading() {
+  return (
+    <Col gap={2} className="w-full h-full items-center justify-center">
+      <p>Processing your request, you'll be redirected shortly.</p>
+      <Spinner />
+    </Col>
+  );
+}
+
+function SubmitFormControl({
+  children,
+  response,
+}: React.PropsWithChildren<{ response: api.GenerateApiResponse | null }>) {
+  const { pending } = useFormStatus();
+  const router = useRouter();
+  useEffect(() => {
+    if (response !== null) {
+      router.push(`/report/${encodeURIComponent(response.jsonUrl)}`);
+    }
+  }, [response]);
+  if (pending) return <FormLoading />;
+  else return children;
 }

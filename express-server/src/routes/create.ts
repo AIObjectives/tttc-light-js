@@ -80,6 +80,11 @@ async function createNewReport(req: Request, res: Response) {
   const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } = env;
   const body = api.generateApiRequest.parse(req.body);
   const { data, userConfig, firebaseAuthToken } = body;
+  // ! Temporary size check
+  const datastr = JSON.stringify(data);
+  if (datastr.length > 150 * 1024) {
+    throw new Error("Data too big - limit of 150kb for alpha");
+  }
   const _parsedData = await parseData(data);
   const makeAnonName = useAnonymousNames(
     _parsedData.data.filter((x) => x.interview === undefined).length,
@@ -121,10 +126,11 @@ async function createNewReport(req: Request, res: Response) {
   ).toString();
 
   // if user provided key is the same as our password, let them use our key
-  const apiKey =
-    userConfig.apiKey === OPENAI_API_KEY_PASSWORD
-      ? OPENAI_API_KEY
-      : userConfig.apiKey;
+  // const apiKey =
+  //   userConfig.apiKey === OPENAI_API_KEY_PASSWORD
+  //     ? OPENAI_API_KEY
+  //     : userConfig.apiKey;
+  const apiKey = OPENAI_API_KEY;
   const config: schema.OldOptions = {
     ...userConfig,
     ...parsedData,

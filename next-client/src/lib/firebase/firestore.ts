@@ -1,6 +1,13 @@
 import { db } from "./clientApp";
 import { z } from "zod";
-import { collection, query, getDocs, where } from "firebase/firestore";
+import {
+  collection,
+  query,
+  getDocs,
+  where,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 
 import {
   useGetCollectionName,
@@ -8,6 +15,7 @@ import {
   ReportRef,
 } from "tttc-common/firebase";
 import { AsyncData, AsyncError } from "../hooks/useAsyncState";
+import { FeedbackRequest } from "../types/clientRoutes";
 
 const NODE_ENV = z
   .union([z.literal("development"), z.literal("production")])
@@ -39,4 +47,20 @@ export async function getUsersReports(
       "Could not get your reports: " + (e instanceof Error ? e.message : e),
     ];
   }
+}
+
+export async function addFeedback(
+  store: typeof db = db,
+  data: FeedbackRequest,
+): Promise<"success"> {
+  const docRef = await addDoc(
+    collection(store, getCollectionName("FEEDBACK")),
+    {
+      ...data,
+      userId: data.userId ?? "Unsigned",
+      timestamp: serverTimestamp(),
+    },
+  );
+
+  return "success";
 }

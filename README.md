@@ -91,7 +91,7 @@ redis-server
 
 ### Pyserver setup
 
-- Go to `/pyserver` and run: `python -m venv venv`
+- Go to `/pyserver` and run: `python -m venv .venv`
 - Run `source ./.venv/bin/activate` to run the virtual environment
 - Install the project requirements by running `pip install -r requirements.txt`
 - You can test to see if it worked by running `fastapi dev main.py` and see if the server spins up.
@@ -102,18 +102,18 @@ You will need to add two .env files, one in `express-server` and one in `next-cl
 
 #### express-server/.env
 
-Encode your Google Credentials using the service account key you downloaded earlier by running the command `base64 -i ./google-credentials.json`
+Encode your Google Credentials using the service account key you downloaded earlier, by running the command `base64 -i ./google-credentials.json`. (You do need both the path to the json file and the base-64 encoded version.)
 
 ```
 export OPENAI_API_KEY=
 export GCLOUD_STORAGE_BUCKET= name of your bucket
 export CLIENT_BASE_URL= for dev: http://localhost:3000
-export GOOGLE_CREDENTIALS_ENCODED= base 64 encoding of your credentials
+export GOOGLE_CREDENTIALS_ENCODED=copy & paste the base64 encoding of your credentials, made above
 export PYSERVER_URL= for dev: http://localhost:8000
 export FIREBASE_DATABASE_URL= found in your firebase project
 export REDIS_HOST= for dev: localhost
 export REDIS_PORT= for dev: 6379
-export GOOGLE_APPLICATION_CREDENTIALS= path to your credentials. Suggest using ./credentials
+export GOOGLE_APPLICATION_CREDENTIALS=./credentials
 export NODE_ENV= dev | prod
 ```
 

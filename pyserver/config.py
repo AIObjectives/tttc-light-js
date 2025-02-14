@@ -79,8 +79,6 @@ Return a JSON object of the form {
 
 And now, here are the claims:"""
 
-WANDB_PROJECT_NAME = "chainmaille"
-
 CRUX_PROMPT = """
 I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
 identified by pseudonyms like "Person 1" or "A". Please synthesize these claims into one new, specific, maximally controversial
@@ -100,3 +98,6 @@ return a JSON object of the form
   }
 }
 """
+
+WANDB_PROJECT_NAME = ""
+WANDB_GROUP_LOG_NAME = ""

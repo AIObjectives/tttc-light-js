@@ -72,7 +72,7 @@ export default function LoginButton({
   if (loading) {
     return (
       <div>
-        <p>Loading...</p>
+        <Button disabled={true}>...</Button>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function LoginButton({
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent sideOffset={20}>
-            <Link href={"/myReports"}>
+            <Link href={"/my-reports"}>
               <DropdownMenuItem>Reports</DropdownMenuItem>
             </Link>
             <DropdownMenuItem onClick={() => signOut()}>

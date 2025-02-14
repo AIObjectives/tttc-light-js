@@ -7,7 +7,7 @@ const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
   async (url: string, body: z.infer<T>) =>
     await fetch(url, {
-      method: "post",
+      method: "POST",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",

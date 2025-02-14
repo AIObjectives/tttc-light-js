@@ -4,6 +4,7 @@ import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import { z } from "zod";
 import ReportProgresss from "@src/components/reportProgress/ReportProgress";
+import Feedback from "@src/components/feedback/Feedback";
 
 const waitingMessage = z.object({
   message: z.string(),
@@ -14,7 +15,7 @@ type PageProps = Promise<{
 }>;
 
 export default async function ReportPage({ params }: { params: PageProps }) {
-  const uri = (await params).uri;
+  const uri = (await params).uri.replace(/\?.*$/, "");
   const url = decodeURIComponent(uri);
   const req = await fetch(url, {
     headers: {
@@ -42,5 +43,10 @@ export default async function ReportPage({ params }: { params: PageProps }) {
   const reportData = schema.llmPipelineOutput.safeParse(data).success
     ? getReportDataObj(data)
     : schema.pipelineOutput.parse(data).data[1];
-  return <Report reportData={reportData} />;
+  return (
+    <div>
+      <Report reportData={reportData} />
+      <Feedback className="hidden lg:block" />
+    </div>
+  );
 }
