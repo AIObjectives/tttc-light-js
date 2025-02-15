@@ -42,6 +42,23 @@
         "id": "e",
         "text": "I don't know about birds"
       }
+    ],
+    "longer_pets_15": [
+      {
+        "id": "0",
+        "text": "I love cats",
+        "speaker": "Alice"
+      },
+      {
+        "id": "1",
+        "text": "I really really love dogs",
+        "speaker": "Bob"
+      },
+      {
+        "id": "2",
+        "text": "I'm not sure about birds",
+        "speaker": "Charles"
+      }
     ]
   },
   "topic_tree_tests": [
@@ -184,5 +201,29 @@
         }
       }
     }
-  ]
+  ],
+  "expected_outputs": {
+    "topic_tree_4o": {
+      "taxonomy": [
+        {
+          "topicName": "Pets",
+          "topicShortDescription": "General opinions about common household pets.",
+          "subtopics": [
+            {
+              "subtopicName": "Cats",
+              "subtopicShortDescription": "Positive sentiments towards cats."
+            },
+            {
+              "subtopicName": "Dogs",
+              "subtopicShortDescription": "Positive sentiments towards dogs."
+            },
+            {
+              "subtopicName": "Birds",
+              "subtopicShortDescription": "Uncertainty or mixed feelings about birds."
+            }
+          ]
+        }
+      ]
+    }
+  }
 } 
