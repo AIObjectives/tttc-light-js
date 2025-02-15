@@ -7,7 +7,7 @@ from openai import OpenAI
 client = OpenAI()
 
 response = client.chat.completions.create(
-    model="gpt-4o-mini"
+    model="gpt-4o-mini",
     messages=[
         {
             "role": "system",
@@ -17,8 +17,8 @@ response = client.chat.completions.create(
             "role": "user",
             "content": "What is the meaning of life?"
         }
-        ],
-        temperature=0.0
+    ],
+    temperature=0.0
 )
 tree = response.choices[0].message.content
 usage = response.usage

@@ -16,7 +16,7 @@ For local testing, load these from a config.py file
 import os
 import sys
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
@@ -39,6 +39,9 @@ if api_key is None:
   raise Exception("No OpenAI API key present")
 
 app = FastAPI() 
+
+def get_client():
+    return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.get("/")
 def read_root():
@@ -86,7 +89,7 @@ def read_root():
 ###################################
 # Step 1: Comments to Topic Tree  #
 #---------------------------------#
-@app.post("/topic_tree")
+@app.post("/topic_tree/")
 def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given the full list of comments, return a corresponding taxonomy of relevant topics and their
@@ -146,7 +149,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GRO
                 "subtopics": [
                     {
                         "subtopicName": "Cats",
-                        "subtopicShortDescription": "Positive sentiments towards cats as pets."
+                        "subtopicShortDescription": "Positive sentiments towards cats."
                     },
                     {
                         "subtopicName": "Dogs",
@@ -167,10 +170,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GRO
     }
   }
   """
-  # api_key = req.llm.api_key
-  client = OpenAI(
-    api_key=api_key
-  )
+  client = get_client()
 
   # append comments to prompt
   full_prompt = req.llm.user_prompt
@@ -243,10 +243,7 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
   """
   Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
   """
-  # api_key = llm.api_key
-  client = OpenAI(
-    api_key=api_key
-  )
+  client = get_client()
 
   # add taxonomy and comment to prompt template
   taxonomy_string = json.dumps(tree)
@@ -286,8 +283,8 @@ def comment_to_claims(llm:dict, comment:str, tree:dict)-> dict:
 ####################################
 # Step 2: Extract and place claims #
 #----------------------------------#
-@app.post("/claims")
-def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
+@app.post("/claims/")
+def claims_from_tree(req: CommentTopicTree, log_to_wandb:str = config.WANDB_GROUP_LOG_NAME) -> dict:
   """
   Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
   Place each claim under the correct subtopic in the tree.
@@ -399,6 +396,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
     }
   }
   """
+  client = get_client()
   comms_to_claims = []
   comms_to_claims_html = []
   TK_2_IN = 0
@@ -514,10 +512,7 @@ def dedup_claims(claims:list, llm:LLMConfig)-> dict:
   """
   Given a list of claims for a given subtopic, identify which ones are near-duplicates
   """
-  # api_key = llm.api_key
-  client = OpenAI(
-    api_key=api_key
-  )
+  client = get_client()
 
   # add claims with enumerated ids (relative to this subtopic only)
   full_prompt = llm.user_prompt
@@ -988,9 +983,7 @@ def confusion_matrix(conf_mat:list)->list:
 
 def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_map:dict)-> dict:
   # api_key = llm.api_key
-  client = OpenAI(
-    api_key=api_key
-  )
+  client = get_client()
   claims_anon = []
   for claim in claims:
     if "speaker" in claim:
@@ -1170,6 +1163,15 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
 
   return {"data" : cruxes, "usage" : net_usage}
 
+@app.post("/generate_topic_tree")
+async def generate_topic_tree(request: dict):
+    result = await comments_to_tree(CommentsLLMConfig(**request))
+    return result["data"]["taxonomy"]
+
+@app.post("/extract_claims")
+async def extract_claims(request: dict):
+    result = await claims_from_tree(CommentTopicTree(**request))
+    return result["data"]
 
 if __name__ == "__main__":
     import uvicorn
