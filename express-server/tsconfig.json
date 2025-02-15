@@ -1,17 +1,18 @@
 {
   "compilerOptions": {
-    "outDir": "./dist",
+    "target": "ES2020",
     "module": "CommonJS",
-    "target": "es6",
-    "sourceMap": true,
-    "baseUrl": "./src",
-    "paths": {
-      "common/*": ["../common/*"] // Map "common/*" to "../common/*"
-    },
-    "jsx": "react",
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "baseUrl": ".",
+    "paths": {
+      "tttc-common/*": ["../common/src/*"],
+      "@/*": ["./src/*"]
+    },
+    "types": ["node", "vitest/globals", "vitest/importMeta"],
+    "strict": true,
+    "skipLibCheck": true
   },
-  "include": ["./src"],
-  "references": [{ "path": "../common" }]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }

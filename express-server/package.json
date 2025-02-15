@@ -4,9 +4,10 @@
   "description": "pipeline for tttc-light-js",
   "scripts": {
     "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\" && npx prettier ./dist --write",
-    "dev": "nodemon src/server.ts",
-    "test": "vitest",
-    "start": "node dist/server.js"
+    "dev": "NODE_ENV=development nodemon src/server.ts",
+    "test": "NODE_ENV=test vitest",
+    "test:watch": "NODE_ENV=test vitest watch",
+    "start": "NODE_ENV=production node dist/server.js"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
@@ -18,11 +19,14 @@
     "@babel/preset-typescript": "^7.23.3",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/node": "^20.11.24",
+    "@types/node": "^20.17.19",
+    "@vitest/coverage-v8": "^2.1.9",
     "babel-plugin-module-resolver": "^5.0.0",
     "nodemon": "^3.1.0",
+    "openai": "^4.85.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.4",
@@ -38,10 +42,8 @@
     "firebase-admin": "^13.0.2",
     "ioredis": "^5.4.1",
     "node-fetch": "^3.3.2",
-    "openai": "^4.28.4",
     "prettier": "^3.2.5",
     "tttc-common": "file:../common/dist",
-    "vitest": "^2.1.8",
     "zod": "^3.22.4"
   }
 }
