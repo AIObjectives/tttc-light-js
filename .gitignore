@@ -13,3 +13,6 @@ __pycache__
 /utils/**/input/*
 !**/*/.keep
 */tsconfig.tsbuildinfo
+
+# Don't ignore test cases
+!common/test_cases.json

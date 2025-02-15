@@ -2,10 +2,14 @@
   "name": "tttc-common",
   "version": "1.0.0",
   "description": "Shares common code across monorepo",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "vitest",
-    "build": "npx tsc",
+    "build": "tsc",
     "watch": "npx tsc --watch --outDir ./dist"
   },
   "author": "",
@@ -17,10 +21,11 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^22.1.0",
+    "@types/node": "^22.13.4",
     "@types/react": "^18.2.67",
     "@types/uuid": "^9.0.8",
-    "typescript": "^5.3.3",
+    "typescript": "^5.7.3",
     "vitest": "^1.6.0"
-  }
+  },
+  "keywords": []
 }

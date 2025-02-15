@@ -1,21 +1,14 @@
 {
   "compilerOptions": {
-    "outDir": "./dist", // Output directory for compiled JS files
-    "module": "NodeNext", // Use CommonJS modules for Node.js
-    "target": "es6", // Target ES6 (or a higher version if needed)
-    "declaration": true, // Generate declaration files
-    "sourceMap": true, // Generate source maps
-    "composite": true, // Enable project references,
-    "jsx": "react",
-    "paths": {
-      "*": ["*", "node_modules/*"]
-    },
+    "target": "ES2020",
+    "module": "CommonJS",
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "resolveJsonModule": true,
-    "lib": ["ES2019", "DOM"]
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["*", "./morphisms/**/*"],
-  "exclude": ["dist/"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
