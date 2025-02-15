@@ -264,3 +264,55 @@ If your organization does not have a key for ChatGPT or Claude, you can obtain o
 # Development and Contributing
 
 Some work in progress—please see the [contributor guide!](/contributing.md)
+
+## Testing
+
+The project uses shared test cases across both TypeScript and Python servers.
+
+### Test Structure
+```
+common/
+  test_cases.json           # Shared test data (inputs and expected outputs)
+express-server/
+  src/tests/               # TypeScript-specific tests and mocks
+pyserver/
+  test_pipeline.py         # Python server tests
+```
+
+### TypeScript Server (express-server)
+Uses mocks to test the pipeline without requiring API calls.
+
+#### Running Tests
+```bash
+cd express-server
+npm test
+```
+
+### Python Server (pyserver)
+Uses mocks for basic testing and supports API integration tests.
+
+#### Running Tests
+```bash
+cd pyserver
+
+# Run tests with mocks
+python -m pytest test_pipeline.py
+
+# Run with API integration
+export OPENAI_API_KEY=your-real-key
+python -m pytest test_pipeline.py
+```
+
+Note: API integration tests require a valid OpenAI key and will incur costs.
+
+### Adding New Tests
+
+Both servers use shared test cases but implement tests differently:
+
+1. Add test cases to `common/test_cases.json`
+2. For TypeScript:
+   - Update mock responses if needed
+   - Add test implementation in `pipeline.test.ts`
+3. For Python:
+   - Update mock responses if needed
+   - Add test implementation in `test_pipeline.py`
