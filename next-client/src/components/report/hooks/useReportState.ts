@@ -266,34 +266,47 @@ type SubtopicActionsWithPath = Exact<
  * Makes a function that returns a TopicActionsWithPath. Just makes it easier to define our actions
  * since most just take a path
  */
-const createTopicActionsWithPath =
-  <T extends TopicActionsWithPath>(type: T["type"]) =>
-  (payload: TopicPath): TopicActionsWithPath => ({
-    type,
-    payload,
-  });
+const createTopicActionsWithPath = <T extends TopicActionsWithPath>(
+  types: T["type"][],
+) =>
+  types.map(
+    (type) =>
+      (payload: TopicPath): TopicActionsWithPath => ({
+        type,
+        payload,
+      }),
+  );
 
 /**
  * Makes a function that returns a SubtopicActionsWithPath. Just makes it easier to define our actions
  * since most just take a path
  */
-const createSubtopicActionsWithPath =
-  <T extends SubtopicActionsWithPath>(type: T["type"]) =>
-  (payload: SubtopicPath) => ({
+const createSubtopicActionsWithPath = <T extends SubtopicActionsWithPath>(
+  types: T["type"][],
+) =>
+  types.map((type) => (payload: SubtopicPath) => ({
     type,
     payload,
-  });
+  }));
 
-const openTopicAction = createTopicActionsWithPath("openTopic");
-const closeTopicAction = createTopicActionsWithPath("closeTopic");
-const toggleTopicAction = createTopicActionsWithPath("toggleTopic");
-const resetTopicPagAction = createTopicActionsWithPath("resetTopicPagination");
-const maxSetTopicPagAction = createTopicActionsWithPath(
+/**
+ * Topic actions that just have a path payload
+ */
+const [
+  openTopicAction,
+  closeTopicAction,
+  toggleTopicAction,
+  resetTopicPagAction,
+  maxSetTopicPagAction,
+  incrementTopicPagAction,
+] = createTopicActionsWithPath([
+  "openTopic",
+  "closeTopic",
+  "toggleTopic",
+  "resetTopicPagination",
   "maxSetTopicPagination",
-);
-const incrementTopicPagAction = createTopicActionsWithPath(
   "incrementTopicPagination",
-);
+]);
 
 /**
  * Sets the topic pagination to an arbitrary value.
@@ -306,15 +319,18 @@ const setTopicPagAction = (payload: {
   payload,
 });
 
-const resetSubtopicPagAction = createSubtopicActionsWithPath(
+/**
+ * Subtopic actions that just have a path payload
+ */
+const [
+  resetSubtopicPagAction,
+  maxSetSubtopicPagAction,
+  incrementSubtopicPagination,
+] = createSubtopicActionsWithPath([
   "resetSubtopicPagination",
-);
-const maxSetSubtopicPagAction = createSubtopicActionsWithPath(
   "maxSetSubTopicPagination",
-);
-const incrementSubtopicPagination = createSubtopicActionsWithPath(
   "incrementSubtopicPagination",
-);
+]);
 
 /**
  * Sets the subtopic pagination to an arbitrary value
