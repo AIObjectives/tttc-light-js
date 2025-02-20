@@ -23,6 +23,8 @@ from typing import List, Union
 import wandb
 import json
 from dotenv import load_dotenv
+from datetime import datetime
+import time
 
 # Add the current directory to path for imports
 current_dir = Path(__file__).resolve().parent
@@ -204,7 +206,6 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GRO
     try:
       exp_group_name = str(log_to_wandb)
       wandb.init(project = config.WANDB_PROJECT_NAME,
-               group=exp_group_name)
                group=exp_group_name,
                resume="allow")
       wandb.config.update({
@@ -412,7 +413,10 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
 
   node_counts = {}
   # TODO: batch this so we're not sending the tree each time
-  for comment in req.comments:
+  for i_c, comment in enumerate(req.comments):
+    # TODO: timing for comments
+    # print("comment: ", i_c)
+    # print("time: ", datetime.now())
     response = comment_to_claims(req.llm, comment.text, req.tree)
     try:
        claims = response["claims"]
@@ -514,7 +518,6 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
   net_usage = {"total_tokens" : TK_2_TOT,
                "prompt_tokens" : TK_2_IN,
                "completion_tokens" : TK_2_OUT}
-
   return {"data" : node_counts, "usage" : net_usage}
 
 def dedup_claims(claims:list, llm:LLMConfig)-> dict:
@@ -1064,7 +1067,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
   #{'claim': 'Historically-grounded depictions of alien cultures enhance storytelling.', 'quote': "I'm especially into historically-grounded depictions or extrapolations of possible cultures [...].", 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}, {'claim': 'Exploring alternative cultural evolutions in storytelling is valuable.', 'quote': 'how could our universe evolve differently?', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}], 'speakers': {'Charles'}}), ('Advanced Technology', {'total': 4, 'claims': [{'claim': 'Space operatic battles enhance storytelling.', 'quote': 'More space operatic battles [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Detailed descriptions of advanced technology are essential.', 'quote': 'detailed descriptions of advanced futuristic technology [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Faster than light travel should be included in narratives.', 'quote': 'perhaps faster than light travel [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Quantum computing is a valuable theme in storytelling.', 'quote': 'or quantum computing? [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}], 'speakers': {'Bob'}})], 'speakers': {'Charles', 'Bob'}}), 
   cruxes = []
   crux_data = []
-  crux_claims = []
+  crux_claims = [] 
   TK_IN = 0
   TK_OUT = 0
   TK_TOT = 0

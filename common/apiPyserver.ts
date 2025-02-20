@@ -188,13 +188,16 @@ export type TopicTreeResponse = z.infer<typeof topicTreeResponse>;
 //  * claims
 //  ********************************/
 
-export const claimsRequest = z.object({
-  tree: z.object({
-    taxonomy: partialTopic.array(),
-  }),
-  comments: comment.array(),
-  llm: llmConfig,
-});
+export const claimsRequest = z.object(
+  {
+    tree: z.object({
+      taxonomy: partialTopic.array(),
+    }),
+    comments: comment.array(),
+    llm: llmConfig,
+  },
+  { invalid_type_error: "Invalid claims request object" },
+);
 export type ClaimsRequest = z.infer<typeof claimsRequest>;
 
 export const claimsReply = z.object({

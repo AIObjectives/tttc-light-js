@@ -81,6 +81,7 @@ async function createNewReport(req: Request, res: Response) {
   const body = api.generateApiRequest.parse(req.body);
   const { data, userConfig, firebaseAuthToken } = body;
   // ! Temporary size check
+  // TODO: configure devprod filesize flag
   const datastr = JSON.stringify(data);
   if (datastr.length > 150 * 1024) {
     throw new Error("Data too big - limit of 150kb for alpha");
