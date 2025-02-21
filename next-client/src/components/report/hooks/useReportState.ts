@@ -533,8 +533,8 @@ const nodePaginationSetter =
     const lowerbound = Math.min(defaultSize, node.children.length - 1);
     return {
       ...node,
-      // Should never bo below lower bound or above children length
-      pagination: Math.min(Math.max(pag, lowerbound), node.children.length),
+      // Should never bo below lower bound or above max children index
+      pagination: Math.min(Math.max(pag, lowerbound), node.children.length - 1),
     };
   };
 
@@ -693,7 +693,7 @@ const makeTopicNode = (topic: schema.Topic): TopicNode => ({
   id: topic.id,
   data: topic,
   isOpen: false,
-  pagination: Math.min(topic.subtopics.length, defaultTopicPagination),
+  pagination: Math.min(topic.subtopics.length - 1, defaultTopicPagination),
   children: topic.subtopics
     .map(makeSubSubtopicNode)
     .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data])),
@@ -703,7 +703,7 @@ const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
   _tag: "SubtopicNode",
   id: subtopic.id,
   data: subtopic,
-  pagination: Math.min(subtopic.claims.length, defaultSubtopicPagination),
+  pagination: Math.min(subtopic.claims.length - 1, defaultSubtopicPagination),
   children: subtopic.claims.map(makeClaimNode),
 });
 

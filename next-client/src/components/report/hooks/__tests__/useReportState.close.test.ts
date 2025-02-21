@@ -30,10 +30,6 @@ const getSubtopic = (
   subtopicIdx: number = 0,
 ) => getTopic(state, topicIdx).children[subtopicIdx];
 
-// gets the very last subtopic in the last topic
-const getLastSubtopic = (state: ReportState) =>
-  getLastTopic(state).children[getLastTopic(state).children.length - 1];
-
 // get a node's id
 const getId = (node: SomeNode) => node.data.id;
 
@@ -48,7 +44,7 @@ const open = (reportState: ReportState, id: string) =>
 const close = (reportState: ReportState, id: string) =>
   reducer(reportState, { type: "close", payload: { id } });
 
-describe.skip("Closing -> Topic.isOpen", () => {
+describe("Closing -> Topic.isOpen", () => {
   const [firstOpen, middleOpen, lastOpen] = testTopics.map((t) =>
     open(state, getId(t)),
   );
@@ -66,7 +62,7 @@ describe.skip("Closing -> Topic.isOpen", () => {
 
   test("Opening and then closing a topic resets it to the original state", () => {
     [firstClosed, middleClosed, lastClosed].forEach((newState) =>
-      expect(newState).toStrictEqual(state),
+      expect(newState).toMatchReportState(state),
     );
   });
 });
@@ -86,7 +82,7 @@ describe.skip("Closing -> Topic.pagination", () => {
   });
 
   test("After opening to a subtopic node, closing resets the state", () => {
-    expect(closedState).toStrictEqual(state);
+    expect(closedState).toMatchReportState(state);
   });
 });
 
@@ -103,21 +99,8 @@ describe("Closing -> Subtopic.pagination", () => {
   const openedState = open(state, getId(getTestClaim(state)));
   const closedState = close(openedState, getId(getTestTopic(state)));
 
-  test.skip("Aftering opening to a claim node, the subtopic pagination is set to default or max", () => {
-    expect(
-      closedState.children
-        .flatMap((t) => t.children)
-        .every(
-          (s) =>
-            s.pagination ===
-            Math.min(defaultSubtopicPagination, s.children.length),
-        ),
-    ).true;
-  });
-  test("Open node -> Close node: subtopic pagination is at default state", () => {
-    expect(getTestSubtopicHigh(closedState).pagination).toBe(
-      defaultSubtopicPagination,
-    );
+  test("Open node -> Close node returns state to original", () => {
+    expect(closedState).toMatchReportState(state);
   });
 });
 

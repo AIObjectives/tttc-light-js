@@ -61,19 +61,19 @@ describe("Topic Node", () => {
 
   test("Caps at children's length", () => {
     // apply increment a bunch of times and make sure it caps off at right point
-    const childrenLen = getTestTopic(state).children.length;
+    const maxLen = getTestTopic(state).children.length - 1;
     const newState = pipe(
-      Array.replicate(incrementTopic, childrenLen),
+      Array.replicate(incrementTopic, maxLen),
       Array.reduce(state, (accumState, f) =>
         f(accumState, getTestTopic(state).id),
       ),
     );
-    expect(getTestTopic(newState).pagination).toBe(childrenLen);
+    expect(getTestTopic(newState).pagination).toBe(maxLen);
   });
 });
 
 describe("Subtopic Node", () => {
-  const childrenLen = getTestSubtopic(state).children.length;
+  const maxLen = getTestSubtopic(state).children.length - 1;
   const newState1 = incrementSubtopic(state, getTestSubtopic(state).id);
   const newState2 = incrementSubtopic(newState1, getTestSubtopic(state).id);
 
@@ -102,12 +102,12 @@ describe("Subtopic Node", () => {
   test("Caps at childrens length", () => {
     // apply increment a ton of times and make sure it caps at right point
     const newState = pipe(
-      Array.replicate(incrementSubtopic, childrenLen),
+      Array.replicate(incrementSubtopic, maxLen),
       Array.reduce(state, (accumState, f) =>
         f(accumState, getTestSubtopic(state).id),
       ),
     );
-    expect(getTestSubtopic(newState).pagination).toBe(childrenLen);
+    expect(getTestSubtopic(newState).pagination).toBe(maxLen);
   });
 });
 
