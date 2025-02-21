@@ -19,13 +19,16 @@ function Navbar({ currentUser }: { currentUser: User | null }) {
       <Headline />
       <Row
         gap={2}
-        className="items-center content-center md:justify-self-end hidden sm:flex"
+        className="items-center content-center md:justify-self-end sm:flex"
       >
-        <RepoGithub />
+        <Row
+          gap={2}
+          className="items-center content-center md:justify-self-end hidden sm:flex"
+        >
+          <RepoGithub />
+        </Row>
 
         <About />
-
-        <LanguageSelector />
 
         <CreateReport />
 

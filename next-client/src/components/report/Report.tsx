@@ -20,7 +20,7 @@ import {
   ToggleText,
 } from "../elements";
 import Icons from "@assets/icons";
-import { getNClaims, getNPeople } from "tttc-common/morphisms";
+import { getNPeople } from "tttc-common/morphisms";
 import useReportState, { ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
 import { cn } from "@src/lib/utils/shadcn";
@@ -390,15 +390,15 @@ export function ReportSummary({
 export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
   const getBarChartEntries = (topics: schema.Topic[]): BarChartItemType[] => {
     const largestN = topics.reduce((accum, curr) => {
-      const nClaims = getNClaims(curr.subtopics);
+      const nClaims = getNPeople(curr.subtopics);
       return Math.max(nClaims, accum);
     }, 0);
 
     return topics.map((topic) => ({
       id: topic.id,
       title: topic.title,
-      percentFill: getNClaims(topic.subtopics) / largestN,
-      subtitle: `${getNClaims(topic.subtopics)} claims`,
+      percentFill: getNPeople(topic.subtopics) / largestN,
+      subtitle: `${getNPeople(topic.subtopics)} people`,
       color: topic.topicColor,
     }));
   };

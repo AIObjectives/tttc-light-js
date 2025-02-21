@@ -22,6 +22,9 @@ export default async function submitAction(
   firebaseAuthToken: string | null,
   formData: FormData,
 ): Promise<GenerateApiResponse> {
+  if (!firebaseAuthToken) {
+    throw new Error("You need to be logged in to create a report.");
+  }
   // parses csv file
   // TODO: redact/overwrite API key, other fields are fine to log
   // console.log("starting to parse", formData);

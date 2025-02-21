@@ -30,13 +30,21 @@ from pydantic import BaseModel
 from typing import List, Union
 import wandb
 import json
-
+from dotenv import load_dotenv
 # Add the current directory to path for imports
 current_dir = Path(__file__).resolve().parent
 sys.path.append(str(current_dir))
 
 import config
 from utils import cute_print
+
+load_dotenv()
+
+# ! Temporarily including API key in env
+shared_api_key:str = os.getenv('OPENAI_API_KEY')
+
+if shared_api_key is None:
+  raise Exception("No OpenAI API key present")
 
 # More comprehensive security middleware
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -57,7 +65,7 @@ app = FastAPI()
 #app.add_middleware(HTTPSRedirectMiddleware)
 #app.add_middleware(SecurityHeadersMiddleware)
 header_scheme = APIKeyHeader(name="openai-api-key") 
-
+ 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}

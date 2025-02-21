@@ -72,7 +72,7 @@ export default function LoginButton({
   if (loading) {
     return (
       <div>
-        <p>Loading...</p>
+        <Button disabled={true}>...</Button>
       </div>
     );
   }
