@@ -192,14 +192,14 @@ export function ReportToolbar() {
       <Row gap={2}>
         {/* Close all button */}
         <Button
-          onClick={() => dispatch({ type: "closeAll", payload: { id: "" } })}
+          onClick={() => dispatch({ type: "closeAll" })}
           variant={"outline"}
         >
           Collapse all
         </Button>
         {/* Open all button  */}
         <Button
-          onClick={() => dispatch({ type: "openAll", payload: { id: "" } })}
+          onClick={() => dispatch({ type: "openAll" })}
           variant={"secondary"}
         >
           Expand all

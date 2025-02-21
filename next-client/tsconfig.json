@@ -39,7 +39,8 @@
     "../express-server/test_local.ts",
     "../express-server/src/styles.ts",
     "env-check.js",
-    ".storybook/miscStories/Typography.stories.tsx"
+    ".storybook/miscStories/Typography.stories.tsx",
+    "vitest.config.mts"
   ],
   "exclude": ["node_modules"]
 }

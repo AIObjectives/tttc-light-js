@@ -21,10 +21,11 @@ import { Option, pipe, Array, Either, flow, Match, Record } from "effect";
 //  * CONSTS
 //  ********************************/
 
-const defaultTopicPagination = 3;
+// Pagination is 0 indexed, so 0 will show one
+const defaultTopicPagination = 2;
 const defaultAddTopicPagination = 1;
 
-const defaultSubtopicPagination = 3;
+const defaultSubtopicPagination = 2;
 const defaultAddSubtopicPagination = 3;
 
 //  ********************************
