@@ -18,6 +18,6 @@ const closedState = closeAll(openedState);
 
 describe("closeAll", () => {
   test("openAll -> closeAll = identity", () => {
-    expect(closedState).toStrictEqual(state);
+    expect(closedState).toMatchReportState(state);
   });
 });
