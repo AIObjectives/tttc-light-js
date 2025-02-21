@@ -31,6 +31,7 @@ import useReportSubscribe from "./hooks/useReportSubscribe";
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useHashChange } from "@src/lib/hooks/useHashChange";
 import { BarChart, BarChartItemType } from "../barchart/Barchart";
+import { toast } from "sonner";
 
 const ToolBarFrame = ({
   children,
@@ -118,7 +119,13 @@ export const ReportContext = createContext<{
 /**
  * Report feature
  */
-function Report({ reportData }: { reportData: schema.ReportDataObj }) {
+function Report({
+  reportData,
+  reportUri,
+}: {
+  reportData: schema.ReportDataObj;
+  reportUri: string;
+}) {
   // Report State reducer
   const [state, _dispatch] = useReportState(reportData.topics);
   // url hash
@@ -166,7 +173,9 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
               ))}
             </Col>
           }
-          ToolBar={<ReportToolbar />}
+          ToolBar={
+            <ReportToolbar filename={reportData.title} reportUri={reportUri} />
+          }
           Outline={<Outline reportState={state} reportDispatch={dispatch} />}
         />
       </div>
@@ -177,7 +186,13 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
 /**
  * Bar that follows down screen. Lets user do certain actions.
  */
-export function ReportToolbar() {
+export function ReportToolbar({
+  filename,
+  reportUri,
+}: {
+  filename: string;
+  reportUri: string;
+}) {
   const { dispatch } = useContext(ReportContext);
   return (
     // Sticky keeps it at top of screen when scrolling down.
@@ -186,9 +201,10 @@ export function ReportToolbar() {
       // ! make sure this is the same width as the theme cards.
       className={`p-2 justify-between w-full mx-auto`}
     >
-      <div>
+      <Row gap={2}>
         <Button variant={"outline"}>Edit</Button>
-      </div>
+        <DownloadDataButton filename={filename} reportUri={reportUri} />
+      </Row>
       <Row gap={2}>
         {/* Close all button */}
         <Button
@@ -408,6 +424,48 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
       <h4>Overview</h4>
       <BarChart entries={getBarChartEntries(topics)} />
     </Col>
+  );
+}
+
+function DownloadDataButton({
+  reportUri,
+  filename,
+}: {
+  reportUri: string;
+  filename: string;
+}) {
+  const handleDownload = async () => {
+    console.log(reportUri);
+    try {
+      const fetchUrl = `/api/report/download/${encodeURIComponent(reportUri)}`;
+      const response = await fetch(fetchUrl, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      toast.error(
+        `Failed to download report data: ${(error as Error).message}`,
+      );
+    }
+  };
+
+  return (
+    <Button onClick={handleDownload} variant={"secondary"}>
+      Download data
+    </Button>
   );
 }
 

@@ -39,13 +39,12 @@ export default async function ReportPage({ params }: { params: PageProps }) {
       .then(api.getReportResponse.parse);
     return <ReportProgresss status={status as api.ReportJobStatus} />;
   }
-
   const reportData = schema.llmPipelineOutput.safeParse(data).success
     ? getReportDataObj(data)
     : schema.pipelineOutput.parse(data).data[1];
   return (
     <div>
-      <Report reportData={reportData} />
+      <Report reportData={reportData} reportUri={url} />
       <Feedback className="hidden lg:block" />
     </div>
   );
