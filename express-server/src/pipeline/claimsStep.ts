@@ -12,6 +12,9 @@ const typedFetch =
       headers: {
         "Content-Type": "application/json",
       },
+      // wait for 7 minutes for full claims list
+      // TODO: use message queue instead
+      signal: AbortSignal.timeout(420000),
     });
 
 const pyserverFetchClaims = typedFetch(apiPyserver.claimsRequest);
