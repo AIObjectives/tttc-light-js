@@ -60,6 +60,7 @@ describe("Topic Node", () => {
   });
 
   test("Caps at children's length", () => {
+    // apply increment a bunch of times and make sure it caps off at right point
     const childrenLen = getTestTopic(state).children.length;
     const newState = pipe(
       Array.replicate(incrementTopic, childrenLen),
@@ -99,6 +100,7 @@ describe("Subtopic Node", () => {
   });
 
   test("Caps at childrens length", () => {
+    // apply increment a ton of times and make sure it caps at right point
     const newState = pipe(
       Array.replicate(incrementSubtopic, childrenLen),
       Array.reduce(state, (accumState, f) =>
@@ -106,5 +108,12 @@ describe("Subtopic Node", () => {
       ),
     );
     expect(getTestSubtopic(newState).pagination).toBe(childrenLen);
+  });
+});
+
+describe("Error state", () => {
+  test("Giving an invalid id results in an error", () => {
+    const badState = incrementTopic(state, "Invalid id");
+    expect(badState.error).toBeTypeOf("string");
   });
 });

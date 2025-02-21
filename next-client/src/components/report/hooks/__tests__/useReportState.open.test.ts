@@ -28,10 +28,6 @@ const getSubtopic = (
   subtopicIdx: number = 0,
 ) => getTopic(state, topicIdx).children[subtopicIdx];
 
-// gets the very last subtopic in the last topic
-const getLastSubtopic = (state: ReportState) =>
-  getLastTopic(state).children[getLastTopic(state).children.length - 1];
-
 // get a node's id
 const getId = (node: SomeNode) => node.data.id;
 
@@ -179,6 +175,13 @@ describe("Open", () => {
 
     test("Sets subtopic pagination correctly", () => {
       expect(getTestSubtopicHigh(testState).pagination).toBe(testClaimHighIdx);
+    });
+  });
+
+  describe("Error state", () => {
+    test("Giving an invalid id results in an error", () => {
+      const badState = open(state, "Invalid id");
+      expect(badState.error).toBeTypeOf("string");
     });
   });
 });

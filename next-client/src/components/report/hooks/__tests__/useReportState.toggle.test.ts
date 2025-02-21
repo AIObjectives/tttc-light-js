@@ -28,3 +28,13 @@ describe("Toggle Topic", () => {
     expect(getTestTopic(closedState).isOpen).toBe(false);
   });
 });
+
+describe("Error state", () => {
+  test("Giving an invalid id results in an error", () => {
+    const badState = reducer(state, {
+      type: "toggleTopic",
+      payload: { id: "invalid" },
+    });
+    expect(badState.error).toBeTypeOf("string");
+  });
+});

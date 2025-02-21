@@ -37,6 +37,7 @@ const defaultAddSubtopicPagination = 3;
 export type ReportState = {
   children: TopicNode[];
   focusedId: string | null;
+  error: string | null;
 };
 
 /**
@@ -475,10 +476,11 @@ function actionStreamReducer(
      * Increases a subtopic's pagination by a set amount
      */
     case "incrementSubtopicPagination": {
-      return modifySubtopic((node) => ({
-        ...node,
-        pagination: node.children.length - 1,
-      }))(state, payload);
+      return modifySubtopic((node) =>
+        subtopicNodePagSetter(node.pagination + defaultAddSubtopicPagination)(
+          node,
+        ),
+      )(state, payload);
     }
     /**
      * Sets a subtopic's pagination to an arbitrary value.
@@ -683,6 +685,7 @@ const stateBuilder = (topics: schema.Topic[]): ReportState => ({
     .map(makeTopicNode)
     .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data])),
   focusedId: null,
+  error: null,
 });
 
 const makeTopicNode = (topic: schema.Topic): TopicNode => ({
@@ -722,7 +725,12 @@ type ReportStateActionTypesWithIdPayloads =
   | "expandSubtopic"
   | "focus";
 
-type ReportStateActionTypesWithoutPayloads = "openAll" | "closeAll";
+type ReportStateActionTypesWithoutPayloads =
+  | "openAll"
+  | "closeAll"
+  | "clearError";
+
+type ReportStateActionTypesWithMessages = "error";
 
 type ReportStateActionsWithIdPayloads = {
   type: ReportStateActionTypesWithIdPayloads;
@@ -733,9 +741,15 @@ type ReportStateActionsWithoutPayloads = {
   type: ReportStateActionTypesWithoutPayloads;
 };
 
+type ReportStateActionsWithMessagePayloads = {
+  type: ReportStateActionTypesWithMessages;
+  payload: { message: string };
+};
+
 export type ReportStateAction =
   | ReportStateActionsWithIdPayloads
-  | ReportStateActionsWithoutPayloads;
+  | ReportStateActionsWithoutPayloads
+  | ReportStateActionsWithMessagePayloads;
 
 function createPathMapReducer(
   idMap: Record<string, TopicPath | SubtopicPath | ClaimPath>,
@@ -765,8 +779,10 @@ function createPathMapReducer(
           // If idxMap for some reason couldn't find the Path, just return the state.
           // TODO: Include more comprehensive error handling.
           Option.getOrElse(() => {
-            console.error("Issue with opening");
-            return state;
+            return {
+              ...state,
+              error: "Could not find path to topic or subtopic",
+            };
           }),
         );
       }
@@ -790,8 +806,10 @@ function createPathMapReducer(
           ),
           // TODO: include more comprehensive error handling
           Either.getOrElse((e) => {
-            console.error(e);
-            return state;
+            return {
+              ...state,
+              error: e,
+            };
           }),
         );
       }
@@ -805,8 +823,10 @@ function createPathMapReducer(
             actionStreamReducer(state, toggleTopicAction(path)),
           ),
           Either.getOrElse((e) => {
-            console.error(e);
-            return state;
+            return {
+              ...state,
+              error: e,
+            };
           }),
         );
       }
@@ -831,7 +851,9 @@ function createPathMapReducer(
         return pipe(
           idMap,
           Record.get(id),
-          Either.fromOption(() => "Could not find path"),
+          Either.fromOption(
+            () => "There was an error in finding the topic/subtopic to expand.",
+          ),
           Either.map(
             flow(
               createIncrementActionStream,
@@ -839,8 +861,10 @@ function createPathMapReducer(
             ),
           ),
           Either.getOrElse((e) => {
-            console.error(e);
-            return state;
+            return {
+              ...state,
+              error: e,
+            };
           }),
         );
       }
@@ -849,6 +873,19 @@ function createPathMapReducer(
         return {
           ...state,
           focusedId: id,
+        };
+      }
+      case "error": {
+        const { message } = action.payload;
+        return {
+          ...state,
+          error: message,
+        };
+      }
+      case "clearError": {
+        return {
+          ...state,
+          error: null,
         };
       }
       default: {

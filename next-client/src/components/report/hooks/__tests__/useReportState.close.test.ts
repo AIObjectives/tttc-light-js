@@ -120,3 +120,10 @@ describe("Closing -> Subtopic.pagination", () => {
     );
   });
 });
+
+describe("Error state", () => {
+  test("Giving an invalid id results in an error", () => {
+    const badState = close(state, "Invalid id");
+    expect(badState.error).toBeTypeOf("string");
+  });
+});

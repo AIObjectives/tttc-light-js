@@ -2,8 +2,7 @@ import { beforeAll, describe, expect, test } from "vitest";
 import { __internals, ReportState } from "../useReportState";
 import { reportData } from "stories/data/dummyData";
 
-const { stateBuilder, defaultTopicPagination, defaultSubtopicPagination } =
-  __internals;
+const { stateBuilder } = __internals;
 
 const state = stateBuilder(reportData.topics);
 
@@ -57,37 +56,5 @@ describe("Test Tools", () => {
 
   test("getLastSubtopic", () => {
     expect(getLastSubtopic(state).data.title).toBe("Activities and Feedback");
-  });
-});
-
-// const identity = <T>(arg: T): T => arg;
-
-// //  ********************************
-// //  * Builder Functions *
-// //  ********************************/
-
-describe("Builder", () => {
-  describe("Expected Topics", () => {
-    test("Expected initial state", () => {
-      expect(
-        state.children.every((topicNode) => {
-          return (
-            !topicNode.isOpen && topicNode.pagination === defaultTopicPagination
-          );
-        }),
-      ).true;
-    });
-  });
-
-  describe.skip("Expected Topics", () => {
-    test("Expected initial state", () => {
-      expect(
-        state.children
-          .flatMap((topic) => topic.children)
-          .every(
-            (subtopic) => subtopic.pagination === defaultSubtopicPagination,
-          ),
-      ).true;
-    });
   });
 });

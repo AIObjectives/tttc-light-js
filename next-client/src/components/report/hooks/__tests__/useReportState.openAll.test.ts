@@ -1,23 +1,14 @@
 import { describe, test, expect } from "vitest";
-import { ReportState, SomeNode, __internals } from "../useReportState";
+import { ReportState, __internals } from "../useReportState";
 import { reportData } from "stories/data/dummyData";
-import exp from "constants";
-import { Array } from "effect";
-import { cons } from "effect/List";
 
-const {
-  createPathMapReducer,
-  stateBuilder,
-  defaultTopicPagination,
-  defaultSubtopicPagination,
-  mapIdsToPath,
-} = __internals;
+const { createPathMapReducer, stateBuilder, mapIdsToPath } = __internals;
 
 const state = stateBuilder(reportData.topics);
 
 const reducer = createPathMapReducer(mapIdsToPath(state));
 const open = (reportState: ReportState) =>
-  reducer(reportState, { type: "openAll", payload: { id: "" } });
+  reducer(reportState, { type: "openAll" });
 
 const openedState = open(state);
 
