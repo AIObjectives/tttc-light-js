@@ -1,14 +1,17 @@
 import { select } from "./tools/terminal";
-import { turboToSchemaScript } from "./scripts/turboToSchemaScript";
+import { splitFileTurboToSchemaScript } from "./scripts/splitFileTurboToSchemaScript";
 (async () => {
-  const options = ["Translate: Turbo => t3c-light schema", "Exit"] as const;
+  const options = [
+    "(splitted file) Translate: Turbo => t3c-light schema",
+    "Exit",
+  ] as const;
   console.log("T3C Code Utilities");
   const result = await select("What would you like to run?", options);
 
   switch (result) {
-    case "Translate: Turbo => t3c-light schema": {
+    case "(splitted file) Translate: Turbo => t3c-light schema": {
       try {
-        await turboToSchemaScript();
+        await splitFileTurboToSchemaScript();
         process.exit(0);
       } catch (e) {
         if (e instanceof Error) {

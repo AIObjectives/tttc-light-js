@@ -165,7 +165,7 @@ const makeLLMPipelineOutput = (
   });
 };
 
-export const turboToSchema = (
+export const splitFileTurboToSchema = (
   turboRows: TurboSourceRow[],
   claimMap: TurboClaimMap,
   topicClustering: TurboTopicClustering,

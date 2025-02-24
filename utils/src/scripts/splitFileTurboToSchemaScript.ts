@@ -3,7 +3,7 @@ import {
   turboSourceRow,
   turboClaimMap,
   turboTopicClustering,
-  turboToSchema,
+  splitFileTurboToSchema,
 } from "../functions/turboToSchema";
 import * as fs from "fs-extra";
 import { parse as parseCsv } from "csv-parse";
@@ -50,7 +50,7 @@ const parseCsvFile = async (fileName: string) => {
   return records;
 };
 
-export const turboToSchemaScript = async () => {
+export const splitFileTurboToSchemaScript = async () => {
   const baseDataPath = "./src/scripts/input";
   console.log(process.cwd());
   const makeFilePath = (fileName: string) => baseDataPath + "/" + fileName;
@@ -140,7 +140,7 @@ export const turboToSchemaScript = async () => {
   assert(parsedClaimsMap.data !== undefined);
   assert(parsedTopicClustering.data !== undefined);
 
-  const schemaData = turboToSchema(
+  const schemaData = splitFileTurboToSchema(
     parsedDataRows.data,
     parsedClaimsMap.data,
     parsedTopicClustering.data,
