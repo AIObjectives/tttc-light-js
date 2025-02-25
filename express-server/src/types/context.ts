@@ -24,9 +24,6 @@ class EnvValidationError extends Error {
 
 export const env = z.object({
   OPENAI_API_KEY: z.string({ required_error: "Missing OpenAI Key" }),
-  OPENAI_API_KEY_PASSWORD: z
-    .string({ invalid_type_error: "Invalid type for openapi key password" })
-    .optional(),
   GCLOUD_STORAGE_BUCKET: z.string({
     required_error: "Missing GCloud storage bucket",
   }),
