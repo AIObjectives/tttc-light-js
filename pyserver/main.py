@@ -40,12 +40,6 @@ from utils import cute_print
 
 load_dotenv()
 
-# ! Temporarily including API key in env
-shared_api_key:str = os.getenv('OPENAI_API_KEY')
-
-if shared_api_key is None:
-  raise Exception("No OpenAI API key present")
-
 # More comprehensive security middleware
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
