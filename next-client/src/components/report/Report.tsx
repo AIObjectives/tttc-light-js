@@ -171,11 +171,10 @@ function Report({
               {state.children.map((themeNode) => (
                 <Theme key={themeNode.data.id} node={themeNode} />
               ))}
+              <Appendix filename={reportData.title} reportUri={reportUri} />
             </Col>
           }
-          ToolBar={
-            <ReportToolbar filename={reportData.title} reportUri={reportUri} />
-          }
+          ToolBar={<ReportToolbar />}
           Outline={<Outline reportState={state} reportDispatch={dispatch} />}
         />
       </div>
@@ -186,13 +185,7 @@ function Report({
 /**
  * Bar that follows down screen. Lets user do certain actions.
  */
-export function ReportToolbar({
-  filename,
-  reportUri,
-}: {
-  filename: string;
-  reportUri: string;
-}) {
+export function ReportToolbar() {
   const { dispatch } = useContext(ReportContext);
   return (
     // Sticky keeps it at top of screen when scrolling down.
@@ -201,10 +194,9 @@ export function ReportToolbar({
       // ! make sure this is the same width as the theme cards.
       className={`p-2 justify-between w-full mx-auto`}
     >
-      <Row gap={2}>
+      <div>
         <Button variant={"outline"}>Edit</Button>
-        <DownloadDataButton filename={filename} reportUri={reportUri} />
-      </Row>
+      </div>
       <Row gap={2}>
         {/* Close all button */}
         <Button
@@ -427,7 +419,7 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
   );
 }
 
-function DownloadDataButton({
+function Appendix({
   reportUri,
   filename,
 }: {
@@ -463,9 +455,15 @@ function DownloadDataButton({
   };
 
   return (
-    <Button onClick={handleDownload} variant={"secondary"}>
-      Download data
-    </Button>
+    <Col className="p-8" gap={1}>
+      <p className="p-medium">Appendix</p>
+      <p
+        className="text-muted-foreground underline cursor-pointer"
+        onClick={handleDownload}
+      >
+        Download report in JSON
+      </p>
+    </Col>
   );
 }
 
