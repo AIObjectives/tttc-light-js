@@ -16,10 +16,10 @@ For local testing, load these from a config.py file
 import os
 import sys
 from pathlib import Path
+
 from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -51,10 +51,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
         
-        # Force HTTPS using HSTS
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        # only add HSTS in production
+        if os.getenv('NODE_ENV') == 'prod':
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         
-        # Additional security headers
+        # additional security headers — safe for both environments
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
@@ -62,8 +63,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 app = FastAPI()
-#app.add_middleware(HTTPSRedirectMiddleware)
-#app.add_middleware(SecurityHeadersMiddleware)
+# configure middleware based on environment
+if os.getenv('NODE_ENV') == 'prod':
+    app.add_middleware(HTTPSRedirectMiddleware)
+# add security headers
+app.add_middleware(SecurityHeadersMiddleware)
 header_scheme = APIKeyHeader(name="openai-api-key") 
  
 @app.get("/")
@@ -574,7 +578,7 @@ def dedup_claims(client, claims:list, llm:LLMConfig)-> dict:
 #####################################
 # Step 3: Sort & deduplicate claims #
 #-----------------------------------#
-@app.put("/sort_claims_tree/")
+@app.put("/sort_claims_tree")
 def sort_claims_tree(req:ClaimTreeLLMConfig, api_key: str = Depends(header_scheme), log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """
   Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
@@ -1063,7 +1067,7 @@ def get_speakers_map(tree:dict):
 
 #@app.post("/cruxes/")
 # TODO: configure optional TS calling, logic for extracting cruxes
-def cruxes_from_tree(req:CruxesLLMConfig,api_key: str = Depends(header_scheme), log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
+def cruxes_from_tree(req:CruxesLLMConfig, api_key: str = Depends(header_scheme), log_to_wandb:str = config.WANDB_GROUP_LOG_NAME)-> dict:
   """ Given a topic, description, and corresponding list of claims, extract the
   crux claims that would best split the claims into agree/disagree sides
   Note: currently we do this for the subtopic level, could scale up to main topic?
