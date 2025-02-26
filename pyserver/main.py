@@ -230,10 +230,7 @@ def comments_to_tree(req: CommentsLLMConfig, log_to_wandb:str = config.WANDB_GRO
         "num_subtopics" : sum(subtopic_bins),
         "subtopic_bins" : subtopic_bins,
         "rows_to_tree" : wandb.Table(data=comms_tree_list,
-                                     columns = ["comments", "taxonomy"]),
-        "step_taxonomy/model" : req.llm.model_name,
-        "step_taxonomy/prompt" : req.llm.user_prompt,                   
-
+                                     columns = ["comments", "taxonomy"]),                
         # token counts
         "U_tok_N/taxonomy": usage.total_tokens,
         "U_tok_in/taxonomy" : usage.prompt_tokens,
@@ -508,9 +505,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
         "U_tok_out/claims" : TK_2_OUT,
         "rows_to_claims" : wandb.Table(
                            data=comms_to_claims_html,
-                           columns = ["comments", "claims"]),
-         "step_claims/model" : req.llm.model_name,
-         "step_claims/prompt" : req.llm.user_prompt
+                           columns = ["comments", "claims"])
       })
     except:
       print("Failed to log wandb run")
@@ -935,9 +930,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, log_to_wandb:str = config.WANDB_GRO
         "U_tok_in/dedup": TK_IN,
         "U_tok_out/dedup" : TK_OUT,
         "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
-        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"]),
-        "step_dedup/model" : req.llm.model_name,
-        "step_dedup/prompt" : req.llm.user_prompt
+        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
       })
       # W&B run completion
       wandb.run.finish()
@@ -962,43 +955,43 @@ def topic_desc_map(topics:list)->dict:
         topic_desc[subtopic["subtopicName"]] = subtopic["subtopicShortDescription"]
   return topic_desc
 
-# TODO: likely deprecate, we'll have a global map
-def pseudonymize_speakers(claims:list)->dict:
-  """ Create sequential ids for speakers so actual names are not sent to an LLM and do not
-  bias the output
+def controversy_matrix(cont_mat:list)->list:
+  """ Compute a controversy matrix from individual speaker opinions on crux claims,
+  as predicted by an LLM. For each pair of cruxes, for each speaker:
+  # - add 0 only if the speaker agrees with both cruxes
+  # - add 0.5 if the speaker has an opinion on one crux, but no known opinion on the other
+  # - add 1 if the speaker has a known different opinion on each crux (agree/disagree or disagree/agree)
+  # Sum the totals for each pair of cruxes in the corresponding cell in the cross-product
+  # and return the matrix of scores.
   """
-  speaker_ids = {}
-  # set([claim["speaker"] for claim in claims])
-  for claim in claims:
-    if "speaker" in claim:
-      if claim["speaker"] not in speaker_ids:
-        curr_id = len(speaker_ids)
-        speaker_ids[claim["speaker"]] = str(curr_id)
-  return speaker_ids
+  cm = [[0 for a in range(len(cont_mat))] for b in range(len(cont_mat))]
 
-def confusion_matrix(conf_mat:list)->list:
-  """ Compute confusion matrix"""
-  cm = [[0 for a in range(len(conf_mat))] for b in range(len(conf_mat))]
-  #we're gonna loop through all the crux statements,
-  for claim_index, row in enumerate(conf_mat):
+  # loop through all the crux statements,
+  for claim_index, row in enumerate(cont_mat):
     claim = row[0]
     # these are the scores for each speaker
     per_speaker_scores = row[1:]
     for score_index, score in enumerate(per_speaker_scores):
       # we want this speaker's scores for all statements except current one
-      other_scores = [item[score_index+1] for item in conf_mat[claim_index +1:]]
+      other_scores = [item[score_index+1] for item in cont_mat[claim_index +1:]]
       for other_index, other_score in enumerate(other_scores):
+        # if the scores match, there is no controversy — do not add anything
         if score != other_score:
+          # we only know one of the opinions
           if score == 0 or other_score == 0:
             cm[claim_index][claim_index+other_index+1] += 0.5
             cm[claim_index+other_index+1][claim_index] += 0.5
+          # these opinions are different — max controversy
           else:
             cm[claim_index][claim_index + other_index+1] += 1
             cm[claim_index + other_index+1][claim_index] += 1
   return cm
 
 def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_map:dict)-> dict:
-  # api_key = llm.api_key
+  """ For each fully-described subtopic, provide all the relevant claims with an anonymized
+  numeric speaker id, and ask the LLM for a crux claim that best splits the speakers' opinions
+  on this topic (ideally into two groups of equal size for agreement vs disagreement with the crux claim)
+  """
   client = OpenAI(
     api_key=api_key
   )
@@ -1036,6 +1029,9 @@ def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_m
   return {"crux" : crux_obj, "usage" : response.usage }
 
 def get_speakers_map(tree:dict):
+  """ Given a full topic tree, collect all distinct speakers for all claims into one set,
+  sort alphabetically, then enumerate (so the numerical id of the speaker is deterministic
+  from the composition of any particular dataset """
   speakers = set()
   for topic, topic_details in tree.items():
     for subtopic, subtopic_details in topic_details["subtopics"].items():
@@ -1050,7 +1046,29 @@ def get_speakers_map(tree:dict):
     speaker_map[s] = str(i)
   return speaker_map
 
-
+def top_k_cruxes(cont_mat:list, crux_claims:list, K=3):
+  """ Return the top K most controversial crux pairs """
+  top_k_scores = [0 for i in range(K)]
+  top_k_coords = [{"x" : 0, "y" : 0} for i in range(K)]
+  for x in range(len(cont_mat)):
+    for y in range(x, len(cont_mat)):
+      curr_cell = cont_mat[x][y]
+      if curr_cell > top_k_scores[0]:
+        print("new max : ", curr_cell)
+        top_k_scores.insert(0, curr_cell)
+        top_k_coords.insert(0, {"x" : x, "y" : y})
+        if len(top_k_scores) > K:
+          print("deleting last K")
+          del top_k_scores[-1]
+          del top_k_coords[-1]
+  # return the pairs
+  top_cruxes = []
+  for score, coords in zip(top_k_scores, top_k_coords):
+    # create a pair of statements and score
+    crux_a = crux_claims[coords["x"]]
+    crux_b = crux_claims[coords["y"]]
+    top_cruxes.append({"score": score, "crux_a" : crux_a, "crux_b" : crux_b})
+  return top_cruxes
 
 @app.post("/cruxes")
 # TODO: configure optional TS calling, logic for extracting cruxes
@@ -1065,7 +1083,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
   #'quote': 'Interesting world-building [...]', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 
   #'commentId': '3', 'duplicates': []}, 
   #{'claim': 'Historically-grounded depictions of alien cultures enhance storytelling.', 'quote': "I'm especially into historically-grounded depictions or extrapolations of possible cultures [...].", 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}, {'claim': 'Exploring alternative cultural evolutions in storytelling is valuable.', 'quote': 'how could our universe evolve differently?', 'speaker': 'Charles', 'topicName': 'World-Building', 'subtopicName': 'Cultural Extrapolation', 'commentId': ' 8', 'duplicates': []}], 'speakers': {'Charles'}}), ('Advanced Technology', {'total': 4, 'claims': [{'claim': 'Space operatic battles enhance storytelling.', 'quote': 'More space operatic battles [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Detailed descriptions of advanced technology are essential.', 'quote': 'detailed descriptions of advanced futuristic technology [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Faster than light travel should be included in narratives.', 'quote': 'perhaps faster than light travel [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}, {'claim': 'Quantum computing is a valuable theme in storytelling.', 'quote': 'or quantum computing? [...].', 'speaker': 'Bob', 'topicName': 'World-Building', 'subtopicName': 'Advanced Technology', 'commentId': '7', 'duplicates': []}], 'speakers': {'Bob'}})], 'speakers': {'Charles', 'Bob'}}), 
-  cruxes = []
+  cruxes_main = []
   crux_data = []
   crux_claims = [] 
   TK_IN = 0
@@ -1075,7 +1093,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
   
   # TODO: can we get this from client?
   speaker_map = get_speakers_map(req.crux_tree)
-  print(speaker_map)
+  print("speaker ids: ", speaker_map)
   for topic, topic_details in req.crux_tree.items():
     subtopics = topic_details["subtopics"]
     for subtopic, subtopic_details in subtopics.items():
@@ -1090,35 +1108,82 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
       llm_response = cruxes_for_topic(req.llm, topic_title, subtopic_desc, claims, speaker_map)
       crux = llm_response["crux"]["crux"]
       usage = llm_response["usage"]
+     
 
-      print(crux)
-      
-      if log_to_wandb:
-        cruxes.append(crux)
-        ids_to_speakers = {v : k for k, v in speaker_map.items()}
-        spoken_claims = [c["speaker"] + ": " + c["claim"] for c in claims]
-        crux_data.append([topic_title, subtopic_desc, json.dumps(spoken_claims,indent=1), json.dumps(crux,indent=1)])
+      ids_to_speakers = {v : k for k, v in speaker_map.items()}
+      spoken_claims = [c["speaker"] + ": " + c["claim"] for c in claims]
 
-        crux_claim = crux["cruxClaim"]
-        agree = crux["agree"]
-        disagree = crux["disagree"]
+      crux_data.append([topic_title, subtopic_desc, json.dumps(spoken_claims,indent=1), json.dumps(crux,indent=1)])
+
+      # create more readable table: crux only, named speakers who agree, named speakers who disagree
+      crux_claim = crux["cruxClaim"]
+      agree = crux["agree"]
+      disagree = crux["disagree"]
+      try:
         explanation = crux["explanation"]
+      except:
+        explanation = "N/A"
 
-        # let's sanitize the agree/disagree:
-        agree = [a.split(":")[0] for a in agree]
-        disagree = [a.split(":")[0] for a in disagree]
+      # let's add back the names to the sanitized/speaker-ids-only
+      # in the agree/disagree claims
+      agree = [a.split(":")[0] for a in agree]
+      disagree = [a.split(":")[0] for a in disagree]
+      # add full name to each speaker
+      named_agree = [a + ":" + ids_to_speakers[a] for a in agree]
+      named_disagree = [d + ":" + ids_to_speakers[d] for d in disagree]
+      crux_claims.append([crux_claim, named_agree, named_disagree])
 
-        # add full name to each speaker
-        named_agree = [a + ":" + ids_to_speakers[a] for a in agree]
-        named_disagree = [d + ":" + ids_to_speakers[d] for d in disagree]
-        crux_claims.append([crux_claim, named_agree, named_disagree])
+      # most readable form:
+      # - crux claim, explanation, agree, disagree
+      # - all claims prepended with speaker names
+      # - topic & subctopic, description
+      cruxes_main.append([crux_claim, explanation, [ids_to_speakers[a] for a in agree],
+        [ids_to_speakers[d] for d in disagree], json.dumps(spoken_claims,indent=1),
+        topic_title, subtopic_desc])
 
       TK_TOT += usage.total_tokens
       TK_IN += usage.prompt_tokens
       TK_OUT += usage.completion_tokens
 
-  print(crux_claims)
-  # Note: we will now be sending speaker names to W&B  
+  print("Crux claims: ", crux_claims)
+  # convert agree/disagree to numeric scores:
+  # for each crux claim, for each speaker:
+  # - assign 1 if the speaker agrees with the crux
+  # - assign 0.5 if the speaker disagrees
+  # - assign 0 if the speaker's opinion is unknown/unspecified
+  speaker_labels = sorted(speaker_map.keys())
+  cont_mat = []
+  for row in crux_claims:
+    claim_scores = []
+    for sl in speaker_labels:
+      # get the id
+      labeled_speaker = speaker_map[sl] + ":" +sl
+      if labeled_speaker in row[1]:
+        claim_scores.append(1)
+      elif labeled_speaker in row[2]:
+        claim_scores.append(0.5)
+      else:
+        claim_scores.append(0)
+    cm = [row[0]]
+    cm.extend(claim_scores)
+    cont_mat.append(cm)
+
+  cols = ["crux"]
+  cols.extend(speaker_labels)
+
+  full_controversy_matrix = controversy_matrix(cont_mat)
+  print("Controversy matrix: ", full_controversy_matrix)
+
+  crux_claims_only = [row[0] for row in crux_claims]
+  top_cruxes = top_k_cruxes(full_controversy_matrix, crux_claims_only)
+  print("TOP CRUXES: ", top_cruxes)
+
+  # TODO: return top K pairs in a readable format
+  # TODO: (later) render the image?
+  # currently matplotlib requires a GUI to generate the plot — we don't want this on FastAPI
+  #
+  #filename = show_confusion_matrix(full_confusion_matrix, claims_only, "Test Conf Mat", "conf_mat_test.jpg")
+  # Note: we will now be sending speaker names to W&B (still not to OpenAI/LLM providers) 
   if log_to_wandb:
     try:
       exp_group_name = str(log_to_wandb)
@@ -1126,55 +1191,23 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
                  group=exp_group_name,
                  resume="allow")
       wandb.config.update({
-                   "s4_cruxes/model" : req.llm.model_name,
-                  "s4_cruxes/prompt" : req.llm.user_prompt
-                 })
-
-      # compute confusion matrix
-      speaker_labels = sorted(speaker_map.keys())
-      conf_mat = []
-      for row in crux_claims:
-        claim_scores = []
-        for sl in speaker_labels:
-          # get the id
-          labeled_speaker = speaker_map[sl] + ":" +sl
-          if labeled_speaker in row[1]:
-            claim_scores.append(1)
-          elif labeled_speaker in row[2]:
-            claim_scores.append(0.5)
-          else:
-            claim_scores.append(0)
-        cm = [row[0]]
-        cm.extend(claim_scores)
-        conf_mat.append(cm)
-    
-      cols = ["crux"]
-      cols.extend(speaker_labels)
-
-      full_confusion_matrix = confusion_matrix(conf_mat)
-      print(full_confusion_matrix)
-      # TODO: render the image?
-      #claims_only = [row[0] for row in crux_claims]
-      #print(claims_only)
-      #filename = show_confusion_matrix(full_confusion_matrix, claims_only, "Test Conf Mat", "conf_mat_test.jpg")
+                "s4_cruxes/model" : req.llm.model_name,
+                "s4_cruxes/prompt" : req.llm.user_prompt
+       })
 
       wandb.log({
         "U_tok_N/cruxes" : TK_TOT,
         "U_tok_in/cruxes": TK_IN,
         "U_tok_out/cruxes" : TK_OUT,
-        "crux_explain" : wandb.Table(data=crux_data,
-                               columns = ["topic", "description", "claims", "crux_explain"]),
-        "crux_YN" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"]),
-        "step_cruxes/model" : req.llm.model_name,
-        "step_cruxes/prompt" : req.llm.user_prompt
-
-      })
-      wandb.log({
-        "crux_binary_conf_mat" : wandb.Table(data=conf_mat, columns = cols),
-        "actual_cmat" : wandb.Table(data=full_confusion_matrix,
-                      columns=["Crux " + str(i) for i in range(len(full_confusion_matrix))])
+        "crux_core" : wandb.Table(data=cruxes_main,
+                                  columns=["crux", "reason", "agree", "disagree", "original_claims", "topic, subtopic", "description"]),
+        "crux_YN_names" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree"]),
+        "crux_binary_scores" : wandb.Table(data=cont_mat, columns = cols),
+        "crux_cmat_scores" : wandb.Table(data=full_controversy_matrix,
+                      columns=["Crux " + str(i) for i in range(len(full_controversy_matrix))]),
+        "crux_raw_explain" : wandb.Table(data=crux_data,
+                               columns = ["topic", "description", "claims", "crux_explain"])
        # "conf_mat_img" : wandb.Image(filename)
-
       })
     except:
       print("Failed to log wandb run")
@@ -1183,7 +1216,14 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
                "prompt_tokens" : TK_IN,
                "completion_tokens" : TK_OUT}
 
-  return {"data" : cruxes, "usage" : net_usage}
+  crux_data = {
+    "crux_claims" : crux_claims_only,
+    "controversy_scores" : full_controversy_matrix,
+    "top_cruxes" : top_cruxes,
+    "full_crux_logs" : cruxes_main
+  }
+  print(crux_data)
+  return {"data" : crux_data, "usage" : net_usage}
 
 if __name__ == "__main__":
     import uvicorn
