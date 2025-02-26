@@ -24,13 +24,13 @@ const logger =
   };
 
 export async function cruxesPipelineStep(env: Env, input: CruxesStep["data"]) {
-  const { data, usage } = await pyserverFetchClaims(
+  const { cruxClaims, controversyMatrix, topCruxes, usage } = await pyserverFetchClaims(
     `${env.PYSERVER_URL}/cruxes`,
     input,
   )
     .then((res) => res.json())
     .then(logger("cruxes step returns: "))
-    .then(apiPyserver.cruxesReply.parse);
+    .then(apiPyserver.cruxesResponse.parse);
 
-  return { cruxClaims: data, usage };
+  return { cruxClaims, controversyMatrix, topCruxes, usage };
 }

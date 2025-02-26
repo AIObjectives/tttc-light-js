@@ -118,13 +118,6 @@ const dupedClaims = z.object({
   duplicated: z.boolean(),
 });
 
-const cruxClaim = z.object({
-  cruxClaim: z.string(),
-  agree: z.array(z.string()),
-  disagree: z.array(z.string()),
-  explanation: z.string(),
-});
-
 /**
  * Top level claims, contains an array of duplicate claims
  */
@@ -226,14 +219,44 @@ export type SortClaimsTreeResponse = z.infer<typeof sortClaimsTreeResponse>;
 //  * cruxes
 //  ********************************/
 
+/**
+ * Crux claim extraction in several formats
+ * - basic details of an extractec cruxClaim: LLM-generated crux claim,
+ *   lists of speakers who agree/disagree, LLM-generated explanation
+ * - controversy matrix: numeric scores for the cross-product of crux claims,
+ *   higher score is more controversial
+ * - human-readable cruxes: top K scores and corresponding crux pairs from the
+ *   controversy matrix
+ * - one cruxDetails object to package this together
+ */
+
+const cruxClaim = z.object({
+  cruxClaim: z.string(),
+  agree: z.array(z.string()),
+  disagree: z.array(z.string()),
+  explanation: z.string(),
+});
+
+const controversyMatrix = z.array(z.array(z.number()));
+
+const scoredCruxPair = z.object({
+  score: z.number(),
+  cruxA: z.string(),
+  cruxB: z.string(),
+})
+
 export const cruxesRequest = z.object({
   topics: partialTopic.array(),
   crux_tree: claimsTree,
   llm: llmConfig,
+  top_k: z.number()
 });
+
 export type CruxesRequest = z.infer<typeof cruxesRequest>;
 
-export const cruxesReply = z.object({
-  data: cruxClaim.array(),
+export const cruxesResponse = z.object({
+  cruxClaims: cruxClaim.array(),
+  controversyMatrix : controversyMatrix,
+  topCruxes: scoredCruxPair.array(),
   usage,
 });
