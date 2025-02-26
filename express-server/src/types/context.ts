@@ -30,12 +30,48 @@ export const env = z.object({
   GOOGLE_CREDENTIALS_ENCODED: z.string({
     required_error: "Missing encoded GCloud credentials",
   }),
-  CLIENT_BASE_URL: z
-    .string({ required_error: "Missing CLIENT_BASE_URL" })
-    .url({ message: "PYSERVER_URL in env should be a valid url" }),
-  PYSERVER_URL: z
-    .string({ required_error: "Missing PYSERVER_URL" })
-    .url({ message: "PYSERVER_URL in env should be a valid url" }),
+  CLIENT_BASE_URL: z.string()
+    .refine(
+      (url) => {
+        try {
+          new URL(url);
+          const isProd = process.env.NODE_ENV === "prod";
+          if (isProd && !url.startsWith("https://")) {
+            return false;
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      {
+        message: (val) => 
+          process.env.NODE_ENV === "prod" 
+            ? "CLIENT_BASE_URL must be a valid HTTPS URL in production" 
+            : "CLIENT_BASE_URL must be a valid URL"
+      }
+    ),
+  PYSERVER_URL: z.string()
+    .refine(
+      (url) => {
+        try {
+          new URL(url);
+          const isProd = process.env.NODE_ENV === "prod";
+          if (isProd && !url.startsWith("https://")) {
+            return false;
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      {
+        message: (val) => 
+          process.env.NODE_ENV === "prod" 
+            ? "PYSERVER_URL must be a valid HTTPS URL in production" 
+            : "PYSERVER_URL must be a valid URL"
+      }
+    ),
   NODE_ENV: z.union([z.literal("dev"), z.literal("prod")], {
     required_error: "Missing NODE_ENV (prod | dev)",
     invalid_type_error: "Invalid input for NODE_ENV",

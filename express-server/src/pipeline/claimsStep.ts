@@ -5,15 +5,23 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>, openaiAPIKey: string) =>
-    await fetch(url, {
+  async (url: string, body: z.infer<T>, openaiAPIKey: string) => {
+    const fetchOptions: RequestInit = {
       method: "POST",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
         "openai-api-key": openaiAPIKey,
-      },
-    });
+      }
+    };
+
+    // Add additional options for production
+    if (process.env.NODE_ENV === "prod") {
+      fetchOptions.redirect = "follow";
+    }
+
+    return await fetch(url, fetchOptions);
+  };
 
 const pyserverFetchClaims = typedFetch(apiPyserver.claimsRequest);
 

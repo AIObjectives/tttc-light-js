@@ -16,6 +16,8 @@ For local testing, load these from a config.py file
 import os
 import sys
 from pathlib import Path
+from enum import Enum
+from typing import Literal
 
 from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
@@ -40,28 +42,40 @@ from utils import cute_print
 
 load_dotenv()
 
-# More comprehensive security middleware
+class Environment(str, Enum):
+    DEV = "dev"
+    PROD = "prod"
+
+# Get environment with type safety
+def get_environment() -> Environment:
+    env = os.getenv("NODE_ENV", "dev").lower()
+    if env not in [Environment.DEV, Environment.PROD]:
+        return Environment.DEV
+    return Environment(env)
+
+app = FastAPI()
+
+# Configure middleware based on environment
+environment = get_environment()
+if environment == Environment.PROD:
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+# Update the SecurityHeadersMiddleware class
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
         
-        # only add HSTS in production
-        if os.getenv('NODE_ENV') == 'prod':
+        # Add HSTS only in production
+        if get_environment() == Environment.PROD:
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         
-        # additional security headers — safe for both environments
+        # Additional security headers - safe for both environments
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         
         return response
 
-app = FastAPI()
-# configure middleware based on environment
-if os.getenv('NODE_ENV') == 'prod':
-    app.add_middleware(HTTPSRedirectMiddleware)
-# add security headers
-app.add_middleware(SecurityHeadersMiddleware)
 header_scheme = APIKeyHeader(name="openai-api-key") 
  
 @app.get("/")
@@ -824,7 +838,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, api_key: str = Depends(header_schem
           # implementation notes:
           # - MOST claims should NOT be near-duplicates
           # - nesting where |claim_vals| > 0 should be a smaller set than |subtopic_data["claims"]|
-          # - but also we won't have duplicate info bidirectionally — A may be dupe of B, but B not dupe of A
+          # - but also we won't have duplicate info bidirectionally — A may be dupe of B, but B not dupe of A
           for claim_key, claim_vals in deduped["nesting"].items():
             # this claim_key has some duplicates
             if len(claim_vals) > 0:
