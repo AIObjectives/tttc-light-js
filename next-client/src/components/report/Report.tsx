@@ -440,7 +440,7 @@ function Appendix({
 
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = filename;
+      link.download = filename + "-" + Date.now();
 
       document.body.appendChild(link);
       link.click();
