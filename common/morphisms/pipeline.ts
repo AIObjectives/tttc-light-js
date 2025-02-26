@@ -240,7 +240,7 @@ const getSubtopicsFromLLMSubTopics =
     subtopics.map((subtopic) => ({
       id: uuid(),
       title: subtopic.subtopicName,
-      description: subtopic.subtopicShortDescription!,
+      description: subtopic.subtopicShortDescription || "",
       claims: subtopic.claims
         ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
         : [],
@@ -252,7 +252,7 @@ const getTopicsFromTaxonomy =
     tree.map((leaf, idx) => ({
       id: uuid(),
       title: leaf.topicName,
-      description: leaf.topicShortDescription!,
+      description: leaf.topicShortDescription || "",
       subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
       topicColor: colorPicker(idx),
     }));

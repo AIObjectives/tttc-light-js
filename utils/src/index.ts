@@ -1,8 +1,10 @@
 import { select } from "./tools/terminal";
 import { splitFileTurboToSchemaScript } from "./scripts/splitFileTurboToSchemaScript";
+import turboToSchemaScript from "./scripts/translatedTurboToSchema";
 (async () => {
   const options = [
     "(splitted file) Translate: Turbo => t3c-light schema",
+    "(report file) Translate: Turbo => t3c-light schema",
     "Exit",
   ] as const;
   console.log("T3C Code Utilities");
@@ -13,6 +15,17 @@ import { splitFileTurboToSchemaScript } from "./scripts/splitFileTurboToSchemaSc
       try {
         await splitFileTurboToSchemaScript();
         process.exit(0);
+      } catch (e) {
+        if (e instanceof Error) {
+          console.error(`${e.message}: \n Stack: \n ${e.stack}`);
+          process.exit(1);
+        }
+      }
+      break;
+    }
+    case "(report file) Translate: Turbo => t3c-light schema": {
+      try {
+        await turboToSchemaScript();
       } catch (e) {
         if (e instanceof Error) {
           console.error(`${e.message}: \n Stack: \n ${e.stack}`);

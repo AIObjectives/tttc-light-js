@@ -1,10 +1,10 @@
 import { reader, select } from "../tools/terminal";
+import { splitFileTurboToSchema } from "../functions/splitFilesTurboToSchema";
 import {
   turboSourceRow,
   turboClaimMap,
   turboTopicClustering,
-  splitFileTurboToSchema,
-} from "../functions/turboToSchema";
+} from "../schema/turboData";
 import * as fs from "fs-extra";
 import { parse as parseCsv } from "csv-parse";
 import assert from "assert";
@@ -52,10 +52,8 @@ const parseCsvFile = async (fileName: string) => {
 
 export const splitFileTurboToSchemaScript = async () => {
   const baseDataPath = "./src/scripts/input";
-  console.log(process.cwd());
   const makeFilePath = (fileName: string) => baseDataPath + "/" + fileName;
 
-  // const dir = Deno.readDir(baseDataPath);
   const dir = await fs.readdir(baseDataPath);
 
   const inputFiles = [];

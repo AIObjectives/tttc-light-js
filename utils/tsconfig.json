@@ -1,32 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
-
     "outDir": "./dist",
-    "rootDir": "./src",
-
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-
-    "allowJs": true,
-    "checkJs": true,
-    "removeComments": true,
+    "module": "CommonJS",
+    "target": "es6",
     "sourceMap": true,
-
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-
+    "baseUrl": "./src",
+    "jsx": "react",
+    "esModuleInterop": true,
     "resolveJsonModule": true,
-    "declaration": true,
-
-    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "common/*": ["../common/*"] // Map "common/*" to "../common/*"
