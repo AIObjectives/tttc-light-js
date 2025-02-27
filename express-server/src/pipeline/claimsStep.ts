@@ -15,7 +15,8 @@ const typedFetch =
       }
     };
 
-    // Add additional options for production
+    // Explicitly set redirect to "follow" in production to ensure any server redirects
+    // (including potential HTTP to HTTPS redirects) are properly followed
     if (isProd) {
       fetchOptions.redirect = "follow";
     }

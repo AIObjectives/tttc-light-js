@@ -5,16 +5,24 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>, openaiAPIKey: string, isProd: boolean) =>
-    await fetch(url, {
+  async (url: string, body: z.infer<T>, openaiAPIKey: string, isProd: boolean) => {
+    const fetchOptions: RequestInit = {
       method: "PUT",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
         "openai-api-key": openaiAPIKey,
-      },
-      ...(isProd ? { redirect: "follow" } : {})
-    });
+      }
+    };
+
+    // Explicitly set redirect to "follow" in production to ensure any server redirects
+    // (including potential HTTP to HTTPS redirects) are properly followed
+    if (isProd) {
+      fetchOptions.redirect = "follow";
+    }
+
+    return await fetch(url, fetchOptions);
+  };
 
 const pyserverFetchSortClaimsTree = typedFetch(
   apiPyserver.sortClaimsTreeRequest,
