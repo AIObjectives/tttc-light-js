@@ -30,6 +30,7 @@ export const env = z.object({
   GOOGLE_CREDENTIALS_ENCODED: z.string({
     required_error: "Missing encoded GCloud credentials",
   }),
+  // check for a valid url, and require https in prod
   CLIENT_BASE_URL: z.string()
     .refine(
       (url) => {
@@ -44,13 +45,13 @@ export const env = z.object({
           return false;
         }
       },
-      {
-        message: (val) => 
-          process.env.NODE_ENV === "prod" 
-            ? "CLIENT_BASE_URL must be a valid HTTPS URL in production" 
-            : "CLIENT_BASE_URL must be a valid URL"
+      {message:
+        process.env.NODE_ENV === "prod" 
+          ? "CLIENT_BASE_URL must be a valid HTTPS URL in production" 
+          : "CLIENT_BASE_URL must be a valid URL"
       }
     ),
+  // check for a valid url and and require https in prod
   PYSERVER_URL: z.string()
     .refine(
       (url) => {
@@ -66,7 +67,7 @@ export const env = z.object({
         }
       },
       {
-        message: (val) => 
+        message:
           process.env.NODE_ENV === "prod" 
             ? "PYSERVER_URL must be a valid HTTPS URL in production" 
             : "PYSERVER_URL must be a valid URL"

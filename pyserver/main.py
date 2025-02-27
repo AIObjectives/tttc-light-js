@@ -26,13 +26,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Union
 import wandb
 import json
 from dotenv import load_dotenv
+
 # Add the current directory to path for imports
 current_dir = Path(__file__).resolve().parent
 sys.path.append(str(current_dir))
@@ -48,19 +48,11 @@ class Environment(str, Enum):
 
 # Get environment with type safety
 def get_environment() -> Environment:
-    env = os.getenv("NODE_ENV", "dev").lower()
+    env = os.getenv("NODE_ENV").lower()
     if env not in [Environment.DEV, Environment.PROD]:
-        return Environment.DEV
+      raise Exception("Environment not set: set NODE_ENV in pyserver/.env to valid value")
     return Environment(env)
 
-app = FastAPI()
-
-# Configure middleware based on environment
-environment = get_environment()
-if environment == Environment.PROD:
-    app.add_middleware(HTTPSRedirectMiddleware)
-
-# Update the SecurityHeadersMiddleware class
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
@@ -75,6 +67,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers['X-XSS-Protection'] = '1; mode=block'
         
         return response
+        
+app = FastAPI()
+# Configure middleware based on environment
+environment = get_environment()
+if environment == Environment.PROD:
+    app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 header_scheme = APIKeyHeader(name="openai-api-key") 
  
