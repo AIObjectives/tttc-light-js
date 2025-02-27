@@ -184,6 +184,10 @@ export const llmPipelineOutput = z.object({
   costs: z.number(),
   end: z.number().optional(),
   duration: z.string().optional(),
+  // crux extraction: TODO make this way more detailed
+  cruxDetails: z.object().optional();
+  //controversyMatrix: z.array(z.array(z.number())),
+
 });
 
 export type LLMPipelineOutput = z.infer<typeof llmPipelineOutput>;

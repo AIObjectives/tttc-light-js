@@ -1058,8 +1058,8 @@ def top_k_cruxes(cont_mat:list, crux_claims:list, top_k:int=0)->list:
     K = math.ceil(math.sqrt(len(crux_claims)))
   else:
     K = top_k
-  top_k_scores = [0.1]
-  top_k_coords = [{"x" : 0, "y" : 0} for i in range(K)]
+  top_k_scores = [0.4]
+  top_k_coords = [{"x" : 0, "y" : 0}]
   for x in range(len(cont_mat)):
     for y in range(x, len(cont_mat)):
       curr_cell = cont_mat[x][y]
@@ -1071,6 +1071,11 @@ def top_k_cruxes(cont_mat:list, crux_claims:list, top_k:int=0)->list:
           print("deleting last K")
           del top_k_scores[-1]
           del top_k_coords[-1]
+  # drop the placeholder
+  if top_k_scores[-1] == 0.4:
+    del top_k_scores[-1]
+    del top_k_coords[-1]
+
   # return the pairs
   top_cruxes = []
   for score, coords in zip(top_k_scores, top_k_coords):
@@ -1145,8 +1150,8 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
       # - crux claim, explanation, agree, disagree
       # - all claims prepended with speaker names
       # - topic & subctopic, description
-      cruxes_main.append([crux_claim, explanation, [ids_to_speakers[a] for a in agree],
-        [ids_to_speakers[d] for d in disagree], json.dumps(spoken_claims,indent=1),
+      cruxes_main.append([crux_claim, explanation, named_agree,
+        named_disagree, json.dumps(spoken_claims,indent=1),
         topic_title, subtopic_desc, json.dumps(crux,indent=1)])
 
       TK_TOT += usage.total_tokens
@@ -1207,8 +1212,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
         "U_tok_in/cruxes": TK_IN,
         "U_tok_out/cruxes" : TK_OUT,
         "crux_details" : wandb.Table(data=cruxes_main,
-                                  columns=["crux", "reason", "agree", "disagree", "original_claims", "topic, subtopic", "description", "raw_llm_explain"]),
-        "crux_YN_names" : wandb.Table(data=crux_claims, columns = ["crux", "agree", "disagree", "llm_explanation"]),
+                                  columns=["crux", "reason", "agree", "disagree", "original_claims", "topic, subtopic", "description"]),
         "crux_binary_scores" : wandb.Table(data=cont_mat, columns = cols),
         "crux_cmat_scores" : wandb.Table(data=full_controversy_matrix,
                       columns=["Crux " + str(i) for i in range(len(full_controversy_matrix))]),
