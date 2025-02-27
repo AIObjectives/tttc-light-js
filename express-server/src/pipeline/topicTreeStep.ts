@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>, openaiAPIKey: string) =>
+  async (url: string, body: z.infer<T>, openaiAPIKey: string, isProd: boolean) =>
     await fetch(url, {
       method: "POST",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
@@ -13,6 +13,7 @@ const typedFetch =
         "Content-Type": "application/json",
         "openai-api-key": openaiAPIKey,
       },
+      ...(isProd ? { redirect: "follow" } : {})
     });
 
 const pyserverFetchTopicTree = typedFetch(apiPyserver.topicTreeRequest);
@@ -33,10 +34,11 @@ export async function topicTreePipelineStep(
     `${env.PYSERVER_URL}/topic_tree`,
     input,
     openaiAPIKey,
+    env.NODE_ENV === "prod"
   )
     .then((res) => res.json())
     .then(logger("topic tree step returns: "))
-    .then(apiPyserver.topicTreeResponse.parse);
+    .then(apiPyserver.topicTreeReply.parse);
 
   return { data, usage };
 }

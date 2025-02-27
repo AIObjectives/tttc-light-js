@@ -21,7 +21,26 @@ const env = z.object({
       required_error:
         "PIPELINE_EXPRESS_URL env var is missing. This is a required.",
     })
-    .url("PIPELINE_EXPRESS_URL env var should be a valid url"),
+    .refine(
+      (url) => {
+        try {
+          new URL(url);
+          const isProd = process.env.NODE_ENV === "production";
+          if (isProd && !url.startsWith("https://")) {
+            return false;
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      {
+        message:
+          process.env.NODE_ENV === "production" 
+            ? "PIPELINE_EXPRESS_URL must be a valid HTTPS URL in production" 
+            : "PIPELINE_EXPRESS_URL must be a valid URL"
+      }
+    ),
 });
 
 const result = env.safeParse({
