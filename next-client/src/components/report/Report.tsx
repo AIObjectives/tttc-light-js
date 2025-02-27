@@ -123,7 +123,7 @@ function Report({
   reportData,
   reportUri,
 }: {
-  reportData: schema.ReportDataObj;
+  reportData: schema.UIReportData;
   reportUri: string;
 }) {
   // Report State reducer
@@ -167,7 +167,13 @@ function Report({
         <ReportLayout
           Report={
             <Col gap={4} className="px-3">
-              <ReportHeader reportData={reportData} />
+              <ReportHeader
+                topics={reportData.topics}
+                date={reportData.date}
+                title={reportData.title}
+                description={reportData.description}
+                questionAnswers={reportData.questionAnswers}
+              />
               {state.children.map((themeNode) => (
                 <Theme key={themeNode.data.id} node={themeNode} />
               ))}
@@ -221,21 +227,28 @@ export function ReportToolbar() {
  * Header for Report that has some summary details.
  */
 export function ReportHeader({
-  reportData,
+  topics: themes,
+  date,
+  title,
+  description,
+  questionAnswers,
 }: {
-  reportData: schema.ReportDataObj;
+  topics: schema.Topic[];
+  date: string;
+  title: string;
+  description: string;
+  questionAnswers?: schema.QuestionAnswer[];
 }) {
-  const themes = reportData.topics;
   const topics = themes.flatMap((theme) => theme.subtopics);
   const claims = topics.flatMap((topic) => topic.claims);
   const nPeople = getNPeople(claims);
-  const dateStr = reportData.date;
+  const dateStr = date;
   return (
     <CardContent>
       <Col gap={8}>
         {/* Contains title and basic overview stats */}
         <ReportIntro
-          title={reportData.title}
+          title={title}
           nThemes={themes.length}
           nTopics={topics.length}
           nClaims={claims.length}
@@ -243,9 +256,12 @@ export function ReportHeader({
           dateStr={dateStr}
         />
         {/* Summary */}
-        <ReportSummary reportData={reportData} />
+        <ReportSummary
+          description={description}
+          questionAnswers={questionAnswers}
+        />
         {/* Overview */}
-        <ReportOverview topics={reportData.topics} />
+        <ReportOverview topics={themes} />
       </Col>
     </CardContent>
   );
@@ -365,11 +381,12 @@ export function ReportInfo() {
 }
 
 export function ReportSummary({
-  reportData,
+  description,
+  questionAnswers,
 }: {
-  reportData: schema.ReportDataObj;
+  description: string;
+  questionAnswers?: schema.QuestionAnswer[];
 }) {
-  const { description, questionAnswers } = reportData;
   return (
     <Col gap={3}>
       {/* Summary Title */}
@@ -435,6 +452,10 @@ function Appendix({
           "Content-Type": "application/json",
         },
       });
+      if (!response.ok) {
+        toast.error("An error occured: could not download report data");
+        return;
+      }
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
 

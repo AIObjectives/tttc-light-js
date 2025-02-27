@@ -540,3 +540,29 @@ export const pipelineOutput = z.object({
 });
 
 export type PipelineOutput = z.infer<typeof pipelineOutput>;
+
+/********************************
+ * UI Report
+ * Data needed only to display a report
+ ********************************/
+
+export const uiReportData = reportDataObj.omit({ sources: true });
+
+export type UIReportData = z.infer<typeof uiReportData>;
+
+/********************************
+ * Downloaded report
+ * When a user downloads a report, it gives a partial report object with some extra metadata
+ ********************************/
+
+const downloadReportSchema_v1 = z.tuple([
+  z.literal("v0.2"),
+  z.object({
+    data: z.tuple([z.literal("v0.2"), uiReportData]),
+    downloadTimestamp: z.number(),
+  }),
+]);
+
+export const downloadReportSchema = downloadReportSchema_v1;
+
+export type DownloadDataReportSchema = z.infer<typeof downloadReportSchema>;

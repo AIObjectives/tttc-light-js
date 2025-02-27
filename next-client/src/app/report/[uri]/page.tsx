@@ -11,7 +11,7 @@ const waitingMessage = z.object({
 });
 
 type WaitingStatus = ["status", api.ReportJobStatus];
-type ReportData = ["report", schema.ReportDataObj];
+type ReportData = ["report", schema.UIReportData];
 type Error = ["error"];
 
 /**
@@ -50,9 +50,14 @@ const handleResponseData = async (
     const newSchemaData = getReportDataObj(
       schema.llmPipelineOutput.parse(data),
     );
-    return ["report", newSchemaData];
+    return ["report", schema.uiReportData.parse(newSchemaData)];
   } else if (schema.pipelineOutput.safeParse(data).success) {
-    return ["report", schema.pipelineOutput.parse(data).data[1]];
+    return [
+      "report",
+      schema.uiReportData.parse(schema.pipelineOutput.parse(data).data[1]),
+    ];
+  } else if (schema.downloadReportSchema.safeParse(data).success) {
+    return ["report", schema.downloadReportSchema.parse(data)[1].data[1]];
   } else {
     return ["error"];
   }
