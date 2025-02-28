@@ -115,7 +115,10 @@ const formatLink = (link: string, beginTimestamp: string) => {
 
 const formatVimeoNonEmbeddedLink = (link: string, beginTimestamp: string) => {
   const url = new URL(link);
-  return `https://player.vimeo.com/video${url.pathname}#t=${beginTimestamp}`;
+  const idNum = url.pathname
+    .split("/")
+    .find((segment) => /^[0-9]+$/.test(segment));
+  return `https://player.vimeo.com/video/${idNum || ""}#t=${beginTimestamp}`;
 };
 
 const formatVimeoLink = (link: string, beginTimestamp: string) =>
