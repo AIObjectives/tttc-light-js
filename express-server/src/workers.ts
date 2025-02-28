@@ -113,19 +113,20 @@ const setupPipelineWorker = (connection: Redis) => {
       });
 
       console.log("Step 2.5: Optionally extract cruxes");
-      const { cruxClaims, controversyMatrix, topCruxes, usage} = await cruxesPipelineStep(env, {
-        topics: taxonomy,
-        crux_tree: claims_tree,
-        llm: cruxesLLMConfig,
-        top_k: 0
-      });
+      const { cruxClaims, controversyMatrix, topCruxes, usage } =
+        await cruxesPipelineStep(env, {
+          topics: taxonomy,
+          crux_tree: claims_tree,
+          llm: cruxesLLMConfig,
+          top_k: 0,
+        });
       console.log(topCruxes);
       // package crux addOns together
       const cruxAddOns = {
         topCruxes: topCruxes,
-        controversyMatrix : controversyMatrix,
+        controversyMatrix: controversyMatrix,
         cruxClaims: cruxClaims,
-      }
+      };
 
       console.log("Step 3: cleaning and sorting the taxonomy");
       await job.updateProgress({

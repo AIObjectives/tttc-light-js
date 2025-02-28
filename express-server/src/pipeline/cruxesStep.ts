@@ -24,13 +24,11 @@ const logger =
   };
 
 export async function cruxesPipelineStep(env: Env, input: CruxesStep["data"]) {
-  const { cruxClaims, controversyMatrix, topCruxes, usage } = await pyserverFetchClaims(
-    `${env.PYSERVER_URL}/cruxes`,
-    input,
-  )
-    .then((res) => res.json())
-    .then(logger("cruxes step returns: "))
-    .then(apiPyserver.cruxesResponse.parse);
+  const { cruxClaims, controversyMatrix, topCruxes, usage } =
+    await pyserverFetchClaims(`${env.PYSERVER_URL}/cruxes`, input)
+      .then((res) => res.json())
+      .then(logger("cruxes step returns: "))
+      .then(apiPyserver.cruxesResponse.parse);
 
   return { cruxClaims, controversyMatrix, topCruxes, usage };
 }

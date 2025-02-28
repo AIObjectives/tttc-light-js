@@ -243,11 +243,11 @@ const scoredCruxPair = z.object({
   score: z.number(),
   cruxA: z.string(),
   cruxB: z.string(),
-})
+});
 
 export const cruxesResponse = z.object({
   cruxClaims: cruxClaim.array(),
-  controversyMatrix : controversyMatrix,
+  controversyMatrix: controversyMatrix,
   topCruxes: scoredCruxPair.array(),
   usage,
 });
@@ -256,9 +256,7 @@ export const cruxesRequest = z.object({
   topics: partialTopic.array(),
   crux_tree: claimsTree,
   llm: llmConfig,
-  top_k: z.number()
+  top_k: z.number(),
 });
 
 export type CruxesRequest = z.infer<typeof cruxesRequest>;
-
-

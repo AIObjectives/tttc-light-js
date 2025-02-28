@@ -269,7 +269,7 @@ export const getReportDataObj = (
     topics: getTopicsFromTaxonomy(claimMap)(pipelineOutput.tree),
     sources: pipelineOutput.data.map((row) => sourceMap[row.id]),
     //TODO: pretty sure we need this
-    addOns: pipelineOutput.addOns
+    addOns: pipelineOutput.addOns,
   });
 };
 
