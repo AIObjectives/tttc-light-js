@@ -231,10 +231,10 @@ export type SortClaimsTreeResponse = z.infer<typeof sortClaimsTreeResponse>;
  */
 
 const cruxClaim = z.object({
-   cruxClaim: z.string(),
-   agree: z.array(z.string()),
-   disagree: z.array(z.string()),
-   explanation: z.string(),
+  cruxClaim: z.string(),
+  agree: z.array(z.string()),
+  disagree: z.array(z.string()),
+  explanation: z.string(),
 });
 
 const controversyMatrix = z.array(z.array(z.number()));
