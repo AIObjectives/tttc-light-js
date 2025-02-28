@@ -268,8 +268,8 @@ export const getReportDataObj = (
     date: new Date().toISOString(),
     topics: getTopicsFromTaxonomy(claimMap)(pipelineOutput.tree),
     sources: pipelineOutput.data.map((row) => sourceMap[row.id]),
-    // TODO: do we need to add something like this?
-    //cruxes : 
+    //TODO: pretty sure we need this
+    addOns: pipelineOutput.addOns
   });
 };
 

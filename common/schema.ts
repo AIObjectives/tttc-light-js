@@ -169,6 +169,40 @@ export const taxonomy = z.array(llmTopic);
 
 export type Taxonomy = z.infer<typeof taxonomy>;
 
+/********************************
+ * Addons
+ * Extra data that can be attached for special features
+ ********************************/
+
+export const crux = z.object({
+  score: z.number(),
+  cruxA: z.string(),
+  cruxB: z.string(),
+});
+
+export type Crux = z.infer<typeof crux>;
+
+const controversyMatrix = z.array(z.number()).array();
+
+export type ControversyMatrix = z.infer<typeof controversyMatrix>;
+
+export const cruxClaim = z.object({
+  cruxClaim: z.string(),
+  agree: z.array(z.string()),
+  disagree: z.array(z.string()),
+  explanation: z.string(),
+});
+
+export type CruxClaim = z.infer<typeof cruxClaim>;
+
+export const addOns = z.object({
+  topCruxes: crux.array().optional(),
+  controversyMatrix: controversyMatrix.optional(),
+  cruxClaims: cruxClaim.array().optional(),
+});
+
+export type AddOns = z.infer<typeof addOns>;
+
 export const llmPipelineOutput = z.object({
   data: z.array(sourceRow),
   title: z.string(),
@@ -184,10 +218,7 @@ export const llmPipelineOutput = z.object({
   costs: z.number(),
   end: z.number().optional(),
   duration: z.string().optional(),
-  // crux extraction: TODO make this way more detailed
-  cruxDetails: z.object().optional();
-  //controversyMatrix: z.array(z.array(z.number())),
-
+  addOns: addOns.optional(),
 });
 
 export type LLMPipelineOutput = z.infer<typeof llmPipelineOutput>;
@@ -392,40 +423,6 @@ export const questionAnswer = z.object({
 });
 
 export type QuestionAnswer = z.infer<typeof questionAnswer>;
-
-/********************************
- * Addons
- * Extra data that can be attached for special features
- ********************************/
-
-export const crux = z.object({
-  score: z.number(),
-  cruxA: z.string(),
-  cruxB: z.string(),
-});
-
-export type Crux = z.infer<typeof crux>;
-
-const controversyMatrix = z.array(z.number()).array();
-
-export type ControversyMatrix = z.infer<typeof controversyMatrix>;
-
-export const cruxClaim = z.object({
-  cruxClaim: z.string(),
-  agree: z.array(z.string()),
-  disagree: z.array(z.string()),
-  explanation: z.string(),
-});
-
-export type CruxClaim = z.infer<typeof cruxClaim>;
-
-export const addOns = z.object({
-  topCruxes: crux.array().optional(),
-  controversyMatrix: controversyMatrix.optional(),
-  cruxClaims: cruxClaim.array().optional(),
-});
-
-export type AddOns = z.infer<typeof addOns>;
 
 /********************************
  * Report Data

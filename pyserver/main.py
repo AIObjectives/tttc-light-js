@@ -425,6 +425,7 @@ def all_comments_to_claims(req:CommentTopicTree, log_to_wandb:str = config.WANDB
     except:
       print("Step 2: no claims for comment: ", response)
       claims = None
+      continue
     # reference format
     #{'claims': [{'claim': 'Dogs are superior pets.', commentId:'c1', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]} 
     usage = response["usage"]
@@ -999,11 +1000,18 @@ def cruxes_for_topic(llm:dict, topic:str, topic_desc:str, claims:list, speaker_m
     api_key=api_key
   )
   claims_anon = []
+  speaker_set = set()
   for claim in claims:
     if "speaker" in claim:
       speaker_anon = speaker_map[claim["speaker"]]
+      speaker_set.add(speaker_anon)
       speaker_claim =  speaker_anon + ":" + claim["claim"]
       claims_anon.append(speaker_claim)
+
+  # TODO: if speaker set is too small / all one person, do not generate cruxes
+  if len(speaker_set) < 2:
+    print("fewer than 2 speakers: ", topic)
+    return None
 
   full_prompt = llm.user_prompt
   full_prompt += "\nTopic: " + topic + ": " + topic_desc
@@ -1049,40 +1057,24 @@ def get_speakers_map(tree:dict):
     speaker_map[s] = str(i)
   return speaker_map
 
-def top_k_cruxes(cont_mat:list, crux_claims:list, top_k:int=0)->list:
+def top_k_cruxes(cont_mat:list, cruxes:list, top_k:int=0)->list:
   """ Return the top K most controversial crux pairs. 
       Optionally let the caller set K, otherwise default
       to the ceiling of the square root of the number of crux claims.
   """
   if top_k == 0:
-    K = math.ceil(math.sqrt(len(crux_claims)))
+    K = min(math.ceil(math.sqrt(len(cruxes))), 10)
   else:
     K = top_k
-  top_k_scores = [0.4]
-  top_k_coords = [{"x" : 0, "y" : 0}]
+  top_k_scores = [0.4 for i in range(K)]
+  top_k_coords = [{"x" : 0, "y" : 0} for i in range(K)]
+  # let's sort a triangular half of the symmetrical matrix (diagonal is all zeros)
+  scores = []
   for x in range(len(cont_mat)):
-    for y in range(x, len(cont_mat)):
-      curr_cell = cont_mat[x][y]
-      if curr_cell > top_k_scores[0]:
-        print("new max : ", curr_cell)
-        top_k_scores.insert(0, curr_cell)
-        top_k_coords.insert(0, {"x" : x, "y" : y})
-        if len(top_k_scores) > K:
-          print("deleting last K")
-          del top_k_scores[-1]
-          del top_k_coords[-1]
-  # drop the placeholder
-  if top_k_scores[-1] == 0.4:
-    del top_k_scores[-1]
-    del top_k_coords[-1]
-
-  # return the pairs
-  top_cruxes = []
-  for score, coords in zip(top_k_scores, top_k_coords):
-    # create a pair of statements and score
-    crux_a = crux_claims[coords["x"]]
-    crux_b = crux_claims[coords["y"]]
-    top_cruxes.append({"score": score, "cruxA" : crux_a, "cruxB" : crux_b})
+    for y in range(x + 1, len(cont_mat)):
+      scores.append([cont_mat[x][y], x, y])
+  top_scores = sorted(scores, key=lambda x: x[0], reverse=True)
+  top_cruxes = [{"score" : score, "cruxA" : cruxes[x], "cruxB" : cruxes[y]} for score, x, y in top_scores[:K]]
   return top_cruxes
 
 @app.post("/cruxes")
@@ -1114,6 +1106,10 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
       # TODO: reduce how many subtopics we analyze for cruxes, based on minimum representation
       # in known speaker comments?
       claims = subtopic_details["claims"]
+      if len(claims) < 2:
+        print("fewer than 2 claims: ", subtopic)
+        continue
+
       if subtopic in topic_desc:
         subtopic_desc = topic_desc[subtopic]
       else:
@@ -1122,6 +1118,8 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
 
       topic_title = topic + ", " + subtopic
       llm_response = cruxes_for_topic(req.llm, topic_title, subtopic_desc, claims, speaker_map)
+      if not llm_response:
+        continue
       crux = llm_response["crux"]["crux"]
       usage = llm_response["usage"]
      
@@ -1152,7 +1150,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
       # - topic & subctopic, description
       cruxes_main.append([crux_claim, explanation, named_agree,
         named_disagree, json.dumps(spoken_claims,indent=1),
-        topic_title, subtopic_desc, json.dumps(crux,indent=1)])
+        topic_title, subtopic_desc])
 
       TK_TOT += usage.total_tokens
       TK_IN += usage.prompt_tokens
@@ -1189,7 +1187,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
 
   crux_claims_only = [row[0] for row in crux_claims]
   top_cruxes = top_k_cruxes(full_controversy_matrix, crux_claims_only, req.top_k)
-  print("TOP CRUXES: ", top_cruxes)
+  print("Top cruxes: ", top_cruxes)
 
   # TODO: (later) render the image?
   # currently matplotlib requires a GUI to generate the plot — we don't want this on FastAPI
@@ -1206,16 +1204,17 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
                 "s4_cruxes/model" : req.llm.model_name,
                 "s4_cruxes/prompt" : req.llm.user_prompt
        })
-
       wandb.log({
         "U_tok_N/cruxes" : TK_TOT,
         "U_tok_in/cruxes": TK_IN,
         "U_tok_out/cruxes" : TK_OUT,
         "crux_details" : wandb.Table(data=cruxes_main,
-                                  columns=["crux", "reason", "agree", "disagree", "original_claims", "topic, subtopic", "description"]),
+                                  columns=["crux", "reason", "agree", "disagree", "original_claims", "topic, subtopic", "description"])}
+      )
+      wandb.log({
         "crux_binary_scores" : wandb.Table(data=cont_mat, columns = cols),
         "crux_cmat_scores" : wandb.Table(data=full_controversy_matrix,
-                      columns=["Crux " + str(i) for i in range(len(full_controversy_matrix))]),
+                      columns=["Crux " + str(i) for i in range(len(full_controversy_matrix))])
        # "cont_mat_img" : wandb.Image(filename)
       })
     except:
@@ -1226,15 +1225,14 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
                "completion_tokens" : TK_OUT}
 
   # TODO: clean up crux claims
-  clean_crux_claims = [{"cruxClaim" : c[0], "agree": c[1], "disagree" : c[2], "explanation" : c[3]} for c in crux_claims]
+  cruxes = [{"cruxClaim" : c[0], "agree": c[1], "disagree" : c[2], "explanation" : c[3]} for c in crux_claims]
 
   crux_response = {
-    "cruxClaims" : clean_crux_claims,
+    "cruxClaims" : cruxes,
     "controversyMatrix" : full_controversy_matrix,
     "topCruxes" : top_cruxes,
     "usage" : net_usage
   }
-  print(crux_response)
   return crux_response
 
 if __name__ == "__main__":

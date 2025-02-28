@@ -120,6 +120,12 @@ const setupPipelineWorker = (connection: Redis) => {
         top_k: 0
       });
       console.log(topCruxes);
+      // package crux addOns together
+      const cruxAddOns = {
+        topCruxes: topCruxes,
+        controversyMatrix : controversyMatrix,
+        cruxClaims: cruxClaims,
+      }
 
       console.log("Step 3: cleaning and sorting the taxonomy");
       await job.updateProgress({
@@ -177,6 +183,7 @@ const setupPipelineWorker = (connection: Redis) => {
         ...tracker,
         tree: newTax,
         data: options.data,
+        addOns: cruxAddOns,
       };
       const json = llmPipelineToSchema(llmPipelineOutput);
       await storeJSON(options.filename, JSON.stringify(json), true);
