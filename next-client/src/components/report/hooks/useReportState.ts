@@ -696,11 +696,11 @@ const makeTopicNode = (topic: schema.Topic): TopicNode => ({
   isOpen: false,
   pagination: Math.min(topic.subtopics.length - 1, defaultTopicPagination),
   children: topic.subtopics
-    .map(makeSubSubtopicNode)
+    .map(makeSubtopicNode)
     .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data])),
 });
 
-const makeSubSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
+const makeSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({
   _tag: "SubtopicNode",
   id: subtopic.id,
   data: subtopic,
