@@ -272,13 +272,13 @@ function ExpandTopic() {
       )}
       {subtopicNodes.map((node, i) => (
         <Col key={node.data.id}>
-          <Subtopic node={node} isOpen={isOpen && i + 1 <= pagination} />
+          <Subtopic node={node} isOpen={isOpen && i <= pagination} />
         </Col>
       ))}
       {isOpen && pagination <= subtopicNodes.length && (
         <>
           <ShowMoreButton
-            moreLeftNum={subtopicNodes.length - pagination}
+            moreLeftNum={subtopicNodes.length - 1 - pagination}
             topicId={data.id}
           />
         </>

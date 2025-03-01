@@ -7,7 +7,7 @@ import { useContext } from "react";
 
 function ClaimLoader({ subtopicNode }: { subtopicNode: SubtopicNode }) {
   const { dispatch } = useContext(ReportContext);
-  const remaining = subtopicNode.children.length - subtopicNode.pagination;
+  const remaining = subtopicNode.children.length - subtopicNode.pagination - 1;
   if (!remaining) return <></>;
   return (
     <div className="pl-4 sm:pl-8">

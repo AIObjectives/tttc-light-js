@@ -105,7 +105,7 @@ export function SubtopicClaims({
             <Claim
               key={claimNode.data.id}
               claimNode={claimNode}
-              show={i < subtopicNode.pagination}
+              show={i <= subtopicNode.pagination}
             />
           );
         })}
