@@ -57,6 +57,7 @@ type CSVErrors = z.infer<typeof CsvErrors>;
  */
 const sizeCheck = (buffer: ArrayBuffer): ArrayBuffer | SizeError => {
   const kiloByte = 1024;
+  // TODO: configure devprod filesize flag
   const maxSize = 150 * kiloByte;
   if (buffer.byteLength > maxSize) {
     return sizeError.parse({ tag: "Size Error" });

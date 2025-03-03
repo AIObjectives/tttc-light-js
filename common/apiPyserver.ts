@@ -25,6 +25,7 @@ export const pipelineSteps = z.enum([
   "topic_tree",
   "claims",
   "sort_claims_tree",
+  "cruxes",
 ]);
 export type PipelineSteps = z.infer<typeof pipelineSteps>;
 
@@ -179,13 +180,16 @@ export type TopicTreeResponse = z.infer<typeof topicTreeResponse>;
 //  * claims
 //  ********************************/
 
-export const claimsRequest = z.object({
-  tree: z.object({
-    taxonomy: partialTopic.array(),
-  }),
-  comments: comment.array(),
-  llm: llmConfig,
-});
+export const claimsRequest = z.object(
+  {
+    tree: z.object({
+      taxonomy: partialTopic.array(),
+    }),
+    comments: comment.array(),
+    llm: llmConfig,
+  },
+  { invalid_type_error: "Invalid claims request object" },
+);
 export type ClaimsRequest = z.infer<typeof claimsRequest>;
 
 export const claimsReply = z.object({
@@ -209,3 +213,49 @@ export const sortClaimsTreeResponse = z.object({
 });
 
 export type SortClaimsTreeResponse = z.infer<typeof sortClaimsTreeResponse>;
+
+//  ********************************
+//  * cruxes
+//  ********************************/
+
+/**
+ * Crux claim extraction in several formats
+ * - basic details of an extractec cruxClaim: LLM-generated crux claim,
+ *   lists of speakers who agree/disagree, LLM-generated explanation
+ * - controversy matrix: numeric scores for the cross-product of crux claims,
+ *   higher score is more controversial
+ * - human-readable cruxes: top K scores and corresponding crux pairs from the
+ *   controversy matrix
+ * - one cruxDetails object to package this together
+ */
+
+const cruxClaim = z.object({
+  cruxClaim: z.string(),
+  agree: z.array(z.string()),
+  disagree: z.array(z.string()),
+  explanation: z.string(),
+});
+
+const controversyMatrix = z.array(z.array(z.number()));
+
+const scoredCruxPair = z.object({
+  score: z.number(),
+  cruxA: z.string(),
+  cruxB: z.string(),
+});
+
+export const cruxesResponse = z.object({
+  cruxClaims: cruxClaim.array(),
+  controversyMatrix: controversyMatrix,
+  topCruxes: scoredCruxPair.array(),
+  usage,
+});
+
+export const cruxesRequest = z.object({
+  topics: partialTopic.array(),
+  crux_tree: claimsTree,
+  llm: llmConfig,
+  top_k: z.number(),
+});
+
+export type CruxesRequest = z.infer<typeof cruxesRequest>;
