@@ -36,10 +36,10 @@ const env = z.object({
       },
       {
         message:
-          process.env.NODE_ENV === "production" 
-            ? "PIPELINE_EXPRESS_URL must be a valid HTTPS URL in production" 
-            : "PIPELINE_EXPRESS_URL must be a valid URL"
-      }
+          process.env.NODE_ENV === "production"
+            ? "PIPELINE_EXPRESS_URL must be a valid HTTPS URL in production"
+            : "PIPELINE_EXPRESS_URL must be a valid URL",
+      },
     ),
 });
 

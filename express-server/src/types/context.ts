@@ -31,31 +31,29 @@ export const env = z.object({
     required_error: "Missing encoded GCloud credentials",
   }),
   // Basic URL validation - additional HTTPS check for prod will be done in validateEnv
-  CLIENT_BASE_URL: z.string()
-    .refine(
-      (url) => {
-        try {
-          new URL(url);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {message: "CLIENT_BASE_URL must be a valid URL"}
-    ),
+  CLIENT_BASE_URL: z.string().refine(
+    (url) => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "CLIENT_BASE_URL must be a valid URL" },
+  ),
   // Basic URL validation - additional HTTPS check for prod will be done in validateEnv
-  PYSERVER_URL: z.string()
-    .refine(
-      (url) => {
-        try {
-          new URL(url);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {message: "PYSERVER_URL must be a valid URL"}
-    ),
+  PYSERVER_URL: z.string().refine(
+    (url) => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "PYSERVER_URL must be a valid URL" },
+  ),
   NODE_ENV: z.union([z.literal("dev"), z.literal("prod")], {
     required_error: "Missing NODE_ENV (prod | dev)",
     invalid_type_error: "Invalid input for NODE_ENV",
@@ -96,7 +94,7 @@ export function validateEnv(): Env {
     if (!validatedEnv.CLIENT_BASE_URL.startsWith("https://")) {
       errors.push("CLIENT_BASE_URL must use HTTPS in production");
     }
-    
+
     if (!validatedEnv.PYSERVER_URL.startsWith("https://")) {
       errors.push("PYSERVER_URL must use HTTPS in production");
     }
@@ -109,7 +107,7 @@ export function validateEnv(): Env {
         .map((e, i) => {
           return `${i}) ${e} \n`;
         })
-        .join("")}`
+        .join("")}`,
     );
   }
 

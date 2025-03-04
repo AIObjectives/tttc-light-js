@@ -5,7 +5,12 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>, openaiAPIKey: string, isProd: boolean) => {
+  async (
+    url: string,
+    body: z.infer<T>,
+    openaiAPIKey: string,
+    isProd: boolean,
+  ) => {
     const fetchOptions: RequestInit = {
       method: "POST",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
@@ -45,7 +50,7 @@ export async function claimsPipelineStep(
     `${env.PYSERVER_URL}/claims`,
     input,
     openaiAPIKey,
-    env.NODE_ENV === "prod"
+    env.NODE_ENV === "prod",
   )
     .then((res) => res.json())
     .then(logger("claims step returns: "))
