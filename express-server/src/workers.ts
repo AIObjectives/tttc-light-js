@@ -117,7 +117,7 @@ const setupPipelineWorker = (connection: Redis) => {
 
       console.log("Step 2.5: Optionally extract cruxes");
       const { cruxClaims, controversyMatrix, topCruxes, usage } =
-        await cruxesPipelineStep(env, {
+        await cruxesPipelineStep(env, config.apiKey, {
           topics: taxonomy,
           crux_tree: claims_tree,
           llm: cruxesLLMConfig,

@@ -192,7 +192,7 @@ export const claimsRequest = z.object(
 );
 export type ClaimsRequest = z.infer<typeof claimsRequest>;
 
-export const claimsReply = z.object({
+export const claimsResponse = z.object({
   data: claimsTree,
   usage,
 });

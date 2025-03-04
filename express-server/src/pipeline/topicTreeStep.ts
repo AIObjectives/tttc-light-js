@@ -51,7 +51,7 @@ export async function topicTreePipelineStep(
   )
     .then((res) => res.json())
     .then(logger("topic tree step returns: "))
-    .then(apiPyserver.topicTreeReply.parse);
+    .then(apiPyserver.topicTreeResponse.parse);
 
   return { data, usage };
 }

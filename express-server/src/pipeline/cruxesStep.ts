@@ -5,14 +5,32 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>) =>
-    await fetch(url, {
-      method: "post",
+  async (
+    url: string,
+    body: z.infer<T>, 
+    openaiAPIKey: string,
+    isProd: boolean
+  ) => {
+    const fetchOptions: RequestInit = {
+      method: "POST",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
+        "openai-api-key": openaiAPIKey,
       },
-    });
+      // wait for up to 3.5 minutes for cruxes to process
+      // TODO: use message queue instead
+      signal: AbortSignal.timeout(210000),
+    };
+
+    // Explicitly set redirect to "follow" in production to ensure any server redirects
+    // (including potential HTTP to HTTPS redirects) are properly followed
+    if (isProd) {
+      fetchOptions.redirect = "follow";
+    }
+
+    return await fetch(url, fetchOptions);
+  };
 
 const pyserverFetchClaims = typedFetch(apiPyserver.cruxesRequest);
 
@@ -23,9 +41,18 @@ const logger =
     return arg;
   };
 
-export async function cruxesPipelineStep(env: Env, input: CruxesStep["data"]) {
+export async function cruxesPipelineStep(
+  env: Env,
+  openaiAPIKey: string,
+  input: CruxesStep["data"]
+) {
   const { cruxClaims, controversyMatrix, topCruxes, usage } =
-    await pyserverFetchClaims(`${env.PYSERVER_URL}/cruxes`, input)
+    await pyserverFetchClaims(
+      `${env.PYSERVER_URL}/cruxes`,
+      input,
+      openaiAPIKey,
+      env.NODE_ENV === "prod",
+    )
       .then((res) => res.json())
       .then(logger("cruxes step returns: "))
       .then(apiPyserver.cruxesResponse.parse);
