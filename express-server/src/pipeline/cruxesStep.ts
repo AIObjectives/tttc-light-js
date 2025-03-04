@@ -7,9 +7,9 @@ const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
   async (
     url: string,
-    body: z.infer<T>, 
+    body: z.infer<T>,
     openaiAPIKey: string,
-    isProd: boolean
+    isProd: boolean,
   ) => {
     const fetchOptions: RequestInit = {
       method: "POST",
@@ -44,7 +44,7 @@ const logger =
 export async function cruxesPipelineStep(
   env: Env,
   openaiAPIKey: string,
-  input: CruxesStep["data"]
+  input: CruxesStep["data"],
 ) {
   const { cruxClaims, controversyMatrix, topCruxes, usage } =
     await pyserverFetchClaims(
