@@ -1,10 +1,10 @@
-import Report from "@src/components/report/Report";
+import Report from "@/components/report/Report";
 import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import { z } from "zod";
-import ReportProgresss from "@src/components/reportProgress/ReportProgress";
-import Feedback from "@src/components/feedback/Feedback";
+import ReportProgresss from "@/components/reportProgress/ReportProgress";
+import Feedback from "@/components/feedback/Feedback";
 
 const waitingMessage = z.object({
   message: z.string(),

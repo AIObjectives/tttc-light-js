@@ -8,7 +8,7 @@ import {
 import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { z } from "zod";
-import { validatedServerEnv } from "@src/server-env";
+import { validatedServerEnv } from "@/server-env";
 
 const parseCSV = async (file: File): Promise<SourceRow[]> => {
   const buffer = await file.arrayBuffer();

@@ -2,9 +2,9 @@
 
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import { Col, Row } from "../layout";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import * as schema from "tttc-common/schema";
-import { useThemeColor } from "@src/lib/hooks/useTopicTheme";
+import { useThemeColor } from "@/lib/hooks/useTopicTheme";
 import { ReportContext } from "../report/Report";
 export type BarChartItemType = {
   id: string;

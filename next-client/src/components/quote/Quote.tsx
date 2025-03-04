@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Card, CardContent, Separator } from "../elements";
 import { Col, Row } from "../layout";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import * as schema from "tttc-common/schema";
-import { cn } from "@src/lib/utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 
 /**
  * Single quote - not wrapped in card.

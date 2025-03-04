@@ -1,5 +1,5 @@
 import { Inter as FontSans } from "next/font/google";
-import { cn } from "@utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 
 const fontSans = FontSans({
   subsets: ["latin"],

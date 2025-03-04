@@ -1,8 +1,8 @@
 "use client";
 
 import { RefObject, useEffect, useState } from "react";
-import { useIsVisible } from "@src/lib/hooks/useIsVisible";
-import useWindowDimensions from "@src/lib/hooks/useWindowDimensions";
+import { useIsVisible } from "@/lib/hooks/useIsVisible";
+import useWindowDimensions from "@/lib/hooks/useWindowDimensions";
 
 /**
  * Summary

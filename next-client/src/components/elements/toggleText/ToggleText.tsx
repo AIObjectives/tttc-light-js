@@ -1,6 +1,6 @@
 "use client";
-import Icons from "@src/assets/icons";
-import { Col, Row } from "@src/components/layout";
+import Icons from "@/assets/icons";
+import { Col, Row } from "@/components/layout";
 import React, {
   createContext,
   Dispatch,

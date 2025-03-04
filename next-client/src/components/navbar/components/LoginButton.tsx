@@ -9,12 +9,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@src/components/elements";
+} from "@/components/elements";
 import {
   signInWithGoogle,
   signOut,
   onAuthStateChanged,
-} from "@src/lib/firebase/auth";
+} from "@/lib/firebase/auth";
 import { User } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
