@@ -21,6 +21,7 @@ from pathlib import Path
 import sys
 from typing import Literal, List, Union
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware

@@ -267,12 +267,10 @@ def test_from_json(json_file="deepseek_10_1.json"):
 #-----------#
 client = TestClient(app)
 #test_from_json()
-
-#test_wb_cruxes_pipeline(fancy_scifi_15) #fancy_scifi_15)
+#test_wb_cruxes_pipeline(fancy_scifi_15)
 #test_topic_tree(fancy_scifi_10)
 #test_full_pipeline(fancy_scifi_10)
 #test_cruxes(pets_conflict)
-
 #test_full_pipeline(speaker_pets_3)
 #test_claims(longer_pets_15)
 #test_dupes()
