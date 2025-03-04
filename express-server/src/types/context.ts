@@ -24,21 +24,36 @@ class EnvValidationError extends Error {
 
 export const env = z.object({
   OPENAI_API_KEY: z.string({ required_error: "Missing OpenAI Key" }),
-  OPENAI_API_KEY_PASSWORD: z
-    .string({ invalid_type_error: "Invalid type for openapi key password" })
-    .optional(),
   GCLOUD_STORAGE_BUCKET: z.string({
     required_error: "Missing GCloud storage bucket",
   }),
   GOOGLE_CREDENTIALS_ENCODED: z.string({
     required_error: "Missing encoded GCloud credentials",
   }),
-  CLIENT_BASE_URL: z
-    .string({ required_error: "Missing CLIENT_BASE_URL" })
-    .url({ message: "PYSERVER_URL in env should be a valid url" }),
-  PYSERVER_URL: z
-    .string({ required_error: "Missing PYSERVER_URL" })
-    .url({ message: "PYSERVER_URL in env should be a valid url" }),
+  // Basic URL validation - additional HTTPS check for prod will be done in validateEnv
+  CLIENT_BASE_URL: z.string().refine(
+    (url) => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "CLIENT_BASE_URL must be a valid URL" },
+  ),
+  // Basic URL validation - additional HTTPS check for prod will be done in validateEnv
+  PYSERVER_URL: z.string().refine(
+    (url) => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "PYSERVER_URL must be a valid URL" },
+  ),
   NODE_ENV: z.union([z.literal("dev"), z.literal("prod")], {
     required_error: "Missing NODE_ENV (prod | dev)",
     invalid_type_error: "Invalid input for NODE_ENV",
@@ -50,24 +65,13 @@ export const env = z.object({
   FIREBASE_DATABASE_URL: z
     .string({ required_error: "Missing FIREBASE_DATABASE_URL" })
     .url({ message: "FIREBASE_DATABASE_URL in env should be a valid url" }),
-  // REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
-  // REDIS_PORT: z
-  //   .string({ required_error: "Missing REDIS_PORT" })
-  //   .refine(
-  //     (v) => {
-  //       let n = Number(v);
-  //       return !isNaN(n) && v?.length > 0;
-  //     },
-  //     { message: "REDIS_PORT should be a numberic string" },
-  //   )
-  //   .transform((numstr) => Number(numstr)),
   REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
 });
 
 export type Env = z.infer<typeof env>;
 
 /**
- * Parse Env
+ * Parse Env and perform additional validation
  */
 export function validateEnv(): Env {
   const parsed = env.safeParse(process.env);
@@ -81,5 +85,31 @@ export function validateEnv(): Env {
     );
   }
 
-  return parsed.data;
+  const validatedEnv = parsed.data;
+  const errors: string[] = [];
+
+  // Additional validation for production environment
+  if (validatedEnv.NODE_ENV === "prod") {
+    // Check that URLs use HTTPS in production
+    if (!validatedEnv.CLIENT_BASE_URL.startsWith("https://")) {
+      errors.push("CLIENT_BASE_URL must use HTTPS in production");
+    }
+
+    if (!validatedEnv.PYSERVER_URL.startsWith("https://")) {
+      errors.push("PYSERVER_URL must use HTTPS in production");
+    }
+  }
+
+  // Throw error if there are any validation failures
+  if (errors.length > 0) {
+    throw new EnvValidationError(
+      `❌ Additional environment validation failed: \n\n${errors
+        .map((e, i) => {
+          return `${i}) ${e} \n`;
+        })
+        .join("")}`,
+    );
+  }
+
+  return validatedEnv;
 }

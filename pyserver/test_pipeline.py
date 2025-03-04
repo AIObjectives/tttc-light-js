@@ -10,7 +10,6 @@ import visualize as vz
 ##################
 # Sample inputs  #
 #----------------#
-
 min_pets_1 = [{"id":"1", "text":"I love cats", "speaker" : "Alice"}]
 min_pets_3 = [{"id":"1", "text":"I love cats", "speaker" : "Alice"},{"id":"2","text":"dogs are great", "speaker": "Bob"},{"id":"3","text":"I'm not sure about birds", "speaker" : "Charles"}]
 pets_conflict = [{"id":"1", "text":"I love cats", "speaker" : "Alice"},{"id":"2","text":"dogs are great", "speaker": "Bob"},\
@@ -64,35 +63,52 @@ dupe_claims_4o_ids = {'Pets': {'total': 5, 'subtopics': {'Cats': {'total': 2, 'c
 
 dupe_claims_4o_speakers = {'Pets': {'total': 5, 'subtopics': {'Cats': {'total': 2, 'claims': [{'claim': 'Cats are the best household pets.', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'a', "speaker" : "Alice"}, {'claim': 'Cats are the best household pets.', 'quote': 'I really really love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'd', "speaker" : "Dany"}]}, 'Dogs': {'total': 1, 'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs', 'commentId': 'b', "speaker" : "Bob"}]}, 'Birds': {'total': 2, 'claims': [{'claim': 'Birds are not ideal pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'c', "speaker" : "Charles"}, {'claim': 'There is uncertainty about birds as pets.', 'quote': "I don't know about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'e', "speaker" : "Elinor"}]}}}}
 
+#################
+# Shared config #
+#---------------#
+# NOTE: gpt-4o-mini is cheaper/better for basic tests, but it fails on some very basic deduplication
+base_llm = {
+  "model_name" : "gpt-4o-mini",
+  "system_prompt": config.SYSTEM_PROMPT
+}
 
-
-# maximize readability
+# utils: maximize readability
 def json_print(json_obj):
   print(json.dumps(json_obj,indent=4))
+
+################
+# Auth & tests #
+#--------------#
+# set in env shell when running tests
+API_KEY = os.getenv('OPENAI_API_KEY')
+# various header cases
+valid_headers = {"openai-api-key" : API_KEY}
+bad_headers = {"openai-api-key" : "sk-proj-123456789"}
+no_headers = {}
 
 ###############
 # Basic tests #
 #-------------#
 
-def test_topic_tree(comments=min_pets_3):
+def test_topic_tree(comments=speaker_pets_3, headers=valid_headers):
   llm = base_llm
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments}
-  response = client.post("/topic_tree/", json=request)
+  response = client.post("/topic_tree/", json=request, headers=headers)
   json_print(response.json())
 
-def test_claims(comments=dupes_pets_5):
+def test_claims(comments=speaker_pets_3, headers=valid_headers):
   llm = base_llm
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : topic_tree_4o}
-  response = client.post("/claims/", json=request)
+  response = client.post("/claims/", json=request, headers=headers)
   print(json.dumps(response.json(), indent=4))
 
-def test_dupes(claims_tree=dupe_claims_4o_speakers):
+def test_dupes(claims_tree=dupe_claims_4o_speakers, headers=valid_headers):
   llm = base_llm
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
   request ={"llm" : llm, "tree" : claims_tree, "sort" : "numPeople"}
-  response = client.put("/sort_claims_tree/", json=request)
+  response = client.put("/sort_claims_tree/", json=request, headers=headers)
   print(json.dumps(response.json(), indent=4))
 
 def test_cruxes(comments=longer_pets_15):
@@ -123,60 +139,60 @@ def test_full_pipeline(comments=dupes_pets_5):
   llm.update({"model_name" : "gpt-4-turbo-preview"})
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
-  tree = client.post("/topic_tree/", json=request).json()["data"]
+  tree = client.post("/topic_tree/", json=request, headers=headers).json()["data"]
   json_print(tree)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :tree}}
-  claims = client.post("/claims/", json=request).json()["data"]
+  claims = client.post("/claims/", json=request, headers=headers).json()["data"]
   json_print(claims)
 
   print("\n\nStep 3: Dedup & sort\n\n")
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
   request ={"llm" : llm, "tree" : claims , "sort" : "numPeople"}
-  full_tree = client.put("/sort_claims_tree/", json=request)
+  full_tree = client.put("/sort_claims_tree/", json=request, headers=headers)
   print(json.dumps(full_tree.json(), indent=4))
 
 #################
 # W&B log tests #
 #---------------#
 
-def test_wb_topic_tree():
+def test_wb_topic_tree(comments=speaker_pets_3, headers=valid_headers):
   llm = base_llm
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
-  request ={"llm" : llm, "comments" : min_pets_3}
-  response = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request)
+  request ={"llm" : llm, "comments" : comments}
+  response = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request, headers=headers)
   json_print(response.json())
 
-def test_wb_claims():
+def test_wb_claims(headers=valid_headers):
   llm = base_llm
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : dupes_pets_5, "tree" : topic_tree_4o}
-  response = client.post("/claims/?log_to_wandb=local_test_0", json=request)
+  response = client.post("/claims/?log_to_wandb=local_test_0", json=request, headers=headers)
   json_print(response.json())
 
-def test_wb_dupes():
+def test_wb_dupes(headers=valid_headers):
   llm = base_llm
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
   request ={"llm" : llm, "tree" : dupe_claims_4o_ids}
-  response = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request)
+  response = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request, headers=headers)
   json_print(response.json())
 
-def test_wb_full_pipeline(comments=dupes_pets_5):
+def test_wb_full_pipeline(comments=speaker_pets_3, headers=valid_headers):
   print("Step 1: Topic tree\n\n")
   llm = base_llm
   # fancier model for more precise deduplication
   llm.update({"model_name" : "gpt-4o"})
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
-  tree = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request).json()["data"]
+  tree = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request, headers=headers).json()["data"]
   json_print(tree)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :tree}}
-  claims = client.post("/claims/?log_to_wandb=local_test_0", json=request).json()["data"]
+  claims = client.post("/claims/?log_to_wandb=local_test_0", json=request, headers=headers).json()["data"]
   json_print(claims)
 
   print("\n\nStep 3: Dedup & sort\n\n")
@@ -251,16 +267,18 @@ def test_from_json(json_file="deepseek_10_1.json"):
 #-----------#
 client = TestClient(app)
 #test_from_json()
-
-#test_wb_cruxes_pipeline(fancy_scifi_15) #fancy_scifi_15)
+#test_wb_cruxes_pipeline(fancy_scifi_15)
 #test_topic_tree(fancy_scifi_10)
 #test_full_pipeline(fancy_scifi_10)
 #test_cruxes(pets_conflict)
-
-test_full_pipeline(speaker_pets_3)
+#test_full_pipeline(speaker_pets_3)
 #test_claims(longer_pets_15)
 #test_dupes()
+#test_claims(headers=valid_headers)
+#test_dupes(headers=bad_headers)
+#test_full_pipeline(longer_pets_15, headers=bad_headers)
 
+#test_wb_topic_tree(headers=bad_headers)
 #test_topic_tree(speaker_pets_3)
 #test_claims()
 #test_dupes()
@@ -269,7 +287,7 @@ test_full_pipeline(speaker_pets_3)
 #test_wb_topic_tree()
 #test_wb_claims()
 #test_wb_dupes()
-#test_wb_full_pipeline(longer_pets_15)
+#test_wb_full_pipeline(longer_pets_15, headers=valid_headers)
 
 # TODO: test with edge case inputs
 # TODO: add assertions

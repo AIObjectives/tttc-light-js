@@ -10,7 +10,7 @@ To run the T3C pipeline with a local front-end & backend server, as well as a Py
 
 0. Pull the latest `main`, then go to `common` and run `npm i && npm run build`.
 1. Client-side: edit `next-client/.env` to add `export PIPELINE_EXPRESS_URL=http://localhost:8080/`.
-2. Server-side: edit `express-server/.env` to add your OpenAI/Anthropic/GCS keys (needs `export OPENAI_API_KEY=[your key here]` and `export OPENAI_API_KEY_PASSWORD=`).
+2. Server-side: edit `express-server/.env` to add your OpenAI/Anthropic/GCS keys (needs `export OPENAI_API_KEY=[your key here]`).
 3. Python FastAPI LLM interface: run the following
    ```
    brew install redis
