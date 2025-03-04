@@ -7,7 +7,9 @@ const { GOOGLE_CREDENTIALS_ENCODED, GCLOUD_STORAGE_BUCKET } = env;
 
 let storage: any;
 if (GOOGLE_CREDENTIALS_ENCODED) {
-  const decoded = Buffer.from(GOOGLE_CREDENTIALS_ENCODED, "base64").toString("utf-8");
+  const decoded = Buffer.from(GOOGLE_CREDENTIALS_ENCODED, "base64").toString(
+    "utf-8",
+  );
   storage = new Storage({ credentials: JSON.parse(decoded) });
 }
 
