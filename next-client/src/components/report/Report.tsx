@@ -19,18 +19,19 @@ import {
   TextIcon,
   ToggleText,
 } from "../elements";
-import Icons from "@assets/icons";
+import Icons from "@/assets/icons";
 import { getNPeople } from "tttc-common/morphisms";
 import useReportState, { ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
-import { cn } from "@src/lib/utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 import Outline from "../outline/Outline";
 import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
-import { useHashChange } from "@src/lib/hooks/useHashChange";
+import { useHashChange } from "@/lib/hooks/useHashChange";
 import { BarChart, BarChartItemType } from "../barchart/Barchart";
+import { toast } from "sonner";
 
 const ToolBarFrame = ({
   children,
@@ -118,7 +119,13 @@ export const ReportContext = createContext<{
 /**
  * Report feature
  */
-function Report({ reportData }: { reportData: schema.ReportDataObj }) {
+function Report({
+  reportData,
+  reportUri,
+}: {
+  reportData: schema.UIReportData;
+  reportUri: string;
+}) {
   // Report State reducer
   const [state, _dispatch] = useReportState(reportData.topics);
   // url hash
@@ -160,10 +167,17 @@ function Report({ reportData }: { reportData: schema.ReportDataObj }) {
         <ReportLayout
           Report={
             <Col gap={4} className="px-3">
-              <ReportHeader reportData={reportData} />
+              <ReportHeader
+                topics={reportData.topics}
+                date={reportData.date}
+                title={reportData.title}
+                description={reportData.description}
+                questionAnswers={reportData.questionAnswers}
+              />
               {state.children.map((themeNode) => (
                 <Theme key={themeNode.data.id} node={themeNode} />
               ))}
+              <Appendix filename={reportData.title} reportUri={reportUri} />
             </Col>
           }
           ToolBar={<ReportToolbar />}
@@ -192,14 +206,14 @@ export function ReportToolbar() {
       <Row gap={2}>
         {/* Close all button */}
         <Button
-          onClick={() => dispatch({ type: "closeAll", payload: { id: "" } })}
+          onClick={() => dispatch({ type: "closeAll" })}
           variant={"outline"}
         >
           Collapse all
         </Button>
         {/* Open all button  */}
         <Button
-          onClick={() => dispatch({ type: "openAll", payload: { id: "" } })}
+          onClick={() => dispatch({ type: "openAll" })}
           variant={"secondary"}
         >
           Expand all
@@ -213,21 +227,28 @@ export function ReportToolbar() {
  * Header for Report that has some summary details.
  */
 export function ReportHeader({
-  reportData,
+  topics: themes,
+  date,
+  title,
+  description,
+  questionAnswers,
 }: {
-  reportData: schema.ReportDataObj;
+  topics: schema.Topic[];
+  date: string;
+  title: string;
+  description: string;
+  questionAnswers?: schema.QuestionAnswer[];
 }) {
-  const themes = reportData.topics;
   const topics = themes.flatMap((theme) => theme.subtopics);
   const claims = topics.flatMap((topic) => topic.claims);
   const nPeople = getNPeople(claims);
-  const dateStr = reportData.date;
+  const dateStr = date;
   return (
     <CardContent>
       <Col gap={8}>
         {/* Contains title and basic overview stats */}
         <ReportIntro
-          title={reportData.title}
+          title={title}
           nThemes={themes.length}
           nTopics={topics.length}
           nClaims={claims.length}
@@ -235,9 +256,12 @@ export function ReportHeader({
           dateStr={dateStr}
         />
         {/* Summary */}
-        <ReportSummary reportData={reportData} />
+        <ReportSummary
+          description={description}
+          questionAnswers={questionAnswers}
+        />
         {/* Overview */}
-        <ReportOverview topics={reportData.topics} />
+        <ReportOverview topics={themes} />
       </Col>
     </CardContent>
   );
@@ -357,11 +381,12 @@ export function ReportInfo() {
 }
 
 export function ReportSummary({
-  reportData,
+  description,
+  questionAnswers,
 }: {
-  reportData: schema.ReportDataObj;
+  description: string;
+  questionAnswers?: schema.QuestionAnswer[];
 }) {
-  const { description, questionAnswers } = reportData;
   return (
     <Col gap={3}>
       {/* Summary Title */}
@@ -407,6 +432,58 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
     <Col gap={3}>
       <h4>Overview</h4>
       <BarChart entries={getBarChartEntries(topics)} />
+    </Col>
+  );
+}
+
+function Appendix({
+  reportUri,
+  filename,
+}: {
+  reportUri: string;
+  filename: string;
+}) {
+  const handleDownload = async () => {
+    console.log(reportUri);
+    try {
+      const fetchUrl = `/api/report/download/${encodeURIComponent(reportUri)}`;
+      const response = await fetch(fetchUrl, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        toast.error("An error occured: could not download report data");
+        return;
+      }
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename + "-" + Date.now();
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      toast.error(
+        `Failed to download report data: ${(error as Error).message}`,
+      );
+    }
+  };
+
+  return (
+    <Col className="p-8" gap={1}>
+      <p className="p-medium">Appendix</p>
+      <p
+        className="text-muted-foreground underline cursor-pointer"
+        onClick={handleDownload}
+      >
+        Download report in JSON
+      </p>
     </Col>
   );
 }

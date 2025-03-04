@@ -3,12 +3,12 @@
 import {
   ReportState,
   SomeNode,
-} from "@src/components/report/hooks/useReportState";
+} from "@/components/report/hooks/useReportState";
 import {
   useThemeColor,
   TextClass,
   TextHoverClass,
-} from "@src/lib/hooks/useTopicTheme";
+} from "@/lib/hooks/useTopicTheme";
 import assert from "assert";
 import { Dispatch, useReducer } from "react";
 import * as schema from "tttc-common/schema";
@@ -270,31 +270,31 @@ const outlineStateBuilder = (
         : undefined,
   }));
 
-type OutlineStateActionTypes =
-  | "open"
-  | "close"
-  | "toggle"
-  | "openAll"
-  | "closeAll"
-  | "highlight";
-
-type OoutlineStatePayload = { id: string };
-
-export type OutlineStateAction = {
-  type: OutlineStateActionTypes;
-  payload: OoutlineStatePayload;
+type OutlineStateActionsWithId = {
+  type: "open" | "close" | "toggle" | "highlight";
+  payload: { id: string };
 };
 
+type OutlineStateActionsWithoutId = {
+  type: "openAll" | "closeAll";
+};
+
+export type OutlineStateAction =
+  | OutlineStateActionsWithId
+  | OutlineStateActionsWithoutId;
+
 function reducer(state: OutlineTree, action: OutlineStateAction): OutlineTree {
-  const { id } = action.payload;
   switch (action.type) {
     case "open": {
+      const { id } = action.payload;
       return open(state, id);
     }
     case "close": {
+      const { id } = action.payload;
       return close(state, id);
     }
     case "toggle": {
+      const { id } = action.payload;
       return toggle(state, id);
     }
     case "openAll": {
@@ -304,6 +304,7 @@ function reducer(state: OutlineTree, action: OutlineStateAction): OutlineTree {
       return closeAll(state);
     }
     case "highlight": {
+      const { id } = action.payload;
       return highlight(state, id);
     }
     default: {

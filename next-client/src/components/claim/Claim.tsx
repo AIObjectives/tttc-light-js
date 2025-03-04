@@ -1,5 +1,5 @@
 import React, { useContext, useRef, useState } from "react";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { Col, Row } from "../layout";
 import { ClaimNode } from "../report/hooks/useReportState";
@@ -14,7 +14,7 @@ import {
 import * as schema from "tttc-common/schema";
 import { Quote } from "../quote/Quote";
 import { getQuotes } from "tttc-common/morphisms";
-import useOutsideClick from "@src/lib/hooks/useOutsideClick";
+import useOutsideClick from "@/lib/hooks/useOutsideClick";
 
 function Claim({ claimNode, show }: { claimNode: ClaimNode; show: boolean }) {
   const data = claimNode.data;

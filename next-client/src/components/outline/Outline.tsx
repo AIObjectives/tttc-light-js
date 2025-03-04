@@ -1,7 +1,7 @@
 "use client";
 
 import { TextIcon } from "../elements";
-import Icons from "@assets/icons";
+import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
 import { Dispatch, createContext, useContext } from "react";
 import { ReportContext } from "../report/Report";
@@ -35,20 +35,43 @@ function Outline({
 
   // When Report State dispatch is called, outline state should dispatch some action
   useReportEffect((action) => {
-    const ReportToOutlineActionMap: Partial<
-      Record<ReportStateAction["type"], OutlineStateAction["type"]>
-    > = {
-      open: "open",
-      openAll: "openAll",
-      close: "close",
-      closeAll: "closeAll",
-      toggleTopic: "toggle",
-      focus: "highlight",
+    const matchAction = (
+      action: ReportStateAction,
+    ): OutlineStateAction | null => {
+      switch (action.type) {
+        case "open":
+        case "close": {
+          return {
+            type: action.type,
+            payload: action.payload,
+          };
+        }
+        case "toggleTopic": {
+          return {
+            type: "toggle",
+            payload: action.payload,
+          };
+        }
+        case "closeAll":
+        case "openAll": {
+          return {
+            type: action.type,
+          };
+        }
+        case "focus": {
+          return {
+            type: "highlight",
+            payload: action.payload,
+          };
+        }
+        default: {
+          return null;
+        }
+      }
     };
-
-    const outlineAction = ReportToOutlineActionMap[action.type];
+    const outlineAction = matchAction(action);
     if (!outlineAction) return;
-    dispatch({ type: outlineAction, payload: action.payload });
+    dispatch(outlineAction);
   });
 
   return (

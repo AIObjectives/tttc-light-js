@@ -1,8 +1,8 @@
-import { nextTypography } from "@src/lib/font";
-import Navbar from "@components/navbar/Navbar";
-import { Toaster } from "@src/components/elements";
+import { nextTypography } from "@/lib/font";
+import Navbar from "@/components/navbar/Navbar";
+import { Toaster } from "@/components/elements";
 import "./global.css";
-import { getAuthenticatedAppForUser } from "@src/lib/firebase/serverApp";
+import { getAuthenticatedAppForUser } from "@/lib/firebase/serverApp";
 
 export const dynamic = "force-dynamic";
 

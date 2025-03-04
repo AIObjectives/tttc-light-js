@@ -70,6 +70,7 @@ export const llmUserConfig = z.object({
   clusteringInstructions: z.string().min(1),
   extractionInstructions: z.string().min(1),
   dedupInstructions: z.string().min(1),
+  cruxInstructions: z.string().optional(),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
@@ -94,6 +95,7 @@ export const oldOptions = z.object({
   clusteringInstructions: z.string(),
   extractionInstructions: z.string(),
   dedupInstructions: z.string(),
+  cruxInstructions: z.string().optional(),
   batchSize: z.number(),
   filename: z.string(),
   googleSheet: z
@@ -167,6 +169,40 @@ export const taxonomy = z.array(llmTopic);
 
 export type Taxonomy = z.infer<typeof taxonomy>;
 
+/********************************
+ * Addons
+ * Extra data that can be attached for special features
+ ********************************/
+
+export const crux = z.object({
+  score: z.number(),
+  cruxA: z.string(),
+  cruxB: z.string(),
+});
+
+export type Crux = z.infer<typeof crux>;
+
+const controversyMatrix = z.array(z.number()).array();
+
+export type ControversyMatrix = z.infer<typeof controversyMatrix>;
+
+export const cruxClaim = z.object({
+  cruxClaim: z.string(),
+  agree: z.array(z.string()),
+  disagree: z.array(z.string()),
+  explanation: z.string(),
+});
+
+export type CruxClaim = z.infer<typeof cruxClaim>;
+
+export const addOns = z.object({
+  topCruxes: crux.array().optional(),
+  controversyMatrix: controversyMatrix.optional(),
+  cruxClaims: cruxClaim.array().optional(),
+});
+
+export type AddOns = z.infer<typeof addOns>;
+
 export const llmPipelineOutput = z.object({
   data: z.array(sourceRow),
   title: z.string(),
@@ -182,6 +218,7 @@ export const llmPipelineOutput = z.object({
   costs: z.number(),
   end: z.number().optional(),
   duration: z.string().optional(),
+  addOns: addOns.optional(),
 });
 
 export type LLMPipelineOutput = z.infer<typeof llmPipelineOutput>;
@@ -396,6 +433,7 @@ export const reportDataObj = z.object({
   title: z.string(),
   description: z.string(),
   questionAnswers: z.optional(questionAnswer.array()),
+  addOns: addOns.optional(),
   topics: z.array(topic).transform((topics) =>
     topics.sort((a, b) => {
       const setSpeakersA = new Set(
@@ -540,3 +578,29 @@ export const pipelineOutput = z.object({
 });
 
 export type PipelineOutput = z.infer<typeof pipelineOutput>;
+
+/********************************
+ * UI Report
+ * Data needed only to display a report
+ ********************************/
+
+export const uiReportData = reportDataObj.omit({ sources: true });
+
+export type UIReportData = z.infer<typeof uiReportData>;
+
+/********************************
+ * Downloaded report
+ * When a user downloads a report, it gives a partial report object with some extra metadata
+ ********************************/
+
+const downloadReportSchema_v1 = z.tuple([
+  z.literal("v0.2"),
+  z.object({
+    data: z.tuple([z.literal("v0.2"), uiReportData]),
+    downloadTimestamp: z.number(),
+  }),
+]);
+
+export const downloadReportSchema = downloadReportSchema_v1;
+
+export type DownloadDataReportSchema = z.infer<typeof downloadReportSchema>;

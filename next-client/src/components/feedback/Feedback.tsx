@@ -10,11 +10,11 @@ import {
   DialogTrigger,
   TextArea,
 } from "../elements";
-import { useUser } from "@src/lib/hooks/getUser";
-import { feedbackResponse } from "@src/lib/types/clientRoutes";
+import { useUser } from "@/lib/hooks/getUser";
+import { feedbackResponse } from "@/lib/types/clientRoutes";
 import { toast } from "sonner";
-import Icons from "@assets/icons";
-import { cn } from "@src/lib/utils/shadcn";
+import Icons from "@/assets/icons";
+import { cn } from "@/lib/utils/shadcn";
 
 export default function Feedback({ className }: { className?: string }) {
   return (

@@ -15,7 +15,7 @@ import {
   IsLoading,
   NotStarted,
   useAsyncState,
-} from "@src/lib/hooks/useAsyncState";
+} from "@/lib/hooks/useAsyncState";
 import Papa from "papaparse";
 import * as schema from "tttc-common/schema";
 import { z, SafeParseReturnType } from "zod";
@@ -57,6 +57,7 @@ type CSVErrors = z.infer<typeof CsvErrors>;
  */
 const sizeCheck = (buffer: ArrayBuffer): ArrayBuffer | SizeError => {
   const kiloByte = 1024;
+  // TODO: configure devprod filesize flag
   const maxSize = 150 * kiloByte;
   if (buffer.byteLength > maxSize) {
     return sizeError.parse({ tag: "Size Error" });

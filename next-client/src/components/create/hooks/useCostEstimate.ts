@@ -9,7 +9,7 @@
 
 import * as schema from "tttc-common/schema";
 import { useParseCsv } from "./useParseCSV";
-// import { useReactiveValue } from "@src/lib/hooks/useReactiveValue";
+// import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
 
 /**
  * Number of char chracters in a 1mb string

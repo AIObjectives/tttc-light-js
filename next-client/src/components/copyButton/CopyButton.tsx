@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "../elements";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import { ReactNode } from "react";
 import { toast } from "sonner";
 

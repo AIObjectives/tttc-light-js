@@ -1,4 +1,4 @@
-import { Col } from "@src/components/layout";
+import { Col } from "@/components/layout";
 import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
 

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES5",
+    "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -15,11 +15,7 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@src/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@utils/*": ["./src/lib/utils/*"],
-      "@assets/*": ["./src/assets/*"],
-      "@types/*": ["./src/types/*"]
+      "@/*": ["./src/*"]
     },
     "incremental": true,
     "plugins": [
@@ -39,7 +35,8 @@
     "../express-server/test_local.ts",
     "../express-server/src/styles.ts",
     "env-check.js",
-    ".storybook/miscStories/Typography.stories.tsx"
+    ".storybook/miscStories/Typography.stories.tsx",
+    "vitest.config.mts"
   ],
   "exclude": ["node_modules"]
 }

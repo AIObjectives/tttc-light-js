@@ -1,5 +1,5 @@
 "use client";
-import CreateReport from "@src/components/create/CreateReport";
+import CreateReport from "@/components/create/CreateReport";
 import React from "react";
 
 export default function ReportCreationPage() {

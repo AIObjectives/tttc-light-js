@@ -1,6 +1,6 @@
 "use client";
 
-import { TopicContext } from "@src/components/topic/Topic";
+import { TopicContext } from "@/components/topic/Topic";
 import { useContext } from "react";
 import * as schema from "tttc-common/schema";
 

@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@src/components/elements";
-import { SubtopicNode } from "@src/components/report/hooks/useReportState";
-import { ReportContext } from "@src/components/report/Report";
+import { Button } from "@/components/elements";
+import { SubtopicNode } from "@/components/report/hooks/useReportState";
+import { ReportContext } from "@/components/report/Report";
 import { useContext } from "react";
 
 function ClaimLoader({ subtopicNode }: { subtopicNode: SubtopicNode }) {
   const { dispatch } = useContext(ReportContext);
-  const remaining = subtopicNode.children.length - subtopicNode.pagination;
+  const remaining = subtopicNode.children.length - subtopicNode.pagination - 1;
   if (!remaining) return <></>;
   return (
     <div className="pl-4 sm:pl-8">

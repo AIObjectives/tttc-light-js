@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, Separator, TextIcon } from "../elements";
 import { Col, Row } from "../layout";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import { ReportRef } from "tttc-common/firebase";
 import Link from "next/link";
 

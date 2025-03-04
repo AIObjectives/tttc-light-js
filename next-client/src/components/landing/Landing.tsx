@@ -7,12 +7,9 @@ import {
   Card,
   CardContent,
 } from "../elements";
-import Icons from "@src/assets/icons";
-import {
-  BackgroundAccentClass,
-  BorderClass,
-} from "@src/lib/hooks/useTopicTheme";
-import LandingHero from "@src/assets/hero/LandingHero";
+import Icons from "@/assets/icons";
+import { BackgroundAccentClass, BorderClass } from "@/lib/hooks/useTopicTheme";
+import LandingHero from "@/assets/hero/LandingHero";
 import Image from "next/image";
 
 export default function Landing() {

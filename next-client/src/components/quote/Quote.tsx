@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Card, CardContent, Separator } from "../elements";
 import { Col, Row } from "../layout";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import * as schema from "tttc-common/schema";
-import { cn } from "@src/lib/utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 
 /**
  * Single quote - not wrapped in card.
@@ -115,7 +115,10 @@ const formatLink = (link: string, beginTimestamp: string) => {
 
 const formatVimeoNonEmbeddedLink = (link: string, beginTimestamp: string) => {
   const url = new URL(link);
-  return `https://player.vimeo.com/video${url.pathname}#t=${beginTimestamp}`;
+  const idNum = url.pathname
+    .split("/")
+    .find((segment) => /^[0-9]+$/.test(segment));
+  return `https://player.vimeo.com/video/${idNum || ""}#t=${beginTimestamp}`;
 };
 
 const formatVimeoLink = (link: string, beginTimestamp: string) =>

@@ -12,7 +12,10 @@ const typedFetch =
       headers: {
         "Content-Type": "application/json",
         "openai-api-key": openaiAPIKey,
-      }
+      },
+      // wait for 7 minutes for full claims list
+      // TODO: use message queue instead
+      signal: AbortSignal.timeout(420000),
     };
 
     // Explicitly set redirect to "follow" in production to ensure any server redirects

@@ -16,7 +16,7 @@ import {
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
 import Subtopic, { SubtopicHeader } from "../subtopic/Subtopic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
@@ -24,7 +24,7 @@ import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { ReportContext } from "../report/Report";
 import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
-import { useThemeColor } from "@src/lib/hooks/useTopicTheme";
+import { useThemeColor } from "@/lib/hooks/useTopicTheme";
 
 type TopicContextType = {
   topicNode: TopicNode;
@@ -272,13 +272,13 @@ function ExpandTopic() {
       )}
       {subtopicNodes.map((node, i) => (
         <Col key={node.data.id}>
-          <Subtopic node={node} isOpen={isOpen && i + 1 <= pagination} />
+          <Subtopic node={node} isOpen={isOpen && i <= pagination} />
         </Col>
       ))}
       {isOpen && pagination <= subtopicNodes.length && (
         <>
           <ShowMoreButton
-            moreLeftNum={subtopicNodes.length - pagination}
+            moreLeftNum={subtopicNodes.length - 1 - pagination}
             topicId={data.id}
           />
         </>
