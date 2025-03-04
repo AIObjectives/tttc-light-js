@@ -1,4 +1,4 @@
-import { cn } from "@src/lib/utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 import React from "react";
 
 function TextIcon({

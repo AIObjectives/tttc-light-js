@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { cn } from "@src/lib/utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 
 export function ExpandableText(
   props: React.HTMLAttributes<HTMLParagraphElement>,

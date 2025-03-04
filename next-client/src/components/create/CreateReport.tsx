@@ -20,9 +20,9 @@ import {
   TextArea,
 } from "../elements";
 import { Input } from "../elements";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import { useCostEstimate } from "./hooks/useCostEstimate";
-import { useReactiveValue } from "@src/lib/hooks/useReactiveValue";
+import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
 import { useParseCsv } from "./hooks/useParseCSV";
 import { toast } from "sonner";
 import {
@@ -36,18 +36,18 @@ import {
   AlertDialogCancel,
 } from "../elements/alertDialog/AlertDialog";
 import Form from "next/form";
-import submitAction from "@src/features/submission/actions/SubmitAction";
+import submitAction from "@/features/submission/actions/SubmitAction";
 import { z } from "zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cn } from "@src/lib/utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 import * as prompts from "tttc-common/prompts";
-import { useUser } from "@src/lib/hooks/getUser";
-import { useAsyncState } from "@src/lib/hooks/useAsyncState";
+import { useUser } from "@/lib/hooks/getUser";
+import { useAsyncState } from "@/lib/hooks/useAsyncState";
 import { User } from "firebase/auth";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
-import { signInWithGoogle } from "@src/lib/firebase/auth";
+import { signInWithGoogle } from "@/lib/firebase/auth";
 
 const fetchToken = async (
   user: User | null,

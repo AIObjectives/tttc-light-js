@@ -1,7 +1,7 @@
 "use client";
 
 import { TextIcon } from "../elements";
-import Icons from "@assets/icons";
+import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
 import { Dispatch, createContext, useContext } from "react";
 import { ReportContext } from "../report/Report";

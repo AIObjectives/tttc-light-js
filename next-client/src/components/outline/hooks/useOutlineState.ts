@@ -3,12 +3,12 @@
 import {
   ReportState,
   SomeNode,
-} from "@src/components/report/hooks/useReportState";
+} from "@/components/report/hooks/useReportState";
 import {
   useThemeColor,
   TextClass,
   TextHoverClass,
-} from "@src/lib/hooks/useTopicTheme";
+} from "@/lib/hooks/useTopicTheme";
 import assert from "assert";
 import { Dispatch, useReducer } from "react";
 import * as schema from "tttc-common/schema";

@@ -1,6 +1,6 @@
-import { addFeedback } from "@src/lib/firebase/firestore";
-import { getUnauthenticatedApp } from "@src/lib/firebase/serverApp";
-import { feedbackRequest } from "@src/lib/types/clientRoutes";
+import { addFeedback } from "@/lib/firebase/firestore";
+import { getUnauthenticatedApp } from "@/lib/firebase/serverApp";
+import { feedbackRequest } from "@/lib/types/clientRoutes";
 import { getFirestore } from "firebase/firestore";
 import { NextResponse } from "next/server";
 

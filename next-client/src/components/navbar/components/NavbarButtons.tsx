@@ -1,6 +1,6 @@
 "use client";
 
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import {
   Button,
   Select,
@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../elements";
-import { Row } from "@src/components/layout";
+import { Row } from "@/components/layout";
 import Link from "next/link";
 
 export function Headline() {

@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@src/components/elements";
-import { SubtopicNode } from "@src/components/report/hooks/useReportState";
-import { ReportContext } from "@src/components/report/Report";
+import { Button } from "@/components/elements";
+import { SubtopicNode } from "@/components/report/hooks/useReportState";
+import { ReportContext } from "@/components/report/Report";
 import { useContext } from "react";
 
 function ClaimLoader({ subtopicNode }: { subtopicNode: SubtopicNode }) {

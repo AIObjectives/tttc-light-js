@@ -19,17 +19,17 @@ import {
   TextIcon,
   ToggleText,
 } from "../elements";
-import Icons from "@assets/icons";
+import Icons from "@/assets/icons";
 import { getNPeople } from "tttc-common/morphisms";
 import useReportState, { ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
-import { cn } from "@src/lib/utils/shadcn";
+import { cn } from "@/lib/utils/shadcn";
 import Outline from "../outline/Outline";
 import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
-import { useHashChange } from "@src/lib/hooks/useHashChange";
+import { useHashChange } from "@/lib/hooks/useHashChange";
 import { BarChart, BarChartItemType } from "../barchart/Barchart";
 import { toast } from "sonner";
 

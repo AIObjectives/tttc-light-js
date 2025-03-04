@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { ReportState } from "@src/components/report/hooks/useReportState";
+import { ReportState } from "@/components/report/hooks/useReportState";
 
 // Helper to get specific differences between objects
 function getDifferences(

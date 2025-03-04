@@ -16,7 +16,7 @@ import {
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
 import Subtopic, { SubtopicHeader } from "../subtopic/Subtopic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
@@ -24,7 +24,7 @@ import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { ReportContext } from "../report/Report";
 import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
-import { useThemeColor } from "@src/lib/hooks/useTopicTheme";
+import { useThemeColor } from "@/lib/hooks/useTopicTheme";
 
 type TopicContextType = {
   topicNode: TopicNode;

@@ -1,6 +1,6 @@
-import { Card, CardContent } from "@src/components/elements";
-import { Col } from "@src/components/layout";
-import { QuoteText } from "@src/components/quote/Quote";
+import { Card, CardContent } from "@/components/elements";
+import { Col } from "@/components/layout";
+import { QuoteText } from "@/components/quote/Quote";
 import React from "react";
 
 /**

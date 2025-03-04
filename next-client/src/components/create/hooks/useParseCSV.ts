@@ -15,7 +15,7 @@ import {
   IsLoading,
   NotStarted,
   useAsyncState,
-} from "@src/lib/hooks/useAsyncState";
+} from "@/lib/hooks/useAsyncState";
 import Papa from "papaparse";
 import * as schema from "tttc-common/schema";
 import { z, SafeParseReturnType } from "zod";

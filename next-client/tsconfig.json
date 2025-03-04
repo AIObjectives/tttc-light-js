@@ -15,11 +15,7 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@src/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@utils/*": ["./src/lib/utils/*"],
-      "@assets/*": ["./src/assets/*"],
-      "@types/*": ["./src/types/*"]
+      "@/*": ["./src/*"]
     },
     "incremental": true,
     "plugins": [

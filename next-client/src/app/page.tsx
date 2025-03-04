@@ -1,4 +1,4 @@
-import Landing from "@src/components/landing/Landing";
+import Landing from "@/components/landing/Landing";
 
 export function generateStaticParams() {
   return [{ slug: [""] }];

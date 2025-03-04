@@ -5,7 +5,7 @@ import { ExpandableText, Separator, TextIcon } from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import Claim from "../claim/Claim";
 import { Col, Row } from "../layout";
-import Icons from "@src/assets/icons";
+import Icons from "@/assets/icons";
 import ClaimLoader from "./components/ClaimLoader";
 import { getNPeople } from "tttc-common/morphisms";
 import { ReportContext } from "../report/Report";
