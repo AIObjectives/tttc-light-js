@@ -228,7 +228,7 @@ const OrgCard = ({
 }) => (
   <Col
     gap={3}
-    className={`flex-1 py-4 px-[18px] ${backgroundColor} ${borderColor} border-[1px]`}
+    className={`flex-1 py-4 px-[18px] ${backgroundColor} ${borderColor} border-[1px] rounded-sm`}
   >
     <p className="p-medium">{title}</p>
     <ul className="list-disc pl-4 flex-grow">
