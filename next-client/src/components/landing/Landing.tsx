@@ -297,8 +297,8 @@ const NumSignpost = ({
   num: number;
 }) => (
   <div
-    className={`h-6 w-6 rounded-sm ${borderColor} ${backgroundColor} border-[1px]`}
+    className={`h-6 w-6 rounded-sm ${borderColor} ${backgroundColor} border-[1px] flex`}
   >
-    <p className="p-medium justify-self-center">{num}</p>
+    <p className="p-medium mx-auto">{num}</p>
   </div>
 );
