@@ -1,6 +1,7 @@
 // This should remain on the server
 import "server-only";
 import { z } from "zod";
+import { createUrlValidator } from "../../express-server/src/types/context";
 
 /**
  * Custom error class since we don't really need a stack trace
@@ -8,50 +9,34 @@ import { z } from "zod";
 class EnvValidationError extends Error {
   constructor(message: string) {
     super(message);
-    this.stack = "";
-    this.name = "";
+    this.name = "EnvValidationError";
   }
 }
 
-const env = z.object({
-  // Endpoint for the TS server.
-  // TODO: Rename this to something like express server url or something?
-  PIPELINE_EXPRESS_URL: z
-    .string({
-      required_error:
-        "PIPELINE_EXPRESS_URL env var is missing. This is a required.",
-    })
-    .refine(
-      (url) => {
-        try {
-          new URL(url);
-          const isProd = process.env.NODE_ENV === "production";
-          if (isProd && !url.startsWith("https://")) {
-            return false;
-          }
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {
-        message:
-          process.env.NODE_ENV === "production"
-            ? "PIPELINE_EXPRESS_URL must be a valid HTTPS URL in production"
-            : "PIPELINE_EXPRESS_URL must be a valid URL",
-      },
-    ),
+/**
+ * Environment variable validation schema
+ * 
+ * Development:
+ * - PIPELINE_EXPRESS_URL can be HTTP or HTTPS
+ * 
+ * Production:
+ * - PIPELINE_EXPRESS_URL must be HTTPS
+ */
+export const env = z.object({
+  PIPELINE_EXPRESS_URL: createUrlValidator("PIPELINE_EXPRESS_URL", {
+    requireHttps: process.env.NODE_ENV === "production",
+  }),
 });
 
 const result = env.safeParse({
-  PIPELINE_EXPRESS_URL: process.env["PIPELINE_EXPRESS_URL"],
+  PIPELINE_EXPRESS_URL: process.env.PIPELINE_EXPRESS_URL,
 });
 
 if (!result.success) {
   throw new EnvValidationError(
-    `There are error(s) with your next-js env: \n \n${result.error.errors
+    `❌ Invalid environment variables: \n\n${result.error.errors
       .map((e, i) => {
-        return `${i}) ${e.message} \n`;
+        return `${i}) [${e.path}]: ${e.message} \n`;
       })
       .join("")}`,
   );
@@ -60,4 +45,4 @@ if (!result.success) {
 /**
  * NextJS server env vars. Next server should fail to start if not present.
  */
-export const validatedServerEnv = result.data;
+export const serverEnv = result.data;
