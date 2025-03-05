@@ -14,7 +14,7 @@ import Image from "next/image";
 
 export default function Landing() {
   return (
-    <Col gap={4} className="max-w-[896px]">
+    <Col gap={4} className="max-w-[896px] mx-auto">
       <Title />
       <div className="px-4">
         <LandingHero className="w-full h-auto" />

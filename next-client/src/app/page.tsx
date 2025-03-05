@@ -6,7 +6,7 @@ export function generateStaticParams() {
 
 export default function HomePage() {
   return (
-    <div className="w-full justify-items-center">
+    <div>
       <Landing />
     </div>
   );
