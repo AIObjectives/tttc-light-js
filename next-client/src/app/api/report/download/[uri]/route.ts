@@ -26,9 +26,9 @@ const handleParsingJson = (data: unknown): ReportData | Error => {
 
 export async function GET(
   _: Request,
-  { params }: { params: Promise<{ encodedUri: string }> },
+  { params }: { params: Promise<{ uri: string }> },
 ) {
-  const { encodedUri } = await params; // we get an error saying that params needs to be awaited? Add await here until it's clearer as to what's going on.
+  const { uri: encodedUri } = await params;
   const uri = decodeURIComponent(encodedUri);
   const jsonData = await fetch(uri, {
     method: "GET",
