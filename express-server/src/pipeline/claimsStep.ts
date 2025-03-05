@@ -28,7 +28,7 @@ const logger =
 
 export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
   const { data, usage } = await pyserverFetchClaims(
-    `${env.PYSERVER_URL}/claims`,
+    `${env.PYSERVER_URL}/claims/`,
     input,
   )
     .then((res) => res.json())
