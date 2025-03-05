@@ -67,7 +67,7 @@ export function LanguageSelector() {
 export function CreateReport() {
   return (
     <Link href={"/create"}>
-      <Button>
+      <Button variant={"secondary"}>
         <Row gap={1} className="hidden sm:block">
           Create a report
         </Row>
