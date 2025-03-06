@@ -280,6 +280,7 @@ function ExpandTopic() {
           <ShowMoreButton
             moreLeftNum={subtopicNodes.length - 1 - pagination}
             topicId={data.id}
+            topicColor={data.topicColor}
           />
         </>
       )}
@@ -290,15 +291,21 @@ function ExpandTopic() {
 function ShowMoreButton({
   moreLeftNum,
   topicId,
+  topicColor,
 }: {
   moreLeftNum: number;
   topicId: string;
+  topicColor: string;
 }) {
   const { dispatch } = useContext(ReportContext);
+  const bg_color = useThemeColor(topicColor, "bgAccent");
+  const text_color = useThemeColor(topicColor, "text");
+  const border_color = useThemeColor(topicColor, "border");
   return moreLeftNum > 0 ? (
     <div className="p-4 sm:p-8">
       <Button
         variant={"secondary"}
+        className={`${bg_color} ${text_color} ${border_color} border`}
         onClick={() =>
           dispatch({ type: "expandTopic", payload: { id: topicId } })
         }

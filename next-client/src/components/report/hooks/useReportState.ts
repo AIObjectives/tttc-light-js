@@ -22,7 +22,7 @@ import { Option, pipe, Array, Either, flow, Match, Record } from "effect";
 //  ********************************/
 
 // Pagination is 0 indexed, so 0 will show one
-const defaultTopicPagination = 2;
+const defaultTopicPagination = 1;
 const defaultAddTopicPagination = 1;
 
 const defaultSubtopicPagination = 2;
