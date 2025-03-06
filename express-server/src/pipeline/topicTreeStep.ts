@@ -28,7 +28,7 @@ export async function topicTreePipelineStep(
   input: TopicTreeStep["data"],
 ) {
   const { data, usage } = await pyserverFetchTopicTree(
-    `${env.PYSERVER_URL}/topic_tree/`,
+    `${env.PYSERVER_URL}/topic_tree`,
     input,
   )
     .then((res) => res.json())
