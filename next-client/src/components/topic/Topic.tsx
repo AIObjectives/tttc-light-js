@@ -91,7 +91,7 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
       <CardTitle className="self-center flex-grow">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
-      <TextIcon
+      {/* <TextIcon
         icon={
           // <div>
           <Icons.Claim />
@@ -99,7 +99,18 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
         }
       >
         {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
-      </TextIcon>
+      </TextIcon> */}
+      <Row
+        gap={2}
+        className="items-center text-muted-foreground fill-muted-foreground"
+      >
+        <div>
+          <Icons.Claim className="h-4 w-4" />
+        </div>
+        <p className="p2 text-muted-foreground flex gap-2 items-center ">
+          {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
+        </p>
+      </Row>
       {button}
     </Row>
   );
