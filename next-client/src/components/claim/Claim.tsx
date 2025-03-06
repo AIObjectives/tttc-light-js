@@ -117,7 +117,7 @@ export function ClaimHeader({
   return (
     <Row gap={2} className="items-center">
       <p>
-        <span className="font-medium">Claim#{number}</span>
+        <span className="font-medium">#{number}</span>
         &ensp;
         <a
           id={`${title}`}
