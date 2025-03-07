@@ -19,6 +19,13 @@ type FirebaseDetails = {
   firebaseJobId: string;
 };
 
+export function addTokenCounts( costs : { tracker: schema.Tracker, stepUsage: schema.UsageTokens}): void {
+  // add token counts
+  costs.tracker.prompt_tokens += costs.stepUsage.prompt_tokens;
+  costs.tracker.completion_tokens += costs.stepUsage.completion_tokens;
+  costs.tracker.total_tokens += costs.stepUsage.total_tokens; 
+};
+
 const setupPipelineWorker = (connection: Redis) => {
   const pipeLineWorker = new Worker(
     "pipeline",
@@ -73,6 +80,7 @@ const setupPipelineWorker = (connection: Redis) => {
         start: Date.now(),
         unmatchedClaims: [],
         prompt_tokens: 0,
+        total_tokens: 0,
         completion_tokens: 0,
       };
 
@@ -95,10 +103,15 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.clustering,
       });
 
-      const { data: taxonomy } = await topicTreePipelineStep(env, {
+      const { data: taxonomy, usage: currStepTokens } = await topicTreePipelineStep(env, {
         comments,
         llm: topicTreeLLMConfig,
       });
+
+      addTokenCounts({tracker: tracker, stepUsage: currStepTokens});
+      console.log(tracker);
+      console.log("tokens : ");
+      console.log(tracker);
 
       console.log(
         "Step 2: extracting claims matching the topics and subtopics",
