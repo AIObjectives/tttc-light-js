@@ -295,3 +295,77 @@ If your organization does not have a key for ChatGPT or Claude, you can obtain o
 # Development and Contributing
 
 Some work in progress—please see the [contributor guide!](/contributing.md)
+
+## Local Development Startup Sequence
+
+For optimal local development, start the components in this dependency order:
+
+1. **Redis Server**
+   ```bash
+   redis-server
+   ```
+   Verify with `redis-cli ping` (should return "PONG")
+
+2. **Build Common Types**
+   ```bash
+   cd common
+   npm install
+   npm run build
+   ```
+
+3. **Python FastAPI Server**
+   ```bash
+   cd pyserver
+   python -m venv .venv
+   source ./.venv/bin/activate
+   pip install -r requirements.txt
+   python main.py
+   ```
+
+4. **Express Server**
+   ```bash
+   cd express-server
+   npm install
+   npm run dev
+   ```
+
+5. **Next.js Client**
+   ```bash
+   cd next-client
+   npm install
+   npm run dev
+   ```
+
+This order ensures each service has its dependencies already running.
+
+## Running Tests
+
+Run tests for each component individually:
+
+### Common Types
+```bash
+cd common
+npm test
+```
+
+### Express Server
+```bash
+cd express-server
+npm test
+# For coverage: npm run test:coverage
+```
+
+### Python FastAPI Server
+```bash
+cd pyserver
+source ./.venv/bin/activate
+pytest
+# For coverage: pytest --cov=.
+```
+
+### Next.js Client
+```bash
+cd next-client
+npm test
+# For coverage: npm run test:coverage
+```
