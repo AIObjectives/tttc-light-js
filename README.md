@@ -105,22 +105,53 @@ You will need to add two .env files, one in `express-server` and one in `next-cl
 Encode your Google Credentials using the service account key you downloaded earlier, by running the command `base64 -i ./google-credentials.json`. (You do need both the path to the json file and the base-64 encoded version.)
 
 ```
-export OPENAI_API_KEY=
-export GCLOUD_STORAGE_BUCKET= name of your bucket
-export CLIENT_BASE_URL= for dev: http://localhost:3000
-export GOOGLE_CREDENTIALS_ENCODED=copy & paste the base64 encoding of your credentials, made above
-export PYSERVER_URL= for dev: http://localhost:8000
-export FIREBASE_DATABASE_URL= found in your firebase project
-export REDIS_HOST= for dev: localhost
-export REDIS_PORT= for dev: 6379
-export GOOGLE_APPLICATION_CREDENTIALS=./credentials
-export NODE_ENV= dev | prod
+export OPENAI_API_KEY= # The server's OpenAI API key
+export GCLOUD_STORAGE_BUCKET= # name of your bucket
+export CLIENT_BASE_URL= # for dev: http://localhost:3000
+export GOOGLE_CREDENTIALS_ENCODED= # copy & paste the base64 encoding of your credentials, made above
+export PYSERVER_URL= # for dev: http://localhost:8000
+export FIREBASE_DATABASE_URL= # found in your firebase project
+export FIREBASE_PROJECT_ID= # found in your firebase project
+export REDIS_HOST= # for dev: localhost
+export REDIS_PORT= # for dev: 6379
+export REDIS_URL= # Redis connection URL (required in addition to HOST/PORT)
+export NODE_ENV= # dev | staging | prod
+```
+
+##### Environment-Specific Requirements
+
+T3C supports three environments with different validation rules:
+
+1. **Development** (`NODE_ENV=dev`)
+   - Accepts both HTTP and HTTPS URLs
+   - Flexible URL validation
+   - Redis configuration required (both HOST/PORT and URL)
+
+2. **Staging** (`NODE_ENV=staging`)
+   - Requires HTTPS URLs for external services:
+     - CLIENT_BASE_URL
+     - PYSERVER_URL
+     - FIREBASE_DATABASE_URL
+   - Enables automatic HTTP-to-HTTPS redirects
+   - Redis configuration required (both HOST/PORT and URL)
+
+3. **Production** (`NODE_ENV=prod`)
+   - Same requirements as staging
+   - Intended for production deployments
+
+##### Redis Configuration
+
+Redis now requires both connection methods to be configured:
+```bash
+# Both are required in all environments
+export REDIS_HOST=localhost
+export REDIS_PORT=6379
+export REDIS_URL=redis://localhost:6379
 ```
 
 #### next-client/.env
 
 ```
-
 export PIPELINE_EXPRESS_URL= # This is by default localhost:8080 on dev
 # Firebase keys below should be found on your firebase project. These are not sensitive and can be shared with the client.
 export NEXT_PUBLIC_FIREBASE_API_KEY=
@@ -264,3 +295,77 @@ If your organization does not have a key for ChatGPT or Claude, you can obtain o
 # Development and Contributing
 
 Some work in progress—please see the [contributor guide!](/contributing.md)
+
+## Local Development Startup Sequence
+
+For optimal local development, start the components in this dependency order:
+
+1. **Redis Server**
+   ```bash
+   redis-server
+   ```
+   Verify with `redis-cli ping` (should return "PONG")
+
+2. **Build Common Types**
+   ```bash
+   cd common
+   npm install
+   npm run build
+   ```
+
+3. **Python FastAPI Server**
+   ```bash
+   cd pyserver
+   python -m venv .venv
+   source ./.venv/bin/activate
+   pip install -r requirements.txt
+   python main.py
+   ```
+
+4. **Express Server**
+   ```bash
+   cd express-server
+   npm install
+   npm run dev
+   ```
+
+5. **Next.js Client**
+   ```bash
+   cd next-client
+   npm install
+   npm run dev
+   ```
+
+This order ensures each service has its dependencies already running.
+
+## Running Tests
+
+Run tests for each component individually:
+
+### Common Types
+```bash
+cd common
+npm test
+```
+
+### Express Server
+```bash
+cd express-server
+npm test
+# For coverage: npm run test:coverage
+```
+
+### Python FastAPI Server
+```bash
+cd pyserver
+source ./.venv/bin/activate
+pytest
+# For coverage: pytest --cov=.
+```
+
+### Next.js Client
+```bash
+cd next-client
+npm test
+# For coverage: npm run test:coverage
+```
