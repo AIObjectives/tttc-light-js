@@ -24,7 +24,7 @@ class EnvValidationError extends Error {
 /**
  * Environment type for validation
  */
-export type Environment = "dev" | "prod";
+export type Environment = "dev" | "staging" | "prod";
 
 /**
  * Environment configuration options
@@ -84,8 +84,8 @@ export const createPortValidator = (fieldName: string) => {
  * Validates environment type
  */
 export const validateEnvironment = (env: string | undefined): Environment => {
-  if (!env || !["dev", "prod"].includes(env.toLowerCase())) {
-    throw new Error("Environment not set: NODE_ENV must be 'dev' or 'prod'");
+  if (!env || !["dev", "staging", "prod"].includes(env.toLowerCase())) {
+    throw new Error("Environment not set: NODE_ENV must be 'dev', 'staging', or 'prod'");
   }
   return env.toLowerCase() as Environment;
 };
@@ -111,8 +111,8 @@ export const env = z.object({
   }),
   CLIENT_BASE_URL: createUrlValidator("CLIENT_BASE_URL"),
   PYSERVER_URL: createUrlValidator("PYSERVER_URL"),
-  NODE_ENV: z.union([z.literal("dev"), z.literal("prod")], {
-    required_error: "Missing NODE_ENV (prod | dev)",
+  NODE_ENV: z.union([z.literal("dev"), z.literal("staging"), z.literal("prod")], {
+    required_error: "Missing NODE_ENV (dev | staging | prod)",
     invalid_type_error: "Invalid input for NODE_ENV",
   }),
   FIREBASE_PROJECT_ID: z.string({
@@ -152,8 +152,8 @@ export function validateEnv(): Env {
   const environment = validateEnvironment(validatedEnv.NODE_ENV);
   const errors: string[] = [];
 
-  // Additional validation for production environment
-  if (environment === "prod") {
+  // Additional validation for production and staging environments
+  if (environment === "prod" || environment === "staging") {
     // Validate HTTPS URLs
     const urlFields = {
       CLIENT_BASE_URL: validatedEnv.CLIENT_BASE_URL,
@@ -163,7 +163,7 @@ export function validateEnv(): Env {
 
     Object.entries(urlFields).forEach(([field, url]) => {
       if (!url.startsWith("https://")) {
-        errors.push(`${field} must use HTTPS in production`);
+        errors.push(`${field} must use HTTPS in ${environment} environment`);
       }
     });
   }

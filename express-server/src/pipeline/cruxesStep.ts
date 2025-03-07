@@ -23,9 +23,9 @@ const typedFetch =
       signal: AbortSignal.timeout(210000),
     };
 
-    // Explicitly set redirect to "follow" in production to ensure any server redirects
+    // Explicitly set redirect to "follow" in production and staging to ensure any server redirects
     // (including potential HTTP to HTTPS redirects) are properly followed
-    if (isProd) {
+    if (isProd || env.NODE_ENV === "staging") {
       fetchOptions.redirect = "follow";
     }
 
