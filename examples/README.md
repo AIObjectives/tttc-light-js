@@ -10,7 +10,7 @@ To run the T3C pipeline with a local front-end & backend server, as well as a Py
 
 0. Pull the latest `main`, then go to `common` and run `npm i && npm run build`.
 1. Client-side: edit `next-client/.env` to add `export PIPELINE_EXPRESS_URL=http://localhost:8080/`.
-2. Server-side: edit `express-server/.env` to add your OpenAI/Anthropic/GCS keys (needs `export OPENAI_API_KEY=[your key here]`).
+2. Server-side: edit `express-server/.env` to add your OpenAI API key (needs `export OPENAI_API_KEY=[your key here]`).
 3. Python FastAPI LLM interface: run the following
    ```
    brew install redis
@@ -23,7 +23,33 @@ To run the T3C pipeline with a local front-end & backend server, as well as a Py
    source ./.venv/bin/activate
    pip install -r requirements.txt
    ```
-4. Internal dev env config: copy & paste the additional lines from the T3C Runbook into both env files.
+
+### Redis Configuration
+
+Redis now requires both connection methods to be configured in your environment:
+```bash
+export REDIS_HOST=localhost
+export REDIS_PORT=6379
+export REDIS_URL=redis://localhost:6379
+```
+
+### Environment Setup
+
+T3C supports three environments:
+- `dev`: For local development (default)
+  - HTTP URLs allowed
+  - Redis configuration required
+- `staging`: For pre-production testing
+  - HTTPS URLs required
+  - Automatic HTTP-to-HTTPS redirects
+  - Redis configuration required
+- `prod`: For production deployment
+  - Same requirements as staging
+
+For local development, use:
+```bash
+export NODE_ENV=dev
+```
 
 ### Creating reports
 
