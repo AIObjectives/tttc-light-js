@@ -2,6 +2,16 @@
 import json
 import wandb
 
+import config
+
+def token_cost(model_name:str, tok_in:int, tok_out:int):
+  """ Returns the cost for the current model running the given numbers of
+  tokens in/out for this call """
+  if model_name not in config.COST_BY_MODEL:
+    print("model undefined!")
+    return -1
+  return 0.001 * (tok_in  *  config.COST_BY_MODEL[model_name]["in_per_1K"] + tok_out * config.COST_BY_MODEL[model_name]["out_per_1K"])
+
 def cute_print(json_obj):
   """Returns a pretty version of a dictionary as properly-indented and scaled
   json in html for at-a-glance review in W&B"""

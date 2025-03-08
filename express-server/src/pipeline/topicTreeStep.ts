@@ -27,7 +27,7 @@ export async function topicTreePipelineStep(
   env: Env,
   input: TopicTreeStep["data"],
 ) {
-  const { data, usage } = await pyserverFetchTopicTree(
+  const { data, usage, cost} = await pyserverFetchTopicTree(
     `${env.PYSERVER_URL}/topic_tree/`,
     input,
   )
@@ -35,5 +35,5 @@ export async function topicTreePipelineStep(
     .then(logger("topic tree step returns: "))
     .then(apiPyserver.topicTreeResponse.parse);
 
-  return { data, usage };
+  return { data, usage, cost};
 }

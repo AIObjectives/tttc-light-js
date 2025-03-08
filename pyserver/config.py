@@ -3,6 +3,21 @@
 # cheapest for testing 
 MODEL = "gpt-4o-mini" # prod default: "gpt-4-turbo-preview"
 
+COST_BY_MODEL = {
+  # GPT-4o mini: Input is $0.150 / 1M tokens, Output is $0.600 / 1M tokens
+  # or: input is $0.00015/1K tokens, output is $0.0006/1K tokens
+  "gpt-4o-mini" : {
+    "in_per_1K" : 0.00015,
+    "out_per_1K" : 0.0006
+  },
+  # GPT-4o : Input is $2.50 / 1M tokens, Output is $10.00/1M tokens
+  # or: input is $0.0025/1K tokens, output is $0.01/1K tokens
+  "gpt-4o" : {
+    "in_per_1K" : 0.0025,
+    "out_per_1K" : 0.01
+  }
+}
+
 SYSTEM_PROMPT = """
 You are a professional research assistant. You have helped run many public consultations,
 surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights.

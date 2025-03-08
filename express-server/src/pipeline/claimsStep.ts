@@ -27,7 +27,7 @@ const logger =
   };
 
 export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
-  const { data, usage } = await pyserverFetchClaims(
+  const { data, usage, cost } = await pyserverFetchClaims(
     `${env.PYSERVER_URL}/claims/`,
     input,
   )
@@ -35,5 +35,5 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
     .then(logger("claims step returns: "))
     .then(apiPyserver.claimsReply.parse);
 
-  return { claims_tree: data, usage };
+  return { claims_tree: data, usage, cost};
 }
