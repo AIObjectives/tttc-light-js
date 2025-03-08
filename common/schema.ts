@@ -150,7 +150,7 @@ export const usageTokens = z.object({
   prompt_tokens: z.number(),
   completion_tokens: z.number(),
   total_tokens: z.number(),
-})
+});
 export type UsageTokens = z.infer<typeof usageTokens>;
 
 export const llmSubtopic = z.object({

@@ -214,7 +214,7 @@ export type SortClaimsTreeRequest = z.infer<typeof sortClaimsTreeRequest>;
 export const sortClaimsTreeResponse = z.object({
   data: sortedTopic.array(),
   usage: usage,
-  cost: z.number()
+  cost: z.number(),
 });
 
 export type SortClaimsTreeResponse = z.infer<typeof sortClaimsTreeResponse>;
@@ -254,7 +254,7 @@ export const cruxesResponse = z.object({
   controversyMatrix: controversyMatrix,
   topCruxes: scoredCruxPair.array(),
   usage,
-  cost: z.number()
+  cost: z.number(),
 });
 
 export const cruxesRequest = z.object({

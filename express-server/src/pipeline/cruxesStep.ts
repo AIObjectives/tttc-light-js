@@ -30,5 +30,5 @@ export async function cruxesPipelineStep(env: Env, input: CruxesStep["data"]) {
       .then(logger("cruxes step returns: "))
       .then(apiPyserver.cruxesResponse.parse);
 
-  return { cruxClaims, controversyMatrix, topCruxes, usage, cost};
+  return { cruxClaims, controversyMatrix, topCruxes, usage, cost };
 }

@@ -35,5 +35,5 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
     .then(logger("claims step returns: "))
     .then(apiPyserver.claimsReply.parse);
 
-  return { claims_tree: data, usage, cost};
+  return { claims_tree: data, usage, cost };
 }
