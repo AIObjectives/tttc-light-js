@@ -17,3 +17,4 @@ export * from "./dropdown/Dropdown";
 export * from "./dialog/Dialog";
 export * from "./drawer/Drawer";
 export * from "./scrollarea/ScrollArea";
+export * from "./sheet/Sheet";

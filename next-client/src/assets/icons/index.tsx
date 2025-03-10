@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageCircle,
+  X,
 } from "lucide-react";
 
 import TopicSVG from "./TopicSvg";

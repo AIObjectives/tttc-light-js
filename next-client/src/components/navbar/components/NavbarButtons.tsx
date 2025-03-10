@@ -9,9 +9,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Sheet,
+  SheetContent,
+  SheetTrigger,
 } from "../../elements";
-import { Row } from "@/components/layout";
+import { Col, Row } from "@/components/layout";
 import Link from "next/link";
+import { useState } from "react";
 
 export function Headline() {
   return (
@@ -74,5 +78,57 @@ export function CreateReport() {
         </Row>
       </Button>
     </Link>
+  );
+}
+
+export function MobileHamburgerMenu() {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  return (
+    <Sheet modal={false} open={isOpen} onOpenChange={(val) => setIsOpen(val)}>
+      <SheetTrigger
+        className="visible sm:hidden"
+        onClick={() => setIsOpen((val) => !val)}
+        asChild
+      >
+        <Button variant={"ghost"} className="p-1">
+          {isOpen ? <Icons.X /> : <Icons.Menu />}
+        </Button>
+      </SheetTrigger>
+      <SheetContent side={"bottom"} className="h-[90vh]">
+        <Col className="flex h-full justify-between">
+          <Col>
+            <Link
+              onClick={() => setIsOpen(false)}
+              href={"/"}
+              className="p-2 items-start w-full self-center rounded-[6px]"
+            >
+              <p>Home</p>
+            </Link>
+            <Link
+              onClick={() => setIsOpen(false)}
+              href={"/about"}
+              className="p-2 items-start w-full self-center rounded-[6px]"
+            >
+              <p>About</p>
+            </Link>
+            <Link
+              onClick={() => setIsOpen(false)}
+              href={"https://github.com/aIObjectives/tttc-light-js"}
+              className="p-2 items-start w-full self-center rounded-[6px]"
+            >
+              <p>Github</p>
+            </Link>
+          </Col>
+          <Col>
+            <Button asChild variant={"secondary"}>
+              <Link onClick={() => setIsOpen(false)} href={"/create"}>
+                Create a report
+              </Link>
+            </Button>
+          </Col>
+        </Col>
+      </SheetContent>
+    </Sheet>
   );
 }
