@@ -47,7 +47,7 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
         //signal: controller.signal,
       });
       console.log("POST call finished");
-      // Clear the custom timeout since we've received a response
+
       clearTimeout(timeoutId);
 
       // Check status code (similar to `response.ok`)
@@ -84,7 +84,7 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
     }
   } catch (error) {
     console.error("Claims pipeline step failed:", error);
-    // Re-throw or return an error response as desired
+
     throw error;
   }
 }
