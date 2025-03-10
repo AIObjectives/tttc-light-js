@@ -34,7 +34,7 @@ const setupPipelineWorker = (connection: Redis) => {
       const { config, env, firebaseDetails } = data;
 
       const defaultConfig = {
-        model: "gpt-4-turbo-preview",
+        model: "gpt-4o-mini",
         data: [],
         title: "",
         question: "",
@@ -106,6 +106,8 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.extraction,
       });
+      console.log("extractrd values");
+      console.log("starting fetch call");
       const { claims_tree } = await claimsPipelineStep(env, {
         tree: { taxonomy },
         comments,
@@ -217,7 +219,7 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.finished,
       });
     },
-    { connection },
+    { connection, stalledInterval: 3000000, skipStalledCheck: true },
   );
 
   pipeLineWorker.on("failed", async (job, e) => {
