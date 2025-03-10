@@ -155,7 +155,7 @@ function OutlineItem({
         {/* Nested items should be further to the right */}
 
         <p
-          className={`pl-${heirarchyDepth * 4} p2 select-none text-ellipsis w-[230px] overflow-hidden whitespace-nowrap items-center`}
+          className={`pl-${heirarchyDepth * 4} p2 select-none text-ellipsis w-[230px] items-center`}
           onClick={onBodyClick}
         >
           {title}
