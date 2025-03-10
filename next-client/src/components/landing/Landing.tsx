@@ -236,7 +236,7 @@ const OrgCard = ({
         <li key={point}>{point}</li>
       ))}
     </ul>
-    <p className="p2">{footer}</p>
+    <p className="p2 text-muted-subtle">{footer}</p>
   </Col>
 );
 
