@@ -2,38 +2,89 @@ import * as apiPyserver from "tttc-common/apiPyserver";
 import { ClaimsStep } from "./types";
 import { Env } from "../types/context";
 import { z } from "zod";
-
-const typedFetch =
-  <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>) =>
-    await fetch(url, {
-      method: "POST",
-      body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // wait for 7 minutes for full claims list
-      // TODO: use message queue instead
-      signal: AbortSignal.timeout(1200000),
-    });
-
-const pyserverFetchClaims = typedFetch(apiPyserver.claimsRequest);
-
-const logger =
-  (prependMessage: string) =>
-  <T>(arg: T): T => {
-    console.log(prependMessage, arg);
-    return arg;
-  };
-
+import { Agent } from "undici";
+import jsonrepair from "jsonrepair";
+import { Client } from "undici";
+import { AbortController } from "abort-controller"; // If needed in your environment
 export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
-  const { data, usage } = await pyserverFetchClaims(
-    `${env.PYSERVER_URL}/claims`,
-    input,
-  )
-    .then((res) => res.json())
-    .then(logger("claims step returns: "))
-    .then(apiPyserver.claimsReply.parse);
+  try {
+    console.log("Claims pipeline input:", JSON.stringify(input));
 
-  return { claims_tree: data, usage };
+    // Validate input
+    try {
+      apiPyserver.claimsRequest.parse(input);
+      console.log("Input validation passed");
+    } catch (validationError) {
+      console.error("Input validation failed:", validationError);
+      throw validationError;
+    }
+
+    // Prepare the Python server URL and path
+    const baseUrl = env.PYSERVER_URL.replace(/\/$/, ""); // Remove trailing slash if any
+    const path = "/claims";
+    console.log("Making request to Python server:", baseUrl + path);
+
+    // Create an AbortController for the request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000000);
+
+    console.log("creating client"); // Create the Undici client
+    const client = new Client(baseUrl, {
+      headersTimeout: 6000000,
+      bodyTimeout: 6000000,
+      keepAliveTimeout: 1200000,
+    });
+    console.log("Undici client created");
+    try {
+      console.log("POST call started"); //Execute the POST request
+      const { statusCode, headers, body } = await client.request({
+        path: path,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+        //signal: controller.signal,
+      });
+      console.log("POST call finished");
+      // Clear the custom timeout since we've received a response
+      clearTimeout(timeoutId);
+
+      // Check status code (similar to `response.ok`)
+      if (statusCode < 200 || statusCode >= 300) {
+        // Read error text from the response body
+        let errorText = "";
+        for await (const chunk of body) {
+          errorText += chunk;
+        }
+        throw new Error(`Server responded with ${statusCode}: ${errorText}`);
+      }
+
+      // Read the response body
+      let responseData = "";
+      for await (const chunk of body) {
+        responseData += chunk;
+      }
+
+      // Parse JSON and validate the response
+      const jsonData = JSON.parse(responseData);
+      const { data, usage } = apiPyserver.claimsReply.parse(jsonData);
+
+      return { claims_tree: data, usage };
+    } catch (requestError: any) {
+      clearTimeout(timeoutId);
+      console.error("Request error:", requestError.message);
+      if (requestError.cause) {
+        console.error("Cause:", requestError.cause.message);
+      }
+      throw requestError;
+    } finally {
+      // Close the client connection
+      await client.close();
+    }
+  } catch (error) {
+    console.error("Claims pipeline step failed:", error);
+    // Re-throw or return an error response as desired
+    throw error;
+  }
 }
