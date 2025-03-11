@@ -14,7 +14,7 @@ const typedFetch =
       },
       // wait for 7 minutes for full claims list
       // TODO: use message queue instead
-      signal: AbortSignal.timeout(420000),
+      signal: AbortSignal.timeout(1200000),
     });
 
 const pyserverFetchClaims = typedFetch(apiPyserver.claimsRequest);
