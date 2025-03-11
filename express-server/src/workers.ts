@@ -29,7 +29,9 @@ export function sumTokensCost(run: {
   run.tracker.prompt_tokens += run.stepUsage.prompt_tokens;
   run.tracker.completion_tokens += run.stepUsage.completion_tokens;
   run.tracker.total_tokens += run.stepUsage.total_tokens;
-  console.log(`Cost:$${run.tracker.costs};Tok_in:${run.tracker.prompt_tokens};Tok_out:${run.tracker.completion_tokens}`);
+  console.log(
+    `Cost:$${run.tracker.costs};Tok_in:${run.tracker.prompt_tokens};Tok_out:${run.tracker.completion_tokens}`,
+  );
 }
 
 const setupPipelineWorker = (connection: Redis) => {
