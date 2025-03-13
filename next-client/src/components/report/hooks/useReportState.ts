@@ -22,11 +22,11 @@ import { Option, pipe, Array, Either, flow, Match, Record } from "effect";
 //  ********************************/
 
 // Pagination is 0 indexed, so 0 will show one
-const defaultTopicPagination = 2;
-const defaultAddTopicPagination = 1;
+const defaultTopicPagination = 1; // 2 subtopics show initially
+const defaultAddTopicPagination = 1; // 2 additional subtopics shown after each pag
 
-const defaultSubtopicPagination = 2;
-const defaultAddSubtopicPagination = 3;
+const defaultSubtopicPagination = 7; // 6 claims shown initially
+const defaultAddSubtopicPagination = 9; // 8 additional claims shown after each pag
 
 //  ********************************
 //  * NODE / STATE DEFINITIONS

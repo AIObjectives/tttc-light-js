@@ -9,7 +9,7 @@ import React from "react";
  */
 export default function AboutPage() {
   return (
-    <Col gap={3} className="p-8 w-[832px] m-auto">
+    <Col gap={3} className="p-8 max-w-[832px] m-auto">
       <h2>About</h2>
 
       <div>

@@ -9,28 +9,20 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Sheet,
+  SheetContent,
+  SheetTrigger,
 } from "../../elements";
-import { Row } from "@/components/layout";
+import { Col, Row } from "@/components/layout";
 import Link from "next/link";
+import { useState } from "react";
 
 export function Headline() {
   return (
-    <Row gap={6} className="h-10 items-center">
-      {/* hamburger */}
-      {/* TODO: fix this button so that it opens the menu on mobile,
-          then un-comment-out this <Button> component
-      <Button variant={"ghost"} size={"icon"} className="p-2 sm:hidden">
-        <Icons.Menu size={24} />
-      </Button>
-      */}
-      {/* <Separator orientation="vertical" className="h-full hidden sm:block" /> */}
-      <Link href={"/"} className="h-10 items-center leading-10">
-        <Icons.Logo className="inline-block align-middle mr-1" />
-        <h3 className="hidden inline-block sm:inline-block align-middle">
-          Talk to the City
-        </h3>
-      </Link>
-    </Row>
+    <Link href={"/"} className="h-10 items-center leading-10">
+      <Icons.Logo className="inline-block align-middle mr-2" />
+      <Icons.TTTC className="hidden sm:inline-block" />
+    </Link>
   );
 }
 
@@ -77,7 +69,7 @@ export function LanguageSelector() {
 export function CreateReport() {
   return (
     <Link href={"/create"}>
-      <Button>
+      <Button variant={"secondary"}>
         <Row gap={1} className="hidden sm:block">
           Create a report
         </Row>
@@ -86,5 +78,57 @@ export function CreateReport() {
         </Row>
       </Button>
     </Link>
+  );
+}
+
+export function MobileHamburgerMenu() {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  return (
+    <Sheet modal={false} open={isOpen} onOpenChange={(val) => setIsOpen(val)}>
+      <SheetTrigger
+        className="visible sm:hidden"
+        onClick={() => setIsOpen((val) => !val)}
+        asChild
+      >
+        <Button variant={"ghost"} className="p-1">
+          {isOpen ? <Icons.X /> : <Icons.Menu />}
+        </Button>
+      </SheetTrigger>
+      <SheetContent side={"bottom"} className="h-[90vh]">
+        <Col className="flex h-full justify-between">
+          <Col>
+            <Link
+              onClick={() => setIsOpen(false)}
+              href={"/"}
+              className="p-2 items-start w-full self-center rounded-[6px]"
+            >
+              <p>Home</p>
+            </Link>
+            <Link
+              onClick={() => setIsOpen(false)}
+              href={"/about"}
+              className="p-2 items-start w-full self-center rounded-[6px]"
+            >
+              <p>About</p>
+            </Link>
+            <Link
+              onClick={() => setIsOpen(false)}
+              href={"https://github.com/aIObjectives/tttc-light-js"}
+              className="p-2 items-start w-full self-center rounded-[6px]"
+            >
+              <p>Github</p>
+            </Link>
+          </Col>
+          <Col>
+            <Button asChild variant={"secondary"}>
+              <Link onClick={() => setIsOpen(false)} href={"/create"}>
+                Create a report
+              </Link>
+            </Button>
+          </Col>
+        </Col>
+      </SheetContent>
+    </Sheet>
   );
 }

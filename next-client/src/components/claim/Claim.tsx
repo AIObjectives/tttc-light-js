@@ -6,10 +6,16 @@ import { ClaimNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
 import {
   Button,
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
   HoverCard,
   HoverCardContent,
   HoverCardPortal,
   HoverCardTrigger,
+  ScrollArea,
 } from "../elements";
 import * as schema from "tttc-common/schema";
 import { Quote } from "../quote/Quote";
@@ -46,17 +52,21 @@ function Claim({ claimNode, show }: { claimNode: ClaimNode; show: boolean }) {
 export function ClaimCard({ claim }: { claim: schema.Claim }) {
   return (
     // <CardContent className="p-4">
-    <Col gap={4}>
+    <Col gap={4} className="">
       <ClaimHeader variant="hovercard" claim={claim} />
-      <Col gap={2}>
-        {getQuotes(claim).map((quote, i) => (
-          <Quote
-            key={quote.id}
-            quote={quote}
-            gap={2}
-            withSeperation={getQuotes(claim).length - 1 !== i}
-          />
-        ))}
+      <Col className="max-h-[80vh]">
+        <ScrollArea className="h-full overflow-auto">
+          <Col gap={2}>
+            {getQuotes(claim).map((quote, i) => (
+              <Quote
+                key={quote.id}
+                quote={quote}
+                gap={2}
+                withSeperation={getQuotes(claim).length - 1 !== i}
+              />
+            ))}
+          </Col>
+        </ScrollArea>
       </Col>
     </Col>
     // </CardContent>
@@ -66,7 +76,8 @@ export function ClaimCard({ claim }: { claim: schema.Claim }) {
 function ShowHoverQuote({
   children,
   claim,
-}: React.PropsWithChildren<{ claim: schema.Claim }>) {
+  className,
+}: React.PropsWithChildren<{ claim: schema.Claim; className?: string }>) {
   const buttonRef = useRef(null);
   const [state, setState] = useState<boolean>(false);
   const [holdOpen, setHoldOpen] = useState<boolean>(false);
@@ -79,7 +90,7 @@ function ShowHoverQuote({
 
   return (
     <HoverCard open={state} onOpenChange={onOpenChange}>
-      <HoverCardTrigger>
+      <HoverCardTrigger asChild className={className}>
         <Button
           ref={buttonRef}
           variant={"ghost"}
@@ -117,7 +128,7 @@ export function ClaimHeader({
   return (
     <Row gap={2} className="items-center">
       <p>
-        <span className="font-medium">Claim#{number}</span>
+        <span className="font-medium">#{number}</span>
         &ensp;
         <a
           id={`${title}`}
@@ -127,9 +138,14 @@ export function ClaimHeader({
         </a>
       </p>
       {variant === "normal" ? (
-        <ShowHoverQuote claim={claim}>
-          <QuoteIcon num={quoteNum} />
-        </ShowHoverQuote>
+        <>
+          <ShowHoverQuote claim={claim} className="hidden sm:block">
+            <QuoteIcon num={quoteNum} />
+          </ShowHoverQuote>
+          <ClaimDrawer claim={claim} className="block sm:hidden">
+            <QuoteIcon num={quoteNum} />
+          </ClaimDrawer>
+        </>
       ) : (
         <></>
       )}
@@ -146,6 +162,26 @@ export function QuoteIcon({ num }: { num: number }) {
       <Icons.QuoteBubble className="fill-primary" />
       <p className="p2 text-primary">{num}</p>
     </Row>
+  );
+}
+
+function ClaimDrawer({
+  children,
+  claim,
+  className,
+}: React.PropsWithChildren<{ claim: schema.Claim; className?: string }>) {
+  return (
+    <Drawer>
+      <DrawerTrigger className={className}>{children}</DrawerTrigger>
+      <DrawerContent className="max-h-[90vh]">
+        <DrawerHeader>
+          <DrawerTitle></DrawerTitle>
+        </DrawerHeader>
+        <Col className="px-4 pb-4">
+          <ClaimCard claim={claim} />
+        </Col>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

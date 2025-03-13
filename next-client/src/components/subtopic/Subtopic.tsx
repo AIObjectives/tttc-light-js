@@ -98,19 +98,22 @@ export function SubtopicClaims({
   subtopicNode: SubtopicNode;
 }) {
   return (
-    <Col gap={4}>
-      <Col>
-        {subtopicNode.children.map((claimNode, i) => {
-          return (
-            <Claim
-              key={claimNode.data.id}
-              claimNode={claimNode}
-              show={i <= subtopicNode.pagination}
-            />
-          );
-        })}
+    <Col>
+      <p className="leading-6 pl-8 text-base font-medium">Claims</p>
+      <Col gap={4}>
+        <Col>
+          {subtopicNode.children.map((claimNode, i) => {
+            return (
+              <Claim
+                key={claimNode.data.id}
+                claimNode={claimNode}
+                show={i <= subtopicNode.pagination}
+              />
+            );
+          })}
+        </Col>
+        <ClaimLoader subtopicNode={subtopicNode} />
       </Col>
-      <ClaimLoader subtopicNode={subtopicNode} />
     </Col>
   );
 }

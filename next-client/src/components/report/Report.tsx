@@ -289,7 +289,7 @@ export function ReportTitle({
 }: IReportTitle) {
   function ReportTitleIconsLeft() {
     return (
-      <Row gap={4} className="h-5">
+      <Row gap={4} className="h-5 flex-wrap">
         {/* Number of topics */}
         <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
           {nThemes} topics
@@ -392,10 +392,18 @@ export function ReportSummary({
       {/* Summary Title */}
       <Col gap={1}>
         <h4>Summary</h4>
-        <TextIcon icon={<Icons.Info />}>
-          The summary is written by the report creators, while the rest is
-          AI-generated, excluding quotes.
-        </TextIcon>
+        <Row
+          gap={2}
+          className="items-center text-muted-foreground fill-muted-foreground"
+        >
+          <div>
+            <Icons.Info className="h-4 w-4" />
+          </div>
+          <p className="p2 text-muted-foreground flex gap-2 items-center ">
+            The summary is written by the report creators, while the rest is
+            AI-generated, excluding quotes.
+          </p>
+        </Row>
       </Col>
       {/* Summary Description */}
       <div>{description}</div>

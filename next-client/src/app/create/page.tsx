@@ -4,7 +4,7 @@ import React from "react";
 
 export default function ReportCreationPage() {
   return (
-    <div className="m-auto w-[832px] mt-4">
+    <div className="m-auto max-w-[832px] p-2 mt-4">
       <CreateReport />
     </div>
   );
