@@ -49,22 +49,14 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
 
       // Check status code (similar to `response.ok`)
       if (statusCode < 200 || statusCode >= 300) {
-        // Read error text from the response body
-        let errorText = "";
-        for await (const chunk of body) {
-          errorText += chunk;
-        }
+        const errorText = await body.json();
         throw new Error(`Server responded with ${statusCode}: ${errorText}`);
       }
 
       // Read the response body
-      let responseData = "";
-      for await (const chunk of body) {
-        responseData += chunk;
-      }
+      const jsonData = await body.json();
 
-      // Parse JSON and validate the response
-      const jsonData = JSON.parse(responseData);
+      // Validate the response
       const { data, usage } = apiPyserver.claimsReply.parse(jsonData);
 
       return { claims_tree: data, usage };
