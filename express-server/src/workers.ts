@@ -34,7 +34,7 @@ const setupPipelineWorker = (connection: Redis) => {
       const { config, env, firebaseDetails } = data;
 
       const defaultConfig = {
-        model: "gpt-4-turbo-preview",
+        model: "gpt-4o-mini",
         data: [],
         title: "",
         question: "",
@@ -120,7 +120,6 @@ const setupPipelineWorker = (connection: Redis) => {
           llm: cruxesLLMConfig,
           top_k: 0,
         });
-      console.log(topCruxes);
       // package crux addOns together
       const cruxAddOns = {
         topCruxes: topCruxes,
@@ -217,7 +216,7 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.finished,
       });
     },
-    { connection },
+    { connection, stalledInterval: 3000000, skipStalledCheck: true }, // ! the stalledInterval and skipStalledCheck is a magical solution to the timeout problem. Need to find a better long-term fix
   );
 
   pipeLineWorker.on("failed", async (job, e) => {
