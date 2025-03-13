@@ -106,8 +106,6 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.extraction,
       });
-      console.log("extractrd values");
-      console.log("starting fetch call");
       const { claims_tree } = await claimsPipelineStep(env, {
         tree: { taxonomy },
         comments,
@@ -122,7 +120,6 @@ const setupPipelineWorker = (connection: Redis) => {
           llm: cruxesLLMConfig,
           top_k: 0,
         });
-      console.log(topCruxes);
       // package crux addOns together
       const cruxAddOns = {
         topCruxes: topCruxes,

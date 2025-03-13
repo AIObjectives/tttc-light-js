@@ -5,12 +5,12 @@ import { Client } from "undici";
 import { AbortController } from "abort-controller"; // If needed in your environment
 export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
   try {
-    console.log("Claims pipeline input:", JSON.stringify(input));
+    //console.log("Claims pipeline input:", JSON.stringify(input));
 
     // Validate input
     try {
       apiPyserver.claimsRequest.parse(input);
-      console.log("Input validation passed");
+      //console.log("Input validation passed");
     } catch (validationError) {
       console.error("Input validation failed:", validationError);
       throw validationError;
@@ -19,21 +19,21 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
     // Prepare the Python server URL and path
     const baseUrl = env.PYSERVER_URL.replace(/\/$/, ""); // Remove trailing slash if any
     const path = "/claims";
-    console.log("Making request to Python server:", baseUrl + path);
+    //console.log("Making request to Python server:", baseUrl + path);
 
     // Create an AbortController for the request
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000000);
 
-    console.log("creating client"); // Create the Undici client
+    //console.log("creating client"); // Create the Undici client
     const client = new Client(baseUrl, {
       headersTimeout: 6000000,
       bodyTimeout: 6000000,
       keepAliveTimeout: 1200000,
     });
-    console.log("Undici client created");
+    //console.log("Undici client created");
     try {
-      console.log("POST call started"); //Execute the POST request
+      //console.log("POST call started"); //Execute the POST request
       const { statusCode, headers, body } = await client.request({
         path: path,
         method: "POST",
@@ -43,7 +43,7 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
         body: JSON.stringify(input),
         //signal: controller.signal,
       });
-      console.log("POST call finished");
+      //console.log("POST call finished");
 
       clearTimeout(timeoutId);
 
