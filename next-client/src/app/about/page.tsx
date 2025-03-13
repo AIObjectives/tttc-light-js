@@ -1,5 +1,6 @@
+import Icons from "@/assets/icons";
 import { Card, CardContent } from "@/components/elements";
-import { Col } from "@/components/layout";
+import { Col, Row } from "@/components/layout";
 import { QuoteText } from "@/components/quote/Quote";
 import React from "react";
 
@@ -9,6 +10,32 @@ const ContentGroup = ({ children }: React.PropsWithChildren) => (
 
 const ContentGroupContainer = ({ children }: React.PropsWithChildren) => (
   <Col gap={6}>{children}</Col>
+);
+
+const Outline = () => (
+  <Col gap={2}>
+    <Row gap={1} className="items-center">
+      <Icons.Outline className="stroke-muted-foreground" size={16} />
+      <p className="text-muted-foreground">Outline</p>
+    </Row>
+    <ul className="list-disc list-inside text-muted-foreground underline pl-2">
+      <li>
+        <a href="#how-it-works">How it works</a>
+      </li>
+      <li>
+        <a href="#case-studies">Case studies</a>
+      </li>
+      <li>
+        <a href="#faq">FAQ</a>
+      </li>
+      <li>
+        <a href="#tutorial">Report creation FAQ</a>
+      </li>
+      <li>
+        <a href="#privacy-security">Privacy & security</a>
+      </li>
+    </ul>
+  </Col>
 );
 
 /**
@@ -22,24 +49,7 @@ export default function AboutPage() {
         <ContentGroup>
           <h2>About</h2>
 
-          <p className="text-muted-foreground">Jump to:</p>
-          <ul className="list-disc list-inside text-muted-foreground underline pl-2">
-            <li>
-              <a href="#how-it-works">How it works</a>
-            </li>
-            <li>
-              <a href="#case-studies">Case studies</a>
-            </li>
-            <li>
-              <a href="#faq">FAQ</a>
-            </li>
-            <li>
-              <a href="#tutorial">Report creation FAQ</a>
-            </li>
-            <li>
-              <a href="#privacy-security">Privacy & security</a>
-            </li>
-          </ul>
+          <Outline />
           <p>
             Talk to the City (T3C) helps large groups of people coordinate by
             understanding each other better.
