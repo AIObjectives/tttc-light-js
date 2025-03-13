@@ -138,12 +138,20 @@ export const tracker = z.object({
   costs: z.number(),
   prompt_tokens: z.number(),
   completion_tokens: z.number(),
+  total_tokens: z.number(),
   unmatchedClaims: z.array(oldclaim),
   end: z.number().optional(),
   duration: z.string().optional(),
 });
 
 export type Tracker = z.infer<typeof tracker>;
+
+export const usageTokens = z.object({
+  prompt_tokens: z.number(),
+  completion_tokens: z.number(),
+  total_tokens: z.number(),
+});
+export type UsageTokens = z.infer<typeof usageTokens>;
 
 export const llmSubtopic = z.object({
   subtopicName: z.string(),

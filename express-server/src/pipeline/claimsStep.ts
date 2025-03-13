@@ -57,9 +57,9 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
       const jsonData = await body.json();
 
       // Validate the response
-      const { data, usage } = apiPyserver.claimsReply.parse(jsonData);
+      const { data, usage, cost } = apiPyserver.claimsReply.parse(jsonData);
 
-      return { claims_tree: data, usage };
+      return { claims_tree: data, usage, cost };
     } catch (requestError: any) {
       clearTimeout(timeoutId);
       console.error("Request error:", requestError.message);

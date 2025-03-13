@@ -19,6 +19,34 @@ type FirebaseDetails = {
   firebaseJobId: string;
 };
 
+function sumTokensCost(run: {
+  tracker: schema.Tracker;
+  stepUsage: schema.UsageTokens;
+  stepCost: number;
+}): schema.Tracker {
+  // add token counts
+  const totalCost = run.tracker.costs + run.stepCost;
+  const totalPromptTokens =
+    run.tracker.prompt_tokens + run.stepUsage.prompt_tokens;
+  const totalCompletionTokens =
+    run.tracker.completion_tokens + run.stepUsage.completion_tokens;
+  const totalTokens = run.tracker.total_tokens + run.stepUsage.total_tokens;
+
+  return {
+    ...run.tracker,
+    costs: totalCost,
+    prompt_tokens: totalPromptTokens,
+    completion_tokens: totalCompletionTokens,
+    total_tokens: totalTokens,
+  };
+}
+
+const logTokensInTracker = (tracker: schema.Tracker) => {
+  console.log(
+    `Cost:$${tracker.costs};Tok_in:${tracker.prompt_tokens};Tok_out:${tracker.completion_tokens}`,
+  );
+};
+
 const setupPipelineWorker = (connection: Redis) => {
   const pipeLineWorker = new Worker(
     "pipeline",
@@ -68,11 +96,12 @@ const setupPipelineWorker = (connection: Redis) => {
         options.cruxInstructions,
       ].map((instructions) => makeLLMConfig(instructions));
 
-      const tracker: schema.Tracker = {
+      const initTracker: schema.Tracker = {
         costs: 0,
         start: Date.now(),
         unmatchedClaims: [],
         prompt_tokens: 0,
+        total_tokens: 0,
         completion_tokens: 0,
       };
 
@@ -95,10 +124,22 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.clustering,
       });
 
-      const { data: taxonomy } = await topicTreePipelineStep(env, {
+      const {
+        data: taxonomy,
+        usage: topicTreeTokens,
+        cost: topicTreeCost,
+      } = await topicTreePipelineStep(env, {
         comments,
         llm: topicTreeLLMConfig,
       });
+
+      const tracker_step1 = sumTokensCost({
+        tracker: initTracker,
+        stepUsage: topicTreeTokens,
+        stepCost: topicTreeCost,
+      });
+
+      logTokensInTracker(tracker_step1);
 
       console.log(
         "Step 2: extracting claims matching the topics and subtopics",
@@ -106,26 +147,49 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.extraction,
       });
-      const { claims_tree } = await claimsPipelineStep(env, {
+      const {
+        claims_tree,
+        usage: claimsTokens,
+        cost: claimsCost,
+      } = await claimsPipelineStep(env, {
         tree: { taxonomy },
         comments,
         llm: claimsLLMConfig,
       });
 
+      const tracker_step2 = sumTokensCost({
+        tracker: tracker_step1,
+        stepUsage: claimsTokens,
+        stepCost: claimsCost,
+      });
+      logTokensInTracker(tracker_step2);
+
       console.log("Step 2.5: Optionally extract cruxes");
-      const { cruxClaims, controversyMatrix, topCruxes, usage } =
-        await cruxesPipelineStep(env, {
-          topics: taxonomy,
-          crux_tree: claims_tree,
-          llm: cruxesLLMConfig,
-          top_k: 0,
-        });
+      const {
+        cruxClaims,
+        controversyMatrix,
+        topCruxes,
+        usage: cruxTokens,
+        cost: cruxCost,
+      } = await cruxesPipelineStep(env, {
+        topics: taxonomy,
+        crux_tree: claims_tree,
+        llm: cruxesLLMConfig,
+        top_k: 0,
+      });
       // package crux addOns together
       const cruxAddOns = {
         topCruxes: topCruxes,
         controversyMatrix: controversyMatrix,
         cruxClaims: cruxClaims,
       };
+
+      const tracker_crux = sumTokensCost({
+        tracker: tracker_step2,
+        stepUsage: cruxTokens,
+        stepCost: cruxCost,
+      });
+      logTokensInTracker(tracker_crux);
 
       console.log("Step 3: cleaning and sorting the taxonomy");
       await job.updateProgress({
@@ -134,11 +198,22 @@ const setupPipelineWorker = (connection: Redis) => {
       // TODO: more principled way of configuring this?
       const numPeopleSort = "numPeople";
 
-      const { data: tree } = await sortClaimsTreePipelineStep(env, {
+      const {
+        data: tree,
+        usage: sortClaimsTreeTokens,
+        cost: sortClaimsTreeCost,
+      } = await sortClaimsTreePipelineStep(env, {
         tree: claims_tree,
         llm: dedupLLMConfig,
         sort: numPeopleSort,
       });
+
+      const tracker_step3 = sumTokensCost({
+        tracker: tracker_crux,
+        stepUsage: sortClaimsTreeTokens,
+        stepCost: sortClaimsTreeCost,
+      });
+      logTokensInTracker(tracker_step3);
 
       const newTax: schema.Taxonomy = taxonomy.map((t) => ({
         ...t,
@@ -165,22 +240,34 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.wrappingup,
       });
 
-      tracker.end = Date.now();
-      const secs = (tracker.end - tracker.start) / 1000;
-      tracker.duration =
-        secs > 60
-          ? `${Math.floor(secs / 60)} minutes ${secs % 60} seconds`
-          : `${secs} seconds`;
+      const tracker_wrappingup = tracker_step3;
+
+      // const secs = (tracker.end - tracker.start) / 1000;
+      // tracker.duration =
+      // secs > 60
+      //   ? `${Math.floor(secs / 60)} minutes ${secs % 60} seconds`
+      //   : `${secs} seconds`;
+      const end = Date.now();
+      const secs = (end - tracker_wrappingup.start) / 1000;
+
+      const tracker_end: schema.Tracker = {
+        ...tracker_wrappingup,
+        end,
+        duration:
+          secs > 60
+            ? `${Math.floor(secs / 60)} minutes ${secs % 60} seconds`
+            : `${secs} seconds`,
+      };
 
       // next line is important to avoid leaking keys!
       delete options.apiKey;
-      console.log(`Pipeline completed in ${tracker.duration}`);
+      console.log(`Pipeline completed in ${tracker_end.duration}`);
       console.log(
-        `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`,
+        `Pipeline cost: $${tracker_end.costs} for ${tracker_end.prompt_tokens} + ${tracker_end.completion_tokens} tokens (${tracker_end.total_tokens} total)`,
       );
       const llmPipelineOutput: schema.LLMPipelineOutput = {
         ...options,
-        ...tracker,
+        ...tracker_end,
         tree: newTax,
         data: options.data,
         addOns: cruxAddOns,
