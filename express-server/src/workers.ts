@@ -216,7 +216,7 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.finished,
       });
     },
-    { connection, stalledInterval: 3000000, skipStalledCheck: true },
+    { connection, stalledInterval: 3000000, skipStalledCheck: true }, // ! the stalledInterval and skipStalledCheck is a magical solution to the timeout problem. Need to find a better long-term fix
   );
 
   pipeLineWorker.on("failed", async (job, e) => {
