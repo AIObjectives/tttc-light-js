@@ -111,7 +111,7 @@ const setupPipelineWorker = (connection: Redis) => {
           text: x.comment,
           id: x.id,
         }));
-      console.log("worker comments", comments);
+      console.log("input comment row count: ", comments.length);
 
       if (comments.some((x) => !x.speaker)) {
         throw new Error(

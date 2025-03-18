@@ -31,4 +31,4 @@ if (!parsed.success) {
 
 export const validatedFirebaseConfig = parsed.data;
 
-console.log(validatedFirebaseConfig);
+//console.log(validatedFirebaseConfig);

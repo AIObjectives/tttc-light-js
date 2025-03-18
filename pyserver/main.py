@@ -1086,7 +1086,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
   
   # TODO: can we get this from client?
   speaker_map = full_speaker_map(req.crux_tree)
-  print("speaker ids: ", speaker_map)
+  # print("speaker ids: ", speaker_map)
   for topic, topic_details in req.crux_tree.items():
     subtopics = topic_details["subtopics"]
     for subtopic, subtopic_details in subtopics.items():
@@ -1170,7 +1170,6 @@ def cruxes_from_tree(req:CruxesLLMConfig, log_to_wandb:str = config.WANDB_GROUP_
   
   crux_claims_only = [row[0] for row in crux_claims]
   top_cruxes = top_k_cruxes(full_controversy_matrix, crux_claims_only, req.top_k)
-  print("Top cruxes: ", top_cruxes)
   # compute LLM costs for this step's tokens
   s4_total_cost = token_cost(req.llm.model_name, TK_IN, TK_OUT)
 
