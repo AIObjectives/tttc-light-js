@@ -72,6 +72,7 @@ const setupPipelineWorker = (connection: Redis) => {
         extractionInstructions: "",
         dedupInstructions: "",
         cruxInstructions: "",
+        cruxesEnabled: false,
         batchSize: 2, // lower to avoid rate limits! initial was 10,
       };
 
@@ -83,6 +84,7 @@ const setupPipelineWorker = (connection: Redis) => {
       });
 
       const options: schema.OldOptions = { ...defaultConfig, ...config };
+      console.log("CRUX OPTIONS: ", options.cruxesEnabled)
 
       const [
         topicTreeLLMConfig,
@@ -164,6 +166,7 @@ const setupPipelineWorker = (connection: Redis) => {
       });
       logTokensInTracker(tracker_step2);
 
+      console.log("CRUX OPTIONS: ", options.cruxesEnabled)
       console.log("Step 2.5: Optionally extract cruxes");
       const {
         cruxClaims,
