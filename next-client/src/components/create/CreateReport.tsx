@@ -332,9 +332,11 @@ function PoorlyFormattedModal({
       <AlertDialogContent className="w-[329px] gap-6">
         <AlertDialogHeader>
           <AlertDialogTitle>
-            We detected a poorly formatted csv. Do you want to proceed
+            We detected a poorly formatted csv. Do you want to proceed?
           </AlertDialogTitle>
-          <AlertDialogDescription>Lorem ipsum</AlertDialogDescription>
+          <AlertDialogDescription>
+            Please make sure the CSV contains at least two columns named "id" and "comment"
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={cancelFunc} asChild>
