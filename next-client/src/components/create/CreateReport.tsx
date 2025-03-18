@@ -531,12 +531,10 @@ const FormOpenAIKey = () => {
 };
 
 const EnableResearchFeatures = () => {
-  const [noCruxes, setCruxesEnabled] = React.useState(false);
-  const handleChange = async () => {
-    setCruxesEnabled(!noCruxes);
-    console.log("NOW CRUXES ARE: ", noCruxes);
-    console.log("NO CRUXES: ", noCruxes);
-    console.log("NO CRUXES STRING: ", noCruxes.toString());
+  const [areCruxesEnabled, setCruxesEnabled] = React.useState(false);
+  const handleChange = (event) => {
+    setCruxesEnabled(areCruxesEnabled => !areCruxesEnabled);
+    console.log("ARE CRUXES ENABLED? : ", areCruxesEnabled.toString());
   };
   return (
     <Col gap={4}>
@@ -552,10 +550,10 @@ const EnableResearchFeatures = () => {
             respondents (into agree/disagree sides/groups of about equal size).
           </p>
           <div style={{ margin: "8px 0" }}>
-            <input type="checkbox" checked={noCruxes} onChange={handleChange} />
+            <input type="checkbox" checked={areCruxesEnabled} onChange={handleChange} />
             <label style={{ paddingLeft: "8px" }}>
               Suggest top crux pairs
-              <p>is it checked? {noCruxes.toString()}</p>
+              <p>Are cruxes enabled? {areCruxesEnabled.toString()}</p>
             </label>
           </div>
         </Col>
