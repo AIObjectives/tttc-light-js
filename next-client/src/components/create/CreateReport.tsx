@@ -335,7 +335,8 @@ function PoorlyFormattedModal({
             We detected a poorly formatted csv. Do you want to proceed?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Please make sure the CSV contains at least two columns named "id" and "comment"
+            Please make sure the CSV contains at least two columns named "id"
+            and "comment"
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
