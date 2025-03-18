@@ -30,7 +30,7 @@ export async function sortClaimsTreePipelineStep(
   input: SortClaimTreeStep["data"],
 ) {
   const { data, usage, cost } = await pyserverFetchSortClaimsTree(
-    `${env.PYSERVER_URL}/sort_claims_tree/`,
+    `${env.PYSERVER_URL}/sort_claims_tree`,
     input,
   )
     .then((res) => res.json())
