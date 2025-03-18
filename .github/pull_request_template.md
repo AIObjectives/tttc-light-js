@@ -1,5 +1,5 @@
-1. What is the goal of this PR?
-2. What changes does it introduce?
-3. How did you test this PR?
+**1. What is the goal of this PR?**
+**2. What specific parts of T3C are you changing and how?**
+**3. How did you test these changes?**
 
-Please select a reviewer and tag them in a new post in the Slack dev channel :)
+Please add one or more reviewer(s) and tag them in a new post in the Slack dev channel :)
