@@ -625,7 +625,7 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
           This estimate is based on past reports. Typically, our real cost vary
           between by 10-15% up or down. A general guideline is that 1 MB costs
           approximately $24, so 0.5 MB would be around $12, and 10 MB about
-          $120.
+          $240.
         </p>
       </Col>
     </Col>
