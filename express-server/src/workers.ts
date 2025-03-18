@@ -84,7 +84,7 @@ const setupPipelineWorker = (connection: Redis) => {
       });
 
       const options: schema.OldOptions = { ...defaultConfig, ...config };
-      console.log("CRUX OPTIONS: ", options.cruxesEnabled)
+      console.log("CRUX OPTIONS: ", options.cruxesEnabled);
 
       const [
         topicTreeLLMConfig,
@@ -166,7 +166,7 @@ const setupPipelineWorker = (connection: Redis) => {
       });
       logTokensInTracker(tracker_step2);
 
-      console.log("CRUX OPTIONS: ", options.cruxesEnabled)
+      console.log("CRUX OPTIONS: ", options.cruxesEnabled);
       console.log("Step 2.5: Optionally extract cruxes");
       const {
         cruxClaims,

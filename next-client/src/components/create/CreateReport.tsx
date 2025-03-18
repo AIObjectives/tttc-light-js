@@ -183,7 +183,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
       extractionInstructions: prompts.defaultExtractionPrompt,
       dedupInstructions: prompts.defaultDedupPrompt,
       cruxInstructions: prompts.defaultCruxPrompt,
-      cruxesEnabled : false,
+      cruxesEnabled: false,
     },
   });
 
@@ -201,7 +201,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormHeader />
             <FormDescription />
             <FormDataInput files={files} setFiles={setFiles} />
-            <EnableResearchFeatures/>
+            <EnableResearchFeatures />
             <CustomizePrompts />
             <CostEstimate files={files} />
             <div>
@@ -541,24 +541,25 @@ const EnableResearchFeatures = () => {
   return (
     <Col gap={4}>
       <h4>Enable Research Features</h4>
-        <Col gap={2}>
-          <Col>
-            <label htmlFor="title" className="font-medium">
-              Extract likely crux statements
+      <Col gap={2}>
+        <Col>
+          <label htmlFor="title" className="font-medium">
+            Extract likely crux statements
+          </label>
+          <p className="p2 text-muted-foreground">
+            As an extra processing step, suggest pairs of
+            perspective-summarizing statements which would best split the
+            respondents (into agree/disagree sides/groups of about equal size).
+          </p>
+          <div style={{ margin: "8px 0" }}>
+            <input type="checkbox" checked={noCruxes} onChange={handleChange} />
+            <label style={{ paddingLeft: "8px" }}>
+              Suggest top crux pairs
+              <p>is it checked? {noCruxes.toString()}</p>
             </label>
-            <p className="p2 text-muted-foreground">
-              As an extra processing step, suggest pairs of perspective-summarizing statements
-              which would best split the respondents (into agree/disagree sides/groups of about equal size). 
-            </p>
-            <div style={{ margin: '8px 0'}}>
-                <input type="checkbox" checked={noCruxes} onChange={handleChange} />
-                <label style={{ paddingLeft: '8px' }}>
-                      Suggest top crux pairs
-                <p>is it checked? {noCruxes.toString()}</p>
-              </label>
-            </div>
-          </Col>
+          </div>
         </Col>
+      </Col>
     </Col>
   );
 };
@@ -598,7 +599,7 @@ const CustomizePrompts = () => (
       title="Optional – Suggest crux summary statements of opposing perspectives"
       subheader="In this optional research step, AI suggests pairs of 'crux' statements which would best split participants into agree/disagree groups or sides of about equal size"
       inputName="cruxInstructions"
-/>
+    />
   </Col>
 );
 
