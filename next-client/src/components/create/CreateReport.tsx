@@ -18,6 +18,7 @@ import {
   DialogTitle,
   Spinner,
   TextArea,
+  Separator,
 } from "../elements";
 import { Input } from "../elements";
 import Icons from "@/assets/icons";
@@ -193,8 +194,8 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormHeader />
             <FormDescription />
             <FormDataInput files={files} setFiles={setFiles} />
-            <CustomizePrompts />
             <CostEstimate files={files} />
+            <AdvancedSettings />
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
                 Generate the report
@@ -523,8 +524,8 @@ const FormOpenAIKey = () => {
   );
 };
 
-const CustomizePrompts = () => (
-  <Col gap={8}>
+const CustomizePrompts = ({ show }: { show: boolean }) => (
+  <Col gap={8} className={show ? "" : "hidden"}>
     <Col gap={4}>
       <h4>Customize AI prompts</h4>
       <p className="p2 text-muted-foreground">
@@ -556,6 +557,35 @@ const CustomizePrompts = () => (
     />
   </Col>
 );
+
+function AdvancedSettings() {
+  const [show, setShow] = useState<boolean>(false);
+
+  return (
+    <Col gap={8}>
+      <Separator orientation="horizontal" />
+      <div>
+        <Button
+          onClick={() => setShow((curr) => !curr)}
+          type="button"
+          variant={"secondary"}
+        >
+          {show ? "Hide advanced settings" : "Show advanced settings"}
+        </Button>
+      </div>
+      <CustomizePrompts show={show} />
+      <div className={show ? "block" : "hidden"}>
+        <Button
+          variant={"secondary"}
+          type="button"
+          onClick={() => setShow((curr) => !curr)}
+        >
+          Hide advanced settings
+        </Button>
+      </div>
+    </Col>
+  );
+}
 
 function CustomizePromptSection({
   title,
