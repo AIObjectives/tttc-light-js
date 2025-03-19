@@ -183,9 +183,6 @@ function CreateReportComponent({ token }: { token: string | null }) {
   });
 
   const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
-  console.log("first,", !files?.item(0));
-  console.log("second, ", !methods.formState.isValid);
-  console.log("third", !token);
 
   return (
     <FormProvider {...methods}>
@@ -364,7 +361,6 @@ function FormDataInput({
   const { result } = useParseCsv(files);
 
   useEffect(() => {
-    console.log(result);
     if (!result) return;
     else if (result[0] === "error") {
       if (result[1].tag === "Broken file" || result[1].tag === "Size Error") {
