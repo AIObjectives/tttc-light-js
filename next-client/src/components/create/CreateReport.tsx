@@ -183,9 +183,6 @@ function CreateReportComponent({ token }: { token: string | null }) {
   });
 
   const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
-  //console.log("first,", !files?.item(0));
-  //console.log("second, ", !methods.formState.isValid);
-  //console.log("third", !token);
 
   return (
     <FormProvider {...methods}>
