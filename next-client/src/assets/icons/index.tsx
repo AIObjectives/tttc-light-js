@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageCircle,
+  X,
 } from "lucide-react";
 
 import TopicSVG from "./TopicSvg";
@@ -28,6 +29,7 @@ import QuoteBubbleSVG from "./QuoteBubbleSvg";
 import ResetSVG from "./Reset";
 import InfoSvg from "./InfoSvg";
 import LogoSvg from "./LogoSvg";
+import TTTC_SVG from "./TTTC";
 
 const Icons = () => <></>;
 
@@ -66,6 +68,8 @@ Icons.Lightbulb = (props: { className?: string }) => (
 );
 
 Icons.Logo = (props: { className?: string }) => <LogoSvg {...props} />;
+
+Icons.TTTC = (props: { className?: string }) => <TTTC_SVG {...props} />;
 
 Icons.Info = (props: { className?: string }) => <InfoSvg {...props} />;
 

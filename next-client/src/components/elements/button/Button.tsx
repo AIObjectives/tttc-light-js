@@ -18,6 +18,15 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:hover:opacity-80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // theme_violet: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_blueSea: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_blueSky: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_greenLeaf: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_greenLime: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_yellow: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_red: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_purple: "hover:hover:opacity-80 bg-theme_x border-theme_purple",
+        // theme_brown: "hover:hover:opacity-80 bg-theme_x border-theme_purple"
       },
       size: {
         default: "h-10 px-4 py-2",

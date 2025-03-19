@@ -14,7 +14,7 @@ import Image from "next/image";
 
 export default function Landing() {
   return (
-    <Col gap={4} className="max-w-[896px]">
+    <Col gap={4} className="max-w-[896px] mx-auto">
       <Title />
       <div className="px-4">
         <LandingHero className="w-full h-auto" />
@@ -228,7 +228,7 @@ const OrgCard = ({
 }) => (
   <Col
     gap={3}
-    className={`flex-1 py-4 px-[18px] ${backgroundColor} ${borderColor} border-[1px]`}
+    className={`flex-1 py-4 px-[18px] ${backgroundColor} ${borderColor} border-[1px] rounded-sm`}
   >
     <p className="p-medium">{title}</p>
     <ul className="list-disc pl-4 flex-grow">
@@ -236,7 +236,7 @@ const OrgCard = ({
         <li key={point}>{point}</li>
       ))}
     </ul>
-    <p className="p2">{footer}</p>
+    <p className="p2 text-muted-subtle">{footer}</p>
   </Col>
 );
 
@@ -297,8 +297,8 @@ const NumSignpost = ({
   num: number;
 }) => (
   <div
-    className={`h-6 w-6 rounded-sm ${borderColor} ${backgroundColor} border-[1px]`}
+    className={`h-6 w-6 rounded-sm ${borderColor} ${backgroundColor} border-[1px] flex`}
   >
-    <p className="p-medium justify-self-center">{num}</p>
+    <p className="p-medium mx-auto">{num}</p>
   </div>
 );

@@ -91,7 +91,7 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
       <CardTitle className="self-center flex-grow">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
-      <TextIcon
+      {/* <TextIcon
         icon={
           // <div>
           <Icons.Claim />
@@ -99,7 +99,18 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
         }
       >
         {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
-      </TextIcon>
+      </TextIcon> */}
+      <Row
+        gap={2}
+        className="items-center text-muted-foreground fill-muted-foreground"
+      >
+        <div>
+          <Icons.Claim className="h-4 w-4" />
+        </div>
+        <p className="p2 text-muted-foreground flex gap-2 items-center ">
+          {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
+        </p>
+      </Row>
       {button}
     </Row>
   );
@@ -280,6 +291,7 @@ function ExpandTopic() {
           <ShowMoreButton
             moreLeftNum={subtopicNodes.length - 1 - pagination}
             topicId={data.id}
+            topicColor={data.topicColor}
           />
         </>
       )}
@@ -290,15 +302,21 @@ function ExpandTopic() {
 function ShowMoreButton({
   moreLeftNum,
   topicId,
+  topicColor,
 }: {
   moreLeftNum: number;
   topicId: string;
+  topicColor: string;
 }) {
   const { dispatch } = useContext(ReportContext);
+  const bg_color = useThemeColor(topicColor, "bgAccent");
+  const text_color = useThemeColor(topicColor, "text");
+  const border_color = useThemeColor(topicColor, "border");
   return moreLeftNum > 0 ? (
     <div className="p-4 sm:p-8">
       <Button
         variant={"secondary"}
+        className={`${bg_color} ${text_color} ${border_color} border`}
         onClick={() =>
           dispatch({ type: "expandTopic", payload: { id: topicId } })
         }
