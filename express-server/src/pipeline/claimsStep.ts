@@ -39,35 +39,22 @@ export async function claimsPipelineStep(
     try {
       //console.log("POST call started");
 
-      // TODO: there's probably a more graceful way to do this in TS, right?
-      
+      // TODO: how do we set redirect: "follow" conditionally in undici? omitting for now
       // Explicitly set redirect to "follow" in production and staging to ensure any server redirects
       // (including potential HTTP to HTTPS redirects) are properly followed
-      if (env.NODE_ENV === "prod" || env.NODE_ENV === "staging") {
-        const { statusCode, headers, body } = await client.request({
-          path: path,
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "openai-api-key": openaiAPIKey,
-          },
-          body: JSON.stringify(input),
-          redirect: "follow"
+      const { statusCode, headers, body } = await client.request({
+        path: path,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "openai-api-key": openaiAPIKey,
+        },
+        body: JSON.stringify(input),
+        // TODO: how to set this in undici???
+        //redirect: "follow"
         //signal: controller.signal,
-        });
-      } else if (env.NODE_ENV == "dev") {
-        const { statusCode, headers, body } = await client.request({
-          path: path,
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "openai-api-key": openaiAPIKey,
-          },
-          body: JSON.stringify(input),
-        //signal: controller.signal,
-        });
+      });
 
-      }
       clearTimeout(timeoutId);
 
       // Check status code (similar to `response.ok`)
@@ -80,7 +67,7 @@ export async function claimsPipelineStep(
       const jsonData = await body.json();
 
       // Validate the response
-      const { data, usage, cost } = apiPyserver.claimsReply.parse(jsonData);
+      const { data, usage, cost } = apiPyserver.claimsResponse.parse(jsonData);
 
       return { claims_tree: data, usage, cost };
     } catch (requestError: any) {

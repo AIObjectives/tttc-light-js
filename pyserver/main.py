@@ -1078,11 +1078,7 @@ def cruxes_for_topic(client, llm:dict, topic:str, topic_desc:str, claims:list, s
   except:
     crux_obj = crux
   return {"crux" : crux_obj, "usage" : response.usage }
-<<<<<<< HEAD
   
-=======
-
->>>>>>> main
 def top_k_cruxes(cont_mat:list, cruxes:list, top_k:int=0)->list:
   """ Return the top K most controversial crux pairs. 
   Optionally let the caller set K, otherwise default

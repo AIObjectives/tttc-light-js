@@ -9,7 +9,7 @@ const typedFetch =
     url: string,
     body: z.infer<T>,
     openaiAPIKey: string,
-    isProd: boolean,
+    currentEnv: string,
   ) => {
     const fetchOptions: RequestInit = {
       method: "POST",
@@ -22,7 +22,7 @@ const typedFetch =
 
     // Explicitly set redirect to "follow" in production and staging to ensure any server redirects
     // (including potential HTTP to HTTPS redirects) are properly followed
-    if (isProd || env.NODE_ENV === "staging") {
+    if (currentEnv === "prod" || currentEnv === "staging") {
       fetchOptions.redirect = "follow";
     }
 
@@ -47,7 +47,7 @@ export async function topicTreePipelineStep(
     `${env.PYSERVER_URL}/topic_tree`,
     input,
     openaiAPIKey,
-    env.NODE_ENV === "prod",
+    env.NODE_ENV,
   )
     .then((res) => res.json())
     .then(logger("topic tree step returns: "))
