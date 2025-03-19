@@ -39,7 +39,7 @@ current_dir = Path(__file__).resolve().parent
 sys.path.append(str(current_dir))
 
 import config
-from utils import cute_print, topic_desc_map, full_speaker_map
+from utils import cute_print, topic_desc_map, full_speaker_map, token_cost
 
 load_dotenv()
 
@@ -236,6 +236,8 @@ def comments_to_tree(req: CommentsLLMConfig, api_key: str = Depends(header_schem
     print("Step 1: no topic tree: ", response)
     tree = {}
   usage = response.usage
+  # compute LLM costs for this step's tokens
+  s1_total_cost = token_cost(req.llm.model_name, usage.prompt_tokens, usage.completion_tokens)
     
   if log_to_wandb:
     try:
@@ -269,13 +271,14 @@ def comments_to_tree(req: CommentsLLMConfig, api_key: str = Depends(header_schem
         # token counts
         "U_tok_N/taxonomy": usage.total_tokens,
         "U_tok_in/taxonomy" : usage.prompt_tokens,
-        "U_tok_out/taxonomy": usage.completion_tokens
+        "U_tok_out/taxonomy": usage.completion_tokens,
+        "cost/s1_topics" : s1_total_cost,
       })
     except:
       print("Failed to create wandb run")
   #NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
   # choosing the latter for now 
-  return {"data" : tree["taxonomy"], "usage" : usage.model_dump()}
+  return {"data" : tree["taxonomy"], "usage" : usage.model_dump(), "cost" : s1_total_cost}
 
 def comment_to_claims(client, llm:dict, comment:str, tree:dict)-> dict:
   """
@@ -520,6 +523,9 @@ def all_comments_to_claims(req:CommentTopicTree, api_key: str = Depends(header_s
                                              }
                                         }
                                       }
+  # compute LLM costs for this step's tokens
+  s2_total_cost = token_cost(req.llm.model_name, TK_2_IN, TK_2_OUT)
+
   # Note: we will now be sending speaker names to W&B  
   if log_to_wandb:
     try:
@@ -538,7 +544,8 @@ def all_comments_to_claims(req:CommentTopicTree, api_key: str = Depends(header_s
         "U_tok_out/claims" : TK_2_OUT,
         "rows_to_claims" : wandb.Table(
                            data=comms_to_claims_html,
-                           columns = ["comments", "claims"])
+                           columns = ["comments", "claims"]),
+        "cost/s2_claims" : s2_total_cost
       })
     except:
       print("Failed to log wandb run")
@@ -546,7 +553,7 @@ def all_comments_to_claims(req:CommentTopicTree, api_key: str = Depends(header_s
   net_usage = {"total_tokens" : TK_2_TOT,
                "prompt_tokens" : TK_2_IN,
                "completion_tokens" : TK_2_OUT}
-  return {"data" : node_counts, "usage" : net_usage}
+  return {"data" : node_counts, "usage" : net_usage, "cost" : s2_total_cost}
 
 def dedup_claims(client, claims:list, llm:LLMConfig)-> dict:
   """
@@ -945,6 +952,9 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, api_key: str = Depends(header_schem
   elif req.sort == "numClaims":
     full_sort_tree = sorted(sorted_tree.items(), key=lambda x: x[1]["counts"]["claims"], reverse=True)
  
+  # compute LLM costs for this step's tokens
+  s3_total_cost = token_cost(req.llm.model_name, TK_IN, TK_OUT)
+  
   if log_to_wandb:
     try:
       exp_group_name = str(log_to_wandb)
@@ -963,7 +973,8 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, api_key: str = Depends(header_schem
         "U_tok_in/dedup": TK_IN,
         "U_tok_out/dedup" : TK_OUT,
         "deduped_claims" : wandb.Table(data=dupe_logs, columns = ["full_flat_claims", "deduped_claims"]),
-        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"])
+        "t3c_report" : wandb.Table(data=report_data, columns = ["t3c_report"]),
+        "cost/s3_dedup" : s3_total_cost
       })
       # W&B run completion
       wandb.run.finish()
@@ -973,7 +984,7 @@ def sort_claims_tree(req:ClaimTreeLLMConfig, api_key: str = Depends(header_schem
                "prompt_tokens" : TK_IN,
                "completion_tokens" : TK_OUT}
 
-  return {"data" : full_sort_tree, "usage" : net_usage} 
+  return {"data" : full_sort_tree, "usage" : net_usage, "cost" : s3_total_cost} 
 
 ###########################################
 # Optional / New Feature & Research Steps #
@@ -1067,7 +1078,11 @@ def cruxes_for_topic(client, llm:dict, topic:str, topic_desc:str, claims:list, s
   except:
     crux_obj = crux
   return {"crux" : crux_obj, "usage" : response.usage }
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> main
 def top_k_cruxes(cont_mat:list, cruxes:list, top_k:int=0)->list:
   """ Return the top K most controversial crux pairs. 
   Optionally let the caller set K, otherwise default
@@ -1108,7 +1123,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, api_key: str = Depends(header_scheme),
   
   # TODO: can we get this from client?
   speaker_map = full_speaker_map(req.crux_tree)
-  print("speaker ids: ", speaker_map)
+  # print("speaker ids: ", speaker_map)
   for topic, topic_details in req.crux_tree.items():
     subtopics = topic_details["subtopics"]
     for subtopic, subtopic_details in subtopics.items():
@@ -1192,7 +1207,8 @@ def cruxes_from_tree(req:CruxesLLMConfig, api_key: str = Depends(header_scheme),
   
   crux_claims_only = [row[0] for row in crux_claims]
   top_cruxes = top_k_cruxes(full_controversy_matrix, crux_claims_only, req.top_k)
-  print("Top cruxes: ", top_cruxes)
+  # compute LLM costs for this step's tokens
+  s4_total_cost = token_cost(req.llm.model_name, TK_IN, TK_OUT)
 
   # Note: we will now be sending speaker names to W&B
   # (still not to external LLM providers, to avoid bias on crux detection and better preserve PII)
@@ -1211,6 +1227,7 @@ def cruxes_from_tree(req:CruxesLLMConfig, api_key: str = Depends(header_scheme),
         "U_tok_N/cruxes" : TK_TOT,
         "U_tok_in/cruxes": TK_IN,
         "U_tok_out/cruxes" : TK_OUT,
+        "cost/s4_cruxes" : s4_total_cost,
         "crux_details" : wandb.Table(data=cruxes_main,
                                   columns=["crux", "reason", "agree", "disagree", "original_claims", "topic, subtopic", "description"]),
         "crux_top_scores" : wandb.Table(data=log_top_cruxes, columns=["score", "cruxA", "cruxB"])                           
@@ -1238,7 +1255,8 @@ def cruxes_from_tree(req:CruxesLLMConfig, api_key: str = Depends(header_scheme),
     "cruxClaims" : cruxes,
     "controversyMatrix" : full_controversy_matrix,
     "topCruxes" : top_cruxes,
-    "usage" : net_usage
+    "usage" : net_usage,
+    "cost" : s4_total_cost
   }
   return crux_response
 

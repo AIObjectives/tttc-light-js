@@ -5,6 +5,7 @@ import {
   CreateReport,
   Headline,
   LanguageSelector,
+  MobileHamburgerMenu,
   RepoGithub,
 } from "./components/NavbarButtons";
 import LoginButton from "./components/LoginButton";
@@ -16,7 +17,10 @@ function Navbar({ currentUser }: { currentUser: User | null }) {
       gap={6}
       className="px-6 items-center justify-between h-16 border-b shadow-sm w-screen"
     >
-      <Headline />
+      <Row className="items-center" gap={2}>
+        <MobileHamburgerMenu />
+        <Headline />
+      </Row>
       <Row
         gap={2}
         className="items-center content-center md:justify-self-end sm:flex"

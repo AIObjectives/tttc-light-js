@@ -183,9 +183,6 @@ function CreateReportComponent({ token }: { token: string | null }) {
   });
 
   const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
-  console.log("first,", !files?.item(0));
-  console.log("second, ", !methods.formState.isValid);
-  console.log("third", !token);
 
   return (
     <FormProvider {...methods}>
@@ -332,9 +329,12 @@ function PoorlyFormattedModal({
       <AlertDialogContent className="w-[329px] gap-6">
         <AlertDialogHeader>
           <AlertDialogTitle>
-            We detected a poorly formatted csv. Do you want to proceed
+            We detected a poorly formatted csv. Do you want to proceed?
           </AlertDialogTitle>
-          <AlertDialogDescription>Lorem ipsum</AlertDialogDescription>
+          <AlertDialogDescription>
+            Please make sure the CSV contains at least two columns named "id"
+            and "comment"
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={cancelFunc} asChild>
@@ -364,7 +364,6 @@ function FormDataInput({
   const { result } = useParseCsv(files);
 
   useEffect(() => {
-    console.log(result);
     if (!result) return;
     else if (result[0] === "error") {
       if (result[1].tag === "Broken file" || result[1].tag === "Size Error") {
@@ -622,7 +621,7 @@ function CostEstimate({ files }: { files: FileList | undefined }) {
           This estimate is based on past reports. Typically, our real cost vary
           between by 10-15% up or down. A general guideline is that 1 MB costs
           approximately $24, so 0.5 MB would be around $12, and 10 MB about
-          $120.
+          $240.
         </p>
       </Col>
     </Col>

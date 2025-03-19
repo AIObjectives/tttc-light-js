@@ -42,10 +42,9 @@ const logger =
 
 export async function sortClaimsTreePipelineStep(
   env: Env,
-  openaiAPIKey: string,
-  data: SortClaimTreeStep["data"],
+  input: SortClaimTreeStep["data"],
 ) {
-  return await pyserverFetchSortClaimsTree(
+  const { data, usage, cost } = await pyserverFetchSortClaimsTree(
     `${env.PYSERVER_URL}/sort_claims_tree`,
     data,
     openaiAPIKey,
@@ -54,4 +53,5 @@ export async function sortClaimsTreePipelineStep(
     .then((res) => res.json())
     .then(logger("sort claims step returns: "))
     .then(apiPyserver.sortClaimsTreeResponse.parse);
+  return { data, usage, cost };
 }

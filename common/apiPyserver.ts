@@ -170,6 +170,7 @@ export const topicTreeResponse = z.object(
   {
     data: partialTopic.array(),
     usage,
+    cost: z.number(),
   },
   { invalid_type_error: "Invalid topic tree response" },
 );
@@ -195,6 +196,7 @@ export type ClaimsRequest = z.infer<typeof claimsRequest>;
 export const claimsResponse = z.object({
   data: claimsTree,
   usage,
+  cost: z.number(),
 });
 
 //  ********************************
@@ -210,6 +212,8 @@ export type SortClaimsTreeRequest = z.infer<typeof sortClaimsTreeRequest>;
 
 export const sortClaimsTreeResponse = z.object({
   data: sortedTopic.array(),
+  usage: usage,
+  cost: z.number(),
 });
 
 export type SortClaimsTreeResponse = z.infer<typeof sortClaimsTreeResponse>;
@@ -249,6 +253,7 @@ export const cruxesResponse = z.object({
   controversyMatrix: controversyMatrix,
   topCruxes: scoredCruxPair.array(),
   usage,
+  cost: z.number(),
 });
 
 export const cruxesRequest = z.object({

@@ -21,6 +21,7 @@
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
+    --muted-subtle: 215, 19%, 35%, 1;
 
     --accent: 226 100% 97%;
     --accent-foreground: 245 58% 51%;
@@ -82,6 +83,7 @@
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 16% 47%;
+    --muted-subtle: 240, 5%, 65%, 1;
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
@@ -94,6 +96,33 @@
     --ring: 212.7 26.8% 83.9%;
 
     --AOI-graph-cell: 240 5% 34%;
+
+    --theme-violet: 263, 30%, 59%, 1;
+    --theme-violet-accent: 263, 20%, 16%, 1;
+
+    --theme-blueSea: 226, 51%, 62%, 1;
+    --theme-blueSea-accent: 226, 31%, 16%, 1;
+
+    --theme-blueSky: 193, 40%, 46%, 1;
+    --theme-blueSky-accent: 193, 100%, 10%, 1;
+
+    --theme-greenLeaf: 121, 23%, 54%, 1;
+    --theme-greenLeaf-accent: 121, 30%, 12%, 1;
+
+    --theme-greenLime: 83, 16%, 49%, 1;
+    --theme-greenLime-accent: 83, 63%, 9%, 1;
+
+    --theme-yellow: 50, 30%, 56%, 1;
+    --theme-yellow-accent: 50, 100%, 9%, 1;
+
+    --theme-red: 359, 27%, 63%, 1;
+    --theme-red-accent: 359, 49%, 13%, 1;
+
+    --theme-purple: 324, 17%, 53%, 1;
+    --theme-purple-accent: 324, 37%, 8%, 1;
+
+    --theme-brown: 345, 14%, 60%, 1;
+    --theme-brown-accent: 345, 21%, 14%, 1;
   }
 }
 

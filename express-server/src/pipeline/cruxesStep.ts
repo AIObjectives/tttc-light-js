@@ -46,7 +46,7 @@ export async function cruxesPipelineStep(
   openaiAPIKey: string,
   input: CruxesStep["data"],
 ) {
-  const { cruxClaims, controversyMatrix, topCruxes, usage } =
+  const { cruxClaims, controversyMatrix, topCruxes, usage, cost } =
     await pyserverFetchClaims(
       `${env.PYSERVER_URL}/cruxes`,
       input,
@@ -57,5 +57,5 @@ export async function cruxesPipelineStep(
       .then(logger("cruxes step returns: "))
       .then(apiPyserver.cruxesResponse.parse);
 
-  return { cruxClaims, controversyMatrix, topCruxes, usage };
+  return { cruxClaims, controversyMatrix, topCruxes, usage, cost };
 }
