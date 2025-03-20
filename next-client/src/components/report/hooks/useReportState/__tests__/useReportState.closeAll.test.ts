@@ -1,12 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { ReportState, __internals } from "../useReportState";
-import { reportData } from "stories/data/dummyData";
+import { setupTestState } from "./testStateSetup";
+import { ReportState } from "../types";
 
-const { createPathMapReducer, stateBuilder, mapIdsToPath } = __internals;
+const { state, reducer } = setupTestState();
 
-const state = stateBuilder(reportData.topics);
-
-const reducer = createPathMapReducer(mapIdsToPath(state));
 const openAll = (reportState: ReportState) =>
   reducer(reportState, { type: "openAll" });
 

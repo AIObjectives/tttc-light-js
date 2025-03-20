@@ -1,27 +1,16 @@
 import { describe, test, expect } from "vitest";
-import {
-  ReportState,
-  SomeNode,
-  SubtopicNode,
-  TopicNode,
-  __internals,
-} from "../useReportState";
-import { reportData } from "stories/data/dummyData";
 import { Array, pipe } from "effect";
 
-const {
-  createPathMapReducer,
-  stateBuilder,
-  mapIdsToPath,
-  defaultTopicPagination,
+import { setupTestState } from "./testStateSetup";
+import {
+  defaultAddSubtopicPagination,
   defaultAddTopicPagination,
   defaultSubtopicPagination,
-  defaultAddSubtopicPagination,
-} = __internals;
+  defaultTopicPagination,
+} from "../consts";
+import { ReportState, SubtopicNode, TopicNode } from "../types";
 
-const state = stateBuilder(reportData.topics);
-
-const reducer = createPathMapReducer(mapIdsToPath(state));
+const { state, reducer } = setupTestState();
 
 const getTestTopic = (state: ReportState): TopicNode => state.children[0];
 

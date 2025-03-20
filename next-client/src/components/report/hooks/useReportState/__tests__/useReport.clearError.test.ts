@@ -1,27 +1,26 @@
 import { describe, test, expect } from "vitest";
-import { ReportState, __internals } from "../useReportState";
-import { reportData } from "stories/data/dummyData";
+import { setupTestState } from "./testStateSetup";
+import { ReportState } from "../types";
 
-const { createPathMapReducer, stateBuilder, mapIdsToPath } = __internals;
+const { state, reducer } = setupTestState();
 
 const errorMessage = "This is an error message";
 
-const state = {
-  ...stateBuilder(reportData.topics),
+const errorState = {
+  ...state,
   error: errorMessage,
 };
 
-const reducer = createPathMapReducer(mapIdsToPath(state));
 const clearError = (reportState: ReportState) =>
   reducer(reportState, { type: "clearError" });
 
 describe("Clear Error", () => {
   test("Initial state has an error", () => {
-    expect(state.error).toBe(errorMessage);
+    expect(errorState.error).toBe(errorMessage);
   });
 
   test("Clearing error sets it back to null", () => {
-    const newState = clearError(state);
+    const newState = clearError(errorState);
     expect(newState.error).toBeNull();
   });
 });
