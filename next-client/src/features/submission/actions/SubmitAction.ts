@@ -8,7 +8,7 @@ import {
 import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { z } from "zod";
-import { validatedServerEnv } from "@/server-env";
+import { serverEnv } from "@/server-env";
 
 const parseCSV = async (file: File): Promise<SourceRow[]> => {
   const buffer = await file.arrayBuffer();
@@ -68,7 +68,7 @@ export default async function submitAction(
     firebaseAuthToken,
   };
 
-  const url = new URL("create", validatedServerEnv.PIPELINE_EXPRESS_URL);
+  const url = new URL("create", serverEnv.PIPELINE_EXPRESS_URL);
 
   const response = await fetch(url, {
     method: "POST",

@@ -1,7 +1,7 @@
 // This should remain on the server
 import "server-only";
 import { z } from "zod";
-import { createUrlValidator } from "../../express-server/src/types/context";
+//import { createUrlValidator } from "../../express-server/src/types/context";
 
 /**
  * Custom error class since we don't really need a stack trace
@@ -14,6 +14,44 @@ class EnvValidationError extends Error {
 }
 
 /**
+ * Environment type for validation
+ */
+export type Environment = "dev" | "staging" | "prod";
+
+/**
+ * Environment configuration options
+ */
+export type EnvConfig = {
+  /**
+   * Whether to enforce HTTPS URLs in validation
+   * @default false
+   */
+  requireHttps?: boolean;
+};
+
+export const createNextUrlValidator = (fieldName: string, config: EnvConfig = {}) => {
+  return z.string()
+    .refine(
+      (url) => {
+        try {
+          const parsed = new URL(url);
+          if (config.requireHttps && !parsed.protocol.startsWith("https")) {
+            return false;
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      {
+        message: config.requireHttps
+          ? `${fieldName} must be a valid HTTPS URL`
+          : `${fieldName} must be a valid URL`,
+      },
+    );
+};
+
+/**
  * Environment variable validation schema
  * 
  * Development:
@@ -23,7 +61,7 @@ class EnvValidationError extends Error {
  * - PIPELINE_EXPRESS_URL must be HTTPS
  */
 export const env = z.object({
-  PIPELINE_EXPRESS_URL: createUrlValidator("PIPELINE_EXPRESS_URL", {
+  PIPELINE_EXPRESS_URL: createNextUrlValidator("PIPELINE_EXPRESS_URL", {
     requireHttps: process.env.NODE_ENV === "production",
   }),
 });

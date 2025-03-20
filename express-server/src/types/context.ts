@@ -115,9 +115,9 @@ export const env = z.object({
     required_error: "Missing NODE_ENV (dev | staging | prod)",
     invalid_type_error: "Invalid input for NODE_ENV",
   }),
-  FIREBASE_PROJECT_ID: z.string({
-    required_error: "Missing FIREBASE_PROJECT_ID",
-  }),
+  //FIREBASE_PROJECT_ID: z.string({
+  //  required_error: "Missing FIREBASE_PROJECT_ID",
+  //}),
   FIREBASE_DATABASE_URL: createUrlValidator("FIREBASE_DATABASE_URL"),
   REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
   REDIS_PORT: createPortValidator("REDIS_PORT"),
@@ -138,7 +138,7 @@ export type Env = z.infer<typeof env>;
 export function validateEnv(): Env {
   const parsed = env.safeParse(process.env);
 
-  if (!parsed.success) {
+  if (parsed.success === false) {
     throw new EnvValidationError(
       `❌ Invalid environment variables: \n\n${parsed.error.errors
         .map((e, i) => {
