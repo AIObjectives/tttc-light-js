@@ -14,15 +14,23 @@ import {
   reportRef,
   ReportRef,
 } from "tttc-common/firebase";
+import { Environment } from "tttc-common/environmentValidation";
 import { AsyncData, AsyncError } from "../hooks/useAsyncState";
 import { FeedbackRequest } from "../types/clientRoutes";
 
-const NODE_ENV = z
-  .union([z.literal("development"), z.literal("production")])
-  .parse(process.env.NODE_ENV);
-const getCollectionName = useGetCollectionName(
-  NODE_ENV === "development" ? "dev" : "prod",
-);
+// Map NextJS environment values to T3C Environment type
+const mapNextEnvToT3CEnv = (nextEnv: string | undefined): Environment => {
+  if (!nextEnv) return "dev";
+  switch (nextEnv.toLowerCase()) {
+    case "development": return "dev";
+    case "production": return "prod";
+    case "test": return "dev";
+    default: return "dev";
+  }
+};
+
+const environment = mapNextEnvToT3CEnv(process.env.NODE_ENV);
+const getCollectionName = useGetCollectionName(environment);
 
 export async function getUsersReports(
   store: typeof db = db,

@@ -508,7 +508,7 @@ describe.skip("claimsPipelineStep", () => {
     });
     expect(result).toBeDefined();
     // expect zod to not throw an error
-    expect(() => apiPyserver.claimsReply.parse(result)).not.toThrow();
+    expect(() => apiPyserver.claimsResponse.parse(result)).not.toThrow();
   });
 });
 

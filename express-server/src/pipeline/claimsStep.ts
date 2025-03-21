@@ -1,12 +1,17 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { ClaimsStep } from "./types";
 import { Env } from "../types/context";
+import { z } from "zod";
 import { Client } from "undici";
 import { AbortController } from "abort-controller"; // If needed in your environment
-export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
-  try {
-    //console.log("Claims pipeline input:", JSON.stringify(input));
+import { Environment, requiresHttps } from "tttc-common/environmentValidation";
 
+export async function claimsPipelineStep(
+  env: Env,
+  openaiAPIKey: string,
+  input: ClaimsStep["data"],
+) {
+  try {
     // Validate input
     try {
       apiPyserver.claimsRequest.parse(input);
@@ -15,12 +20,12 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
       console.error("Input validation failed:", validationError);
       throw validationError;
     }
-
+  
     // Prepare the Python server URL and path
     const baseUrl = env.PYSERVER_URL.replace(/\/$/, ""); // Remove trailing slash if any
     const path = "/claims";
     //console.log("Making request to Python server:", baseUrl + path);
-
+  
     // Create an AbortController for the request
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000000);
@@ -33,17 +38,26 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
     });
     //console.log("Undici client created");
     try {
-      //console.log("POST call started"); //Execute the POST request
-      const { statusCode, headers, body } = await client.request({
+      //console.log("POST call started");
+
+      // Create request options
+      const requestOptions = {
         path: path,
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "openai-api-key": openaiAPIKey,
         },
         body: JSON.stringify(input),
-        //signal: controller.signal,
-      });
-      //console.log("POST call finished");
+      };
+      
+      // Add redirect option for staging and production environments
+      if (requiresHttps(env.NODE_ENV as Environment)) {
+        // In undici, followRedirect is the equivalent of fetch's redirect: "follow"
+        requestOptions.followRedirect = true;
+      }
+      
+      const { statusCode, headers, body } = await client.request(requestOptions);
 
       clearTimeout(timeoutId);
 
@@ -57,7 +71,7 @@ export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
       const jsonData = await body.json();
 
       // Validate the response
-      const { data, usage, cost } = apiPyserver.claimsReply.parse(jsonData);
+      const { data, usage, cost } = apiPyserver.claimsResponse.parse(jsonData);
 
       return { claims_tree: data, usage, cost };
     } catch (requestError: any) {

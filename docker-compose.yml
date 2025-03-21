@@ -2,7 +2,9 @@ version: "3.8"
 
 services:
   next-client:
-    image: registry.heroku.com/t3c-client/web
+    image: gcr.io/tttc-light-js/t3c-next-client
+    # NOTE: for current prod, use the following instead
+    # image: registry.heroku.com/t3c-client/web
     platform: linux/amd64
     build:
       context: .
@@ -14,7 +16,7 @@ services:
     # - NEXT_PUBLIC_FIREBASE_CONFIG=${FIREBASE_CONFIG}
 
   express-server:
-    image: registry.heroku.com/t3c-pipeline/web
+    image: gcr.io/tttc-light-js/t3c-express-server
     platform: linux/amd64
     build:
       context: .
@@ -27,7 +29,7 @@ services:
     #   - redis
 
   pyserver:
-    image: registry.heroku.com/t3c-pyserver/web
+    image: gcr.io/tttc-light-js/pyserver-brandon
     platform: linux/amd64
     build:
       context: .
