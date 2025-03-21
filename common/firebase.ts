@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Environment } from "./environmentValidation";
 
 export const reportRef = z.object({
   userId: z.string(),
@@ -51,8 +52,8 @@ export type ReportJob = z.infer<typeof reportJob>;
 
 export type JobStatus = ReportJob["status"];
 
-const COLLECTIONS = {
-  REPORT_REF: "reportRef",
+export const COLLECTIONS = {
+  REPORT_REF: "report_ref",
   REPORT_JOB: "reportJob",
   FEEDBACK: "feedback",
 } as const;
@@ -64,6 +65,6 @@ export const JOB_STATUS = {
 } as const;
 
 export const useGetCollectionName =
-  (NODE_ENV: "dev" | "prod") => (name: keyof typeof COLLECTIONS) => {
-    return NODE_ENV === "prod" ? COLLECTIONS[name] : `${COLLECTIONS[name]}_dev`;
+  (environment: Environment) => (name: keyof typeof COLLECTIONS) => {
+    return environment === "prod" ? COLLECTIONS[name] : `${COLLECTIONS[name]}_dev`;
   };

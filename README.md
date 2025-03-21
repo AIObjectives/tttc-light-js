@@ -166,6 +166,17 @@ Copy this file to .env.local in the same directory if you plan to run the dev se
 
 You can add different types of .env files based on your needs for testing, dev, prod, etc. You can read more in the [NextJS docs](https://nextjs.org/docs/pages/building-your-application/configuring/environment-variables#default-environment-variables)
 
+#### pyserver/.env
+
+Create a `.env` file in the `pyserver` directory with the following variables:
+
+```
+NODE_ENV=dev # Use 'dev', 'staging', or 'prod'
+OPENAI_API_KEY=your_openai_api_key
+```
+
+This ensures the Python server has access to the same environment configuration as the rest of the system.
+
 ## Running a local instance
 
 Note: There is a bug that prevents `/common` from being built correctly. For your first time, before doing anything else, go to `/common` and run `npm i && npm run build`. After this, you should be able to follow the other steps. If the project fails to start in dev, try rebuilding common first.

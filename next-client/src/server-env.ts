@@ -1,22 +1,13 @@
 // This should remain on the server
 import "server-only";
 import { z } from "zod";
-//import { createUrlValidator } from "../../express-server/src/types/context";
-
-/**
- * Custom error class since we don't really need a stack trace
- */
-class EnvValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EnvValidationError";
-  }
-}
-
-/**
- * Environment type for validation
- */
-export type Environment = "dev" | "staging" | "prod";
+import { 
+  Environment, 
+  EnvValidationError,
+  validateEnvironment,
+  requiresHttps,
+  createUrlValidator
+} from "tttc-common/environmentValidation";
 
 /**
  * Environment configuration options
@@ -29,27 +20,7 @@ export type EnvConfig = {
   requireHttps?: boolean;
 };
 
-export const createNextUrlValidator = (fieldName: string, config: EnvConfig = {}) => {
-  return z.string()
-    .refine(
-      (url) => {
-        try {
-          const parsed = new URL(url);
-          if (config.requireHttps && !parsed.protocol.startsWith("https")) {
-            return false;
-          }
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {
-        message: config.requireHttps
-          ? `${fieldName} must be a valid HTTPS URL`
-          : `${fieldName} must be a valid URL`,
-      },
-    );
-};
+export const createNextUrlValidator = createUrlValidator;
 
 /**
  * Environment variable validation schema
@@ -62,7 +33,9 @@ export const createNextUrlValidator = (fieldName: string, config: EnvConfig = {}
  */
 export const env = z.object({
   PIPELINE_EXPRESS_URL: createNextUrlValidator("PIPELINE_EXPRESS_URL", {
-    requireHttps: process.env.NODE_ENV === "production",
+    requireHttps: requiresHttps(
+      process.env.NODE_ENV === "production" ? "prod" : "dev"
+    ),
   }),
 });
 
@@ -84,3 +57,90 @@ if (!result.success) {
  * NextJS server env vars. Next server should fail to start if not present.
  */
 export const serverEnv = result.data;
+
+/**
+ * Client environment validation schema
+ */
+export const clientEnv = z.object({
+  PIPELINE_EXPRESS_URL: z.string(),
+  NEXT_PUBLIC_FIREBASE_API_KEY: z.string(),
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string(),
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string(),
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string(),
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string(),
+  NEXT_PUBLIC_FIREBASE_APP_ID: z.string(),
+  NODE_ENV: z.string().optional().default("development"),
+});
+
+export type ClientEnv = z.infer<typeof clientEnv>;
+
+/**
+ * Parse and validate client environment variables
+ */
+export function validateClientEnv(): ClientEnv {
+  const parsed = clientEnv.safeParse(process.env);
+
+  if (!parsed.success) {
+    throw new EnvValidationError(
+      `❌ Invalid client environment variables: \n\n${parsed.error.errors
+        .map((e, i) => {
+          return `${i}) [${e.path}]: ${e.message} \n`;
+        })
+        .join("")}`
+    );
+  }
+
+  // Convert Next.js NODE_ENV to our standardized environment type
+  const nodeEnv = parsed.data.NODE_ENV;
+  let environment: Environment;
+  
+  switch(nodeEnv) {
+    case "development":
+      environment = "dev";
+      break;
+    case "production":
+      // In Next.js, production could be our staging or production
+      // We need an additional ENV var to distinguish
+      environment = process.env.DEPLOY_ENV === "staging" ? "staging" : "prod";
+      break;
+    default:
+      throw new EnvValidationError(`Invalid NODE_ENV: ${nodeEnv}`);
+  }
+  
+  // Store normalized environment value for internal use
+  parsed.data.NODE_ENV = environment;
+  
+  return parsed.data;
+}
+
+/**
+ * Get current environment value
+ */
+export function getEnvironment(): Environment {
+  return validateEnvironment(process.env.NODE_ENV);
+}
+
+/**
+ * Update URL validation to use the common utilities
+ */
+export function validateServerUrls() {
+  const environment = getEnvironment();
+  const requireHttps = requiresHttps(environment);
+  
+  // Create validators with appropriate HTTPS requirements
+  const urlValidator = createUrlValidator("Server URL", { requireHttps });
+  
+  try {
+    // Validate URLs with appropriate HTTPS enforcement
+    const pipelineUrl = urlValidator.parse(process.env.PIPELINE_EXPRESS_URL);
+    // ... validate other URLs ...
+    
+    return {
+      pipelineUrl,
+      // ... other validated URLs ...
+    };
+  } catch (error) {
+    console.error("URL validation error:", error);
+    throw error;
+  }
+}

@@ -4,6 +4,7 @@ import { Env } from "../types/context";
 import { z } from "zod";
 import { Client } from "undici";
 import { AbortController } from "abort-controller"; // If needed in your environment
+import { Environment, requiresHttps } from "tttc-common/environmentValidation";
 
 export async function claimsPipelineStep(
   env: Env,
@@ -39,10 +40,8 @@ export async function claimsPipelineStep(
     try {
       //console.log("POST call started");
 
-      // TODO: how do we set redirect: "follow" conditionally in undici? omitting for now
-      // Explicitly set redirect to "follow" in production and staging to ensure any server redirects
-      // (including potential HTTP to HTTPS redirects) are properly followed
-      const { statusCode, headers, body } = await client.request({
+      // Create request options
+      const requestOptions = {
         path: path,
         method: "POST",
         headers: {
@@ -50,10 +49,15 @@ export async function claimsPipelineStep(
           "openai-api-key": openaiAPIKey,
         },
         body: JSON.stringify(input),
-        // TODO: how to set this in undici???
-        //redirect: "follow"
-        //signal: controller.signal,
-      });
+      };
+      
+      // Add redirect option for staging and production environments
+      if (requiresHttps(env.NODE_ENV as Environment)) {
+        // In undici, followRedirect is the equivalent of fetch's redirect: "follow"
+        requestOptions.followRedirect = true;
+      }
+      
+      const { statusCode, headers, body } = await client.request(requestOptions);
 
       clearTimeout(timeoutId);
 

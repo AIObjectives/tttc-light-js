@@ -2,6 +2,7 @@ import * as apiPyserver from "tttc-common/apiPyserver";
 import { CruxesStep } from "./types";
 import { Env } from "../types/context";
 import { z } from "zod";
+import { Environment, requiresHttps } from "tttc-common/environmentValidation";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
@@ -25,7 +26,7 @@ const typedFetch =
 
     // Explicitly set redirect to "follow" in production and staging to ensure any server redirects
     // (including potential HTTP to HTTPS redirects) are properly followed
-    if (currentEnv === "prod" || currentEnv === "staging") {
+    if (requiresHttps(currentEnv as Environment)) {
       fetchOptions.redirect = "follow";
     }
 

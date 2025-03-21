@@ -22,7 +22,7 @@ import sys
 from typing import Literal, List, Union
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -33,6 +33,10 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel
 import wandb
+import logging
+
+# Set up the logger
+logger = logging.getLogger(__name__)
 
 # Add the current directory to path for imports
 current_dir = Path(__file__).resolve().parent
@@ -45,24 +49,32 @@ load_dotenv()
 
 class Environment(str, Enum):
     DEV = "dev"
+    STAGING = "staging"
     PROD = "prod"
 
-# Get environment with type safety
 def get_environment() -> Environment:
-    env = os.getenv("NODE_ENV").lower()
-    if env not in [Environment.DEV, Environment.PROD]:
-      raise Exception("Environment not set: set NODE_ENV in pyserver/.env to valid value")
-    return Environment(env)
+    env = os.getenv("NODE_ENV", "dev").lower()
+    try:
+        return Environment(env)
+    except ValueError:
+        logger.warning(f"Invalid environment: {env}. Defaulting to DEV.")
+        return Environment.DEV
+
+# Check if current environment requires HTTPS
+def requires_https() -> bool:
+    env = get_environment()
+    return env in [Environment.STAGING, Environment.PROD]
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
         
-        # Add HSTS only in production
-        if get_environment() == Environment.PROD:
+        # Add security headers based on environment
+        if requires_https():
+            # HSTS should only be set in environments requiring HTTPS
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         
-        # Additional security headers - safe for both environments
+        # Additional security headers - safe for all environments
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'

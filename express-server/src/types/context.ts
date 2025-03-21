@@ -1,5 +1,10 @@
 import "dotenv/config";
 import { z } from "zod";
+import { 
+  EnvValidationError, 
+  requiresHttps,
+  validateEnvironment
+} from "tttc-common/environmentValidation";
 
 declare global {
   namespace Express {
@@ -12,116 +17,21 @@ declare global {
 }
 
 /**
- * Custom error class since we don't really need a stack trace
- */
-class EnvValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EnvValidationError";
-  }
-}
-
-/**
- * Environment type for validation
- */
-export type Environment = "dev" | "staging" | "prod";
-
-/**
- * Environment configuration options
- */
-export type EnvConfig = {
-  /**
-   * Whether to enforce HTTPS URLs in validation
-   * @default false
-   */
-  requireHttps?: boolean;
-};
-
-/**
- * Creates a URL validator with configurable HTTPS requirement
- * @param fieldName - Name of the URL field for error messages
- * @param config - Environment configuration options
- */
-export const createUrlValidator = (fieldName: string, config: EnvConfig = {}) => {
-  return z.string()
-    .refine(
-      (url) => {
-        try {
-          const parsed = new URL(url);
-          if (config.requireHttps && !parsed.protocol.startsWith("https")) {
-            return false;
-          }
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {
-        message: config.requireHttps
-          ? `${fieldName} must be a valid HTTPS URL`
-          : `${fieldName} must be a valid URL`,
-      },
-    );
-};
-
-/**
- * Creates a port number validator
- * @param fieldName - Name of the port field for error messages
- */
-export const createPortValidator = (fieldName: string) => {
-  return z.string()
-    .refine(
-      (v) => {
-        const n = Number(v);
-        return !isNaN(n) && v?.length > 0;
-      },
-      { message: `${fieldName} should be a numeric string` },
-    )
-    .transform((numstr) => Number(numstr));
-};
-
-/**
- * Validates environment type
- */
-export const validateEnvironment = (env: string | undefined): Environment => {
-  if (!env || !["dev", "staging", "prod"].includes(env.toLowerCase())) {
-    throw new Error("Environment not set: NODE_ENV must be 'dev', 'staging', or 'prod'");
-  }
-  return env.toLowerCase() as Environment;
-};
-
-/**
- * Environment variable validation schema
- * 
- * Development:
- * - URLs can be HTTP or HTTPS
- * - Redis can use either REDIS_HOST + REDIS_PORT or REDIS_URL
- * 
- * Production:
- * - All URLs must be HTTPS
- * - Redis configuration same as development
+ * Environment validation schema
  */
 export const env = z.object({
-  OPENAI_API_KEY: z.string({ required_error: "Missing OpenAI Key" }),
-  GCLOUD_STORAGE_BUCKET: z.string({
-    required_error: "Missing GCloud storage bucket",
-  }),
-  GOOGLE_CREDENTIALS_ENCODED: z.string({
-    required_error: "Missing encoded GCloud credentials",
-  }),
-  CLIENT_BASE_URL: createUrlValidator("CLIENT_BASE_URL"),
-  PYSERVER_URL: createUrlValidator("PYSERVER_URL"),
-  NODE_ENV: z.union([z.literal("dev"), z.literal("staging"), z.literal("prod")], {
-    required_error: "Missing NODE_ENV (dev | staging | prod)",
-    invalid_type_error: "Invalid input for NODE_ENV",
-  }),
-  //FIREBASE_PROJECT_ID: z.string({
-  //  required_error: "Missing FIREBASE_PROJECT_ID",
-  //}),
-  FIREBASE_DATABASE_URL: createUrlValidator("FIREBASE_DATABASE_URL"),
-  REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
-  REDIS_PORT: createPortValidator("REDIS_PORT"),
-  REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
+  OPENAI_API_KEY: z.string(),
+  GCLOUD_STORAGE_BUCKET: z.string(),
+  FIREBASE_DATABASE_URL: z.string(),
+  FIREBASE_PROJECT_ID: z.string(),
+  CLIENT_BASE_URL: z.string(),
+  PYSERVER_URL: z.string(),
+  GOOGLE_CREDENTIALS_ENCODED: z.string().optional(),
+  GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+  REDIS_HOST: z.string(),
+  REDIS_PORT: z.string(),
+  REDIS_URL: z.string(),
+  NODE_ENV: z.string(),
 });
 
 export type Env = z.infer<typeof env>;
@@ -133,7 +43,7 @@ export type Env = z.infer<typeof env>;
  * 1. Required environment variables are present
  * 2. URLs are properly formatted
  * 3. Port numbers are valid
- * 4. In production, enforces HTTPS for all URLs
+ * 4. In production and staging, enforces HTTPS for all URLs
  */
 export function validateEnv(): Env {
   const parsed = env.safeParse(process.env);
@@ -153,7 +63,7 @@ export function validateEnv(): Env {
   const errors: string[] = [];
 
   // Additional validation for production and staging environments
-  if (environment === "prod" || environment === "staging") {
+  if (requiresHttps(environment)) {
     // Validate HTTPS URLs
     const urlFields = {
       CLIENT_BASE_URL: validatedEnv.CLIENT_BASE_URL,
@@ -180,4 +90,18 @@ export function validateEnv(): Env {
   }
 
   return validatedEnv;
+}
+
+// Example pattern to use consistently across all API calls
+const fetchOptions: RequestInit = {
+  // ... other options ...
+  headers: {
+    "Content-Type": "application/json",
+    "openai-api-key": openaiAPIKey,
+  },
+};
+
+// Apply consistent environment-based redirect handling
+if (requiresHttps(environment)) {
+  fetchOptions.redirect = "follow";
 }
