@@ -83,6 +83,6 @@
     "tailwindcss-animate": "^1.0.7",
     "tttc-common": "file:../common",
     "vaul": "^1.1.2",
-    "zod": "^3.22.4"
+    "zod": "3.22.4"
   }
 }
