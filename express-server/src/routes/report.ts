@@ -6,7 +6,13 @@ export async function report(req: Request, res: Response) {
   const uri = decodeURIComponent(
     api.getReportRequestUri.parse(req.params.reportUri),
   );
+  // Extract name of the json file
   const name = new URL(uri).pathname.split("/").pop();
+  // If no such name exists, then we can't find the resource.
+  if (!name) {
+    res.status(404).send("Not Found");
+    return;
+  }
   const jobState = await pipelineQueue.getJobState(name);
   if (jobState === "unknown")
     return res.send({ status: api.reportJobStatus.Values["notFound"] });

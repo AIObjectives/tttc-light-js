@@ -79,7 +79,8 @@ export async function updateReportJobStatus(jobId: string, status: JobStatus) {
     if (e instanceof JobNotFoundError) {
       throw new JobNotFoundError(e.message);
     }
-    throw new Error(`Failed to update job status: ${e.message}`);
+    const message = e instanceof Error ? e.message : e?.toString();
+    throw new Error(`Failed to update job status: ${message}`);
   }
 }
 

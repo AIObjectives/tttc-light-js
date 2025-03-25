@@ -3,8 +3,8 @@ import { SourceRow } from "tttc-common/schema";
 // sync version of sha256 hash to make strong unique urls
 // that do not leak
 const { createHash } = require("crypto");
-function sha256(string) {
-  return createHash("sha256").update(string).digest("hex");
+function sha256(str: string) {
+  return createHash("sha256").update(str).digest("hex");
 }
 
 export function uniqueSlug(str: string): string {

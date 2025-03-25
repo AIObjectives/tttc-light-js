@@ -7,6 +7,7 @@
     "sourceMap": true, // Generate source maps
     "composite": true, // Enable project references,
     "jsx": "react",
+    "strict": true,
     "paths": {
       "*": ["*", "node_modules/*"]
     },
@@ -17,5 +18,5 @@
     "lib": ["ES2019", "DOM"]
   },
   "include": ["*", "./morphisms/**/*"],
-  "exclude": ["dist/"]
+  "exclude": ["dist/", "**/*/*.test.*"]
 }

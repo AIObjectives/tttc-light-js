@@ -1,4 +1,6 @@
 import * as schema from "../schema";
+// ! for some reason uuid's types aren't working?
+// @ts-ignore
 import { v4 } from "uuid";
 
 // type SourcePair = [schema.SourceRow, schema.Source];
@@ -32,10 +34,10 @@ const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
  * This function takes the source rows, sees if the pattern 'Anonymous #n' is used. Start from the last number.
  */
 const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
-  const usedAnonNums = sourceRows
+  const usedAnonNums: number[] = sourceRows
     .map((r) => r.interview && r.interview.match(/Anonymous #(\d+)/))
     .map((expArr) => (expArr ? parseInt(expArr[1]) : null))
-    .filter((val) => val !== null)
+    .filter((val): val is number => val !== null)
     .map(Math.abs);
 
   const maxNum = usedAnonNums.length > 0 ? Math.max(...usedAnonNums) : 0;

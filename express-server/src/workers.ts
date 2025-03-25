@@ -94,7 +94,7 @@ const setupPipelineWorker = (connection: Redis) => {
         options.extractionInstructions,
         options.dedupInstructions,
         options.cruxInstructions,
-      ].map((instructions) => makeLLMConfig(instructions));
+      ].map((instructions) => makeLLMConfig(instructions as string));
 
       const initTracker: schema.Tracker = {
         costs: 0,
@@ -107,7 +107,7 @@ const setupPipelineWorker = (connection: Redis) => {
 
       const comments: { speaker: string; text: string; id: string }[] =
         options.data.map((x) => ({
-          speaker: x.interview,
+          speaker: x.interview as string,
           text: x.comment,
           id: x.id,
         }));
@@ -221,9 +221,10 @@ const setupPipelineWorker = (connection: Redis) => {
         subtopics: t.subtopics.map((sub) => ({
           ...sub,
           subtopicId: randomUUID(),
+          // @ts-ignore
           claims: tree
             .find(([tag]) => tag === t.topicName)[1]
-            .topics.find(([key]) => key === sub.subtopicName)[1]
+            .topics?.find(([key]) => key === sub.subtopicName)[1]
             .claims.map((clm) => ({
               ...clm,
               claimId: randomUUID(),
@@ -260,7 +261,7 @@ const setupPipelineWorker = (connection: Redis) => {
       };
 
       // next line is important to avoid leaking keys!
-      delete options.apiKey;
+      options.apiKey = "";
       console.log(`Pipeline completed in ${tracker_end.duration}`);
       console.log(
         `Pipeline cost: $${tracker_end.costs} for ${tracker_end.prompt_tokens} + ${tracker_end.completion_tokens} tokens (${tracker_end.total_tokens} total)`,
@@ -309,6 +310,9 @@ const setupPipelineWorker = (connection: Redis) => {
   pipeLineWorker.on("failed", async (job, e) => {
     // Update Firestore reportJob to failed status
     try {
+      if (!job?.data.firebaseDetails) {
+        throw new firebase.JobNotFoundError();
+      }
       await firebase.updateReportJobStatus(
         job.data.firebaseDetails.firebaseJobId,
         "failed",
