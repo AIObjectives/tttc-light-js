@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import generate from "./routes/generate";
 import create from "./routes/create";
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
@@ -27,12 +26,6 @@ export const pipelineQueue = plq;
 
 // This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
 const _ = setupWorkers(connection);
-
-/**
- * Depcrecated route
- * @deprecated
- */
-app.post("/generate", generate);
 
 /**
  * Creates report
