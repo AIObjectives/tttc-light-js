@@ -79,7 +79,6 @@ const setupPipelineWorker = (connection: Redis) => {
         system_prompt: config.systemInstructions,
         user_prompt,
         model_name: config.model || "gpt-4o-mini",
-        api_key: config.apiKey,
       });
 
       const options: schema.OldOptions = { ...defaultConfig, ...config };
@@ -124,14 +123,14 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.clustering,
       });
 
-      const {
-        data: taxonomy,
-        usage: topicTreeTokens,
-        cost: topicTreeCost,
-      } = await topicTreePipelineStep(env, {
-        comments,
-        llm: topicTreeLLMConfig,
-      });
+      const { data: taxonomy, usage: topicTreeTokens, cost: topicTreeCost } = await topicTreePipelineStep(
+        env,
+        config.apiKey,
+        {
+          comments,
+          llm: topicTreeLLMConfig,
+        },
+      );
 
       const tracker_step1 = sumTokensCost({
         tracker: initTracker,
@@ -147,11 +146,7 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.extraction,
       });
-      const {
-        claims_tree,
-        usage: claimsTokens,
-        cost: claimsCost,
-      } = await claimsPipelineStep(env, {
+      const { claims_tree, usage: claimsTokens, cost: claimsCost } = await claimsPipelineStep(env, config.apiKey, {
         tree: { taxonomy },
         comments,
         llm: claimsLLMConfig,
@@ -165,18 +160,13 @@ const setupPipelineWorker = (connection: Redis) => {
       logTokensInTracker(tracker_step2);
 
       console.log("Step 2.5: Optionally extract cruxes");
-      const {
-        cruxClaims,
-        controversyMatrix,
-        topCruxes,
-        usage: cruxTokens,
-        cost: cruxCost,
-      } = await cruxesPipelineStep(env, {
-        topics: taxonomy,
-        crux_tree: claims_tree,
-        llm: cruxesLLMConfig,
-        top_k: 0,
-      });
+      const { cruxClaims, controversyMatrix, topCruxes, usage: cruxTokens, cost: cruxCost } =
+        await cruxesPipelineStep(env, config.apiKey, {
+          topics: taxonomy,
+          crux_tree: claims_tree,
+          llm: cruxesLLMConfig,
+          top_k: 0,
+        });
       // package crux addOns together
       const cruxAddOns = {
         topCruxes: topCruxes,
@@ -198,15 +188,15 @@ const setupPipelineWorker = (connection: Redis) => {
       // TODO: more principled way of configuring this?
       const numPeopleSort = "numPeople";
 
-      const {
-        data: tree,
-        usage: sortClaimsTreeTokens,
-        cost: sortClaimsTreeCost,
-      } = await sortClaimsTreePipelineStep(env, {
-        tree: claims_tree,
-        llm: dedupLLMConfig,
-        sort: numPeopleSort,
-      });
+      const { data: tree, usage: sortClaimsTreeTokens, cost: sortClaimsTreeCost} = await sortClaimsTreePipelineStep(
+        env,
+        config.apiKey,
+        {
+          tree: claims_tree,
+          llm: dedupLLMConfig,
+          sort: numPeopleSort,
+        },
+      );
 
       const tracker_step3 = sumTokensCost({
         tracker: tracker_crux,
