@@ -6,6 +6,7 @@ import { CustomError } from "./error";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
 import { Result } from "./types/result";
+import { Env } from "./types/context";
 
 const fileContent = z.union([schema.pipelineOutput, schema.uiReportData]);
 type FileContent = z.infer<typeof fileContent>;
@@ -75,12 +76,14 @@ export class Bucket extends Storage {
   async save(
     fileName: string,
     fileContent: string,
-  ): Promise<Result<string, BucketSaveError>> {
+  ): Promise<Result<string, StorageSaveError>> {
     const file = this.bucket.file(fileName);
     try {
       await file.save(fileContent, {
         metadata: {
           contentType: "application/json",
+          // Cache control here is required to successfully save to bucket for some reason.
+          cacheControl: "no-cache, no-store, must-revalidate",
         },
       });
       return {
@@ -117,3 +120,8 @@ class BucketSaveError extends CustomError<"BucketSaveError"> {
     super("BucketSaveError", err);
   }
 }
+
+export const createStorage = (env: Env): Storage => {
+  // since Bucket is the only storage class, just return this for now.
+  return new Bucket(env.GOOGLE_CREDENTIALS_ENCODED, env.GCLOUD_STORAGE_BUCKET);
+};
