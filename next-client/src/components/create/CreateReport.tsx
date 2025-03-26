@@ -183,6 +183,16 @@ function CreateReportComponent({ token }: { token: string | null }) {
     },
   });
 
+  // ! Brandon: For some reason I can't get the form to revalidate
+  // ! But when I watch / console log  it, it works.
+  // ! I'm going to leave this in a as a hotfix and focus on fixing the real bug
+  // ! When this component is refactored
+  const title = methods.watch("title");
+  const description = methods.watch("description");
+  useEffect(() => {
+    console.log(methods.formState.isValid);
+  }, [title, description]);
+
   const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
 
   return (
