@@ -37,6 +37,7 @@ function insertClaim(taxonomy: Taxonomy, claim: LLMClaim, tracker: Tracker) {
   const matchedTopic = taxonomy.find((topic) => topic.topicName === topicName);
   if (!matchedTopic) {
     console.log("Topic missmatch, skipping claim " + claim.claimId);
+
     tracker.unmatchedClaims.push(claim);
     return;
   }
@@ -95,6 +96,7 @@ async function pipeline(
     unmatchedClaims: [],
     prompt_tokens: 0,
     completion_tokens: 0,
+    total_tokens: 0,
   };
   const comments = JSON.stringify(options.data.map((x) => x.comment));
 
@@ -192,7 +194,7 @@ async function pipeline(
       : `${secs} seconds`;
 
   // next line is important to avoid leaking keys!
-  delete options.apiKey;
+  options.apiKey = "";
   console.log(`Pipeline completed in ${tracker.duration}`);
   console.log(
     `Pipeline cost: $${tracker.costs} for ${tracker.prompt_tokens} + ${tracker.completion_tokens} tokens`,

@@ -1,7 +1,7 @@
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
 import { exit } from "process";
-import { Env } from "types/context";
+import { Env } from "./types/context";
 
 export const setupConnection = (env: Env) => {
   const connection = new IORedis(env.REDIS_URL, {

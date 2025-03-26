@@ -7,7 +7,7 @@ import * as schema from "tttc-common/schema";
 import { formatData, uniqueSlug } from "../utils";
 import { pipelineQueue } from "../server";
 import * as firebase from "../Firebase";
-import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier";
+import { DecodedIdToken } from "firebase-admin/auth";
 
 const handleGoogleSheets = async (
   googleData: schema.GoogleSheetData,
@@ -118,6 +118,8 @@ async function createNewReport(req: Request, res: Response) {
         title: userConfig.title,
         description: userConfig.description,
         reportDataUri: jsonUrl,
+        status: "pending",
+        createdAt: new Date(),
       })
     : null;
 
@@ -132,6 +134,8 @@ async function createNewReport(req: Request, res: Response) {
   //     ? OPENAI_API_KEY
   //     : userConfig.apiKey;
   const apiKey = OPENAI_API_KEY;
+  // ! FIX
+  // @ts-ignore
   const config: schema.OldOptions = {
     ...userConfig,
     ...parsedData,
@@ -180,7 +184,9 @@ export default async function create(req: Request, res: Response) {
     console.error(e);
 
     res.status(500).send({
-      error: { message: e.message || "An unknown error occurred." },
+      error: {
+        message: e instanceof Error ? e.message : "An unknown error occurred.",
+      },
     });
   }
 }

@@ -16,13 +16,20 @@ export default async function generate(req: Request, res: Response) {
   try {
     const body: GenerateApiRequest = req.body;
     const { data: dataPayload, userConfig } = body;
+    // @ts-ignore
     const config: OldOptions = userConfig;
+    // @ts-ignore
     if (dataPayload[0] === "googlesheet") {
+      // @ts-ignore
       const googleSheet = dataPayload[1];
       const { data, pieCharts } = await fetchSpreadsheetData(
+        // @ts-ignore
         googleSheet.url,
+        // @ts-ignore
         googleSheet.pieChartColumns,
+        // @ts-ignore
         googleSheet.filterEmails,
+        // @ts-ignore
         googleSheet.oneSubmissionPerEmail,
       );
       config.data = formatData(data);
@@ -31,6 +38,7 @@ export default async function generate(req: Request, res: Response) {
     // if (!config.data) {
     //   throw new Error("Missing data");
     // }
+    // @ts-ignore
     config.data = formatData(dataPayload[1]);
     // allow users to use our keys if they provided the password
     if (config.apiKey === process.env.OPENAI_API_KEY_PASSWORD) {
@@ -44,6 +52,7 @@ export default async function generate(req: Request, res: Response) {
     const clientBaseUrl = process.env.CLIENT_BASE_URL;
     if (!clientBaseUrl)
       throw new Error("You need a CLIENT_BASE_URL defined in env");
+    // @ts-ignore
     config.filename = config.filename || uniqueSlug(config.title);
     const jsonUrl = getStorageUrl(config.filename);
     await storeJSON(

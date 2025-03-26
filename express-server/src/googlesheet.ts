@@ -16,7 +16,8 @@ export async function fetchSpreadsheetData(
   // extract the data from the spreadsheet
   const url2 = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
   const response = await axios.get(url2);
-  const jsonStr = response.data.match(/(?<=.*\().*(?=\);)/s)[0];
+  const match = response.data.match(/.*\(([\s\S]*)\);/);
+  const jsonStr = match ? match[1] : null;
   const json = JSON.parse(jsonStr);
 
   // extract the columns and rows
@@ -63,7 +64,11 @@ export async function fetchSpreadsheetData(
   const emailToData: { [key: number]: { id: string; comment: string }[] } = {};
 
   rows.forEach((row, id) => {
+    // ! Brandon: indexing into a string and then using that to access a record with key:number ?????????
+    // ! Brandon: Adding ts ignores into this so we can use strict mode and not break stuff. This entire file needs redone.
+    // @ts-ignore
     emailToData[row[emailColumn]] ??= [];
+    // @ts-ignore
     emailToData[row[emailColumn]].push({
       id: String(id),
       comment: commentColumns

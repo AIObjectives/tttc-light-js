@@ -38,5 +38,5 @@
     ".storybook/miscStories/Typography.stories.tsx",
     "vitest.config.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "**/*/*.test.*", "**/*/*.stories.*"]
 }
