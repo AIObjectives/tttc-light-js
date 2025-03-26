@@ -12,7 +12,7 @@
  * }
  */
 export abstract class CustomError<T extends string> extends Error {
-  public readonly _tag: T;
+  public readonly tag: T;
 
   constructor(tag: T, err?: unknown) {
     const message =
@@ -25,7 +25,7 @@ export abstract class CustomError<T extends string> extends Error {
     Object.setPrototypeOf(this, new.target.prototype);
 
     // Initialize the _tag property
-    this._tag = tag;
+    this.tag = tag;
 
     // Set name for better stack traces
     this.name = this.constructor.name;
