@@ -5,6 +5,7 @@ import {
 import { CustomError } from "./error";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
+import { Result } from "./types/result";
 
 const fileContent = z.union([schema.pipelineOutput, schema.uiReportData]);
 type FileContent = z.infer<typeof fileContent>;
@@ -13,11 +14,11 @@ type FileContent = z.infer<typeof fileContent>;
  * Abstract class for anything that involves storing reports
  */
 export abstract class Storage {
-  abstract get(fileName: string): Promise<FileContent | StorageGetError>;
+  abstract get(fileName: string): Promise<Result<FileContent, StorageGetError>>;
   abstract save(
     fileName: string,
     fileContent: string,
-  ): Promise<string | StorageSaveError>;
+  ): Promise<Result<string, StorageSaveError>>;
 }
 
 /**
@@ -45,24 +46,36 @@ export class Bucket extends Storage {
   /**
    * Gets report data from storage bucket. Returns either the content or an error value
    */
-  async get(fileName: string): Promise<FileContent | StorageGetError> {
+  async get(fileName: string): Promise<Result<FileContent, StorageGetError>> {
     try {
       const data = await this.bucket.file(this.storageUrl(fileName)).download();
       const parsed = fileContent.safeParse(data);
       if (parsed.success) {
-        return parsed.data;
+        return {
+          tag: "success",
+          value: parsed.data,
+        };
       } else {
-        return new InvalidJSONFormat(parsed.error);
+        return {
+          tag: "failure",
+          error: new InvalidJSONFormat(parsed.error),
+        };
       }
     } catch (e) {
-      return new BucketGetError(e);
+      return {
+        tag: "failure",
+        error: new BucketGetError(e),
+      };
     }
   }
 
   /**
    * Saves data to storage bucket. Returns either the storage url or an error.
    */
-  async save(fileName: string, fileContent: string) {
+  async save(
+    fileName: string,
+    fileContent: string,
+  ): Promise<Result<string, BucketSaveError>> {
     const file = this.bucket.file(fileName);
     try {
       await file.save(fileContent, {
@@ -70,9 +83,15 @@ export class Bucket extends Storage {
           contentType: "application/json",
         },
       });
-      return this.storageUrl(fileName);
+      return {
+        tag: "success",
+        value: this.storageUrl(fileName),
+      };
     } catch (e) {
-      return new BucketSaveError(e);
+      return {
+        tag: "failure",
+        error: new BucketSaveError(e),
+      };
     }
   }
 }
