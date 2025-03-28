@@ -82,7 +82,7 @@ async function createNewReport(req: Request, res: Response) {
   // ! Brandon: This config object should be phased out
   const { data, userConfig, firebaseAuthToken } = body;
 
-  const storage = createStorage(env);
+  const storage = createStorage(env, "public");
 
   // ! Temporary size check
   // TODO: configure devprod filesize flag

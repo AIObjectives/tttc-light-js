@@ -121,7 +121,19 @@ class BucketSaveError extends CustomError<"BucketSaveError"> {
   }
 }
 
-export const createStorage = (env: Env): Storage => {
+export const createStorage = (
+  env: Env,
+  control: "public" | "private",
+): Storage => {
   // since Bucket is the only storage class, just return this for now.
-  return new Bucket(env.GOOGLE_CREDENTIALS_ENCODED, env.GCLOUD_STORAGE_BUCKET);
+  if (control === "public")
+    return new Bucket(
+      env.GOOGLE_CREDENTIALS_ENCODED,
+      env.GCLOUD_STORAGE_BUCKET,
+    );
+  else
+    return new Bucket(
+      env.GOOGLE_CREDENTIALS_ENCODED,
+      env.GLCOUD_STORAGE_BUCKET_PRIVATE,
+    );
 };

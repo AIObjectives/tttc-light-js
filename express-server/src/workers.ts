@@ -61,7 +61,7 @@ const setupPipelineWorker = (connection: Redis) => {
       // const cache = job.data.cache;
       const { config, env, firebaseDetails } = data;
 
-      const storage = createStorage(env);
+      const storage = createStorage(env, "public");
 
       const defaultConfig = {
         model: "gpt-4o-mini",
