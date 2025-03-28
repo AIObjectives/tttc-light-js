@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Request, Response } from "express";
 import { fetchSpreadsheetData } from "../googlesheet";
-import { getStorageUrl, storeJSON } from "../storage";
+import { createStorage } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
 import { formatData, uniqueSlug } from "../utils";
@@ -79,7 +79,11 @@ async function createNewReport(req: Request, res: Response) {
   const { env } = req.context;
   const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } = env;
   const body = api.generateApiRequest.parse(req.body);
+  // ! Brandon: This config object should be phased out
   const { data, userConfig, firebaseAuthToken } = body;
+
+  const storage = createStorage(env, "public");
+
   // ! Temporary size check
   // TODO: configure devprod filesize flag
   const datastr = JSON.stringify(data);
@@ -103,11 +107,15 @@ async function createNewReport(req: Request, res: Response) {
   };
 
   const filename = uniqueSlug(userConfig.title);
-  const jsonUrl = getStorageUrl(filename);
-  await storeJSON(
+
+  const saveResult = await storage.save(
     filename,
     JSON.stringify({ message: "Your data is being generated" }),
   );
+  if (saveResult.tag === "failure") {
+    throw saveResult.error;
+  }
+  const jsonUrl = saveResult.value;
   const decodedUser: DecodedIdToken | null = firebaseAuthToken
     ? await firebase.verifyUser(firebaseAuthToken)
     : null;
@@ -134,6 +142,7 @@ async function createNewReport(req: Request, res: Response) {
   //     ? OPENAI_API_KEY
   //     : userConfig.apiKey;
   const apiKey = OPENAI_API_KEY;
+  // ! Brandon: This config object should be phased out
   // ! FIX
   // @ts-ignore
   const config: schema.OldOptions = {
@@ -152,6 +161,7 @@ async function createNewReport(req: Request, res: Response) {
   res.send(response);
 
   // add id to comment data if not included.
+  // ! Brandon: This config object should be phased out
   const updatedConfig = {
     ...config,
     data: config.data.map((data, i) => ({
