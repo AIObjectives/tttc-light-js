@@ -49,6 +49,7 @@ import { User } from "firebase/auth";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { signInWithGoogle } from "@/lib/firebase/auth";
+import { crux } from "tttc-common/schema";
 
 const fetchToken = async (
   user: User | null,
@@ -86,6 +87,8 @@ const form = z.object({
   clusteringInstructions: z.string().min(1),
   extractionInstructions: z.string().min(1),
   dedupInstructions: z.string().min(1),
+  cruxInstructions: z.string().optional(),
+  cruxesEnabled: z.boolean().optional(),
 });
 
 function Center({ children }: React.PropsWithChildren) {
@@ -180,6 +183,8 @@ function CreateReportComponent({ token }: { token: string | null }) {
       clusteringInstructions: prompts.defaultClusteringPrompt,
       extractionInstructions: prompts.defaultExtractionPrompt,
       dedupInstructions: prompts.defaultDedupPrompt,
+      cruxInstructions: prompts.defaultCruxPrompt,
+      cruxesEnabled: false,
     },
   });
 
@@ -206,6 +211,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormDataInput files={files} setFiles={setFiles} />
             <CostEstimate files={files} />
             <AdvancedSettings />
+            <EnableResearchFeatures />
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
                 Generate the report
@@ -565,6 +571,11 @@ const CustomizePrompts = ({ show }: { show: boolean }) => (
       subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
       inputName="dedupInstructions"
     />
+    <CustomizePromptSection
+      title="Optional – Suggest crux summary statements of opposing perspectives"
+      subheader="In this optional research step, AI suggests pairs of 'crux' statements which would best split participants into agree/disagree groups or sides of about equal size"
+      inputName="cruxInstructions"
+    />
   </Col>
 );
 
@@ -596,6 +607,42 @@ function AdvancedSettings() {
     </Col>
   );
 }
+
+const EnableResearchFeatures = () => {
+  const [areCruxesEnabled, setCruxesEnabled] = React.useState(false);
+  const handleChange = (event) => {
+    setCruxesEnabled((areCruxesEnabled) => !areCruxesEnabled);
+    console.log("ARE CRUXES ENABLED? : ", areCruxesEnabled.toString());
+  };
+  return (
+    <Col gap={4}>
+      <h4>Enable Research Features</h4>
+      <Col gap={2}>
+        <Col>
+          <label htmlFor="title" className="font-medium">
+            Extract likely crux statements
+          </label>
+          <p className="p2 text-muted-foreground">
+            As an extra processing step, suggest pairs of
+            perspective-summarizing statements which would best split the
+            respondents (into agree/disagree sides/groups of about equal size).
+          </p>
+          <div style={{ margin: "8px 0" }}>
+            <input
+              type="checkbox"
+              checked={areCruxesEnabled}
+              onChange={handleChange}
+            />
+            <label style={{ paddingLeft: "8px" }}>
+              Suggest top crux pairs
+              <p>Are cruxes enabled? {areCruxesEnabled.toString()}</p>
+            </label>
+          </div>
+        </Col>
+      </Col>
+    </Col>
+  );
+};
 
 function CustomizePromptSection({
   title,
