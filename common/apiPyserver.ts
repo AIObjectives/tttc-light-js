@@ -200,6 +200,8 @@ export const claimsReply = z.object({
   cost: z.number(),
 });
 
+export type ClaimsReply = z.infer<typeof claimsReply>;
+
 //  ********************************
 //  * sort_claims_tree
 //  ********************************/

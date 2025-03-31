@@ -1,79 +1,165 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { ClaimsStep } from "./types";
 import { Env } from "../types/context";
-import { Client } from "undici";
+import { Client, Dispatcher } from "undici";
 import { AbortController } from "abort-controller"; // If needed in your environment
-export async function claimsPipelineStep(env: Env, input: ClaimsStep["data"]) {
+import { CustomError } from "../error";
+import { pipe, Result } from "../types/result";
+
+/**
+ * Sends an http request to the pyserver for the claims step
+ *
+ * Returns a Result type with either the claimsstep data or an error
+ */
+export async function claimsPipelineStep(
+  env: Env,
+  input: ClaimsStep["data"],
+): Promise<
+  Result<
+    apiPyserver.ClaimsReply,
+    TimeoutError | FetchError | InvalidResponseDataError
+  >
+> {
+  // Prepare the Python server URL and path
+  const baseUrl = env.PYSERVER_URL.replace(/\/$/, ""); // Remove trailing slash if any
+  const path = "/claims";
+
+  // Create an AbortController for the request
+  // Brandon: I'm pretty sure this doesn't do anything as of right now.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000000);
+  // Create the Undici client
+  const client = new Client(baseUrl, {
+    headersTimeout: 6000000,
+    bodyTimeout: 6000000,
+    keepAliveTimeout: 1200000,
+  });
+
   try {
-    //console.log("Claims pipeline input:", JSON.stringify(input));
-
-    // Validate input
-    try {
-      apiPyserver.claimsRequest.parse(input);
-      //console.log("Input validation passed");
-    } catch (validationError) {
-      console.error("Input validation failed:", validationError);
-      throw validationError;
-    }
-
-    // Prepare the Python server URL and path
-    const baseUrl = env.PYSERVER_URL.replace(/\/$/, ""); // Remove trailing slash if any
-    const path = "/claims";
-    //console.log("Making request to Python server:", baseUrl + path);
-
-    // Create an AbortController for the request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000000);
-
-    //console.log("creating client"); // Create the Undici client
-    const client = new Client(baseUrl, {
-      headersTimeout: 6000000,
-      bodyTimeout: 6000000,
-      keepAliveTimeout: 1200000,
-    });
-    //console.log("Undici client created");
-    try {
-      //console.log("POST call started"); //Execute the POST request
-      const { statusCode, headers, body } = await client.request({
+    /**
+     * Send fetch request to pyserver
+     */
+    const fetchResult: Result<
+      apiPyserver.ClaimsReply,
+      FetchError | TimeoutError | InvalidResponseDataError
+    > = await client
+      .request({
         path: path,
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(input),
-        //signal: controller.signal,
-      });
-      //console.log("POST call finished");
-
-      clearTimeout(timeoutId);
-
-      // Check status code (similar to `response.ok`)
-      if (statusCode < 200 || statusCode >= 300) {
-        const errorText = await body.json();
-        throw new Error(`Server responded with ${statusCode}: ${errorText}`);
-      }
-
-      // Read the response body
-      const jsonData = await body.json();
-
-      // Validate the response
-      const { data, usage, cost } = apiPyserver.claimsReply.parse(jsonData);
-
-      return { claims_tree: data, usage, cost };
-    } catch (requestError: any) {
-      clearTimeout(timeoutId);
-      console.error("Request error:", requestError.message);
-      if (requestError.cause) {
-        console.error("Cause:", requestError.cause.message);
-      }
-      throw requestError;
-    } finally {
-      // Close the client connection
-      await client.close();
+      })
+      /**
+       * After we've received the response, clear out the abort signal timer
+       * Brandon: I'm pretty sure this abort signal doesn't do anything since it's not attached to the client. TODO
+       */
+      .then((res) => {
+        clearTimeout(timeoutId);
+        return res;
+      })
+      /**
+       * Check the response for error codes we don't like
+       *
+       * unknown -> Result<unknown, errors>
+       */
+      .then(validateResponse)
+      /**
+       * Pipe the previous result. Validate the data schema.
+       */
+      .then((result) =>
+        pipe(result, (val) => {
+          const parse = apiPyserver.claimsReply.safeParse(val);
+          if (parse.success) {
+            return {
+              tag: "success",
+              value: parse.data,
+            };
+          } else {
+            return {
+              tag: "failure",
+              error: new InvalidResponseDataError(parse.error),
+            };
+          }
+        }),
+      );
+    return fetchResult;
+    /**
+     * Catch any errors that threw
+     */
+  } catch (e) {
+    /**
+     * If the abort signal went off - return a timeout error
+     */
+    if (controller.signal.aborted) {
+      return {
+        tag: "failure",
+        error: new TimeoutError(e),
+      };
+      /**
+       * Otherwise, return a general error.
+       *
+       * TODO: figure out what kinds of errors are best here.
+       */
+    } else {
+      return {
+        tag: "failure",
+        error: new FetchError(e),
+      };
     }
-  } catch (error) {
-    console.error("Claims pipeline step failed:", error);
+    /**
+     * Finally, close the client's connection
+     */
+  } finally {
+    await client.close();
+  }
+}
 
-    throw error;
+/**
+ * Tests the resposne for error codes we don't like
+ */
+const validateResponse = async (
+  response: Dispatcher.ResponseData<unknown>,
+): Promise<Result<unknown, FetchError>> => {
+  const { statusCode, body } = response;
+  /**
+   * If we get a response code we don't like, return an error
+   *
+   * TODO: We can add additional error types here.
+   */
+  if (statusCode < 200 || statusCode >= 300) {
+    const error = await body.json();
+    return {
+      tag: "failure",
+      error: new FetchError(error),
+    };
+  } else {
+    /**
+     * Return a success result
+     */
+    const data = await body.json();
+    return {
+      tag: "success",
+      value: data,
+    };
+  }
+};
+
+class InvalidResponseDataError extends CustomError<"InvalidResponseDataError"> {
+  constructor(err?: unknown) {
+    super("InvalidResponseDataError", err);
+  }
+}
+
+class TimeoutError extends CustomError<"TimeoutError"> {
+  constructor(err?: unknown) {
+    super("TimeoutError", err);
+  }
+}
+
+class FetchError extends CustomError<"FetchError"> {
+  constructor(err?: unknown) {
+    super("FetchError", err);
   }
 }
