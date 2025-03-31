@@ -149,15 +149,29 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.extraction,
       });
-      const {
-        claims_tree,
-        usage: claimsTokens,
-        cost: claimsCost,
-      } = await claimsPipelineStep(env, {
+      // const {
+      //   claims_tree,
+      //   usage: claimsTokens,
+      //   cost: claimsCost,
+      // } = await claimsPipelineStep(env, {
+      //   tree: { taxonomy },
+      //   comments,
+      //   llm: claimsLLMConfig,
+      // });
+      const claimsStep = await claimsPipelineStep(env, {
         tree: { taxonomy },
         comments,
         llm: claimsLLMConfig,
       });
+      if (claimsStep.tag === "failure") {
+        throw claimsStep.error;
+      }
+
+      const {
+        data: claims_tree,
+        usage: claimsTokens,
+        cost: claimsCost,
+      } = claimsStep.value;
 
       const tracker_step2 = sumTokensCost({
         tracker: tracker_step1,
