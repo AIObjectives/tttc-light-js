@@ -171,6 +171,7 @@ const setupPipelineWorker = (connection: Redis) => {
       // us refer to the same tracker objects — open to more graceful solutions and
       // this is why I wanted to pass by reference ~S
       const tracker_crux = tracker_step2;
+      let cruxAddOns = {};
       if (options.cruxesEnabled === true) {
 
         console.log("Step 2.5: Optionally extract cruxes");
