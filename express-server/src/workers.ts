@@ -126,14 +126,20 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.clustering,
       });
 
+      const topicTreeResults = await topicTreePipelineStep(env, {
+        comments,
+        llm: topicTreeLLMConfig,
+      });
+
+      if (topicTreeResults.tag === "failure") {
+        throw topicTreeResults.error;
+      }
+
       const {
         data: taxonomy,
         usage: topicTreeTokens,
         cost: topicTreeCost,
-      } = await topicTreePipelineStep(env, {
-        comments,
-        llm: topicTreeLLMConfig,
-      });
+      } = topicTreeResults.value;
 
       const tracker_step1 = sumTokensCost({
         tracker: initTracker,
@@ -181,18 +187,22 @@ const setupPipelineWorker = (connection: Redis) => {
       logTokensInTracker(tracker_step2);
 
       console.log("Step 2.5: Optionally extract cruxes");
+      const cruxesResult = await cruxesPipelineStep(env, {
+        topics: taxonomy,
+        crux_tree: claims_tree,
+        llm: cruxesLLMConfig,
+        top_k: 0,
+      });
+      if (cruxesResult.tag === "failure") {
+        throw cruxesResult.error;
+      }
       const {
         cruxClaims,
         controversyMatrix,
         topCruxes,
         usage: cruxTokens,
         cost: cruxCost,
-      } = await cruxesPipelineStep(env, {
-        topics: taxonomy,
-        crux_tree: claims_tree,
-        llm: cruxesLLMConfig,
-        top_k: 0,
-      });
+      } = cruxesResult.value;
       // package crux addOns together
       const cruxAddOns = {
         topCruxes: topCruxes,
@@ -214,15 +224,21 @@ const setupPipelineWorker = (connection: Redis) => {
       // TODO: more principled way of configuring this?
       const numPeopleSort = "numPeople";
 
-      const {
-        data: tree,
-        usage: sortClaimsTreeTokens,
-        cost: sortClaimsTreeCost,
-      } = await sortClaimsTreePipelineStep(env, {
+      const sortClaimsResult = await sortClaimsTreePipelineStep(env, {
         tree: claims_tree,
         llm: dedupLLMConfig,
         sort: numPeopleSort,
       });
+
+      if (sortClaimsResult.tag === "failure") {
+        throw sortClaimsResult.error;
+      }
+
+      const {
+        data: tree,
+        usage: sortClaimsTreeTokens,
+        cost: sortClaimsTreeCost,
+      } = sortClaimsResult.value;
 
       const tracker_step3 = sumTokensCost({
         tracker: tracker_crux,
