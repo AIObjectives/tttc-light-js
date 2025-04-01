@@ -1,21 +1,15 @@
 #! usr/bin/env python
 
-# cheapest for testing 
-MODEL = "gpt-4o-mini" # prod default: "gpt-4-turbo-preview"
+# cheapest for testing
+MODEL = "gpt-4o-mini"  # prod default: "gpt-4-turbo-preview"
 
 COST_BY_MODEL = {
-  # GPT-4o mini: Input is $0.150 / 1M tokens, Output is $0.600 / 1M tokens
-  # or: input is $0.00015/1K tokens, output is $0.0006/1K tokens
-  "gpt-4o-mini" : {
-    "in_per_1K" : 0.00015,
-    "out_per_1K" : 0.0006
-  },
-  # GPT-4o : Input is $2.50 / 1M tokens, Output is $10.00/1M tokens
-  # or: input is $0.0025/1K tokens, output is $0.01/1K tokens
-  "gpt-4o" : {
-    "in_per_1K" : 0.0025,
-    "out_per_1K" : 0.01
-  }
+    # GPT-4o mini: Input is $0.150 / 1M tokens, Output is $0.600 / 1M tokens
+    # or: input is $0.00015/1K tokens, output is $0.0006/1K tokens
+    "gpt-4o-mini": {"in_per_1K": 0.00015, "out_per_1K": 0.0006},
+    # GPT-4o : Input is $2.50 / 1M tokens, Output is $10.00/1M tokens
+    # or: input is $0.0025/1K tokens, output is $0.01/1K tokens
+    "gpt-4o": {"in_per_1K": 0.0025, "out_per_1K": 0.01},
 }
 
 SYSTEM_PROMPT = """
@@ -50,7 +44,8 @@ Now here is the list of comments:
 """
 
 COMMENT_TO_CLAIMS_PROMPT = """
-I'm going to give you a comment made by a participant and a list of topics and subtopics which have already been extracted.
+I'm going to give you a comment made by a participant and a list of topics and subtopics
+which have already been extracted.
 I want you to extract a list of concise claims that the participant may support.
 We are only interested in claims that can be mapped to one of the given topic and subtopic.
 The claim must be fairly general but not a platitude.
@@ -116,3 +111,80 @@ return a JSON object of the form
 
 WANDB_PROJECT_NAME = ""
 WANDB_GROUP_LOG_NAME = ""
+
+DRY_RUN = True
+
+MOCK_RESPONSE = {
+    "topic_tree": {
+        "data":
+             [
+                {
+                    "topicName": "Pets",
+                    "topicShortDescription": "General opinions about common household pets.",
+                    "subtopics": [
+                        {
+                            "subtopicName": "Cats",
+                            "subtopicShortDescription": "Positive sentiments towards cats as pets.",
+                        },
+                        {
+                            "subtopicName": "Dogs",
+                            "subtopicShortDescription": "Positive sentiments towards dogs as pets.",
+                        },
+                        {
+                            "subtopicName": "Birds",
+                            "subtopicShortDescription": "Uncertainty or mixed feelings about birds as pets.",
+                        },
+                    ],
+                },
+            ],
+        "usage": {"completion_tokens": 131, "prompt_tokens": 224, "total_tokens": 355},
+        "cost" : 0.0
+    },
+    "claims": {
+        "data": {
+            "Pets": {
+                "total": 3,
+                "subtopics": {
+                    "Cats": {
+                        "total": 1,
+                        "claims": [
+                            {
+                                "claim": "Cats are the best household pets.",
+                                "commentId": "c1",
+                                "quote": "I love cats",
+                                "topicName": "Pets",
+                                "subtopicName": "Cats",
+                            },
+                        ],
+                    },
+                    "Dogs": {
+                        "total": 1,
+                        "claims": [
+                            {
+                                "claim": "Dogs are superior pets.",
+                                "commentId": "c2",
+                                "quote": "dogs are great",
+                                "topicName": "Pets",
+                                "subtopicName": "Dogs",
+                            },
+                        ],
+                    },
+                    "Birds": {
+                        "total": 1,
+                        "claims": [
+                            {
+                                "claim": "Birds are not suitable pets for everyone.",
+                                "commentId": "c3",
+                                "quote": "I'm not sure about birds.",
+                                "topicName": "Pets",
+                                "subtopicName": "Birds",
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+        "usage": {"completion_tokens": 131, "prompt_tokens": 224, "total_tokens": 355},
+        "cost" : 0.0
+    }
+}
