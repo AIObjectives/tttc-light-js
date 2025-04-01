@@ -1,34 +1,16 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { CruxesStep } from "./types";
 import { Env } from "../types/context";
-import { z } from "zod";
+import { handlePipelineStep } from "./handlePipelineStep";
 
-const typedFetch =
-  <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>) =>
-    await fetch(url, {
+export async function cruxesPipelineStep(env: Env, input: CruxesStep["data"]) {
+  return await handlePipelineStep(apiPyserver.cruxesResponse, () =>
+    fetch(`${env.PYSERVER_URL}/cruxes`, {
       method: "post",
-      body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
+      body: JSON.stringify(input),
       headers: {
         "Content-Type": "application/json",
       },
-    });
-
-const pyserverFetchClaims = typedFetch(apiPyserver.cruxesRequest);
-
-const logger =
-  (prependMessage: string) =>
-  <T>(arg: T): T => {
-    console.log(prependMessage, arg);
-    return arg;
-  };
-
-export async function cruxesPipelineStep(env: Env, input: CruxesStep["data"]) {
-  const { cruxClaims, controversyMatrix, topCruxes, usage, cost } =
-    await pyserverFetchClaims(`${env.PYSERVER_URL}/cruxes`, input)
-      .then((res) => res.json())
-      .then(logger("cruxes step returns: "))
-      .then(apiPyserver.cruxesResponse.parse);
-
-  return { cruxClaims, controversyMatrix, topCruxes, usage, cost };
+    }),
+  );
 }
