@@ -76,3 +76,16 @@ export function flatMapResult<T, F, T2, F2>(
     return transform(result.value);
   }
 }
+
+/**
+ * Async variant of flatMapResult.
+ *
+ * Takes a transform function that returns a Result wrapped in a Promise
+ */
+export async function flatMapResultAsync<T, F, T2, F2>(
+  result: Result<T, F>,
+  transform: (arg: T) => Promise<Result<T2, F2>>,
+): Promise<Result<T2, F | F2>> {
+  if (result.tag === "failure") return result;
+  else return await transform(result.value);
+}
