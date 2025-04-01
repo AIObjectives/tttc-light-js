@@ -607,7 +607,7 @@ def dedup_claims(claims: list, llm: LLMConfig) -> dict:
 # -----------------------------------#
 @app.put("/sort_claims_tree/")
 def sort_claims_tree(
-    req: ClaimTreeLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    req: ClaimTreeLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
 ) -> dict:
     """Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
     all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -814,6 +814,10 @@ def sort_claims_tree(
     DOES matter, or where we want to sum the claims by a particular speaker or by other metadata
     towards the total for a subtopic/topic.
     """
+    # skip calling an LLM
+    if dry_run or config.DRY_RUN:
+       print("dry_run sort tree")
+       return config.MOCK_RESPONSE["sort_claims_tree"]
     claims_tree = req.tree
     llm = req.llm
     TK_IN = 0

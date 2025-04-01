@@ -112,33 +112,32 @@ return a JSON object of the form
 WANDB_PROJECT_NAME = ""
 WANDB_GROUP_LOG_NAME = ""
 
-DRY_RUN = True
+DRY_RUN = False
 
 MOCK_RESPONSE = {
     "topic_tree": {
-        "data":
-             [
-                {
-                    "topicName": "Pets",
-                    "topicShortDescription": "General opinions about common household pets.",
-                    "subtopics": [
-                        {
-                            "subtopicName": "Cats",
-                            "subtopicShortDescription": "Positive sentiments towards cats as pets.",
-                        },
-                        {
-                            "subtopicName": "Dogs",
-                            "subtopicShortDescription": "Positive sentiments towards dogs as pets.",
-                        },
-                        {
-                            "subtopicName": "Birds",
-                            "subtopicShortDescription": "Uncertainty or mixed feelings about birds as pets.",
-                        },
-                    ],
-                },
-            ],
+        "data": [
+            {
+                "topicName": "Pets",
+                "topicShortDescription": "General opinions about common household pets.",
+                "subtopics": [
+                    {
+                        "subtopicName": "Cats",
+                        "subtopicShortDescription": "Positive sentiments towards cats as pets.",
+                    },
+                    {
+                        "subtopicName": "Dogs",
+                        "subtopicShortDescription": "Positive sentiments towards dogs as pets.",
+                    },
+                    {
+                        "subtopicName": "Birds",
+                        "subtopicShortDescription": "Uncertainty or mixed feelings about birds as pets.",
+                    },
+                ],
+            },
+        ],
         "usage": {"completion_tokens": 131, "prompt_tokens": 224, "total_tokens": 355},
-        "cost" : 0.0
+        "cost": 0.0,
     },
     "claims": {
         "data": {
@@ -153,6 +152,7 @@ MOCK_RESPONSE = {
                                 "commentId": "c1",
                                 "quote": "I love cats",
                                 "topicName": "Pets",
+                                "speaker": "Alice",
                                 "subtopicName": "Cats",
                             },
                         ],
@@ -165,6 +165,7 @@ MOCK_RESPONSE = {
                                 "commentId": "c2",
                                 "quote": "dogs are great",
                                 "topicName": "Pets",
+                                "speaker": "Bob",
                                 "subtopicName": "Dogs",
                             },
                         ],
@@ -177,6 +178,7 @@ MOCK_RESPONSE = {
                                 "commentId": "c3",
                                 "quote": "I'm not sure about birds.",
                                 "topicName": "Pets",
+                                "speaker": "Charles",
                                 "subtopicName": "Birds",
                             },
                         ],
@@ -184,7 +186,102 @@ MOCK_RESPONSE = {
                 },
             },
         },
+        "usage": {
+            "completion_tokens": 163,
+            "prompt_tokens": 1412,
+            "total_tokens": 1575,
+        },
+        "cost": 0.0,
+    },
+    "dedup": {
+        "data": [
+            {
+                "claim": "Birds are not ideal pets for everyone.",
+                "commentId": "c3",
+                "quote": "I'm not sure about birds.",
+                "speaker": "Charles",
+                "topicName": "Pets",
+                "subtopicName": "Birds",
+                "duplicates": [
+                    {
+                        "claim": "Birds are not suitable pets for everyone.",
+                        "commentId": "c3",
+                        "quote": "I don't know about birds.",
+                        "speaker": "Dany",
+                        "topicName": "Pets",
+                        "subtopicName": "Birds",
+                        "duplicated": True,
+                    }
+                ],
+            }
+        ],
         "usage": {"completion_tokens": 131, "prompt_tokens": 224, "total_tokens": 355},
-        "cost" : 0.0
-    }
+        "cost": 0.0,
+    },
+    "sort_claims_tree": {
+        "data": [
+            [
+                "Pets",
+                {
+                    "topics": [
+                        [
+                            "Cats",
+                            {
+                                "claims": [
+                                    {
+                                        "claim": "Cats are the best pets.",
+                                        "quote": "I love cats",
+                                        "speaker": "Alice",
+                                        "topicName": "Pets",
+                                        "subtopicName": "Cats",
+                                        "commentId": "1",
+                                    }
+                                ],
+                                "speakers": ["Alice"],
+                                "counts": {"claims": 1, "speakers": 1},
+                            },
+                        ],
+                        [
+                            "Dogs",
+                            {
+                                "claims": [
+                                    {
+                                        "claim": "Dogs are the best pets.",
+                                        "quote": "I really really love dogs",
+                                        "speaker": "Bob",
+                                        "topicName": "Pets",
+                                        "subtopicName": "Dogs",
+                                        "commentId": "2",
+                                    }
+                                ],
+                                "speakers": ["Bob"],
+                                "counts": {"claims": 1, "speakers": 1},
+                            },
+                        ],
+                        [
+                            "Birds",
+                            {
+                                "claims": [
+                                    {
+                                        "claim": "Birds are not as appealing as other pets.",
+                                        "quote": "I am not sure about birds.",
+                                        "speaker": "Charles",
+                                        "topicName": "Pets",
+                                        "subtopicName": "Birds",
+                                        "commentId": "3",
+                                    }
+                                ],
+                                "speakers": ["Charles"],
+                                "counts": {"claims": 1, "speakers": 1},
+                            },
+                        ],
+                    ],
+                    "speakers": ["Bob", "Alice", "Charles"],
+                    "counts": {"claims": 3, "speakers": 3},
+                },
+            ]
+        ],
+        "usage": {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
+        "cost": 0.0,
+    },
 }
