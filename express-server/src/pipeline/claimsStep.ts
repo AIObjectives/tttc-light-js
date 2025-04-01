@@ -4,7 +4,7 @@ import { Env } from "../types/context";
 import { Client, Dispatcher } from "undici";
 import { AbortController } from "abort-controller"; // If needed in your environment
 import { CustomError } from "../error";
-import { pipe, Result } from "../types/result";
+import { flatMapResult, Result } from "../types/result";
 
 /**
  * Sends an http request to the pyserver for the claims step
@@ -69,7 +69,7 @@ export async function claimsPipelineStep(
        * Pipe the previous result. Validate the data schema.
        */
       .then((result) =>
-        pipe(result, (val) => {
+        flatMapResult(result, (val) => {
           const parse = apiPyserver.claimsReply.safeParse(val);
           if (parse.success) {
             return {
@@ -117,7 +117,7 @@ export async function claimsPipelineStep(
 }
 
 /**
- * Tests the resposne for error codes we don't like
+ * Tests the resposne for error codes we don't like and returns a Result
  */
 const validateResponse = async (
   response: Dispatcher.ResponseData<unknown>,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pipe, Result } from "../types/result";
+import { flatMapResult, Result } from "../types/result";
 import { FetchError, InvalidResponseDataError } from "./errors";
 
 /**
@@ -11,9 +11,12 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
   parser: T, // Zod parser
   call: () => Promise<Response>, // some fetch function.
 ): Promise<Result<z.infer<T>, FetchError | InvalidResponseDataError>> {
+  // Perform our fetch
   return await call()
+    // parse our fetch and see if the request succeeded
     .then(async (res) => {
       const parsed = await res.json();
+      // TODO we can potentially test for specific error codes and other cases here?
       if (res.ok) {
         const res: Result<unknown, FetchError> = {
           tag: "success",
@@ -28,8 +31,9 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
         return res;
       }
     })
+    // Make sure that the returned data fits our schema type
     .then((res) =>
-      pipe(res, (val) => {
+      flatMapResult(res, (val) => {
         const parsed = parser.safeParse(val);
         if (parsed.success) {
           return { tag: "success", value: parsed.data };
