@@ -165,35 +165,42 @@ const setupPipelineWorker = (connection: Redis) => {
         stepCost: claimsCost,
       });
       logTokensInTracker(tracker_step2);
-      console.log("CRUX OPTIONS: ", options.cruxesEnabled);
+      console.log("user enabled crux extraction: ", options.cruxesEnabled);
 
-      console.log("Step 2.5: Optionally extract cruxes");
-      const {
-        cruxClaims,
-        controversyMatrix,
-        topCruxes,
-        usage: cruxTokens,
-        cost: cruxCost,
-      } = await cruxesPipelineStep(env, {
-        topics: taxonomy,
-        crux_tree: claims_tree,
-        llm: cruxesLLMConfig,
-        top_k: 0,
-      });
-      // package crux addOns together
-      const cruxAddOns = {
-        topCruxes: topCruxes,
-        controversyMatrix: controversyMatrix,
-        cruxClaims: cruxClaims,
-      };
+      // TODO: this catches the case where we DO NOT run Step 2.5 and lets
+      // us refer to the same tracker objects — open to more graceful solutions and
+      // this is why I wanted to pass by reference ~S
+      const tracker_crux = tracker_step2;
+      if (options.cruxesEnabled === true) {
 
-      const tracker_crux = sumTokensCost({
-        tracker: tracker_step2,
-        stepUsage: cruxTokens,
-        stepCost: cruxCost,
-      });
-      logTokensInTracker(tracker_crux);
+        console.log("Step 2.5: Optionally extract cruxes");
+        const {
+          cruxClaims,
+          controversyMatrix,
+          topCruxes,
+          usage: cruxTokens,
+          cost: cruxCost,
+        } = await cruxesPipelineStep(env, {
+          topics: taxonomy,
+          crux_tree: claims_tree,
+          llm: cruxesLLMConfig,
+          top_k: 0,
+        });
+        // package crux addOns together
+        const cruxAddOns = {
+          topCruxes: topCruxes,
+          controversyMatrix: controversyMatrix,
+          cruxClaims: cruxClaims,
+        };
 
+        const tracker_crux = sumTokensCost({
+          tracker: tracker_step2,
+          stepUsage: cruxTokens,
+          stepCost: cruxCost,
+        });
+        logTokensInTracker(tracker_crux);
+      } 
+    
       console.log("Step 3: cleaning and sorting the taxonomy");
       await job.updateProgress({
         status: api.reportJobStatus.Values.sorting,

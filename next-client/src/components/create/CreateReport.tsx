@@ -88,7 +88,7 @@ const form = z.object({
   extractionInstructions: z.string().min(1),
   dedupInstructions: z.string().min(1),
   cruxInstructions: z.string().optional(),
-  cruxesEnabled: z.boolean().optional(),
+  cruxesEnabled: z.boolean().optional().nullish().transform((val) => val ?? false)
 });
 
 function Center({ children }: React.PropsWithChildren) {
@@ -211,7 +211,6 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormDataInput files={files} setFiles={setFiles} />
             <CostEstimate files={files} />
             <AdvancedSettings />
-            <EnableResearchFeatures />
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
                 Generate the report
@@ -542,6 +541,7 @@ const FormOpenAIKey = () => {
 
 const CustomizePrompts = ({ show }: { show: boolean }) => (
   <Col gap={8} className={show ? "" : "hidden"}>
+    <EnableResearchFeatures/>
     <Col gap={4}>
       <h4>Customize AI prompts</h4>
       <p className="p2 text-muted-foreground">
@@ -612,7 +612,6 @@ const EnableResearchFeatures = () => {
   const [areCruxesEnabled, setCruxesEnabled] = React.useState(false);
   const handleChange = (event) => {
     setCruxesEnabled((areCruxesEnabled) => !areCruxesEnabled);
-    console.log("ARE CRUXES ENABLED? : ", areCruxesEnabled.toString());
   };
   return (
     <Col gap={4}>
@@ -626,6 +625,9 @@ const EnableResearchFeatures = () => {
             As an extra processing step, suggest pairs of
             perspective-summarizing statements which would best split the
             respondents (into agree/disagree sides/groups of about equal size).
+            This optional step increases processing costs and will only be run if you
+            check this box. Results are available in the JSON download at
+            the end of a report.
           </p>
           <div style={{ margin: "8px 0" }}>
             <input
@@ -635,7 +637,6 @@ const EnableResearchFeatures = () => {
             />
             <label style={{ paddingLeft: "8px" }}>
               Suggest top crux pairs
-              <p>Are cruxes enabled? {areCruxesEnabled.toString()}</p>
             </label>
           </div>
         </Col>
