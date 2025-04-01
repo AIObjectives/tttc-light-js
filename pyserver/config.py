@@ -1,5 +1,12 @@
 #! usr/bin/env python
 
+# DEV MODE DRY RUN: 
+# - faster & cheaper testing
+# - set this to True to skip OpenAI calls/paying for external LLMs
+# - returns a fixed string in the correct shape for all pyserver routes
+# which would typically call OpenAI
+DRY_RUN = False
+
 # cheapest for testing
 MODEL = "gpt-4o-mini"  # prod default: "gpt-4-turbo-preview"
 
@@ -111,8 +118,6 @@ return a JSON object of the form
 
 WANDB_PROJECT_NAME = ""
 WANDB_GROUP_LOG_NAME = ""
-
-DRY_RUN = False
 
 MOCK_RESPONSE = {
     "topic_tree": {
@@ -281,6 +286,30 @@ MOCK_RESPONSE = {
                 },
             ]
         ],
+        "usage": {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
+        "cost": 0.0,
+    },
+    "cruxes": {
+        "cruxClaims": [
+            {
+                "cruxClaim": "Epic fantasy storytelling should prioritize expansive worlds and detailed character backgrounds.",
+                "agree": ["Alice"],
+                "disagree": ["Dany"],
+                "explanation": "The cruxClaim synthesizes the desire for expansive fantasy settings and the importance of character backgrounds. Participant 0 emphasizes the need for greater emphasis on epic fantasy worlds, indicating a preference for immersive settings. In contrast, Participant 3 focuses specifically on the inclusion of royal lineage as a character's background, which suggests a narrower view that does not necessarily align with the broader desire for expansive worlds. Thus, Participant 0 agrees with the cruxClaim, while Participant 3 disagrees.",
+            },
+            {
+                "cruxClaim": "Characters in fantasy should possess unique powers that enhance their individuality and connection to the universe.",
+                "agree": ["Elinor", "Dany"],
+                "disagree": [],
+                "explanation": "Both participants emphasize the importance of unique powers in enhancing character individuality and their connection to the universe. Participant 4 explicitly states that characters should have unique powers that connect them to the universe, while Participant 3 believes that magical elements should enhance character individuality. Since both claims align closely with the cruxClaim, they agree with it. There are no participants who disagree, as all statements support the idea of unique powers contributing to individuality and a connection to the universe.",
+            },
+        ],
+        "controversyMatrix": [[0, 2], [2, 0]],
+        "topCruxes": [{
+            "score": 2,
+            "cruxA": "Epic fantasy storytelling should prioritize expansive worlds and detailed character backgrounds.",
+            "cruxB": "Characters in fantasy should possess unique powers that enhance their individuality and connection to the universe.",
+        }],
         "usage": {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
         "cost": 0.0,
     },

@@ -1162,12 +1162,15 @@ def top_k_cruxes(cont_mat: list, cruxes: list, top_k: int = 0) -> list:
 
 @app.post("/cruxes")
 def cruxes_from_tree(
-    req: CruxesLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    req: CruxesLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False,
 ) -> dict:
     """Given a topic, description, and corresponding list of claims with numerical speaker ids, extract the
     crux claims that would best split the claims into agree/disagree sides.
     Return a crux for each subtopic which contains at least 2 claims and at least 2 speakers.
     """
+    if dry_run or config.DRY_RUN:
+        print("dry_run cruxes")
+        return config.MOCK_RESPONSE["cruxes"]
     cruxes_main = []
     crux_claims = []
     TK_IN = 0
