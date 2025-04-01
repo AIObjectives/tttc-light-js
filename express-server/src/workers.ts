@@ -84,7 +84,6 @@ const setupPipelineWorker = (connection: Redis) => {
       });
 
       const options: schema.OldOptions = { ...defaultConfig, ...config };
-      console.log("CRUX OPTIONS: ", options.cruxesEnabled);
 
       const [
         topicTreeLLMConfig,
@@ -167,11 +166,10 @@ const setupPipelineWorker = (connection: Redis) => {
       logTokensInTracker(tracker_step2);
       console.log("user enabled crux extraction: ", options.cruxesEnabled);
 
-      // TODO: this catches the case where we DO NOT run Step 2.5 and lets
-      // us refer to the same tracker objects — open to more graceful solutions and
-      // this is why I wanted to pass by reference ~S
-      const tracker_crux = tracker_step2;
+      // TODO: more graceful way to catch the case where we don't run Step 2.5?
+      // perhaps we can pass by reference instead of renaming the tracker object?
       let cruxAddOns = {};
+      const tracker_crux = tracker_step2;
       if (options.cruxesEnabled === true) {
 
         console.log("Step 2.5: Optionally extract cruxes");
