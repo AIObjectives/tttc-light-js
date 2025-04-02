@@ -81,6 +81,23 @@ And now, here are the claims:
 \${claims}
 `;
 
+export const defaultCruxPrompt = `
+I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
+identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
+which would best split the participants into two groups, based on all their
+statements on this topic: one group which would agree with the statement, and one which would disagree.
+Please explain your reasoning and assign participants into "agree" and "disagree" groups.
+return a JSON object of the form
+{
+  "crux" : {
+    "cruxClaim" : string // the new extracted claim
+    "agree" : list of strings // list of the given participants who would agree with the cruxClaim
+    "disagree" : list strings // list of the given participants who would disagree with the cruxClaim
+    "explanation" : string // reasoning for why you synthesized this cruxClaim from the participants' perspective
+  }
+}
+`;
+
 /**
  * Takes a prompt and data, and then inserts those values into the prompt.
  * The reason for this is that the string the user provides can't actually be a template literal.

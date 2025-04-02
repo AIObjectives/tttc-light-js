@@ -72,6 +72,7 @@ const setupPipelineWorker = (connection: Redis) => {
         extractionInstructions: "",
         dedupInstructions: "",
         cruxInstructions: "",
+        cruxesEnabled: false,
         batchSize: 2, // lower to avoid rate limits! initial was 10,
       };
 
@@ -163,34 +164,42 @@ const setupPipelineWorker = (connection: Redis) => {
         stepCost: claimsCost,
       });
       logTokensInTracker(tracker_step2);
+      console.log("user enabled crux extraction: ", options.cruxesEnabled);
 
-      console.log("Step 2.5: Optionally extract cruxes");
-      const {
-        cruxClaims,
-        controversyMatrix,
-        topCruxes,
-        usage: cruxTokens,
-        cost: cruxCost,
-      } = await cruxesPipelineStep(env, {
-        topics: taxonomy,
-        crux_tree: claims_tree,
-        llm: cruxesLLMConfig,
-        top_k: 0,
-      });
-      // package crux addOns together
-      const cruxAddOns = {
-        topCruxes: topCruxes,
-        controversyMatrix: controversyMatrix,
-        cruxClaims: cruxClaims,
-      };
+      // TODO: more graceful way to catch the case where we don't run Step 2.5?
+      // perhaps we can pass by reference instead of renaming the tracker object?
+      let cruxAddOns = {};
+      const tracker_crux = tracker_step2;
+      if (options.cruxesEnabled === true) {
 
-      const tracker_crux = sumTokensCost({
-        tracker: tracker_step2,
-        stepUsage: cruxTokens,
-        stepCost: cruxCost,
-      });
-      logTokensInTracker(tracker_crux);
+        console.log("Step 2.5: Optionally extract cruxes");
+        const {
+          cruxClaims,
+          controversyMatrix,
+          topCruxes,
+          usage: cruxTokens,
+          cost: cruxCost,
+        } = await cruxesPipelineStep(env, {
+          topics: taxonomy,
+          crux_tree: claims_tree,
+          llm: cruxesLLMConfig,
+          top_k: 0,
+        });
+        // package crux addOns together
+        const cruxAddOns = {
+          topCruxes: topCruxes,
+          controversyMatrix: controversyMatrix,
+          cruxClaims: cruxClaims,
+        };
 
+        const tracker_crux = sumTokensCost({
+          tracker: tracker_step2,
+          stepUsage: cruxTokens,
+          stepCost: cruxCost,
+        });
+        logTokensInTracker(tracker_crux);
+      } 
+    
       console.log("Step 3: cleaning and sorting the taxonomy");
       await job.updateProgress({
         status: api.reportJobStatus.Values.sorting,
