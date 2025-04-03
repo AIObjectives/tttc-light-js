@@ -5,12 +5,13 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>) =>
+  async (url: string, body: z.infer<T>, apiKey: string) =>
     await fetch(url, {
       method: "post",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
+        [apiPyserver.OPENAI_API_KEY_HEADER]: apiKey,
       },
     });
 
@@ -25,7 +26,7 @@ const logger =
 
 export async function cruxesPipelineStep(env: Env, input: CruxesStep["data"]) {
   const { cruxClaims, controversyMatrix, topCruxes, usage, cost } =
-    await pyserverFetchClaims(`${env.PYSERVER_URL}/cruxes`, input)
+    await pyserverFetchClaims(`${env.PYSERVER_URL}/cruxes`, input, env.OPENAI_API_KEY)
       .then((res) => res.json())
       .then(logger("cruxes step returns: "))
       .then(apiPyserver.cruxesResponse.parse);
