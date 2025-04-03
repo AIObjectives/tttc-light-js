@@ -47,7 +47,7 @@ export type Usage = z.infer<typeof usage>;
  */
 const comment = z.object({
   id: z.string(),
-  text: z.string().min(1, "Empty comment"),
+  text: z.string(),
   speaker: z.string(),
 });
 
