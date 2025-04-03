@@ -19,11 +19,11 @@ import math
 import os
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import wandb
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from openai import OpenAI
 from pydantic import BaseModel
 
@@ -45,6 +45,9 @@ if api_key is None:
 
 app = FastAPI()
 
+# Header name for OpenAI API key
+OPENAI_API_KEY_HEADER = "X-OpenAI-API-Key"
+
 class Comment(BaseModel):
     id: str
     text: str
@@ -59,7 +62,6 @@ class LLMConfig(BaseModel):
     model_name: str
     system_prompt: str
     user_prompt: str
-    api_key: str
 
 
 class CommentsLLMConfig(BaseModel):
@@ -85,6 +87,11 @@ class CruxesLLMConfig(BaseModel):
     topics: list
     top_k: int
 
+def get_api_key(openai_api_key: Optional[str] = Header(None, alias=OPENAI_API_KEY_HEADER)) -> str:
+    if openai_api_key is None:
+        raise HTTPException(status_code=401, detail="OpenAI API key is required in header")
+    return openai_api_key
+
 @app.get("/")
 def read_root():
     # TODO: setup/relevant defaults?
@@ -96,6 +103,7 @@ def read_root():
 @app.post("/topic_tree")
 def comments_to_tree(
     req: CommentsLLMConfig,
+    openai_api_key: str = Header(None, alias=OPENAI_API_KEY_HEADER),
     log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
     dry_run=False,
 ) -> dict:
@@ -177,12 +185,11 @@ def comments_to_tree(
       }
     }
     """
-    # skip calling an LLM
     if dry_run or config.DRY_RUN:
         print("dry_run topic tree")
         return config.MOCK_RESPONSE["topic_tree"]
-    # api_key = req.llm.api_key
-    client = OpenAI(api_key=api_key)
+    
+    client = OpenAI(api_key=openai_api_key)
 
     # append comments to prompt
     full_prompt = req.llm.user_prompt
@@ -249,13 +256,17 @@ def comments_to_tree(
                     "cost/s1_topics": s1_total_cost,
                 },
             )
-        except Exception:
-            print("Failed to create wandb run")
-    # NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
-    # choosing the latter for now
+            wandb.finish()
+        except Exception as e:
+            print("W&B logging failed:", e)
+
     return {
-        "data": tree["taxonomy"],
-        "usage": usage.model_dump(),
+        "data": tree,
+        "usage": {
+            "completion_tokens": usage.completion_tokens,
+            "prompt_tokens": usage.prompt_tokens,
+            "total_tokens": usage.total_tokens,
+        },
         "cost": s1_total_cost,
     }
 
@@ -306,234 +317,58 @@ def comment_to_claims(llm: dict, comment: str, tree: dict) -> dict:
 # ----------------------------------#
 @app.post("/claims")
 def all_comments_to_claims(
-    req: CommentTopicTree, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+    req: CommentTopicTree,
+    openai_api_key: str = Header(None, alias=OPENAI_API_KEY_HEADER),
+    log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    dry_run=False,
 ) -> dict:
-    """Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
-    Place each claim under the correct subtopic in the tree.
-
-    Input format:
-    - CommentTopicTree object: JSON/dictionary with the following fields:
-      - comments: a list of Comment (each has a field, "text", for the raw text of the comment, and an id)
-      - llm: a dictionary of the LLM configuration:
-        - model_name: a string of the name of the LLM to call ("gpt-4o-mini", "gpt-4-turbo-preview")
-        - system_prompt: a string of the system prompt
-        - user_prompt: a string of the user prompt to convert the raw comments into the
-                             taxonomy/topic tree
-     - tree: a dictionary of the topics and nested subtopics, and their titles/descriptions
-    Example:
-    {
-      "llm": {
-          "model_name": "gpt-4o-mini",
-          "system_prompt": "\n\tYou are a professional research assistant.",
-          "user_prompt": "\nI'm going to give you a comment made by a participant",
-      },
-      "comments": [
-          {
-              "id": "c1",
-              "text": "I love cats"
-          },
-          {
-              "id": "c2",
-              "text": "dogs are great"
-          },
-          {
-              "id": "c3",
-              "text": "I'm not sure about birds"
-          }
-      ],
-      "tree": [
-                {
-                  "topicName": "Pets",
-                  "topicShortDescription": "General opinions about common household pets.",
-                  "subtopics": [
-                      {
-                          "subtopicName": "Cats",
-                          "subtopicShortDescription": "Positive sentiments towards cats."
-                      },
-                      {
-                          "subtopicName": "Dogs",
-                          "subtopicShortDescription": "Positive sentiments towards dogs."
-                      },
-                      {
-                          "subtopicName": "Birds",
-                          "subtopicShortDescription": "Uncertainty or mixed feelings about birds."
-                      }
-                  ]
-                }
-             ]
-    }
-
-    Output format:
-    - data: the dictionary of topics and subtopics with extracted claims listed under the
-                   correct subtopic, along with the source quote
-    - usage: a dictionary of token counts for the LLM calls of this pipeline step
-      - completion_tokens
-      - prompt_tokens
-      - total_tokens
-
-    Example output:
-    {
-      "data": {
-          "Pets": {
-              "total": 3,
-              "subtopics": {
-                  "Cats": {
-                      "total": 1,
-                      "claims": [
-                          {
-                              "claim": "Cats are the best household pets.",
-                              "commentId":"c1",
-                              "quote": "I love cats",
-                              "topicName": "Pets",
-                              "subtopicName": "Cats"
-                          }
-                      ]
-                  },
-                  "Dogs": {
-                      "total": 1,
-                      "claims": [
-                          {
-                              "claim": "Dogs are superior pets.",
-                              "commentId":"c2",
-                              "quote": "dogs are great",
-                              "topicName": "Pets",
-                              "subtopicName": "Dogs"
-                          }
-                      ]
-                  },
-                  "Birds": {
-                      "total": 1,
-                      "claims": [
-                          {
-                              "claim": "Birds are not suitable pets for everyone.",
-                              "commentId":"c3",
-                              "quote": "I'm not sure about birds.",
-                              "topicName": "Pets",
-                              "subtopicName": "Birds"
-                          }
-                      ]
-                  }
-              }
-          }
-      }
-    }
-    """
-    # skip calling an LLM
+    """Given a list of comments and a topic tree, extract claims from each comment."""
     if dry_run or config.DRY_RUN:
         print("dry_run claims")
         return config.MOCK_RESPONSE["claims"]
-    comms_to_claims = []
-    comms_to_claims_html = []
-    TK_2_IN = 0
-    TK_2_OUT = 0
-    TK_2_TOT = 0
+    
+    client = OpenAI(api_key=openai_api_key)
 
-    node_counts = {}
-    # TODO: batch this so we're not sending the tree each time
-    for i_c, comment in enumerate(req.comments):
-        # TODO: timing for comments
-        # print("comment: ", i_c)
-        # print("time: ", datetime.now())
-        response = comment_to_claims(req.llm, comment.text, req.tree)
-        try:
-            claims = response["claims"]
-            for claim in claims["claims"]:
-                claim.update({"commentId": comment.id, "speaker": comment.speaker})
-        except Exception:
-            print("Step 2: no claims for comment: ", response)
-            claims = None
-            continue
-        # reference format
-        # {'claims': [{'claim': 'Dogs are superior pets.', commentId:'c1', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]}
-        usage = response["usage"]
-        if claims and len(claims["claims"]) > 0:
-            comms_to_claims.extend([c for c in claims["claims"]])
+    # Process each comment
+    claims_tree = {}
+    total_usage = {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0,
+    }
+    total_cost = 0.0
 
-        TK_2_IN += usage.prompt_tokens
-        TK_2_OUT += usage.completion_tokens
-        TK_2_TOT += usage.total_tokens
+    for comment in req.comments:
+        result = comment_to_claims(req.llm.model_dump(), comment.text, req.tree)
+        claims = result["claims"]
+        usage = result["usage"]
 
-        # format for logging to W&B
-        if log_to_wandb:
-            viz_claims = cute_print(claims["claims"])
-            comms_to_claims_html.append([comment.text, viz_claims])
+        # Update total usage and cost
+        total_usage["completion_tokens"] += usage.completion_tokens
+        total_usage["prompt_tokens"] += usage.prompt_tokens
+        total_usage["total_tokens"] += usage.total_tokens
+        total_cost += token_cost(req.llm.model_name, usage.prompt_tokens, usage.completion_tokens)
 
-    # reference format
-    # [{'claim': 'Cats are the best household pets.', 'commentId':'c1', 'quote': 'I love cats', 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Cats'},
-    # {'commentId':'c2','claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'speaker' : 'Bob', 'topicName': 'Pets', 'subtopicName': 'Dogs'},
-    # {'commentId':'c3', 'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Birds'}]
-
-    # count the claims in each subtopic
-    for claim in comms_to_claims:
-        if "topicName" not in claim:
-            print("claim unassigned to topic: ", claim)
-            continue
-        if claim["topicName"] in node_counts:
-            node_counts[claim["topicName"]]["total"] += 1
-            node_counts[claim["topicName"]]["speakers"].add(claim["speaker"])
-            if "subtopicName" in claim:
-                if (
-                    claim["subtopicName"]
-                    in node_counts[claim["topicName"]]["subtopics"]
-                ):
-                    node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
-                        "total"
-                    ] += 1
-                    node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
-                        "claims"
-                    ].append(claim)
-                    node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
-                        "speakers"
-                    ].add(claim["speaker"])
-                else:
-                    node_counts[claim["topicName"]]["subtopics"][
-                        claim["subtopicName"]
-                    ] = {
-                        "total": 1,
-                        "claims": [claim],
-                        "speakers": set([claim["speaker"]]),
-                    }
-        else:
-            node_counts[claim["topicName"]] = {
-                "total": 1,
-                "speakers": set([claim["speaker"]]),
-                "subtopics": {
-                    claim["subtopicName"]: {
-                        "total": 1,
-                        "claims": [claim],
-                        "speakers": set([claim["speaker"]]),
-                    },
-                },
-            }
-    # after inserting claims: check if any of the topics/subtopics are empty
-    for topic in req.tree["taxonomy"]:
-        if "subtopics" in topic:
-            for subtopic in topic["subtopics"]:
-                # check if subtopic in node_counts
-                if topic["topicName"] in node_counts:
-                    if (
-                        subtopic["subtopicName"]
-                        not in node_counts[topic["topicName"]]["subtopics"]
-                    ):
-                        # this is an empty subtopic!
-                        print("EMPTY SUBTOPIC: ", subtopic["subtopicName"])
-                        node_counts[topic["topicName"]]["subtopics"][
-                            subtopic["subtopicName"]
-                        ] = {"total": 0, "claims": [], "speakers": set()}
-                else:
-                    # could we have an empty topic? certainly
-                    print("EMPTY TOPIC: ", topic["topicName"])
-                    node_counts[topic["topicName"]] = {
+        # Add claims to the tree
+        for topic_name, topic_data in claims.items():
+            if topic_name not in claims_tree:
+                claims_tree[topic_name] = {"total": 0, "subtopics": {}}
+            
+            for subtopic_name, subtopic_data in topic_data["subtopics"].items():
+                if subtopic_name not in claims_tree[topic_name]["subtopics"]:
+                    claims_tree[topic_name]["subtopics"][subtopic_name] = {
                         "total": 0,
-                        "speakers": set(),
-                        "subtopics": {
-                            "None": {"total": 0, "claims": [], "speakers": set()},
-                        },
+                        "claims": [],
                     }
-    # compute LLM costs for this step's tokens
-    s2_total_cost = token_cost(req.llm.model_name, TK_2_IN, TK_2_OUT)
+                
+                claims_tree[topic_name]["subtopics"][subtopic_name]["claims"].extend(
+                    subtopic_data["claims"]
+                )
+                claims_tree[topic_name]["subtopics"][subtopic_name]["total"] += len(
+                    subtopic_data["claims"]
+                )
+                claims_tree[topic_name]["total"] += len(subtopic_data["claims"])
 
-    # Note: we will now be sending speaker names to W&B
     if log_to_wandb:
         try:
             exp_group_name = str(log_to_wandb)
@@ -549,31 +384,35 @@ def all_comments_to_claims(
             )
             wandb.log(
                 {
-                    "U_tok_N/claims": TK_2_TOT,
-                    "U_tok_in/claims": TK_2_IN,
-                    "U_tok_out/claims": TK_2_OUT,
-                    "rows_to_claims": wandb.Table(
-                        data=comms_to_claims_html, columns=["comments", "claims"],
+                    "comm_N": len(req.comments),
+                    "claims_N": sum(
+                        [
+                            len(st["claims"])
+                            for t in claims_tree.values()
+                            for st in t["subtopics"].values()
+                        ]
                     ),
-                    "cost/s2_claims": s2_total_cost,
+                    "U_tok_N/claims": total_usage["total_tokens"],
+                    "U_tok_in/claims": total_usage["prompt_tokens"],
+                    "U_tok_out/claims": total_usage["completion_tokens"],
+                    "cost/s2_claims": total_cost,
                 },
             )
-        except Exception:
-            print("Failed to log wandb run")
+            wandb.finish()
+        except Exception as e:
+            print("W&B logging failed:", e)
 
-    net_usage = {
-        "total_tokens": TK_2_TOT,
-        "prompt_tokens": TK_2_IN,
-        "completion_tokens": TK_2_OUT,
+    return {
+        "data": claims_tree,
+        "usage": total_usage,
+        "cost": total_cost,
     }
-    return {"data": node_counts, "usage": net_usage, "cost": s2_total_cost}
 
 
-def dedup_claims(claims: list, llm: LLMConfig) -> dict:
+def dedup_claims(claims: list, llm: LLMConfig, openai_api_key: str) -> dict:
     """Given a list of claims for a given subtopic, identify which ones are near-duplicates
     """
-    # api_key = llm.api_key
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(api_key=openai_api_key)
 
     # add claims with enumerated ids (relative to this subtopic only)
     full_prompt = llm.user_prompt
@@ -607,7 +446,10 @@ def dedup_claims(claims: list, llm: LLMConfig) -> dict:
 # -----------------------------------#
 @app.put("/sort_claims_tree/")
 def sort_claims_tree(
-    req: ClaimTreeLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+    req: ClaimTreeLLMConfig,
+    openai_api_key: str = Header(None, alias=OPENAI_API_KEY_HEADER),
+    log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    dry_run = False
 ) -> dict:
     """Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
     all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -816,8 +658,8 @@ def sort_claims_tree(
     """
     # skip calling an LLM
     if dry_run or config.DRY_RUN:
-       print("dry_run sort tree")
-       return config.MOCK_RESPONSE["sort_claims_tree"]
+        print("dry_run sort tree")
+        return config.MOCK_RESPONSE["sort_claims_tree"]
     claims_tree = req.tree
     llm = req.llm
     TK_IN = 0
@@ -839,7 +681,7 @@ def sort_claims_tree(
             # no need to deduplicate single claims
             if subtopic_data["total"] > 1:
                 try:
-                    response = dedup_claims(subtopic_data["claims"], llm=llm)
+                    response = dedup_claims(subtopic_data["claims"], llm=llm, openai_api_key=openai_api_key)
                 except Exception:
                     print(
                         "Step 3: no deduped claims response for: ",
@@ -860,7 +702,7 @@ def sort_claims_tree(
                     # implementation notes:
                     # - MOST claims should NOT be near-duplicates
                     # - nesting where |claim_vals| > 0 should be a smaller set than |subtopic_data["claims"]|
-                    # - but also we won't have duplicate info bidirectionally — A may be dupe of B, but B not dupe of A
+                    # - but also we won't have duplicate info bidirectionally — A may be dupe of B, but B not dupe of A
                     for claim_key, claim_vals in deduped["nesting"].items():
                         # this claim_key has some duplicates
                         if len(claim_vals) > 0:
