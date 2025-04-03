@@ -88,7 +88,8 @@ async function createNewReport(req: Request, res: Response) {
   }
   const _parsedData = await parseData(data);
   const makeAnonName = useAnonymousNames(
-    _parsedData.data.filter((x) => x.interview === undefined).length,
+    //NOTE: this check used to be for x.interview === undefined
+    _parsedData.data.filter((x) => !x.interview).length,
   );
   // Add anonymous names if interview prop is undefined
   const parsedData: {

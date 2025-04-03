@@ -187,7 +187,11 @@ def comments_to_tree(
     # append comments to prompt
     full_prompt = req.llm.user_prompt
     for comment in req.comments:
-        full_prompt += "\n" + comment.text
+        # skip any empty comments/rows
+        if len(comment.text) > 0:
+            full_prompt += "\n" + comment.text
+        else:
+            print("warning:empty comment in topic_tree")
 
     response = client.chat.completions.create(
         model=req.llm.model_name,
@@ -434,7 +438,11 @@ def all_comments_to_claims(
         # TODO: timing for comments
         # print("comment: ", i_c)
         # print("time: ", datetime.now())
-        response = comment_to_claims(req.llm, comment.text, req.tree)
+        if len(comment.text) > 0:
+            response = comment_to_claims(req.llm, comment.text, req.tree)
+        else:
+            print("warning: empty comment in claims")
+            continue
         try:
             claims = response["claims"]
             for claim in claims["claims"]:
@@ -1203,9 +1211,14 @@ def cruxes_from_tree(
                 req.llm, topic_title, subtopic_desc, claims, speaker_map,
             )
             if not llm_response:
+                print("warning: no crux response from LLM")
                 continue
-            crux = llm_response["crux"]["crux"]
-            usage = llm_response["usage"]
+            try:
+                crux = llm_response["crux"]["crux"]
+                usage = llm_response["usage"]
+            except Exception:
+                print("warning: crux response parsing failed")
+                continue
 
             ids_to_speakers = {v: k for k, v in speaker_map.items()}
             spoken_claims = [c["speaker"] + ": " + c["claim"] for c in claims]
