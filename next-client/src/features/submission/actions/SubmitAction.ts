@@ -9,6 +9,7 @@ import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { z } from "zod";
 import { validatedServerEnv } from "@/server-env";
+import * as apiPyserver from "tttc-common/apiPyserver";
 
 const parseCSV = async (file: File): Promise<SourceRow[]> => {
   const buffer = await file.arrayBuffer();
@@ -50,7 +51,6 @@ export default async function submitAction(
   }
   `;
   const config: LLMUserConfig = llmUserConfig.parse({
-    apiKey: formData.get("apiKey"),
     title: formData.get("title"),
     // question: formData.get("question"),
     description: formData.get("description"),
@@ -75,6 +75,7 @@ export default async function submitAction(
     body: JSON.stringify(body),
     headers: {
       "Content-Type": "application/json",
+      [apiPyserver.OPENAI_API_KEY_HEADER]: formData.get("apiKey") as string,
     },
   });
   if (!response.ok) {
