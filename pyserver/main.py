@@ -23,7 +23,7 @@ from typing import List
 
 import wandb
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from openai import OpenAI
 from pydantic import BaseModel
 
@@ -36,12 +36,6 @@ import config
 from utils import cute_print, full_speaker_map, token_cost, topic_desc_map
 
 load_dotenv()
-
-# ! Temporarily including API key in env
-api_key: str = os.getenv("OPENAI_API_KEY")
-
-if api_key is None:
-    raise Exception("No OpenAI API key present")
 
 app = FastAPI()
 
@@ -59,7 +53,6 @@ class LLMConfig(BaseModel):
     model_name: str
     system_prompt: str
     user_prompt: str
-    api_key: str
 
 
 class CommentsLLMConfig(BaseModel):
@@ -96,6 +89,7 @@ def read_root():
 @app.post("/topic_tree")
 def comments_to_tree(
     req: CommentsLLMConfig,
+    x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"),
     log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
     dry_run=False,
 ) -> dict:
@@ -181,8 +175,7 @@ def comments_to_tree(
     if dry_run or config.DRY_RUN:
         print("dry_run topic tree")
         return config.MOCK_RESPONSE["topic_tree"]
-    # api_key = req.llm.api_key
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(api_key=x_openai_api_key)
 
     # append comments to prompt
     full_prompt = req.llm.user_prompt
@@ -260,10 +253,9 @@ def comments_to_tree(
     }
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict) -> dict:
+def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
     """
-    # api_key = llm.api_key
     client = OpenAI(api_key=api_key)
 
     # add taxonomy and comment to prompt template
@@ -306,7 +298,10 @@ def comment_to_claims(llm: dict, comment: str, tree: dict) -> dict:
 # ----------------------------------#
 @app.post("/claims")
 def all_comments_to_claims(
-    req: CommentTopicTree, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+    req: CommentTopicTree,
+    x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"),
+    log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    dry_run=False,
 ) -> dict:
     """Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
     Place each claim under the correct subtopic in the tree.
@@ -434,7 +429,7 @@ def all_comments_to_claims(
         # TODO: timing for comments
         # print("comment: ", i_c)
         # print("time: ", datetime.now())
-        response = comment_to_claims(req.llm, comment.text, req.tree)
+        response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key)
         try:
             claims = response["claims"]
             for claim in claims["claims"]:
@@ -569,10 +564,9 @@ def all_comments_to_claims(
     return {"data": node_counts, "usage": net_usage, "cost": s2_total_cost}
 
 
-def dedup_claims(claims: list, llm: LLMConfig) -> dict:
+def dedup_claims(claims: list, llm: LLMConfig, api_key: str) -> dict:
     """Given a list of claims for a given subtopic, identify which ones are near-duplicates
     """
-    # api_key = llm.api_key
     client = OpenAI(api_key=api_key)
 
     # add claims with enumerated ids (relative to this subtopic only)
@@ -607,7 +601,10 @@ def dedup_claims(claims: list, llm: LLMConfig) -> dict:
 # -----------------------------------#
 @app.put("/sort_claims_tree/")
 def sort_claims_tree(
-    req: ClaimTreeLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+    req: ClaimTreeLLMConfig,
+    x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"),
+    log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    dry_run=False,
 ) -> dict:
     """Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
     all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -839,7 +836,7 @@ def sort_claims_tree(
             # no need to deduplicate single claims
             if subtopic_data["total"] > 1:
                 try:
-                    response = dedup_claims(subtopic_data["claims"], llm=llm)
+                    response = dedup_claims(subtopic_data["claims"], llm=llm, api_key=x_openai_api_key)
                 except Exception:
                     print(
                         "Step 3: no deduped claims response for: ",
@@ -1096,7 +1093,7 @@ def controversy_matrix(cont_mat: list) -> list:
 
 
 def cruxes_for_topic(
-    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict,
+    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict, api_key: str,
 ) -> dict:
     """For each fully-described subtopic, provide all the relevant claims with an anonymized
     numeric speaker id, and ask the LLM for a crux claim that best splits the speakers' opinions
@@ -1162,7 +1159,10 @@ def top_k_cruxes(cont_mat: list, cruxes: list, top_k: int = 0) -> list:
 
 @app.post("/cruxes")
 def cruxes_from_tree(
-    req: CruxesLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False,
+    req: CruxesLLMConfig,
+    x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"),
+    log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    dry_run=False,
 ) -> dict:
     """Given a topic, description, and corresponding list of claims with numerical speaker ids, extract the
     crux claims that would best split the claims into agree/disagree sides.
@@ -1200,7 +1200,7 @@ def cruxes_from_tree(
 
             topic_title = topic + ", " + subtopic
             llm_response = cruxes_for_topic(
-                req.llm, topic_title, subtopic_desc, claims, speaker_map,
+                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key,
             )
             if not llm_response:
                 continue
