@@ -3,12 +3,20 @@ import { Env } from "../types/context";
 import { createStorage } from "../storage";
 import { Job } from "bullmq";
 import * as apiPyserver from "tttc-common/apiPyserver";
-import { topicTreePipelineStep } from "../pipeline/topicTreeStep";
-import { claimsPipelineStep } from "../pipeline/claimsStep";
-import { cruxesPipelineStep } from "../pipeline/cruxesStep";
-import { sortClaimsTreePipelineStep } from "../pipeline/sortClaimsTree";
-import { Result, flatMapResultAsync, mapResult } from "../types/result";
-import { CustomError } from "src/error";
+import {
+  Result,
+  failure,
+  flatMapResultAsync,
+  mapResult,
+  sequenceResult,
+  success,
+} from "../types/result";
+import { CustomError } from "../error";
+import * as Pyserver from "../pipeline/";
+import { randomUUID } from "crypto";
+import { llmPipelineToSchema } from "tttc-common/morphisms";
+import * as Firebase from "../Firebase";
+import * as api from "tttc-common/api";
 
 type FirebaseDetails = {
   reportDataUri: string;
@@ -40,43 +48,220 @@ interface PipelineConfig {
   };
 }
 
-interface PipelineJob {
-  config: PipelineConfig;
-  data: schema.Source[];
+interface ReportDetails {
+  title: string;
+  description: string;
+  question: string;
   filename: string;
 }
 
+export interface PipelineJob {
+  config: PipelineConfig;
+  data: schema.SourceRow[];
+  reportDetails: ReportDetails;
+}
+
+type PipelineComment = apiPyserver.PipelineComment;
+
+type PipelineErrors =
+  | Pyserver.FetchError
+  | Pyserver.InvalidResponseDataError
+  | Pyserver.TimeoutError;
+
 export async function pipelineJob(job: Job<PipelineJob>) {
   const jobdata = job.data;
-  const { data, config } = jobdata;
+  const { data, config, reportDetails } = jobdata;
   const { auth, env } = config;
+  const { title, description, question, filename } = reportDetails;
+
+  // Create our storage object for storing the pipeline's output json
   const storage = createStorage(env, auth);
 
-  const { doClaimsStep, doCruxStep, doSortClaimsTreeStep, doTopicTreeStep } =
+  // Do each of the steps in the pipeline
+  // This returns the results of each of the steps.
+  const { topicTreeStep, claimsStep, sortedStep } = await doPipelineSteps(job);
+
+  // Summarizes all of the Usage objects into a single tracker object.
+  // As of right now, it will skip over the failed steps and summarize only the success
+  const tracker = summarizeUsage([topicTreeStep, claimsStep, sortedStep]);
+  logTokensInTracker(tracker, "Total output");
+
+  // Unpack the data from each of the steps
+  const topicData = mapResult(topicTreeStep, (t) => t.data);
+  const claimsData = mapResult(claimsStep, (c) => c.data);
+  const sortData = mapResult(sortedStep, (s) => s.data);
+
+  // Goes from Result<Step, Errors>[] -> Result<Step[], Errors>
+  const outputData = sequenceResult([topicData, claimsData, sortData] as const);
+
+  // We need to take the data we made from the pipeline steps and format it into
+  // the Taxonomy object
+  const newTaxonomyResult = mapResult(
+    outputData,
+    ([topicData, _, sortData]) => {
+      const newTax: schema.Taxonomy = topicData.tree.taxonomy.map((t) => ({
+        ...t,
+        topicId: randomUUID(),
+        subtopics: t.subtopics.map((sub) => ({
+          ...sub,
+          subtopicId: randomUUID(),
+          // @ts-ignore // TODO FIX THIS
+          claims: sortData
+            .find(([tag]) => tag === t.topicName)[1]
+            .topics?.find(([key]) => key === sub.subtopicName)[1]
+            .claims.map((clm) => ({
+              ...clm,
+              claimId: randomUUID(),
+              duplicates: clm.duplicates.map((dup) => ({
+                ...dup,
+                claimId: randomUUID(),
+              })),
+            })) as schema.LLMClaim[],
+        })),
+      }));
+      return newTax;
+    },
+  );
+
+  const end = Date.now();
+  const secs = (end - tracker.start) / 1000;
+  const finalTracker: schema.Tracker = {
+    ...tracker,
+    end,
+    duration:
+      secs > 60
+        ? `${Math.floor(secs / 60)} minutes ${secs % 60} seconds`
+        : `${secs} seconds`,
+  };
+
+  console.log(`Pipeline completed in ${finalTracker.duration}`);
+
+  // The pipeline is set to output this schema.LLMPipelineOutput function, so
+  // take our data and form the output object
+  const outputResult = mapResult(
+    sequenceResult([
+      newTaxonomyResult,
+      success(data),
+      success(finalTracker),
+    ] as const),
+    ([tree, data, tracker]): schema.LLMPipelineOutput => ({
+      ...tracker,
+      ...config.instructions,
+      tree,
+      data,
+      // ! TODO
+      addOns: {},
+      question: question,
+      title: title,
+      description: description,
+      batchSize: 0, // I think this is deprecated? Leaving at 0 for now.
+    }),
+  );
+
+  // Take the pipeline object and translate it into our updated schema
+  const finalResult = mapResult(outputResult, llmPipelineToSchema);
+
+  if (finalResult.tag === "success") {
+    // add the json data to storage
+    const resultValue = finalResult.value;
+    const _ = await storage.save(filename, JSON.stringify(resultValue));
+
+    // Add the job ref to Firebase
+    const resultData = resultValue.data;
+    const { topics, sources, date } = resultData[1];
+    const { firebaseDetails } = config;
+
+    // ! TODO Error handling for this stuff
+    Firebase.addReportRef(firebaseDetails.firebaseJobId, {
+      ...firebaseDetails,
+      title,
+      description: description,
+      numTopics: topics.length,
+      numSubtopics: topics.flatMap((t) => t.subtopics).length,
+      numClaims: topics.flatMap((t) => t.subtopics.flatMap((s) => s.claims))
+        .length,
+      numPeople: new Set(sources.map((s) => s.interview)).size,
+      createdDate: new Date(date),
+    });
+    console.log("Finished report");
+    await job.updateProgress({
+      status: api.reportJobStatus.Values.finished,
+    });
+  } else {
+    const err = finalResult.error;
+
+    console.error("An error occured: ", err.name, err.message);
+    // We can handle specific errors here if we want.
+    throw err;
+  }
+}
+
+/**
+ * Does each of the steps in the pyserver pipeline
+ */
+async function doPipelineSteps(job: Job<PipelineJob>) {
+  const { config, data } = job.data;
+  const { doClaimsStep, doSortClaimsTreeStep, doTopicTreeStep } =
     makePyserverFuncs(config);
 
+  const pipelineComments: Result<
+    PipelineComment[],
+    MissingInterviewAttributionsError
+  > = makePipelineComments(data);
+
+  // Update job progress
   console.log("Step 1: generating taxonomy of topics and subtopics");
+  await job.updateProgress({
+    status: api.reportJobStatus.Values.clustering,
+  });
 
-  const pipelineComments = makePipelineComments(data);
+  // do topic tree step
+  const topicTreeStep: PyserverResult<
+    ClaimStepProps,
+    PipelineErrors | MissingInterviewAttributionsError
+  > = await flatMapResultAsync(pipelineComments, doTopicTreeStep);
 
-  const topicTreeStep = await flatMapResultAsync(
-    pipelineComments,
-    doTopicTreeStep,
-  );
+  // update job progress
+  console.log("Step 2: extracting claims matching the topics and subtopics");
+  await job.updateProgress({
+    status: api.reportJobStatus.Values.extraction,
+  });
 
-  const claimsStep = await flatMapResultAsync(topicTreeStep, (val) =>
-    doClaimsStep(val.data),
-  );
+  // do claims step
+  const claimsStep: PyserverResult<
+    SortClaimsProps,
+    PipelineErrors | MissingInterviewAttributionsError
+  > = await flatMapResultAsync(topicTreeStep, (val) => doClaimsStep(val.data));
 
+  // TODO
   // const cruxesStep = config.featureFlags.cruxes ? await flatMapResultAsync(claimsStep, (val) => doCruxStep(val.data)) : claimsStep
 
-  const sortedStep = await flatMapResultAsync(claimsStep, (val) =>
+  // update job progress
+  console.log("Step 3: cleaning and sorting the taxonomy");
+  await job.updateProgress({
+    status: api.reportJobStatus.Values.sorting,
+  });
+
+  // do sort step
+  const sortedStep: PyserverResult<
+    OutputProps,
+    PipelineErrors | MissingInterviewAttributionsError
+  > = await flatMapResultAsync(claimsStep, (val) =>
     doSortClaimsTreeStep(val.data),
   );
 
-  const tracker = summarizeUsage([topicTreeStep, claimsStep, sortedStep]);
+  // update job progress
+  console.log("Step 4: wrapping up....");
+  await job.updateProgress({
+    status: api.reportJobStatus.Values.wrappingup,
+  });
+
+  return { topicTreeStep, claimsStep, sortedStep };
 }
 
+/**
+ * Props that the pyserver takes for the claims step
+ */
 type ClaimStepProps = {
   tree: {
     taxonomy: apiPyserver.PartialTopic[];
@@ -84,76 +269,88 @@ type ClaimStepProps = {
   comments: apiPyserver.PipelineComment[];
 };
 
-type CruxStepProps = {
-  topics: apiPyserver.PartialTopic[];
-  crux_tree: apiPyserver.ClaimsTree;
-  top_k: number;
-};
-
+/**
+ * Props that the pyserver takes for the sort step
+ */
 type SortClaimsProps = {
   tree: apiPyserver.ClaimsTree;
   sort: string;
 };
 
-interface PyserverReply<T> {
+/**
+ * Output of the sort claims response
+ */
+type OutputProps = apiPyserver.SortClaimsTreeResponse["data"];
+
+/**
+ * Generic type for the type of information sent back from the pyserver.
+ *
+ * Also appends a stepName string that's used for logging
+ */
+type PyserverReply<T> = {
+  stepName: string;
   data: T;
   usage: apiPyserver.Usage;
   cost: number;
-}
+};
 
-function topicTreeReplyToClaimStepProps(
-  reply: apiPyserver.TopicTreeResponse,
-  comments: apiPyserver.PipelineComment[],
-): PyserverReply<ClaimStepProps> {
-  return {
-    ...reply,
-    data: {
-      tree: {
-        taxonomy: reply.data,
+type PyserverResult<T, E> = Result<PyserverReply<T>, E>;
+
+/**
+ * The pyserver's responses aren't exact a 1:1 to the next steps inputs, so we need to reshape them slightly.
+ *
+ * Also includes a stepName that's used for logging
+ */
+const PipelineOutputToProps = {
+  makeClaimsProps: (
+    reply: apiPyserver.TopicTreeResponse,
+    comments: PipelineComment[],
+  ) => {
+    return {
+      ...reply,
+      stepName: "Topic Tree Step",
+      data: {
+        tree: {
+          taxonomy: reply.data,
+        },
+        comments,
       },
-      comments,
-    },
-  };
-}
+    };
+  },
+  makeSortedProps: (reply: apiPyserver.ClaimsReply) => {
+    return {
+      ...reply,
+      stepName: "Claims Step",
+      data: {
+        tree: reply.data,
+        sort: "numPeople",
+      },
+    };
+  },
+  makeOutputProps: (reply: apiPyserver.SortClaimsTreeResponse) => {
+    return {
+      ...reply,
+      stepName: "Sort Step",
+    };
+  },
+};
 
-function claimsReplyToCruxesProps(
-  reply: apiPyserver.ClaimsReply,
-  topics: apiPyserver.PartialTopic[],
-): PyserverReply<CruxStepProps> {
-  return {
-    ...reply,
-    data: {
-      crux_tree: reply.data,
-      topics,
-      top_k: 10,
-    },
-  };
-}
-
-function claimsReplyToSortedProps(
-  reply: apiPyserver.ClaimsReply,
-): PyserverReply<SortClaimsProps> {
-  return {
-    ...reply,
-    data: {
-      tree: reply.data,
-      sort: "numPeople",
-    },
-  };
-}
-
+/**
+ * This builds each of the step functions called in doPipelineSteps
+ */
 const makePyserverFuncs = (config: PipelineConfig) => {
   const { instructions, llm, api_key, env } = config;
+  // Make each config object for each call
   const [
     topicTreeLLMConfig,
     claimsLLMConfig,
     dedupLLMConfig,
-    cruxesLLMConfig,
+    // cruxesLLMConfig,
   ]: apiPyserver.LLMConfig[] = [
     instructions.clusteringInstructions,
     instructions.extractionInstructions,
     instructions.dedupInstructions,
-    instructions.cruxInstructions,
+    // instructions.cruxInstructions,
   ].map((prompt) => ({
     system_prompt: instructions.systemInstructions,
     user_prompt: prompt,
@@ -161,37 +358,57 @@ const makePyserverFuncs = (config: PipelineConfig) => {
     api_key: api_key,
   }));
 
+  /**
+   * Calls the topic tree step on the pyserver, and then reshapes the response to the next step's props
+   */
   const doTopicTreeStep = async (comments: apiPyserver.PipelineComment[]) =>
-    await topicTreePipelineStep(env, {
+    await Pyserver.topicTreePipelineStep(env, {
       comments,
       llm: topicTreeLLMConfig,
     }).then((val) =>
-      mapResult(val, (arg) => topicTreeReplyToClaimStepProps(arg, comments)),
+      mapResult(val, (arg) =>
+        PipelineOutputToProps.makeClaimsProps(arg, comments),
+      ),
     );
 
+  /**
+   * Calls the claims step on the pyserver, and then reshapes the response to the next step's props
+   */
   const doClaimsStep = async (args: {
     tree: { taxonomy: apiPyserver.PartialTopic[] };
     comments: apiPyserver.PipelineComment[];
   }) =>
-    await claimsPipelineStep(env, { ...args, llm: claimsLLMConfig }).then(
-      (val) => mapResult(val, (reply) => claimsReplyToSortedProps(reply)),
+    await Pyserver.claimsPipelineStep(env, {
+      ...args,
+      llm: claimsLLMConfig,
+    }).then((val) =>
+      mapResult(val, (reply) => PipelineOutputToProps.makeSortedProps(reply)),
     );
 
-  const doCruxStep = async (args: {
-    topics: apiPyserver.PartialTopic[];
-    crux_tree: apiPyserver.ClaimsTree;
-    top_k: number;
-  }) => await cruxesPipelineStep(env, { ...args, llm: cruxesLLMConfig });
-
+  // const doCruxStep = async (args: {
+  //   topics: apiPyserver.PartialTopic[];
+  //   crux_tree: apiPyserver.ClaimsTree;
+  //   top_k: number;
+  // }) =>
+  //   await Pyserver.cruxesPipelineStep(env, { ...args, llm: cruxesLLMConfig });
+  /**
+   * Calls the sort step on the pyserver
+   */
   const doSortClaimsTreeStep = async (arg: {
     tree: apiPyserver.ClaimsTree;
     sort: string;
-  }) => await sortClaimsTreePipelineStep(env, { ...arg, llm: dedupLLMConfig });
+  }) =>
+    await Pyserver.sortClaimsTreePipelineStep(env, {
+      ...arg,
+      llm: dedupLLMConfig,
+    }).then((val) =>
+      mapResult(val, (arg) => PipelineOutputToProps.makeOutputProps(arg)),
+    );
 
   return {
     doTopicTreeStep,
     doClaimsStep,
-    doCruxStep,
+    // doCruxStep,
     doSortClaimsTreeStep,
   };
 };
@@ -200,34 +417,27 @@ const makePyserverFuncs = (config: PipelineConfig) => {
  * The pyserver accepts comments in a different format - this ensures that everything is correct
  */
 const makePipelineComments = (
-  comments: schema.Source[],
-): Result<apiPyserver.PipelineComment[], UnsupportedCommentTypes> => {
-  /**
-   * Currently there are more source types than are supported.
-   */
-  const allTextSources = comments.every((c) => c.data[0] === "text");
-  if (!allTextSources) {
-    return {
-      tag: "failure",
-      error: new UnsupportedCommentTypes(
-        "T3C does not support creating video or audio based reports yet",
+  comments: schema.SourceRow[],
+): Result<apiPyserver.PipelineComment[], MissingInterviewAttributionsError> => {
+  const anonNamesAreAdded = comments.every((c) => c.interview);
+  if (!anonNamesAreAdded) {
+    return failure(
+      new MissingInterviewAttributionsError(
+        "Missing interview fields should be filled in before being added to pipeline",
       ),
-    };
-  } else {
-    return {
-      tag: "success",
-      value: comments.map((c) => ({
-        id: c.id,
-        speaker: c.interview,
-        text: (c.data as schema.TextMediaSource)[1].text,
-      })),
-    };
+    );
   }
+  const pipelineComments: PipelineComment[] = comments.map((c) => ({
+    id: c.id,
+    speaker: c.interview!,
+    text: c.comment,
+  }));
+  return success(pipelineComments);
 };
 
-const logTokensInTracker = (tracker: schema.Tracker) => {
+const logTokensInTracker = (tracker: schema.Tracker, stepName: string) => {
   console.log(
-    `Cost:$${tracker.costs};Tok_in:${tracker.prompt_tokens};Tok_out:${tracker.completion_tokens}`,
+    `${stepName}: Cost:$${tracker.costs};Tok_in:${tracker.prompt_tokens};Tok_out:${tracker.completion_tokens}`,
   );
 };
 
@@ -270,24 +480,17 @@ function summarizeUsage(steps: Result<PyserverReply<unknown>, unknown>[]) {
         stepUsage: usage,
         stepCost: cost,
       });
-      logTokensInTracker(updatedTracker);
+      logTokensInTracker(updatedTracker, step.value.stepName);
       return updatedTracker;
     } else {
-      console.log("TODO");
+      console.log(`TODO`);
       return accum;
     }
   }, initTracker);
 }
 
-// const logStep = (result:Result<unknown, unknown>, message:string):void => {
-//   if (result.tag === 'success') {
-//     console.log(message)
-//   }
-//   return;
-// }
-
-class UnsupportedCommentTypes extends CustomError<"UnsupportedCommentTypes"> {
+class MissingInterviewAttributionsError extends CustomError<"MissingInterviewAttributions"> {
   constructor(err?: unknown) {
-    super("UnsupportedCommentTypes", err);
+    super("MissingInterviewAttributions", err);
   }
 }

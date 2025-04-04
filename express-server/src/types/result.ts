@@ -23,6 +23,10 @@ type Failure<T> = {
  */
 export type Result<S, F> = Success<S> | Failure<F>;
 
+export const success = <T>(value: T): Success<T> => ({ tag: "success", value });
+
+export const failure = <F>(error: F): Failure<F> => ({ tag: "failure", error });
+
 /**
  * Takes a Result.
  *
@@ -48,6 +52,85 @@ export function mapResult<T, T2, F>(
     tag: "success",
     value: newValue,
   };
+}
+
+/**
+ * This takes a list of results and either:
+ *
+ * If any one of them is a failure, pass the failure through
+ *
+ * Otherwise, Concat them into a new success with an array of the input values
+ *
+ * sequenceResult -> Result<T,F>[] -> Result<T[], F>
+ *
+ * Example:
+ *
+ * sequenceResult([Success(1), Success(2), Success(3)]) -> Success([1,2,3])
+ *
+ * sequenceResult([Success(1), Failure(GoofedError), Success(3)]) -> Failure(GoofedError)
+ */
+export function sequenceResult2<S extends any[], F>(results: {
+  [K in keyof S]: Result<S[K], F>;
+}): Result<S, F> {
+  return results.reduce(
+    (accum, result) => {
+      if (accum.tag === "failure") return accum;
+      if (result.tag === "failure") return failure(result.error);
+      else return success([...accum.value, result.value]);
+    },
+    success([]) as Result<S[], F>,
+  );
+}
+
+/**
+ * Extracts the union of all error types from an array of Result types
+ */
+type ErrorUnion<R extends readonly Result<any, any>[]> =
+  R[number] extends Result<any, infer E> ? E : never;
+
+/**
+ * This takes a list of results and either:
+ *
+ * If any one of them is a failure, pass the failure through
+ *
+ * Otherwise, Concat them into a new success with an array of the input values
+ *
+ * For the possible Error values, it will return a union of the possible errors from each result.
+ *
+ * sequenceResult -> Result<T,F>[] -> Result<T[], F>
+ *
+ * Example:
+ *
+ * sequenceResult([Success(1), Success(2), Success(3)]) -> Success([1,2,3])
+ *
+ * sequenceResult([Success(1), Failure(GoofedError), Success(3)]) -> Failure(GoofedError)
+ *
+ * Devnote: The type stuff here is pretty gnarly. I had Claude generate it because I couldn't figure it out. After a few tries I got this, and it works.
+ * If possible, we should simplify it.
+ */
+export function sequenceResult<R extends readonly Result<any, any>[]>(
+  results: R,
+): Result<
+  { -readonly [P in keyof R]: R[P] extends Result<infer S, any> ? S : never },
+  ErrorUnion<R>
+> {
+  type SuccessTuple = {
+    -readonly [P in keyof R]: R[P] extends Result<infer S, any> ? S : never;
+  };
+
+  const initialState: Result<any[], ErrorUnion<R>> = success([]);
+
+  const finalResult = results.reduce<Result<any[], ErrorUnion<R>>>(
+    (acc, result) => {
+      if (acc.tag === "failure") return acc;
+      if (result.tag === "failure")
+        return failure(result.error as ErrorUnion<R>);
+      return success([...acc.value, result.value]);
+    },
+    initialState,
+  );
+
+  return finalResult as Result<SuccessTuple, ErrorUnion<R>>;
 }
 
 /**
