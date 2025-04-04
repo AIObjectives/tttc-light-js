@@ -5,12 +5,13 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>) =>
+  async (url: string, body: z.infer<T>, apiKey: string) =>
     await fetch(url, {
       method: "PUT",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
+        [apiPyserver.OPENAI_API_KEY_HEADER]: apiKey,
       },
     });
 
@@ -32,6 +33,7 @@ export async function sortClaimsTreePipelineStep(
   const { data, usage, cost } = await pyserverFetchSortClaimsTree(
     `${env.PYSERVER_URL}/sort_claims_tree`,
     input,
+    env.OPENAI_API_KEY,
   )
     .then((res) => res.json())
     .then(logger("sort claims step returns: "))
