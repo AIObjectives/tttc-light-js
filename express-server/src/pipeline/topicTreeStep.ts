@@ -5,12 +5,13 @@ import { z } from "zod";
 
 const typedFetch =
   <T extends z.ZodTypeAny>(bodySchema: T) =>
-  async (url: string, body: z.infer<T>) =>
+  async (url: string, body: z.infer<T>, apiKey: string) =>
     await fetch(url, {
       method: "POST",
       body: JSON.stringify(bodySchema.parse(body) as z.infer<T>),
       headers: {
         "Content-Type": "application/json",
+        [apiPyserver.OPENAI_API_KEY_HEADER]: apiKey,
       },
     });
 
@@ -30,6 +31,7 @@ export async function topicTreePipelineStep(
   const { data, usage, cost } = await pyserverFetchTopicTree(
     `${env.PYSERVER_URL}/topic_tree`,
     input,
+    env.OPENAI_API_KEY,
   )
     .then((res) => res.json())
     .then(logger("topic tree step returns: "))

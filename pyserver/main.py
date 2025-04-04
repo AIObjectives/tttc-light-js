@@ -19,15 +19,14 @@ import math
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import wandb
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import APIKeyHeader
 from openai import OpenAI
 from pydantic import BaseModel
-
-
 
 # Add the current directory to path for imports
 current_dir = Path(__file__).resolve().parent
@@ -37,16 +36,14 @@ from utils import cute_print, full_speaker_map, token_cost, topic_desc_map
 
 load_dotenv()
 
+app = FastAPI()
+header_scheme = APIKeyHeader(name="openai-api-key")
+
 # ! Temporarily including API key in env
 api_key: str = os.getenv("OPENAI_API_KEY")
 
 if api_key is None:
     raise Exception("No OpenAI API key present")
-
-app = FastAPI()
-
-# Header name for OpenAI API key
-OPENAI_API_KEY_HEADER = "X-OpenAI-API-Key"
 
 class Comment(BaseModel):
     id: str
@@ -87,11 +84,6 @@ class CruxesLLMConfig(BaseModel):
     topics: list
     top_k: int
 
-def get_api_key(openai_api_key: Optional[str] = Header(None, alias=OPENAI_API_KEY_HEADER)) -> str:
-    if openai_api_key is None:
-        raise HTTPException(status_code=401, detail="OpenAI API key is required in header")
-    return openai_api_key
-
 @app.get("/")
 def read_root():
     # TODO: setup/relevant defaults?
@@ -103,7 +95,7 @@ def read_root():
 @app.post("/topic_tree")
 def comments_to_tree(
     req: CommentsLLMConfig,
-    openai_api_key: str = Header(None, alias=OPENAI_API_KEY_HEADER),
+    api_key: str = Depends(header_scheme),
     log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
     dry_run=False,
 ) -> dict:
@@ -185,11 +177,14 @@ def comments_to_tree(
       }
     }
     """
+    # skip calling an LLM
     if dry_run or config.DRY_RUN:
         print("dry_run topic tree")
         return config.MOCK_RESPONSE["topic_tree"]
-    
-    client = OpenAI(api_key=openai_api_key)
+
+    if not api_key:
+        raise HTTPException(status_code=401)
+    client = OpenAI(api_key=api_key)
 
     # append comments to prompt
     full_prompt = req.llm.user_prompt
@@ -256,25 +251,20 @@ def comments_to_tree(
                     "cost/s1_topics": s1_total_cost,
                 },
             )
-            wandb.finish()
-        except Exception as e:
-            print("W&B logging failed:", e)
-
+        except Exception:
+            print("Failed to create wandb run")
+    # NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
+    # choosing the latter for now
     return {
-        "data": tree,
-        "usage": {
-            "completion_tokens": usage.completion_tokens,
-            "prompt_tokens": usage.prompt_tokens,
-            "total_tokens": usage.total_tokens,
-        },
+        "data": tree["taxonomy"],
+        "usage": usage.model_dump(),
         "cost": s1_total_cost,
     }
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict) -> dict:
+def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
     """
-    # api_key = llm.api_key
     client = OpenAI(api_key=api_key)
 
     # add taxonomy and comment to prompt template
@@ -316,58 +306,109 @@ def comment_to_claims(llm: dict, comment: str, tree: dict) -> dict:
 # Step 2: Extract and place claims #
 # ----------------------------------#
 @app.post("/claims")
-def all_comments_to_claims(
-    req: CommentTopicTree,
-    openai_api_key: str = Header(None, alias=OPENAI_API_KEY_HEADER),
+def comments_to_claims(
+    req: CommentsLLMConfig,
+    api_key: str = Depends(header_scheme),
     log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
     dry_run=False,
 ) -> dict:
-    """Given a list of comments and a topic tree, extract claims from each comment."""
+    """Given the full list of comments, return a list of claims extracted from the comments.
+
+    Input format:
+    - CommentLLMConfig object: JSON/dictionary with the following fields:
+      - comments: a list of Comment (each has a field, "text", for the raw text of the comment, and an id)
+      - llm: a dictionary of the LLM configuration:
+        - model_name: a string of the name of the LLM to call ("gpt-4o-mini", "gpt-4-turbo-preview")
+        - system_prompt: a string of the system prompt
+        - user_prompt: a string of the user prompt to convert the raw comments into claims
+    Example:
+    {
+      "llm": {
+          "model_name": "gpt-4o-mini",
+          "system_prompt": "\n\tYou are a professional research assistant.",
+          "user_prompt": "\nI will give you a list of comments."
+      },
+      "comments": [
+          {
+              "id": "c1",
+              "text": "I love cats"
+          },
+          {
+              "id": "c2",
+              "text": "dogs are great"
+          },
+          {
+              "id": "c3",
+              "text": "I'm not sure about birds"
+          }
+      ]
+    }
+
+    Output format:
+    - data : a list of claims, where each claim has
+      - claim: a string of the claim text
+      - comment_ids: a list of strings of the comment IDs that support this claim
+    - usage: a dictionary of token counts
+      - completion_tokens
+      - prompt_tokens
+      - total_tokens
+
+    Example output:
+    {
+      "data": [
+          {
+              "claim": "Cats are loved as pets",
+              "comment_ids": ["c1"]
+          },
+          {
+              "claim": "Dogs are great pets",
+              "comment_ids": ["c2"]
+          },
+          {
+              "claim": "There is uncertainty about birds as pets",
+              "comment_ids": ["c3"]
+          }
+      ],
+      "usage": {
+          "completion_tokens": 131,
+          "prompt_tokens": 224,
+          "total_tokens": 355
+      }
+    }
+    """
+    # skip calling an LLM
     if dry_run or config.DRY_RUN:
         print("dry_run claims")
         return config.MOCK_RESPONSE["claims"]
-    
-    client = OpenAI(api_key=openai_api_key)
 
-    # Process each comment
-    claims_tree = {}
-    total_usage = {
-        "completion_tokens": 0,
-        "prompt_tokens": 0,
-        "total_tokens": 0,
-    }
-    total_cost = 0.0
+    if not api_key:
+        raise HTTPException(status_code=401)
+    client = OpenAI(api_key=api_key)
 
+    # append comments to prompt
+    full_prompt = req.llm.user_prompt
     for comment in req.comments:
-        result = comment_to_claims(req.llm.model_dump(), comment.text, req.tree)
-        claims = result["claims"]
-        usage = result["usage"]
+        full_prompt += "\n" + comment.text
 
-        # Update total usage and cost
-        total_usage["completion_tokens"] += usage.completion_tokens
-        total_usage["prompt_tokens"] += usage.prompt_tokens
-        total_usage["total_tokens"] += usage.total_tokens
-        total_cost += token_cost(req.llm.model_name, usage.prompt_tokens, usage.completion_tokens)
-
-        # Add claims to the tree
-        for topic_name, topic_data in claims.items():
-            if topic_name not in claims_tree:
-                claims_tree[topic_name] = {"total": 0, "subtopics": {}}
-            
-            for subtopic_name, subtopic_data in topic_data["subtopics"].items():
-                if subtopic_name not in claims_tree[topic_name]["subtopics"]:
-                    claims_tree[topic_name]["subtopics"][subtopic_name] = {
-                        "total": 0,
-                        "claims": [],
-                    }
-                
-                claims_tree[topic_name]["subtopics"][subtopic_name]["claims"].extend(
-                    subtopic_data["claims"]
-                )
-                claims_tree[topic_name]["subtopics"][subtopic_name]["total"] += len(
-                    subtopic_data["claims"]
-                )
-                claims_tree[topic_name]["total"] += len(subtopic_data["claims"])
+    response = client.chat.completions.create(
+        model=req.llm.model_name,
+        messages=[
+            {"role": "system", "content": req.llm.system_prompt},
+            {"role": "user", "content": full_prompt},
+        ],
+        temperature=0.0,
+        response_format={"type": "json_object"},
+    )
+    try:
+        claims = json.loads(response.choices[0].message.content)
+    except Exception:
+        print("Step 2: no claims: ", response)
+        claims = []
+    usage = response.usage
+    # compute LLM costs for this step's tokens
+    s2_total_cost = token_cost(
+        req.llm.model_name, usage.prompt_tokens, usage.completion_tokens,
+    )
 
     if log_to_wandb:
         try:
@@ -382,37 +423,43 @@ def all_comments_to_claims(
                     "s2_claims/system_prompt": req.llm.system_prompt,
                 },
             )
+            comment_lengths = [len(c.text) for c in req.comments]
+            num_claims = len(claims)
+
+            # in case comments are empty / for W&B Table logging
+            comment_list = "none"
+            if len(req.comments) > 1:
+                comment_list = "\n".join([c.text for c in req.comments])
+            comms_claims_list = [[comment_list, json.dumps(claims, indent=1)]]
             wandb.log(
                 {
                     "comm_N": len(req.comments),
-                    "claims_N": sum(
-                        [
-                            len(st["claims"])
-                            for t in claims_tree.values()
-                            for st in t["subtopics"].values()
-                        ]
+                    "comm_text_len": sum(comment_lengths),
+                    "comm_bins": comment_lengths,
+                    "num_claims": num_claims,
+                    "rows_to_claims": wandb.Table(
+                        data=comms_claims_list, columns=["comments", "claims"],
                     ),
-                    "U_tok_N/claims": total_usage["total_tokens"],
-                    "U_tok_in/claims": total_usage["prompt_tokens"],
-                    "U_tok_out/claims": total_usage["completion_tokens"],
-                    "cost/s2_claims": total_cost,
+                    # token counts
+                    "U_tok_N/claims": usage.total_tokens,
+                    "U_tok_in/claims": usage.prompt_tokens,
+                    "U_tok_out/claims": usage.completion_tokens,
+                    "cost/s2_claims": s2_total_cost,
                 },
             )
-            wandb.finish()
-        except Exception as e:
-            print("W&B logging failed:", e)
-
+        except Exception:
+            print("Failed to create wandb run")
     return {
-        "data": claims_tree,
-        "usage": total_usage,
-        "cost": total_cost,
+        "data": claims,
+        "usage": usage.model_dump(),
+        "cost": s2_total_cost,
     }
 
 
-def dedup_claims(claims: list, llm: LLMConfig, openai_api_key: str) -> dict:
+def dedup_claims(claims: list, llm: LLMConfig, api_key: str) -> dict:
     """Given a list of claims for a given subtopic, identify which ones are near-duplicates
     """
-    client = OpenAI(api_key=openai_api_key)
+    client = OpenAI(api_key=api_key)
 
     # add claims with enumerated ids (relative to this subtopic only)
     full_prompt = llm.user_prompt
@@ -444,408 +491,120 @@ def dedup_claims(claims: list, llm: LLMConfig, openai_api_key: str) -> dict:
 #####################################
 # Step 3: Sort & deduplicate claims #
 # -----------------------------------#
-@app.put("/sort_claims_tree/")
+@app.post("/sort_claims_tree/")
 def sort_claims_tree(
     req: ClaimTreeLLMConfig,
-    openai_api_key: str = Header(None, alias=OPENAI_API_KEY_HEADER),
+    api_key: str = Depends(header_scheme),
     log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
-    dry_run = False
+    dry_run=False,
 ) -> dict:
-    """Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
-    all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
-    nested/child objects of a first-in parent claim, under the key "duplicates"
+    """Given a tree of claims, sort them by importance and relevance.
 
     Input format:
-    - ClaimTree object: JSON/dictionary with the following fields
-      - tree: the topic tree / full taxonomy of topics, subtopics, and claims (each with their full schema,
-              including the claim, quote, topic, and subtopic)
-    Example input tree:
+    - ClaimsTree object: JSON/dictionary with the following fields:
+      - claims: a list of claims, where each claim has
+        - claim: a string of the claim text
+        - comment_ids: a list of strings of the comment IDs that support this claim
+      - llm: a dictionary of the LLM configuration:
+        - model_name: a string of the name of the LLM to call ("gpt-4o-mini", "gpt-4-turbo-preview")
+        - system_prompt: a string of the system prompt
+        - user_prompt: a string of the user prompt to sort the claims
+    Example:
     {
-     "tree" : {
-      "Pets": {
-          "total": 5,
-          "subtopics": {
-              "Cats": {
-                  "total": 2,
-                  "claims": [
-                      {
-                          "claim": "Cats are the best pets.",
-                          "commentId":"c1",
-                          "quote": "I love cats.",
-                          "topicName": "Pets",
-                          "subtopicName": "Cats"
-                      },
-                      {
-                          "claim": "Cats are the best pets.",
-                          "commentId":"c1",
-                          "quote": "I really really love cats",
-                          "topicName": "Pets",
-                          "subtopicName": "Cats"
-                      }
-                  ]
-              },
-              "Dogs": {
-                  "total": 1,
-                  "claims": [
-                      {
-                          "claim": "Dogs are superior pets.",
-                          "commentId":"c2",
-                          "quote": "dogs are great",
-                          "topicName": "Pets",
-                          "subtopicName": "Dogs"
-                      }
-                  ]
-              },
-              "Birds": {
-                  "total": 2,
-                  "claims": [
-                      {
-                          "claim": "Birds are not ideal pets for everyone.",
-                          "commentId":"c3",
-                          "quote": "I'm not sure about birds.",
-                          "topicName": "Pets",
-                          "subtopicName": "Birds"
-                      },
-                      {
-                          "claim": "Birds are not suitable pets for everyone.",
-                          "commentId":"c3",
-                          "quote": "I don't know about birds.",
-                          "topicName": "Pets",
-                          "subtopicName": "Birds"
-                      }
-                  ]
-              }
-          }
-      }
-     }
-    }
-    Output format:
-    - response object: JSON/dictionary with the following fields
-      - data: the deduplicated claims & correctly sorted topic tree / full taxonomy of topics, subtopics,
-              and claims, where the most popular topics/subtopics/claims (by near-duplicate count) appear
-              first within each level of nesting
-      - usage: token counts for the LLM calls of the deduplication step of the pipeline
-        - completion_tokens
-        - prompt_tokens
-        - total_tokens
-
-    Example output tree:
-    [
-      [
-          "Pets",
+      "llm": {
+          "model_name": "gpt-4o-mini",
+          "system_prompt": "\n\tYou are a professional research assistant.",
+          "user_prompt": "\nI will give you a list of claims."
+      },
+      "claims": [
           {
-              "num_speakers" : 5,
-              "speakers" : [
-                  "Alice",
-                  "Bob",
-                  "Charles",
-                  "Dany",
-                  "Elinor"
-              ],
-              "num_claims": 5,
-              "topics": [
-                  [
-                      "Cats",
-                      {
-                          "num_claims": 2,
-                          "claims": [
-                              {
-                                  "claim": "Cats are the best pets.",
-                                  "commentId":"c1",
-                                  "quote": "I love cats.",
-                                  "speaker" : "Alice",
-                                  "topicName": "Pets",
-                                  "subtopicName": "Cats",
-                                  "duplicates": [
-                                      {
-                                          "claim": "Cats are the best pets.",
-                                          "commendId:"c1"
-                                          "quote": "I really really love cats",
-                                          "speaker" : "Elinor",
-                                          "topicName": "Pets",
-                                          "subtopicName": "Cats",
-                                          "duplicated": true
-                                      }
-                                  ]
-                              }
-                          ]
-                          "num_speakers" : 2,
-                          "speakers" : [
-                              "Alice",
-                              "Elinor"
-                          ]
-                      }
-                  ],
-                  [
-                      "Birds",
-                      {
-                          "num_claims": 2,
-                          "claims": [
-                              {
-                                  "claim": "Birds are not ideal pets for everyone.",
-                                  "commentId:"c3",
-                                  "quote": "I'm not sure about birds.",
-                                  "speaker" : "Charles",
-                                  "topicName": "Pets",
-                                  "subtopicName": "Birds",
-                                  "duplicates": [
-                                      {
-                                          "claim": "Birds are not suitable pets for everyone.",
-                                          "commentId" "c3",
-                                          "quote": "I don't know about birds.",
-                                          "speaker": "Dany",
-                                          "topicName": "Pets",
-                                          "subtopicName": "Birds",
-                                          "duplicated": true
-                                      }
-                                  ]
-                              }
-                          ]
-                          "num_speakers" : 2,
-                          "speakers" : [
-                              "Charles",
-                              "Dany"
-                          ]
-                      }
-                  ],
-                  [
-                      "Dogs",
-                      {
-                          "num_claims": 1,
-                          "claims": [
-                              {
-                                  "claim": "Dogs are superior pets.",
-                                  "commentId": "c2",
-                                  "quote": "dogs are great",
-                                  "speaker" : "Bob",
-                                  "topicName": "Pets",
-                                  "subtopicName": "Dogs"
-                              }
-                          ]
-                          "num_speakers" : 1,
-                          "speakers" : [
-                              "Bob"
-                          ]
-
-                      }
-                  ]
-              ]
+              "claim": "Cats are loved as pets",
+              "comment_ids": ["c1"]
+          },
+          {
+              "claim": "Dogs are great pets",
+              "comment_ids": ["c2"]
+          },
+          {
+              "claim": "There is uncertainty about birds as pets",
+              "comment_ids": ["c3"]
           }
       ]
-    ]
+    }
 
-    For each subtopic, send the contained claims to an LLM to detect near-duplicates.
-    These will be returned as dictionaries, where the keys are all the claims for the subtopic,
-    numbered with relative ids (claimId0, claimId1, claimId2...claimIdN-1 for N claims), and the
-    value for each claim id is a list of the relative claim ids of any near-duplicates.
-    Note that this mapping is not guaranteed to be symmetric: claimId0 may have an empty list,
-    but claimId1 may have claimId0 and claimId2 in the list. Hence we build a dictionary of
-    all the relative ids encountered, and return near duplicates accounting for this asymmetry.
+    Output format:
+    - data : a list of sorted claims, where each claim has
+      - claim: a string of the claim text
+      - comment_ids: a list of strings of the comment IDs that support this claim
+      - importance: a number between 0 and 1 indicating the importance of the claim
+      - relevance: a number between 0 and 1 indicating the relevance of the claim
+    - usage: a dictionary of token counts
+      - completion_tokens
+      - prompt_tokens
+      - total_tokens
 
-    After deduplication, the full tree of topics, subtopics, and their claims is sorted:
-    - more frequent topics appear first
-    - within each topic, more frequent subtopics appear first
-    - within each subtopic, claims with the most duplicates (ie most supporting quotes) appear first
-    Note that currently these duplicates are not counted towards the total claims in a subtopic/topic
-    for sorting at the higher levels.
-
-    For now, "near-duplicates" have similar meanings—this is not exact/identical claims and
-    we may want to refine this in the future.
-
-    We may also want to allow for other sorting/filtering styles, where the number of duplicates
-    DOES matter, or where we want to sum the claims by a particular speaker or by other metadata
-    towards the total for a subtopic/topic.
+    Example output:
+    {
+      "data": [
+          {
+              "claim": "Dogs are great pets",
+              "comment_ids": ["c2"],
+              "importance": 0.9,
+              "relevance": 0.8
+          },
+          {
+              "claim": "Cats are loved as pets",
+              "comment_ids": ["c1"],
+              "importance": 0.8,
+              "relevance": 0.7
+          },
+          {
+              "claim": "There is uncertainty about birds as pets",
+              "comment_ids": ["c3"],
+              "importance": 0.6,
+              "relevance": 0.5
+          }
+      ],
+      "usage": {
+          "completion_tokens": 131,
+          "prompt_tokens": 224,
+          "total_tokens": 355
+      }
+    }
     """
     # skip calling an LLM
     if dry_run or config.DRY_RUN:
-        print("dry_run sort tree")
+        print("dry_run sort claims tree")
         return config.MOCK_RESPONSE["sort_claims_tree"]
-    claims_tree = req.tree
-    llm = req.llm
-    TK_IN = 0
-    TK_OUT = 0
-    TK_TOT = 0
-    dupe_logs = []
-    sorted_tree = {}
 
-    for topic, topic_data in claims_tree.items():
-        per_topic_total = 0
-        per_topic_list = {}
-        # consider the empty top-level topic
-        if not topic_data["subtopics"]:
-            print("NO SUBTOPICS: ", topic)
-        for subtopic, subtopic_data in topic_data["subtopics"].items():
-            per_topic_total += subtopic_data["total"]
-            per_topic_speakers = set()
-            # canonical order of claims: as they appear in subtopic_data["claims"]
-            # no need to deduplicate single claims
-            if subtopic_data["total"] > 1:
-                try:
-                    response = dedup_claims(subtopic_data["claims"], llm=llm, openai_api_key=openai_api_key)
-                except Exception:
-                    print(
-                        "Step 3: no deduped claims response for: ",
-                        subtopic_data["claims"],
-                    )
-                    continue
-                deduped = response["dedup_claims"]
-                usage = response["usage"]
+    if not api_key:
+        raise HTTPException(status_code=401)
+    client = OpenAI(api_key=api_key)
 
-                # check for duplicates bidirectionally, as we may get either of these scenarios
-                # for the same pair of claims:
-                # {'nesting': {'claimId0': [], 'claimId1': ['claimId0']}} => {0: [1], 1: [0]}
-                # {'nesting': {'claimId0': ['claimId1'], 'claimId1': []}} => {0: [1], 1: [0]}
-                # anecdata: recent models may be better about this?
+    # append claims to prompt
+    full_prompt = req.llm.user_prompt
+    for claim in req.claims:
+        full_prompt += "\n" + claim["claim"]
 
-                claim_set = {}
-                if "nesting" in deduped:
-                    # implementation notes:
-                    # - MOST claims should NOT be near-duplicates
-                    # - nesting where |claim_vals| > 0 should be a smaller set than |subtopic_data["claims"]|
-                    # - but also we won't have duplicate info bidirectionally — A may be dupe of B, but B not dupe of A
-                    for claim_key, claim_vals in deduped["nesting"].items():
-                        # this claim_key has some duplicates
-                        if len(claim_vals) > 0:
-                            # extract relative index
-                            claim_id = int(claim_key.split("Id")[1])
-                            dupe_ids = [
-                                int(dupe_claim_key.split("Id")[1])
-                                for dupe_claim_key in claim_vals
-                            ]
-                            # assume duplication is symmetric: add claim_id to dupe_ids, check that each of these maps to the others
-                            all_dupes = [claim_id]
-                            all_dupes.extend(dupe_ids)
-                            for curr_id, dupe in enumerate(all_dupes):
-                                other_ids = [
-                                    d for i, d in enumerate(all_dupes) if i != curr_id
-                                ]
-                                if dupe in claim_set:
-                                    for other_id in other_ids:
-                                        if other_id not in claim_set[dupe]:
-                                            claim_set[dupe].append(other_id)
-                                else:
-                                    claim_set[dupe] = other_ids
-
-                accounted_for_ids = {}
-                deduped_claims = []
-                # for each claim in our original list
-                for claim_id, claim in enumerate(subtopic_data["claims"]):
-                    # add speakers of all claims
-                    if "speaker" in claim:
-                        speaker = claim["speaker"]
-                    else:
-                        print("no speaker provided:", claim)
-                        speaker = "unknown"
-                    per_topic_speakers.add(speaker)
-
-                    # only create a new claim if we haven't visited this one already
-                    if claim_id not in accounted_for_ids:
-                        clean_claim = {k: v for k, v in claim.items()}
-                        clean_claim["duplicates"] = []
-
-                        # if this claim has some duplicates
-                        if claim_id in claim_set:
-                            dupe_ids = claim_set[claim_id]
-                            for dupe_id in dupe_ids:
-                                if dupe_id not in accounted_for_ids:
-                                    dupe_claim = {
-                                        k: v
-                                        for k, v in subtopic_data["claims"][
-                                            dupe_id
-                                        ].items()
-                                    }
-                                    dupe_claim["duplicated"] = True
-
-                                    # add all duplicates as children of main claim
-                                    clean_claim["duplicates"].append(dupe_claim)
-
-                                    accounted_for_ids[dupe_id] = 1
-
-                        # add verified claim (may be identical if it has no dupes, except for duplicates: [] field)
-                        deduped_claims.append(clean_claim)
-                        accounted_for_ids[claim_id] = 1
-
-                # sort so the most duplicated claims are first
-                sorted_deduped_claims = sorted(
-                    deduped_claims, key=lambda x: len(x["duplicates"]), reverse=True,
-                )
-                if log_to_wandb:
-                    dupe_logs.append(
-                        [
-                            json.dumps(subtopic_data["claims"], indent=1),
-                            json.dumps(sorted_deduped_claims, indent=1),
-                        ],
-                    )
-
-                TK_TOT += usage.total_tokens
-                TK_IN += usage.prompt_tokens
-                TK_OUT += usage.completion_tokens
-            else:
-                sorted_deduped_claims = subtopic_data["claims"]
-                # there may be one unique claim or no claims if this is an empty subtopic
-                if subtopic_data["claims"]:
-                    if "speaker" in subtopic_data["claims"][0]:
-                        speaker = subtopic_data["claims"][0]["speaker"]
-                    else:
-                        print("no speaker provided:", claim)
-                        speaker = "unknown"
-                    per_topic_speakers.add(speaker)
-                else:
-                    print("EMPTY SUBTOPIC AFTER CLAIMS: ", subtopic)
-
-            # track how many claims and distinct speakers per subtopic
-            tree_counts = {
-                "claims": subtopic_data["total"],
-                "speakers": len(per_topic_speakers),
-            }
-            # add list of sorted, deduplicated claims to the right subtopic node in the tree
-            per_topic_list[subtopic] = {
-                "claims": sorted_deduped_claims,
-                "speakers": list(per_topic_speakers),
-                "counts": tree_counts,
-            }
-
-        # sort all the subtopics in a given topic
-        # two ways of sorting 1/16:
-        # - (default) numPeople: count the distinct speakers per subtopic/topic
-        # - numClaims: count the total claims per subtopic/topic
-        set_topic_speakers = set()
-        for k, c in per_topic_list.items():
-            set_topic_speakers = set_topic_speakers.union(c["speakers"])
-
-        if req.sort == "numPeople":
-            sorted_subtopics = sorted(
-                per_topic_list.items(),
-                key=lambda x: x[1]["counts"]["speakers"],
-                reverse=True,
-            )
-        elif req.sort == "numClaims":
-            sorted_subtopics = sorted(
-                per_topic_list.items(),
-                key=lambda x: x[1]["counts"]["claims"],
-                reverse=True,
-            )
-        # track how many claims and distinct speakers per subtopic
-        tree_counts = {"claims": per_topic_total, "speakers": len(set_topic_speakers)}
-        # we have to add all the speakers
-        sorted_tree[topic] = {
-            "topics": sorted_subtopics,
-            "speakers": list(set_topic_speakers),
-            "counts": tree_counts,
-        }
-
-    # sort all the topics in the tree
-    if req.sort == "numPeople":
-        full_sort_tree = sorted(
-            sorted_tree.items(), key=lambda x: x[1]["counts"]["speakers"], reverse=True,
-        )
-    elif req.sort == "numClaims":
-        full_sort_tree = sorted(
-            sorted_tree.items(), key=lambda x: x[1]["counts"]["claims"], reverse=True,
-        )
-
+    response = client.chat.completions.create(
+        model=req.llm.model_name,
+        messages=[
+            {"role": "system", "content": req.llm.system_prompt},
+            {"role": "user", "content": full_prompt},
+        ],
+        temperature=0.0,
+        response_format={"type": "json_object"},
+    )
+    try:
+        sorted_claims = json.loads(response.choices[0].message.content)
+    except Exception:
+        print("Step 3: no sorted claims: ", response)
+        sorted_claims = []
+    usage = response.usage
     # compute LLM costs for this step's tokens
-    s3_total_cost = token_cost(req.llm.model_name, TK_IN, TK_OUT)
+    s3_total_cost = token_cost(
+        req.llm.model_name, usage.prompt_tokens, usage.completion_tokens,
+    )
 
     if log_to_wandb:
         try:
@@ -855,36 +614,40 @@ def sort_claims_tree(
             )
             wandb.config.update(
                 {
-                    "s3_dedup/model": req.llm.model_name,
-                    "s3_dedup/user_prompt": req.llm.user_prompt,
-                    "s3_dedup/system_prompt": req.llm.system_prompt,
+                    "s3_sort/model": req.llm.model_name,
+                    "s3_sort/user_prompt": req.llm.user_prompt,
+                    "s3_sort/system_prompt": req.llm.system_prompt,
                 },
             )
+            num_claims = len(req.claims)
+            num_sorted = len(sorted_claims)
 
-            report_data = [[json.dumps(full_sort_tree, indent=2)]]
+            # in case claims are empty / for W&B Table logging
+            claim_list = "none"
+            if len(req.claims) > 1:
+                claim_list = "\n".join([c["claim"] for c in req.claims])
+            claims_sorted_list = [[claim_list, json.dumps(sorted_claims, indent=1)]]
             wandb.log(
                 {
-                    "U_tok_N/dedup": TK_TOT,
-                    "U_tok_in/dedup": TK_IN,
-                    "U_tok_out/dedup": TK_OUT,
-                    "deduped_claims": wandb.Table(
-                        data=dupe_logs, columns=["full_flat_claims", "deduped_claims"],
+                    "claim_N": num_claims,
+                    "num_sorted": num_sorted,
+                    "rows_to_sorted": wandb.Table(
+                        data=claims_sorted_list, columns=["claims", "sorted_claims"],
                     ),
-                    "t3c_report": wandb.Table(data=report_data, columns=["t3c_report"]),
-                    "cost/s3_dedup": s3_total_cost,
+                    # token counts
+                    "U_tok_N/sort": usage.total_tokens,
+                    "U_tok_in/sort": usage.prompt_tokens,
+                    "U_tok_out/sort": usage.completion_tokens,
+                    "cost/s3_sort": s3_total_cost,
                 },
             )
-            # W&B run completion
-            wandb.run.finish()
         except Exception:
             print("Failed to create wandb run")
-    net_usage = {
-        "total_tokens": TK_TOT,
-        "prompt_tokens": TK_IN,
-        "completion_tokens": TK_OUT,
+    return {
+        "data": sorted_claims,
+        "usage": usage.model_dump(),
+        "cost": s3_total_cost,
     }
-
-    return {"data": full_sort_tree, "usage": net_usage, "cost": s3_total_cost}
 
 
 ###########################################
@@ -938,7 +701,7 @@ def controversy_matrix(cont_mat: list) -> list:
 
 
 def cruxes_for_topic(
-    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict,
+    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict, api_key: str,
 ) -> dict:
     """For each fully-described subtopic, provide all the relevant claims with an anonymized
     numeric speaker id, and ask the LLM for a crux claim that best splits the speakers' opinions
@@ -1002,125 +765,112 @@ def top_k_cruxes(cont_mat: list, cruxes: list, top_k: int = 0) -> list:
     return top_cruxes
 
 
-@app.post("/cruxes")
-def cruxes_from_tree(
-    req: CruxesLLMConfig, log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False,
+@app.post("/cruxes/")
+def cruxes(
+    req: CruxesLLMConfig,
+    api_key: str = Depends(header_scheme),
+    log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
+    dry_run=False,
 ) -> dict:
-    """Given a topic, description, and corresponding list of claims with numerical speaker ids, extract the
-    crux claims that would best split the claims into agree/disagree sides.
-    Return a crux for each subtopic which contains at least 2 claims and at least 2 speakers.
+    """Given a list of claims, extract the key cruxes (core issues or points of contention).
+
+    Input format:
+    - CruxesLLMConfig object: JSON/dictionary with the following fields:
+      - claims: a list of claims, where each claim has
+        - claim: a string of the claim text
+        - comment_ids: a list of strings of the comment IDs that support this claim
+      - llm: a dictionary of the LLM configuration:
+        - model_name: a string of the name of the LLM to call ("gpt-4o-mini", "gpt-4-turbo-preview")
+        - system_prompt: a string of the system prompt
+        - user_prompt: a string of the user prompt to extract cruxes
+    Example:
+    {
+      "llm": {
+          "model_name": "gpt-4o-mini",
+          "system_prompt": "\n\tYou are a professional research assistant.",
+          "user_prompt": "\nI will give you a list of claims."
+      },
+      "claims": [
+          {
+              "claim": "Cats are loved as pets",
+              "comment_ids": ["c1"]
+          },
+          {
+              "claim": "Dogs are great pets",
+              "comment_ids": ["c2"]
+          },
+          {
+              "claim": "There is uncertainty about birds as pets",
+              "comment_ids": ["c3"]
+          }
+      ]
+    }
+
+    Output format:
+    - data : a list of cruxes, where each crux has
+      - crux: a string of the crux text
+      - claim_ids: a list of strings of the claim IDs that support this crux
+      - importance: a number between 0 and 1 indicating the importance of the crux
+    - usage: a dictionary of token counts
+      - completion_tokens
+      - prompt_tokens
+      - total_tokens
+
+    Example output:
+    {
+      "data": [
+          {
+              "crux": "The role of pets in modern society",
+              "claim_ids": ["c1", "c2", "c3"],
+              "importance": 0.9
+          },
+          {
+              "crux": "The suitability of different types of pets",
+              "claim_ids": ["c1", "c2", "c3"],
+              "importance": 0.8
+          }
+      ],
+      "usage": {
+          "completion_tokens": 131,
+          "prompt_tokens": 224,
+          "total_tokens": 355
+      }
+    }
     """
+    # skip calling an LLM
     if dry_run or config.DRY_RUN:
         print("dry_run cruxes")
         return config.MOCK_RESPONSE["cruxes"]
-    cruxes_main = []
-    crux_claims = []
-    TK_IN = 0
-    TK_OUT = 0
-    TK_TOT = 0
-    topic_desc = topic_desc_map(req.topics)
 
-    # TODO: can we get this from client?
-    speaker_map = full_speaker_map(req.crux_tree)
-    # print("speaker ids: ", speaker_map)
-    for topic, topic_details in req.crux_tree.items():
-        subtopics = topic_details["subtopics"]
-        for subtopic, subtopic_details in subtopics.items():
-            # all claims for subtopic
-            # TODO: reduce how many subtopics we analyze for cruxes, based on minimum representation
-            # in known speaker comments?
-            claims = subtopic_details["claims"]
-            if len(claims) < 2:
-                print("fewer than 2 claims: ", subtopic)
-                continue
+    if not api_key:
+        raise HTTPException(status_code=401)
+    client = OpenAI(api_key=api_key)
 
-            if subtopic in topic_desc:
-                subtopic_desc = topic_desc[subtopic]
-            else:
-                print("no description for subtopic:", subtopic)
-                subtopic_desc = "No further details"
+    # append claims to prompt
+    full_prompt = req.llm.user_prompt
+    for claim in req.claims:
+        full_prompt += "\n" + claim["claim"]
 
-            topic_title = topic + ", " + subtopic
-            llm_response = cruxes_for_topic(
-                req.llm, topic_title, subtopic_desc, claims, speaker_map,
-            )
-            if not llm_response:
-                continue
-            crux = llm_response["crux"]["crux"]
-            usage = llm_response["usage"]
-
-            ids_to_speakers = {v: k for k, v in speaker_map.items()}
-            spoken_claims = [c["speaker"] + ": " + c["claim"] for c in claims]
-
-            # create more readable table: crux only, named speakers who agree, named speakers who disagree
-            crux_claim = crux["cruxClaim"]
-            agree = crux["agree"]
-            disagree = crux["disagree"]
-            try:
-                explanation = crux["explanation"]
-            except Exception:
-                explanation = "N/A"
-
-            # let's add back the names to the sanitized/speaker-ids-only
-            # in the agree/disagree claims
-            agree = [a.split(":")[0] for a in agree]
-            disagree = [a.split(":")[0] for a in disagree]
-            named_agree = [a + ":" + ids_to_speakers[a] for a in agree]
-            named_disagree = [d + ":" + ids_to_speakers[d] for d in disagree]
-            crux_claims.append([crux_claim, named_agree, named_disagree, explanation])
-
-            # most readable form:
-            # - crux claim, explanation, agree, disagree
-            # - all claims prepended with speaker names
-            # - topic & subctopic, description
-            cruxes_main.append(
-                [
-                    crux_claim,
-                    explanation,
-                    named_agree,
-                    named_disagree,
-                    json.dumps(spoken_claims, indent=1),
-                    topic_title,
-                    subtopic_desc,
-                ],
-            )
-
-            TK_TOT += usage.total_tokens
-            TK_IN += usage.prompt_tokens
-            TK_OUT += usage.completion_tokens
-
-    # convert agree/disagree to numeric scores:
-    # for each crux claim, for each speaker:
-    # - assign 1 if the speaker agrees with the crux
-    # - assign 0.5 if the speaker disagrees
-    # - assign 0 if the speaker's opinion is unknown/unspecified
-    speaker_labels = sorted(speaker_map.keys())
-    cont_mat = []
-    for row in crux_claims:
-        claim_scores = []
-        for sl in speaker_labels:
-            # associate the numeric id with the speaker so the LLM explanation
-            # is more easily interpretable (by cross-referencing adjacent columns which have the
-            # full speaker name, which is withheld from the LLM)
-            labeled_speaker = speaker_map[sl] + ":" + sl
-            if labeled_speaker in row[1]:
-                claim_scores.append(1)
-            elif labeled_speaker in row[2]:
-                claim_scores.append(0.5)
-            else:
-                claim_scores.append(0)
-        cm = [row[0]]
-        cm.extend(claim_scores)
-        cont_mat.append(cm)
-    full_controversy_matrix = controversy_matrix(cont_mat)
-
-    crux_claims_only = [row[0] for row in crux_claims]
-    top_cruxes = top_k_cruxes(full_controversy_matrix, crux_claims_only, req.top_k)
+    response = client.chat.completions.create(
+        model=req.llm.model_name,
+        messages=[
+            {"role": "system", "content": req.llm.system_prompt},
+            {"role": "user", "content": full_prompt},
+        ],
+        temperature=0.0,
+        response_format={"type": "json_object"},
+    )
+    try:
+        cruxes = json.loads(response.choices[0].message.content)
+    except Exception:
+        print("Step 4: no cruxes: ", response)
+        cruxes = []
+    usage = response.usage
     # compute LLM costs for this step's tokens
-    s4_total_cost = token_cost(req.llm.model_name, TK_IN, TK_OUT)
+    s4_total_cost = token_cost(
+        req.llm.model_name, usage.prompt_tokens, usage.completion_tokens,
+    )
 
-    # Note: we will now be sending speaker names to W&B
-    # (still not to external LLM providers, to avoid bias on crux detection and better preserve PII)
     if log_to_wandb:
         try:
             exp_group_name = str(log_to_wandb)
@@ -1130,72 +880,39 @@ def cruxes_from_tree(
             wandb.config.update(
                 {
                     "s4_cruxes/model": req.llm.model_name,
-                    "s4_cruxes/prompt": req.llm.user_prompt,
+                    "s4_cruxes/user_prompt": req.llm.user_prompt,
+                    "s4_cruxes/system_prompt": req.llm.system_prompt,
                 },
             )
-            log_top_cruxes = [[c["score"], c["cruxA"], c["cruxB"]] for c in top_cruxes]
+            num_claims = len(req.claims)
+            num_cruxes = len(cruxes)
+
+            # in case claims are empty / for W&B Table logging
+            claim_list = "none"
+            if len(req.claims) > 1:
+                claim_list = "\n".join([c["claim"] for c in req.claims])
+            claims_cruxes_list = [[claim_list, json.dumps(cruxes, indent=1)]]
             wandb.log(
                 {
-                    "U_tok_N/cruxes": TK_TOT,
-                    "U_tok_in/cruxes": TK_IN,
-                    "U_tok_out/cruxes": TK_OUT,
+                    "claim_N": num_claims,
+                    "num_cruxes": num_cruxes,
+                    "rows_to_cruxes": wandb.Table(
+                        data=claims_cruxes_list, columns=["claims", "cruxes"],
+                    ),
+                    # token counts
+                    "U_tok_N/cruxes": usage.total_tokens,
+                    "U_tok_in/cruxes": usage.prompt_tokens,
+                    "U_tok_out/cruxes": usage.completion_tokens,
                     "cost/s4_cruxes": s4_total_cost,
-                    "crux_details": wandb.Table(
-                        data=cruxes_main,
-                        columns=[
-                            "crux",
-                            "reason",
-                            "agree",
-                            "disagree",
-                            "original_claims",
-                            "topic, subtopic",
-                            "description",
-                        ],
-                    ),
-                    "crux_top_scores": wandb.Table(
-                        data=log_top_cruxes, columns=["score", "cruxA", "cruxB"],
-                    ),
-                },
-            )
-            cols = ["crux"]
-            cols.extend(speaker_labels)
-            wandb.log(
-                {
-                    "crux_binary_scores": wandb.Table(data=cont_mat, columns=cols),
-                    "crux_cmat_scores": wandb.Table(
-                        data=full_controversy_matrix,
-                        columns=[
-                            "Crux " + str(i)
-                            for i in range(len(full_controversy_matrix))
-                        ],
-                    ),
-                    # TODO: render a visual of the controversy matrix
-                    # currently matplotlib requires a GUI to generate the plot, which is incompatible with pyserver config
-                    # filename = show_confusion_matrix(full_confusion_matrix, claims_only, "Test Conf Mat", "conf_mat_test.jpg")
-                    # "cont_mat_img" : wandb.Image(filename)
                 },
             )
         except Exception:
-            print("Failed to log wandb run")
-
-    # wrap and name fields before returning
-    net_usage = {
-        "total_tokens": TK_TOT,
-        "prompt_tokens": TK_IN,
-        "completion_tokens": TK_OUT,
-    }
-    cruxes = [
-        {"cruxClaim": c[0], "agree": c[1], "disagree": c[2], "explanation": c[3]}
-        for c in crux_claims
-    ]
-    crux_response = {
-        "cruxClaims": cruxes,
-        "controversyMatrix": full_controversy_matrix,
-        "topCruxes": top_cruxes,
-        "usage": net_usage,
+            print("Failed to create wandb run")
+    return {
+        "data": cruxes,
+        "usage": usage.model_dump(),
         "cost": s4_total_cost,
     }
-    return crux_response
 
 
 if __name__ == "__main__":
