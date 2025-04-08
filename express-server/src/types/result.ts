@@ -55,34 +55,6 @@ export function mapResult<T, T2, F>(
 }
 
 /**
- * This takes a list of results and either:
- *
- * If any one of them is a failure, pass the failure through
- *
- * Otherwise, Concat them into a new success with an array of the input values
- *
- * sequenceResult -> Result<T,F>[] -> Result<T[], F>
- *
- * Example:
- *
- * sequenceResult([Success(1), Success(2), Success(3)]) -> Success([1,2,3])
- *
- * sequenceResult([Success(1), Failure(GoofedError), Success(3)]) -> Failure(GoofedError)
- */
-export function sequenceResult2<S extends any[], F>(results: {
-  [K in keyof S]: Result<S[K], F>;
-}): Result<S, F> {
-  return results.reduce(
-    (accum, result) => {
-      if (accum.tag === "failure") return accum;
-      if (result.tag === "failure") return failure(result.error);
-      else return success([...accum.value, result.value]);
-    },
-    success([]) as Result<S[], F>,
-  );
-}
-
-/**
  * Extracts the union of all error types from an array of Result types
  */
 type ErrorUnion<R extends readonly Result<any, any>[]> =
