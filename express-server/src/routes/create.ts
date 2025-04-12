@@ -188,7 +188,7 @@ async function createNewReport(req: Request, res: Response) {
       auth: "public",
       instructions: {
         ...userConfig,
-        cruxInstructions: "", // ! Temp
+        cruxInstructions: userConfig.cruxInstructions ?? "", // ! Crux instructions should probably be made non-optional?
       },
       api_key: "", // ! Change when we transition away from using the AOI key,
       featureFlags: {

@@ -79,7 +79,8 @@ export async function pipelineJob(job: Job<PipelineJob>) {
 
   // Do each of the steps in the pipeline
   // This returns the results of each of the steps.
-  const { topicTreeStep, claimsStep, sortedStep } = await doPipelineSteps(job);
+  const { topicTreeStep, claimsStep, sortedStep, addonsStep } =
+    await doPipelineSteps(job);
 
   // Summarizes all of the Usage objects into a single tracker object.
   // As of right now, it will skip over the failed steps and summarize only the success
@@ -143,14 +144,18 @@ export async function pipelineJob(job: Job<PipelineJob>) {
       newTaxonomyResult,
       success(data),
       success(finalTracker),
+      addonsStep,
     ] as const),
-    ([tree, data, tracker]): schema.LLMPipelineOutput => ({
+    ([tree, data, tracker, addonsStep]): schema.LLMPipelineOutput => ({
       ...tracker,
       ...config.instructions,
       tree,
       data,
-      // ! TODO
-      addOns: {},
+      addOns: {
+        cruxClaims: addonsStep?.cruxClaims,
+        topCruxes: addonsStep?.topCruxes,
+        controversyMatrix: addonsStep?.controversyMatrix,
+      },
       question: question,
       title: title,
       description: description,
@@ -201,7 +206,7 @@ export async function pipelineJob(job: Job<PipelineJob>) {
  */
 async function doPipelineSteps(job: Job<PipelineJob>) {
   const { config, data } = job.data;
-  const { doClaimsStep, doSortClaimsTreeStep, doTopicTreeStep } =
+  const { doClaimsStep, doSortClaimsTreeStep, doTopicTreeStep, doAddons } =
     makePyserverFuncs(config);
 
   const pipelineComments: Result<
@@ -250,13 +255,32 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     doSortClaimsTreeStep(val.data),
   );
 
+  console.log("Doing optional addons step");
+  const addonsStep = await flatMapResultAsync(
+    sequenceResult([claimsStep, topicTreeStep] as const),
+    async ([claim, topic]) => {
+      return await doAddons(
+        config.featureFlags.cruxes
+          ? {
+              crux: {
+                topics: topic.data.tree.taxonomy,
+                // ! does this ever change?
+                top_k: 10,
+                crux_tree: claim.data.tree,
+              },
+            }
+          : {},
+      );
+    },
+  );
+
   // update job progress
   console.log("Step 4: wrapping up....");
   await job.updateProgress({
     status: api.reportJobStatus.Values.wrappingup,
   });
 
-  return { topicTreeStep, claimsStep, sortedStep };
+  return { topicTreeStep, claimsStep, sortedStep, addonsStep };
 }
 
 /**
@@ -345,12 +369,12 @@ const makePyserverFuncs = (config: PipelineConfig) => {
     topicTreeLLMConfig,
     claimsLLMConfig,
     dedupLLMConfig,
-    // cruxesLLMConfig,
+    cruxesLLMConfig,
   ]: apiPyserver.LLMConfig[] = [
     instructions.clusteringInstructions,
     instructions.extractionInstructions,
     instructions.dedupInstructions,
-    // instructions.cruxInstructions,
+    instructions.cruxInstructions,
   ].map((prompt) => ({
     system_prompt: instructions.systemInstructions,
     user_prompt: prompt,
@@ -385,12 +409,28 @@ const makePyserverFuncs = (config: PipelineConfig) => {
       mapResult(val, (reply) => PipelineOutputToProps.makeSortedProps(reply)),
     );
 
-  // const doCruxStep = async (args: {
-  //   topics: apiPyserver.PartialTopic[];
-  //   crux_tree: apiPyserver.ClaimsTree;
-  //   top_k: number;
-  // }) =>
-  //   await Pyserver.cruxesPipelineStep(env, { ...args, llm: cruxesLLMConfig });
+  type CruxProps = {
+    topics: apiPyserver.PartialTopic[];
+    crux_tree: apiPyserver.ClaimsTree;
+    top_k: number;
+  };
+  const doCruxStep = async (args: CruxProps) =>
+    await Pyserver.cruxesPipelineStep(env, { ...args, llm: cruxesLLMConfig });
+
+  type Addons = Partial<{
+    crux: CruxProps;
+  }>;
+
+  const doAddons = async (addons: Addons) => {
+    // keep it simple for now, since we really only have one addon
+
+    if (!addons.crux) {
+      return success(null);
+    } else {
+      return await doCruxStep(addons.crux);
+    }
+  };
+
   /**
    * Calls the sort step on the pyserver
    */
@@ -408,7 +448,7 @@ const makePyserverFuncs = (config: PipelineConfig) => {
   return {
     doTopicTreeStep,
     doClaimsStep,
-    // doCruxStep,
+    doAddons,
     doSortClaimsTreeStep,
   };
 };
