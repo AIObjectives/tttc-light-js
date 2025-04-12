@@ -4,6 +4,14 @@ import { z } from "zod";
 //  * General
 //  ********************************/
 
+export const pipelineComment = z.object({
+  id: z.string(),
+  text: z.string(),
+  speaker: z.string(),
+});
+
+export type PipelineComment = z.infer<typeof pipelineComment>;
+
 /**
  * Contains information about/for the llm
  */
@@ -67,6 +75,8 @@ const partialTopic = z.object({
   topicShortDescription: z.string(),
   subtopics: partialSubtopic.array(),
 });
+
+export type PartialTopic = z.infer<typeof partialTopic>;
 
 /**
  * Claims without id and duplications. Used for second and third step.
@@ -199,6 +209,8 @@ export const claimsReply = z.object({
   usage,
   cost: z.number(),
 });
+
+export type ClaimsReply = z.infer<typeof claimsReply>;
 
 //  ********************************
 //  * sort_claims_tree
