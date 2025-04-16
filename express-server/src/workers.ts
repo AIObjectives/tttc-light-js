@@ -3,7 +3,7 @@ import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import { Env } from "./types/context";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
-import { storeJSON } from "./storage";
+import { createStorage } from "./storage";
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { topicTreePipelineStep } from "./pipeline/topicTreeStep";
 import { claimsPipelineStep } from "./pipeline/claimsStep";
@@ -60,6 +60,8 @@ const setupPipelineWorker = (connection: Redis) => {
       const { data } = job;
       // const cache = job.data.cache;
       const { config, env, firebaseDetails } = data;
+
+      const storage = createStorage(env, "public");
 
       const defaultConfig = {
         model: "gpt-4o-mini",
@@ -124,14 +126,20 @@ const setupPipelineWorker = (connection: Redis) => {
         status: api.reportJobStatus.Values.clustering,
       });
 
+      const topicTreeResults = await topicTreePipelineStep(env, {
+        comments,
+        llm: topicTreeLLMConfig,
+      });
+
+      if (topicTreeResults.tag === "failure") {
+        throw topicTreeResults.error;
+      }
+
       const {
         data: taxonomy,
         usage: topicTreeTokens,
         cost: topicTreeCost,
-      } = await topicTreePipelineStep(env, {
-        comments,
-        llm: topicTreeLLMConfig,
-      });
+      } = topicTreeResults.value;
 
       const tracker_step1 = sumTokensCost({
         tracker: initTracker,
@@ -147,15 +155,29 @@ const setupPipelineWorker = (connection: Redis) => {
       await job.updateProgress({
         status: api.reportJobStatus.Values.extraction,
       });
-      const {
-        claims_tree,
-        usage: claimsTokens,
-        cost: claimsCost,
-      } = await claimsPipelineStep(env, {
+      // const {
+      //   claims_tree,
+      //   usage: claimsTokens,
+      //   cost: claimsCost,
+      // } = await claimsPipelineStep(env, {
+      //   tree: { taxonomy },
+      //   comments,
+      //   llm: claimsLLMConfig,
+      // });
+      const claimsStep = await claimsPipelineStep(env, {
         tree: { taxonomy },
         comments,
         llm: claimsLLMConfig,
       });
+      if (claimsStep.tag === "failure") {
+        throw claimsStep.error;
+      }
+
+      const {
+        data: claims_tree,
+        usage: claimsTokens,
+        cost: claimsCost,
+      } = claimsStep.value;
 
       const tracker_step2 = sumTokensCost({
         tracker: tracker_step1,
@@ -165,18 +187,22 @@ const setupPipelineWorker = (connection: Redis) => {
       logTokensInTracker(tracker_step2);
 
       console.log("Step 2.5: Optionally extract cruxes");
+      const cruxesResult = await cruxesPipelineStep(env, {
+        topics: taxonomy,
+        crux_tree: claims_tree,
+        llm: cruxesLLMConfig,
+        top_k: 0,
+      });
+      if (cruxesResult.tag === "failure") {
+        throw cruxesResult.error;
+      }
       const {
         cruxClaims,
         controversyMatrix,
         topCruxes,
         usage: cruxTokens,
         cost: cruxCost,
-      } = await cruxesPipelineStep(env, {
-        topics: taxonomy,
-        crux_tree: claims_tree,
-        llm: cruxesLLMConfig,
-        top_k: 0,
-      });
+      } = cruxesResult.value;
       // package crux addOns together
       const cruxAddOns = {
         topCruxes: topCruxes,
@@ -198,15 +224,21 @@ const setupPipelineWorker = (connection: Redis) => {
       // TODO: more principled way of configuring this?
       const numPeopleSort = "numPeople";
 
-      const {
-        data: tree,
-        usage: sortClaimsTreeTokens,
-        cost: sortClaimsTreeCost,
-      } = await sortClaimsTreePipelineStep(env, {
+      const sortClaimsResult = await sortClaimsTreePipelineStep(env, {
         tree: claims_tree,
         llm: dedupLLMConfig,
         sort: numPeopleSort,
       });
+
+      if (sortClaimsResult.tag === "failure") {
+        throw sortClaimsResult.error;
+      }
+
+      const {
+        data: tree,
+        usage: sortClaimsTreeTokens,
+        cost: sortClaimsTreeCost,
+      } = sortClaimsResult.value;
 
       const tracker_step3 = sumTokensCost({
         tracker: tracker_crux,
@@ -274,7 +306,7 @@ const setupPipelineWorker = (connection: Redis) => {
         addOns: cruxAddOns,
       };
       const json = llmPipelineToSchema(llmPipelineOutput);
-      await storeJSON(options.filename, JSON.stringify(json), true);
+      await storage.save(options.filename, JSON.stringify(json));
       if (firebaseDetails) {
         await firebase.updateReportJobStatus(
           firebaseDetails.firebaseJobId,
