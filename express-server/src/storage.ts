@@ -129,11 +129,11 @@ export const createStorage = (
   if (control === "public")
     return new Bucket(
       env.GOOGLE_CREDENTIALS_ENCODED,
-      env.GCLOUD_STORAGE_BUCKET,
+      env.GCLOUD_STORAGE_BUCKET_PUBLIC,
     );
   else
     return new Bucket(
       env.GOOGLE_CREDENTIALS_ENCODED,
-      env.GLCOUD_STORAGE_BUCKET_PRIVATE,
+      env.GCLOUD_STORAGE_BUCKET_PRIVATE,
     );
 };

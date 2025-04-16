@@ -27,10 +27,10 @@ export const env = z.object({
   OPENAI_API_KEY_PASSWORD: z
     .string({ invalid_type_error: "Invalid type for openapi key password" })
     .optional(),
-  GCLOUD_STORAGE_BUCKET: z.string({
+  GCLOUD_STORAGE_BUCKET_PUBLIC: z.string({
     required_error: "Missing GCloud storage bucket",
   }),
-  GLCOUD_STORAGE_BUCKET_PRIVATE: z.string({
+  GCLOUD_STORAGE_BUCKET_PRIVATE: z.string({
     required_error: "Missing GCloud private storage bucket",
   }),
   GOOGLE_CREDENTIALS_ENCODED: z.string({
