@@ -3,7 +3,7 @@ import { ClaimsStep } from "./types";
 import { Env } from "../types/context";
 import { Client, Dispatcher } from "undici";
 import { AbortController } from "abort-controller"; // If needed in your environment
-import { CustomError } from "../error";
+import { TimeoutError, FetchError, InvalidResponseDataError } from "./errors";
 import { flatMapResult, Result } from "../types/result";
 
 /**
@@ -145,21 +145,3 @@ const validateResponse = async (
     };
   }
 };
-
-class InvalidResponseDataError extends CustomError<"InvalidResponseDataError"> {
-  constructor(err?: unknown) {
-    super("InvalidResponseDataError", err);
-  }
-}
-
-class TimeoutError extends CustomError<"TimeoutError"> {
-  constructor(err?: unknown) {
-    super("TimeoutError", err);
-  }
-}
-
-class FetchError extends CustomError<"FetchError"> {
-  constructor(err?: unknown) {
-    super("FetchError", err);
-  }
-}
