@@ -33,7 +33,7 @@ from pydantic import BaseModel
 current_dir = Path(__file__).resolve().parent
 sys.path.append(str(current_dir))
 import config
-from utils import cute_print, full_speaker_map, token_cost, topic_desc_map
+from utils import cute_print, full_speaker_map, token_cost, topic_desc_map, comment_is_meaningful
 
 load_dotenv()
 
@@ -188,10 +188,10 @@ def comments_to_tree(
     full_prompt = req.llm.user_prompt
     for comment in req.comments:
         # skip any empty comments/rows
-        if len(comment.text) > 0:
+        if comment_is_meaningful(comment.text):
             full_prompt += "\n" + comment.text
         else:
-            print("warning:empty comment in topic_tree")
+            print("warning:empty comment in topic_tree:" + comment.text)
 
     response = client.chat.completions.create(
         model=req.llm.model_name,
@@ -438,10 +438,10 @@ def all_comments_to_claims(
         # TODO: timing for comments
         # print("comment: ", i_c)
         # print("time: ", datetime.now())
-        if len(comment.text) > 0:
+        if comment_is_meaningful(comment.text):
             response = comment_to_claims(req.llm, comment.text, req.tree)
         else:
-            print("warning: empty comment in claims")
+            print("warning: empty comment in claims:" + comment.text)
             continue
         try:
             claims = response["claims"]
