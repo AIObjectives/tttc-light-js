@@ -19,6 +19,9 @@ COST_BY_MODEL = {
     "gpt-4o": {"in_per_1K": 0.0025, "out_per_1K": 0.01},
 }
 
+# for web-app mode, require at least 3 words in order to extract meaningful claims
+MIN_WORD_COUNT_FOR_MEANING = 3
+
 SYSTEM_PROMPT = """
 You are a professional research assistant. You have helped run many public consultations,
 surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights.
