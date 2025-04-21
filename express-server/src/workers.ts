@@ -3,7 +3,7 @@ import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import { Env } from "./types/context";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
-import { storeJSON } from "./storage";
+import { createStorage } from "./storage";
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { topicTreePipelineStep } from "./pipeline/topicTreeStep";
 import { claimsPipelineStep } from "./pipeline/claimsStep";
@@ -60,6 +60,8 @@ const setupPipelineWorker = (connection: Redis) => {
       const { data } = job;
       // const cache = job.data.cache;
       const { config, env, firebaseDetails } = data;
+
+      const storage = createStorage(env, "public");
 
       const defaultConfig = {
         model: "gpt-4o-mini",
@@ -274,7 +276,7 @@ const setupPipelineWorker = (connection: Redis) => {
         addOns: cruxAddOns,
       };
       const json = llmPipelineToSchema(llmPipelineOutput);
-      await storeJSON(options.filename, JSON.stringify(json), true);
+      await storage.save(options.filename, JSON.stringify(json));
       if (firebaseDetails) {
         await firebase.updateReportJobStatus(
           firebaseDetails.firebaseJobId,
