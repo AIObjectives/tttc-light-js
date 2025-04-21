@@ -30,7 +30,7 @@ export const env = z.object({
   GCLOUD_STORAGE_BUCKET: z.string({
     required_error: "Missing GCloud storage bucket",
   }),
-  GLCOUD_STORAGE_BUCKET_PRIVATE: z.string({
+  GCLOUD_STORAGE_BUCKET_PRIVATE: z.string({
     required_error: "Missing GCloud private storage bucket",
   }),
   GOOGLE_CREDENTIALS_ENCODED: z.string({
