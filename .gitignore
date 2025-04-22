@@ -1,8 +1,26 @@
+# node_modules/
+# **/.cache/*
+# .DS_Store
+# google-credentials.json
+# .env*
+# .vscode/
+# .next
+# dist
+# *storybook.log
+# __pycache__
+# **/*/credentials/*
+# /utils/**/output/*
+# /utils/**/input/*
+# !**/*/.keep
+# */tsconfig.tsbuildinfo
+
+
+
 node_modules/
 **/.cache/*
 .DS_Store
 google-credentials.json
-.env*
+#.env*
 .vscode/
 .next
 dist
@@ -13,3 +31,5 @@ __pycache__
 /utils/**/input/*
 !**/*/.keep
 */tsconfig.tsbuildinfo
+
+**/firebase-admin.json

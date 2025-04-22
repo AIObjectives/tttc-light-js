@@ -1,0 +1,53 @@
+
+
+
+
+name: Deploy Pyserver to Cloud Run
+
+on:
+  push:
+    branches:
+      - cicdtrial
+      
+
+jobs:
+  deploy:
+    name: Deploy Pyserver
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: tttc-light-js
+####
+      - name: Write .env file for Pyserver
+        run: |
+          echo "${{ secrets.ENV_PYSERVER }}" > pyserver/.env
+
+###
+      - name: Build and Push Docker image
+        run: |
+          cd pyserver
+          gcloud builds submit . \
+            --project=tttc-light-js \
+            --config=cloudbuild.yaml \
+            --timeout=1200s
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy emrepyservertest \
+            --image gcr.io/tttc-light-js/emrepyservertest \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated
+
+ 

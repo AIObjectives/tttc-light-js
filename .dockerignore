@@ -1,8 +1,29 @@
+# fixtures/
+# examples/
+# src/
+# google-credentials.json
+# .env
+# .env*
+# **/*.stories.*
+# **/.storybook
+
+
 fixtures/
 examples/
 src/
 google-credentials.json
-.env
-.env*
+#.env
+#.env*
 **/*.stories.*
 **/.storybook
+
+
+!next-client/package.json
+!next-client/package-lock.json
+!next-client/Dockerfile
+!next-client/cloudbuild.yaml
+
+
+
+**/firebase-admin.json
+**/*/credentials/*

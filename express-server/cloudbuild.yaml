@@ -1,0 +1,67 @@
+# steps:
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args:
+#       [
+#         'build',
+#         '-t', 'gcr.io/tttc-light-js/emreexpresstest',
+#         '-f', 'express-server/Dockerfile',
+#         '.'
+#       ]
+# images:
+#   - 'gcr.io/tttc-light-js/emreexpresstest'
+
+
+
+
+
+# steps:
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: [
+#       'build',
+#       '-t', 'gcr.io/tttc-light-js/emreexpresstest',
+#       '-f', 'express-server/Dockerfile',
+#       '.'
+#     ]
+# images:
+#   - 'gcr.io/tttc-light-js/emreexpresstest'
+
+
+
+
+
+# steps:
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: [
+#       'build',
+#       '-t', 'gcr.io/tttc-light-js/emreexpresstest',
+#       '-f', 'Dockerfile',  # Not express-server/Dockerfile anymore
+#       '.'
+#     ]
+# images:
+#   - 'gcr.io/tttc-light-js/emreexpresstest'
+
+
+
+# steps:
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: [
+#       'build',
+#       '-t', 'gcr.io/tttc-light-js/emreexpresstest',
+#       '-f', 'Dockerfile',  # only works because we cd'ed into express-server
+#       '.'
+#     ]
+# images:
+#   - 'gcr.io/tttc-light-js/emreexpresstest'
+
+
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/tttc-light-js/emreexpresstest',
+      '-f', 'express-server/Dockerfile',
+      '.'
+    ]
+images:
+  - 'gcr.io/tttc-light-js/emreexpresstest'
