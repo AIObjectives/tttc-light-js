@@ -4,8 +4,7 @@ name: Deploy Next Client to Cloud Run
 on:
   push:
     branches:
-      - main
-      - pyserver_nextclient
+      - cicdtrial
 
 jobs:
   deploy:
