@@ -9,7 +9,7 @@ def comment_is_meaningful(raw_comment:str):
   to be meaningful in web app mode. Only check word count for short comments.
   TODO: add config for other modes like elicitation/direct response
   """
-  if len(raw_comment) > 10 or len(raw_comment.split(" ")) >= config.MIN_WORD_COUNT_FOR_MEANING:
+  if len(raw_comment) >= config.MIN_CHAR_COUNT_FOR_MEANING or len(raw_comment.split(" ")) >= config.MIN_WORD_COUNT_FOR_MEANING:
     return True
   else:
     return False

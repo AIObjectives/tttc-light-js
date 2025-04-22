@@ -21,6 +21,7 @@ COST_BY_MODEL = {
 
 # for web-app mode, require at least 3 words in order to extract meaningful claims
 MIN_WORD_COUNT_FOR_MEANING = 3
+MIN_CHAR_COUNT_FOR_MEANING = 10
 
 SYSTEM_PROMPT = """
 You are a professional research assistant. You have helped run many public consultations,
