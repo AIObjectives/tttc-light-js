@@ -17,7 +17,7 @@ google-credentials.json
 **/*.stories.*
 **/.storybook
 
-
+  
 !next-client/package.json
 !next-client/package-lock.json
 !next-client/Dockerfile
