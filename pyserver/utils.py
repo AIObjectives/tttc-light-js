@@ -4,6 +4,17 @@ import wandb
 
 import config
 
+def comment_is_meaningful(raw_comment:str):
+  """ Check whether the raw comment contains enough words/characters
+  to be meaningful in web app mode. Only check word count for short comments.
+  TODO: add config for other modes like elicitation/direct response
+  """
+  if len(raw_comment) >= config.MIN_CHAR_COUNT_FOR_MEANING or len(raw_comment.split(" ")) >= config.MIN_WORD_COUNT_FOR_MEANING:
+    return True
+  else:
+    return False
+
+
 def token_cost(model_name:str, tok_in:int, tok_out:int):
   """ Returns the cost for the current model running the given numbers of
   tokens in/out for this call """
