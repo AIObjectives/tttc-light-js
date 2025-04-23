@@ -68,7 +68,7 @@
     "firebase": "^11.1.0",
     "firebase-admin": "^13.0.2",
     "lucide-react": "^0.378.0",
-    "next": "^15.0.3",
+    "next": "^15.3.1",
     "next-themes": "^0.3.0",
     "papaparse": "^5.4.1",
     "plotly.js": "^2.31.0",
