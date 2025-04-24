@@ -1,17 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { ReportState, SomeNode, __internals } from "../useReportState";
-import { reportData } from "stories/data/dummyData";
-import exp from "constants";
+import { setupTestState } from "./testStateSetup";
+import { ReportState, SomeNode } from "../types";
+import { defaultTopicPagination } from "../consts";
 
-const {
-  createPathMapReducer,
-  stateBuilder,
-  defaultTopicPagination,
-  defaultSubtopicPagination,
-  mapIdsToPath,
-} = __internals;
-
-const state = stateBuilder(reportData.topics);
+const { state, reducer } = setupTestState();
 
 // Gets a topic at a specific index
 const getTopic = (state: ReportState, idx: number = 0) => state.children[idx];
@@ -37,7 +29,6 @@ const firstTopic = getTopic(state);
 const lastTopic = getLastTopic(state);
 const middleTopic = getMiddleTopic(state);
 const testTopics = [firstTopic, middleTopic, lastTopic];
-const reducer = createPathMapReducer(mapIdsToPath(state));
 const open = (reportState: ReportState, id: string) =>
   reducer(reportState, { type: "open", payload: { id } });
 

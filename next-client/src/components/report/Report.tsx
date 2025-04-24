@@ -21,7 +21,7 @@ import {
 } from "../elements";
 import Icons from "@/assets/icons";
 import { getNPeople } from "tttc-common/morphisms";
-import useReportState, { ReportStateAction } from "./hooks/useReportState";
+import { useReportState, ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
 import { cn } from "@/lib/utils/shadcn";
 import Outline from "../outline/Outline";

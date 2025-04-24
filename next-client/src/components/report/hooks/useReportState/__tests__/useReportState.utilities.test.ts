@@ -1,11 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { __internals } from "../useReportState";
-import { reportData } from "stories/data/dummyData";
 import { Record } from "effect";
-const { stateBuilder, mapIdsToPath } = __internals;
+import { setupTestState } from "./testStateSetup";
+import { mapIdsToPath } from "../path";
 
-const state = stateBuilder(reportData.topics);
-
+const { state } = setupTestState();
 describe("Utility functions", () => {
   describe("mapIdsToPath", () => {
     test("Id map builds without error", () => {

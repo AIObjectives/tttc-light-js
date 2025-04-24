@@ -1,14 +1,17 @@
 import { describe, test, expect } from "vitest";
-import { ReportState, TopicNode, __internals } from "../useReportState";
-import { reportData } from "stories/data/dummyData";
+import { ReportState, TopicNode } from "../";
+import { setupTestState } from "./testStateSetup";
+import { pipe } from "effect";
 
-const { createPathMapReducer, stateBuilder, mapIdsToPath } = __internals;
-
-const state = stateBuilder(reportData.topics);
-
-const reducer = createPathMapReducer(mapIdsToPath(state));
+const { state, reducer } = setupTestState();
 
 const getTestTopic = (state: ReportState): TopicNode => state.children[0];
+
+const incrementTopic = (reportState: ReportState) =>
+  reducer(reportState, {
+    type: "expandTopic",
+    payload: { id: getTestTopic(state).id },
+  });
 
 const toggle = (state: ReportState) =>
   reducer(state, {
@@ -26,6 +29,13 @@ describe("Toggle Topic", () => {
   test("Applying twice sets topic to close", () => {
     const closedState = toggle(newState);
     expect(getTestTopic(closedState).isOpen).toBe(false);
+  });
+});
+
+describe("Toggling an open node is equivalent to closing it", () => {
+  const newState = pipe(state, toggle, incrementTopic, toggle);
+  test("Toggling an open node that has been expended should reset it", () => {
+    expect(newState).toMatchReportState(state);
   });
 });
 
