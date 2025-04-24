@@ -10,7 +10,7 @@ import {
 import Icons from "@/assets/icons";
 import { BackgroundAccentClass, BorderClass } from "@/lib/hooks/useTopicTheme";
 import LandingHero from "@/assets/hero/LandingHero";
-import Image from "next/image";
+import Image from "next/legacy/image";
 
 export default function Landing() {
   return (
