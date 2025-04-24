@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(
     process.env.NODE_ENV === "development"
-      ? "localhost:3000"
+      ? "http://localhost:3000"
       : "https://www.talktothe.city",
   ),
 };
