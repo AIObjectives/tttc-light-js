@@ -523,7 +523,6 @@ function summarizeUsage(steps: Result<PyserverReply<unknown>, unknown>[]) {
       logTokensInTracker(updatedTracker, step.value.stepName);
       return updatedTracker;
     } else {
-      console.log(`TODO`);
       return accum;
     }
   }, initTracker);
