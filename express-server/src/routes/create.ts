@@ -8,6 +8,7 @@ import { formatData, uniqueSlug } from "../utils";
 import { pipelineQueue } from "../server";
 import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
+import { PipelineJob } from "src/jobs/pipeline";
 
 const handleGoogleSheets = async (
   googleData: schema.GoogleSheetData,
@@ -171,21 +172,41 @@ async function createNewReport(req: Request, res: Response) {
     })),
   };
 
-  const _ = await pipelineQueue.add(
-    "pipeline",
-    {
-      config: updatedConfig,
+  if (decodedUser === null)
+    throw new Error("Firebase is now required to run a report.");
+  if (maybeFirebaseJobId === null)
+    throw new Error("Failed to add firebase job.");
+
+  const pipelineJob: PipelineJob = {
+    config: {
+      firebaseDetails: {
+        userId: decodedUser.uid,
+        reportDataUri: jsonUrl,
+        firebaseJobId: maybeFirebaseJobId,
+      },
       env,
-      firebaseDetails: decodedUser
-        ? {
-            userId: decodedUser.uid,
-            reportDataUri: jsonUrl,
-            firebaseJobId: maybeFirebaseJobId,
-          }
-        : null,
+      auth: "public",
+      instructions: {
+        ...userConfig,
+        cruxInstructions: userConfig.cruxInstructions ?? "", // ! Crux instructions should probably be made non-optional?
+      },
+      api_key: "", // ! Change when we transition away from using the AOI key,
+      options: {
+        cruxes: false,
+      },
+      llm: {
+        model: "", // ! Change when we allow different models
+      },
     },
-    { jobId: config.filename },
-  );
+    data: updatedConfig.data,
+    reportDetails: {
+      ...updatedConfig,
+    },
+  };
+
+  const _ = await pipelineQueue.add("pipeline", pipelineJob, {
+    jobId: config.filename,
+  });
 }
 
 export default async function create(req: Request, res: Response) {
