@@ -43,7 +43,7 @@ interface PipelineConfig {
   llm: LLM;
   instructions: Instructions;
   api_key: string;
-  featureFlags: {
+  options: {
     cruxes: boolean;
   };
 }
@@ -260,7 +260,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     sequenceResult([claimsStep, topicTreeStep] as const),
     async ([claim, topic]) => {
       return await doAddons(
-        config.featureFlags.cruxes
+        config.options.cruxes
           ? {
               crux: {
                 topics: topic.data.tree.taxonomy,
