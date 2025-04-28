@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Icons from "@/assets/icons";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { Col, Row } from "../layout";
@@ -171,7 +171,7 @@ function ClaimDrawer({
   className,
 }: React.PropsWithChildren<{ claim: schema.Claim; className?: string }>) {
   return (
-    <Drawer>
+    <Drawer preventScrollRestoration={false} noBodyStyles>
       <DrawerTrigger className={className}>{children}</DrawerTrigger>
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader>
