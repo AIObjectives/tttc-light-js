@@ -107,6 +107,7 @@ Encode your Google Credentials using the service account key you downloaded earl
 ```
 export OPENAI_API_KEY=
 export GCLOUD_STORAGE_BUCKET= name of your bucket
+export GCLOUD_STORAGE_BUCKET_PRIVATE= name of your bucket
 export CLIENT_BASE_URL= for dev: http://localhost:3000
 export GOOGLE_CREDENTIALS_ENCODED=copy & paste the base64 encoding of your credentials, made above
 export PYSERVER_URL= for dev: http://localhost:8000
