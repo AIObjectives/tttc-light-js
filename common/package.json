@@ -2,7 +2,39 @@
   "name": "tttc-common",
   "version": "1.0.0",
   "description": "Shares common code across monorepo",
-  "main": "index.ts",
+  "exports": {
+    "./api": {
+      "types": "./dist/api/index.d.ts",
+      "default": "./dist/api/index.js"
+    },
+    "./apiPyserver": {
+      "types": "./dist/apiPyserver/index.d.ts",
+      "default": "./dist/apiPyserver/index.js"
+    },
+    "./firebase": {
+      "types": "./dist/firebase/index.d.ts",
+      "default": "./dist/firebase/index.js"
+    },
+    "./morphisms": {
+      "types": "./dist/morphisms/index.d.ts",
+      "default": "./dist/morphisms/index.js"
+    },
+    "./morphisms/pipeline": {
+      "types": "./dist/morphisms/pipeline/index.d.ts",
+      "default": "./dist/morphisms/pipeline/index.js"
+    },
+    "./prompts": {
+      "types": "./dist/prompts/index.d.ts",
+      "default": "./dist/prompts/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "vitest",
     "build": "npx tsc",
