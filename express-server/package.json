@@ -40,7 +40,7 @@
     "node-fetch": "^3.3.2",
     "openai": "^4.28.4",
     "prettier": "^3.2.5",
-    "tttc-common": "file:../common/dist",
+    "tttc-common": "file:../common",
     "undici": "^7.5.0",
     "vitest": "^2.1.8",
     "zod": "3.22.4"

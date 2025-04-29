@@ -1,5 +1,5 @@
 import { z } from "zod";
-import * as schema from "./schema";
+import * as schema from "../schema";
 
 export const generateApiRequest = z.object({
   userConfig: schema.llmUserConfig,

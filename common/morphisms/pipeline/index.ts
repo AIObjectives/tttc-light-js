@@ -1,4 +1,4 @@
-import * as schema from "../schema";
+import * as schema from "../../schema";
 // ! for some reason uuid's types aren't working?
 // @ts-ignore
 import { v4 } from "uuid";
