@@ -2,7 +2,6 @@
   "name": "tttc-common",
   "version": "1.0.0",
   "description": "Shares common code across monorepo",
-  "main": "index.ts",
   "exports": {
     "./api": {
       "types": "./dist/api/index.d.ts",
@@ -32,7 +31,10 @@
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
     }
-  },  
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "vitest",
     "build": "npx tsc",
