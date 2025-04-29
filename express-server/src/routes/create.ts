@@ -195,7 +195,7 @@ async function createNewReport(req: Request, res: Response) {
         cruxes: false,
       },
       llm: {
-        model: "", // ! Change when we allow different models
+        model: "gpt-4o-mini", // ! Change when we allow different models
       },
     },
     data: updatedConfig.data,
