@@ -4,7 +4,7 @@ import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import { Col, Row } from "../layout";
 import Icons from "@/assets/icons";
 import * as schema from "tttc-common/schema";
-import { useThemeColor } from "@/lib/hooks/useTopicTheme";
+import { getThemeColor } from "@/lib/color";
 import { ReportContext } from "../report/Report";
 export type BarChartItemType = {
   id: string;
@@ -36,7 +36,7 @@ export function BarItem({
   entry: BarChartItemType;
   onClick: () => void;
 }) {
-  const hoverColor = useThemeColor(entry.color, "groupHoverBgAccent");
+  const hoverColor = getThemeColor(entry.color, "groupHoverBgAccent");
 
   return (
     <Col gap={2} className="py-2 group relative" onClick={onClick}>
@@ -71,7 +71,7 @@ export function Bar({
   if (percent > 1 || percent < 0)
     throw new Error("Barchart should only accept values between 0 and 1");
 
-  const fillColor = useThemeColor(color, "bg");
+  const fillColor = getThemeColor(color, "bg");
 
   return (
     <Row className="flex-grow bg-secondary items-center">

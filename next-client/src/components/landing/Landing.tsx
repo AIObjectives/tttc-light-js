@@ -8,7 +8,7 @@ import {
   CardContent,
 } from "../elements";
 import Icons from "@/assets/icons";
-import { BackgroundAccentClass, BorderClass } from "@/lib/hooks/useTopicTheme";
+import { BackgroundAccentClass, BorderClass } from "@/lib/color";
 import LandingHero from "@/assets/hero/LandingHero";
 import Image from "next/legacy/image";
 

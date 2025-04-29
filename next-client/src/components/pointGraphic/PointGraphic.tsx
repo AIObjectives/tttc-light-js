@@ -5,7 +5,8 @@ import * as schema from "tttc-common/schema";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
 import { ClaimCard } from "../claim/Claim";
 import { ReportContext } from "../report/Report";
-import { ThemeClass, useThemeContextColor } from "@/lib/hooks/useTopicTheme";
+import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
+import { ThemeClass } from "@/lib/color";
 
 type CellContextType = {
   borderClass: ThemeClass | string;
