@@ -8,6 +8,7 @@ google-credentials.json
 dist
 *storybook.log
 __pycache__
+.venv/
 **/*/credentials/*
 /utils/**/output/*
 /utils/**/input/*
