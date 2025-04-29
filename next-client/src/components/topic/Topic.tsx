@@ -24,7 +24,7 @@ import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { ReportContext } from "../report/Report";
 import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
-import { useThemeColor } from "@/lib/hooks/useTopicTheme";
+import { getThemeColor } from "@/lib/color";
 
 type TopicContextType = {
   topicNode: TopicNode;
@@ -145,7 +145,7 @@ export function TopicInteractiveGraphic({
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
   const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(subtopics);
-  const buttonBackgroundColor = useThemeColor(topicNode.data.topicColor, "bg");
+  const buttonBackgroundColor = getThemeColor(topicNode.data.topicColor, "bg");
 
   return (
     <Col gap={3}>
@@ -309,9 +309,9 @@ function ShowMoreButton({
   topicColor: string;
 }) {
   const { dispatch } = useContext(ReportContext);
-  const bg_color = useThemeColor(topicColor, "bgAccent");
-  const text_color = useThemeColor(topicColor, "text");
-  const border_color = useThemeColor(topicColor, "border");
+  const bg_color = getThemeColor(topicColor, "bgAccent");
+  const text_color = getThemeColor(topicColor, "text");
+  const border_color = getThemeColor(topicColor, "border");
   return moreLeftNum > 0 ? (
     <div className="p-4 sm:p-8">
       <Button

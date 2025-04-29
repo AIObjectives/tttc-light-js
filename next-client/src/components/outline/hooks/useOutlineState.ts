@@ -4,11 +4,7 @@ import {
   ReportState,
   SomeNode,
 } from "@/components/report/hooks/useReportState";
-import {
-  useThemeColor,
-  TextClass,
-  TextHoverClass,
-} from "@/lib/hooks/useTopicTheme";
+import { getThemeColor, TextClass, TextHoverClass } from "@/lib/color";
 import assert from "assert";
 import { Dispatch, useReducer } from "react";
 import * as schema from "tttc-common/schema";
@@ -222,7 +218,7 @@ const chooseColor = (
 ): TextClass => {
   const parsed = schema.topic.safeParse(node.data);
   if (parsed.success) {
-    return useThemeColor(parsed.data.topicColor, "text");
+    return getThemeColor(parsed.data.topicColor, "text");
   } else if (parentColor) {
     return parentColor;
   } else {
@@ -238,7 +234,7 @@ const chooseHoverColor = (
 ): TextHoverClass => {
   const parsed = schema.topic.safeParse(node.data);
   if (parsed.success) {
-    return useThemeColor(parsed.data.topicColor, "textHover");
+    return getThemeColor(parsed.data.topicColor, "textHover");
   } else if (parentHoverColor) {
     return parentHoverColor;
   } else {
