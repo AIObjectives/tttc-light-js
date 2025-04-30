@@ -41,7 +41,7 @@
     "storybook": "^8.0.10",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.3.3",
-    "vitest": "^2.0.4"
+    "vitest": "^3.1.2"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",
