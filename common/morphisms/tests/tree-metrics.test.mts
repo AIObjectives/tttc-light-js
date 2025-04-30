@@ -1,5 +1,5 @@
 import { test, expect, beforeAll, describe } from "vitest";
-import * as schema from "../../schema.js";
+import * as schema from "../../schema";
 import { z } from "zod";
 import { getNPeople } from "../tree-metrics.js";
 const data = require("./data/getNPeople.json");
