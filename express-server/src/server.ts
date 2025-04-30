@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import cors from "cors";
 import create from "./routes/create";
 import { validateEnv } from "./types/context";
@@ -30,7 +31,12 @@ const _ = setupWorkers(connection);
 /**
  * Creates report
  */
-app.post("/create", create);
+const createRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many requests, please try again later.",
+});
+app.post("/create", createRateLimiter, create);
 
 /**
  * Gets a report
