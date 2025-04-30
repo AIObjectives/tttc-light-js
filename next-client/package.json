@@ -84,5 +84,8 @@
     "tttc-common": "file:../common",
     "vaul": "^1.1.2",
     "zod": "3.22.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.40.1"
   }
 }
