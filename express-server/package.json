@@ -29,7 +29,7 @@
     "@babel/runtime": "^7.24.0",
     "@firebase/firestore": "^4.7.5",
     "@google-cloud/storage": "^7.7.0",
-    "axios": "^1.6.8",
+    "axios": "^1.8.2",
     "bullmq": "^5.30.1",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
