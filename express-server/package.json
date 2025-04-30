@@ -22,7 +22,8 @@
     "babel-plugin-module-resolver": "^5.0.0",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.1.2"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.4",
@@ -42,7 +43,6 @@
     "prettier": "^3.2.5",
     "tttc-common": "file:../common",
     "undici": "^7.5.0",
-    "vitest": "^2.1.8",
     "zod": "3.22.4"
   }
 }
