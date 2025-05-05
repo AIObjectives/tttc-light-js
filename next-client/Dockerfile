@@ -1,58 +1,41 @@
-# Dockerfile content
 # Stage 1: Install dependencies and build
 FROM node:18-slim AS build
 
-# Create and change to the app directory.
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json for next-client
-COPY next-client/package*.json ./next-client/
-
-# Copy package.json and package-lock.json for common
+# Copy package.json and package-lock.json to cache dependency layers first
 COPY common/package*.json ./common/
+COPY next-client/package*.json ./next-client/
+RUN npm install --prefix ./common
+RUN npm install --prefix ./next-client
 
-# Install dependencies for common
-WORKDIR /usr/src/app/common
-RUN npm install
+COPY common/ ./common/
+COPY next-client/ ./next-client/
 
-# Install dependencies for next-client
-WORKDIR /usr/src/app/next-client
-
-# Install remaining dependencies
-RUN npm install
-
-# Copy the rest of the application code for next-client
-COPY next-client/ ./
-
-# Copy the rest of the application code for common
-COPY common/ ../common/
-
-# Build the Next.js client
-RUN npm run build
+RUN npm run build --prefix ./common
+RUN npm run build --prefix ./next-client
 
 # Stage 2: Production image
 FROM node:18-slim
 
-# Create and change to the app directory.
 WORKDIR /usr/src/app
 
-# Copy only the production dependencies for next-client
 COPY --from=build /usr/src/app/next-client/package*.json ./
 RUN npm install --only=production
 
-# Copy the build output and other necessary files from the build stage
 COPY --from=build /usr/src/app/next-client/.next ./.next
 COPY --from=build /usr/src/app/next-client/public ./public
 COPY --from=build /usr/src/app/next-client/next.config.js ./next.config.js
 
-# Copy the common directory
-COPY --from=build /usr/src/app/common ../common/
+COPY --from=build /usr/src/app/common ./node_modules/tttc-common
 
-# Expose port 3000
+ENV NODE_ENV=production
+ENV PORT=3000
 EXPOSE 3000
 
-# Set the environment variable for the port
-ENV PORT=3000
+HEALTHCHECK CMD curl --fail http://localhost:3000/ || exit 1
 
-# Run the Next.js client on container startup.
+RUN useradd --user-group --create-home --shell /bin/false appuser
+USER appuser
+
 CMD ["npm", "start"]

@@ -1,8 +1,12 @@
 fixtures/
 examples/
-src/
 google-credentials.json
 .env
 .env*
 **/*.stories.*
 **/.storybook
+node_modules
+.git
+dist
+.next
+out
