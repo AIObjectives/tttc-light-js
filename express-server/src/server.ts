@@ -15,6 +15,10 @@ const env = validateEnv();
 
 const app = express();
 app.use(cors());
+ // Required to use express-rate-limit with CloudRun, but doesn't apply to local
+ if (process.env.NODE_ENV === "production") { // Could be its own env var, but correct for now.
+  app.set('trust proxy', 1);
+}
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static("public"));
 
