@@ -1,45 +1,37 @@
+# Stage 1: Install dependencies and build
+FROM node:18-slim AS build
 
-
-FROM node:18-slim
-
-
-# Create and change to the app directory.
 WORKDIR /usr/src/app
 
-# Copy the packages from common and express
+# Copy package.json and package-lock.json to cache dependency layers first
 COPY ./common/package*.json ./common/
 COPY express-server/package*.json ./express-server/
+RUN npm install --prefix ./common
+RUN npm install --prefix ./express-server
 
-# Install common packages including development dependencies
-WORKDIR /usr/src/app/common
-RUN npm install --only=production
-RUN npm install typescript @types/node vite rollup @rollup/plugin-node-resolve @rollup/plugin-commonjs rollup-plugin-typescript2 --save-dev
+COPY common/ ./common/
+COPY express-server/ ./express-server/
+RUN npm run build --prefix ./common
+RUN npm run build --prefix ./express-server
 
-# Move contents of common into docker image before express
+# Stage 2: Production image
+FROM node:18-slim
+
 WORKDIR /usr/src/app
-COPY ./common ./common
 
-# Build common
-WORKDIR /usr/src/app/common
-RUN npm run build
-
-# Install express packages including development dependencies
-WORKDIR /usr/src/app/express-server
+COPY --from=build /usr/src/app/express-server/package*.json ./
 RUN npm install --only=production
-RUN npm install @babel/cli @babel/core @babel/preset-env @babel/preset-typescript @babel/plugin-transform-modules-commonjs babel-plugin-module-resolver prettier @types/node --save-dev
 
-# Copy express contents 
-WORKDIR /usr/src/app
-COPY ./express-server ./express-server
+COPY --from=build /usr/src/app/express-server/ ./
+COPY --from=build /usr/src/app/common ./node_modules/tttc-common
 
-# Build express app
-WORKDIR /usr/src/app/express-server
-RUN npm run build
-
-# Expose port 8080 to the Docker daemon, since Cloud Run only listens on this port.
+ENV NODE_ENV=production
+ENV PORT=8080
 EXPOSE 8080
 
-WORKDIR /usr/src/app/express-server
-# Run the web service on container startup.
-CMD [ "npm", "start" ]
+HEALTHCHECK CMD curl --fail http://localhost:8080/ || exit 1
 
+RUN useradd --user-group --create-home --shell /bin/false appuser
+USER appuser
+
+CMD ["npm", "start"]
