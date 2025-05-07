@@ -20,9 +20,7 @@ import { FeedbackRequest } from "../types/clientRoutes";
 const NODE_ENV = z
   .union([z.literal("development"), z.literal("production")])
   .parse(process.env.NODE_ENV);
-const getCollectionName = useGetCollectionName(
-  NODE_ENV === "development" ? "dev" : "prod",
-);
+const getCollectionName = useGetCollectionName(NODE_ENV)
 
 export async function getUsersReports(
   store: typeof db = db,

@@ -114,7 +114,7 @@ export FIREBASE_DATABASE_URL= found in your firebase project
 export REDIS_HOST= for dev: localhost
 export REDIS_PORT= for dev: 6379
 export GOOGLE_APPLICATION_CREDENTIALS=./credentials
-export NODE_ENV= dev | prod
+export NODE_ENV= development | production
 ```
 
 #### next-client/.env
