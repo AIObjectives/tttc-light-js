@@ -64,6 +64,6 @@ export const JOB_STATUS = {
 } as const;
 
 export const useGetCollectionName =
-  (NODE_ENV: "dev" | "prod") => (name: keyof typeof COLLECTIONS) => {
-    return NODE_ENV === "prod" ? COLLECTIONS[name] : `${COLLECTIONS[name]}_dev`;
+  (NODE_ENV: "development" | "production") => (name: keyof typeof COLLECTIONS) => {
+    return NODE_ENV === "production" ? COLLECTIONS[name] : `${COLLECTIONS[name]}_dev`;
   };
