@@ -31,51 +31,21 @@ export type TaggedClaimPath = ClaimPath & { type: "claim" };
  */
 export const mapIdsToPath = (
   state: ReportState,
-): Record<string, TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath> =>
-  pipe(
-    state.children,
-    // Create entries for top-level topics
-    Array.reduce(
-      {} as Record<string, TaggedTopicPath | TaggedSubtopicPath>,
-      (idxMap, current, i) =>
-        pipe(
-          idxMap,
-          // Add entry for current topic
-          Record.set(current.id, {
-            type: "topic",
-            topicIdx: i,
-          } as TaggedTopicPath),
-          // Add entries for all subtopics
-          (idxMap) =>
-            pipe(
-              current.children,
-              Array.reduce(idxMap, (subtopicAccum, subtopic, j) =>
-                pipe(
-                  subtopicAccum,
-                  Record.set(subtopic.id, {
-                    type: "subtopic",
-                    topicIdx: i,
-                    subtopicIdx: j,
-                  } as TaggedSubtopicPath),
-                  // add entries for all claims
-                  (idxMap) =>
-                    pipe(
-                      subtopic.children,
-                      Array.reduce(idxMap, (claimAccum, claim, k) =>
-                        pipe(
-                          claimAccum,
-                          Record.set(claim.id, {
-                            type: "claim",
-                            topicIdx: i,
-                            subtopicIdx: j,
-                            claimIdx: k,
-                          } as TaggedClaimPath),
-                        ),
-                      ),
-                    ),
-                ),
-              ),
-            ),
-        ),
-    ),
-  );
+): Record<string, TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath> => {
+  const idMap: Record<string, TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath> = {};
+  state.children.forEach((topic, i) => {
+    idMap[topic.id] = { type: "topic", topicIdx: i };
+    topic.children.forEach((subtopic, j) => {
+      idMap[subtopic.id] = { type: "subtopic", topicIdx: i, subtopicIdx: j };
+      subtopic.children.forEach((claim, k) => {
+        idMap[claim.id] = {
+          type: "claim",
+          topicIdx: i,
+          subtopicIdx: j,
+          claimIdx: k,
+        };
+      });
+    });
+  });
+  return idMap;
+};
