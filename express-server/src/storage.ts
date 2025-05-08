@@ -1,6 +1,7 @@
 import {
   Storage as BucketStorage,
   Bucket as GBucket,
+  GetSignedUrlConfig,
 } from "@google-cloud/storage";
 import { CustomError } from "./error";
 import * as schema from "tttc-common/schema";
@@ -16,6 +17,9 @@ type FileContent = z.infer<typeof fileContent>;
  */
 export abstract class Storage {
   abstract get(fileName: string): Promise<Result<FileContent, StorageGetError>>;
+  abstract getUrl(
+    fileName: string,
+  ): Promise<Result<string, StorageGetUrlError>>;
   abstract save(
     fileName: string,
     fileContent: string,
@@ -30,6 +34,9 @@ export class Bucket extends Storage {
   private storage: BucketStorage;
   private bucket: GBucket;
 
+  static VALID_FILENAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+  static MAX_FILENAME_LENGTH = 512; // Reasonable max length for filenames
+
   constructor(encoded_creds: string, name: string) {
     super();
     this.name = name;
@@ -43,6 +50,23 @@ export class Bucket extends Storage {
     JSON.parse(Buffer.from(encoded_creds, "base64").toString("utf-8"));
   private storageUrl = (fileName: string) =>
     `https://storage.googleapis.com/${this.name}/${fileName}`;
+
+  async getUrl(fileName: string): Promise<Result<string, StorageGetUrlError>> {
+    const expiresInSeconds: number = 60 * 60; // 1 hour default
+    const file = this.bucket.file(fileName);
+    try {
+      const [url] = await file.getSignedUrl({
+        action: "read",
+        expires: Date.now() + expiresInSeconds * 1000,
+      } as GetSignedUrlConfig);
+      return { tag: "success", value: url };
+    } catch (e) {
+      return {
+        tag: "failure",
+        error: new StorageGetUrlError("Could not generate URL"),
+      };
+    }
+  }
 
   /**
    * Gets report data from storage bucket. Returns either the content or an error value
@@ -97,6 +121,56 @@ export class Bucket extends Storage {
       };
     }
   }
+
+  /**
+   * Extracts the bucket name and file name from a GCS URL or returns the file name if it's a plain filename.
+   * Returns { bucket: string, fileName: string } or null if invalid.
+   */
+  static parseUri(
+    uri: string,
+    defaultBucket: string,
+  ): Result<{ bucket: string; fileName: string }, ParseUriError> {
+    // If it's already a valid filename, use the default bucket
+    if (Bucket.isValidFileName(uri)) {
+      return {
+        tag: "success",
+        value: { bucket: defaultBucket, fileName: uri },
+      };
+    }
+
+    try {
+      const url = new URL(uri);
+
+      // Match GCS URL pattern: https://storage.googleapis.com/bucket/file
+      if (url.hostname === "storage.googleapis.com") {
+        const [_, bucket, ...fileParts] = url.pathname.split("/");
+        if (bucket && fileParts.length > 0) {
+          return {
+            tag: "success",
+            value: { bucket, fileName: fileParts.join("/") },
+          };
+        }
+      }
+    } catch {
+      // Not a valid URL, fall through
+    }
+    return {
+      tag: "failure",
+      error: new ParseUriError("Invalid or unsupported URI"),
+    };
+  }
+
+  static isValidFileName(fileName: string | undefined): boolean {
+    return (
+      typeof fileName === "string" &&
+      fileName.length > 0 &&
+      fileName.length <= Bucket.MAX_FILENAME_LENGTH &&
+      Bucket.VALID_FILENAME_REGEX.test(fileName) &&
+      !fileName.includes("..") &&
+      !fileName.includes("/") &&
+      fileName !== "index.js" // Prevents serving index.js directly
+    );
+  }
 }
 
 type StorageGetError = BucketGetError | InvalidJSONFormat;
@@ -121,19 +195,20 @@ class BucketSaveError extends CustomError<"BucketSaveError"> {
   }
 }
 
-export const createStorage = (
-  env: Env,
-  control: "public" | "private",
-): Storage => {
+class ParseUriError extends CustomError<"ParseUriError"> {
+  constructor(message: string) {
+    super("ParseUriError", message);
+  }
+}
+
+class StorageGetUrlError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StorageGetUrlError";
+  }
+}
+
+export const createStorage = (env: Env): Storage => {
   // since Bucket is the only storage class, just return this for now.
-  if (control === "public")
-    return new Bucket(
-      env.GOOGLE_CREDENTIALS_ENCODED,
-      env.GCLOUD_STORAGE_BUCKET,
-    );
-  else
-    return new Bucket(
-      env.GOOGLE_CREDENTIALS_ENCODED,
-      env.GCLOUD_STORAGE_BUCKET_PRIVATE,
-    );
+  return new Bucket(env.GOOGLE_CREDENTIALS_ENCODED, env.GCLOUD_STORAGE_BUCKET);
 };

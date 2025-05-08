@@ -9,6 +9,15 @@ import { pipelineQueue } from "../server";
 import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { PipelineJob } from "src/jobs/pipeline";
+import { sendError } from "./sendError";
+import { Result } from "../types/result";
+
+class CreateReportError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CreateReportError";
+  }
+}
 
 const handleGoogleSheets = async (
   googleData: schema.GoogleSheetData,
@@ -76,13 +85,22 @@ const useAnonymousNames = (numOfEmptyInterviewRows: number) => {
   };
 };
 
-async function createNewReport(req: Request, res: Response) {
+async function createNewReport(
+  req: Request,
+  res: Response,
+): Promise<
+  Result<
+    { response: api.GenerateApiResponse; pipelineJob: PipelineJob },
+    CreateReportError
+  >
+> {
   const { env } = req.context;
   const { CLIENT_BASE_URL, OPENAI_API_KEY } = env;
   const body = api.generateApiRequest.parse(req.body);
   // ! Brandon: This config object should be phased out
   const { data, userConfig, firebaseAuthToken } = body;
-  const storage = createStorage(env, "public");
+
+  const storage = createStorage(env);
 
   // ! Temporary size check
   // TODO: configure devprod filesize flag
@@ -152,7 +170,6 @@ async function createNewReport(req: Request, res: Response) {
     jsonUrl,
     reportUrl,
   };
-  res.send(response);
 
   // add id to comment data if not included.
   // ! Brandon: This config object should be phased out
@@ -195,17 +212,31 @@ async function createNewReport(req: Request, res: Response) {
       ...updatedConfig,
     },
   };
-  const _ = await pipelineQueue.add("pipeline", pipelineJob, {
-    jobId: config.filename,
-  });
+
+  return {
+    tag: "success",
+    value: {
+      response,
+      pipelineJob,
+    },
+  };
 }
 
 export default async function create(req: Request, res: Response) {
   try {
-    return createNewReport(req, res);
+    const result = await createNewReport(req, res);
+    if (result.tag === "failure") {
+      sendError(res, 400, result.error.message, "CreateReportError");
+      return;
+    }
+    res.json(result.value.response);
+
+    // Queue the pipeline job in the background
+    pipelineQueue.add("pipeline", result.value.pipelineJob, {
+      jobId: result.value.response.filename,
+    });
   } catch (e) {
     console.error(e);
-
     res.status(500).send({
       error: {
         message: e instanceof Error ? e.message : "An unknown error occurred.",

@@ -30,9 +30,6 @@ export const env = z.object({
   GCLOUD_STORAGE_BUCKET: z.string({
     required_error: "Missing GCloud storage bucket",
   }),
-  GCLOUD_STORAGE_BUCKET_PRIVATE: z.string({
-    required_error: "Missing GCloud private storage bucket",
-  }),
   GOOGLE_CREDENTIALS_ENCODED: z.string({
     required_error: "Missing encoded GCloud credentials",
   }),
@@ -64,6 +61,7 @@ export const env = z.object({
   //   )
   //   .transform((numstr) => Number(numstr)),
   REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
+  ALLOWED_GCS_BUCKETS: z.string().transform((val) => val.split(",")),
 });
 
 export type Env = z.infer<typeof env>;

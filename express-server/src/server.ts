@@ -6,7 +6,7 @@ import create from "./routes/create";
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
 import { setupWorkers } from "./workers";
-import { report } from "./routes/report";
+import { getReportStatusHandler, getReportDataHandler } from "./routes/report";
 import { setupConnection } from "./Queue";
 
 const port = process.env.PORT || 8080;
@@ -33,20 +33,31 @@ export const pipelineQueue = plq;
 // This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
 const _ = setupWorkers(connection);
 
+const defaultRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    error: {
+      message: "Too many requests, please try again later.",
+      code: "RateLimitExceeded",
+    },
+  },
+});
+
 /**
  * Creates report
  */
-const createRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: "Too many requests, please try again later.",
-});
-app.post("/create", createRateLimiter, create);
+app.post("/create", defaultRateLimiter, create);
 
 /**
  * Gets a report
  */
-app.get("/report/:reportUri", report);
+app.get(
+  "/report/:reportUri/status",
+  defaultRateLimiter,
+  getReportStatusHandler,
+);
+app.get("/report/:reportUri/data", defaultRateLimiter, getReportDataHandler);
 
 app.get("/test", async (req, res) => {
   return res.send("hi");
