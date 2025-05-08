@@ -6,7 +6,7 @@ name: Deploy Express to Cloud Run
 on:
   push:
     branches:
-      - cicdtrial
+      - main
       
     
 
@@ -47,8 +47,8 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy emreexpresstest \
-            --image gcr.io/tttc-light-js/emreexpresstest \
+          gcloud run deploy stage-t3c-express-server \
+            --image gcr.io/tttc-light-js/stage-t3c-express-server \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated

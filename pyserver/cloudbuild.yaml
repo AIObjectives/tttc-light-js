@@ -2,8 +2,8 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
-      '-t', 'gcr.io/tttc-light-js/emrepyservertest',
+      '-t', 'gcr.io/tttc-light-js/stage-t3c-pyserver',
       '.'
     ]
 images:
-  - 'gcr.io/tttc-light-js/emrepyservertest'
+  - 'gcr.io/tttc-light-js/stage-t3c-pyserver'

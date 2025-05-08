@@ -30,10 +30,10 @@ steps:
     args:
       [
         'build',
-        '-t', 'gcr.io/tttc-light-js/emrenextclienttest',
+        '-t', 'gcr.io/tttc-light-js/t3c-next-client-staging',
         '-f', 'next-client/Dockerfile',
         '.'
       ]
 images:
-  - 'gcr.io/tttc-light-js/emrenextclienttest'
+  - 'gcr.io/tttc-light-js/t3c-next-client-staging'
 

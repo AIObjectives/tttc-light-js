@@ -7,7 +7,7 @@ name: Deploy Pyserver to Cloud Run
 on:
   push:
     branches:
-      - cicdtrial
+      - main
       
 
 jobs:
@@ -44,8 +44,8 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy emrepyservertest \
-            --image gcr.io/tttc-light-js/emrepyservertest \
+          gcloud run deploy stage-t3c-pyserver \
+            --image gcr.io/tttc-light-js/stage-t3c-pyserver \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
