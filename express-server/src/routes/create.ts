@@ -104,7 +104,7 @@ async function createNewReport(req: Request, res: Response) {
     ..._parsedData,
     data: _parsedData.data.map((sr) => ({
       ...sr,
-      interview: sr.interview ?? makeAnonName(),
+      interview: sr.interview ? sr.interview : makeAnonName(),
     })),
   };
 
