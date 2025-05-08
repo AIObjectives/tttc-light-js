@@ -74,7 +74,7 @@ export async function pipelineJob(job: Job<PipelineJob>) {
   const { auth, env } = config;
   const { title, description, question, filename } = reportDetails;
   // Create our storage object for storing the pipeline's output json
-  const storage = createStorage(env, auth);
+  const storage = createStorage(env);
 
   // Do each of the steps in the pipeline
   // This returns the results of each of the steps.

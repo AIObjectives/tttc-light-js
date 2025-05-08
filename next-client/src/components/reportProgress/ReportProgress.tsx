@@ -1,9 +1,10 @@
 import React from "react";
 import * as api from "tttc-common/api";
+import * as utils from "tttc-common/utils";
 import { Col } from "../layout";
 import { Progress } from "../elements";
 
-export default function ReportProgresss({
+export default function ReportProgress({
   status,
 }: {
   status: api.ReportJobStatus;
@@ -28,16 +29,18 @@ const Body = ({ status }: { status: api.ReportJobStatus }) => {
   }
 };
 
-const JobFailed = () => <p>Your report failed</p>;
+const JobFailed = (_: unknown) => <p>Your report failed</p>;
 
-const JobFinished = () => (
+const JobFinished = (_: unknown) => (
   <p>
     Report finished but data not found - likely that resource was moved or
     deleted
   </p>
 );
 
-const JobNotFound = () => <p>Could not find a valid report with that uri</p>;
+const JobNotFound = (_: unknown) => (
+  <p>Could not find a valid report with that uri</p>
+);
 
 function ReportProcessing({ status }: { status: api.ReportJobStatus }) {
   return (
@@ -70,14 +73,7 @@ const statusToProgress = (status: api.ReportJobStatus) => {
     case "notFound":
       return -100;
     default: {
-      if (process.env.NODE_ENV === "development") {
-        throw new Error(`Unrecognized value in statusToProgress: ${status}`);
-      } else {
-        console.warn(
-          "GOT AN UNEXPECTED VALUE IN REPORT PROGRESS statusToProgress",
-        );
-        return 90; // idk what to have, but at least it won't crash now. Fixme
-      }
+      utils.assertNever(status);
     }
   }
 };
@@ -103,6 +99,6 @@ const statusMessage = (status: api.ReportJobStatus) => {
     case "notFound":
       return "Not found :/";
     default:
-      throw new Error("Unrecognized value in statusMessage");
+      utils.assertNever(status);
   }
 };
