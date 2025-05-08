@@ -3,7 +3,7 @@ import * as api from "tttc-common/api";
 import { Col } from "../layout";
 import { Progress } from "../elements";
 
-export default function ReportProgresss({
+export default function ReportProgress({
   status,
 }: {
   status: api.ReportJobStatus;
