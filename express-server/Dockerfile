@@ -12,7 +12,6 @@ COPY express-server/package*.json ./express-server/
 WORKDIR /usr/src/app/common
 RUN npm install --only=production
 RUN npm install typescript @types/node vite rollup @rollup/plugin-node-resolve @rollup/plugin-commonjs rollup-plugin-typescript2 --save-dev
-  
 # Move contents of common into docker image before express
 WORKDIR /usr/src/app
 COPY ./common ./common
