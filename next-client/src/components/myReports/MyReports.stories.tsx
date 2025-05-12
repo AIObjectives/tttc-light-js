@@ -1,3 +1,4 @@
+import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import YourReports, { ReportItem } from "./MyReports";
 
@@ -52,9 +53,7 @@ const reports = [
 
 export const Main: Story = {
   args: {
-    userName: "Testy McTestface",
     reports,
-    pictureUri: "https://imgflip.com/s/meme/Unsettled-Tom.jpg",
   },
 };
 

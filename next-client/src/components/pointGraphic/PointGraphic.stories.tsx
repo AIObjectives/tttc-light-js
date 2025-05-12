@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { reportData } from "stories/data/dummyData";
+import { reportData } from "../../../stories/data/dummyData";
 import React, { useRef, useState } from "react";
 import PointGraphic, {
   Cell as CellComponent,
@@ -7,6 +7,10 @@ import PointGraphic, {
 } from "./PointGraphic";
 import { Button } from "../elements";
 import { Col, Row } from "../layout";
+
+/**
+ * ! This story will be broken until it's properly refactored
+ */
 
 const meta = {
   title: "PointGraphic",
