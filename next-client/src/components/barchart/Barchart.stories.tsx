@@ -1,10 +1,11 @@
+import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   BarChart,
   BarChartItemType,
   BarItem as BarItemComponent,
 } from "./Barchart";
-import { reportData } from "stories/data/dummyData";
+import { reportData } from "../../../stories/data/dummyData";
 import { getNClaims } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 
@@ -30,6 +31,7 @@ type Story = StoryObj<typeof meta>;
 const topic = reportData.topics[1];
 
 const entries: BarChartItemType[] = schema.topicColors.options.map((color) => ({
+  id: "",
   title: "Some topic",
   percentFill: 0.7,
   subtitle: "# Claims",
@@ -45,10 +47,12 @@ export const Primary: Story = {
 export const BarItem = () => (
   <BarItemComponent
     entry={{
+      id: "",
       title: topic.title,
       percentFill: 0.7,
       subtitle: `${getNClaims(topic.subtopics)} claims`,
       color: "blueSea",
     }}
+    onClick={() => null}
   />
 );

@@ -1,6 +1,7 @@
+import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import Claim, { ClaimHeader, QuoteIcon as QuoteIconComponent } from "./Claim";
-import { reportData } from "stories/data/dummyData";
+import { reportData } from "../../../stories/data/dummyData";
 
 const meta = {
   title: "Claim",
@@ -26,6 +27,8 @@ type Story = StoryObj<typeof meta>;
 export const Primary: Story = {
   args: {
     claimNode: {
+      id: "",
+      _tag: "ClaimNode",
       data: {
         title:
           "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset",
@@ -35,7 +38,6 @@ export const Primary: Story = {
         number: 0,
       },
     },
-    claimNum: 0,
     show: true,
   },
 };
