@@ -32,7 +32,10 @@ export type TaggedClaimPath = ClaimPath & { type: "claim" };
 export const mapIdsToPath = (
   state: ReportState,
 ): Record<string, TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath> => {
-  const idMap: Record<string, TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath> = {};
+  const idMap: Record<
+    string,
+    TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath
+  > = {};
   state.children.forEach((topic, i) => {
     idMap[topic.id] = { type: "topic", topicIdx: i };
     topic.children.forEach((subtopic, j) => {

@@ -17,6 +17,14 @@
     "resolveJsonModule": true,
     "lib": ["ES2019", "DOM"]
   },
-  "include": ["*", "./api/*", "./apiPyserver/*", "./firebase/*", "./morphisms/**/*", "./prompts/*", "./schema/*"],
+  "include": [
+    "*",
+    "./api/*",
+    "./apiPyserver/*",
+    "./firebase/*",
+    "./morphisms/**/*",
+    "./prompts/*",
+    "./schema/*"
+  ],
   "exclude": ["dist/", "**/*/*.test.*"]
 }
