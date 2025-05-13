@@ -16,13 +16,7 @@ const meta = {
   component: Subtopic,
   parameters: {},
   tags: ["autodocs"],
-  decorators: [
-    (Story) => (
-      <div className="border">
-        <Story />
-      </div>
-    ),
-  ],
+  decorators: [(Story) => <div className="border">{/* <Story /> */}</div>],
 } satisfies Meta<typeof Subtopic>;
 
 export default meta;
