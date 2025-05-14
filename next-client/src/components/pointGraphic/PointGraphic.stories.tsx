@@ -22,7 +22,7 @@ const meta = {
   decorators: [
     (Story) => (
       <div className="flex h-screen border items-center justify-center">
-        <Story />
+        {/* <Story /> */}
       </div>
     ),
   ],
