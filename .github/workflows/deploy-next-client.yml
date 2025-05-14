@@ -1,0 +1,47 @@
+name: Deploy Next Client to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY2 }}'
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: tttc-light-js
+
+
+####
+      - name: Write .env file for Next Client
+        run: |
+          echo "${{ secrets.ENV_CLIENT }}" > next-client/.env
+
+####
+      - name: Build and Push Docker Image
+        run: |
+          gcloud builds submit . \
+            --project=tttc-light-js \
+            --timeout=1200s \
+            --config=next-client/cloudbuild.yaml
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy t3c-next-client-staging \
+            --image gcr.io/tttc-light-js/t3c-next-client-staging \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated

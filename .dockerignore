@@ -1,8 +1,8 @@
 fixtures/
 examples/
 google-credentials.json
-.env
-.env*
+#.env
+#.env*
 **/*.stories.*
 **/.storybook
 node_modules
