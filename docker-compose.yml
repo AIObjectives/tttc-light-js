@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   next-client:
     image: gcr.io/tttc-light-js/t3c-next-client

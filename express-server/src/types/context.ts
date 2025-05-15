@@ -36,6 +36,9 @@ export const env = z.object({
   GOOGLE_CREDENTIALS_ENCODED: z.string({
     required_error: "Missing encoded GCloud credentials",
   }),
+  FIREBASE_CREDENTIALS_ENCODED: z.string({
+    required_error: "Missing encoded Firebase credentials",
+  }),
   CLIENT_BASE_URL: z
     .string({ required_error: "Missing CLIENT_BASE_URL" })
     .url({ message: "PYSERVER_URL in env should be a valid url" }),
@@ -45,10 +48,6 @@ export const env = z.object({
   NODE_ENV: z.union([z.literal("development"), z.literal("production")], {
     required_error: "Missing NODE_ENV (production | development)",
     invalid_type_error: "Invalid input for NODE_ENV",
-  }),
-  GOOGLE_APPLICATION_CREDENTIALS: z.string({
-    required_error:
-      "Missing GOOGLE_APPLICATION_CREDENTIALS from env. This is a path to your credentials json.",
   }),
   FIREBASE_DATABASE_URL: z
     .string({ required_error: "Missing FIREBASE_DATABASE_URL" })
