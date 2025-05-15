@@ -1,6 +1,5 @@
 import * as admin from "firebase-admin";
 import { Env, validateEnv } from "./types/context";
-import { applicationDefault } from "firebase-admin/app";
 import {
   ReportJob,
   ReportRef,
@@ -11,8 +10,12 @@ import {
 
 const env: Env = validateEnv();
 
+const FIREBASE_CREDENTIALS = JSON.parse(
+  Buffer.from(env.FIREBASE_CREDENTIALS_ENCODED!, "base64").toString("utf-8"),
+);
+
 const app = admin.initializeApp({
-  credential: applicationDefault(),
+  credential: admin.credential.cert(FIREBASE_CREDENTIALS),
   databaseURL: env.FIREBASE_DATABASE_URL,
 });
 

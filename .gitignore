@@ -2,7 +2,7 @@ node_modules/
 **/.cache/*
 .DS_Store
 google-credentials.json
-#.env*
+.env*
 .vscode/
 .next
 dist
