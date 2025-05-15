@@ -3,7 +3,7 @@
 import React, { Ref, createContext, forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
-import { ClaimCard } from "../claim/Claim";
+import { QuoteCard } from "../claim";
 import { ReportContext } from "../report/Report";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
 import { ThemeClass } from "@/lib/color";
@@ -88,7 +88,7 @@ export function Cell(
         />
       </HoverCardTrigger>
       <HoverCardContent sideOffset={-1} className="p-4">
-        <ClaimCard claim={claim} />
+        <QuoteCard claim={claim} />
       </HoverCardContent>
     </HoverCard>
   );
