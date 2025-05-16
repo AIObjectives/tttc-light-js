@@ -3,7 +3,7 @@ import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { ExpandableText, Separator, TextIcon } from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
-import Claim from "../claim/Claim";
+import { Claim } from "../claim";
 import { Col, Row } from "../layout";
 import Icons from "@/assets/icons";
 import ClaimLoader from "./components/ClaimLoader";
@@ -11,6 +11,7 @@ import { getNPeople } from "tttc-common/morphisms";
 import { ReportContext } from "../report/Report";
 import { SubtopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
+import { NodeWrapper } from "../node/NodeWrapper";
 
 /**
  * Subtopic Node. Only show contents if isOpen=true.
@@ -104,11 +105,13 @@ export function SubtopicClaims({
         <Col>
           {subtopicNode.children.map((claimNode, i) => {
             return (
-              <Claim
-                key={claimNode.data.id}
-                claimNode={claimNode}
-                show={i <= subtopicNode.pagination}
-              />
+              <NodeWrapper
+                key={claimNode.id}
+                node={claimNode}
+                className={`${i <= subtopicNode.pagination ? "" : "hidden"}`}
+              >
+                <Claim claim={claimNode.data} />
+              </NodeWrapper>
             );
           })}
         </Col>
