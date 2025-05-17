@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { initializeServerApp } from "firebase/app";
 
 import { getAuth } from "firebase/auth";
-import { validatedFirebaseConfig } from "./config";
+import { firebaseConfig } from "./config";
 
 export async function getAuthenticatedAppForUser() {
   // const idToken = headers().get("Authorization")?.split("Bearer ")[1];
@@ -14,7 +14,7 @@ export async function getAuthenticatedAppForUser() {
   const idToken = authHeader?.split("Bearer ")[1];
 
   const firebaseServerApp = initializeServerApp(
-    validatedFirebaseConfig,
+    firebaseConfig,
     idToken
       ? {
           authIdToken: idToken,
@@ -29,6 +29,6 @@ export async function getAuthenticatedAppForUser() {
 }
 
 export async function getUnauthenticatedApp() {
-  const firebaseServerApp = initializeServerApp(validatedFirebaseConfig, {});
+  const firebaseServerApp = initializeServerApp(firebaseConfig, {});
   return { firebaseServerApp };
 }
