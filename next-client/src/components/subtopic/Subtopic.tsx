@@ -37,7 +37,7 @@ const SubtopicComponent = forwardRef<
   { subtopicNode: SubtopicNode }
 >(function TopicComponent({ subtopicNode }, ref) {
   return (
-    <div>
+    <div data-testid={"subtopic-item"}>
       <Col gap={4} className="py-6 sm:py-8" ref={ref}>
         <SubtopicSummary subtopic={subtopicNode.data} />
         <SubtopicClaims subtopicNode={subtopicNode} />

@@ -19,6 +19,7 @@ function ClaimLoader({ subtopicNode }: { subtopicNode: SubtopicNode }) {
             payload: { id: subtopicNode.data.id },
           })
         }
+        data-testid={"show-more-claims-button"}
       >
         {remaining} more claim{remaining > 0 ? "s" : ""}
       </Button>

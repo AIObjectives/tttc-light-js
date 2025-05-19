@@ -11,7 +11,11 @@ import { CopyLinkButton } from "../copyButton/CopyButton";
  */
 export function Claim({ claim }: { claim: schema.Claim }) {
   return (
-    <Row gap={3} className="justify-between px-4 sm:px-8 py-1 items-center">
+    <Row
+      gap={3}
+      className="justify-between px-4 sm:px-8 py-1 items-center"
+      data-testid={"claim-item"}
+    >
       <ClaimHeader claim={claim} />
       <div>
         <CopyLinkButton anchor={claim.title} />

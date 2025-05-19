@@ -140,7 +140,11 @@ function OutlineItem({
 }>) {
   return (
     // column here because opened nodes should continue the spacing.
-    <Col gap={outlineSpacing} className="pl-2 max-w-[279px]">
+    <Col
+      gap={outlineSpacing}
+      className="pl-2 max-w-[279px]"
+      data-testid={"outline-item"}
+    >
       <Row
         gap={2}
         className={`group items-center ${node.isHighlighted ? node.color : ""} ${node.hoverColor} cursor-pointer`}
@@ -157,6 +161,7 @@ function OutlineItem({
         <p
           className={`pl-${heirarchyDepth * 4} p2 select-none text-ellipsis w-[230px] items-center`}
           onClick={onBodyClick}
+          data-testid={"outline-item-clickable"}
         >
           {title}
         </p>
@@ -193,13 +198,18 @@ function OutlineCarrot({
       <div
         onClick={onClick}
         className="invisible group-hover:visible group-hover:text-muted-foreground hover:bg-slate-200 hover:rounded-sm"
+        data-testid={"outline-expander"}
       >
         <Icons.OutlineCollapsed />
       </div>
     );
   } else {
     return (
-      <div onClick={onClick} className="hover:bg-slate-200 hover:rounded-sm">
+      <div
+        onClick={onClick}
+        className="hover:bg-slate-200 hover:rounded-sm"
+        data-testid={"outline-expander"}
+      >
         <Icons.OutlineExpanded />
       </div>
     );

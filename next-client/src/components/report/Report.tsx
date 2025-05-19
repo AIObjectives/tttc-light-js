@@ -215,6 +215,7 @@ export function ReportToolbar() {
         <Button
           onClick={() => dispatch({ type: "openAll" })}
           variant={"secondary"}
+          data-testid={"open-all-button"}
         >
           Expand all
         </Button>
