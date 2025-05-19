@@ -1,7 +1,6 @@
 services:
   next-client:
     image: gcr.io/tttc-light-js/t3c-next-client
-    platform: linux/amd64
     build:
       context: .
       dockerfile: next-client/Dockerfile
@@ -13,7 +12,6 @@ services:
 
   express-server:
     image: gcr.io/tttc-light-js/t3c-express-server
-    platform: linux/amd64
     build:
       context: .
       dockerfile: express-server/Dockerfile
@@ -26,7 +24,6 @@ services:
 
   pyserver:
     image: gcr.io/tttc-light-js/pyserver-brandon
-    platform: linux/amd64
     build:
       context: .
       dockerfile: pyserver/Dockerfile
