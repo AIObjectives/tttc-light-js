@@ -1,3 +1,11 @@
+/**
+ * Firebase Configuration
+ *
+ * Shared configuration used by both client and server Firebase SDKs.
+ * Uses environment variables to keep sensitive data secure while
+ * allowing the same config to work in both environments.
+ */
+
 const requiredKeys = [
   "apiKey",
   "authDomain",

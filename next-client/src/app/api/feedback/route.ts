@@ -1,10 +1,13 @@
-import { addFeedback } from "@/lib/firebase/firestore";
-import { getUnauthenticatedApp } from "@/lib/firebase/serverApp";
-import { feedbackRequest } from "@/lib/types/clientRoutes";
-import { getFirestore } from "firebase/firestore";
-import { NextResponse } from "next/server";
-
 export async function POST(request: Request) {
+  // Import Firebase-related code only when this function runs and not during the build
+  const { addFeedback } = await import("@/lib/firebase/firestoreServer");
+  const { getAuthenticatedAppForUser } = await import(
+    "@/lib/firebase/serverApp"
+  );
+  const { feedbackRequest } = await import("@/lib/types/clientRoutes");
+  const { getFirestore } = await import("firebase-admin/firestore");
+  const { NextResponse } = await import("next/server");
+
   console.log(1);
   const js = await request.json();
   const parsed = feedbackRequest.safeParse(js);
@@ -18,11 +21,21 @@ export async function POST(request: Request) {
     );
   console.log(3);
   try {
-    const { firebaseServerApp } = await getUnauthenticatedApp();
+    const { firebaseServerApp, currentUser } =
+      await getAuthenticatedAppForUser();
+    if (!currentUser) {
+      return new NextResponse(
+        JSON.stringify({ response: ["error", { message: "Unauthorized" }] }),
+        { status: 401 },
+      );
+    }
     console.log(4);
     const firestore = getFirestore(firebaseServerApp);
     console.log(5);
-    const res = await addFeedback(firestore, parsed.data);
+    const res = await addFeedback(firestore, {
+      ...parsed.data,
+      userId: currentUser.uid,
+    });
     console.log(6);
     console.log("firebase response", res);
     if (res === "success")
@@ -41,7 +54,7 @@ export async function POST(request: Request) {
     } else {
       return new NextResponse(
         JSON.stringify({
-          response: ["error", { message: "An error occured" }],
+          response: ["error", { message: "An error occurred" }],
         }),
       );
     }

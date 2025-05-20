@@ -49,17 +49,7 @@ import { User } from "firebase/auth";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { signInWithGoogle } from "@/lib/firebase/auth";
-
-const fetchToken = async (
-  user: User | null,
-): Promise<["data", string | null] | ["error", string]> => {
-  try {
-    if (!user) return ["data", null];
-    return ["data", await user?.getIdToken()];
-  } catch (e) {
-    return ["error", e instanceof Error ? e.message : "An error occured"];
-  }
-};
+import { fetchToken } from "@/lib/firebase/getIdToken";
 
 function getUserToken() {
   const user = useUser();
@@ -108,10 +98,15 @@ export default function CreateReport() {
   else if (result[0] === "error")
     return (
       <Center>
-        <p>An error occured...</p>
+        <p>An error occurred...</p>
       </Center>
     );
-  else return <CreateReportComponent token={result[1]} />;
+  else {
+    if (result[0] === "data" && typeof result[1] === "string") {
+      // Safe to use result[1] as a token
+      return <CreateReportComponent token={result[1]} />;
+    }
+  }
 }
 
 const SigninModal = ({ isOpen }: { isOpen: boolean }) => {

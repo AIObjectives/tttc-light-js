@@ -2,7 +2,6 @@ import { nextTypography } from "@/lib/font";
 import Navbar from "@/components/navbar/Navbar";
 import { Toaster } from "@/components/elements";
 import "./global.css";
-import { getAuthenticatedAppForUser } from "@/lib/firebase/serverApp";
 import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +50,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { currentUser } = await getAuthenticatedAppForUser();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -60,7 +58,7 @@ export default async function RootLayout({
       <body className={nextTypography}>
         <script src="index.js"></script>
         <div className="h-screen w-screen">
-          <Navbar currentUser={currentUser} />
+          <Navbar />
           {children}
         </div>
         <Toaster position="bottom-right" />

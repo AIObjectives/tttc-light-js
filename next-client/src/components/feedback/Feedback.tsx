@@ -15,6 +15,7 @@ import { feedbackResponse } from "@/lib/types/clientRoutes";
 import { toast } from "sonner";
 import Icons from "@/assets/icons";
 import { cn } from "@/lib/utils/shadcn";
+import { fetchToken } from "@/lib/firebase/getIdToken";
 
 export default function Feedback({ className }: { className?: string }) {
   return (
@@ -72,31 +73,53 @@ function FeedbackForm() {
   const user = useUser();
 
   const handleSubmit = async () => {
-    const { response } = await fetch("/api/feedback", {
-      method: "POST",
-      body: JSON.stringify({
-        userId: user?.uid ?? null,
-        text,
-      }),
-    })
-      .then((res) => {
-        console.log("feedback response", res);
-        return res;
-      })
-      .then(async (res) => {
-        const json = await res.json();
-        console.log("json", json);
-        return json;
-      })
-      .then(feedbackResponse.parse);
-
-    if (response[0] === "data") {
-      toast.success("Thank you for your feedback");
+    if (!user) {
+      toast.error("Please sign in to submit feedback");
       dispatch({ type: "close" });
-    } else {
-      toast.error(response[1].message);
-      dispatch({ type: "close" });
+      return;
     }
+
+    const tokenResult = await fetchToken(user);
+    if (tokenResult[0] === "error") {
+      toast.error("Authentication failed");
+      dispatch({ type: "close" });
+      return;
+    }
+
+    const token = tokenResult[1];
+    if (!token) {
+      toast.error("Please sign in to submit feedback");
+      dispatch({ type: "close" });
+      return;
+    }
+
+    try {
+      const httpResponse = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          text,
+        }),
+      });
+
+      const json = await httpResponse.json();
+      const apiResult = feedbackResponse.parse(json).response;
+      console.log("json", json);
+
+      if (apiResult[0] === "data") {
+        toast.success("Thank you for your feedback");
+      } else {
+        toast.error(apiResult[1].message);
+      }
+    } catch (error) {
+      toast.error("Failed to submit feedback");
+    }
+
+    dispatch({ type: "close" });
   };
   return (
     <Dialog open={dialogState.dialog}>
