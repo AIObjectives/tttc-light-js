@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      
 
 jobs:
   deploy:
@@ -18,18 +17,18 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCP_SA_KEY2 }}'
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
 
       - name: Setup gcloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: tttc-light-js
-####
+      ####
       - name: Write .env file for Pyserver
         run: |
           echo "${{ secrets.ENV_PYSERVER }}" > pyserver/.env
 
-###
+      ###
       - name: Build and Push Docker image
         run: |
           gcloud builds submit . \
@@ -44,5 +43,3 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
-
- 
