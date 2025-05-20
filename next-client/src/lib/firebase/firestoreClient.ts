@@ -1,4 +1,15 @@
-import { db } from "./clientApp";
+/**
+ * Firestore Operations (Client SDK)
+ *
+ * Client-side database operations using the Firebase Client SDK.
+ * These operations:
+ * - Run in the browser with user's authentication
+ * - Are subject to Firestore security rules
+ * - Can work offline and sync when reconnected
+ * - Use the user's permissions and auth state
+ */
+
+import { getFirebaseDb } from "./clientApp";
 import { z } from "zod";
 import {
   collection,
@@ -17,11 +28,18 @@ import {
 import { AsyncData, AsyncError } from "../hooks/useAsyncState";
 import { FeedbackRequest } from "../types/clientRoutes";
 
+const db = getFirebaseDb();
+
 const NODE_ENV = z
   .union([z.literal("development"), z.literal("production")])
   .parse(process.env.NODE_ENV);
 const getCollectionName = useGetCollectionName(NODE_ENV);
 
+/**
+ * Get reports for a specific user using client SDK.
+ * This operation goes through Firestore security rules and
+ * uses the client's authentication context.
+ */
 export async function getUsersReports(
   store: typeof db = db,
   userId: string,
@@ -47,6 +65,11 @@ export async function getUsersReports(
   }
 }
 
+/**
+ * Add feedback using client SDK.
+ * This operation is subject to Firestore security rules
+ * and uses the current user's authentication.
+ */
 export async function addFeedback(
   store: typeof db = db,
   data: FeedbackRequest,

@@ -11,7 +11,7 @@ import {
 import LoginButton from "./components/LoginButton";
 import { User } from "firebase/auth";
 
-function Navbar({ currentUser }: { currentUser: User | null }) {
+function Navbar() {
   return (
     <Row
       gap={6}
@@ -36,7 +36,7 @@ function Navbar({ currentUser }: { currentUser: User | null }) {
 
         <CreateReport />
 
-        <LoginButton currentUser={currentUser} />
+        <LoginButton />
       </Row>
     </Row>
   );

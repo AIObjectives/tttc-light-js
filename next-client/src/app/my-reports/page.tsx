@@ -1,11 +1,13 @@
 "use client";
 import { useUser } from "@/lib/hooks/getUser";
-import { getUsersReports } from "../../lib/firebase/firestore";
-import { db } from "@/lib/firebase/clientApp";
+import { getUsersReports } from "../../lib/firebase/firestoreClient";
+import { getFirebaseDb } from "@/lib/firebase/clientApp";
 import { useAsyncState } from "@/lib/hooks/useAsyncState";
 import { useEffect, useState } from "react";
 import MyReports from "@/components/myReports/MyReports";
 import { Spinner } from "@/components/elements";
+
+const db = getFirebaseDb();
 
 function Center({ children }: React.PropsWithChildren) {
   return (

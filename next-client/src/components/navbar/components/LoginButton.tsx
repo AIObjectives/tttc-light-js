@@ -17,8 +17,8 @@ import {
 } from "@/lib/firebase/auth";
 import { User } from "firebase/auth";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useUser } from "@/lib/hooks/getUser";
 
 const getInitials = (name: string) =>
   name
@@ -26,49 +26,14 @@ const getInitials = (name: string) =>
     .map((word) => word[0])
     .join("");
 
-/**
- * @fileoverview LoginButton component + some user session management logic.
- *
- * TODO: There is flickering present
- */
-
-/**
- * Hook for managing a user session
- */
-function useUserSession(initialUser: User | null): [boolean, User | null] {
-  // The initialUser comes from the server via a server component
-  const [user, setUser] = useState(initialUser);
-  const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const router = useRouter();
+export default function LoginButton() {
+  const user = useUser();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged((authUser) => {
-      setUser(authUser);
-      setAuthLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    onAuthStateChanged((authUser) => {
-      if (user === undefined) return;
-
-      if (user?.email !== authUser?.email) {
-        router.refresh();
-      }
-    });
+    setLoading(false);
   }, [user]);
 
-  return [authLoading, user];
-}
-
-export default function LoginButton({
-  currentUser,
-}: {
-  currentUser: User | null;
-}) {
-  const [loading, user] = useUserSession(currentUser);
   if (loading) {
     return (
       <div>
