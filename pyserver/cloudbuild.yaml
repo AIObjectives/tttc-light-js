@@ -1,10 +1,13 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'build',
-      '-f', 'pyserver/Dockerfile',         
-      '-t', 'gcr.io/tttc-light-js/stage-t3c-pyserver',
-      '.'
-    ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-f",
+        "pyserver/Dockerfile",
+        "-t",
+        "gcr.io/tttc-light-js/stage-t3c-pyserver",
+        ".",
+      ]
 images:
-  - 'gcr.io/tttc-light-js/stage-t3c-pyserver'
+  - "gcr.io/tttc-light-js/stage-t3c-pyserver"

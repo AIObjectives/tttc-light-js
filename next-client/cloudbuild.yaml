@@ -1,12 +1,13 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     args:
       [
-        'build',
-        '-t', 'gcr.io/tttc-light-js/t3c-next-client-staging',
-        '-f', 'next-client/Dockerfile',
-        '.'
+        "build",
+        "-t",
+        "gcr.io/tttc-light-js/t3c-next-client-staging",
+        "-f",
+        "next-client/Dockerfile",
+        ".",
       ]
 images:
-  - 'gcr.io/tttc-light-js/t3c-next-client-staging'
-
+  - "gcr.io/tttc-light-js/t3c-next-client-staging"
