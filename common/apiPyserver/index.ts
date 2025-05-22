@@ -20,12 +20,16 @@ const llmConfig = z.object(
     model_name: z.string(),
     system_prompt: z.string(),
     user_prompt: z.string(),
-    api_key: z.string(),
   },
   { invalid_type_error: "Invalid llmConfig" },
 );
 
 export type LLMConfig = z.infer<typeof llmConfig>;
+
+/**
+ * Header name for OpenAI API key
+ */
+export const OPENAI_API_KEY_HEADER = "X-OpenAI-API-Key";
 
 /**
  * Pipeline line broken into a few steps.

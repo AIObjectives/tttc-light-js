@@ -63,7 +63,6 @@ export const llmPieChart = z.object({
 export type LLMPieChart = z.infer<typeof llmPieChart>;
 
 export const llmUserConfig = z.object({
-  // apiKey: z.string().optional(),
   title: z.string().min(1),
   description: z.string().min(1),
   systemInstructions: z.string().min(1),
@@ -85,7 +84,6 @@ export type oldSystemConfig = z.infer<typeof llmSystemConfig>;
 
 export const oldOptions = z.object({
   model: z.string(),
-  apiKey: z.string(),
   data: sourceRow.array(),
   title: z.string(),
   question: z.string(),

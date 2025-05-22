@@ -48,6 +48,7 @@ export async function claimsPipelineStep(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          [apiPyserver.OPENAI_API_KEY_HEADER]: env.OPENAI_API_KEY,
         },
         body: JSON.stringify(input),
       })
