@@ -78,7 +78,7 @@ const useAnonymousNames = (numOfEmptyInterviewRows: number) => {
 
 async function createNewReport(req: Request, res: Response) {
   const { env } = req.context;
-  const { CLIENT_BASE_URL, OPENAI_API_KEY, OPENAI_API_KEY_PASSWORD } = env;
+  const { CLIENT_BASE_URL, OPENAI_API_KEY } = env;
   const body = api.generateApiRequest.parse(req.body);
   // ! Brandon: This config object should be phased out
   const { data, userConfig, firebaseAuthToken } = body;
@@ -138,12 +138,6 @@ async function createNewReport(req: Request, res: Response) {
     CLIENT_BASE_URL,
   ).toString();
 
-  // if user provided key is the same as our password, let them use our key
-  // const apiKey =
-  //   userConfig.apiKey === OPENAI_API_KEY_PASSWORD
-  //     ? OPENAI_API_KEY
-  //     : userConfig.apiKey;
-  const apiKey = OPENAI_API_KEY;
   // ! Brandon: This config object should be phased out
   // ! FIX
   // @ts-ignore
@@ -151,7 +145,6 @@ async function createNewReport(req: Request, res: Response) {
     ...userConfig,
     ...parsedData,
     filename,
-    apiKey,
   };
 
   const response: api.GenerateApiResponse = {

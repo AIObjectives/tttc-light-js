@@ -50,7 +50,6 @@ export default async function submitAction(
   }
   `;
   const config: LLMUserConfig = llmUserConfig.parse({
-    apiKey: formData.get("apiKey"),
     title: formData.get("title"),
     // question: formData.get("question"),
     description: formData.get("description"),

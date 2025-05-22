@@ -15,6 +15,7 @@ export async function sortClaimsTreePipelineStep(
         body: JSON.stringify(input),
         headers: {
           "Content-Type": "application/json",
+          [apiPyserver.OPENAI_API_KEY_HEADER]: env.OPENAI_API_KEY,
         },
       }),
   );
