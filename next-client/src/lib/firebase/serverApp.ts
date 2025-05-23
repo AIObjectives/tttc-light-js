@@ -36,7 +36,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { getAuth } from "firebase-admin/auth";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { firebaseConfig } from "./config";
+import { getFirebaseConfig } from "./config";
 
 /**
  * Get or create the Firebase Admin app instance.
@@ -45,6 +45,7 @@ import { firebaseConfig } from "./config";
  * Multiple instances can supposedly complicate state.
  */
 function getFirebaseServerApp() {
+  const firebaseConfig = getFirebaseConfig(); // Get config at runtime
   return getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 }
 
