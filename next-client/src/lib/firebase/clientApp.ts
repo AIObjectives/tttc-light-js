@@ -29,7 +29,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { firebaseConfig } from "./config";
+import { getFirebaseConfig } from "./config";
 
 let firebaseApp: ReturnType<typeof initializeApp> | undefined;
 
@@ -40,6 +40,7 @@ let firebaseApp: ReturnType<typeof initializeApp> | undefined;
  */
 export function getFirebaseApp() {
   if (!firebaseApp) {
+    const firebaseConfig = getFirebaseConfig(); // Get config at runtime
     firebaseApp =
       getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   }
