@@ -60,7 +60,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
   const { title, description } = topicNode.data;
 
   return (
-    <Card>
+    <Card data-testid={"topic-item"}>
       <CardContent ref={ref}>
         <Col gap={3}>
           <TopicHeader
@@ -88,7 +88,7 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
   const subtopics = topicNode.children.map((sub) => sub.data);
   return (
     <Row gap={2}>
-      <CardTitle className="self-center flex-grow">
+      <CardTitle className="self-center flex-grow" data-testid="topic-title">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
       {/* <TextIcon
@@ -179,6 +179,7 @@ export function TopicInteractiveGraphic({
               })
             }
             className={buttonBackgroundColor}
+            data-testid={"open-topic-button"}
           >
             {topicNode.isOpen ? "Collapse Topic" : "Expand Topic"}
           </Button>
@@ -246,7 +247,9 @@ export function SubtopicListItem({
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
         >
-          <span className="link">{subtopic.title}</span>
+          <span className="link" data-testid={"subtopic-list-item"}>
+            {subtopic.title}
+          </span>
           {withComma ? ",   " : ""}
         </span>
       </HoverCardTrigger>
@@ -320,6 +323,7 @@ function ShowMoreButton({
         onClick={() =>
           dispatch({ type: "expandTopic", payload: { id: topicId } })
         }
+        data-testid={"show-more-subtopics-button"}
       >
         {moreLeftNum} more subtopic{moreLeftNum > 1 ? "s" : ""}
       </Button>

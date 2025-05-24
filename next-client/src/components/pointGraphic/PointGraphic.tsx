@@ -85,6 +85,7 @@ export function Cell(
       <HoverCardTrigger onClick={onClick}>
         <div
           className={`w-3 h-3 ${!isHighlighted ? backgroundClass : highlightedClass} ${borderClass} border rounded-[3px] ${hoverClass}`}
+          data-testid={"point-graphic-cell"}
         />
       </HoverCardTrigger>
       <HoverCardContent sideOffset={-1} className="p-4">
