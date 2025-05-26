@@ -7,7 +7,7 @@ import { Quote } from "../quote/Quote";
 
 export function QuoteCard({ claim }: { claim: schema.Claim }) {
   return (
-    <Col gap={4}>
+    <Col gap={4} data-testid={"quotecard"}>
       <QuoteHeader title={claim.title} number={claim.number} />
       <Col className="max-h-[80vh]">
         <ScrollArea className="h-full overflow-auto">
