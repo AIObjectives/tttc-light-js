@@ -285,9 +285,11 @@ function ExpandTopic() {
         <></>
       )}
       {subtopicNodes.map((node, i) => (
-        <Col key={node.data.id}>
-          <Subtopic node={node} isOpen={isOpen && i <= pagination} />
-        </Col>
+        <SubtopicItem
+          subtopicNode={node}
+          show={isOpen && i <= pagination}
+          key={node.id}
+        />
       ))}
       {isOpen && pagination <= subtopicNodes.length && (
         <>
@@ -299,6 +301,31 @@ function ExpandTopic() {
         </>
       )}
     </>
+  );
+}
+
+function SubtopicItem({
+  subtopicNode,
+  show,
+}: {
+  subtopicNode: SubtopicNode;
+  show: boolean;
+}) {
+  const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
+
+  const scrollRef = useScrollTo(subtopicNode.data.id);
+  const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
+  if (!show) {
+    return <></>;
+  }
+  return (
+    <Subtopic
+      subtopicNode={subtopicNode}
+      ref={mergeRefs([scrollRef, focusedRef])}
+      onExpandSubtopic={() =>
+        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
+      }
+    />
   );
 }
 
