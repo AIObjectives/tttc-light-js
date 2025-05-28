@@ -1,43 +1,43 @@
 "use client";
 
-import { onAuthStateChanged, User } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-
-import { getFirebaseAuth } from "../firebase/clientApp";
-const auth = getFirebaseAuth();
-
-// Define protected routes for now
-const protectedRoutes = ["/my-reports", "/create"];
+import { onAuthStateChanged } from "@/lib/firebase/auth";
+import { User } from "firebase/auth";
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      setUser(authUser);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    try {
+      const unsubscribe = onAuthStateChanged((authUser: User | null) => {
+        if (!mounted) return;
+
+        setUser(authUser);
+        setLoading(false);
+        setError(null);
+      });
+
+      return () => {
+        mounted = false;
+        unsubscribe();
+      };
+    } catch (err) {
+      console.error("Failed to initialize auth:", err);
+      if (mounted) {
+        setError(
+          err instanceof Error ? err.message : "Auth initialization failed",
+        );
+        setLoading(false);
+      }
+      return () => {
+        mounted = false;
+      };
+    }
   }, []);
 
-  // Handle redirect for protected routes
-  useEffect(() => {
-    if (!loading && !user) {
-      const isProtectedRoute = protectedRoutes.some((route) =>
-        pathname.startsWith(route),
-      );
-
-      if (isProtectedRoute) {
-        router.push("/");
-      }
-    }
-  }, [user, loading, pathname, router]);
-
-  return user;
+  return { user, loading, error };
 }

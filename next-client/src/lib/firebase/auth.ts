@@ -11,50 +11,31 @@
  * - Handles token refresh automatically
  */
 
+"use client";
+
 import {
-  GoogleAuthProvider,
   signInWithPopup,
-  onAuthStateChanged as _onAuthStateChanged,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  onAuthStateChanged as firebaseOnAuthStateChanged,
   setPersistence,
   browserLocalPersistence,
 } from "firebase/auth";
-
 import { getFirebaseAuth } from "./clientApp";
-const auth = getFirebaseAuth();
 
-/**
- * Listen for authentication state changes.
- * This is how React components stay in sync with auth state.
- */
-export function onAuthStateChanged(cb) {
-  return _onAuthStateChanged(auth, cb);
+export function onAuthStateChanged(callback: (user: any) => void) {
+  return firebaseOnAuthStateChanged(getFirebaseAuth(), callback);
 }
 
-/**
- * Sign in with Google using a popup window.
- * Sets persistence to local storage so user stays signed in across browser sessions.
- */
 export async function signInWithGoogle() {
+  const auth = getFirebaseAuth();
+  await setPersistence(auth, browserLocalPersistence);
   const provider = new GoogleAuthProvider();
-  // Add scopes here if we need access to user data
-  // ex: provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
-  try {
-    setPersistence(auth, browserLocalPersistence).then(
-      async () => await signInWithPopup(auth, provider),
-    );
-  } catch (error) {
-    console.error("Error signing in with Google", error);
-  }
+  provider.addScope("email");
+  provider.addScope("profile");
+  return signInWithPopup(auth, provider);
 }
 
-/**
- * Sign out the current user.
- * Clears auth state and tokens from the browser.
- */
 export async function signOut() {
-  try {
-    return auth.signOut();
-  } catch (error) {
-    console.error("Error signing out with Google", error);
-  }
+  return firebaseSignOut(getFirebaseAuth());
 }

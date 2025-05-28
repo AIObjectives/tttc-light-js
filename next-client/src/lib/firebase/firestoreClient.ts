@@ -1,15 +1,7 @@
 /**
  * Firestore Operations (Client SDK)
- *
- * Client-side database operations using the Firebase Client SDK.
- * These operations:
- * - Run in the browser with user's authentication
- * - Are subject to Firestore security rules
- * - Can work offline and sync when reconnected
- * - Use the user's permissions and auth state
  */
 
-import { getFirebaseDb } from "./clientApp";
 import { z } from "zod";
 import {
   collection,
@@ -19,6 +11,7 @@ import {
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { Firestore } from "firebase/firestore";
 
 import {
   useGetCollectionName,
@@ -28,8 +21,6 @@ import {
 import { AsyncData, AsyncError } from "../hooks/useAsyncState";
 import { FeedbackRequest } from "../types/clientRoutes";
 
-const db = getFirebaseDb();
-
 const NODE_ENV = z
   .union([z.literal("development"), z.literal("production")])
   .parse(process.env.NODE_ENV);
@@ -37,17 +28,15 @@ const getCollectionName = useGetCollectionName(NODE_ENV);
 
 /**
  * Get reports for a specific user using client SDK.
- * This operation goes through Firestore security rules and
- * uses the client's authentication context.
+ * Updated to return the correct type for useAsyncState.
  */
 export async function getUsersReports(
-  store: typeof db = db,
+  db: Firestore,
   userId: string,
-): Promise<AsyncData<ReportRef[]> | AsyncError<string>> {
+): Promise<AsyncData<ReportRef[]> | AsyncError<Error>> {
   try {
-    const collectionRef = collection(store, getCollectionName("REPORT_REF"));
+    const collectionRef = collection(db, getCollectionName("REPORT_REF"));
     const userQuery = query(collectionRef, where("userId", "==", userId));
-    // Log each raw document
     const snapshot = await getDocs(userQuery);
 
     const unparsedData = await Promise.all(
@@ -58,30 +47,24 @@ export async function getUsersReports(
 
     return ["data", reportRefs];
   } catch (e) {
-    return [
-      "error",
-      "Could not get your reports: " + (e instanceof Error ? e.message : e),
-    ];
+    const error =
+      e instanceof Error ? e : new Error("Could not get your reports: " + e);
+    return ["error", error];
   }
 }
 
 /**
  * Add feedback using client SDK.
- * This operation is subject to Firestore security rules
- * and uses the current user's authentication.
  */
 export async function addFeedback(
-  store: typeof db = db,
+  db: Firestore,
   data: FeedbackRequest,
 ): Promise<"success"> {
-  const docRef = await addDoc(
-    collection(store, getCollectionName("FEEDBACK")),
-    {
-      ...data,
-      userId: data.userId ?? "Unsigned",
-      timestamp: serverTimestamp(),
-    },
-  );
+  const docRef = await addDoc(collection(db, getCollectionName("FEEDBACK")), {
+    ...data,
+    userId: data.userId ?? "Unsigned",
+    timestamp: serverTimestamp(),
+  });
 
   return "success";
 }

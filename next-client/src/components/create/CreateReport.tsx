@@ -45,15 +45,25 @@ import { cn } from "@/lib/utils/shadcn";
 import * as prompts from "tttc-common/prompts";
 import { useUser } from "@/lib/hooks/getUser";
 import { useAsyncState } from "@/lib/hooks/useAsyncState";
-import { User } from "firebase/auth";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
-import { signInWithGoogle } from "@/lib/firebase/auth";
 import { fetchToken } from "@/lib/firebase/getIdToken";
+import { signInWithGoogle } from "@/lib/firebase/auth";
 
 function getUserToken() {
-  const user = useUser();
-  return useAsyncState(() => fetchToken(user), user);
+  const { user, loading } = useUser();
+
+  // Only run fetchToken when loading is false and user exists
+  const shouldFetch = !loading && !!user;
+  const userId = user?.uid ?? null;
+
+  return useAsyncState(
+    async () => {
+      if (!shouldFetch) return ["data", null] as const;
+      return await fetchToken(user);
+    },
+    shouldFetch ? userId : null, // Only changes when userId changes
+  );
 }
 
 const bindTokenToAction = <Input, Output>(
@@ -95,21 +105,35 @@ export default function CreateReport() {
         <Spinner />
       </Center>
     );
-  else if (result[0] === "error")
+
+  if (result[0] === "error")
     return (
       <Center>
-        <p>An error occurred...</p>
+        <p>Authentication error. Please try signing in again.</p>
       </Center>
     );
-  else {
-    if (result[0] === "data" && typeof result[1] === "string") {
-      // Safe to use result[1] as a token
-      return <CreateReportComponent token={result[1]} />;
-    }
+
+  if (result[0] === "data") {
+    const token = result[1];
+    return <CreateReportComponent token={token} />;
   }
+
+  return (
+    <Center>
+      <p>Unable to load create report</p>
+    </Center>
+  );
 }
 
 const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Sign in failed:", error);
+    }
+  };
+
   return (
     <Dialog open={isOpen}>
       <DialogContent className="gap-10">
@@ -117,7 +141,7 @@ const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
           <DialogTitle>Login to create a report</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          <Button onClick={signInWithGoogle}>Login</Button>
+          <Button onClick={handleSignIn}>Login</Button>
         </DialogDescription>
       </DialogContent>
     </Dialog>
@@ -184,11 +208,15 @@ function CreateReportComponent({ token }: { token: string | null }) {
   // ! When this component is refactored
   const title = methods.watch("title");
   const description = methods.watch("description");
-  useEffect(() => {
-    console.log(methods.formState.isValid);
-  }, [title, description]);
+  const { isValid } = methods.formState;
 
-  const isDisabled = !files?.item(0) || !methods.formState.isValid || !token;
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("Form validation state:", isValid);
+    }
+  }, [isValid]);
+
+  const isDisabled = !files?.item(0) || !isValid || !token;
 
   return (
     <FormProvider {...methods}>
@@ -717,6 +745,10 @@ function SubmitFormControl({
       router.push(`/report/${encodeURIComponent(response.jsonUrl)}`);
     }
   }, [response]);
-  if (pending) return <FormLoading />;
-  else return children;
+
+  if (pending) {
+    return <FormLoading />;
+  }
+
+  return <>{children}</>;
 }

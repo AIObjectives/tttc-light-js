@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useReducer, useState } from "react";
 import {
   Button,
@@ -70,7 +71,7 @@ function FeedbackForm() {
     feedbackDialogReducer,
     defaultFeedbackDialogState,
   );
-  const user = useUser();
+  const { user, loading, error } = useUser();
 
   const handleSubmit = async () => {
     if (!user) {
@@ -79,21 +80,21 @@ function FeedbackForm() {
       return;
     }
 
-    const tokenResult = await fetchToken(user);
-    if (tokenResult[0] === "error") {
-      toast.error("Authentication failed");
-      dispatch({ type: "close" });
-      return;
-    }
-
-    const token = tokenResult[1];
-    if (!token) {
-      toast.error("Please sign in to submit feedback");
-      dispatch({ type: "close" });
-      return;
-    }
-
     try {
+      const tokenResult = await fetchToken(user);
+      if (tokenResult[0] === "error") {
+        toast.error("Authentication failed");
+        dispatch({ type: "close" });
+        return;
+      }
+
+      const token = tokenResult[1];
+      if (!token) {
+        toast.error("Please sign in to submit feedback");
+        dispatch({ type: "close" });
+        return;
+      }
+
       const httpResponse = await fetch("/api/feedback", {
         method: "POST",
         headers: {
@@ -108,7 +109,6 @@ function FeedbackForm() {
 
       const json = await httpResponse.json();
       const apiResult = feedbackResponse.parse(json).response;
-      console.log("json", json);
 
       if (apiResult[0] === "data") {
         toast.success("Thank you for your feedback");
@@ -116,11 +116,33 @@ function FeedbackForm() {
         toast.error(apiResult[1].message);
       }
     } catch (error) {
+      console.error("Feedback submission failed:", error);
       toast.error("Failed to submit feedback");
     }
 
     dispatch({ type: "close" });
   };
+
+  // Handle loading and error states
+  if (loading) {
+    return (
+      <div className={cn("fixed bottom-10 right-10")}>
+        <Button
+          disabled
+          size="icon"
+          variant="outline"
+          className="rounded-full p-4"
+        >
+          <Icons.Feedback size={24} className="stroke-[1.2px]" />
+        </Button>
+      </div>
+    );
+  }
+
+  if (error) {
+    return null; // Hide feedback button if auth failed
+  }
+
   return (
     <Dialog open={dialogState.dialog}>
       <DialogTrigger onClick={() => dispatch({ type: "dialog" })}>
@@ -147,6 +169,7 @@ function FeedbackForm() {
             e.preventDefault();
             handleSubmit();
           }}
+          disabled={!user} // Disable if no user
         >
           Submit
         </Button>
