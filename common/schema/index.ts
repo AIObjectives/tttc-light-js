@@ -69,7 +69,8 @@ export const llmUserConfig = z.object({
   clusteringInstructions: z.string().min(1),
   extractionInstructions: z.string().min(1),
   dedupInstructions: z.string().min(1),
-  cruxInstructions: z.string().optional(),
+  cruxInstructions: z.string(),
+  cruxesEnabled: z.boolean(),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
@@ -93,7 +94,8 @@ export const oldOptions = z.object({
   clusteringInstructions: z.string(),
   extractionInstructions: z.string(),
   dedupInstructions: z.string(),
-  cruxInstructions: z.string().optional(),
+  cruxInstructions: z.string(),
+  cruxesEnabled: z.boolean(),
   batchSize: z.number(),
   filename: z.string(),
   googleSheet: z

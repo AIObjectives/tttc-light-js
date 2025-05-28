@@ -82,7 +82,6 @@ async function createNewReport(req: Request, res: Response) {
   const body = api.generateApiRequest.parse(req.body);
   // ! Brandon: This config object should be phased out
   const { data, userConfig, firebaseAuthToken } = body;
-
   const storage = createStorage(env, "public");
 
   // ! Temporary size check
@@ -181,11 +180,11 @@ async function createNewReport(req: Request, res: Response) {
       auth: "public",
       instructions: {
         ...userConfig,
-        cruxInstructions: userConfig.cruxInstructions ?? "", // ! Crux instructions should probably be made non-optional?
+        cruxInstructions: userConfig.cruxInstructions,
       },
       api_key: "", // ! Change when we transition away from using the AOI key,
       options: {
-        cruxes: false,
+        cruxes: updatedConfig.cruxesEnabled,
       },
       llm: {
         model: "gpt-4o-mini", // ! Change when we allow different models
@@ -196,7 +195,6 @@ async function createNewReport(req: Request, res: Response) {
       ...updatedConfig,
     },
   };
-
   const _ = await pipelineQueue.add("pipeline", pipelineJob, {
     jobId: config.filename,
   });

@@ -73,7 +73,6 @@ export async function pipelineJob(job: Job<PipelineJob>) {
   const { data, config, reportDetails } = jobdata;
   const { auth, env } = config;
   const { title, description, question, filename } = reportDetails;
-
   // Create our storage object for storing the pipeline's output json
   const storage = createStorage(env, auth);
 
@@ -238,9 +237,6 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     PipelineErrors | MissingInterviewAttributionsError
   > = await flatMapResultAsync(topicTreeStep, (val) => doClaimsStep(val.data));
 
-  // TODO
-  // const cruxesStep = config.featureFlags.cruxes ? await flatMapResultAsync(claimsStep, (val) => doCruxStep(val.data)) : claimsStep
-
   // update job progress
   console.log("Step 3: cleaning and sorting the taxonomy");
   await job.updateProgress({
@@ -273,7 +269,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
       );
     },
   );
-
+  console.log("cruxes", addonsStep, config.options.cruxes);
   // update job progress
   console.log("Step 4: wrapping up....");
   await job.updateProgress({

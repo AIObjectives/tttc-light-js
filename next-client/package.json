@@ -59,6 +59,7 @@
     "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.0.4",
     "@types/firebase": "^2.4.32",
     "@types/papaparse": "^5.3.15",

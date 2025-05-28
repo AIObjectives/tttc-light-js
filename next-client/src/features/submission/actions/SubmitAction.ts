@@ -34,21 +34,6 @@ export default async function submitAction(
     throw new Error("Missing data. Check your csv file");
   }
 
-  const tempCruxInstructions = `I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
-  identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
-  which would best split the participants into two groups, based on all their
-  statements on this topic: one group which would agree with the statement, and one which would disagree.
-  Please explain your reasoning and assign participants into "agree" and "disagree" groups.
-  return a JSON object of the form
-  {
-    "crux" : {
-      "cruxClaim" : string // the new extracted claim
-      "agree" : list of strings // list of the given participants who would agree with the cruxClaim
-      "disagree" : list strings // list of the given participants who would disagree with the cruxClaim
-      "explanation" : string // reasoning for why you synthesized this cruxClaim from the participants' perspective
-    }
-  }
-  `;
   const config: LLMUserConfig = llmUserConfig.parse({
     title: formData.get("title"),
     // question: formData.get("question"),
@@ -57,16 +42,20 @@ export default async function submitAction(
     systemInstructions: formData.get("systemInstructions"),
     extractionInstructions: formData.get("extractionInstructions"),
     dedupInstructions: formData.get("dedupInstructions"),
-    cruxInstructions: tempCruxInstructions,
+    cruxInstructions: formData.get("cruxInstructions"),
+    /**
+     * ! Checkbox inputs get modeled as 'on' | undefined for some reason. Do this until we refactor CreateReport
+     */
+    cruxesEnabled: formData.get("cruxesEnabled") === "on",
   });
   const dataPayload: DataPayload = ["csv", data];
-
+  console.log("submit action crux", config.cruxesEnabled);
   const body: GenerateApiRequest = {
     userConfig: config,
     data: dataPayload,
     firebaseAuthToken,
   };
-
+  console.log("submit action body", body.userConfig.cruxesEnabled);
   const url = new URL("create", validatedServerEnv.PIPELINE_EXPRESS_URL);
 
   const response = await fetch(url, {

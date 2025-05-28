@@ -19,6 +19,7 @@ import {
   Spinner,
   TextArea,
   Separator,
+  Switch,
 } from "../elements";
 import { Input } from "../elements";
 import Icons from "@/assets/icons";
@@ -45,12 +46,10 @@ import { cn } from "@/lib/utils/shadcn";
 import * as prompts from "tttc-common/prompts";
 import { useUser } from "@/lib/hooks/getUser";
 import { useAsyncState } from "@/lib/hooks/useAsyncState";
-import { User } from "firebase/auth";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { signInWithGoogle } from "@/lib/firebase/auth";
 import { fetchToken } from "@/lib/firebase/getIdToken";
-
 function getUserToken() {
   const user = useUser();
   return useAsyncState(() => fetchToken(user), user);
@@ -76,6 +75,8 @@ const form = z.object({
   clusteringInstructions: z.string().min(1),
   extractionInstructions: z.string().min(1),
   dedupInstructions: z.string().min(1),
+  cruxInstructions: z.string().min(1),
+  cruxesEnabled: z.boolean(),
 });
 
 function Center({ children }: React.PropsWithChildren) {
@@ -175,6 +176,8 @@ function CreateReportComponent({ token }: { token: string | null }) {
       clusteringInstructions: prompts.defaultClusteringPrompt,
       extractionInstructions: prompts.defaultExtractionPrompt,
       dedupInstructions: prompts.defaultDedupPrompt,
+      cruxInstructions: prompts.defaultCruxPrompt,
+      cruxesEnabled: false,
     },
   });
 
@@ -199,6 +202,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormHeader />
             <FormDescription />
             <FormDataInput files={files} setFiles={setFiles} />
+            <EnableResearchFeatures />
             <CostEstimate files={files} />
             <AdvancedSettings />
             <div>
@@ -529,39 +533,74 @@ const FormOpenAIKey = () => {
   );
 };
 
-const CustomizePrompts = ({ show }: { show: boolean }) => (
-  <Col gap={8} className={show ? "" : "hidden"}>
-    <Col gap={4}>
-      <h4>Customize AI prompts</h4>
+const EnableResearchFeatures = () => {
+  const { register, setValue } = useFormContext();
+
+  return (
+    <Col gap={2}>
+      <h4>Enable Research Features</h4>
+      <Row gap={2}>
+        <Switch
+          id="cruxEnabled"
+          onCheckedChange={(val) => setValue("cruxesEnabled", val)}
+          {...register("cruxesEnabled")}
+        />
+        <label className="font-medium" htmlFor="cruxEnabled">
+          Extract likely crux statements
+        </label>
+      </Row>
       <p className="p2 text-muted-foreground">
-        Optionally customize the prompts we use to generate the report, e.g. to
-        focus on specific questions, topics, or perspectives. Changing these the
-        prompts will change the resulting report.
+        As an extra processing step, suggest pairs of perspective-summarizing
+        statements which would best split the respondents (into agree/disagree
+        sides/groups of about equal size).
       </p>
     </Col>
-    <CustomizePromptSection
-      title="Role prompt for all steps"
-      subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow shown below."
-      inputName="systemInstructions"
-    />
-    <CustomizePromptSection
-      title="Step 1 – Topics and subtopics prompt"
-      subheader="In the first step, the AI finds the most frequent topics and subtopics mentioned in the comments and writes short descriptions for each."
-      inputName="clusteringInstructions"
-    />
-    <CustomizePromptSection
-      title="Step 2 – Claim extraction prompt"
-      subheader="In the second step, the AI summarizes each particpant's comments as key claims with supporting quotes from the original text.
+  );
+};
+
+const CustomizePrompts = ({ show }: { show: boolean }) => {
+  const { watch } = useFormContext();
+  const showCruxes: boolean = watch("cruxesEnabled");
+  return (
+    <Col gap={8} className={show ? "" : "hidden"}>
+      <Col gap={4}>
+        <h4>Customize AI prompts</h4>
+        <p className="p2 text-muted-foreground">
+          Optionally customize the prompts we use to generate the report, e.g.
+          to focus on specific questions, topics, or perspectives. Changing
+          these the prompts will change the resulting report.
+        </p>
+      </Col>
+      <CustomizePromptSection
+        title="Role prompt for all steps"
+        subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow shown below."
+        inputName="systemInstructions"
+      />
+      <CustomizePromptSection
+        title="Step 1 – Topics and subtopics prompt"
+        subheader="In the first step, the AI finds the most frequent topics and subtopics mentioned in the comments and writes short descriptions for each."
+        inputName="clusteringInstructions"
+      />
+      <CustomizePromptSection
+        title="Step 2 – Claim extraction prompt"
+        subheader="In the second step, the AI summarizes each particpant's comments as key claims with supporting quotes from the original text.
       It then assigns the claim to the most relevant subtopic in the report. This prompt runs once for each participant's comment"
-      inputName="extractionInstructions"
-    />
-    <CustomizePromptSection
-      title="Step 3 – Merging claims prompt"
-      subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
-      inputName="dedupInstructions"
-    />
-  </Col>
-);
+        inputName="extractionInstructions"
+      />
+      <CustomizePromptSection
+        title="Step 3 – Merging claims prompt"
+        subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
+        inputName="dedupInstructions"
+      />
+      <CustomizePromptSection
+        title="Optional – Suggest crux summary statements of opposing perspectives"
+        subheader="In this optional research step, AI suggests pairs of 'crux' statements which would best split participants into agree/disagree groups or sides of about equal size"
+        inputName="cruxInstructions"
+        show={showCruxes}
+      />
+    </Col>
+  );
+};
 
 function AdvancedSettings() {
   const [show, setShow] = useState<boolean>(false);
@@ -596,10 +635,12 @@ function CustomizePromptSection({
   title,
   subheader,
   inputName,
+  show = true,
 }: {
   title: string;
   subheader: string;
   inputName: string;
+  show?: boolean;
 }) {
   const { register, formState, getValues, setValue } = useFormContext();
   const { touchedFields, errors, defaultValues } = formState;
@@ -609,7 +650,7 @@ function CustomizePromptSection({
   const changedDefault = getValues(inputName) !== defaultValues![inputName];
 
   return (
-    <Col gap={3}>
+    <Col gap={3} className={`${show ? "block" : "hidden"}`}>
       <Col gap={1}>
         <p className="font-medium">{title}</p>
         <p className="p2 text-muted-foreground">{subheader}</p>
