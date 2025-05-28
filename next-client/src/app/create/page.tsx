@@ -1,10 +1,18 @@
 "use client";
+
 import CreateReport from "@/components/create/CreateReport";
 import { useUser } from "@/lib/hooks/getUser";
-import React from "react";
 
 export default function ReportCreationPage() {
-  const user = useUser();
+  const { user, loading } = useUser();
+
+  if (loading) {
+    return (
+      <div className="w-full h-full content-center justify-items-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   if (user === null) {
     return (

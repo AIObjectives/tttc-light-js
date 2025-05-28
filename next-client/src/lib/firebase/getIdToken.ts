@@ -13,18 +13,22 @@
  */
 
 import { User } from "firebase/auth";
+import { AsyncData, AsyncError } from "../hooks/useAsyncState";
 
-// Primarily to avoid a security flag for using a hardcoded string in second field.
-// The field is not used as a token without checking for validity first.
-const GENERIC_ERROR_MESSAGE = "An error occurred";
-
-export const fetchToken = async (
+export async function fetchToken(
   user: User | null,
-): Promise<["data", string | null] | ["error", string]> => {
+): Promise<AsyncData<string | null> | AsyncError<Error>> {
   try {
-    if (!user) return ["data", null];
-    return ["data", await user?.getIdToken()];
-  } catch (e) {
-    return ["error", e instanceof Error ? e.message : GENERIC_ERROR_MESSAGE];
+    if (!user) {
+      return ["data", null];
+    }
+
+    const token = await user.getIdToken();
+    return ["data", token];
+  } catch (error) {
+    console.error("Failed to get ID token:", error);
+    const err =
+      error instanceof Error ? error : new Error("Failed to get token");
+    return ["error", err];
   }
-};
+}

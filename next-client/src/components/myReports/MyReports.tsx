@@ -12,7 +12,11 @@ const reportLink = (uri: string) =>
   location.host +
   `/report/${encodeURIComponent(uri)}`;
 
-export default function MyReports({ reports }: { reports: ReportRef[] }) {
+interface MyReportsProps {
+  reports: ReportRef[];
+}
+
+export default function MyReports({ reports }: MyReportsProps) {
   return (
     <Col gap={8}>
       <YourReportsHeader />

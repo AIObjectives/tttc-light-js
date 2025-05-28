@@ -1,62 +1,45 @@
-export async function POST(request: Request) {
-  // Import Firebase-related code only when this function runs and not during the build
-  const { addFeedback } = await import("@/lib/firebase/firestoreServer");
-  const { getAuthenticatedAppForUser } = await import(
-    "@/lib/firebase/serverApp"
-  );
-  const { feedbackRequest } = await import("@/lib/types/clientRoutes");
-  const { getFirestore } = await import("firebase-admin/firestore");
-  const { NextResponse } = await import("next/server");
+import { addFeedback } from "@/lib/firebase/firestoreServer";
+import { getAuthenticatedAppForUser } from "@/lib/firebase/serverApp";
+import { feedbackRequest } from "@/lib/types/clientRoutes";
+import { getFirestore } from "firebase-admin/firestore";
+import { NextResponse } from "next/server";
 
-  console.log(1);
-  const js = await request.json();
-  const parsed = feedbackRequest.safeParse(js);
-  console.log("test", js);
-  console.log(2);
-  if (!parsed.success)
-    return new NextResponse(
-      JSON.stringify({
-        response: ["error", { message: parsed.error.issues.join("\n") }],
-      }),
-    );
-  console.log(3);
+export async function POST(request: Request) {
   try {
+    const json = await request.json();
+    const parsed = feedbackRequest.safeParse(json);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { response: ["error", { message: "Invalid request format" }] },
+        { status: 400 },
+      );
+    }
+
     const { firebaseServerApp, currentUser } =
       await getAuthenticatedAppForUser();
+
     if (!currentUser) {
-      return new NextResponse(
-        JSON.stringify({ response: ["error", { message: "Unauthorized" }] }),
+      return NextResponse.json(
+        { response: ["error", { message: "Unauthorized" }] },
         { status: 401 },
       );
     }
-    console.log(4);
+
     const firestore = getFirestore(firebaseServerApp);
-    console.log(5);
-    const res = await addFeedback(firestore, {
+    await addFeedback(firestore, {
       ...parsed.data,
       userId: currentUser.uid,
     });
-    console.log(6);
-    console.log("firebase response", res);
-    if (res === "success")
-      return new NextResponse(
-        JSON.stringify({ response: ["data", "success"] }),
-      );
-    else
-      throw new Error(
-        "Received different value from add feedback - shouldn't happen",
-      );
-  } catch (e) {
-    if (e instanceof Error) {
-      return new NextResponse(
-        JSON.stringify({ response: ["error", { message: e.message }] }),
-      );
-    } else {
-      return new NextResponse(
-        JSON.stringify({
-          response: ["error", { message: "An error occurred" }],
-        }),
-      );
-    }
+
+    return NextResponse.json({
+      response: ["data", "success"],
+    });
+  } catch (error) {
+    console.error("Feedback submission failed:", error);
+    return NextResponse.json(
+      { response: ["error", { message: "An error occurred" }] },
+      { status: 500 },
+    );
   }
 }

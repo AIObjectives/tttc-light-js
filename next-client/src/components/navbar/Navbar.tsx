@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { Row } from "../layout";
 import {
@@ -9,7 +11,6 @@ import {
   RepoGithub,
 } from "./components/NavbarButtons";
 import LoginButton from "./components/LoginButton";
-import { User } from "firebase/auth";
 
 function Navbar() {
   return (
@@ -33,9 +34,7 @@ function Navbar() {
         </Row>
 
         <About />
-
         <CreateReport />
-
         <LoginButton />
       </Row>
     </Row>

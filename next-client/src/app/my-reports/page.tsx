@@ -1,13 +1,12 @@
 "use client";
+
 import { useUser } from "@/lib/hooks/getUser";
-import { getUsersReports } from "../../lib/firebase/firestoreClient";
-import { getFirebaseDb } from "@/lib/firebase/clientApp";
 import { useAsyncState } from "@/lib/hooks/useAsyncState";
 import { useEffect, useState } from "react";
 import MyReports from "@/components/myReports/MyReports";
 import { Spinner } from "@/components/elements";
-
-const db = getFirebaseDb();
+import { getUsersReports } from "@/lib/firebase/firestoreClient";
+import { getFirebaseDb } from "@/lib/firebase/clientApp";
 
 function Center({ children }: React.PropsWithChildren) {
   return (
@@ -19,15 +18,19 @@ function Center({ children }: React.PropsWithChildren) {
 
 export default function MyReportsPage() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
-  const user = useUser();
+  const { user, loading } = useUser();
+
   useEffect(() => {
-    if (user) setUserId(user.uid);
-    else setUserId(null);
-  }, [user]);
-  if (userId === undefined)
+    if (!loading) {
+      if (user) setUserId(user.uid);
+      else setUserId(null);
+    }
+  }, [user, loading]);
+
+  if (loading || userId === undefined)
     return (
       <Center>
-        <p>Please login to see your reports</p>
+        <Spinner />
       </Center>
     );
   if (userId === null)
@@ -40,11 +43,12 @@ export default function MyReportsPage() {
 }
 
 function MyReportsUI({ userId }: { userId: string }) {
-  const user = useUser();
-  const { isLoading, result } = useAsyncState(
-    async () => await getUsersReports(db, userId),
-    user,
-  );
+  const { user } = useUser();
+
+  const { isLoading, result } = useAsyncState(async () => {
+    const db = getFirebaseDb();
+    return await getUsersReports(db, userId);
+  }, user);
 
   if (isLoading || result === undefined)
     return (
@@ -58,6 +62,7 @@ function MyReportsUI({ userId }: { userId: string }) {
         <p>There was an issue loading your reports</p>
       </Center>
     );
+
   const reports = result[1];
 
   return (
