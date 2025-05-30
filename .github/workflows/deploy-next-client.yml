@@ -29,13 +29,14 @@ jobs:
         run: |
           echo "${{ secrets.ENV_CLIENT }}" > next-client/.env
 
-      ####
-      - name: Build and Push Docker Image
+      - name: Build Docker image
         run: |
-          gcloud builds submit . \
-            --project=tttc-light-js \
-            --timeout=1200s \
-            --config=next-client/cloudbuild.yaml
+          docker build -t gcr.io/tttc-light-js/t3c-next-client-staging -f next-client/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          gcloud auth configure-docker
+          docker push gcr.io/tttc-light-js/t3c-next-client-staging
 
       - name: Deploy to Cloud Run
         run: |
@@ -44,3 +45,6 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
+
+      - name: Remove .env file
+        run: rm -f next-client/.env
