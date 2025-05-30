@@ -202,7 +202,6 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormHeader />
             <FormDescription />
             <FormDataInput files={files} setFiles={setFiles} />
-            <EnableResearchFeatures />
             <CostEstimate files={files} />
             <AdvancedSettings />
             <div>
@@ -533,27 +532,37 @@ const FormOpenAIKey = () => {
   );
 };
 
-const EnableResearchFeatures = () => {
-  const { register, setValue } = useFormContext();
+const EnableResearchFeatures = ({ show }: { show: boolean }) => {
+  const { register, setValue, watch } = useFormContext();
+  const cruxesEnabled: boolean = watch("cruxesEnabled");
 
   return (
-    <Col gap={2}>
-      <h4>Enable Research Features</h4>
-      <Row gap={2}>
-        <Switch
-          id="cruxEnabled"
-          onCheckedChange={(val) => setValue("cruxesEnabled", val)}
-          {...register("cruxesEnabled")}
-        />
-        <label className="font-medium" htmlFor="cruxEnabled">
-          Extract likely crux statements
-        </label>
-      </Row>
-      <p className="p2 text-muted-foreground">
-        As an extra processing step, suggest pairs of perspective-summarizing
-        statements which would best split the respondents (into agree/disagree
-        sides/groups of about equal size).
-      </p>
+    <Col gap={4} className={`${show ? "" : "hidden"}`}>
+      <Col gap={2}>
+        <h4>Enable Research Features</h4>
+        <Row gap={2}>
+          <Switch
+            id="cruxEnabled"
+            onCheckedChange={(val) => setValue("cruxesEnabled", val)}
+            {...register("cruxesEnabled")}
+          />
+          <label className="font-medium" htmlFor="cruxEnabled">
+            Extract likely crux statements
+          </label>
+        </Row>
+        <p className="p2 text-muted-foreground">
+          As an extra processing step, suggest pairs of perspective-summarizing
+          statements which would best split the respondents (into agree/disagree
+          sides/groups of about equal size).
+        </p>
+      </Col>
+
+      <CustomizePromptSection
+        title="Suggest crux summary statements of opposing perspectives"
+        subheader="In this optional research step, AI suggests pairs of 'crux' statements which would best split participants into agree/disagree groups or sides of about equal size"
+        inputName="cruxInstructions"
+        show={cruxesEnabled}
+      />
     </Col>
   );
 };
@@ -592,12 +601,6 @@ const CustomizePrompts = ({ show }: { show: boolean }) => {
         subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
         inputName="dedupInstructions"
       />
-      <CustomizePromptSection
-        title="Optional – Suggest crux summary statements of opposing perspectives"
-        subheader="In this optional research step, AI suggests pairs of 'crux' statements which would best split participants into agree/disagree groups or sides of about equal size"
-        inputName="cruxInstructions"
-        show={showCruxes}
-      />
     </Col>
   );
 };
@@ -618,6 +621,7 @@ function AdvancedSettings() {
         </Button>
       </div>
       <CustomizePrompts show={show} />
+      <EnableResearchFeatures show={show} />
       <div className={show ? "block" : "hidden"}>
         <Button
           variant={"secondary"}
@@ -627,6 +631,7 @@ function AdvancedSettings() {
           Hide advanced settings
         </Button>
       </div>
+      <Separator className={`${show ? "" : "hidden"}`} />
     </Col>
   );
 }
