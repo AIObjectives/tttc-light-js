@@ -7,6 +7,8 @@ steps:
         "gcr.io/tttc-light-js/t3c-next-client-staging",
         "-f",
         "next-client/Dockerfile",
+        "--build-arg",
+        "ENV_FILE_CONTENT=${_ENV_FILE_CONTENT}",
         ".",
       ]
 images:

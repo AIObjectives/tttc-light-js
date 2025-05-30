@@ -24,18 +24,13 @@ jobs:
         with:
           project_id: tttc-light-js
 
-      ####
-      - name: Write .env file for Next Client
-        run: |
-          echo "${{ secrets.ENV_CLIENT }}" > next-client/.env
-
-      ####
       - name: Build and Push Docker Image
         run: |
           gcloud builds submit . \
             --project=tttc-light-js \
             --timeout=1200s \
-            --config=next-client/cloudbuild.yaml
+            --config=next-client/cloudbuild.yaml \
+            --substitutions=_ENV_FILE_CONTENT="${{ secrets.ENV_CLIENT }}"
 
       - name: Deploy to Cloud Run
         run: |
