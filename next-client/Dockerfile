@@ -30,16 +30,8 @@ COPY next-client/ ./next-client/
 
 # Build common first
 RUN npm run build --prefix ./common
-
-# Accept build arg and write .env file
-ARG ENV_FILE_CONTENT
-RUN cat <<EOF > ./next-client/.env
-$ENV_FILE_CONTENT
-EOF
-
-# Build next-client
-RUN npm run build --prefix ./next-client \
-    && rm -f ./next-client/.env
+# Then build next-client with standalone output
+RUN npm run build --prefix ./next-client
 
 # Production image
 FROM base AS runner
