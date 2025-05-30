@@ -1,6 +1,7 @@
 import {
   Storage as BucketStorage,
   Bucket as GBucket,
+  GetSignedUrlConfig,
 } from "@google-cloud/storage";
 import { CustomError } from "./error";
 import * as schema from "tttc-common/schema";
@@ -16,6 +17,7 @@ type FileContent = z.infer<typeof fileContent>;
  */
 export abstract class Storage {
   abstract get(fileName: string): Promise<Result<FileContent, StorageGetError>>;
+  abstract getUrl(fileName: string): Promise<string>;
   abstract save(
     fileName: string,
     fileContent: string,
@@ -30,6 +32,8 @@ export class Bucket extends Storage {
   private storage: BucketStorage;
   private bucket: GBucket;
 
+  static VALID_FILENAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+
   constructor(encoded_creds: string, name: string) {
     super();
     this.name = name;
@@ -43,6 +47,17 @@ export class Bucket extends Storage {
     JSON.parse(Buffer.from(encoded_creds, "base64").toString("utf-8"));
   private storageUrl = (fileName: string) =>
     `https://storage.googleapis.com/${this.name}/${fileName}`;
+
+  async getUrl(fileName: string): Promise<string> {
+    const expiresInSeconds: number = 60 * 60; // 1 hour default
+    const file = this.bucket.file(fileName);
+    const [url] = await file.getSignedUrl({
+      action: "read",
+      expires: Date.now() + expiresInSeconds * 1000,
+    } as GetSignedUrlConfig);
+    console.debug(`Generated signed URL for file "${fileName}"`);
+    return url;
+  }
 
   /**
    * Gets report data from storage bucket. Returns either the content or an error value
@@ -97,6 +112,39 @@ export class Bucket extends Storage {
       };
     }
   }
+
+  /**
+   * Validates a GCS URL or filename and extracts the filename if valid.
+   * Returns null if invalid.
+   */
+  static extractFileNameFromUri(
+    uri: string,
+    bucketName: string,
+  ): string | null {
+    try {
+      const url = new URL(uri);
+      if (
+        url.hostname !== "storage.googleapis.com" ||
+        !url.pathname.startsWith(`/${bucketName}/`)
+      ) {
+        return null;
+      }
+      const fileName = url.pathname.split("/").pop();
+      return Bucket.isValidFileName(fileName) ? fileName! : null;
+    } catch {
+      // Not a valid URL, treat as filename directly
+      return Bucket.isValidFileName(uri) ? uri : null;
+    }
+  }
+
+  static isValidFileName(fileName: string | undefined): boolean {
+    return (
+      typeof fileName === "string" &&
+      Bucket.VALID_FILENAME_REGEX.test(fileName) &&
+      !fileName.includes("..") &&
+      !fileName.includes("/")
+    );
+  }
 }
 
 type StorageGetError = BucketGetError | InvalidJSONFormat;
@@ -121,19 +169,7 @@ class BucketSaveError extends CustomError<"BucketSaveError"> {
   }
 }
 
-export const createStorage = (
-  env: Env,
-  control: "public" | "private",
-): Storage => {
+export const createStorage = (env: Env): Storage => {
   // since Bucket is the only storage class, just return this for now.
-  if (control === "public")
-    return new Bucket(
-      env.GOOGLE_CREDENTIALS_ENCODED,
-      env.GCLOUD_STORAGE_BUCKET,
-    );
-  else
-    return new Bucket(
-      env.GOOGLE_CREDENTIALS_ENCODED,
-      env.GCLOUD_STORAGE_BUCKET_PRIVATE,
-    );
+  return new Bucket(env.GOOGLE_CREDENTIALS_ENCODED, env.GCLOUD_STORAGE_BUCKET);
 };

@@ -3,7 +3,7 @@ import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import { z } from "zod";
-import ReportProgresss from "@/components/reportProgress/ReportProgress";
+import ReportProgress from "@/components/reportProgress/ReportProgress";
 import Feedback from "@/components/feedback/Feedback";
 
 const waitingMessage = z.object({
@@ -69,19 +69,38 @@ type PageProps = Promise<{
 
 export default async function ReportPage({ params }: { params: PageProps }) {
   const uri = (await params).uri.replace(/\?.*$/, "");
-  const url = decodeURIComponent(uri);
-  const req = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const encodedUri = encodeURIComponent(decodeURIComponent(uri));
+  const baseApiUrl = process.env.PIPELINE_EXPRESS_URL;
+
+  // Fetch status
+  const statusUrl = `${baseApiUrl}/report/${encodedUri}/status`;
+  const statusRes = await fetch(statusUrl);
+  if (!statusRes.ok) {
+    return <p>Failed to get report status.</p>;
+  }
+  const { status } = await statusRes.json();
+
+  if (status !== "finished") {
+    return <ReportProgress status={status} />;
+  }
+
+  // Fetch signed URL for report data
+  const dataUrl = `${baseApiUrl}/report/${encodedUri}/data`;
+  const dataRes = await fetch(dataUrl);
+  if (!dataRes.ok) {
+    return <p>Failed to get signed URL for report, could not download.</p>;
+  }
+  const { url } = await dataRes.json();
+
+  // Fetch the actual report data from the signed URL
+  const req = await fetch(url);
   let data = await req.json();
 
   const parsedData = await handleResponseData(data, url);
 
   switch (parsedData[0]) {
     case "status": {
-      return <ReportProgresss status={parsedData[1]} />;
+      return <ReportProgress status={parsedData[1]} />;
     }
     case "report": {
       return (
@@ -92,7 +111,7 @@ export default async function ReportPage({ params }: { params: PageProps }) {
       );
     }
     case "error": {
-      return <p>An error occured</p>;
+      return <p>An error occurred</p>;
     }
   }
 }
