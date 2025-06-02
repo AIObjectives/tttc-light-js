@@ -28,13 +28,14 @@ jobs:
         run: |
           echo "${{ secrets.ENV_PYSERVER }}" > pyserver/.env
 
-      ###
-      - name: Build and Push Docker image
+      - name: Build Docker image
         run: |
-          gcloud builds submit . \
-            --project=tttc-light-js \
-            --config=pyserver/cloudbuild.yaml \
-            --timeout=300s
+          docker build -t gcr.io/tttc-light-js/stage-t3c-pyserver -f pyserver/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          gcloud auth configure-docker
+          docker push gcr.io/tttc-light-js/stage-t3c-pyserver
 
       - name: Deploy to Cloud Run
         run: |
@@ -43,3 +44,6 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
+
+      - name: Remove .env file
+        run: rm -f pyserver/.env

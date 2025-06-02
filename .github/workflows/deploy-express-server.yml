@@ -30,14 +30,14 @@ jobs:
         run: |
           echo "${{ secrets.ENV_EXPRESS_SERVER }}" > express-server/.env
 
-      ####
-
-      - name: Build and Push Docker Image
+      - name: Build Docker image
         run: |
-          gcloud builds submit . \
-            --project=tttc-light-js \
-            --config=express-server/cloudbuild.yaml \
-            --timeout=600s
+          docker build -t gcr.io/tttc-light-js/stage-t3c-express-server -f express-server/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          gcloud auth configure-docker
+          docker push gcr.io/tttc-light-js/stage-t3c-express-server
 
       - name: Deploy to Cloud Run
         run: |
@@ -46,3 +46,6 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
+
+      - name: Remove .env file
+        run: rm -f express-server/.env
