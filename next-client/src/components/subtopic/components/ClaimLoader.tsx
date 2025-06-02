@@ -1,24 +1,20 @@
 "use client";
 
 import { Button } from "@/components/elements";
-import { SubtopicNode } from "@/components/report/hooks/useReportState";
-import { ReportContext } from "@/components/report/Report";
-import { useContext } from "react";
 
-function ClaimLoader({ subtopicNode }: { subtopicNode: SubtopicNode }) {
-  const { dispatch } = useContext(ReportContext);
-  const remaining = subtopicNode.children.length - subtopicNode.pagination - 1;
-  if (!remaining) return <></>;
+function ClaimLoader({
+  remaining,
+  onExpandSubtopic,
+}: {
+  remaining: number;
+  onExpandSubtopic: () => void;
+}) {
+  if (remaining <= 0) return <></>;
   return (
     <div className="pl-4 sm:pl-8">
       <Button
         variant={"outline"}
-        onClick={() =>
-          dispatch({
-            type: "expandSubtopic",
-            payload: { id: subtopicNode.data.id },
-          })
-        }
+        onClick={onExpandSubtopic}
         data-testid={"show-more-claims-button"}
       >
         {remaining} more claim{remaining > 0 ? "s" : ""}
