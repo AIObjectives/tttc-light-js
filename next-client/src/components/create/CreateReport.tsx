@@ -19,6 +19,7 @@ import {
   Spinner,
   TextArea,
   Separator,
+  Switch,
 } from "../elements";
 import { Input } from "../elements";
 import Icons from "@/assets/icons";
@@ -86,6 +87,8 @@ const form = z.object({
   clusteringInstructions: z.string().min(1),
   extractionInstructions: z.string().min(1),
   dedupInstructions: z.string().min(1),
+  cruxInstructions: z.string().min(1),
+  cruxesEnabled: z.boolean(),
 });
 
 function Center({ children }: React.PropsWithChildren) {
@@ -199,6 +202,8 @@ function CreateReportComponent({ token }: { token: string | null }) {
       clusteringInstructions: prompts.defaultClusteringPrompt,
       extractionInstructions: prompts.defaultExtractionPrompt,
       dedupInstructions: prompts.defaultDedupPrompt,
+      cruxInstructions: prompts.defaultCruxPrompt,
+      cruxesEnabled: false,
     },
   });
 
@@ -557,39 +562,78 @@ const FormOpenAIKey = () => {
   );
 };
 
-const CustomizePrompts = ({ show }: { show: boolean }) => (
-  <Col gap={8} className={show ? "" : "hidden"}>
-    <Col gap={4}>
-      <h4>Customize AI prompts</h4>
-      <p className="p2 text-muted-foreground">
-        Optionally customize the prompts we use to generate the report, e.g. to
-        focus on specific questions, topics, or perspectives. Changing these the
-        prompts will change the resulting report.
-      </p>
+const EnableResearchFeatures = ({ show }: { show: boolean }) => {
+  const { register, setValue, watch } = useFormContext();
+  const cruxesEnabled: boolean = watch("cruxesEnabled");
+
+  return (
+    <Col gap={4} className={`${show ? "" : "hidden"}`}>
+      <Col gap={2}>
+        <h4>Enable Research Features</h4>
+        <Row gap={2}>
+          <Switch
+            id="cruxEnabled"
+            onCheckedChange={(val) => setValue("cruxesEnabled", val)}
+            {...register("cruxesEnabled")}
+          />
+          <label className="font-medium" htmlFor="cruxEnabled">
+            Extract cruxes to distill conflicting opinions
+          </label>
+        </Row>
+        <p className="p2 text-muted-foreground">
+          Suggest pairs of perspective-summarizing "crux" statements which would
+          best split participants into agree/disagree groups or sides of about
+          equal size.
+        </p>
+      </Col>
+
+      <CustomizePromptSection
+        title="Crux extraction prompt"
+        subheader="In this optional step, the AI suggests pairs of `crux` statements to summarize the most controverisal perspectives within each topic."
+        inputName="cruxInstructions"
+        show={cruxesEnabled}
+      />
     </Col>
-    <CustomizePromptSection
-      title="Role prompt for all steps"
-      subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow shown below."
-      inputName="systemInstructions"
-    />
-    <CustomizePromptSection
-      title="Step 1 – Topics and subtopics prompt"
-      subheader="In the first step, the AI finds the most frequent topics and subtopics mentioned in the comments and writes short descriptions for each."
-      inputName="clusteringInstructions"
-    />
-    <CustomizePromptSection
-      title="Step 2 – Claim extraction prompt"
-      subheader="In the second step, the AI summarizes each particpant's comments as key claims with supporting quotes from the original text.
+  );
+};
+
+const CustomizePrompts = ({ show }: { show: boolean }) => {
+  const { watch } = useFormContext();
+  const showCruxes: boolean = watch("cruxesEnabled");
+  return (
+    <Col gap={8} className={show ? "" : "hidden"}>
+      <Col gap={4}>
+        <h4>Customize AI prompts</h4>
+        <p className="p2 text-muted-foreground">
+          Optionally customize the prompts we use to generate the report, e.g.
+          to focus on specific questions, topics, or perspectives. Changing
+          these the prompts will change the resulting report.
+        </p>
+      </Col>
+      <CustomizePromptSection
+        title="Role prompt for all steps"
+        subheader="This prompt helps AI understand how to approach generating reports. It is prepended to all the steps of the report generation flow shown below."
+        inputName="systemInstructions"
+      />
+      <CustomizePromptSection
+        title="Step 1 – Topics and subtopics prompt"
+        subheader="In the first step, the AI finds the most frequent topics and subtopics mentioned in the comments and writes short descriptions for each."
+        inputName="clusteringInstructions"
+      />
+      <CustomizePromptSection
+        title="Step 2 – Claim extraction prompt"
+        subheader="In the second step, the AI summarizes each particpant's comments as key claims with supporting quotes from the original text.
       It then assigns the claim to the most relevant subtopic in the report. This prompt runs once for each participant's comment"
-      inputName="extractionInstructions"
-    />
-    <CustomizePromptSection
-      title="Step 3 – Merging claims prompt"
-      subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
-      inputName="dedupInstructions"
-    />
-  </Col>
-);
+        inputName="extractionInstructions"
+      />
+      <CustomizePromptSection
+        title="Step 3 – Merging claims prompt"
+        subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
+        inputName="dedupInstructions"
+      />
+    </Col>
+  );
+};
 
 function AdvancedSettings() {
   const [show, setShow] = useState<boolean>(false);
@@ -607,6 +651,7 @@ function AdvancedSettings() {
         </Button>
       </div>
       <CustomizePrompts show={show} />
+      <EnableResearchFeatures show={show} />
       <div className={show ? "block" : "hidden"}>
         <Button
           variant={"secondary"}
@@ -616,6 +661,7 @@ function AdvancedSettings() {
           Hide advanced settings
         </Button>
       </div>
+      <Separator className={`${show ? "" : "hidden"}`} />
     </Col>
   );
 }
@@ -624,10 +670,12 @@ function CustomizePromptSection({
   title,
   subheader,
   inputName,
+  show = true,
 }: {
   title: string;
   subheader: string;
   inputName: string;
+  show?: boolean;
 }) {
   const { register, formState, getValues, setValue } = useFormContext();
   const { touchedFields, errors, defaultValues } = formState;
@@ -637,7 +685,7 @@ function CustomizePromptSection({
   const changedDefault = getValues(inputName) !== defaultValues![inputName];
 
   return (
-    <Col gap={3}>
+    <Col gap={3} className={`${show ? "block" : "hidden"}`}>
       <Col gap={1}>
         <p className="font-medium">{title}</p>
         <p className="p2 text-muted-foreground">{subheader}</p>
