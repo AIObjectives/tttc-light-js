@@ -30,6 +30,10 @@
     "./schema": {
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
     }
   },
   "files": [

@@ -24,7 +24,8 @@
     "./firebase/*",
     "./morphisms/**/*",
     "./prompts/*",
-    "./schema/*"
+    "./schema/*",
+    "./utils/*"
   ],
   "exclude": ["dist/", "**/*/*.test.*"]
 }

@@ -24,12 +24,18 @@ const handleParsingJson = (data: unknown): ReportData | Error => {
   }
 };
 
-export async function GET(
-  _: Request,
-  { params }: { params: Promise<{ uri: string }> },
-) {
-  const { uri: encodedUri } = await params;
-  const uri = decodeURIComponent(encodedUri);
+export async function GET(request: Request) {
+  const { pathname } = new URL(request.url);
+  const match = pathname.match(/\/api\/report\/download\/(.+)$/);
+  const uri = match ? match[1] : undefined;
+
+  if (!uri) {
+    return NextResponse.json(
+      { error: "Missing URI parameter" },
+      { status: 400 },
+    );
+  }
+
   const jsonData = await fetch(uri, {
     method: "GET",
     headers: {
