@@ -167,8 +167,7 @@ export class Bucket extends Storage {
       fileName.length <= Bucket.MAX_FILENAME_LENGTH &&
       Bucket.VALID_FILENAME_REGEX.test(fileName) &&
       !fileName.includes("..") &&
-      !fileName.includes("/") &&
-      fileName !== "index.js" // Prevents serving index.js directly
+      !fileName.includes("/")
     );
   }
 }
