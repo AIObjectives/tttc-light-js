@@ -34,7 +34,7 @@ export class Bucket extends Storage {
   private storage: BucketStorage;
   private bucket: GBucket;
 
-  static VALID_FILENAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+  static VALID_FILENAME_REGEX = /^[a-zA-Z0-9%._-]+$/;
   static MAX_FILENAME_LENGTH = 512; // Reasonable max length for filenames
 
   constructor(encoded_creds: string, name: string) {
