@@ -103,7 +103,11 @@ export function SubtopicClaims({
         <Col>
           {claimNodes.map((claimNode, i) => {
             return (
-              <ClaimItem show={i <= pagination} id={claimNode.id}>
+              <ClaimItem
+                key={claimNode.id}
+                show={i <= pagination}
+                id={claimNode.id}
+              >
                 <Claim claim={claimNode.data} />
               </ClaimItem>
             );

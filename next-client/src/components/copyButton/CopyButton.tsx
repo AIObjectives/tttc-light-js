@@ -29,10 +29,10 @@ function CopyButton({
 export const CopyLinkButton = ({ anchor }: { anchor: string }) => (
   <CopyButton
     copyStr={
-      location.protocol +
+      globalThis.location?.protocol +
       "//" +
-      location.host +
-      location.pathname +
+      globalThis.location?.host +
+      globalThis.location?.pathname +
       `#${encodeURIComponent(anchor)}`
     }
     successMessage="Link copied"
