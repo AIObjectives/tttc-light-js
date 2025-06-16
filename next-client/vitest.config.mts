@@ -4,10 +4,12 @@ import path from "path";
 export default defineConfig({
   test: {
     setupFiles: ["./__tests__/setup/vitest.setup.ts"],
+    include: ["**/*.test.t*"]
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  
 });
