@@ -5,8 +5,10 @@ import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
 import { Dispatch, createContext, useContext } from "react";
 import { ReportContext } from "../report/Report";
-import useOutlineState, {
-  OutlineNode,
+import {
+  useOutlineState,
+  OutlineTopicNode,
+  OutlineSubtopicNode,
   OutlineStateAction,
 } from "./hooks/useOutlineState";
 import { ReportState, ReportStateAction } from "../report/hooks/useReportState";
@@ -83,7 +85,7 @@ function Outline({
         </TextIcon>
         {/* Scrolly part */}
         <Col gap={outlineSpacing} className="overflow-y-scroll no-scrollbar">
-          {state.map((node) => (
+          {state.tree.map((node) => (
             <OutlineItem
               key={node.id}
               node={node}
@@ -130,7 +132,7 @@ function OutlineItem({
   onBodyClick,
   onIconClick = () => null,
 }: React.PropsWithChildren<{
-  node: OutlineNode;
+  node: OutlineTopicNode | OutlineSubtopicNode;
   title: string;
   isLeafNode?: boolean;
   heirarchyDepth?: number;
@@ -165,14 +167,16 @@ function OutlineItem({
         >
           {title}
         </p>
-        <OutlineCarrot
-          onClick={onIconClick}
-          isOpen={node.isOpen}
-          collapsable={!!node.children?.length && !isLeafNode}
-        />
+        {node._tag === "OutlineTopicNode" ? (
+          <OutlineCarrot
+            onClick={onIconClick}
+            isOpen={node.isOpen}
+            collapsable={!!node.children?.length && !isLeafNode}
+          />
+        ) : null}
       </Row>
 
-      {node.isOpen ? children : null}
+      {node._tag === "OutlineTopicNode" && node.isOpen ? children : null}
     </Col>
   );
 }
