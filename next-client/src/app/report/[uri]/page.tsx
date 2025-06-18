@@ -93,10 +93,11 @@ async function getReportState(
   const statusUrl = `${baseApiUrl}/report/${encodedUri}/status`;
   try {
     const statusRes = await fetch(statusUrl);
-    if (statusRes.status === 404) {
-      return { type: "notFound" };
-    }
     if (!statusRes.ok) {
+      console.error("Failed to fetch report status", {
+        statusUrl,
+        status: statusRes.status,
+      });
       return { type: "error", message: "Failed to fetch report status." };
     }
     const statusJson = await statusRes.json();
@@ -109,39 +110,57 @@ async function getReportState(
       return { type: "progress", status };
     }
 
-    // Try to fetch signed URL for report data
+    // Fetch either signed or fallback URL for report data
     const dataUrl = `${baseApiUrl}/report/${encodedUri}/data`;
     const dataRes = await fetch(dataUrl);
-    if (dataRes.status === 404) {
-      return { type: "notFound" };
-    }
-    if (!dataRes.ok) {
+    const dataJson = await dataRes.json();
+    const url = dataJson.url as string | undefined;
+    if (!dataRes.ok || url === undefined) {
+      console.error("Failed to fetch report data URL", {
+        dataUrl,
+        status: dataRes.status,
+        dataJson,
+      });
       return {
         type: "error",
         message:
           "Failed to fetch report data. The file may not be public, may not exist, or you may not have access.",
       };
     }
-    const url = (await dataRes.json()).url as string | undefined;
-    const finalUrl = url || decodeURIComponent(encodedUri);
 
     // Fetch the actual report data
     try {
-      const reportRes = await fetch(finalUrl);
+      const reportRes = await fetch(url);
+      if (!reportRes.ok) {
+        console.error("Failed to fetch report data from storage", {
+          url,
+          status: reportRes.status,
+        });
+        return {
+          type: "reportDataError",
+          message:
+            "Failed to fetch report data. The file may not be public or may not exist.",
+        };
+      }
       const reportData = await reportRes.json();
-      const parsedData = await handleResponseData(reportData, finalUrl);
+      const parsedData = await handleResponseData(reportData, url);
 
       switch (parsedData.tag) {
         case "status":
           return { type: "progress", status: parsedData.status };
         case "report":
-          return { type: "reportData", data: parsedData.data, url: finalUrl };
+          return { type: "reportData", data: parsedData.data, url: url };
         case "error":
+          console.error("Report data parse error", { url, reportData });
           return { type: "reportDataError", message: parsedData.message };
         default:
           utils.assertNever(parsedData);
       }
     } catch (e) {
+      console.error("Exception while fetching or parsing report data", {
+        url,
+        error: e,
+      });
       return {
         type: "reportDataError",
         message:
@@ -149,6 +168,7 @@ async function getReportState(
       };
     }
   } catch (e) {
+    console.error("Unexpected error loading report", { statusUrl, error: e });
     return { type: "error", message: "Unexpected error loading report." };
   }
 }
@@ -159,7 +179,7 @@ export default async function ReportPage({
   params: Promise<{ uri: string }>;
 }) {
   const { uri } = await params;
-  const encodedUri = encodeURIComponent(decodeURIComponent(uri));
+  const encodedUri = encodeURIComponent(decodeURIComponent(uri)); // This is probably overly strict now.
   const state = await getReportState(encodedUri);
 
   switch (state.type) {
