@@ -11,6 +11,7 @@ import {
   RepoGithub,
 } from "./components/NavbarButtons";
 import LoginButton from "./components/LoginButton";
+import { Button } from "../elements";
 
 function Navbar() {
   return (
@@ -36,6 +37,14 @@ function Navbar() {
 
         <About />
         <CreateReport />
+        <Button variant={"secondary"} asChild>
+          <a
+            target="_blank"
+            href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
+          >
+            Join the waitlist
+          </a>
+        </Button>
         <LoginButton />
       </Row>
     </Row>

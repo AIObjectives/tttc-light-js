@@ -10,6 +10,7 @@ export function useUser() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isWaitlisted, setIsWaitlisted] = useState(false);
   // Use a Map to track ongoing ensure operations for each user
   const ensuredUsersRef = useRef<Set<string>>(new Set());
   const ensurePromisesRef = useRef<Map<string, Promise<void>>>(new Map());
@@ -29,6 +30,7 @@ export function useUser() {
           logger.info("CLIENT: User logged out");
           // Clear ensured users when user logs out
           ensuredUsersRef.current = new Set();
+          setIsWaitlisted(false);
         }
 
         // Update the ref for next comparison
@@ -49,18 +51,22 @@ export function useUser() {
               ensurePromise = ensureUserDocumentOnClient(authUser)
                 .then((result) => {
                   if (!mounted) return;
-
+                    // Don't add to ensuredUsersRef so it will retry next time
                   if (result.tag === "success") {
                     logger.info(
                       `CLIENT ENSURE: User document ensured successfully for ${uid}`,
                     );
                     ensuredUsersRef.current.add(uid);
+                    setIsWaitlisted(false);
+                  } else if (result.tag === "waitlisted") {
+                    logger.info("User is waitlisted");
+                    setIsWaitlisted(true);
+                    // Don't add to ensured users since they're waitlisted
                   } else {
                     logger.error(
-                      "CLIENT ENSURE: Failed to ensure user document",
+                      "Failed to ensure user document",
                       result.error,
                     );
-                    // Don't add to ensuredUsersRef so it will retry next time
                   }
                 })
                 .catch((error) => {
@@ -100,5 +106,5 @@ export function useUser() {
     }
   }, []);
 
-  return { user, loading, error };
+  return { user, loading, error, isWaitlisted };
 }

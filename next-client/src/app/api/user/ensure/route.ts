@@ -70,6 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       uid: result.uid,
+      user: result.user,
       message: "User document ensured via express server",
     });
   } catch (error) {

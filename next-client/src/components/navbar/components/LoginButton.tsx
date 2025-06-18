@@ -5,6 +5,12 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -15,6 +21,8 @@ import { useUser } from "@/lib/hooks/getUser";
 import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
 import { logAuthEvent } from "@/lib/firebase/authEvents";
 import { logger } from "tttc-common/logger";
+import { useState, useEffect } from "react";
+import { Col } from "@/components/layout";
 
 const getInitials = (name: string) =>
   name
@@ -23,14 +31,21 @@ const getInitials = (name: string) =>
     .join("");
 
 export default function LoginButton() {
-  const { user, loading, error } = useUser();
+  const { user, loading, error, isWaitlisted } = useUser();
+  const [showAccessLimitedModal, setShowAccessLimitedModal] =
+    useState<boolean>(false);
+
+  useEffect(() => {
+    if (isWaitlisted) {
+      setShowAccessLimitedModal(true);
+    }
+  }, [isWaitlisted]);
 
   const handleSignIn = async () => {
     try {
       logger.debug("Sign in button clicked");
       const result = await signInWithGoogle();
       logger.info("Sign in successful", result.user);
-
       // Log signin event to server
       await logAuthEvent("signin", result.user);
     } catch (error) {
@@ -73,11 +88,34 @@ export default function LoginButton() {
       </div>
     );
   }
-
   return (
     <div>
       {!user ? (
-        <Button onClick={handleSignIn}>Sign in</Button>
+        <>
+          <Button onClick={handleSignIn}>Sign in</Button>
+          <Dialog
+            open={showAccessLimitedModal}
+            onOpenChange={setShowAccessLimitedModal}
+          >
+            <DialogClose />
+            <DialogContent
+              className="gap-y-8"
+              overlayProps={{ className: "opacity-40" }}
+            >
+              <Col gap={2}>
+                <DialogTitle>Access is currently limited.</DialogTitle>
+                <DialogDescription>
+                  We'll let you know as soon as you can start using the tool.
+                </DialogDescription>
+              </Col>
+              <DialogFooter className="justify-self-start">
+                <DialogClose asChild>
+                  <Button variant={"secondary"}>Close</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       ) : (
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center">

@@ -28,7 +28,7 @@ export default async function ensureUser(req: Request, res: Response) {
       return sendError(res, 401, "Invalid or expired token", "TokenError");
     }
 
-    await firebase.ensureUserDocument(
+    const userDocument = await firebase.ensureUserDocument(
       decodedUser.uid,
       decodedUser.email || null,
       decodedUser.name || null,
@@ -40,6 +40,7 @@ export default async function ensureUser(req: Request, res: Response) {
     res.json({
       success: true,
       uid: decodedUser.uid,
+      user: userDocument,
       message: "User document ensured successfully",
     });
   } catch (error) {
