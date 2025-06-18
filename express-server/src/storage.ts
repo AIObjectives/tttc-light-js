@@ -34,7 +34,7 @@ export class Bucket extends Storage {
   private storage: BucketStorage;
   private bucket: GBucket;
 
-  static VALID_FILENAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+  static VALID_FILENAME_REGEX = /^[^(\r\n#\[\]*?\:"<>|)]+$/; // GCS filenames are very permissive, so we check the negative.
   static MAX_FILENAME_LENGTH = 512; // Reasonable max length for filenames
 
   constructor(encoded_creds: string, name: string) {
@@ -53,6 +53,7 @@ export class Bucket extends Storage {
 
   async getUrl(fileName: string): Promise<Result<string, StorageGetUrlError>> {
     const expiresInSeconds: number = 60 * 60; // 1 hour default
+    // fileName must be decoded (with spaces not %20), not encoded
     const file = this.bucket.file(fileName);
     try {
       const [url] = await file.getSignedUrl({
@@ -73,20 +74,36 @@ export class Bucket extends Storage {
    */
   async get(fileName: string): Promise<Result<FileContent, StorageGetError>> {
     try {
-      const data = await this.bucket.file(this.storageUrl(fileName)).download();
-      const parsed = fileContent.safeParse(data);
-      if (parsed.success) {
-        return {
-          tag: "success",
-          value: parsed.data,
-        };
-      } else {
+      const [data] = await this.bucket.file(fileName).download();
+      try {
+        const parsed = fileContent.safeParse(JSON.parse(data.toString()));
+        if (parsed.success) {
+          return {
+            tag: "success",
+            value: parsed.data,
+          };
+        } else {
+          console.error("Invalid JSON format in file", {
+            fileName,
+            error: parsed.error,
+          });
+          return {
+            tag: "failure",
+            error: new InvalidJSONFormat(parsed.error),
+          };
+        }
+      } catch (jsonErr) {
+        console.error("JSON parse error in file", {
+          fileName,
+          error: jsonErr,
+        });
         return {
           tag: "failure",
-          error: new InvalidJSONFormat(parsed.error),
+          error: new InvalidJSONFormat(jsonErr),
         };
       }
     } catch (e) {
+      console.error("Failed to download file", { fileName, error: e });
       return {
         tag: "failure",
         error: new BucketGetError(e),
@@ -130,7 +147,7 @@ export class Bucket extends Storage {
     uri: string,
     defaultBucket: string,
   ): Result<{ bucket: string; fileName: string }, ParseUriError> {
-    // If it's already a valid filename, use the default bucket
+    // If it's already a valid filename (not a url), use the default bucket
     if (Bucket.isValidFileName(uri)) {
       return {
         tag: "success",
@@ -139,15 +156,19 @@ export class Bucket extends Storage {
     }
 
     try {
-      const url = new URL(uri);
+      const url = new URL(uri); // Note this encodes the URL, so we decode it again before returning.
 
       // Match GCS URL pattern: https://storage.googleapis.com/bucket/file
       if (url.hostname === "storage.googleapis.com") {
         const [_, bucket, ...fileParts] = url.pathname.split("/");
         if (bucket && fileParts.length > 0) {
+          // Returns decoded fileName (with spaces, not %20)
           return {
             tag: "success",
-            value: { bucket, fileName: fileParts.join("/") },
+            value: {
+              bucket,
+              fileName: decodeURIComponent(fileParts.join("/")),
+            },
           };
         }
       }

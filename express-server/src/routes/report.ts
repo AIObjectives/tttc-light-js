@@ -21,23 +21,18 @@ function getBucketAndFileName(
   );
   const parsed = Bucket.parseUri(uri, env.GCLOUD_STORAGE_BUCKET);
   if (parsed.tag === "failure") {
-    console.warn(
-      `Invalid report URI: ${req.params.reportUri}. Allowed buckets: ${env.ALLOWED_GCS_BUCKETS.join(", ")}`,
-    );
+    console.warn(`Invalid report URI: ${req.params.reportUri}`);
     return {
       tag: "failure",
       error: new BucketParseError("Invalid or missing report URI"),
     };
   }
   const { bucket, fileName } = parsed.value;
-  if (
-    !fileName ||
-    !Bucket.isValidFileName(fileName) ||
-    !env.ALLOWED_GCS_BUCKETS.includes(bucket)
-  ) {
+
+  if (!env.ALLOWED_GCS_BUCKETS.includes(bucket)) {
     return {
       tag: "failure",
-      error: new BucketParseError("Invalid or missing report URI"),
+      error: new BucketParseError(`Bucket ${bucket} not in allowed list.`),
     };
   }
   return { tag: "success", value: { bucket, fileName } };
@@ -63,7 +58,10 @@ export async function getReportStatusHandler(req: Request, res: Response) {
       return res.json({ status });
     }
     case "failure":
-      sendError(res, 404, parsed.error.message, "InvalidReportUri");
+      console.error("Invalid or missing report URI", {
+        reportUri: req.params.reportUri,
+      });
+      sendError(res, 404, "Invalid or missing report URI", "InvalidReportUri");
       return;
     default:
       utils.assertNever(parsed);
@@ -89,6 +87,7 @@ export async function getReportDataHandler(req: Request, res: Response) {
         const url = urlResult.value;
         res.json({ url });
       } catch (e) {
+        console.error("Error generating signed URL:", e);
         console.warn(
           `Falling back to public URL for file ${fileName} in bucket ${bucket}`,
         );
@@ -113,7 +112,11 @@ export async function getReportDataHandler(req: Request, res: Response) {
               "FileNotFound",
             );
           }
-        } catch {
+        } catch (err) {
+          console.error("Exception during public URL fallback", {
+            publicUrl,
+            error: err,
+          });
           return sendError(res, 404, "File not found", "FileNotFound");
         }
       }
