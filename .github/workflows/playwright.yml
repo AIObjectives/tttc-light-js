@@ -1,0 +1,53 @@
+name: Playwright Tests
+on:
+  # workflow_run:
+  #   workflows: 
+  #     - "Deploy Express to Cloud Run"
+  #     - "Deploy Next Client to Cloud Run"
+  #     - "Deploy Pyserver to Cloud Run"
+  #   types:
+  #     - completed
+  #   branches: [main]
+  push:
+    branches:
+      - main
+jobs:
+  # wait-for-prerequisites:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       workflow: ["deploy-express-server.yml", "deploy-next-client.yml", "deploy-pyserver.yml"]
+  #   steps:
+  #     - name: Wait for workflow
+  #       uses: fountainhead/action-wait-for-check@v1.1.0
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  #         checkName: ${{ matrix.workflow }}
+  #         ref: ${{ github.sha }}
+  test:
+    # needs: wait-for-prerequisites
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    defaults:
+      run:
+        working-directory: ./e2e
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    # - name: Wait for application
+    #   run: npx wait-on http://localhost:3000 --timeout 6000
+    - name: Run Playwright tests
+      run: npx playwright test
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30

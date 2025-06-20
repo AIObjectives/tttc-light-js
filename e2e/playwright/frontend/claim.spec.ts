@@ -1,20 +1,12 @@
 import { test as base, Locator, expect } from "@playwright/test";
-
-const baseUrl = new URL("http://localhost:3000");
-
-const reportBaseUrl = new URL("/report/", baseUrl);
-
-const testReportUrl = new URL(
-  "https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2Ftest%2520longer%2520report-1740686953925.json",
-  reportBaseUrl,
-);
+import { testUrl } from "./utils/url";
 
 /**
  * Fixture - sets up the claim we want to test
  */
 const test = base.extend<{ claim: Locator }>({
   claim: async ({ page }, use) => {
-    await page.goto(testReportUrl.toString());
+    await page.goto(testUrl.toString());
 
     await page.waitForLoadState("networkidle");
     const firstTopic = page.locator('[data-testid="topic-item"]').first();

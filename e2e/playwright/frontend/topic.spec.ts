@@ -2,18 +2,11 @@ import { test, expect } from "@playwright/test";
 import {
   defaultSubtopicPagination,
   defaultTopicPagination,
-} from '../../../next-client/src/components/report/hooks/useReportState/consts'
-const baseUrl = new URL("http://localhost:3000");
-
-const reportBaseUrl = new URL("/report/", baseUrl);
-
-const testReportUrl = new URL(
-  "https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2Ftest%2520longer%2520report-1740686953925.json",
-  reportBaseUrl,
-);
+} from "../../../next-client/src/components/report/hooks/useReportState/consts";
+import { testUrl } from "./utils/url";
 
 test.beforeEach(async ({ page }) => {
-  await page.goto(testReportUrl.toString());
+  await page.goto(testUrl.toString());
 
   await page.waitForLoadState("networkidle");
 });

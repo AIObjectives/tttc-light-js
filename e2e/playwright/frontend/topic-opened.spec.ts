@@ -2,19 +2,12 @@ import { test as base, expect, Locator } from "@playwright/test";
 import {
   defaultAddTopicPagination,
   defaultTopicPagination,
-} from '../../../next-client/src/components/report/hooks/useReportState/consts'
-const baseUrl = new URL("http://localhost:3000");
-
-const reportBaseUrl = new URL("/report/", baseUrl);
-
-const testReportUrl = new URL(
-  "https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2Ftest%2520longer%2520report-1740686953925.json",
-  reportBaseUrl,
-);
+} from "../../../next-client/src/components/report/hooks/useReportState/consts";
+import { testUrl } from "./utils/url";
 
 const test = base.extend<{ topic: Locator }>({
   topic: async ({ page }, use) => {
-    await page.goto(testReportUrl.toString());
+    await page.goto(testUrl.toString());
 
     await page.waitForLoadState("networkidle");
     const firstTopic = page.locator('[data-testid="topic-item"]').first();
