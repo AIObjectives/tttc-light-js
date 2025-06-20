@@ -1,0 +1,48 @@
+name: Deploy Next Client to Cloud Run - Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Next Client - Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: tttc-light-js
+
+      ####
+      - name: Write .env file for Next Client
+        run: |
+          echo "${{ secrets.ENV_CLIENT_PRODUCTION }}" > next-client/.env
+
+      - name: Build Docker image
+        run: |
+          docker build -t gcr.io/tttc-light-js/t3c-next-client -f next-client/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          gcloud auth configure-docker
+          docker push gcr.io/tttc-light-js/t3c-next-client
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy t3c-next-client \
+            --image gcr.io/tttc-light-js/t3c-next-client \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated
+
+      - name: Remove .env file
+        run: rm -f next-client/.env
