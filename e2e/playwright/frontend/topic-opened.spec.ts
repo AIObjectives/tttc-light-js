@@ -2,7 +2,7 @@ import { test as base, expect, Locator } from "@playwright/test";
 import {
   defaultAddTopicPagination,
   defaultTopicPagination,
-} from "@/components/report/hooks/useReportState/consts";
+} from '../../../next-client/src/components/report/hooks/useReportState/consts'
 const baseUrl = new URL("http://localhost:3000");
 
 const reportBaseUrl = new URL("/report/", baseUrl);
