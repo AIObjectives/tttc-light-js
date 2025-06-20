@@ -6,8 +6,19 @@ on:
       - main
 
 jobs:
+  pre-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: log execution mode
+      run: |
+        if [ "${{ github.event.act }}" = "true" ]; then
+            echo "::notice:: Running locally with act - pyserver deploy skipped"
+          else
+            echo "::notice:: Running in CI - deploying pyserver"
+          fi
   deploy:
     name: Deploy Pyserver
+    if: ${{!github.event.act}}
     runs-on: ubuntu-latest
 
     steps:

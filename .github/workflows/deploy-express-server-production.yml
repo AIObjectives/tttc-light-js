@@ -4,6 +4,16 @@ on:
   workflow_dispatch:
 
 jobs:
+  pre-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: log execution mode
+      run: |
+        if [ "${{ github.event.act }}" = "true" ]; then
+            echo "::notice:: Running locally with act - express server prod deploy skipped"
+          else
+            echo "::notice:: Running in CI - deploying express server to production"
+          fi
   deploy:
     name: Deploy Express Server - Production
     runs-on: ubuntu-latest
