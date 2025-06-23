@@ -56,7 +56,6 @@ export default async function RootLayout({
         <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
       </head>
       <body className={nextTypography}>
-        <script src="index.js"></script>
         <div className="h-screen w-screen">
           <Navbar />
           {children}
