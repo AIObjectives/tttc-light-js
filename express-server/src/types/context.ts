@@ -62,6 +62,7 @@ export const env = z.object({
   //   .transform((numstr) => Number(numstr)),
   REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
   ALLOWED_GCS_BUCKETS: z.string().transform((val) => val.split(",")),
+  REDIS_QUEUE_NAME: z.string().default("pipeline"),
 });
 
 export type Env = z.infer<typeof env>;

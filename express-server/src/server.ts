@@ -31,7 +31,7 @@ const { connection, pipelineQueue: plq } = setupConnection(env);
 export const pipelineQueue = plq;
 
 // This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
-const _ = setupWorkers(connection);
+setupWorkers(connection, env.REDIS_QUEUE_NAME);
 
 const defaultRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
