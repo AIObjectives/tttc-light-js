@@ -22,7 +22,7 @@ export const setupConnection = (env: Env) => {
     exit(1);
   });
 
-  const pipelineQueue = new Queue("pipeline", {
+  const pipelineQueue = new Queue(env.REDIS_QUEUE_NAME, {
     connection,
   });
 

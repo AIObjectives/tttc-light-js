@@ -232,7 +232,7 @@ export default async function create(req: Request, res: Response) {
     res.json(result.value.response);
 
     // Queue the pipeline job in the background
-    pipelineQueue.add("pipeline", result.value.pipelineJob, {
+    pipelineQueue.add("generate-report", result.value.pipelineJob, {
       jobId: result.value.response.filename,
     });
   } catch (e) {

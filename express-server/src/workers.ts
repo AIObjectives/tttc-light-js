@@ -3,9 +3,9 @@ import * as firebase from "./Firebase";
 import Redis from "ioredis";
 import { PipelineJob, pipelineJob } from "./jobs/pipeline";
 
-const setupPipelineWorker = (connection: Redis) => {
+const setupPipelineWorker = (connection: Redis, queueName: string) => {
   const pipeLineWorker = new Worker(
-    "pipeline",
+    queueName,
     async (job: Job<PipelineJob>) => {
       await pipelineJob(job);
     },
@@ -41,5 +41,5 @@ const setupPipelineWorker = (connection: Redis) => {
   return pipeLineWorker;
 };
 
-export const setupWorkers = (connection: Redis) =>
-  setupPipelineWorker(connection);
+export const setupWorkers = (connection: Redis, queueName: string) =>
+  setupPipelineWorker(connection, queueName);
