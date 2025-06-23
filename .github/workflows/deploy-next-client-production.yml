@@ -2,10 +2,22 @@ name: Deploy Next Client to Cloud Run - Production
 
 on:
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
+  pre-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: log execution mode
+      run: |
+        if [ "${{ github.event.act }}" = "true" ]; then
+            echo "::notice:: Running locally with act - next client prod deploy skipped"
+          else
+            echo "::notice:: Running in CI - deploying next client prod"
+          fi
   deploy:
     name: Deploy Next Client - Production
+    if: ${{!github.event.act}}
     runs-on: ubuntu-latest
 
     steps:
