@@ -10,13 +10,13 @@ jobs:
   pre-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: log execution mode
-      run: |
-        if [ "${{ github.event.act }}" = "true" ]; then
-            echo "::notice:: Running locally with act - express server deploy skipped"
-          else
-            echo "::notice:: Running in CI - deploying express server"
-          fi
+      - name: log execution mode
+        run: |
+          if [ "${{ github.event.act }}" = "true" ]; then
+              echo "::notice:: Running locally with act - express server deploy skipped"
+            else
+              echo "::notice:: Running in CI - deploying express server"
+            fi
   deploy:
     name: Deploy Express Server
     if: ${{!github.event.act}}
