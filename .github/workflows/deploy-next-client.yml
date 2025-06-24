@@ -9,13 +9,13 @@ jobs:
   pre-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: log execution mode
-      run: |
-        if [ "${{ github.event.act }}" = "true" ]; then
-            echo "::notice:: Running locally with act - next client deploy skipped"
-          else
-            echo "::notice:: Running in CI - deploying next client"
-          fi
+      - name: log execution mode
+        run: |
+          if [ "${{ github.event.act }}" = "true" ]; then
+              echo "::notice:: Running locally with act - next client deploy skipped"
+            else
+              echo "::notice:: Running in CI - deploying next client"
+            fi
   deploy:
     name: Deploy
     if: ${{!github.event.act}}

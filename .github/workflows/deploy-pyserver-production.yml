@@ -7,13 +7,13 @@ jobs:
   pre-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: log execution mode
-      run: |
-        if [ "${{ github.event.act }}" = "true" ]; then
-            echo "::notice:: Running locally with act - pyserver prod deploy skipped"
-          else
-            echo "::notice:: Running in CI - deploying pyserver prod"
-          fi
+      - name: log execution mode
+        run: |
+          if [ "${{ github.event.act }}" = "true" ]; then
+              echo "::notice:: Running locally with act - pyserver prod deploy skipped"
+            else
+              echo "::notice:: Running in CI - deploying pyserver prod"
+            fi
   deploy:
     name: Deploy Pyserver - Production
     if: ${{!github.event.act}}
