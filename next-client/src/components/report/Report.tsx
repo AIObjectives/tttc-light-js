@@ -16,6 +16,8 @@ import {
   Button,
   CardContent,
   Separator,
+  Sheet,
+  SheetContent,
   TextIcon,
   ToggleText,
 } from "../elements";
@@ -32,6 +34,11 @@ import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useHashChange } from "@/lib/hooks/useHashChange";
 import { BarChart, BarChartItemType } from "../barchart/Barchart";
 import { toast } from "sonner";
+import { isObject } from "effect/Predicate";
+import {
+  OutlineStateAction,
+  useOutlineState,
+} from "../outline/hooks/useOutlineState";
 
 const ToolBarFrame = ({
   children,
@@ -50,10 +57,14 @@ function ReportLayout({
   Outline,
   Report,
   ToolBar,
+  isMobileOutlineOpen,
+  setIsMobileOutlineOpen,
 }: {
   Outline: React.ReactNode;
   Report: React.ReactNode;
   ToolBar: React.ReactNode;
+  isMobileOutlineOpen: boolean;
+  setIsMobileOutlineOpen: (val: boolean) => void;
 }) {
   return (
     <Row className="flex w-full min-h-screen">
@@ -64,6 +75,12 @@ function ReportLayout({
         </ToolBarFrame>
         <div className="sticky top-20">{Outline}</div>
       </Col>
+
+      <Sheet open={isMobileOutlineOpen} onOpenChange={setIsMobileOutlineOpen}>
+        <SheetContent side={"left"} className="px-0 pt-4">
+          {Outline}
+        </SheetContent>
+      </Sheet>
 
       {/* Body section */}
       <Col className="flex-grow max-w-[896px] mx-auto w-full">
@@ -152,6 +169,52 @@ function Report({
     dispatch({ type: "open", payload: { id: matchingNode.data.id } });
   }, [hashNav]);
 
+  const [isMobileOutlineOpen, setIsMobileOutlineOpen] =
+    useState<boolean>(false);
+
+  const [outlineState, outlineDispatch] = useOutlineState(state);
+
+  // When Report State dispatch is called, outline state should dispatch some action
+  useReportEffect((action) => {
+    const matchAction = (
+      action: ReportStateAction,
+    ): OutlineStateAction | null => {
+      switch (action.type) {
+        case "open":
+        case "close": {
+          return {
+            type: action.type,
+            payload: action.payload,
+          };
+        }
+        case "toggleTopic": {
+          return {
+            type: "toggle",
+            payload: action.payload,
+          };
+        }
+        case "closeAll":
+        case "openAll": {
+          return {
+            type: action.type,
+          };
+        }
+        case "focus": {
+          return {
+            type: "highlight",
+            payload: action.payload,
+          };
+        }
+        default: {
+          return null;
+        }
+      }
+    };
+    const outlineAction = matchAction(action);
+    if (!outlineAction) return;
+    outlineDispatch(outlineAction);
+  });
+
   return (
     <ReportContext.Provider
       value={{
@@ -165,6 +228,8 @@ function Report({
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
       <div className="mb-36">
         <ReportLayout
+          isMobileOutlineOpen={isMobileOutlineOpen}
+          setIsMobileOutlineOpen={setIsMobileOutlineOpen}
           Report={
             <Col gap={4} className="px-3">
               <ReportHeader
@@ -180,8 +245,16 @@ function Report({
               <Appendix filename={reportData.title} reportUri={reportUri} />
             </Col>
           }
-          ToolBar={<ReportToolbar />}
-          Outline={<Outline reportState={state} reportDispatch={dispatch} />}
+          ToolBar={
+            <ReportToolbar setIsMobileOutlineOpen={setIsMobileOutlineOpen} />
+          }
+          Outline={
+            <Outline
+              outlineState={outlineState}
+              outlineDispatch={outlineDispatch}
+              reportDispatch={dispatch}
+            />
+          }
         />
       </div>
     </ReportContext.Provider>
@@ -191,7 +264,11 @@ function Report({
 /**
  * Bar that follows down screen. Lets user do certain actions.
  */
-export function ReportToolbar() {
+export function ReportToolbar({
+  setIsMobileOutlineOpen,
+}: {
+  setIsMobileOutlineOpen: (val: boolean) => void;
+}) {
   const { dispatch } = useContext(ReportContext);
   return (
     // Sticky keeps it at top of screen when scrolling down.
@@ -200,9 +277,20 @@ export function ReportToolbar() {
       // ! make sure this is the same width as the theme cards.
       className={`p-2 justify-between w-full mx-auto`}
     >
-      <div>
-        <Button variant={"outline"}>Edit</Button>
-      </div>
+      <Row gap={2}>
+        <div>
+          <Button
+            onClick={() => setIsMobileOutlineOpen(true)}
+            className="sm:hidden p-3"
+            variant={"outline"}
+          >
+            <Icons.MobileOutline className="size-4 fill-muted-foreground" />
+          </Button>
+        </div>
+        <div>
+          <Button variant={"outline"}>Edit</Button>
+        </div>
+      </Row>
       <Row gap={2}>
         {/* Close all button */}
         <Button
