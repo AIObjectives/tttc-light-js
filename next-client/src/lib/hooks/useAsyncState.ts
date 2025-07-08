@@ -57,9 +57,9 @@ function asyncReducer<T, E>(
   }
 }
 
-export function useAsyncState<T, E>(
-  func: (arg: unknown) => Promise<Result<T, E>>,
-  dep: unknown,
+export function useAsyncState<T, E, Params>(
+  func: (arg: Params) => Promise<Result<T, E>>,
+  dep: Params | undefined,
 ) {
   const [state, dispatch] = useReducer(asyncReducer<T, E>, {
     isLoading: false,

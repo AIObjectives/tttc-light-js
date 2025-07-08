@@ -9,25 +9,32 @@
 
 import { AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
 import Papa from "papaparse";
-import { failure, Result, success } from "tttc-common/functional-utils";
 import * as schema from "tttc-common/schema";
-import { z, SafeParseReturnType } from "zod";
+import { z } from "zod";
+import {
+  failure,
+  success,
+  Result,
+  flatMapResult,
+} from "tttc-common/functional-utils";
 
 /**
  * Shape of error that can be returned by useParseCSV. Use this to build specific errors
  */
-const csvError = (tag: string) =>
+const csvError = <T extends string>(tag: T) =>
   z.object({ tag: z.literal(tag), message: z.string().optional() });
 
 /**
  * Zod error - row does not match intended shape.
  */
-const badFormatCsv = csvError("Poorly formatted CSV");
+const badFormatCsv = csvError("Poorly formatted CSV" as const);
+
+type BadFormatCSV = z.infer<typeof badFormatCsv>;
 
 /**
  * PapaParse threw an error trying to parse the file.
  */
-const brokenFile = csvError("Broken file");
+const brokenFile = csvError("Broken file" as const);
 
 type BrokenFileError = z.infer<typeof brokenFile>;
 
@@ -48,25 +55,16 @@ type CSVErrors = z.infer<typeof CsvErrors>;
 /**
  * ! Temporary for alpha - limit size of file
  */
-const sizeCheck = (buffer: ArrayBuffer): ArrayBuffer | SizeError => {
+const sizeCheck = (buffer: ArrayBuffer): Result<ArrayBuffer, SizeError> => {
   const kiloByte = 1024;
   // TODO: configure devprod filesize flag
   const maxSize = 150 * kiloByte;
   if (buffer.byteLength > maxSize) {
-    return sizeError.parse({ tag: "Size Error" });
+    return failure({ tag: "Size Error" });
   } else {
-    return buffer;
+    return success(buffer);
   }
 };
-
-/**
- * Takes a CSV buffer and returns it parsed. Can return data or error.
- */
-const papaParse = (buffer: ArrayBuffer): Papa.ParseResult<unknown> =>
-  Papa.parse(Buffer.from(buffer).toString(), {
-    header: true,
-    skipEmptyLines: true,
-  });
 
 /**
  * Helper function concating all the PapaParse errors
@@ -80,91 +78,57 @@ const formatPapaParseErrors = (errors: Papa.ParseError[]) =>
     });
 
 /**
- * Unwraps Data or CSVError from Papa.ParseResult.
+ * Takes a CSV buffer and returns it parsed. Can return data or error.
  */
-const unwrapPapaParse = (
-  parseResult: Papa.ParseResult<unknown>,
-): unknown | BrokenFileError =>
-  parseResult.errors.length > 0
-    ? { tag: "Broken file", message: formatPapaParseErrors(parseResult.errors) }
-    : parseResult.data;
-
-/**
- * Unwraps Data or CSVError from Zod parser.
- */
-const unwrapZodParse =
-  <Input, Output>(errorType: CSVErrors) =>
-  (parseResult: SafeParseReturnType<Input, Output>): Output | CSVErrors =>
-    parseResult.success
-      ? (parseResult.data as Output)
-      : { ...errorType, message: parseResult.error.message };
-
-/**
- * If an error has happened previously in the pipeline, short-circuit.
- */
-const pipe =
-  <Data, Returns, Error extends CSVErrors>(cb: (data: Data) => Returns) =>
-  (res: Data | Error) =>
-    CsvErrors.safeParse(res).success ? (res as Error) : cb(res as Data);
-
-/**
- * Pipeline for parsing CSV. Returns either some data or an error
- */
-const parseCSV = async (file: File): Promise<unknown | BrokenFileError> =>
-  // file.arrayBuffer().then(sizeCheck).then(papaParse).then(unwrapPapaParse);
-  file
-    .arrayBuffer()
-    .then(sizeCheck)
-    .then((bufOrErr) => {
-      const isError = sizeError.safeParse(bufOrErr);
-      if (isError.success) return isError.data as SizeError;
-      else return unwrapPapaParse(papaParse(bufOrErr as ArrayBuffer));
-    });
-
-/**
- * Parse and then Zod-parse the data to ensure its the correct shape.
- */
-const parseDataCsv = async (
-  file: File,
-): Promise<schema.SourceRow[] | CSVErrors> =>
-  parseCSV(file)
-    .then(
-      pipe(
-        schema.sourceRow.array().nonempty({ message: "Could not parse CSV" })
-          .safeParse,
-      ),
-    )
-    .then(pipe(unwrapZodParse({ tag: "Poorly formatted CSV" })));
-
-const asyncStateCsv = async (
-  file: File,
-): Promise<Result<schema.SourceRow[], CSVErrors>> =>
-  parseDataCsv(file).then((maybe) => {
-    const isError = CsvErrors.safeParse(maybe);
-    if (isError.success) {
-      return failure(isError.data);
-    } else {
-      return success(maybe as schema.SourceRow[]);
-    }
+const papaParse = (buffer: ArrayBuffer): Result<unknown, BrokenFileError> => {
+  const papares = Papa.parse(Buffer.from(buffer).toString(), {
+    header: true,
+    skipEmptyLines: true,
   });
 
-/**
- * Hook for parsing CSV data.
- */
-// export function useParseCsv(files: FileList | undefined):NotStarted|IsLoading|FinishedLoading<schema.SourceRow[], CSVErrors> {
-//   const input = files?.item(0) || undefined;
-//   if (input === undefined) return { isLoading: false, result: undefined };
-//   const blah = useAsyncState(
-//     async () => parseDataCsv(input),
-//     [input?.name, input?.lastModified],
-//     schema.sourceRow.array(),
-//   );
-//   return blah
-// }
+  if (papares.errors.length > 0) {
+    return failure({
+      tag: "Broken file",
+      message: formatPapaParseErrors(papares.errors),
+    });
+  } else {
+    return success(papares.data);
+  }
+};
 
+/**
+ * Checks to make sure that the CSV is in the format we want
+ */
+const correctlyFormattedCsv = (
+  data: unknown,
+): Result<schema.SourceRow[], BadFormatCSV> => {
+  const r = schema.sourceRow
+    .array()
+    .nonempty({ message: "Could not parse CSV" })
+    .safeParse(data);
+  if (r.success) return success(r.data);
+  else
+    return failure({ tag: "Poorly formatted CSV", message: r.error.message });
+};
+
+/**
+ * Takes raw file data and performs all the parsing / checks we need.
+ */
+const parseCsv = async (file: File) => {
+  const buffer = await file.arrayBuffer();
+  const isCorrectSize = sizeCheck(buffer);
+  const csv = flatMapResult(isCorrectSize, (buf) => papaParse(buf));
+  const correctFormat = flatMapResult(csv, (d) => correctlyFormattedCsv(d));
+  return correctFormat;
+};
+
+/**
+ * Hook for parsing csv files for creating reports - returns an async state
+ */
 export function useParseCsv(
   files: FileList | undefined,
 ): AsyncState<schema.SourceRow[], CSVErrors> {
   const file = files?.item(0) || undefined;
-  return useAsyncState(asyncStateCsv, file);
+
+  return useAsyncState(parseCsv, file);
 }

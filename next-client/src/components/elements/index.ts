@@ -19,3 +19,4 @@ export * from "./drawer/Drawer";
 export * from "./scrollarea/ScrollArea";
 export * from "./sheet/Sheet";
 export * from "./switch/Switch";
+export * from "./alertDialog/AlertDialog";
