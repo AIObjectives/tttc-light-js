@@ -7,7 +7,7 @@ import {
 } from "./actionStream";
 import { actionStreamReducer } from "./actionStreamReducer";
 import { TaggedTopicPath, TaggedSubtopicPath, OutlineState } from "./types";
-import { pipe, Record, Either, Array, flow } from "effect";
+import { pipe, Record, Either, Array, flow, Option } from "effect";
 
 //  ********************************
 //  * Reducer *
@@ -71,6 +71,9 @@ export function createReducer(
         return pipe(
           idMap,
           Record.get(id),
+          Option.flatMap((val) =>
+            val.type === "subtopic" ? Option.none() : Option.some(val),
+          ),
           Either.fromOption(() => "Could not find path for action: " + id),
           Either.map(
             flow(
@@ -95,6 +98,9 @@ export function createReducer(
         return pipe(
           idMap,
           Record.get(id),
+          Option.flatMap((val) =>
+            val.type === "subtopic" ? Option.none() : Option.some(val),
+          ),
           Either.fromOption(() => "Could not find path for action: " + id),
           Either.map(
             flow(
