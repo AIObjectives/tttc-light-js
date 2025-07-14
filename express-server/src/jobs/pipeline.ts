@@ -10,7 +10,7 @@ import {
   mapResult,
   sequenceResult,
   success,
-} from "../types/result";
+} from "tttc-common/functional-utils";
 import { CustomError } from "../error";
 import * as Pyserver from "../pipeline/";
 import { randomUUID } from "crypto";

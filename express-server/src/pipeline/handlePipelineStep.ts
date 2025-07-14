@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { flatMapResult, Result } from "../types/result";
+import { flatMapResult, Result } from "tttc-common/functional-utils";
 import { FetchError, InvalidResponseDataError } from "./errors";
 
 /**

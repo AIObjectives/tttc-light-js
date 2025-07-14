@@ -7,7 +7,7 @@ import {
   flatMapResult,
   flatMapResultAsync,
   sequenceResult,
-} from "../";
+} from "../result";
 
 const s = success(1) as Result<number, boolean>;
 const f = failure(false) as Result<number, boolean>;
