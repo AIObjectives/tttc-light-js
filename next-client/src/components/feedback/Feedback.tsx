@@ -82,13 +82,13 @@ function FeedbackForm() {
 
     try {
       const tokenResult = await fetchToken(user);
-      if (tokenResult[0] === "error") {
+      if (tokenResult.tag === "failure") {
         toast.error("Authentication failed");
         dispatch({ type: "close" });
         return;
       }
 
-      const token = tokenResult[1];
+      const token = tokenResult.value;
       if (!token) {
         toast.error("Please sign in to submit feedback");
         dispatch({ type: "close" });

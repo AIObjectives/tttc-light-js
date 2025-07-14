@@ -56,14 +56,14 @@ function MyReportsUI({ userId }: { userId: string }) {
         <Spinner />
       </Center>
     );
-  if (result[0] === "error" || user === null)
+  if (result.tag === "failure" || user === null)
     return (
       <Center>
         <p>There was an issue loading your reports</p>
       </Center>
     );
 
-  const reports = result[1];
+  const reports = result.value;
 
   return (
     <div className="justify-items-center">

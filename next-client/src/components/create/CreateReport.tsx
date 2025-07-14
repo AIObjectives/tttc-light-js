@@ -50,6 +50,7 @@ import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { fetchToken } from "@/lib/firebase/getIdToken";
 import { signInWithGoogle } from "@/lib/firebase/auth";
+import { success } from "tttc-common/functional-utils";
 
 function getUserToken() {
   const { user, loading } = useUser();
@@ -60,7 +61,7 @@ function getUserToken() {
 
   return useAsyncState(
     async () => {
-      if (!shouldFetch) return ["data", null] as const;
+      if (!shouldFetch) return success(null);
       return await fetchToken(user);
     },
     shouldFetch ? userId : null, // Only changes when userId changes
@@ -109,15 +110,15 @@ export default function CreateReport() {
       </Center>
     );
 
-  if (result[0] === "error")
+  if (result.tag === "failure")
     return (
       <Center>
         <p>Authentication error. Please try signing in again.</p>
       </Center>
     );
 
-  if (result[0] === "data") {
-    const token = result[1];
+  if (result.tag === "success") {
+    const token = result.value;
     return <CreateReportComponent token={token} />;
   }
 
@@ -404,10 +405,13 @@ function FormDataInput({
 
   useEffect(() => {
     if (!result) return;
-    else if (result[0] === "error") {
-      if (result[1].tag === "Broken file" || result[1].tag === "Size Error") {
+    else if (result.tag === "failure") {
+      if (
+        result.error.tag === "Broken file" ||
+        result.error.tag === "Size Error"
+      ) {
         const description =
-          result[1].tag === "Broken file"
+          result.error.tag === "Broken file"
             ? "File is broken or has no data"
             : "File is too large - 150kb limit";
         toast.error("Error", {
@@ -415,7 +419,7 @@ function FormDataInput({
           position: "top-center",
         });
         handleReset(inputRef);
-      } else if (result[1].tag === "Poorly formatted CSV") {
+      } else if (result.error.tag === "Poorly formatted CSV") {
         setModalOpen(true);
       }
     }
