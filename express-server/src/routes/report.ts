@@ -4,7 +4,7 @@ import * as utils from "tttc-common/utils";
 import { pipelineQueue } from "../server";
 import { Bucket, createStorage } from "../storage";
 import { sendError } from "./sendError";
-import { Result } from "../types/result";
+import { Result } from "tttc-common/functional-utils";
 class BucketParseError extends Error {
   constructor(message: string) {
     super(message);

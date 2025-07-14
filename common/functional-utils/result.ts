@@ -1,7 +1,7 @@
 /**
  * Represents a successful result
  */
-type Success<T> = {
+export type Success<T> = {
   tag: "success";
   value: T;
 };
@@ -9,7 +9,7 @@ type Success<T> = {
 /**
  * Represents some expected failure so we can explicitly handle them.
  */
-type Failure<T> = {
+export type Failure<T> = {
   tag: "failure";
   error: T;
 };

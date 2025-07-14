@@ -6,7 +6,7 @@ import {
 import { CustomError } from "./error";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
-import { Result } from "./types/result";
+import { Result } from "tttc-common/functional-utils";
 import { Env } from "./types/context";
 
 const fileContent = z.union([schema.pipelineOutput, schema.uiReportData]);

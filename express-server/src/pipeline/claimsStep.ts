@@ -4,7 +4,7 @@ import { Env } from "../types/context";
 import { Client, Dispatcher } from "undici";
 import { AbortController } from "abort-controller"; // If needed in your environment
 import { TimeoutError, FetchError, InvalidResponseDataError } from "./errors";
-import { flatMapResult, Result } from "../types/result";
+import { flatMapResult, Result } from "tttc-common/functional-utils";
 
 /**
  * Sends an http request to the pyserver for the claims step

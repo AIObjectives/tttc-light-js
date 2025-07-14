@@ -10,7 +10,7 @@ import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { PipelineJob } from "src/jobs/pipeline";
 import { sendError } from "./sendError";
-import { Result } from "../types/result";
+import { Result } from "tttc-common/functional-utils";
 
 class CreateReportError extends Error {
   constructor(message: string) {

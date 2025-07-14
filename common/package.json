@@ -15,6 +15,10 @@
       "types": "./dist/firebase/index.d.ts",
       "default": "./dist/firebase/index.js"
     },
+    "./functional-utils": {
+      "types": "./dist/functional-utils/index.d.ts",
+      "default": "./dist/functional-utils/index.js"
+    },
     "./morphisms": {
       "types": "./dist/morphisms/index.d.ts",
       "default": "./dist/morphisms/index.js"
