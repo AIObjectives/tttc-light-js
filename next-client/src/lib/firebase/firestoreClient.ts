@@ -18,8 +18,8 @@ import {
   reportRef,
   ReportRef,
 } from "tttc-common/firebase";
-import { AsyncData, AsyncError } from "../hooks/useAsyncState";
 import { FeedbackRequest } from "../types/clientRoutes";
+import { failure, Result, success } from "tttc-common/functional-utils";
 
 const NODE_ENV = z
   .union([z.literal("development"), z.literal("production")])
@@ -33,7 +33,8 @@ const getCollectionName = useGetCollectionName(NODE_ENV);
 export async function getUsersReports(
   db: Firestore,
   userId: string,
-): Promise<AsyncData<ReportRef[]> | AsyncError<Error>> {
+  // ): Promise<AsyncData<ReportRef[]> | AsyncError<Error>> {
+): Promise<Result<ReportRef[], Error>> {
   try {
     const collectionRef = collection(db, getCollectionName("REPORT_REF"));
     const userQuery = query(collectionRef, where("userId", "==", userId));
@@ -45,11 +46,11 @@ export async function getUsersReports(
 
     const reportRefs = reportRef.array().parse(unparsedData);
 
-    return ["data", reportRefs];
+    return success(reportRefs);
   } catch (e) {
     const error =
       e instanceof Error ? e : new Error("Could not get your reports: " + e);
-    return ["error", error];
+    return failure(error);
   }
 }
 

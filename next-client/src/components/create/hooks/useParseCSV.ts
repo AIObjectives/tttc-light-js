@@ -7,16 +7,9 @@
  * There's some somewhat questionable FP standins that would be better if we actually used a full FP library. Go back and redo this in the future if we do.
  */
 
-import {
-  AsyncData,
-  AsyncError,
-  AsyncState,
-  FinishedLoading,
-  IsLoading,
-  NotStarted,
-  useAsyncState,
-} from "@/lib/hooks/useAsyncState";
+import { AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
 import Papa from "papaparse";
+import { failure, Result, success } from "tttc-common/functional-utils";
 import * as schema from "tttc-common/schema";
 import { z, SafeParseReturnType } from "zod";
 
@@ -145,12 +138,14 @@ const parseDataCsv = async (
 
 const asyncStateCsv = async (
   file: File,
-): Promise<AsyncData<schema.SourceRow[]> | AsyncError<CSVErrors>> =>
+): Promise<Result<schema.SourceRow[], CSVErrors>> =>
   parseDataCsv(file).then((maybe) => {
     const isError = CsvErrors.safeParse(maybe);
-    console.log(isError);
-    if (isError.success) return ["error", isError.data];
-    else return ["data", maybe as schema.SourceRow[]];
+    if (isError.success) {
+      return failure(isError.data);
+    } else {
+      return success(maybe as schema.SourceRow[]);
+    }
   });
 
 /**

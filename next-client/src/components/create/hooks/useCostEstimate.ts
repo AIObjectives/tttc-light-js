@@ -41,7 +41,7 @@ export function useCostEstimate(files: FileList | undefined) {
 
   if (isLoading) return "Loading...";
   else if (result === undefined) return "$-.--";
-  else if (result[0] === "error") return "Error...";
+  else if (result.tag === "failure") return "Error...";
 
-  return `$${calcCost(getCharLength(result[1] as schema.SourceRow[])).toFixed(2)}`;
+  return `$${calcCost(getCharLength(result.value as schema.SourceRow[])).toFixed(2)}`;
 }

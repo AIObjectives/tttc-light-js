@@ -13,22 +13,22 @@
  */
 
 import { User } from "firebase/auth";
-import { AsyncData, AsyncError } from "../hooks/useAsyncState";
+import { Result, success, failure } from "tttc-common/functional-utils";
 
 export async function fetchToken(
   user: User | null,
-): Promise<AsyncData<string | null> | AsyncError<Error>> {
+): Promise<Result<string | null, Error>> {
   try {
     if (!user) {
-      return ["data", null];
+      return success(null);
     }
 
     const token = await user.getIdToken();
-    return ["data", token];
+    return success(token);
   } catch (error) {
     console.error("Failed to get ID token:", error);
     const err =
       error instanceof Error ? error : new Error("Failed to get token");
-    return ["error", err];
+    return failure(err);
   }
 }
