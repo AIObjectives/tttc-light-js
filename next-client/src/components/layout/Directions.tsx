@@ -53,10 +53,10 @@ const getRowGap = (n: number) => {
 
 const getColGap = (n: number) => {
   if (n > 10) {
-    throw new Error("Invalid row gap");
+    throw new Error("Invalid col gap");
   } else {
     const s = n as keyof typeof classDictCol;
-    return classDictRow[s];
+    return classDictCol[s];
   }
 };
 
