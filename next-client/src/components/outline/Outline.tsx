@@ -10,8 +10,9 @@ import {
   OutlineTopicNode,
   OutlineSubtopicNode,
   OutlineStateAction,
+  OutlineState,
 } from "./hooks/useOutlineState";
-import { ReportState, ReportStateAction } from "../report/hooks/useReportState";
+import { ReportStateAction } from "../report/hooks/useReportState";
 
 type OutlineContextType = {
   dispatch: Dispatch<OutlineStateAction>;
@@ -24,68 +25,26 @@ const OutlineContext = createContext<OutlineContextType>({
 const outlineSpacing = 2;
 
 function Outline({
-  reportState,
+  outlineState,
+  outlineDispatch,
   reportDispatch,
 }: {
-  reportState: ReportState;
+  outlineState: OutlineState;
+  outlineDispatch: Dispatch<OutlineStateAction>;
   reportDispatch: Dispatch<ReportStateAction>;
 }) {
-  // State management for outline
-  const [state, dispatch] = useOutlineState(reportState);
-
-  const { useReportEffect, setScrollTo } = useContext(ReportContext);
-
-  // When Report State dispatch is called, outline state should dispatch some action
-  useReportEffect((action) => {
-    const matchAction = (
-      action: ReportStateAction,
-    ): OutlineStateAction | null => {
-      switch (action.type) {
-        case "open":
-        case "close": {
-          return {
-            type: action.type,
-            payload: action.payload,
-          };
-        }
-        case "toggleTopic": {
-          return {
-            type: "toggle",
-            payload: action.payload,
-          };
-        }
-        case "closeAll":
-        case "openAll": {
-          return {
-            type: action.type,
-          };
-        }
-        case "focus": {
-          return {
-            type: "highlight",
-            payload: action.payload,
-          };
-        }
-        default: {
-          return null;
-        }
-      }
-    };
-    const outlineAction = matchAction(action);
-    if (!outlineAction) return;
-    dispatch(outlineAction);
-  });
+  const { setScrollTo } = useContext(ReportContext);
 
   return (
-    <OutlineContext.Provider value={{ dispatch }}>
+    <OutlineContext.Provider value={{ dispatch: outlineDispatch }}>
       <Col gap={2} className="h-full">
         {/* Top icon */}
-        <TextIcon icon={<Icons.Outline size={16} />} className="pl-5">
+        <TextIcon icon={<Icons.Outline size={16} />} className="pl-7">
           Outline
         </TextIcon>
         {/* Scrolly part */}
         <Col gap={outlineSpacing} className="overflow-y-scroll no-scrollbar">
-          {state.tree.map((node) => (
+          {outlineState.tree.map((node) => (
             <OutlineItem
               key={node.id}
               node={node}

@@ -25,11 +25,13 @@ import ChevronRight16SVG from "./ChevronRight16Svg";
 import ResponseSvg from "./ResponseSvg";
 import LightbulbSvg from "./LightbulbSvg";
 import XSVG from "./XSvg";
+import X2SVG from "./X2Svg";
 import QuoteBubbleSVG from "./QuoteBubbleSvg";
 import ResetSVG from "./Reset";
 import InfoSvg from "./InfoSvg";
 import LogoSvg from "./LogoSvg";
 import TTTC_SVG from "./TTTC";
+import MobileOutlineSvg from "./MobileOutlineSvg";
 
 const Icons = () => <></>;
 
@@ -95,6 +97,12 @@ Icons.Response = (props: { className?: string }) => <ResponseSvg {...props} />;
 
 Icons.X = (props: { className?: string }) => <XSVG {...props} />;
 
+Icons.X2 = (props: { className?: string }) => <X2SVG {...props} />;
+
 Icons.Reset = (props: { className?: string }) => <ResetSVG {...props} />;
+
+Icons.MobileOutline = (props: { className?: string }) => (
+  <MobileOutlineSvg {...props} />
+);
 
 export default Icons;
