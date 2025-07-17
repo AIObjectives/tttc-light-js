@@ -59,7 +59,7 @@ export type ReportStateAction =
   | ReportStateActionsWithMessagePayloads;
 
 export function createPathMapReducer(
-  idMap: Record<string, TopicPath | SubtopicPath | ClaimPath>,
+  idMap: Record<string, TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath>,
 ) {
   return function (state: ReportState, action: ReportStateAction): ReportState {
     switch (action.type) {
@@ -100,6 +100,9 @@ export function createPathMapReducer(
           idMap,
           // Option Path
           Record.get(id),
+          Option.flatMap((val) =>
+            val.type === "topic" ? Option.some(val) : Option.none(),
+          ),
           // Either Path
           Either.fromOption(() => "Could not find path"),
           Either.map(
@@ -185,6 +188,11 @@ export function createPathMapReducer(
         return pipe(
           idMap,
           Record.get(id),
+          Option.flatMap((val) =>
+            val.type === "topic" || val.type === "subtopic"
+              ? Option.some(val)
+              : Option.none(),
+          ),
           Either.fromOption(
             () => "There was an error in finding the topic/subtopic to expand.",
           ),

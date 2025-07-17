@@ -1,5 +1,5 @@
 import * as React from "react";
-const SvgComponent = (props) => (
+const SvgComponent = (props: React.SVGProps<SVGPathElement>) => (
   <svg
     width="24"
     height="24"

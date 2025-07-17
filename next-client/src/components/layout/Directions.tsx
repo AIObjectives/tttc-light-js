@@ -42,6 +42,24 @@ const classDictCol = {
   10: "gap-y-10",
 };
 
+const getRowGap = (n: number) => {
+  if (n > 10) {
+    throw new Error("Invalid row gap");
+  } else {
+    const s = n as keyof typeof classDictRow;
+    return classDictRow[s];
+  }
+};
+
+const getColGap = (n: number) => {
+  if (n > 10) {
+    throw new Error("Invalid row gap");
+  } else {
+    const s = n as keyof typeof classDictCol;
+    return classDictRow[s];
+  }
+};
+
 const Row = forwardRef<HTMLDivElement, DirectionProps>(function Row(
   { children, className, gap = 0, ...props }: DirectionProps,
   ref,
@@ -50,7 +68,7 @@ const Row = forwardRef<HTMLDivElement, DirectionProps>(function Row(
     <div
       {...props}
       ref={ref}
-      className={`flex flex-row ${classDictRow[gap]} ${className}`}
+      className={`flex flex-row ${getRowGap(gap)} ${className}`}
     >
       {children}
     </div>
@@ -65,7 +83,7 @@ const Col = forwardRef<HTMLDivElement, DirectionProps>(function Col(
     <div
       {...props}
       ref={ref}
-      className={`flex flex-col ${classDictCol[gap]} ${className}`}
+      className={`flex flex-col ${getColGap(gap)} ${className}`}
     >
       {children}
     </div>
