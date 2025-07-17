@@ -1,10 +1,14 @@
 "use client";
-import React, { useEffect, useState, useRef, ChangeEvent, RefObject } from "react";
-import {
-  CustomizePromptSection,
-} from "./FormHelpers";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  ChangeEvent,
+  RefObject,
+} from "react";
+import { CustomizePromptSection } from "./FormHelpers";
 import { PoorlyFormattedModal } from "./Modals";
-import {  FormItemState } from "../hooks/useFormState";
+import { FormItemState } from "../hooks/useFormState";
 import { Col, Row } from "@/components/layout";
 import { Button, Input, Separator, Switch } from "@/components/elements";
 import { useCostEstimate } from "../hooks/useCostEstimate";
@@ -12,7 +16,6 @@ import { cn } from "@/lib/utils/shadcn";
 import { useParseCsv } from "../hooks/useParseCSV";
 import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
 import { toast } from "sonner";
-
 
 export const FormHeader = () => (
   <Col gap={3}>
@@ -127,7 +130,6 @@ export const FormDescription = ({
     </Col>
   );
 };
-
 
 export function FormDataInput({
   files,
@@ -344,7 +346,6 @@ const CustomizePrompts = ({
   );
 };
 
-
 export const EnableResearchFeatures = ({
   show,
   cruxesEnabled,
@@ -478,5 +479,3 @@ export function TermsAndConditions() {
     </div>
   );
 }
-
-
