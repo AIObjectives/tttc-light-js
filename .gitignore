@@ -16,3 +16,7 @@ __pycache__
 */tsconfig.tsbuildinfo
 playwright-report
 test-results
+CLAUDE.md
+AGENT.md
+AGENTS.md
+GEMINI.md
