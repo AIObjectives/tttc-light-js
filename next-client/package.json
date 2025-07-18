@@ -48,7 +48,6 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",
-    "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-avatar": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.6",
@@ -79,7 +78,6 @@
     "prettier": "^3.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.53.2",
     "react-merge-refs": "^2.1.1",
     "react-plotly.js": "^2.6.0",
     "sonner": "^1.5.0",
