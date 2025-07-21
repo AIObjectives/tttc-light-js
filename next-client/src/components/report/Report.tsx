@@ -319,9 +319,9 @@ export function ReportToolbar({
             )}
           </Button>
         </div>
-        <div>
+        {/* <div>
           <Button variant={"outline"}>Edit</Button>
-        </div>
+        </div> */}
       </Row>
       <Row gap={2}>
         {/* Close all button */}
