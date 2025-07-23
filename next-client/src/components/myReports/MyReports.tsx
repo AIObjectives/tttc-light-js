@@ -18,7 +18,7 @@ interface MyReportsProps {
 
 export default function MyReports({ reports }: MyReportsProps) {
   return (
-    <Col gap={8}>
+    <Col gap={8} className="items-center">
       <YourReportsHeader />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px]">
         {reports.map((reportdata) => (
