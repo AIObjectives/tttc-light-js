@@ -13,6 +13,8 @@ import {
 import Link from "next/link";
 import { useUser } from "@/lib/hooks/getUser";
 import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
+import { logAuthEvent } from "@/lib/firebase/authEvents";
+import { logger } from "tttc-common/logger";
 
 const getInitials = (name: string) =>
   name
@@ -25,17 +27,28 @@ export default function LoginButton() {
 
   const handleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      logger.debug("Sign in button clicked");
+      const result = await signInWithGoogle();
+      logger.info("Sign in successful", result.user);
+
+      // Log signin event to server
+      await logAuthEvent("signin", result.user);
     } catch (error) {
-      console.error("Sign in failed:", error);
+      logger.error("Sign in failed", error);
     }
   };
 
   const handleSignOut = async () => {
     try {
+      logger.debug("Sign out button clicked", user);
+
+      // Log signout event to server (before actually signing out)
+      await logAuthEvent("signout");
+
       await signOut();
+      logger.info("Sign out successful");
     } catch (error) {
-      console.error("Sign out failed:", error);
+      logger.error("Sign out failed", error);
     }
   };
 
