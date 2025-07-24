@@ -14,6 +14,7 @@
 
 import { User } from "firebase/auth";
 import { Result, success, failure } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
 
 export async function fetchToken(
   user: User | null,
@@ -26,7 +27,7 @@ export async function fetchToken(
     const token = await user.getIdToken();
     return success(token);
   } catch (error) {
-    console.error("Failed to get ID token:", error);
+    logger.error("Failed to get ID token:", error);
     const err =
       error instanceof Error ? error : new Error("Failed to get token");
     return failure(err);
