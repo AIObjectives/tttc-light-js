@@ -23,6 +23,7 @@
     "./apiPyserver/*",
     "./firebase/*",
     "./functional-utils/*",
+    "./logger/*",
     "./morphisms/**/*",
     "./prompts/*",
     "./schema/*",

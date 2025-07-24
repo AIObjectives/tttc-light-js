@@ -11,6 +11,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { PipelineJob } from "src/jobs/pipeline";
 import { sendError } from "./sendError";
 import { Result } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
 
 class CreateReportError extends Error {
   constructor(message: string) {
@@ -138,6 +139,23 @@ async function createNewReport(
   const decodedUser: DecodedIdToken | null = firebaseAuthToken
     ? await firebase.verifyUser(firebaseAuthToken)
     : null;
+
+  logger.info("EXPRESS CREATE: Authentication result", decodedUser);
+
+  if (decodedUser) {
+    logger.info("EXPRESS CREATE: Calling ensureUserDocument", decodedUser.uid);
+    await firebase.ensureUserDocument(
+      decodedUser.uid,
+      decodedUser.email || null,
+      decodedUser.name || null,
+    );
+    logger.info(
+      "EXPRESS CREATE: ensureUserDocument completed",
+      decodedUser.uid,
+    );
+  } else {
+    logger.info("EXPRESS CREATE: No decodedUser, skipping ensureUserDocument");
+  }
   // add job to firebase for easy reference
   const maybeFirebaseJobId = decodedUser
     ? await firebase.addReportJob({

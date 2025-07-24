@@ -51,10 +51,37 @@ export type ReportJob = z.infer<typeof reportJob>;
 
 export type JobStatus = ReportJob["status"];
 
+export const userDocument = z.object({
+  firebaseUid: z.string(),
+  email: z.string().email(),
+  // DisplayName is nullable because users may not have set a display name
+  displayName: z.string().nullable(),
+  isValid: z.boolean(),
+  isWaitlistApproved: z.boolean(),
+  roles: z.array(z.string()),
+  createdAt: z.preprocess(
+    (arg) =>
+      firebaseTimestamp.safeParse(arg).success
+        ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+        : arg,
+    z.date(),
+  ),
+  lastLoginAt: z.preprocess(
+    (arg) =>
+      firebaseTimestamp.safeParse(arg).success
+        ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+        : arg,
+    z.date(),
+  ),
+});
+
+export type UserDocument = z.infer<typeof userDocument>;
+
 const COLLECTIONS = {
   REPORT_REF: "reportRef",
   REPORT_JOB: "reportJob",
   FEEDBACK: "feedback",
+  USERS: "users",
 } as const;
 
 export const JOB_STATUS = {
