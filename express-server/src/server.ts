@@ -3,6 +3,9 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import create from "./routes/create";
+import ensureUser from "./routes/ensureUser";
+import feedback from "./routes/feedback";
+import authEvents from "./routes/authEvents";
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
 import { setupWorkers } from "./workers";
@@ -48,6 +51,21 @@ const defaultRateLimiter = rateLimit({
  * Creates report
  */
 app.post("/create", defaultRateLimiter, create);
+
+/**
+ * Ensures user document exists in Firestore
+ */
+app.post("/ensure-user", defaultRateLimiter, ensureUser);
+
+/**
+ * Submits user feedback
+ */
+app.post("/feedback", defaultRateLimiter, feedback);
+
+/**
+ * Logs authentication events (signin/signout)
+ */
+app.post("/auth-events", defaultRateLimiter, authEvents);
 
 /**
  * Gets a report

@@ -19,6 +19,10 @@
       "types": "./dist/functional-utils/index.d.ts",
       "default": "./dist/functional-utils/index.js"
     },
+    "./logger": {
+      "types": "./dist/logger/index.d.ts",
+      "default": "./dist/logger/index.js"
+    },
     "./morphisms": {
       "types": "./dist/morphisms/index.d.ts",
       "default": "./dist/morphisms/index.js"
