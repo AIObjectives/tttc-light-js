@@ -55,8 +55,8 @@ export function QuoteIcon({ num }: { num: number }) {
       gap={1}
       className="px-2 py-[2px] border rounded-sm min-w-fit items-center"
     >
-      <Icons.QuoteBubble className="fill-primary" />
-      <p className="p2 text-primary">{num}</p>
+      <Icons.QuoteBubble className="fill-muted-foreground" />
+      <p className="p2 text-muted-foreground">{num}</p>
     </Row>
   );
 }
