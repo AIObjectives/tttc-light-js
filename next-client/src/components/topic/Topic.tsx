@@ -203,22 +203,22 @@ export function SubtopicList({
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
   return (
-    <TextIcon
-      className="inline line-clamp-2 leading-6 flex-grow"
-      icon={<Icons.Topic className="inline " />}
-    >
-      {subtopics.length} subtopics
-      {"   "}
-      {subtopics.map((subtopic, i) => (
-        <SubtopicListItem
-          key={subtopic.id}
-          subtopic={subtopic}
-          withComma={i !== subtopics.length - 1}
-          onMouseOver={() => onMouseOver(subtopic.id)}
-          onMouseOut={() => onMouseExit(subtopic.id)}
-        />
-      ))}
-    </TextIcon>
+    <div className="p2 text-muted-foreground flex gap-2 items-center line-clamp-2 leading-6 flex-grow">
+      <Icons.Topic className="inline " />
+      <span>
+        {subtopics.length} subtopics
+        {"   "}
+        {subtopics.map((subtopic, i) => (
+          <SubtopicListItem
+            key={subtopic.id}
+            subtopic={subtopic}
+            withComma={i !== subtopics.length - 1}
+            onMouseOver={() => onMouseOver(subtopic.id)}
+            onMouseOut={() => onMouseExit(subtopic.id)}
+          />
+        ))}
+      </span>
+    </div>
   );
 }
 
