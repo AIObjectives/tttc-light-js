@@ -9,7 +9,7 @@ function TextIcon({
   return (
     <p
       className={cn(
-        "p2 text-muted-foreground flex gap-2 items-center ",
+        "p2 text-muted-foreground flex gap-[6px] items-center",
         className,
       )}
     >

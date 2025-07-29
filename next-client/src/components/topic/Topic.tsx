@@ -91,26 +91,14 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
       <CardTitle className="self-center flex-grow" data-testid="topic-title">
         <a id={`${title}`}>{title}</a>
       </CardTitle>
-      {/* <TextIcon
-        icon={
-          // <div>
-          <Icons.Claim />
-          // </div>
-        }
-      >
-        {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
-      </TextIcon> */}
-      <Row
-        gap={2}
-        className="items-center text-muted-foreground fill-muted-foreground"
-      >
+      <div className="flex flex-row items-center text-muted-foreground fill-muted-foreground gap-[6px]">
         <div>
           <Icons.Claim className="h-4 w-4" />
         </div>
         <p className="p2 text-muted-foreground flex gap-2 items-center ">
           {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
         </p>
-      </Row>
+      </div>
       {button}
     </Row>
   );
