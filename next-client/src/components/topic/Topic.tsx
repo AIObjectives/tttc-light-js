@@ -191,45 +191,23 @@ export function SubtopicList({
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
 
-  const Title = () => (
-    <Row gap={1}>
-      <Icons.Topic className="self-center" />
-      <p className="p2 leading-6">{subtopics.length} subtopics</p>
-    </Row>
-  );
-
   return (
-    // <div className="p2 text-muted-foreground flex gap-2 items-center line-clamp-2 leading-6 flex-grow">
-    //   <span>
-    //     <Icons.Topic className="inline mr-[6px]" />
-    //     {subtopics.length} subtopics
-    //     {"   "}
-    //     {subtopics.map((subtopic, i) => (
-    //       <SubtopicListItem
-    //         key={subtopic.id}
-    //         subtopic={subtopic}
-    //         withComma={i !== subtopics.length - 1}
-    //         onMouseOver={() => onMouseOver(subtopic.id)}
-    //         onMouseOut={() => onMouseExit(subtopic.id)}
-    //       />
-    //     ))}
-    //   </span>
-    // </div>
-    <Row
-      gap={2}
-      className="p2 text-muted-foreground items-center line-clamp-2 leading-6 flex-grow flex-wrap"
-    >
-      <Title />
-      {subtopics.map((subtopic, i) => (
-        <SubtopicListItem
-          key={subtopic.id}
-          subtopic={subtopic}
-          withComma={i !== subtopics.length - 1}
-          onMouseOver={() => onMouseOver(subtopic.id)}
-          onMouseOut={() => onMouseExit(subtopic.id)}
-        />
-      ))}
-    </Row>
+    <div className="flex items-center flex-grow">
+      <span className="line-clamp-2 gap-2 leading-6 p2 text-muted-foreground">
+        <Icons.Topic className="inline mr-[6px]" />
+        {subtopics.length} subtopics
+        {"   "}
+        {subtopics.map((subtopic, i) => (
+          <SubtopicListItem
+            key={subtopic.id}
+            subtopic={subtopic}
+            withComma={i !== subtopics.length - 1}
+            onMouseOver={() => onMouseOver(subtopic.id)}
+            onMouseOut={() => onMouseExit(subtopic.id)}
+          />
+        ))}
+      </span>
+    </div>
   );
 }
 
@@ -261,7 +239,7 @@ export function SubtopicListItem({
           <span className="link" data-testid={"subtopic-list-item"}>
             {subtopic.title}
           </span>
-          {withComma ? ",   " : ""}
+          {withComma ? `,\u00A0\u00A0` : ""}
         </span>
       </HoverCardTrigger>
       <HoverCardContent>
