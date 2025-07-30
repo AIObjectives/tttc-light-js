@@ -1,10 +1,8 @@
 "use client";
 
-import useOutsideClick from "@/lib/hooks/useOutsideClick";
 import React, { useRef, useState } from "react";
 import * as schema from "tttc-common/schema";
 import {
-  Button,
   Drawer,
   DrawerContent,
   DrawerHeader,
@@ -48,33 +46,61 @@ function HoverQuoteCard({
   claim,
   className,
 }: React.PropsWithChildren<{ claim: schema.Claim; className?: string }>) {
-  const buttonRef = useRef(null);
-  const [state, setState] = useState<boolean>(false);
-  const [holdOpen, setHoldOpen] = useState<boolean>(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isPinned, setIsPinned] = useState<boolean>(false);
 
-  const onOpenChange = () => setState((curr) => (holdOpen ? holdOpen : !curr));
-  useOutsideClick(buttonRef, () => {
-    setHoldOpen(false);
-    setState(false);
-  });
+  React.useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!isPinned) return;
+
+      const target = event.target as Node;
+      const isOutsideTrigger =
+        triggerRef.current && !triggerRef.current.contains(target);
+      const isOutsideContent =
+        contentRef.current && !contentRef.current.contains(target);
+
+      if (isOutsideTrigger && isOutsideContent) {
+        setIsPinned(false);
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isPinned]);
 
   return (
-    <HoverCard open={state} onOpenChange={onOpenChange}>
+    <HoverCard
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!isPinned) {
+          setIsOpen(open);
+        }
+      }}
+    >
       <HoverCardTrigger asChild className={className}>
-        <Button
-          ref={buttonRef}
-          variant={"ghost"}
-          size={"content"}
+        <div
+          ref={triggerRef}
+          className="cursor-pointer"
           onClick={() => {
-            setHoldOpen((curr) => !curr);
-            setState(true);
+            setIsPinned(true);
+            setIsOpen(true);
           }}
         >
           {children}
-        </Button>
+        </div>
       </HoverCardTrigger>
       <HoverCardPortal>
-        <HoverCardContent sideOffset={-1} side="top" avoidCollisions={false}>
+        <HoverCardContent
+          ref={contentRef}
+          sideOffset={-1}
+          side="top"
+          avoidCollisions={false}
+        >
           <QuoteCard claim={claim} />
         </HoverCardContent>
       </HoverCardPortal>
