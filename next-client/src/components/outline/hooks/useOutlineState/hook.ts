@@ -9,7 +9,7 @@ export function useOutlineState(
   reportState: ReportState,
 ): [OutlineState, Dispatch<OutlineStateAction>] {
   const initialState: OutlineState = createInitialState(reportState);
-  const idMap = mapIdsToPath(initialState);
+  const idMap = mapIdsToPath(reportState);
   const reducer = createReducer(idMap);
   const [state, dispatch] = useReducer(reducer, initialState);
   return [state, dispatch];

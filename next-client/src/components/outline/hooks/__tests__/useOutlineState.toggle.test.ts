@@ -7,7 +7,7 @@ const { createReducer, mapIdsToPath, createInitialState } = __internals;
 
 const reportState = reportStateBuilder(reportData.topics);
 const outlineState = createInitialState(reportState);
-const idMap = mapIdsToPath(outlineState);
+const idMap = mapIdsToPath(reportState);
 const reducer = createReducer(idMap);
 
 const toggle = (state: OutlineState, id: string) =>
