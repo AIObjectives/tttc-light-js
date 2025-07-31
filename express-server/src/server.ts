@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import create from "./routes/create";
@@ -47,35 +47,37 @@ const defaultRateLimiter = rateLimit({
   },
 });
 
+// Skip rate limiting in development
+const rateLimiter =
+  process.env.NODE_ENV === "production"
+    ? defaultRateLimiter
+    : (_req: Request, _res: Response, next: NextFunction) => next();
+
 /**
  * Creates report
  */
-app.post("/create", defaultRateLimiter, create);
+app.post("/create", rateLimiter, create);
 
 /**
  * Ensures user document exists in Firestore
  */
-app.post("/ensure-user", defaultRateLimiter, ensureUser);
+app.post("/ensure-user", rateLimiter, ensureUser);
 
 /**
  * Submits user feedback
  */
-app.post("/feedback", defaultRateLimiter, feedback);
+app.post("/feedback", rateLimiter, feedback);
 
 /**
  * Logs authentication events (signin/signout)
  */
-app.post("/auth-events", defaultRateLimiter, authEvents);
+app.post("/auth-events", rateLimiter, authEvents);
 
 /**
  * Gets a report
  */
-app.get(
-  "/report/:reportUri/status",
-  defaultRateLimiter,
-  getReportStatusHandler,
-);
-app.get("/report/:reportUri/data", defaultRateLimiter, getReportDataHandler);
+app.get("/report/:reportUri/status", rateLimiter, getReportStatusHandler);
+app.get("/report/:reportUri/data", rateLimiter, getReportDataHandler);
 
 app.get("/test", async (req, res) => {
   return res.send("hi");
