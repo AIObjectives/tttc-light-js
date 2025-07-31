@@ -190,10 +190,11 @@ export function SubtopicList({
 }) {
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
+
   return (
-    <div className="p2 text-muted-foreground flex gap-2 items-center line-clamp-2 leading-6 flex-grow">
-      <Icons.Topic className="inline " />
-      <span>
+    <div className="flex items-center flex-grow">
+      <span className="line-clamp-2 gap-2 leading-6 p2 text-muted-foreground">
+        <Icons.Topic className="inline mr-[6px]" />
         {subtopics.length} subtopics
         {"   "}
         {subtopics.map((subtopic, i) => (
@@ -238,7 +239,7 @@ export function SubtopicListItem({
           <span className="link" data-testid={"subtopic-list-item"}>
             {subtopic.title}
           </span>
-          {withComma ? ",   " : ""}
+          {withComma ? `,\u00A0\u00A0` : ""}
         </span>
       </HoverCardTrigger>
       <HoverCardContent>
