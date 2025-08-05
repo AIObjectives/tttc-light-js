@@ -73,9 +73,11 @@ Firebase provides authentication and database services.
    - Project Settings → Service accounts
    - Click "Generate new private key"
    - Save the JSON file as `firebase-credentials.json`
-6. **Get Database URL:**
-   - Project Settings → General → Your apps
-   - Copy the "databaseURL" value
+6. **Enable Cloud Firestore:**
+   - Go to Firestore Database → Create database
+   - Choose "Start in production mode"
+   - Select your preferred region
+   - Set up security rules to restrict access to authenticated users only
 
 ### Google Cloud Storage
 
@@ -194,7 +196,6 @@ CLIENT_BASE_URL=http://localhost:3000
 PYSERVER_URL=http://localhost:8000
 
 # Firebase (from your Firebase project)
-FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com/
 FIREBASE_CREDENTIALS_ENCODED=<base64-encoded-firebase-credentials.json>
 
 # Redis (local development)

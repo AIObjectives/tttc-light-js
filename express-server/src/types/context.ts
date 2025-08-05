@@ -46,9 +46,6 @@ export const env = z.object({
     required_error: "Missing NODE_ENV (production | development)",
     invalid_type_error: "Invalid input for NODE_ENV",
   }),
-  FIREBASE_DATABASE_URL: z
-    .string({ required_error: "Missing FIREBASE_DATABASE_URL" })
-    .url({ message: "FIREBASE_DATABASE_URL in env should be a valid url" }),
   // REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
   // REDIS_PORT: z
   //   .string({ required_error: "Missing REDIS_PORT" })
