@@ -61,7 +61,6 @@ vi.mock("../types/context", () => ({
     FIREBASE_CREDENTIALS_ENCODED: Buffer.from(
       '{"type":"service_account","client_id":"test"}',
     ).toString("base64"),
-    FIREBASE_DATABASE_URL: "https://test.firebase.com",
   })),
 }));
 
