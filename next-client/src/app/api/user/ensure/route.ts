@@ -34,6 +34,8 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         firebaseAuthToken: token,
       }),
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000), // 10 second timeout
     });
 
     logger.debug(
@@ -44,9 +46,18 @@ export async function POST(request: Request) {
       const errorText = await expressResponse.text();
       logger.error(
         `ENSURE USER API: Express server error: ${expressResponse.status} - ${errorText}`,
+        {
+          expressUrl,
+          status: expressResponse.status,
+          headers: Object.fromEntries(expressResponse.headers.entries()),
+          body: errorText,
+        },
       );
       return NextResponse.json(
-        { error: "Failed to ensure user document via express server" },
+        {
+          error: "Failed to ensure user document via express server",
+          details: errorText,
+        },
         { status: 500 },
       );
     }

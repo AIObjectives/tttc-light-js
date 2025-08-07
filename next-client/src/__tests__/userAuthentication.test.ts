@@ -38,7 +38,10 @@ describe("User Authentication Hook", () => {
     unsubscribeMock = vi.fn();
 
     mockOnAuthStateChanged.mockReturnValue(unsubscribeMock);
-    mockEnsureUserDocument.mockResolvedValue(undefined);
+    mockEnsureUserDocument.mockResolvedValue({
+      tag: "success",
+      uid: "test-user",
+    });
   });
 
   afterEach(() => {
@@ -189,9 +192,11 @@ describe("User Authentication Hook", () => {
         email: "error@example.com",
       };
 
-      mockEnsureUserDocument.mockRejectedValue(
-        new Error("Document creation failed"),
-      );
+      mockEnsureUserDocument.mockResolvedValue({
+        tag: "failure",
+        error: new Error("Document creation failed"),
+        retryable: false,
+      });
 
       let authCallback: (user: User | null) => void;
       mockOnAuthStateChanged.mockImplementation((callback) => {
