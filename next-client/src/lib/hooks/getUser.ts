@@ -22,11 +22,11 @@ export function useUser() {
       const unsubscribe = onAuthStateChanged(async (authUser: User | null) => {
         if (!mounted) return;
 
-        logger.debug("Auth state changed", authUser);
+        logger.debug("CLIENT: Auth state changed", authUser);
 
         // Detect logout: previous user existed but current user is null
         if (previousUserRef.current && !authUser) {
-          logger.info("User logged out");
+          logger.info("CLIENT: User logged out");
           // Clear ensured users when user logs out
           ensuredUsersRef.current = new Set();
         }
@@ -42,15 +42,33 @@ export function useUser() {
           if (!ensuredUsersRef.current.has(authUser.uid)) {
             let ensurePromise = ensurePromisesRef.current.get(authUser.uid);
             if (!ensurePromise) {
-              logger.debug("Ensuring user document for new user");
+              logger.debug(
+                "CLIENT ENSURE: Ensuring user document for new user",
+              );
               const uid = authUser.uid; // Store UID in a local variable to avoid race conditions
               ensurePromise = ensureUserDocumentOnClient(authUser)
-                .then(() => {
-                  ensuredUsersRef.current.add(uid);
+                .then((result) => {
+                  if (!mounted) return;
+
+                  if (result.tag === "success") {
+                    logger.info(
+                      `CLIENT ENSURE: User document ensured successfully for ${uid}`,
+                    );
+                    ensuredUsersRef.current.add(uid);
+                  } else {
+                    logger.error(
+                      "CLIENT ENSURE: Failed to ensure user document",
+                      result.error,
+                    );
+                    // Don't add to ensuredUsersRef so it will retry next time
+                  }
                 })
                 .catch((error) => {
-                  logger.error("Failed to ensure user document", error);
-                  // User state should still be updated even if document creation fails
+                  if (!mounted) return;
+                  logger.error(
+                    "CLIENT ENSURE: Unexpected error in user document creation",
+                    error,
+                  );
                 })
                 .finally(() => {
                   ensurePromisesRef.current.delete(uid);
@@ -59,7 +77,7 @@ export function useUser() {
             }
             // Do not await ensurePromise; let it run in the background
           } else {
-            logger.debug("User document already ensured");
+            logger.debug("CLIENT ENSURE: User document already ensured");
           }
         }
       });
@@ -69,7 +87,7 @@ export function useUser() {
         unsubscribe();
       };
     } catch (err) {
-      logger.error("Failed to initialize auth:", err);
+      logger.error("CLIENT: Failed to initialize auth:", err);
       if (mounted) {
         setError(
           err instanceof Error ? err.message : "Auth initialization failed",
