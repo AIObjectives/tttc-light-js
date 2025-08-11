@@ -54,12 +54,48 @@ export const env = z.object({
   //       let n = Number(v);
   //       return !isNaN(n) && v?.length > 0;
   //     },
-  //     { message: "REDIS_PORT should be a numberic string" },
+  //     { message: "REDIS_PORT should be a numeric string" },
   //   )
   //   .transform((numstr) => Number(numstr)),
   REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
   ALLOWED_GCS_BUCKETS: z.string().transform((val) => val.split(",")),
   REDIS_QUEUE_NAME: z.string().default("pipeline"),
+  ALLOWED_ORIGINS: z
+    .string({
+      required_error: "ALLOWED_ORIGINS is required in all environments",
+    })
+    .transform((val, ctx) => {
+      const origins = val
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0);
+
+      // At least one origin should be specified in all environments
+      if (origins.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "ALLOWED_ORIGINS must contain at least one valid origin",
+        });
+      }
+
+      // Validate each origin is a valid URL
+      const invalidOrigin = origins.find((origin) => {
+        try {
+          new URL(origin);
+          return false;
+        } catch {
+          return true;
+        }
+      });
+      if (invalidOrigin) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "All ALLOWED_ORIGINS must be valid URLs",
+        });
+      }
+
+      return origins;
+    }),
 });
 
 export type Env = z.infer<typeof env>;
