@@ -11,13 +11,25 @@ import { contextMiddleware } from "./middleware";
 import { setupWorkers } from "./workers";
 import { getReportStatusHandler, getReportDataHandler } from "./routes/report";
 import { setupConnection } from "./Queue";
+import {
+  getAllowedOrigins,
+  createCorsOptions,
+  logCorsConfiguration,
+} from "./utils/corsConfig";
 
 const port = process.env.PORT || 8080;
 
 const env = validateEnv();
 
 const app = express();
-app.use(cors());
+// CORS Security Configuration
+const corsConfig = getAllowedOrigins(env);
+const corsOptions = createCorsOptions(corsConfig.origins);
+
+// Log CORS configuration for debugging
+logCorsConfiguration(corsConfig);
+
+app.use(cors(corsOptions));
 // Required to use express-rate-limit with CloudRun, but doesn't apply to local
 if (process.env.NODE_ENV === "production") {
   // Could be its own env var, but correct for now.

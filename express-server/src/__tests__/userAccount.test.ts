@@ -57,7 +57,7 @@ vi.mock("tttc-common/logger", () => ({
 // Mock environment validation
 vi.mock("../types/context", () => ({
   validateEnv: vi.fn(() => ({
-    NODE_ENV: "test",
+    NODE_ENV: "development",
     FIREBASE_CREDENTIALS_ENCODED: Buffer.from(
       '{"type":"service_account","client_id":"test"}',
     ).toString("base64"),

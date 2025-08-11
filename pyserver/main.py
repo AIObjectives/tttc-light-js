@@ -15,6 +15,7 @@ For local testing, load these from a config.py file
 
 import json
 from json import JSONDecodeError
+import logging
 import math
 import os
 import sys
@@ -24,6 +25,7 @@ from typing import List
 import wandb
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header
+from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel
 
@@ -37,7 +39,71 @@ from utils import cute_print, full_speaker_map, token_cost, topic_desc_map, comm
 
 load_dotenv()
 
+# Configure logging for CORS security monitoring
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
+
+# CORS Security Configuration Constants
+PREFLIGHT_CACHE_SECONDS = 24 * 60 * 60  # 24 hours
+
+# CORS Security Configuration  
+# Prevents unauthorized cross-origin requests to FastAPI endpoints
+# Only Express server should call Python server - Next.js client calls Express server
+def get_allowed_origins():
+    """
+    Get allowed origins for CORS configuration.
+    Requires ALLOWED_ORIGINS to be explicitly set in all environments for security.
+    All origins including Express server must be explicitly configured.
+    """
+    allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+    
+    # Require ALLOWED_ORIGINS in all environments (matching Express server behavior)
+    if not allowed_origins_env or allowed_origins_env.strip() == "":
+        raise ValueError(
+            "ALLOWED_ORIGINS environment variable is required in all environments. "
+            "For development, set: ALLOWED_ORIGINS=http://localhost:8080,http://localhost:3000 "
+            "(Express server origin must be included for service communication)"
+        )
+    
+    # Parse comma-separated origins
+    origins = [
+        origin.strip() 
+        for origin in allowed_origins_env.split(",") 
+        if origin.strip()
+    ]
+    
+    # Validate at least one origin is specified
+    if not origins:
+        raise ValueError("ALLOWED_ORIGINS must contain at least one valid origin")
+    
+    return origins
+
+allowed_origins = get_allowed_origins()
+
+# Log CORS configuration on startup for security monitoring
+logger.info(
+    "CORS config: env=%s, origins=%s",
+    os.getenv("NODE_ENV", "development"),
+    allowed_origins,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "X-OpenAI-API-Key"  # Allow custom headers for API keys
+    ],
+    max_age=PREFLIGHT_CACHE_SECONDS  # Cache preflight for 24 hours
+)
 
 class Comment(BaseModel):
     id: str

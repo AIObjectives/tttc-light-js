@@ -207,6 +207,9 @@ REDIS_QUEUE_NAME=dev-queue
 # OpenAI
 OPENAI_API_KEY=your-openai-api-key
 
+# CORS Configuration (REQUIRED)
+ALLOWED_ORIGINS=http://localhost:3000
+
 # Google Cloud Storage
 GCLOUD_STORAGE_BUCKET=your-bucket-name
 ALLOWED_GCS_BUCKETS=your-bucket-name
