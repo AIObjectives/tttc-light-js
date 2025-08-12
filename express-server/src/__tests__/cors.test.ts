@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import request from "supertest";
 
 // Store original env
@@ -10,7 +11,7 @@ import { getAllowedOrigins, createCorsOptions } from "../utils/corsConfig";
 import { validateEnv } from "../types/context";
 
 // Create a test app with the same CORS configuration as server.ts
-const createTestApp = () => {
+const createTestApp = (includeSecurityHeaders = false) => {
   const app = express();
 
   // Use the same CORS configuration as production
@@ -18,6 +19,22 @@ const createTestApp = () => {
   const testEnv = validateEnv();
   const corsConfig = getAllowedOrigins(testEnv);
   const corsOptions = createCorsOptions(corsConfig.origins);
+
+  // Optionally include security headers for integration testing
+  // Apply helmet BEFORE CORS to ensure security headers are always present
+  if (includeSecurityHeaders) {
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            connectSrc: ["'self'", "https://api.openai.com"],
+          },
+        },
+        hsts: false, // Disable for testing
+      }),
+    );
+  }
 
   app.use(cors(corsOptions));
 
@@ -265,6 +282,91 @@ describe("CORS Security Configuration", () => {
       expect(() => {
         createTestApp();
       }).toThrow("ALLOWED_ORIGINS must contain at least one valid origin");
+    });
+  });
+
+  describe("CORS with Security Headers Integration", () => {
+    it("should include both CORS and security headers in responses", async () => {
+      app = createTestApp(true); // Include security headers
+
+      const response = await request(app)
+        .get("/test")
+        .set("Origin", "http://localhost:3000")
+        .expect(200);
+
+      // CORS headers
+      expect(response.headers["access-control-allow-origin"]).toBe(
+        "http://localhost:3000",
+      );
+
+      // Security headers
+      expect(response.headers["x-content-type-options"]).toBe("nosniff");
+      expect(response.headers["x-powered-by"]).toBeUndefined();
+      expect(response.headers["content-security-policy"]).toContain(
+        "default-src 'self'",
+      );
+    });
+
+    it("should apply security headers even when CORS blocks requests", async () => {
+      app = createTestApp(true); // Include security headers
+
+      const response = await request(app)
+        .get("/test")
+        .set("Origin", "https://malicious-site.com")
+        .expect(500);
+
+      // Should have CORS error
+      expect(response.text).toContain("not allowed by CORS policy");
+
+      // Security headers should still be applied (helmet runs before CORS now)
+      expect(response.headers["x-content-type-options"]).toBe("nosniff");
+      // X-Powered-By should be removed by helmet (Express adds it by default)
+      expect(response.headers["x-powered-by"]).toBeUndefined();
+    });
+
+    it("should handle preflight requests with both middleware", async () => {
+      app = createTestApp(true); // Include security headers
+
+      const response = await request(app)
+        .options("/test")
+        .set("Origin", "http://localhost:3000")
+        .set("Access-Control-Request-Method", "POST")
+        .set("Access-Control-Request-Headers", "Content-Type,X-OpenAI-API-Key")
+        .expect(200);
+
+      // CORS preflight headers
+      expect(response.headers["access-control-allow-methods"]).toContain(
+        "POST",
+      );
+      expect(response.headers["access-control-allow-headers"]).toContain(
+        "X-OpenAI-API-Key",
+      );
+
+      // Security headers should also be present (at minimum X-Content-Type-Options)
+      expect(response.headers["x-content-type-options"]).toBeDefined();
+    });
+
+    it("should maintain API functionality with both middleware", async () => {
+      app = createTestApp(true); // Include security headers
+
+      // Add a POST route to test API functionality
+      app.post("/api/test", express.json(), (_req, res) => {
+        res.json({ success: true, data: "API response" });
+      });
+
+      const response = await request(app)
+        .post("/api/test")
+        .set("Origin", "http://localhost:3000")
+        .set("Content-Type", "application/json")
+        .send({ test: "data" })
+        .expect(200);
+
+      // Should work with both middleware
+      expect(response.body.success).toBe(true);
+      expect(response.headers["access-control-allow-origin"]).toBe(
+        "http://localhost:3000",
+      );
+      expect(response.headers["content-security-policy"]).toBeDefined();
     });
   });
 });
