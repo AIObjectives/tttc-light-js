@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import helmet from "helmet";
 import create from "./routes/create";
 import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
@@ -22,12 +23,42 @@ const port = process.env.PORT || 8080;
 const env = validateEnv();
 
 const app = express();
+
 // CORS Security Configuration
 const corsConfig = getAllowedOrigins(env);
 const corsOptions = createCorsOptions(corsConfig.origins);
 
 // Log CORS configuration for debugging
 logCorsConfiguration(corsConfig);
+
+// Security headers middleware - Apply BEFORE CORS to ensure headers are always present
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:"],
+        scriptSrc: ["'self'"],
+        connectSrc: ["'self'", "https://api.openai.com"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    hsts:
+      process.env.NODE_ENV === "production"
+        ? {
+            maxAge: 31536000,
+            includeSubDomains: true,
+            preload: true,
+          }
+        : false,
+  }),
+);
 
 app.use(cors(corsOptions));
 // Required to use express-rate-limit with CloudRun, but doesn't apply to local
@@ -91,7 +122,7 @@ app.post("/auth-events", rateLimiter, authEvents);
 app.get("/report/:reportUri/status", rateLimiter, getReportStatusHandler);
 app.get("/report/:reportUri/data", rateLimiter, getReportDataHandler);
 
-app.get("/test", async (req, res) => {
+app.get("/test", async (_req, res) => {
   return res.send("hi");
 });
 

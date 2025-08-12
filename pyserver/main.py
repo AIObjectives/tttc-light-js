@@ -24,8 +24,9 @@ from typing import List
 
 import wandb
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header
+from fastapi import FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from openai import OpenAI
 from pydantic import BaseModel
 
@@ -89,6 +90,7 @@ logger.info(
     allowed_origins,
 )
 
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -104,6 +106,21 @@ app.add_middleware(
     ],
     max_age=PREFLIGHT_CACHE_SECONDS  # Cache preflight for 24 hours
 )
+
+# Security middleware for production
+if os.getenv('NODE_ENV') == 'production':
+    # Enable HTTPS redirect in production
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Add HSTS header in production
+    if os.getenv('NODE_ENV') == 'production':
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+    
+    return response
 
 class Comment(BaseModel):
     id: str
