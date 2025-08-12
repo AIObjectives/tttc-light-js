@@ -2,7 +2,7 @@
  * Server-side CSV security validation tests for create route
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import request from "supertest";
 import express from "express";
 import create from "../create";
@@ -42,9 +42,8 @@ vi.mock("../../server", () => ({
 describe("CSV Security in Create Route", () => {
   let app: express.Application;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
+  beforeAll(() => {
+    // Setup Express app once for all tests
     app = express();
     app.use(express.json());
 
@@ -67,6 +66,11 @@ describe("CSV Security in Create Route", () => {
     });
 
     app.post("/create", create);
+  });
+
+  beforeEach(() => {
+    // Clear mocks before each test for proper isolation
+    vi.clearAllMocks();
   });
 
   const createValidRequestBody = (csvData: any[]) => ({

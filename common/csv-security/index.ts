@@ -53,7 +53,7 @@ export function detectCSVInjection(content: string): boolean {
     /cmd\s*\|/i, // Command injection
     /powershell/i, // PowerShell execution
     /javascript:/i, // JavaScript protocol
-    /data:.*base64/i, // Data URI with base64
+    /data:/i, // Data URI scheme
     /<script/i, // Script tags
     /vbscript:/i, // VBScript protocol
   ];
@@ -76,7 +76,7 @@ export function sanitizeCSVCell(content: string): string {
   sanitized = sanitized
     .replace(/javascript:/gi, "js:")
     .replace(/vbscript:/gi, "vbs:")
-    .replace(/data:/gi, "data-removed");
+    .replace(/data:/gi, "data-removed:");
 
   // Remove script tags using sanitize-html
   sanitized = sanitizeHtml(sanitized, {

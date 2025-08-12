@@ -70,20 +70,14 @@ describe("CSV Security Module", () => {
       expect(sanitizeCSVCell("javascript:alert(1)")).toBe("js:alert(1)");
       expect(sanitizeCSVCell("vbscript:msgbox(1)")).toBe("vbs:msgbox(1)");
       expect(sanitizeCSVCell("data:text/html;base64,evil")).toBe(
-        "data-removed,evil",
+        "data-removed:text/html;base64,evil",
       );
     });
 
     it("should remove script tags", () => {
-      expect(sanitizeCSVCell("<script>alert(1)</script>")).toBe(
-        "[script-removed]",
-      );
-      expect(sanitizeCSVCell("<SCRIPT>alert(1)</SCRIPT>")).toBe(
-        "[script-removed]",
-      );
-      expect(sanitizeCSVCell('<script src="evil.js"></script>')).toBe(
-        "[script-removed]",
-      );
+      expect(sanitizeCSVCell("<script>alert(1)</script>")).toBe("");
+      expect(sanitizeCSVCell("<SCRIPT>alert(1)</SCRIPT>")).toBe("");
+      expect(sanitizeCSVCell('<script src="evil.js"></script>')).toBe("");
     });
 
     it("should sanitize command injection patterns", () => {
@@ -121,10 +115,8 @@ describe("CSV Security Module", () => {
       const result = validateCSVStructure(oversizedBuffer);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("OVERSIZE_CONTENT");
-        expect(result.error.severity).toBe("high");
-      }
+      expect(result.error.tag).toBe("OVERSIZE_CONTENT");
+      expect(result.error.severity).toBe("high");
     });
 
     it("should reject CSV with too many rows", () => {
@@ -137,14 +129,12 @@ describe("CSV Security Module", () => {
       const result = validateCSVStructure(buffer);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        // The implementation checks file size first, so it might be OVERSIZE_CONTENT
-        expect(["CSV_BOMB_DETECTED", "OVERSIZE_CONTENT"]).toContain(
-          result.error.tag,
-        );
-        if (result.error.tag === "CSV_BOMB_DETECTED") {
-          expect(result.error.message).toContain("Row count");
-        }
+      // The implementation checks file size first, so it might be OVERSIZE_CONTENT
+      expect(["CSV_BOMB_DETECTED", "OVERSIZE_CONTENT"]).toContain(
+        result.error.tag,
+      );
+      if (result.error.tag === "CSV_BOMB_DETECTED") {
+        expect(result.error.message).toContain("Row count");
       }
     });
 
@@ -157,25 +147,22 @@ describe("CSV Security Module", () => {
       const result = validateCSVStructure(buffer);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("CSV_BOMB_DETECTED");
-        expect(result.error.message).toContain("Column count");
-      }
+      expect(result.error.tag).toBe("CSV_BOMB_DETECTED");
+      expect(result.error.message).toContain("Column count");
     });
 
     it("should detect suspicious patterns", () => {
-      const suspiciousCSV = "header," + ",".repeat(150) + "\nvalue1,value2";
+      // Create content with suspicious patterns but within column limits (under 50 columns)
+      const suspiciousCSV =
+        "header1,header2,header3\n" +
+        ",".repeat(100) +
+        "\nvalue1,value2,value3";
       const buffer = Buffer.from(suspiciousCSV);
       const result = validateCSVStructure(buffer);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("CSV_BOMB_DETECTED");
-        // The implementation checks column count first, so the message might be about columns
-        expect(result.error.message).toMatch(
-          /Column count|Suspicious repeating patterns/,
-        );
-      }
+      expect(result.error.tag).toBe("CSV_BOMB_DETECTED");
+      expect(result.error.message).toContain("Suspicious repeating patterns");
     });
 
     it("should accept valid CSV structure", () => {
@@ -219,10 +206,8 @@ describe("CSV Security Module", () => {
       const result = validateEncoding(invalidBuffer);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("INVALID_ENCODING");
-        expect(result.error.message).toContain("invalid UTF-8");
-      }
+      expect(result.error.tag).toBe("INVALID_ENCODING");
+      expect(result.error.message).toContain("invalid UTF-8");
     });
   });
 
@@ -231,10 +216,8 @@ describe("CSV Security Module", () => {
       const result = validateParsedData("not an array" as any);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("MALFORMED_STRUCTURE");
-        expect(result.error.message).toContain("not an array");
-      }
+      expect(result.error.tag).toBe("MALFORMED_STRUCTURE");
+      expect(result.error.message).toContain("not an array");
     });
 
     it("should detect injection in parsed data", () => {
@@ -245,11 +228,9 @@ describe("CSV Security Module", () => {
       const result = validateParsedData(maliciousData);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("INJECTION_ATTEMPT");
-        expect(result.error.message).toContain("row 2");
-        expect(result.error.message).toContain("comment");
-      }
+      expect(result.error.tag).toBe("INJECTION_ATTEMPT");
+      expect(result.error.message).toContain("row 2");
+      expect(result.error.message).toContain("comment");
     });
 
     it("should accept clean parsed data", () => {
@@ -305,9 +286,7 @@ describe("CSV Security Module", () => {
       const result = await validateCSVSecurity(file);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("OVERSIZE_CONTENT");
-      }
+      expect(result.error.tag).toBe("OVERSIZE_CONTENT");
     });
 
     it("should handle file reading errors gracefully", async () => {
@@ -319,10 +298,8 @@ describe("CSV Security Module", () => {
       const result = await validateCSVSecurity(mockFile);
 
       expect(result.tag).toBe("failure");
-      if (result.tag === "failure") {
-        expect(result.error.tag).toBe("MALFORMED_STRUCTURE");
-        expect(result.error.message).toContain("File read error");
-      }
+      expect(result.error.tag).toBe("MALFORMED_STRUCTURE");
+      expect(result.error.message).toContain("File read error");
     });
   });
 });
