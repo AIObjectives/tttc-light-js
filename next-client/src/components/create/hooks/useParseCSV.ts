@@ -11,12 +11,7 @@ import { AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
 import Papa from "papaparse";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
-import {
-  failure,
-  success,
-  Result,
-  flatMapResult,
-} from "tttc-common/functional-utils";
+import { failure, success, Result } from "tttc-common/functional-utils";
 
 /**
  * Shape of error that can be returned by useParseCSV. Use this to build specific errors
@@ -112,13 +107,28 @@ const correctlyFormattedCsv = (
 };
 
 /**
- * Takes raw file data and performs all the parsing / checks we need.
+ * Takes raw file data and performs basic parsing / checks (light validation for UX).
+ * Server-side will do comprehensive security validation.
  */
-const parseCsv = async (file: File) => {
+const parseCsv = async (
+  file: File,
+): Promise<Result<schema.SourceRow[], CSVErrors>> => {
   const buffer = await file.arrayBuffer();
+
+  // Basic size check for immediate feedback
   const isCorrectSize = sizeCheck(buffer);
-  const csv = flatMapResult(isCorrectSize, (buf) => papaParse(buf));
-  const correctFormat = flatMapResult(csv, (d) => correctlyFormattedCsv(d));
+  if (isCorrectSize.tag === "failure") {
+    return isCorrectSize;
+  }
+
+  // Basic parsing
+  const csv = papaParse(buffer);
+  if (csv.tag === "failure") {
+    return csv;
+  }
+
+  // Schema validation
+  const correctFormat = correctlyFormattedCsv(csv.value);
   return correctFormat;
 };
 
