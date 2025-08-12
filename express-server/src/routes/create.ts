@@ -12,6 +12,10 @@ import { PipelineJob } from "src/jobs/pipeline";
 import { sendError } from "./sendError";
 import { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import {
+  detectCSVInjection,
+  validateParsedData,
+} from "tttc-common/csv-security";
 
 class CreateReportError extends Error {
   constructor(message: string) {
@@ -36,9 +40,41 @@ const handleGoogleSheets = async (
   };
 };
 
-const handleCsvData = async (csvData: schema.SourceRow[]) => ({
-  data: formatData(csvData),
-});
+const handleCsvData = async (csvData: schema.SourceRow[]) => {
+  // Comprehensive server-side security validation
+  const validationResult = validateParsedData(csvData);
+  if (validationResult.tag === "failure") {
+    throw new CreateReportError(
+      `CSV security validation failed: ${validationResult.error.tag} - ${validationResult.error.message}`,
+    );
+  }
+
+  // Additional field-level injection detection
+  for (const row of csvData) {
+    if (typeof row.comment === "string" && detectCSVInjection(row.comment)) {
+      throw new CreateReportError(
+        `Security violation: Potential injection detected in comment field: ${row.comment.substring(0, 50)}...`,
+      );
+    }
+    if (
+      typeof row.interview === "string" &&
+      detectCSVInjection(row.interview)
+    ) {
+      throw new CreateReportError(
+        `Security violation: Potential injection detected in interview field: ${row.interview.substring(0, 50)}...`,
+      );
+    }
+    if (typeof row.id === "string" && detectCSVInjection(row.id)) {
+      throw new CreateReportError(
+        `Security violation: Potential injection detected in id field: ${row.id.substring(0, 50)}...`,
+      );
+    }
+  }
+
+  return {
+    data: formatData(csvData),
+  };
+};
 
 const parseData = async (
   data: schema.DataPayload,
@@ -66,6 +102,122 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
+const validateDataSize = (data: schema.DataPayload) => {
+  const datastr = JSON.stringify(data);
+  if (datastr.length > 150 * 1024) {
+    throw new Error("Data too big - limit of 150kb for alpha");
+  }
+};
+
+const addAnonymousNames = (parsedData: {
+  data: schema.SourceRow[];
+  pieChart?: schema.LLMPieChart[];
+}) => {
+  const makeAnonName = useAnonymousNames(
+    parsedData.data.filter((x) => !x.interview).length,
+  );
+
+  return {
+    ...parsedData,
+    data: parsedData.data.map((sr) => ({
+      ...sr,
+      interview: sr.interview ? sr.interview : makeAnonName(),
+    })),
+  };
+};
+
+const createAndSaveReport = async (
+  storage: ReturnType<typeof createStorage>,
+  userConfig: schema.LLMUserConfig,
+) => {
+  const filename = uniqueSlug(userConfig.title);
+  const saveResult = await storage.save(
+    filename,
+    JSON.stringify({ message: "Your data is being generated" }),
+  );
+
+  if (saveResult.tag === "failure") {
+    throw saveResult.error;
+  }
+
+  return { filename, jsonUrl: saveResult.value };
+};
+
+const handleUserAuthentication = async (
+  firebaseAuthToken: string | null,
+  userConfig: schema.LLMUserConfig,
+  jsonUrl: string,
+) => {
+  const decodedUser: DecodedIdToken | null = firebaseAuthToken
+    ? await firebase.verifyUser(firebaseAuthToken)
+    : null;
+
+  logger.info("EXPRESS CREATE: Authentication result", decodedUser);
+
+  if (decodedUser) {
+    logger.info("EXPRESS CREATE: Calling ensureUserDocument", decodedUser.uid);
+    await firebase.ensureUserDocument(
+      decodedUser.uid,
+      decodedUser.email || null,
+      decodedUser.name || null,
+    );
+    logger.info(
+      "EXPRESS CREATE: ensureUserDocument completed",
+      decodedUser.uid,
+    );
+
+    const firebaseJobId = await firebase.addReportJob({
+      userId: decodedUser.uid,
+      title: userConfig.title,
+      description: userConfig.description,
+      reportDataUri: jsonUrl,
+      status: "pending",
+      createdAt: new Date(),
+    });
+
+    return { decodedUser, firebaseJobId };
+  } else {
+    logger.info("EXPRESS CREATE: No decodedUser, skipping ensureUserDocument");
+    return { decodedUser: null, firebaseJobId: null };
+  }
+};
+
+const buildPipelineJob = (
+  env: any,
+  decodedUser: DecodedIdToken,
+  firebaseJobId: string,
+  userConfig: schema.LLMUserConfig,
+  updatedConfig: any,
+  jsonUrl: string,
+): PipelineJob => {
+  return {
+    config: {
+      firebaseDetails: {
+        userId: decodedUser.uid,
+        reportDataUri: jsonUrl,
+        firebaseJobId,
+      },
+      env,
+      auth: "public",
+      instructions: {
+        ...userConfig,
+        cruxInstructions: userConfig.cruxInstructions,
+      },
+      api_key: "", // ! Change when we transition away from using the AOI key,
+      options: {
+        cruxes: updatedConfig.cruxesEnabled,
+      },
+      llm: {
+        model: "gpt-4o-mini", // ! Change when we allow different models
+      },
+    },
+    data: updatedConfig.data,
+    reportDetails: {
+      ...updatedConfig,
+    },
+  };
+};
+
 const useAnonymousNames = (numOfEmptyInterviewRows: number) => {
   const anonNames = Array.from(Array(numOfEmptyInterviewRows).keys()).map(
     (num) => `Anonymous #${num + 1}`,
@@ -88,7 +240,6 @@ const useAnonymousNames = (numOfEmptyInterviewRows: number) => {
 
 async function createNewReport(
   req: Request,
-  res: Response,
 ): Promise<
   Result<
     { response: api.GenerateApiResponse; pipelineJob: PipelineJob },
@@ -96,77 +247,32 @@ async function createNewReport(
   >
 > {
   const { env } = req.context;
-  const { CLIENT_BASE_URL, OPENAI_API_KEY } = env;
+  const { CLIENT_BASE_URL } = env;
   const body = api.generateApiRequest.parse(req.body);
-  // ! Brandon: This config object should be phased out
   const { data, userConfig, firebaseAuthToken } = body;
 
-  const storage = createStorage(env);
+  // Validate data size
+  validateDataSize(data);
 
-  // ! Temporary size check
-  // TODO: configure devprod filesize flag
-  const datastr = JSON.stringify(data);
-  if (datastr.length > 150 * 1024) {
-    throw new Error("Data too big - limit of 150kb for alpha");
-  }
+  // Parse and process data
   const _parsedData = await parseData(data);
-  const makeAnonName = useAnonymousNames(
-    //NOTE: this check used to be for x.interview === undefined
-    _parsedData.data.filter((x) => !x.interview).length,
+  const parsedData = addAnonymousNames(_parsedData);
+
+  // Create and save report
+  const storage = createStorage(env);
+  const { filename, jsonUrl } = await createAndSaveReport(storage, userConfig);
+
+  // Handle user authentication and Firebase operations
+  const { decodedUser, firebaseJobId } = await handleUserAuthentication(
+    firebaseAuthToken,
+    userConfig,
+    jsonUrl,
   );
-  // Add anonymous names if interview prop is undefined
-  const parsedData: {
-    data: schema.SourceRow[];
-    pieChart?: schema.LLMPieChart[];
-  } = {
-    ..._parsedData,
-    data: _parsedData.data.map((sr) => ({
-      ...sr,
-      interview: sr.interview ? sr.interview : makeAnonName(),
-    })),
-  };
 
-  const filename = uniqueSlug(userConfig.title);
-
-  const saveResult = await storage.save(
-    filename,
-    JSON.stringify({ message: "Your data is being generated" }),
-  );
-  if (saveResult.tag === "failure") {
-    throw saveResult.error;
-  }
-  const jsonUrl = saveResult.value;
-  const decodedUser: DecodedIdToken | null = firebaseAuthToken
-    ? await firebase.verifyUser(firebaseAuthToken)
-    : null;
-
-  logger.info("EXPRESS CREATE: Authentication result", decodedUser);
-
-  if (decodedUser) {
-    logger.info("EXPRESS CREATE: Calling ensureUserDocument", decodedUser.uid);
-    await firebase.ensureUserDocument(
-      decodedUser.uid,
-      decodedUser.email || null,
-      decodedUser.name || null,
-    );
-    logger.info(
-      "EXPRESS CREATE: ensureUserDocument completed",
-      decodedUser.uid,
-    );
-  } else {
-    logger.info("EXPRESS CREATE: No decodedUser, skipping ensureUserDocument");
-  }
-  // add job to firebase for easy reference
-  const maybeFirebaseJobId = decodedUser
-    ? await firebase.addReportJob({
-        userId: decodedUser.uid,
-        title: userConfig.title,
-        description: userConfig.description,
-        reportDataUri: jsonUrl,
-        status: "pending",
-        createdAt: new Date(),
-      })
-    : null;
+  // Validate required Firebase data
+  if (decodedUser === null)
+    throw new Error("Firebase is now required to run a report.");
+  if (firebaseJobId === null) throw new Error("Failed to add firebase job.");
 
   const reportUrl = new URL(
     `report/${encodeURIComponent(jsonUrl)}`,
@@ -174,7 +280,6 @@ async function createNewReport(
   ).toString();
 
   // ! Brandon: This config object should be phased out
-  // ! FIX
   // @ts-ignore
   const config: schema.OldOptions = {
     ...userConfig,
@@ -190,7 +295,6 @@ async function createNewReport(
   };
 
   // add id to comment data if not included.
-  // ! Brandon: This config object should be phased out
   const updatedConfig = {
     ...config,
     data: config.data.map((data, i) => ({
@@ -199,37 +303,14 @@ async function createNewReport(
     })),
   };
 
-  if (decodedUser === null)
-    throw new Error("Firebase is now required to run a report.");
-  if (maybeFirebaseJobId === null)
-    throw new Error("Failed to add firebase job.");
-
-  const pipelineJob: PipelineJob = {
-    config: {
-      firebaseDetails: {
-        userId: decodedUser.uid,
-        reportDataUri: jsonUrl,
-        firebaseJobId: maybeFirebaseJobId,
-      },
-      env,
-      auth: "public",
-      instructions: {
-        ...userConfig,
-        cruxInstructions: userConfig.cruxInstructions,
-      },
-      api_key: "", // ! Change when we transition away from using the AOI key,
-      options: {
-        cruxes: updatedConfig.cruxesEnabled,
-      },
-      llm: {
-        model: "gpt-4o-mini", // ! Change when we allow different models
-      },
-    },
-    data: updatedConfig.data,
-    reportDetails: {
-      ...updatedConfig,
-    },
-  };
+  const pipelineJob = buildPipelineJob(
+    env,
+    decodedUser,
+    firebaseJobId,
+    userConfig,
+    updatedConfig,
+    jsonUrl,
+  );
 
   return {
     tag: "success",
@@ -242,7 +323,7 @@ async function createNewReport(
 
 export default async function create(req: Request, res: Response) {
   try {
-    const result = await createNewReport(req, res);
+    const result = await createNewReport(req);
     if (result.tag === "failure") {
       sendError(res, 400, result.error.message, "CreateReportError");
       return;

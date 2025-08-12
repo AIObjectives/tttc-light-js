@@ -42,6 +42,10 @@
     "./utils": {
       "types": "./dist/utils/index.d.ts",
       "default": "./dist/utils/index.js"
+    },
+    "./csv-security": {
+      "types": "./dist/csv-security/index.d.ts",
+      "default": "./dist/csv-security/index.js"
     }
   },
   "files": [
