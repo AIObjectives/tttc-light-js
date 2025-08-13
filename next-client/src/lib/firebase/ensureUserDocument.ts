@@ -7,6 +7,8 @@ import { APIError, isAPIError } from "../types/api";
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_REQUEST_TIMEOUT = 408;
 const HTTP_TOO_MANY_REQUESTS = 429;
+import { signOut } from "./auth";
+import { UserDocument } from "tttc-common/firebase";
 
 /**
  * Ensures a user document exists in Firestore by calling the server API
@@ -15,7 +17,8 @@ const HTTP_TOO_MANY_REQUESTS = 429;
 
 export type EnsureUserDocumentResult =
   | { tag: "success"; uid: string }
-  | { tag: "failure"; error: unknown; retryable: boolean };
+  | { tag: "failure"; error: unknown; retryable: boolean }
+  | { tag: "waitlisted"; uid: string };
 
 function shouldAbortRetry(error: unknown): boolean {
   if (isAPIError(error)) {
@@ -30,7 +33,7 @@ function shouldAbortRetry(error: unknown): boolean {
   return false;
 }
 
-async function callUserEnsureAPI(token: string): Promise<{ uid: string }> {
+async function callUserEnsureAPI(token: string): Promise<{ uid: string, success:boolean, user:UserDocument, message:string }> {
   const response = await fetch("/api/user/ensure", {
     method: "POST",
     headers: {
@@ -61,7 +64,7 @@ async function callUserEnsureAPI(token: string): Promise<{ uid: string }> {
 async function attemptEnsureUserDocument(
   user: User,
   forceTokenRefresh = false,
-): Promise<{ uid: string }> {
+): Promise<{ uid: string, success:boolean, user:UserDocument, message:string }> {
   logger.info(`CLIENT: Ensuring user document for UID: ${user.uid}`);
 
   // Get token (with optional refresh)
@@ -112,6 +115,7 @@ async function attemptEnsureUserDocument(
     throw error;
   }
 }
+  
 
 export async function ensureUserDocumentOnClient(
   user: User,
@@ -128,6 +132,29 @@ export async function ensureUserDocumentOnClient(
         );
       },
     });
+
+
+    logger.info(
+      "CLIENT: User document ensured successfully for UID:",
+      result.uid,
+    );
+
+    // Check waitlist status from the returned user document
+    if (!result.user) {
+      logger.error("CLIENT: No user document returned from ensure endpoint");
+      return { tag: "failure", error: "No user document returned", retryable:false };
+    }
+
+    const userDoc = result.user;
+    logger.debug("CLIENT: Checking waitlist status for user", {
+      isWaitlistApproved: userDoc.isWaitlistApproved,
+    });
+
+    if (!userDoc.isWaitlistApproved) {
+      logger.info("CLIENT: User is not waitlist approved, signing out");
+      await signOut();
+      return { tag: "waitlisted", uid: result.uid };
+    }
 
     return { tag: "success", uid: result.uid };
   } catch (error) {

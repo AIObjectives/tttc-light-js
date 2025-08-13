@@ -20,14 +20,14 @@ import {
   onAuthStateChanged as firebaseOnAuthStateChanged,
   setPersistence,
   browserLocalPersistence,
+  UserCredential,
 } from "firebase/auth";
 import { getFirebaseAuth } from "./clientApp";
 
 export function onAuthStateChanged(callback: (user: any) => void) {
   return firebaseOnAuthStateChanged(getFirebaseAuth(), callback);
 }
-
-export async function signInWithGoogle() {
+export async function signInWithGoogle(): Promise<UserCredential> {
   const auth = getFirebaseAuth();
   await setPersistence(auth, browserLocalPersistence);
   const provider = new GoogleAuthProvider();

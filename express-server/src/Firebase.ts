@@ -116,7 +116,7 @@ export async function ensureUserDocument(
   firebaseUid: string,
   email: string | null = null,
   displayName: string | null = null,
-) {
+): Promise<UserDocument> {
   logger.debug("ensureUserDocument called", {
     firebaseUid,
     email,
@@ -168,6 +168,23 @@ export async function ensureUserDocument(
         });
       }
     }
+
+    // Fetch and return the updated user document
+    const updatedUserDoc = await userRef.get();
+    const userData = updatedUserDoc.data();
+
+    if (!userData) {
+      throw new Error(
+        `User document not found after ensuring it exists for ${firebaseUid}`,
+      );
+    }
+
+    // Convert Firestore timestamps to dates for the return type
+    return {
+      ...userData,
+      createdAt: userData.createdAt?.toDate() || new Date(),
+      lastLoginAt: userData.lastLoginAt?.toDate() || new Date(),
+    } as UserDocument;
   } catch (error) {
     logger.error("Error ensuring user document", error);
     throw new Error(
