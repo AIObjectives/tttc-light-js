@@ -36,6 +36,7 @@ current_dir = Path(__file__).resolve().parent
 sys.path.append(str(current_dir))
 import config
 from utils import cute_print, full_speaker_map, token_cost, topic_desc_map, comment_is_meaningful
+from simple_sanitizer import basic_sanitize, sanitize_prompt_length, sanitize_for_output
 
 load_dotenv()
 
@@ -253,17 +254,22 @@ def comments_to_tree(
     if dry_run or config.DRY_RUN:
         print("dry_run topic tree")
         return config.MOCK_RESPONSE["topic_tree"]
-    # api_key = req.llm.api_key
+    
+    # Basic sanitization - just check for prompt injection and length
     client = OpenAI(api_key=x_openai_api_key)
 
-    # append comments to prompt
+    # append comments to prompt with basic sanitization
     full_prompt = req.llm.user_prompt
     for comment in req.comments:
-        # skip any empty comments/rows
-        if comment_is_meaningful(comment.text):
-            full_prompt += "\n" + comment.text
-        else:
-            print("warning:empty comment in topic_tree:" + comment.text)
+        # Basic sanitization check
+        sanitized_text, is_safe = basic_sanitize(comment.text, "topic_tree_comment")
+        if is_safe and comment_is_meaningful(sanitized_text):
+            full_prompt += "\n" + sanitized_text
+        elif not is_safe:
+            logger.warning(f"Rejecting unsafe comment in topic_tree")
+    
+    # Basic prompt length check
+    full_prompt = sanitize_prompt_length(full_prompt)
 
     response = client.chat.completions.create(
         model=req.llm.model_name,
@@ -329,11 +335,14 @@ def comments_to_tree(
             print("Failed to create wandb run")
     # NOTE:we could return a dictionary with one key "taxonomy", or the raw taxonomy list directly
     # choosing the latter for now
-    return {
+    response_data = {
         "data": tree["taxonomy"],
         "usage": usage.model_dump(),
         "cost": s1_total_cost,
     }
+    
+    # Filter PII from final output for user privacy
+    return sanitize_for_output(response_data)
 
 
 def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str) -> dict:
@@ -349,14 +358,20 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str) -> dict
         dict: A dictionary containing the extracted claims and usage information.
     """
     client = OpenAI(api_key=api_key)
+    
+    # Basic sanitization check
+    sanitized_comment, is_safe = basic_sanitize(comment, "comment_to_claims")
+    if not is_safe:
+        logger.warning(f"Rejecting unsafe comment in comment_to_claims")
+        return {"claims": {"claims": []}, "usage": None}
 
-    # add taxonomy and comment to prompt template
+    # add taxonomy and sanitized comment to prompt template
     taxonomy_string = json.dumps(tree)
 
     # TODO: prompt nit, shorten this to just "Comment:"
     full_prompt = llm.user_prompt
     full_prompt += (
-        "\n" + taxonomy_string + "\nAnd then here is the comment:\n" + comment
+        "\n" + taxonomy_string + "\nAnd then here is the comment:\n" + sanitized_comment
     )
 
     response = client.chat.completions.create(
@@ -654,7 +669,11 @@ def all_comments_to_claims(
         "prompt_tokens": TK_2_IN,
         "completion_tokens": TK_2_OUT,
     }
-    return {"data": node_counts, "usage": net_usage, "cost": s2_total_cost}
+    
+    response_data = {"data": node_counts, "usage": net_usage, "cost": s2_total_cost}
+    
+    # Filter PII from final output for user privacy
+    return sanitize_for_output(response_data)
 
 
 def dedup_claims(claims: list, llm: LLMConfig, api_key: str) -> dict:
@@ -673,7 +692,15 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str) -> dict:
     # add claims with enumerated ids (relative to this subtopic only)
     full_prompt = llm.user_prompt
     for i, orig_claim in enumerate(claims):
-        full_prompt += "\nclaimId" + str(i) + ": " + orig_claim["claim"]
+        # Basic sanitization check
+        sanitized_claim, is_safe = basic_sanitize(orig_claim["claim"], f"dedup_claim_{i}")
+        if is_safe:
+            full_prompt += "\nclaimId" + str(i) + ": " + sanitized_claim
+        else:
+            logger.warning(f"Skipping unsafe claim in dedup")
+    
+    # Basic prompt length check
+    full_prompt = sanitize_prompt_length(full_prompt)
 
     response = client.chat.completions.create(
         model=config.MODEL,
@@ -1137,7 +1164,10 @@ def sort_claims_tree(
         "completion_tokens": TK_OUT,
     }
 
-    return {"data": full_sort_tree, "usage": net_usage, "cost": s3_total_cost}
+    response_data = {"data": full_sort_tree, "usage": net_usage, "cost": s3_total_cost}
+    
+    # Filter PII from final output for user privacy
+    return sanitize_for_output(response_data)
 
 
 ###########################################
@@ -1213,9 +1243,20 @@ def cruxes_for_topic(
         print("fewer than 2 speakers: ", topic)
         return None
 
+    # Basic sanitization for topic info
+    sanitized_topic, topic_safe = basic_sanitize(topic, "cruxes_topic")
+    sanitized_topic_desc, desc_safe = basic_sanitize(topic_desc, "cruxes_desc")
+    
+    if not (topic_safe and desc_safe):
+        logger.warning(f"Rejecting unsafe topic/description in cruxes")
+        return None
+
     full_prompt = llm.user_prompt
-    full_prompt += "\nTopic: " + topic + ": " + topic_desc
+    full_prompt += "\nTopic: " + sanitized_topic + ": " + sanitized_topic_desc
     full_prompt += "\nParticipant claims: \n" + json.dumps(claims_anon)
+    
+    # Basic prompt length check
+    full_prompt = sanitize_prompt_length(full_prompt)
 
     response = client.chat.completions.create(
         model=llm.model_name,
@@ -1454,7 +1495,9 @@ def cruxes_from_tree(
         "usage": net_usage,
         "cost": s4_total_cost,
     }
-    return crux_response
+    
+    # Filter PII from final output for user privacy
+    return sanitize_for_output(crux_response)
 
 
 if __name__ == "__main__":
