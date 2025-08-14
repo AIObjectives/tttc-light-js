@@ -51,7 +51,7 @@ export function useUser() {
               ensurePromise = ensureUserDocumentOnClient(authUser)
                 .then((result) => {
                   if (!mounted) return;
-                    // Don't add to ensuredUsersRef so it will retry next time
+                  // Don't add to ensuredUsersRef so it will retry next time
                   if (result.tag === "success") {
                     logger.info(
                       `CLIENT ENSURE: User document ensured successfully for ${uid}`,

@@ -33,7 +33,12 @@ function shouldAbortRetry(error: unknown): boolean {
   return false;
 }
 
-async function callUserEnsureAPI(token: string): Promise<{ uid: string, success:boolean, user:UserDocument, message:string }> {
+async function callUserEnsureAPI(token: string): Promise<{
+  uid: string;
+  success: boolean;
+  user: UserDocument;
+  message: string;
+}> {
   const response = await fetch("/api/user/ensure", {
     method: "POST",
     headers: {
@@ -64,7 +69,12 @@ async function callUserEnsureAPI(token: string): Promise<{ uid: string, success:
 async function attemptEnsureUserDocument(
   user: User,
   forceTokenRefresh = false,
-): Promise<{ uid: string, success:boolean, user:UserDocument, message:string }> {
+): Promise<{
+  uid: string;
+  success: boolean;
+  user: UserDocument;
+  message: string;
+}> {
   logger.info(`CLIENT: Ensuring user document for UID: ${user.uid}`);
 
   // Get token (with optional refresh)
@@ -115,7 +125,6 @@ async function attemptEnsureUserDocument(
     throw error;
   }
 }
-  
 
 export async function ensureUserDocumentOnClient(
   user: User,
@@ -133,7 +142,6 @@ export async function ensureUserDocumentOnClient(
       },
     });
 
-
     logger.info(
       "CLIENT: User document ensured successfully for UID:",
       result.uid,
@@ -142,7 +150,11 @@ export async function ensureUserDocumentOnClient(
     // Check waitlist status from the returned user document
     if (!result.user) {
       logger.error("CLIENT: No user document returned from ensure endpoint");
-      return { tag: "failure", error: "No user document returned", retryable:false };
+      return {
+        tag: "failure",
+        error: "No user document returned",
+        retryable: false,
+      };
     }
 
     const userDoc = result.user;
