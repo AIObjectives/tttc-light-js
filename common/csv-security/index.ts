@@ -75,7 +75,7 @@ export function sanitizeCSVCell(content: string): string {
   sanitized = sanitized
     .replace(/javascript:/gi, "js:")
     .replace(/vbscript:/gi, "vbs:")
-    .replace(/data:.*base64/gi, "data-removed")
+    .replace(/data:/gi, "data-removed")
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "[script-removed]")
     .replace(/DDE\s*\(/gi, "DDE-removed(")
     .replace(/cmd\s*\|/gi, "cmd-removed|");
