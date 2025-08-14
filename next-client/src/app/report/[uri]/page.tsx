@@ -6,6 +6,7 @@ import * as utils from "tttc-common/utils";
 import { z } from "zod";
 import ReportProgress from "@/components/reportProgress/ReportProgress";
 import Feedback from "@/components/feedback/Feedback";
+import pRetry from "p-retry";
 
 const waitingMessage = z.object({
   message: z.string(),
@@ -43,40 +44,58 @@ const handleResponseData = async (
   data: unknown,
   url: string,
 ): Promise<HandleResponseResult> => {
-  if (waitingMessage.safeParse(data).success) {
-    const statusResponse = await fetch(
-      z
-        .string()
-        .url()
-        .parse(
-          `${process.env.PIPELINE_EXPRESS_URL}/report/${encodeURIComponent(url)}`,
+  try {
+    if (waitingMessage.safeParse(data).success) {
+      const { status } = await pRetry(
+        async () => {
+          const response = await fetch(
+            z
+              .string()
+              .url()
+              .parse(
+                `${process.env.PIPELINE_EXPRESS_URL}/report/${encodeURIComponent(url)}`,
+              ),
+          );
+          const json = await response.json();
+          return api.getReportResponse.parse(json);
+        },
+        {
+          retries: 2,
+          onFailedAttempt: (error) => {
+            console.log(
+              `Failed to fetch status response. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+            );
+          },
+        },
+      );
+      return { tag: "status", status: status as api.ReportJobStatus };
+    } else if (schema.llmPipelineOutput.safeParse(data).success) {
+      // if the data is from the old schema, then translate it into the new one
+      const newSchemaData = getReportDataObj(
+        schema.llmPipelineOutput.parse(data),
+      );
+      return { tag: "report", data: schema.uiReportData.parse(newSchemaData) };
+    } else if (schema.pipelineOutput.safeParse(data).success) {
+      return {
+        tag: "report",
+        data: schema.uiReportData.parse(
+          schema.pipelineOutput.parse(data).data[1],
         ),
-    );
-
-    const { status } = await statusResponse
-      .json()
-      .then(api.getReportResponse.parse);
-    return { tag: "status", status: status as api.ReportJobStatus };
-  } else if (schema.llmPipelineOutput.safeParse(data).success) {
-    // if the data is from the old schema, then translate it into the new one
-    const newSchemaData = getReportDataObj(
-      schema.llmPipelineOutput.parse(data),
-    );
-    return { tag: "report", data: schema.uiReportData.parse(newSchemaData) };
-  } else if (schema.pipelineOutput.safeParse(data).success) {
-    return {
-      tag: "report",
-      data: schema.uiReportData.parse(
-        schema.pipelineOutput.parse(data).data[1],
-      ),
-    };
-  } else if (schema.downloadReportSchema.safeParse(data).success) {
-    return {
-      tag: "report",
-      data: schema.downloadReportSchema.parse(data)[1].data[1],
-    };
-  } else {
-    return { tag: "error", message: "Unknown error" };
+      };
+    } else if (schema.downloadReportSchema.safeParse(data).success) {
+      return {
+        tag: "report",
+        data: schema.downloadReportSchema.parse(data)[1].data[1],
+      };
+    } else {
+      return { tag: "error", message: "Unknown error" };
+    }
+  } catch (e) {
+    console.error("Unexpected error in handleResponseData", {
+      url,
+      error: e,
+    });
+    return { tag: "error", message: "Failed to process response data" };
   }
 };
 
@@ -92,15 +111,33 @@ async function getReportState(
   const baseApiUrl = process.env.PIPELINE_EXPRESS_URL ?? "";
   const statusUrl = `${baseApiUrl}/report/${encodedUri}/status`;
   try {
-    const statusRes = await fetch(statusUrl);
-    if (!statusRes.ok) {
+    const statusJson = await pRetry(
+      async () => {
+        const statusRes = await fetch(statusUrl);
+        if (!statusRes.ok) {
+          throw new Error(`Failed to fetch report status: ${statusRes.status}`);
+        }
+        return await statusRes.json();
+      },
+      {
+        retries: 2,
+        onFailedAttempt: (error) => {
+          console.log(
+            `Failed to fetch report status. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+          );
+        },
+      },
+    ).catch((error) => {
       console.error("Failed to fetch report status", {
         statusUrl,
-        status: statusRes.status,
+        error,
       });
       return { type: "error", message: "Failed to fetch report status." };
+    });
+
+    if (statusJson.type === "error") {
+      return statusJson;
     }
-    const statusJson = await statusRes.json();
     const status = statusJson.status as api.ReportJobStatus;
 
     if (status === "failed") {
@@ -112,13 +149,42 @@ async function getReportState(
 
     // Fetch either signed or fallback URL for report data
     const dataUrl = `${baseApiUrl}/report/${encodedUri}/data`;
-    const dataRes = await fetch(dataUrl);
-    const dataJson = await dataRes.json();
-    const url = dataJson.url as string | undefined;
-    if (!dataRes.ok || url === undefined) {
+    const dataJson = await pRetry(
+      async () => {
+        const dataRes = await fetch(dataUrl);
+        if (!dataRes.ok) {
+          throw new Error(`Failed to fetch report data URL: ${dataRes.status}`);
+        }
+        return await dataRes.json();
+      },
+      {
+        retries: 2,
+        onFailedAttempt: (error) => {
+          console.log(
+            `Failed to fetch report data URL. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+          );
+        },
+      },
+    ).catch((error) => {
       console.error("Failed to fetch report data URL", {
         dataUrl,
-        status: dataRes.status,
+        error,
+      });
+      return {
+        type: "error",
+        message:
+          "Failed to fetch report data. The file may not be public, may not exist, or you may not have access.",
+      };
+    });
+
+    if (dataJson.type === "error") {
+      return dataJson;
+    }
+
+    const url = dataJson.url as string | undefined;
+    if (url === undefined) {
+      console.error("Failed to get report data URL", {
+        dataUrl,
         dataJson,
       });
       return {
@@ -130,19 +196,39 @@ async function getReportState(
 
     // Fetch the actual report data
     try {
-      const reportRes = await fetch(url);
-      if (!reportRes.ok) {
+      const reportData = await pRetry(
+        async () => {
+          const reportRes = await fetch(url);
+          if (!reportRes.ok) {
+            throw new Error(
+              `Failed to fetch report data from storage: ${reportRes.status}`,
+            );
+          }
+          return await reportRes.json();
+        },
+        {
+          retries: 2,
+          onFailedAttempt: (error) => {
+            console.log(
+              `Failed to fetch report data from storage. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+            );
+          },
+        },
+      ).catch((error) => {
         console.error("Failed to fetch report data from storage", {
           url,
-          status: reportRes.status,
+          error,
         });
         return {
           type: "reportDataError",
           message:
             "Failed to fetch report data. The file may not be public or may not exist.",
         };
+      });
+
+      if (reportData.type === "reportDataError") {
+        return reportData;
       }
-      const reportData = await reportRes.json();
       const parsedData = await handleResponseData(reportData, url);
 
       switch (parsedData.tag) {
