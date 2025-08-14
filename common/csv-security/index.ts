@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { Result, success, failure } from "../functional-utils";
+import sanitizeHtml from "sanitize-html";
 
 // Security configuration constants
 export const CSV_SECURITY_CONFIG = {
@@ -75,8 +76,16 @@ export function sanitizeCSVCell(content: string): string {
   sanitized = sanitized
     .replace(/javascript:/gi, "js:")
     .replace(/vbscript:/gi, "vbs:")
-    .replace(/data:/gi, "data-removed")
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "[script-removed]")
+    .replace(/data:/gi, "data-removed");
+
+  // Remove script tags using sanitize-html
+  sanitized = sanitizeHtml(sanitized, {
+    allowedTags: [],
+    allowedAttributes: {},
+    textFilter: (text) => text, // Don't modify text content
+  });
+
+  sanitized = sanitized
     .replace(/DDE\s*\(/gi, "DDE-removed(")
     .replace(/cmd\s*\|/gi, "cmd-removed|");
 
