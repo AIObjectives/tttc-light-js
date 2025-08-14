@@ -69,6 +69,41 @@ describe("User Account Handling", () => {
   let mockUserRef: any;
   let mockFirestore: any;
 
+  // Fixed timestamps for deterministic tests
+  const FIXED_DATE = new Date("2023-01-01T00:00:00Z");
+
+  // Define a proper interface for user document structure
+  interface UserDoc {
+    firebaseUid: string;
+    email: string | null;
+    displayName: string | null;
+    isValid: boolean;
+    isWaitlistApproved: boolean;
+    roles: string[];
+    createdAt: { toDate: () => Date };
+    lastLoginAt: { toDate: () => Date };
+  }
+
+  // Helper function to create mock user document responses
+  const createMockUserDoc = (userData: Partial<UserDoc> = {}) => ({
+    exists: true,
+    data: () => ({
+      firebaseUid: "default-uid",
+      email: null,
+      displayName: null,
+      isValid: true,
+      isWaitlistApproved: true,
+      roles: ["user"],
+      createdAt: { toDate: () => FIXED_DATE },
+      lastLoginAt: { toDate: () => FIXED_DATE },
+      ...userData,
+    }),
+  });
+
+  const createMockNonExistentDoc = () => ({
+    exists: false,
+  });
+
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -98,9 +133,17 @@ describe("User Account Handling", () => {
       const email = "test@example.com";
       const displayName = "Test User";
 
-      mockUserRef.get.mockResolvedValue({
-        exists: false,
-      });
+      // Mock the first get() call (check if doc exists)
+      mockUserRef.get.mockResolvedValueOnce(createMockNonExistentDoc());
+
+      // Mock the second get() call (fetch updated document)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
+          firebaseUid: uid,
+          email,
+          displayName,
+        }),
+      );
 
       // Act
       await ensureUserDocument(uid, email, displayName);
@@ -132,13 +175,22 @@ describe("User Account Handling", () => {
       const email = "existing@example.com";
       const displayName = "Existing User";
 
-      mockUserRef.get.mockResolvedValue({
-        exists: true,
-        data: () => ({
+      // Mock the first get() call (check if doc exists)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
           email: "existing@example.com",
           displayName: "Existing User",
         }),
-      });
+      );
+
+      // Mock the second get() call (fetch updated document)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
+          firebaseUid: uid,
+          email: "existing@example.com",
+          displayName: "Existing User",
+        }),
+      );
 
       // Act
       await ensureUserDocument(uid, email, displayName);
@@ -158,13 +210,22 @@ describe("User Account Handling", () => {
       const newEmail = "new@example.com";
       const displayName = "Test User";
 
-      mockUserRef.get.mockResolvedValue({
-        exists: true,
-        data: () => ({
+      // Mock the first get() call (check if doc exists)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
           email: oldEmail,
           displayName,
         }),
-      });
+      );
+
+      // Mock the second get() call (fetch updated document)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
+          firebaseUid: uid,
+          email: newEmail,
+          displayName,
+        }),
+      );
 
       // Act
       await ensureUserDocument(uid, newEmail, displayName);
@@ -183,13 +244,22 @@ describe("User Account Handling", () => {
       const oldDisplayName = "Old Name";
       const newDisplayName = "New Name";
 
-      mockUserRef.get.mockResolvedValue({
-        exists: true,
-        data: () => ({
+      // Mock the first get() call (check if doc exists)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
           email,
           displayName: oldDisplayName,
         }),
-      });
+      );
+
+      // Mock the second get() call (fetch updated document)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
+          firebaseUid: uid,
+          email,
+          displayName: newDisplayName,
+        }),
+      );
 
       // Act
       await ensureUserDocument(uid, email, newDisplayName);
@@ -205,9 +275,17 @@ describe("User Account Handling", () => {
       // Arrange
       const uid = "test-uid-null";
 
-      mockUserRef.get.mockResolvedValue({
-        exists: false,
-      });
+      // Mock the first get() call (check if doc exists)
+      mockUserRef.get.mockResolvedValueOnce(createMockNonExistentDoc());
+
+      // Mock the second get() call (fetch updated document)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
+          firebaseUid: uid,
+          email: null,
+          displayName: null,
+        }),
+      );
 
       // Act
       await ensureUserDocument(uid, null, null);
@@ -248,7 +326,17 @@ describe("User Account Handling", () => {
       // Arrange
       const uid = "test-uid-collection";
 
-      mockUserRef.get.mockResolvedValue({ exists: false });
+      // Mock the first get() call (check if doc exists)
+      mockUserRef.get.mockResolvedValueOnce(createMockNonExistentDoc());
+
+      // Mock the second get() call (fetch updated document)
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({
+          firebaseUid: uid,
+          email: null,
+          displayName: null,
+        }),
+      );
 
       // Act
       await ensureUserDocument(uid, null, null);
