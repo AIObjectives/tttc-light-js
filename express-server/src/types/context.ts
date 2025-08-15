@@ -96,6 +96,13 @@ export const env = z.object({
 
       return origins;
     }),
+  // Feature Flag Configuration
+  FEATURE_FLAG_PROVIDER: z.enum(["posthog", "local"]).default("local"),
+  FEATURE_FLAG_API_KEY: z.string().optional(),
+  FEATURE_FLAG_HOST: z.string().optional().default("https://app.posthog.com"),
+  LOCAL_FLAGS: z
+    .record(z.string(), z.union([z.string(), z.boolean()]))
+    .optional(),
 });
 
 export type Env = z.infer<typeof env>;
