@@ -214,6 +214,11 @@ ALLOWED_ORIGINS=http://localhost:3000
 GCLOUD_STORAGE_BUCKET=your-bucket-name
 ALLOWED_GCS_BUCKETS=your-bucket-name
 GOOGLE_CREDENTIALS_ENCODED=<base64-encoded-google-credentials.json>
+
+# Feature Flags
+FEATURE_FLAG_PROVIDER=local
+LOCAL_FLAGS='{"exampleBool": true, "exampleString": "string"}'
+
 ```
 
 **Encoding Credentials:**
