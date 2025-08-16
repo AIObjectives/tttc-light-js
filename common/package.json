@@ -48,6 +48,9 @@
       "default": "./dist/csv-security/index.js"
     }
   },
+  "engines": {
+    "node": ">=24"
+  },
   "files": [
     "dist"
   ],

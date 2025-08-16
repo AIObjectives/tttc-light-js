@@ -1,5 +1,5 @@
 # Stage 1: Install dependencies and build
-FROM node:18-slim AS build
+FROM node:24-slim AS build
 
 WORKDIR /usr/src/app
 
@@ -15,7 +15,7 @@ RUN npm run build --prefix ./common
 RUN npm run build --prefix ./express-server
 
 # Stage 2: Production image
-FROM node:18-slim
+FROM node:24-slim
 
 WORKDIR /usr/src/app
 

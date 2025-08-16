@@ -10,6 +10,9 @@
   },
   "author": "Bruno Marnette",
   "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
   "devDependencies": {
     "husky": "^9.0.11",
     "prettier": "3.2.5",
