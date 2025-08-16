@@ -34,12 +34,12 @@ This guide covers setting up a local development environment for Talk to the Cit
 
 Before starting setup, ensure you have:
 
-- **Node.js 18+** and npm
+- **Node.js 24+** and npm
   - **New to Node.js?** Use [nvm](https://github.com/nvm-sh/nvm) to easily install and switch between Node.js versions:
     ```bash
-    # Install and use Node.js 18
-    nvm install 18
-    nvm use 18
+    # Install and use Node.js 24
+    nvm install 24
+    nvm use 24
     ```
 - **Python 3.8+** and pip
 - **Redis server** (local or remote)
