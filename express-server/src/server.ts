@@ -126,6 +126,44 @@ app.get("/test", async (_req, res) => {
   return res.send("hi");
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
+
+async function gracefulShutdown(signal: string) {
+  console.log(`Received ${signal}. Starting graceful shutdown...`);
+  
+  // Stop accepting new connections
+  server.close(async (err) => {
+    if (err) {
+      console.error('Error during server shutdown:', err);
+      process.exit(1);
+    }
+    
+    console.log('HTTP server closed');
+    
+    try {
+      // Close Redis connection
+      if (connection) {
+        await connection.disconnect();
+        console.log('Redis connection closed');
+      }
+      
+      console.log('Graceful shutdown complete');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during graceful shutdown:', error);
+      process.exit(1);
+    }
+  });
+  
+  // Force exit if graceful shutdown takes too long
+  setTimeout(() => {
+    console.error('Graceful shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 10000); // 10 second timeout
+}
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
