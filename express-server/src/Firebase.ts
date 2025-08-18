@@ -133,7 +133,7 @@ export async function ensureUserDocument(
         email,
         displayName,
         isValid: true, // This user is allowed to login, set to false to ban/disable.
-        isWaitlistApproved: true, // User is not waiting to be approved on the waitlist.
+        isWaitlistApproved: false, // User is waiting to be approved on the waitlist.
         roles: ["user"],
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
