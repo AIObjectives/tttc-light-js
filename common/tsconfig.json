@@ -12,6 +12,7 @@
       "*": ["*", "node_modules/*"]
     },
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "baseUrl": ".",
     "resolveJsonModule": true,

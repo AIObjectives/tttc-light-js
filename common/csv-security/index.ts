@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { Result, success, failure } from "../functional-utils";
-import sanitizeHtml from "sanitize-html";
+import sanitizeHtml = require("sanitize-html");
 
 // Security configuration constants
 export const CSV_SECURITY_CONFIG = {
@@ -82,7 +82,7 @@ export function sanitizeCSVCell(content: string): string {
   sanitized = sanitizeHtml(sanitized, {
     allowedTags: [],
     allowedAttributes: {},
-    textFilter: (text) => text, // Don't modify text content
+    textFilter: (text: string, tagName: string) => text, // Don't modify text content
   });
 
   sanitized = sanitized
