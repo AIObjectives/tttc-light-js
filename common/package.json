@@ -46,6 +46,10 @@
     "./csv-security": {
       "types": "./dist/csv-security/index.d.ts",
       "default": "./dist/csv-security/index.js"
+    },
+    "./analytics": {
+      "types": "./dist/analytics/index.d.ts",
+      "default": "./dist/analytics/index.js"
     }
   },
   "engines": {
@@ -62,6 +66,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "posthog-js": "^1.260.1",
+    "posthog-node": "^4.18.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sanitize-html": "^2.17.0",
