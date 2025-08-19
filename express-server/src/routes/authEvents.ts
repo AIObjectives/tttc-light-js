@@ -4,6 +4,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { sendError } from "./sendError";
 import { z } from "zod";
 import { logger } from "tttc-common/logger";
+import { getAnalytics, CommonEvents } from "../../../common/analytics";
 
 const authEventRequest = z.object({
   event: z.enum(["signin", "signout"]),
@@ -27,6 +28,14 @@ export default async function authEvents(req: Request, res: Response) {
       const decodedUser: DecodedIdToken = await verifyUser(firebaseAuthToken);
 
       logger.auth("signin", decodedUser.uid, decodedUser.email);
+
+      // Track signin event with analytics
+      trackAuthEventAnalytics(
+        CommonEvents.USER_SIGNIN,
+        clientTimestamp,
+        decodedUser.uid,
+        decodedUser.email,
+      );
 
       res.json({
         success: true,
@@ -53,5 +62,28 @@ export default async function authEvents(req: Request, res: Response) {
     const message =
       error instanceof Error ? error.message : "Unknown error occurred";
     sendError(res, 500, message, "AuthEventError");
+  }
+}
+
+async function trackAuthEventAnalytics(
+  event: string,
+  timestamp: string | undefined,
+  decodedUserId: string,
+  decodedUserEmail?: string,
+) {
+  const analytics = getAnalytics();
+  if (analytics) {
+    await analytics.track({
+      name: event,
+      properties: {
+        clientTimestamp: timestamp || new Date().toISOString(),
+      },
+      context: {
+        user: {
+          userId: decodedUserId,
+          email: decodedUserEmail,
+        },
+      },
+    });
   }
 }

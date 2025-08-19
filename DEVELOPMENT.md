@@ -230,6 +230,9 @@ GOOGLE_CREDENTIALS_ENCODED=<base64-encoded-google-credentials.json>
 FEATURE_FLAG_PROVIDER=local
 LOCAL_FLAGS='{"exampleBool": true, "exampleString": "string"}'
 
+ANALYTICS_PROVIDER=local
+ANALYTICS_ENABLED=false
+
 ```
 
 **Encoding Credentials:**

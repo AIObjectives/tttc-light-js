@@ -22,6 +22,10 @@ import {
   shutdownFeatureFlags,
   isFeatureEnabled,
 } from "./featureFlags";
+import {
+  initializeAnalyticsClient,
+  shutdownAnalyticsClient,
+} from "./analytics";
 
 const port = process.env.PORT || 8080;
 
@@ -83,6 +87,9 @@ export const pipelineQueue = plq;
 
 // Initialize feature flags
 initializeFeatureFlags(env);
+
+// Initialize analytics client (non-blocking)
+initializeAnalyticsClient(env);
 
 // This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
 setupWorkers(connection, env.REDIS_QUEUE_NAME);
@@ -154,13 +161,17 @@ async function gracefulShutdown(signal: string) {
     try {
       // Close Redis connection
       if (connection) {
-        await connection.disconnect();
+        connection.disconnect();
         console.log("Redis connection closed");
       }
 
       // Shutdown feature flags
       await shutdownFeatureFlags();
       console.log("Feature flags shutdown complete");
+
+      // Shutdown analytics client
+      await shutdownAnalyticsClient();
+      console.log("Analytics client shutdown complete");
 
       console.log("Graceful shutdown complete");
       process.exit(0);
