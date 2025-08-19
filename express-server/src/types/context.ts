@@ -103,6 +103,37 @@ export const env = z.object({
   LOCAL_FLAGS: z
     .record(z.string(), z.union([z.string(), z.boolean()]))
     .optional(),
+  
+  // Analytics Configuration
+  ANALYTICS_PROVIDER: z.enum(["posthog", "local"]).default("local"),
+  ANALYTICS_API_KEY: z.string().optional(),
+  ANALYTICS_HOST: z.string().optional().default("https://app.posthog.com"),
+  ANALYTICS_FLUSH_AT: z
+    .string()
+    .optional()
+    .default("20")
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => !isNaN(val) && val > 0, {
+      message: "ANALYTICS_FLUSH_AT must be a positive number",
+    }),
+  ANALYTICS_FLUSH_INTERVAL: z
+    .string()
+    .optional()
+    .default("10000")
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => !isNaN(val) && val > 0, {
+      message: "ANALYTICS_FLUSH_INTERVAL must be a positive number",
+    }),
+  ANALYTICS_DEBUG: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((val) => val.toLowerCase() === "true"),
+  ANALYTICS_ENABLED: z
+    .string()
+    .optional()
+    .default("true")
+    .transform((val) => val.toLowerCase() === "true"),
 });
 
 export type Env = z.infer<typeof env>;
