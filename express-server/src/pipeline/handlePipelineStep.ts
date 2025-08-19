@@ -1,54 +1,67 @@
 import { z } from "zod";
-import { flatMapResult, Result } from "tttc-common/functional-utils";
+import { Result } from "tttc-common/functional-utils";
 import { FetchError, InvalidResponseDataError } from "./errors";
+import { withRetry } from "./retryConfig";
 
 /**
  * Calls some fetch function with a parser and returns a Result type
  *
- * This is seperated out from the particular fetch function used so that we can more easily mock it
+ * This is separated out from the particular fetch function used so that we can more easily mock it
  */
 export async function handlePipelineStep<T extends z.ZodTypeAny>(
   parser: T, // Zod parser
   call: () => Promise<Response>, // some fetch function.
 ): Promise<Result<z.infer<T>, FetchError | InvalidResponseDataError>> {
-  // Perform our fetch
-  return await call()
-    // parse our fetch and see if the request succeeded
-    .then(async (res) => {
-      const parsed = await res.json();
-      // TODO we can potentially test for specific error codes and other cases here?
-      if (res.ok) {
-        const res: Result<unknown, FetchError> = {
-          tag: "success",
-          value: parsed,
-        };
-        return res;
-      } else {
-        const res: Result<unknown, FetchError> = {
-          tag: "failure",
-          error: new FetchError(parsed),
-        };
-        return res;
-      }
-    })
-    // Make sure that the returned data fits our schema type
-    .then((res) =>
-      flatMapResult(res, (val) => {
-        const parsed = parser.safeParse(val);
-        if (parsed.success) {
-          return { tag: "success", value: parsed.data };
-        } else {
-          return {
-            tag: "failure",
-            error: new InvalidResponseDataError(parsed.error),
-          };
+  try {
+    const result = await withRetry(
+      async () => {
+        // Perform our fetch
+        const response = await call();
+        const parsed = await response.json();
+
+        // Check if the request succeeded
+        if (!response.ok) {
+          throw new FetchError(parsed);
         }
-      }),
-    )
-    .catch((e) => {
+
+        // Validate schema
+        const schemaResult = parser.safeParse(parsed);
+        if (schemaResult.success === false) {
+          // Schema validation errors shouldn't be retried
+          throw new InvalidResponseDataError(schemaResult.error);
+        }
+
+        // Return successful result
+        return {
+          tag: "success",
+          value: schemaResult.data,
+        } as Result<z.infer<T>, FetchError | InvalidResponseDataError>;
+      },
+      "Pipeline step",
+      // Don't retry schema validation errors
+      (error) => error instanceof InvalidResponseDataError,
+    );
+
+    return result;
+  } catch (error: unknown) {
+    // Handle InvalidResponseDataError directly
+    if (error instanceof InvalidResponseDataError) {
       return {
         tag: "failure",
-        error: new FetchError(e),
+        error: error,
       };
-    });
+    }
+    // Handle FetchError directly
+    if (error instanceof FetchError) {
+      return {
+        tag: "failure",
+        error: error,
+      };
+    }
+    // For all other errors (including timeout), wrap in FetchError
+    return {
+      tag: "failure",
+      error: new FetchError(error),
+    };
+  }
 }
