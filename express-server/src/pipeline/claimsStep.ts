@@ -1,15 +1,15 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { ClaimsStep } from "./types";
 import { Env } from "../types/context";
-import { Client, Dispatcher } from "undici";
-import { AbortController } from "abort-controller"; // If needed in your environment
+import { Dispatcher } from "undici";
 import { TimeoutError, FetchError, InvalidResponseDataError } from "./errors";
-import { flatMapResult, Result } from "tttc-common/functional-utils";
+import { Result } from "tttc-common/functional-utils";
+import { getHttpClient, withRetry, refreshClient } from "./retryConfig";
 
 /**
  * Sends an http request to the pyserver for the claims step
  *
- * Returns a Result type with either the claimsstep data or an error
+ * Returns a Result type with either the claims step data or an error
  */
 export async function claimsPipelineStep(
   env: Env,
@@ -24,101 +24,83 @@ export async function claimsPipelineStep(
   const baseUrl = env.PYSERVER_URL.replace(/\/$/, ""); // Remove trailing slash if any
   const path = "/claims";
 
-  // Create an AbortController for the request
-  // Brandon: I'm pretty sure this doesn't do anything as of right now.
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000000);
-  // Create the Undici client
-  const client = new Client(baseUrl, {
-    headersTimeout: 6000000,
-    bodyTimeout: 6000000,
-    keepAliveTimeout: 1200000,
-  });
+  // Force refresh client to ensure we get updated timeout configuration
+  await refreshClient(baseUrl);
 
   try {
-    /**
-     * Send fetch request to pyserver
-     */
-    const fetchResult: Result<
-      apiPyserver.ClaimsReply,
-      FetchError | TimeoutError | InvalidResponseDataError
-    > = await client
-      .request({
-        path: path,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          [apiPyserver.OPENAI_API_KEY_HEADER]: env.OPENAI_API_KEY,
-        },
-        body: JSON.stringify(input),
-      })
-      /**
-       * After we've received the response, clear out the abort signal timer
-       * Brandon: I'm pretty sure this abort signal doesn't do anything since it's not attached to the client. TODO
-       */
-      .then((res) => {
-        clearTimeout(timeoutId);
-        return res;
-      })
-      /**
-       * Check the response for error codes we don't like
-       *
-       * unknown -> Result<unknown, errors>
-       */
-      .then(validateResponse)
-      /**
-       * Pipe the previous result. Validate the data schema.
-       */
-      .then((result) =>
-        flatMapResult(result, (val) => {
-          const parse = apiPyserver.claimsReply.safeParse(val);
-          if (parse.success) {
-            return {
-              tag: "success",
-              value: parse.data,
-            };
-          } else {
-            return {
-              tag: "failure",
-              error: new InvalidResponseDataError(parse.error),
-            };
-          }
-        }),
-      );
-    return fetchResult;
-    /**
-     * Catch any errors that threw
-     */
-  } catch (e) {
-    /**
-     * If the abort signal went off - return a timeout error
-     */
-    if (controller.signal.aborted) {
+    const result = await withRetry(
+      async () => {
+        // Use shared client from pool
+        const client = getHttpClient(baseUrl);
+
+        // Send fetch request to pyserver (rely on undici client timeouts)
+        const response = await client.request({
+          path: path,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            [apiPyserver.OPENAI_API_KEY_HEADER]: env.OPENAI_API_KEY,
+          },
+          body: JSON.stringify(input),
+        });
+
+        // Validate response status
+        const validationResult = await validateResponse(response);
+        if (validationResult.tag === "failure") {
+          throw validationResult.error;
+        }
+
+        // Parse and validate schema
+        const schemaResult = apiPyserver.claimsReply.safeParse(
+          validationResult.value,
+        );
+        if (schemaResult.success === false) {
+          // Schema validation errors shouldn't be retried
+          throw new InvalidResponseDataError(schemaResult.error);
+        }
+
+        // Return successful result
+        return {
+          tag: "success" as const,
+          value: schemaResult.data,
+        };
+      },
+      `PyServer claims call to ${baseUrl}${path}`,
+      // Don't retry schema validation errors
+      (error) => error instanceof InvalidResponseDataError,
+    );
+
+    return result;
+  } catch (error: unknown) {
+    // Type-safe error handling for errors from retry logic or operation timeout
+    if (error instanceof InvalidResponseDataError) {
       return {
         tag: "failure",
-        error: new TimeoutError(e),
-      };
-      /**
-       * Otherwise, return a general error.
-       *
-       * TODO: figure out what kinds of errors are best here.
-       */
-    } else {
-      return {
-        tag: "failure",
-        error: new FetchError(e),
+        error: error,
       };
     }
-    /**
-     * Finally, close the client's connection
-     */
-  } finally {
-    await client.close();
+    if (error instanceof TimeoutError) {
+      return {
+        tag: "failure",
+        error: error,
+      };
+    }
+    if (error instanceof FetchError) {
+      return {
+        tag: "failure",
+        error: error,
+      };
+    }
+    // For all other errors (including operation timeout), wrap in FetchError
+    return {
+      tag: "failure",
+      error: new FetchError(error),
+    };
   }
 }
 
 /**
- * Tests the resposne for error codes we don't like and returns a Result
+ * Tests the response for error codes we don't like and returns a Result
  */
 const validateResponse = async (
   response: Dispatcher.ResponseData<unknown>,

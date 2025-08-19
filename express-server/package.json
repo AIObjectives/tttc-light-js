@@ -35,6 +35,8 @@
     "@babel/runtime": "^7.24.0",
     "@firebase/firestore": "^4.7.5",
     "@google-cloud/storage": "^7.7.0",
+    "@types/async-retry": "^1.4.9",
+    "async-retry": "^1.3.3",
     "axios": "^1.8.2",
     "bullmq": "^5.30.1",
     "cors": "^2.8.5",
