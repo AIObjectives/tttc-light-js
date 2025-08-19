@@ -34,4 +34,4 @@ HEALTHCHECK CMD curl --fail http://localhost:8080/ || exit 1
 RUN useradd --user-group --create-home --shell /bin/false appuser
 USER appuser
 
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]
