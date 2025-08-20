@@ -1,8 +1,4 @@
-import {
-  FeatureFlagProvider,
-  FeatureFlagConfig,
-  FeatureFlagContext,
-} from "./types";
+import { FeatureFlagProvider, FeatureFlagContext } from "./types";
 import { LocalFeatureFlagProvider } from "./providers/localProvider";
 import { PostHogFeatureFlagProvider } from "./providers/posthogProvider";
 import { logger } from "tttc-common/logger";
