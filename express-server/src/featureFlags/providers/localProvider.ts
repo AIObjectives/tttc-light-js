@@ -1,4 +1,4 @@
-import { FeatureFlagProvider, FeatureFlagContext } from '../types';
+import { FeatureFlagProvider, FeatureFlagContext } from "../types";
 
 export class LocalFeatureFlagProvider implements FeatureFlagProvider {
   private flags: Record<string, boolean | string>;
@@ -7,16 +7,24 @@ export class LocalFeatureFlagProvider implements FeatureFlagProvider {
     this.flags = flags;
   }
 
-  async isEnabled(flagName: string, _context: FeatureFlagContext): Promise<boolean> {
+  async isEnabled(
+    flagName: string,
+    _context: FeatureFlagContext,
+  ): Promise<boolean> {
     const flag = this.flags[flagName];
     return Boolean(flag);
   }
 
-  async getFeatureFlag(flagName: string, _context: FeatureFlagContext): Promise<string | boolean | null> {
+  async getFeatureFlag(
+    flagName: string,
+    _context: FeatureFlagContext,
+  ): Promise<string | boolean | null> {
     return this.flags[flagName] ?? null;
   }
 
-  async getAllFlags(_context: FeatureFlagContext): Promise<Record<string, string | boolean>> {
+  async getAllFlags(
+    _context: FeatureFlagContext,
+  ): Promise<Record<string, string | boolean>> {
     return { ...this.flags };
   }
 
