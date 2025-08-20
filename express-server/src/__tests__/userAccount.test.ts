@@ -92,7 +92,7 @@ describe("User Account Handling", () => {
       email: null,
       displayName: null,
       isValid: true,
-      isWaitlistApproved: true,
+      isWaitlistApproved: false,
       roles: ["user"],
       createdAt: { toDate: () => FIXED_DATE },
       lastLoginAt: { toDate: () => FIXED_DATE },
@@ -157,7 +157,7 @@ describe("User Account Handling", () => {
         email,
         displayName,
         isValid: true,
-        isWaitlistApproved: true,
+        isWaitlistApproved: false,
         roles: ["user"],
         createdAt: expect.any(Object), // FieldValue.serverTimestamp()
         lastLoginAt: expect.any(Object), // FieldValue.serverTimestamp()
@@ -296,7 +296,7 @@ describe("User Account Handling", () => {
         email: null,
         displayName: null,
         isValid: true,
-        isWaitlistApproved: true,
+        isWaitlistApproved: false,
         roles: ["user"],
         createdAt: expect.any(Object),
         lastLoginAt: expect.any(Object),
