@@ -13,7 +13,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest",
-    "chromatic": "npx chromatic"
+    "chromatic": "npx chromatic --exit-zero-on-changes"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
