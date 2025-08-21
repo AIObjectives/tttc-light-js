@@ -1,4 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["**/*.test.*", "**/__tests__/*", "**/*.stories.tsx"]
+  "exclude": ["**/*.test.*", "**/__tests__/*", "**/*.stories.tsx"],
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  }
 }
