@@ -106,7 +106,18 @@ Required for LLM processing in pyserver.
 
 ## Local Development Setup
 
-### 1. common (Shared Package)
+### 1. Root Dependencies
+
+First, install root-level dependencies to set up development tools like Husky for pre-commit hooks:
+
+```bash
+# From repository root
+npm install
+```
+
+This installs Husky and other development tools, and automatically sets up git hooks.
+
+### 2. common (Shared Package)
 
 Contains shared types, schemas, and utilities.
 **Important**: Always build the `common` package first as it's required by other services.
@@ -119,7 +130,7 @@ npm run build
 
 **Note**: Rebuild `common` whenever you modify shared types or schemas, or use the root `npm run dev` which watches for changes.
 
-### 2. Redis
+### 3. Redis
 
 Used for job queue management.
 
@@ -141,7 +152,7 @@ redis-server
 redis-cli ping  # Should return "PONG"
 ```
 
-### 3. pyserver (Python/FastAPI)
+### 4. pyserver (Python/FastAPI)
 
 Handles LLM processing calls.
 
@@ -174,7 +185,7 @@ pytest
 # For coverage: pytest --cov=.
 ```
 
-### 4. express-server (Node.js/Express)
+### 5. express-server (Node.js/Express)
 
 Main backend API that coordinates with pyserver and manages jobs.
 
@@ -250,7 +261,7 @@ npm test
 # For coverage: npm run test:coverage
 ```
 
-### 5. next-client (Next.js Frontend)
+### 6. next-client (Next.js Frontend)
 
 Web application frontend.
 
