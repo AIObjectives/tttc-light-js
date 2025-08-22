@@ -11,7 +11,7 @@ import {
   getAnalytics,
   createAnalyticsConfig,
   AnalyticsConfig,
-} from "../../common/analytics";
+} from "tttc-common/analytics";
 import { Env } from "./types/context";
 import { logger } from "tttc-common/logger";
 
