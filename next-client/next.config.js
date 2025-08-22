@@ -4,7 +4,7 @@
 const nextConfig = {
   /* config options here */
   output: "standalone",
-  outputFileTracingRoot: require("path").resolve(__dirname, ".."), // Set workspace root to monorepo root
+  outputFileTracingRoot: __dirname, // Set to next-client directory to avoid incorrect workspace inference
   typescript: {
     tsconfigPath: "tsconfig.build.json",
   },
