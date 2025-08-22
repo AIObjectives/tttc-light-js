@@ -4,7 +4,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { sendError } from "./sendError";
 import { z } from "zod";
 import { logger } from "tttc-common/logger";
-import { getAnalytics, CommonEvents } from "../../../common/analytics";
+import { getAnalytics, CommonEvents } from "tttc-common/analytics";
 
 const authEventRequest = z.object({
   event: z.enum(["signin", "signout"]),
