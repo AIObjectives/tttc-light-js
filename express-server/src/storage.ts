@@ -133,6 +133,16 @@ export class Bucket extends Storage {
     fileName: string,
     fileContent: string,
   ): Promise<Result<string, StorageSaveError>> {
+    // Validate filename before saving
+    if (!fileName || typeof fileName !== "string") {
+      return {
+        tag: "failure",
+        error: new BucketSaveError(
+          new Error("Invalid filename: must be a non-empty string"),
+        ),
+      };
+    }
+
     const file = this.bucket.file(fileName);
     try {
       await file.save(fileContent, {
@@ -142,9 +152,35 @@ export class Bucket extends Storage {
           cacheControl: "no-cache, no-store, must-revalidate",
         },
       });
+
+      const resultUrl = this.storageUrl(fileName);
+
+      // Validate that the generated URL contains the expected filename
+      const urlFilename = decodeURIComponent(
+        new URL(resultUrl).pathname.split("/").pop() || "",
+      );
+      if (urlFilename !== fileName) {
+        storageLogger.error(
+          {
+            expectedFilename: fileName,
+            actualUrlFilename: urlFilename,
+            resultUrl,
+          },
+          "CRITICAL: Storage URL filename mismatch detected",
+        );
+        return {
+          tag: "failure",
+          error: new BucketSaveError(
+            new Error(
+              `Storage URL filename mismatch: expected ${fileName}, got ${urlFilename}`,
+            ),
+          ),
+        };
+      }
+
       return {
         tag: "success",
-        value: this.storageUrl(fileName),
+        value: resultUrl,
       };
     } catch (e) {
       return {

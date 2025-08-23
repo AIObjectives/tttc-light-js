@@ -23,6 +23,26 @@ vi.mock("../../Firebase", () => ({
     .mockResolvedValue({ uid: "test-user", email: "test@example.com" }),
   ensureUserDocument: vi.fn().mockResolvedValue(undefined),
   addReportJob: vi.fn().mockResolvedValue("job-id-123"),
+  addReportRef: vi.fn().mockResolvedValue("job-id-123"),
+  createReportJobAndRef: vi.fn().mockResolvedValue({
+    jobId: "job-id-123",
+    reportId: "report-id-123",
+  }),
+  updateReportJobDataUri: vi.fn().mockResolvedValue(undefined),
+  updateReportRefDataUri: vi.fn().mockResolvedValue(undefined),
+  db: {
+    collection: vi.fn(() => ({
+      doc: vi.fn(() => ({
+        get: vi.fn(),
+        set: vi.fn(),
+        update: vi.fn(),
+      })),
+    })),
+  },
+  getCollectionName: vi.fn((collection) => `test-${collection.toLowerCase()}`),
+  admin: {
+    firestore: vi.fn(),
+  },
 }));
 
 vi.mock("../../storage", () => ({
@@ -47,33 +67,29 @@ describe("CSV Security in Create Route", () => {
     app = express();
     app.use(express.json());
 
-    // Mock request context and logger
-    app.use((req, res, next) => {
+    // Mock request context with minimal test env
+    app.use((req, _res, next) => {
       req.context = {
         env: {
-          OPENAI_API_KEY: "test-key",
-          GCLOUD_STORAGE_BUCKET: "test-bucket",
-          GOOGLE_CREDENTIALS_ENCODED: "test-encoded-creds",
-          FIREBASE_CREDENTIALS_ENCODED: "test-firebase-creds",
+          OPENAI_API_KEY: "sk-test-key-123",
           CLIENT_BASE_URL: "http://localhost:3000",
           PYSERVER_URL: "http://localhost:8000",
-          NODE_ENV: "development" as const,
-          REDIS_URL: "redis://localhost:6379",
+          GCLOUD_STORAGE_BUCKET: "test-bucket",
+          GOOGLE_CREDENTIALS_ENCODED: "test-google-credentials",
           ALLOWED_GCS_BUCKETS: ["test-bucket"],
+          FIREBASE_CREDENTIALS_ENCODED: "test-firebase-credentials",
+          REDIS_URL: "redis://localhost:6379",
           REDIS_QUEUE_NAME: "test-queue",
           ALLOWED_ORIGINS: ["http://localhost:3000"],
+          NODE_ENV: "development" as const,
           FEATURE_FLAG_PROVIDER: "local" as const,
-          FEATURE_FLAG_API_KEY: undefined,
           FEATURE_FLAG_HOST: "https://us.i.posthog.com",
-          LOCAL_FLAGS: undefined,
           ANALYTICS_PROVIDER: "local" as const,
-          ANALYTICS_API_KEY: undefined,
           ANALYTICS_HOST: "https://app.posthog.com",
+          ANALYTICS_ENABLED: false,
           ANALYTICS_FLUSH_AT: 20,
           ANALYTICS_FLUSH_INTERVAL: 10000,
-          ANALYTICS_ENABLED: false,
           ANALYTICS_DEBUG: false,
-          FIREBASE_ADMIN_PROJECT_ID: "test-project",
         },
       };
       // Mock logger for RequestWithLogger interface
@@ -208,7 +224,6 @@ describe("CSV Security in Create Route", () => {
       .post("/create")
       .send(createValidRequestBody(cleanData))
       .expect(200);
-
     expect(response.body.message).toBe("Request received.");
     expect(validateParsedData).toHaveBeenCalledWith(cleanData);
     expect(detectCSVInjection).toHaveBeenCalledWith("This is a normal comment");
@@ -227,7 +242,6 @@ describe("CSV Security in Create Route", () => {
       .post("/create")
       .send(createValidRequestBody(dataWithNonStrings))
       .expect(200);
-
     expect(response.body.message).toBe("Request received.");
 
     // Should call detectCSVInjection for all string values

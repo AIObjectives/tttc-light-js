@@ -42,6 +42,16 @@ vi.mock("firebase-admin", () => {
 // Mock the common Firebase utilities
 vi.mock("tttc-common/firebase", () => ({
   useGetCollectionName: vi.fn(() => vi.fn((name: string) => `${name}_test`)),
+  JOB_STATUS: {
+    PENDING: "pending",
+    FINISHED: "finished",
+    FAILED: "failed",
+  },
+  SCHEMA_VERSIONS: {
+    REPORT_REF: 1,
+    REPORT_JOB: 1,
+    USER_DOCUMENT: 1,
+  },
 }));
 
 // Mock the logger
@@ -171,6 +181,7 @@ describe("User Account Handling", () => {
         roles: ["user"],
         createdAt: expect.any(Object), // FieldValue.serverTimestamp()
         lastLoginAt: expect.any(Object), // FieldValue.serverTimestamp()
+        schemaVersion: 1,
       });
       expect(mockChildLogger.debug).toHaveBeenCalledWith(
         {
@@ -313,6 +324,7 @@ describe("User Account Handling", () => {
         roles: ["user"],
         createdAt: expect.any(Object),
         lastLoginAt: expect.any(Object),
+        schemaVersion: 1,
       });
     });
 

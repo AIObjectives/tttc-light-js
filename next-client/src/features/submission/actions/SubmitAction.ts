@@ -75,7 +75,11 @@ export default async function submitAction(
   });
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error);
+    throw new Error(
+      errorData.error?.message ||
+        errorData.error ||
+        "An unknown error occurred",
+    );
   }
   return await response.json();
 }
