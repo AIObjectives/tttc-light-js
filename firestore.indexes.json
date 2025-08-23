@@ -1,0 +1,15 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "REPORT_REF",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "reportDataUri",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

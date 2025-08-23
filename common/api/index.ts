@@ -37,3 +37,12 @@ export const getReportRequestUri = z.string();
 export const getReportResponse = z.object({
   status: z.string(),
 });
+
+export const migrationApiResponse = z.object({
+  success: z.boolean(),
+  newUrl: z.string().optional(),
+  docId: z.string().optional(),
+  message: z.string().optional(),
+});
+
+export type MigrationApiResponse = z.infer<typeof migrationApiResponse>;

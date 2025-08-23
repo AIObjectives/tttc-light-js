@@ -197,7 +197,9 @@ function SubmitFormControl({
   const router = useRouter();
   useEffect(() => {
     if (response !== null) {
-      router.push(`/report/${encodeURIComponent(response.jsonUrl)}`);
+      const url =
+        response.reportUrl || `/report/${encodeURIComponent(response.jsonUrl)}`;
+      router.replace(url);
     }
   }, [response]);
 
