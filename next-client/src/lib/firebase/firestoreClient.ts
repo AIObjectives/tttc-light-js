@@ -16,6 +16,7 @@ import { Firestore } from "firebase/firestore";
 import {
   useGetCollectionName,
   reportRef,
+  reportRefWithDefaults,
   ReportRef,
 } from "tttc-common/firebase";
 import { FeedbackRequest } from "../types/clientRoutes";
@@ -33,21 +34,41 @@ const getCollectionName = useGetCollectionName(NODE_ENV);
 export async function getUsersReports(
   db: Firestore,
   userId: string,
-  // ): Promise<AsyncData<ReportRef[]> | AsyncError<Error>> {
 ): Promise<Result<ReportRef[], Error>> {
   try {
     const collectionRef = collection(db, getCollectionName("REPORT_REF"));
     const userQuery = query(collectionRef, where("userId", "==", userId));
     const snapshot = await getDocs(userQuery);
 
-    const unparsedData = await Promise.all(
-      snapshot.docs.map((doc) => doc.data()),
-    );
+    const reportsWithIds = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamps to Date objects for client-side
+        createdDate: data.createdDate?.toDate
+          ? data.createdDate.toDate()
+          : data.createdDate,
+        // Handle empty reportDataUri (reports that haven't been processed yet)
+        // Use a safe placeholder that doesn't expose internal structure
+        reportDataUri: data.reportDataUri || "about:blank", // Safe placeholder that won't be confused with real URLs
+      };
+    });
 
-    const reportRefs = reportRef.array().parse(unparsedData);
+    // Parse reports with Zod defaults for missing fields
+    const reportRefs = reportsWithIds.map((report) => {
+      const result = reportRef.safeParse(report);
+      if (result.success) {
+        return result.data;
+      }
 
+      // Apply defaults for malformed documents and log the issue
+      console.warn("Report parsing failed for", report.id, "applying defaults");
+      return reportRefWithDefaults.parse(report);
+    });
     return success(reportRefs);
   } catch (e) {
+    console.error("Error in getUsersReports:", e);
     const error =
       e instanceof Error ? e : new Error("Could not get your reports: " + e);
     return failure(error);

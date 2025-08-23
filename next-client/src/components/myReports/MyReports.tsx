@@ -6,11 +6,8 @@ import Icons from "@/assets/icons";
 import { ReportRef } from "tttc-common/firebase";
 import Link from "next/link";
 
-const reportLink = (uri: string) =>
-  location.protocol +
-  "//" +
-  location.host +
-  `/report/${encodeURIComponent(uri)}`;
+const reportLink = (id: string) =>
+  location.protocol + "//" + location.host + `/report/id/${id}`;
 
 interface MyReportsProps {
   reports: ReportRef[];
@@ -21,8 +18,8 @@ export default function MyReports({ reports }: MyReportsProps) {
     <Col gap={8} className="items-center">
       <YourReportsHeader />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px]">
-        {reports.map((reportdata) => (
-          <ReportItem {...reportdata} key={reportdata.reportDataUri} />
+        {reports.map((report) => (
+          <ReportItem {...report} key={report.id} />
         ))}
       </div>
     </Col>
@@ -40,10 +37,11 @@ function YourReportsHeader() {
 }
 
 export function ReportItem(props: ReportRef) {
-  const { description, reportDataUri } = props;
+  const { description, id } = props;
+
   return (
     <Card className="min-w-72 h-60">
-      <Link href={reportLink(reportDataUri)}>
+      <Link href={reportLink(id)}>
         <CardContent>
           <Col gap={4}>
             <ReportItemTop {...props} />
@@ -62,7 +60,6 @@ const ReportItemTop = ({
   numClaims,
   numPeople,
   createdDate,
-  reportDataUri,
 }: ReportRef) => (
   <Col gap={2}>
     <Row className="justify-between">

@@ -1,18 +1,22 @@
 import "dotenv/config";
 import { Response } from "express";
-import { Logger } from "pino";
 import { RequestWithLogger } from "../types/request";
 import { fetchSpreadsheetData } from "../googlesheet";
 import { createStorage } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
-import { formatData, uniqueSlug } from "../utils";
+import { formatData } from "../utils";
 import { pipelineQueue } from "../server";
 import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { PipelineJob } from "src/jobs/pipeline";
+import { Env } from "../types/context";
 import { sendError } from "./sendError";
 import { Result } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
+
+const createLogger = logger.child({ module: "create" });
+
 import {
   detectCSVInjection,
   validateParsedData,
@@ -129,9 +133,15 @@ const addAnonymousNames = (parsedData: {
 
 const createAndSaveReport = async (
   storage: ReturnType<typeof createStorage>,
-  userConfig: schema.LLMUserConfig,
+  reportId: string,
 ) => {
-  const filename = uniqueSlug(userConfig.title);
+  // Use stable filename based on reportId for regeneration consistency
+  const filename = `${reportId}.json`;
+  createLogger.info(
+    { filename, reportId },
+    "Using stable filename for storage based on reportId",
+  );
+
   const saveResult = await storage.save(
     filename,
     JSON.stringify({ message: "Your data is being generated" }),
@@ -141,60 +151,88 @@ const createAndSaveReport = async (
     throw saveResult.error;
   }
 
+  createLogger.info({ url: saveResult.value }, "Storage saved with URL");
+
   return { filename, jsonUrl: saveResult.value };
 };
 
-const handleUserAuthentication = async (
+const handleUserAuthenticationAndCreateDocuments = async (
   firebaseAuthToken: string | null,
   userConfig: schema.LLMUserConfig,
   jsonUrl: string,
-  logger: Logger,
+  preGeneratedReportId: string,
 ) => {
   const decodedUser: DecodedIdToken | null = firebaseAuthToken
     ? await firebase.verifyUser(firebaseAuthToken)
     : null;
 
-  logger.info(decodedUser, "Authentication result");
+  createLogger.info(
+    { decodedUser: decodedUser || undefined },
+    "Authentication result",
+  );
 
   if (decodedUser) {
-    logger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
+    createLogger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
     await firebase.ensureUserDocument(
       decodedUser.uid,
       decodedUser.email || null,
       decodedUser.name || null,
     );
-    logger.info({ uid: decodedUser.uid }, "ensureUserDocument completed");
+    createLogger.info({ uid: decodedUser.uid }, "ensureUserDocument completed");
 
-    const firebaseJobId = await firebase.addReportJob({
-      userId: decodedUser.uid,
-      title: userConfig.title,
-      description: userConfig.description,
-      reportDataUri: jsonUrl,
-      status: "pending",
-      createdAt: new Date(),
-    });
+    // Atomically create both ReportJob and ReportRef documents with actual URL
+    const { jobId, reportId } = await firebase.createReportJobAndRef(
+      {
+        userId: decodedUser.uid,
+        title: userConfig.title,
+        description: userConfig.description,
+        reportDataUri: jsonUrl, // Use actual URL from storage
+        status: "pending",
+        createdAt: new Date(),
+      },
+      {
+        userId: decodedUser.uid,
+        reportDataUri: jsonUrl, // Use actual URL from storage
+        title: userConfig.title,
+        description: userConfig.description,
+        numTopics: 0, // Placeholder, will be updated
+        numSubtopics: 0, // Placeholder, will be updated
+        numClaims: 0, // Placeholder, will be updated
+        numPeople: 0, // Placeholder, will be updated
+        createdDate: new Date(),
+      },
+    );
 
-    return { decodedUser, firebaseJobId };
+    createLogger.info(
+      { jobId, reportId, uid: decodedUser.uid },
+      "Atomically created ReportJob and ReportRef documents",
+    );
+
+    return { decodedUser, firebaseJobId: jobId, reportId };
   } else {
-    logger.info("No decodedUser, skipping ensureUserDocument");
-    return { decodedUser: null, firebaseJobId: null };
+    createLogger.info("No decodedUser, skipping document creation");
+    return { decodedUser: null, firebaseJobId: null, reportId: null };
   }
 };
 
 const buildPipelineJob = (
-  env: any,
+  env: Env,
   decodedUser: DecodedIdToken,
   firebaseJobId: string,
+  reportId: string,
   userConfig: schema.LLMUserConfig,
-  updatedConfig: any,
+  updatedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] },
   jsonUrl: string,
 ): PipelineJob => {
+  const filename = `${reportId}.json`;
+
   return {
     config: {
       firebaseDetails: {
         userId: decodedUser.uid,
         reportDataUri: jsonUrl,
         firebaseJobId,
+        reportId,
       },
       env,
       auth: "public",
@@ -212,7 +250,10 @@ const buildPipelineJob = (
     },
     data: updatedConfig.data,
     reportDetails: {
-      ...updatedConfig,
+      title: updatedConfig.title,
+      description: updatedConfig.description,
+      question: updatedConfig.title, // Using title as question fallback
+      filename: filename, // Use validated filename based on reportId
     },
   };
 };
@@ -257,25 +298,36 @@ async function createNewReport(
   const _parsedData = await parseData(data);
   const parsedData = addAnonymousNames(_parsedData);
 
-  // Create and save report
-  const storage = createStorage(env);
-  const { filename, jsonUrl } = await createAndSaveReport(storage, userConfig);
+  // Generate reportId that will be used for both storage filename and Firebase document ID
+  const reportId = firebase.db
+    .collection(firebase.getCollectionName("REPORT_REF"))
+    .doc().id;
 
-  // Handle user authentication and Firebase operations
-  const { decodedUser, firebaseJobId } = await handleUserAuthentication(
+  // Create storage file with stable filename
+  const storage = createStorage(env);
+  const { filename, jsonUrl } = await createAndSaveReport(storage, reportId);
+
+  // Now handle authentication and create Firebase documents with actual URL
+  const {
+    decodedUser,
+    firebaseJobId,
+    reportId: createdReportId,
+  } = await handleUserAuthenticationAndCreateDocuments(
     firebaseAuthToken,
     userConfig,
     jsonUrl,
-    req.log,
+    reportId,
   );
 
   // Validate required Firebase data
   if (decodedUser === null)
     throw new Error("Firebase is now required to run a report.");
   if (firebaseJobId === null) throw new Error("Failed to add firebase job.");
+  if (createdReportId === null)
+    throw new Error("Failed to create report reference.");
 
   const reportUrl = new URL(
-    `report/${encodeURIComponent(jsonUrl)}`,
+    `report/id/${reportId}`,
     CLIENT_BASE_URL,
   ).toString();
 
@@ -307,6 +359,7 @@ async function createNewReport(
     env,
     decodedUser,
     firebaseJobId,
+    reportId,
     userConfig,
     updatedConfig,
     jsonUrl,
@@ -331,8 +384,10 @@ export default async function create(req: RequestWithLogger, res: Response) {
     res.json(result.value.response);
 
     // Queue the pipeline job in the background
+    // Use firebaseJobId as queue job ID but stable reportId-based filename for storage
+    // This ensures consistent storage location for regeneration scenarios
     pipelineQueue.add("generate-report", result.value.pipelineJob, {
-      jobId: result.value.response.filename,
+      jobId: result.value.pipelineJob.config.firebaseDetails.firebaseJobId,
     });
   } catch (e) {
     req.log.error(

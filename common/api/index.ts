@@ -9,14 +9,14 @@ export const generateApiRequest = z.object({
 
 export type GenerateApiRequest = z.infer<typeof generateApiRequest>;
 
-export const generateApiReponse = z.object({
+export const generateApiResponse = z.object({
   message: z.string(),
   filename: z.string().min(1),
   jsonUrl: z.string().url(),
   reportUrl: z.string().url(),
 });
 
-export type GenerateApiResponse = z.infer<typeof generateApiReponse>;
+export type GenerateApiResponse = z.infer<typeof generateApiResponse>;
 
 export const reportJobStatus = z.enum([
   "queued",
@@ -37,3 +37,17 @@ export const getReportRequestUri = z.string();
 export const getReportResponse = z.object({
   status: z.string(),
 });
+
+export const migrationApiResponse = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+    newUrl: z.string(),
+    docId: z.string(),
+  }),
+  z.object({
+    success: z.literal(false),
+    message: z.string(),
+  }),
+]);
+
+export type MigrationApiResponse = z.infer<typeof migrationApiResponse>;
