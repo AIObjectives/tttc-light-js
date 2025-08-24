@@ -178,6 +178,7 @@ export async function pipelineJob(job: Job<PipelineJob>) {
     // ! TODO Error handling for this stuff
     Firebase.addReportRef(firebaseDetails.firebaseJobId, {
       ...firebaseDetails,
+      id: firebaseDetails.firebaseJobId,
       title,
       description: description,
       numTopics: topics.length,

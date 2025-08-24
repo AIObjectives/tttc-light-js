@@ -152,7 +152,16 @@ const handleUserAuthentication = async (
     ? await firebase.verifyUser(firebaseAuthToken)
     : null;
 
-  logger.info("EXPRESS CREATE: Authentication result", decodedUser);
+  logger.info(
+    "EXPRESS CREATE: Authentication result",
+    decodedUser
+      ? {
+          uid: decodedUser.uid,
+          email: decodedUser.email,
+          email_verified: decodedUser.email_verified,
+        }
+      : "No authentication token provided",
+  );
 
   if (decodedUser) {
     logger.info("EXPRESS CREATE: Calling ensureUserDocument", decodedUser.uid);

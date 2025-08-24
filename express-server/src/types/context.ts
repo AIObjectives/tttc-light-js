@@ -101,7 +101,7 @@ export const env = z.object({
   FEATURE_FLAG_API_KEY: z.string().optional(),
   FEATURE_FLAG_HOST: z.string().optional().default("https://us.i.posthog.com"),
   LOCAL_FLAGS: z
-    .record(z.string(), z.union([z.string(), z.boolean()]))
+    .record(z.string(), z.union([z.string(), z.boolean(), z.number()]))
     .optional(),
 
   // Analytics Configuration
@@ -129,6 +129,12 @@ export const env = z.object({
     .optional()
     .default("false")
     .transform((val) => val.toLowerCase() === "true"),
+  ANALYTICS_DEBUG: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((val) => val.toLowerCase() === "true"),
+  FIREBASE_ADMIN_PROJECT_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof env>;
