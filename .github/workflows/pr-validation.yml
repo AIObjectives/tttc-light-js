@@ -1,0 +1,98 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Build and Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install all dependencies
+        run: |
+          # Install root dependencies
+          npm ci
+          # Install subdirectory dependencies without breaking symlinks
+          cd common && npm ci
+          cd ../express-server && npm ci
+          cd ../next-client && npm ci
+          cd ..
+
+      - name: Check formatting
+        run: npx prettier . --check
+
+      - name: Build and test common package
+        run: |
+          cd common
+          npx tsc --noEmit
+          npm run build
+          npm test
+
+      - name: Build and test Express server
+        env:
+          NODE_ENV: development
+          OPENAI_API_KEY: dummy-key-for-ci
+          GCLOUD_STORAGE_BUCKET: dummy-bucket
+          GOOGLE_CREDENTIALS_ENCODED: eyJ0ZXN0IjogInJhbmRvbSIsICJkYXRhIjogImZha2UifQ==
+          FIREBASE_CREDENTIALS_ENCODED: eyJmYWtlIjogImNyZWRlbnRpYWxzIiwgImZvciI6ICJjaXRlc3QifQ==
+          CLIENT_BASE_URL: http://localhost:3000
+          PYSERVER_URL: http://localhost:8000
+          REDIS_URL: redis://localhost:6379
+          ALLOWED_ORIGINS: http://localhost:3000
+          ALLOWED_GCS_BUCKETS: dummy-bucket
+        run: |
+          cd express-server
+          npx tsc --noEmit
+          npm run build
+          npm test
+
+      - name: Build and test Next.js client
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: dummy-api-key-for-ci-build
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: dummy-project.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: dummy-project-id
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: dummy-project.appspot.com
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: 123456789012
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:123456789012:web:abcdef123456
+          PIPELINE_EXPRESS_URL: http://localhost:8080
+        run: |
+          cd next-client
+          npx tsc --noEmit
+          npm run build
+          npm test
+
+      - name: Setup Python and test
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyserver/requirements*.txt"
+
+      - name: Check Python syntax and run tests
+        env:
+          ALLOWED_ORIGINS: http://localhost:8080
+        run: |
+          cd pyserver
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          python -m py_compile main.py config.py utils.py simple_sanitizer.py
+          python -m pytest -v
