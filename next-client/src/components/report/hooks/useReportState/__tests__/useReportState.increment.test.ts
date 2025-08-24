@@ -12,7 +12,7 @@ import { ReportState, SubtopicNode, TopicNode } from "../types";
 
 const { state, reducer } = setupTestState();
 
-const getTestTopic = (state: ReportState): TopicNode => state.children[0];
+const getTestTopic = (state: ReportState): TopicNode => state.children[2];
 
 const getTestSubtopic = (state: ReportState): SubtopicNode =>
   getTestTopic(state).children[0];

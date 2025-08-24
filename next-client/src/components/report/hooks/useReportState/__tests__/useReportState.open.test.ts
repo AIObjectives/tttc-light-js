@@ -85,8 +85,8 @@ describe("Open", () => {
   });
 
   describe("Opening to subtopics", () => {
-    const testTopicIdx = 3;
-    const testSubtopicHighIdx = 7;
+    const testTopicIdx = 2; // Topic with 6 subtopics
+    const testSubtopicHighIdx = 5; // Last subtopic
     const testSubtopicLowIdx = 1;
     const getTestTopic = (state: ReportState) => getTopic(state, testTopicIdx);
     const getTestSubtopicHigh = (state: ReportState) =>
@@ -100,12 +100,12 @@ describe("Open", () => {
     ];
 
     describe("Precondition test", () => {
-      test("Test topic has 10 items. If not, test data has changed", () => {
-        expect(getTestTopic(state).children.length).toBe(10);
+      test("Test topic has 6 items. If not, test data has changed", () => {
+        expect(getTestTopic(state).children.length).toBe(6);
       });
 
-      test("Number of subtopics in test topic is greater than the default topic pagination", () => {
-        expect(getTestTopic(state).children.length).greaterThan(
+      test("Number of subtopics in test topic is greater than or equal to the default topic pagination", () => {
+        expect(getTestTopic(state).children.length).greaterThanOrEqual(
           defaultTopicPagination,
         );
       });
@@ -138,9 +138,9 @@ describe("Open", () => {
   });
 
   describe("Opening to claim", () => {
-    const testTopicIdx = 3;
-    const testSubtopicHighIdx = 7;
-    const testClaimHighIdx = 4;
+    const testTopicIdx = 2; // Topic with 6 subtopics
+    const testSubtopicHighIdx = 5; // Last subtopic
+    const testClaimHighIdx = 10;
     const getTestTopic = (state: ReportState) => getTopic(state, testTopicIdx);
     const getTestSubtopicHigh = (state: ReportState) =>
       getSubtopic(state, testTopicIdx, testSubtopicHighIdx);
