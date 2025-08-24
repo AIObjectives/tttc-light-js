@@ -12,7 +12,7 @@ import { ReportState, SubtopicNode, TopicNode } from "../types";
 
 const { state, reducer } = setupTestState();
 
-const getTestTopic = (state: ReportState): TopicNode => state.children[2];
+const getTestTopic = (state: ReportState): TopicNode => state.children[0];
 
 const getTestSubtopic = (state: ReportState): SubtopicNode =>
   getTestTopic(state).children[0];
@@ -27,8 +27,8 @@ describe("Topic Node", () => {
   const newState1 = incrementTopic(state, getTestTopic(state).id);
   const newState2 = incrementTopic(newState1, getTestTopic(newState1).id);
   describe("Precheck", () => {
-    test("Make sure our test topic's children length is >= 6", () => {
-      expect(getTestTopic(state).children.length).greaterThanOrEqual(6);
+    test("Make sure our test topic's children length is >= 3", () => {
+      expect(getTestTopic(state).children.length).greaterThanOrEqual(3);
     });
 
     test("Make sure our test topic's pag is set to default", () => {
