@@ -22,6 +22,39 @@ import {
 import { validateEnv } from "../types/context";
 import { contextMiddleware } from "../middleware";
 
+// Helper function to create mock environment for feature flag tests
+const createMockEnv = (
+  provider = "local",
+  apiKey?: string,
+  localFlags?: Record<string, boolean | string | number>,
+  host?: string,
+) => ({
+  FEATURE_FLAG_PROVIDER: provider as "local" | "posthog",
+  FEATURE_FLAG_API_KEY: apiKey,
+  FEATURE_FLAG_HOST: host || "https://test.posthog.com",
+  LOCAL_FLAGS: localFlags,
+  // Add other required env properties with defaults
+  OPENAI_API_KEY: "test-key",
+  GCLOUD_STORAGE_BUCKET: "test-bucket",
+  GOOGLE_CREDENTIALS_ENCODED: "test-encoded-creds",
+  FIREBASE_CREDENTIALS_ENCODED: "test-firebase-creds",
+  CLIENT_BASE_URL: "http://localhost:3000",
+  PYSERVER_URL: "http://localhost:8000",
+  NODE_ENV: "development" as const,
+  REDIS_URL: "redis://localhost:6379",
+  ALLOWED_GCS_BUCKETS: ["test-bucket"],
+  REDIS_QUEUE_NAME: "test-queue",
+  ALLOWED_ORIGINS: ["http://localhost:3000"],
+  ANALYTICS_PROVIDER: "local" as const,
+  ANALYTICS_API_KEY: undefined,
+  ANALYTICS_HOST: "https://app.posthog.com",
+  ANALYTICS_FLUSH_AT: 20,
+  ANALYTICS_FLUSH_INTERVAL: 10000,
+  ANALYTICS_ENABLED: false,
+  ANALYTICS_DEBUG: false,
+  FIREBASE_ADMIN_PROJECT_ID: undefined,
+});
+
 // Mock validateEnv to return a valid test environment
 vi.mock("../types/context", () => ({
   validateEnv: vi.fn(() => ({
@@ -420,10 +453,7 @@ describe("Feature Flags Integration Tests", () => {
   describe("Feature Flag Initialization Integration", () => {
     it("should handle initialization with empty local flags", () => {
       expect(() => {
-        initializeFeatureFlags({
-          provider: "local",
-          localFlags: {},
-        });
+        initializeFeatureFlags(createMockEnv("local", undefined, {}));
       }).not.toThrow();
 
       const provider = getFeatureFlagProvider();
@@ -431,16 +461,14 @@ describe("Feature Flags Integration Tests", () => {
     });
 
     it("should prevent re-initialization", () => {
-      const provider1 = initializeFeatureFlags({
-        provider: "local",
-        localFlags: { flag1: true },
-      });
+      const provider1 = initializeFeatureFlags(
+        createMockEnv("local", undefined, { flag1: true }),
+      );
 
       // Attempt to re-initialize should return the same provider
-      const provider2 = initializeFeatureFlags({
-        provider: "local",
-        localFlags: { flag2: false },
-      });
+      const provider2 = initializeFeatureFlags(
+        createMockEnv("local", undefined, { flag2: false }),
+      );
 
       expect(provider1).toBe(provider2);
     });
@@ -470,10 +498,7 @@ describe("Feature Flags Integration Tests", () => {
 
   describe("Graceful Shutdown Integration", () => {
     it("should shutdown local provider gracefully", async () => {
-      initializeFeatureFlags({
-        provider: "local",
-        localFlags: { test: true },
-      });
+      initializeFeatureFlags(createMockEnv("local", undefined, { test: true }));
 
       expect(getFeatureFlagProvider()).not.toBeNull();
 
@@ -529,20 +554,18 @@ describe("Feature Flags Integration Tests", () => {
 
     it("should allow re-initialization after shutdown", async () => {
       // Initialize
-      const provider1 = initializeFeatureFlags({
-        provider: "local",
-        localFlags: { test1: true },
-      });
+      const provider1 = initializeFeatureFlags(
+        createMockEnv("local", undefined, { test1: true }),
+      );
 
       // Shutdown
       await shutdownFeatureFlags();
       expect(getFeatureFlagProvider()).toBeNull();
 
       // Re-initialize
-      const provider2 = initializeFeatureFlags({
-        provider: "local",
-        localFlags: { test2: false },
-      });
+      const provider2 = initializeFeatureFlags(
+        createMockEnv("local", undefined, { test2: false }),
+      );
 
       expect(provider2).not.toBe(provider1);
       expect(getFeatureFlagProvider()).toBe(provider2);

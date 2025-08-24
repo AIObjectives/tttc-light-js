@@ -53,7 +53,7 @@ export async function isFeatureEnabled(
 export async function getFeatureFlag(
   flagName: string,
   context: FeatureFlagContext = {},
-): Promise<string | boolean | null> {
+): Promise<string | boolean | number | null> {
   if (!featureFlagProvider) {
     logger.warn("FEATURE FLAGS: Feature flags not initialized, returning null");
     return null;
@@ -64,7 +64,7 @@ export async function getFeatureFlag(
 
 export async function getAllFeatureFlags(
   context: FeatureFlagContext = {},
-): Promise<Record<string, string | boolean>> {
+): Promise<Record<string, string | boolean | number>> {
   if (!featureFlagProvider) {
     console.warn(
       "FEATURE FLAGS: Feature flags not initialized, returning empty object",
