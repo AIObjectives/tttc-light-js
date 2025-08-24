@@ -45,7 +45,11 @@ export default function LoginButton() {
     try {
       logger.debug("Sign in button clicked");
       const result = await signInWithGoogle();
-      logger.info("Sign in successful", result.user);
+      logger.info("Sign in successful", {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+      });
       // Log signin event to server
       await logAuthEvent("signin", result.user);
     } catch (error) {
@@ -55,7 +59,16 @@ export default function LoginButton() {
 
   const handleSignOut = async () => {
     try {
-      logger.debug("Sign out button clicked", user);
+      logger.debug(
+        "Sign out button clicked",
+        user
+          ? {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+            }
+          : undefined,
+      );
 
       // Log signout event to server (before actually signing out)
       await logAuthEvent("signout");
