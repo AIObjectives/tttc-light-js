@@ -2,6 +2,8 @@ name: Deploy Pyserver to Cloud Run - Production
 
 on:
   workflow_dispatch:
+permissions:
+  contents: read
 
 jobs:
   pre-deploy:
