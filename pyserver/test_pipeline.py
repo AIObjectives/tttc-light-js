@@ -5,8 +5,6 @@ from main import app
 import config
 import os
 
-import visualize as vz
-
 ##################
 # Sample inputs  #
 #----------------#
