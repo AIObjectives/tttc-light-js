@@ -23,7 +23,16 @@ export function useUser() {
       const unsubscribe = onAuthStateChanged(async (authUser: User | null) => {
         if (!mounted) return;
 
-        logger.debug("CLIENT: Auth state changed", authUser);
+        logger.debug(
+          "CLIENT: Auth state changed",
+          authUser
+            ? {
+                uid: authUser.uid,
+                email: authUser.email,
+                displayName: authUser.displayName,
+              }
+            : undefined,
+        );
 
         // Detect logout: previous user existed but current user is null
         if (previousUserRef.current && !authUser) {
