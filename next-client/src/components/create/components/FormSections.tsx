@@ -278,7 +278,7 @@ export function CostEstimate({ files }: { files: FileList | undefined }) {
   return (
     <Col gap={4}>
       <h4>Cost</h4>
-      <Col gap={2} className="p-4 pb-8 border rounded-lg">
+      <Col gap={2} className="p-4 pb-6 border rounded-lg">
         <p className="font-medium">{cost}</p>
         <p className="text-muted-foreground">
           This estimate is based on past reports. Typically, our real cost vary
