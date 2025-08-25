@@ -10,9 +10,9 @@ export interface FeatureFlagProvider {
   getFeatureFlag(
     flagName: string,
     context: FeatureFlagContext,
-  ): Promise<string | boolean | null>;
+  ): Promise<string | boolean | number | null>;
   getAllFlags(
     context: FeatureFlagContext,
-  ): Promise<Record<string, string | boolean>>;
+  ): Promise<Record<string, string | boolean | number>>;
   shutdown(): Promise<void>;
 }

@@ -3,7 +3,7 @@ import { handlePipelineStep } from "../handlePipelineStep";
 import { FetchError, InvalidResponseDataError } from "../errors";
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { Result } from "../../types/result";
+import { Result } from "tttc-common/functional-utils";
 
 // Create a schema for testing - simple {status: boolean} as requested
 const testSchema = z.object({
