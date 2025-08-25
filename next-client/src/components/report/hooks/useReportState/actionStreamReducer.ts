@@ -59,7 +59,10 @@ export function actionStreamReducer(
      * Set's a topic's pagination to an arbitrary value.
      */
     case "setTopicPagination": {
-      return modifyTopic(topicNodePagSetter(payload.pag))(state, payload.path);
+      return modifyTopic(explicitPaginationSetter(payload.pag))(
+        state,
+        payload.path,
+      );
     }
     /**
      * Increments a topic's pagination by a set amount
@@ -92,7 +95,7 @@ export function actionStreamReducer(
      * Sets a subtopic's pagination to an arbitrary value.
      */
     case "setSubtopicPagination": {
-      return modifySubtopic(subtopicNodePagSetter(payload.pag))(
+      return modifySubtopic(explicitPaginationSetter(payload.pag))(
         state,
         payload.path,
       );
@@ -130,6 +133,7 @@ export function actionStreamReducer(
 
 /**
  * Guards against setting a node's pagination above its children length or below its default pag
+ * Used for reset and increment operations where we want to maintain minimum defaults
  */
 const nodePaginationSetter =
   (defaultSize: number) =>
@@ -139,8 +143,22 @@ const nodePaginationSetter =
     const lowerbound = Math.min(defaultSize, node.children.length - 1);
     return {
       ...node,
-      // Should never bo below lower bound or above max children index
+      // Should never go below lower bound or above max children index
       pagination: Math.min(Math.max(pag, lowerbound), node.children.length - 1),
+    };
+  };
+
+/**
+ * Sets pagination to an explicit value, only bounded by children length
+ * Used when we need to show a specific item (e.g., opening to a specific claim)
+ */
+const explicitPaginationSetter =
+  (pag: number) =>
+  <T extends TopicNode | SubtopicNode>(node: T) => {
+    return {
+      ...node,
+      // Only bounded by 0 and max children index
+      pagination: Math.min(Math.max(pag, 0), node.children.length - 1),
     };
   };
 
