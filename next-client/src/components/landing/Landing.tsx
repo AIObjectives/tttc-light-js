@@ -154,22 +154,22 @@ const CaseStudy = ({
   date: string;
   resourceUrl: string;
 }) => (
-  <a href={resourceUrl} target="blank">
-    <Card className="max-w-[260px] transition-transform duration-200 transform hover:opacity-90">
-      <div className="w-[260px] h-[171px] relative">
+  <Card className="w-full md:max-w-[260px] transition-transform duration-200 transform hover:opacity-90">
+    <a href={resourceUrl} target="blank">
+      <div className="w-full aspect-[1.5] md:max-w-[260px] md:max-h-[171px] relative">
         <Image
           src={imageUri}
           alt={`${title} image`}
           layout="fill"
-          className="rounded-t-sm"
+          className="rounded-t-sm "
         />
       </div>
       <Col gap={2} className="p-3 justify-between h-24">
         <p className="p2 line-clamp-2">{title}</p>
         <p className="p2 text-muted-foreground">{date}</p>
       </Col>
-    </Card>
-  </a>
+    </a>
+  </Card>
 );
 
 const Organizations = () => (
