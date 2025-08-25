@@ -104,8 +104,8 @@ describe("Open", () => {
         expect(getTestTopic(state).children.length).toBe(3);
       });
 
-      test("Number of subtopics in test topic is greater than or equal to the default topic pagination", () => {
-        expect(getTestTopic(state).children.length).greaterThanOrEqual(
+      test("Number of subtopics in test topic is greater than the default topic pagination", () => {
+        expect(getTestTopic(state).children.length).greaterThan(
           defaultTopicPagination,
         );
       });
