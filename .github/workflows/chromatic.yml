@@ -1,0 +1,36 @@
+name: "Chromatic"
+
+  # Docs recommend on push: https://www.chromatic.com/docs/github-actions/#recommended-configuration-for-build-events
+on: push
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+jobs:
+  chromatic:
+    name: Run Chromatic
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">=24"
+      - name: Install common dependencies
+        working-directory: "./common"
+        run: npm ci
+      - name: Build commmon
+        working-directory: "./common"
+        run: npm run build
+      - name: Install client dependencies
+        working-directory: "./next-client"
+        run: npm ci
+      - name: Run Chromatic
+        uses: chromaui/action@latest
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          autoAcceptChanges: "main" # keeps main clean https://www.chromatic.com/docs/github-actions/#github-squashrebase-merge-and-the-main-branch
+          skip: "dependabot/**" # skip dependabot branches
+          workingDir: './next-client' # for some reason we need this here as well.
