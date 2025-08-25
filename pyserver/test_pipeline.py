@@ -58,6 +58,14 @@ base_llm = {
   "api_key" : API_KEY
 }
 
+def require_api_key():
+    """Decorator to skip tests that require a real OpenAI API key"""
+    import pytest
+    return pytest.mark.skipif(
+        not API_KEY or API_KEY.startswith('test-'),
+        reason="Requires a valid OpenAI API key"
+    )
+
 dupe_claims_4o_ids = {'Pets': {'total': 5, 'subtopics': {'Cats': {'total': 2, 'claims': [{'claim': 'Cats are the best household pets.', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'a'}, {'claim': 'Cats are the best household pets.', 'quote': 'I really really love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'd'}]}, 'Dogs': {'total': 1, 'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs', 'commentId': 'b'}]}, 'Birds': {'total': 2, 'claims': [{'claim': 'Birds are not ideal pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'c'}, {'claim': 'There is uncertainty about birds as pets.', 'quote': "I don't know about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'e'}]}}}}
 
 dupe_claims_4o_speakers = {'Pets': {'total': 5, 'subtopics': {'Cats': {'total': 2, 'claims': [{'claim': 'Cats are the best household pets.', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'a', "speaker" : "Alice"}, {'claim': 'Cats are the best household pets.', 'quote': 'I really really love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'd', "speaker" : "Dany"}]}, 'Dogs': {'total': 1, 'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs', 'commentId': 'b', "speaker" : "Bob"}]}, 'Birds': {'total': 2, 'claims': [{'claim': 'Birds are not ideal pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'c', "speaker" : "Charles"}, {'claim': 'There is uncertainty about birds as pets.', 'quote': "I don't know about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'e', "speaker" : "Elinor"}]}}}}
@@ -72,68 +80,76 @@ def json_print(json_obj):
 # Basic tests #
 #-------------#
 
+@require_api_key()
 def test_topic_tree(comments=min_pets_3):
-  llm = base_llm
+  llm = base_llm.copy()
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments}
-  response = client.post("/topic_tree/", json=request)
+  headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
+  response = client.post("/topic_tree/", json=request, headers=headers)
   json_print(response.json())
 
 def test_claims(comments=dupes_pets_5):
-  llm = base_llm
+  llm = base_llm.copy()
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : topic_tree_4o}
-  response = client.post("/claims/", json=request)
+  headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
+  response = client.post("/claims/", json=request, headers=headers)
   print(json.dumps(response.json(), indent=4))
 
 def test_dupes(claims_tree=dupe_claims_4o_speakers):
-  llm = base_llm
+  llm = base_llm.copy()
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
   request ={"llm" : llm, "tree" : claims_tree, "sort" : "numPeople"}
-  response = client.put("/sort_claims_tree/", json=request)
+  headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
+  response = client.put("/sort_claims_tree/", json=request, headers=headers)
   print(json.dumps(response.json(), indent=4))
 
+@require_api_key()
 def test_cruxes(comments=longer_pets_15):
-  llm = base_llm
+  llm = base_llm.copy()
   llm.update({"model_name" : "gpt-4-turbo-preview"})
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
-  taxonomy = client.post("/topic_tree/", json=request).json()["data"]
+  headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
+  taxonomy = client.post("/topic_tree/", json=request, headers=headers).json()["data"]
   json_print(taxonomy)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"model_name" : "gpt-4o-mini"})
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :taxonomy}}
-  claims = client.post("/claims/", json=request).json()["data"]
+  claims = client.post("/claims/", json=request, headers=headers).json()["data"]
   json_print(claims)
 
   print("\n\nStep 3: Cruxes\n\n")
   llm.update({"user_prompt" : config.CRUX_PROMPT})
   request ={"llm" : llm, "topics" : taxonomy, "tree" : claims}
-  cruxes = client.post("/cruxes/", json=request) #.json()["data"]
+  cruxes = client.post("/cruxes/", json=request, headers=headers) #.json()["data"]
   print(cruxes)
 
+@require_api_key()
 def test_full_pipeline(comments=dupes_pets_5):
   print("Step 1: Topic tree\n\n")
-  llm = base_llm
+  llm = base_llm.copy()
   # fancier model for more precise deduplication
   llm.update({"model_name" : "gpt-4-turbo-preview"})
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
-  tree = client.post("/topic_tree/", json=request).json()["data"]
+  headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
+  tree = client.post("/topic_tree/", json=request, headers=headers).json()["data"]
   json_print(tree)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :tree}}
-  claims = client.post("/claims/", json=request).json()["data"]
+  claims = client.post("/claims/", json=request, headers=headers).json()["data"]
   json_print(claims)
 
   print("\n\nStep 3: Dedup & sort\n\n")
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
   request ={"llm" : llm, "tree" : claims , "sort" : "numPeople"}
-  full_tree = client.put("/sort_claims_tree/", json=request)
+  full_tree = client.put("/sort_claims_tree/", json=request, headers=headers)
   print(json.dumps(full_tree.json(), indent=4))
 
 #################
@@ -161,6 +177,7 @@ def test_wb_dupes():
   response = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request)
   json_print(response.json())
 
+@require_api_key()
 def test_wb_full_pipeline(comments=dupes_pets_5):
   print("Step 1: Topic tree\n\n")
   llm = base_llm
@@ -185,6 +202,7 @@ def test_wb_full_pipeline(comments=dupes_pets_5):
   #.json()["data"]
   #json_print(full_tree)
 
+@require_api_key()
 def test_wb_cruxes_pipeline(comments=pets_conflict):
 
   print("Step 1: Topic tree\n\n")
@@ -209,7 +227,8 @@ def test_wb_cruxes_pipeline(comments=pets_conflict):
   json_print(cruxes.json()["data"])
 
 
-def test_from_json(json_file="deepseek_10_1.json"):
+@require_api_key()
+def test_from_json(json_file="test_comments.json"):
 
   with open(json_file, 'r', encoding='utf-8') as jsonfile:
     comments = json.load(jsonfile)
@@ -255,7 +274,17 @@ client = TestClient(app)
 #test_full_pipeline(fancy_scifi_10)
 #test_cruxes(pets_conflict)
 
-test_full_pipeline(speaker_pets_3)
+@require_api_key()
+def test_integration_full_pipeline():
+    """Integration test that requires a real API key"""
+    test_full_pipeline(speaker_pets_3)
+
+if __name__ == "__main__":
+    if API_KEY and not API_KEY.startswith('test-'):
+        test_full_pipeline(speaker_pets_3)
+    else:
+        print("Skipping integration test - no valid OpenAI API key found")
+        print("Use mocked tests with: python -m pytest test_pipeline_mocked.py")
 #test_claims(longer_pets_15)
 #test_dupes()
 
