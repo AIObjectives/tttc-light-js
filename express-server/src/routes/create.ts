@@ -1,5 +1,7 @@
 import "dotenv/config";
-import { Request, Response } from "express";
+import { Response } from "express";
+import { Logger } from "pino";
+import { RequestWithLogger } from "../types/request";
 import { fetchSpreadsheetData } from "../googlesheet";
 import { createStorage } from "../storage";
 import * as api from "tttc-common/api";
@@ -11,7 +13,6 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { PipelineJob } from "src/jobs/pipeline";
 import { sendError } from "./sendError";
 import { Result } from "tttc-common/functional-utils";
-import { logger } from "tttc-common/logger";
 import {
   detectCSVInjection,
   validateParsedData,
@@ -147,33 +148,22 @@ const handleUserAuthentication = async (
   firebaseAuthToken: string | null,
   userConfig: schema.LLMUserConfig,
   jsonUrl: string,
+  logger: Logger,
 ) => {
   const decodedUser: DecodedIdToken | null = firebaseAuthToken
     ? await firebase.verifyUser(firebaseAuthToken)
     : null;
 
-  logger.info(
-    "EXPRESS CREATE: Authentication result",
-    decodedUser
-      ? {
-          uid: decodedUser.uid,
-          email: decodedUser.email,
-          email_verified: decodedUser.email_verified,
-        }
-      : "No authentication token provided",
-  );
+  logger.info(decodedUser, "Authentication result");
 
   if (decodedUser) {
-    logger.info("EXPRESS CREATE: Calling ensureUserDocument", decodedUser.uid);
+    logger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
     await firebase.ensureUserDocument(
       decodedUser.uid,
       decodedUser.email || null,
       decodedUser.name || null,
     );
-    logger.info(
-      "EXPRESS CREATE: ensureUserDocument completed",
-      decodedUser.uid,
-    );
+    logger.info({ uid: decodedUser.uid }, "ensureUserDocument completed");
 
     const firebaseJobId = await firebase.addReportJob({
       userId: decodedUser.uid,
@@ -186,7 +176,7 @@ const handleUserAuthentication = async (
 
     return { decodedUser, firebaseJobId };
   } else {
-    logger.info("EXPRESS CREATE: No decodedUser, skipping ensureUserDocument");
+    logger.info("No decodedUser, skipping ensureUserDocument");
     return { decodedUser: null, firebaseJobId: null };
   }
 };
@@ -248,7 +238,7 @@ const useAnonymousNames = (numOfEmptyInterviewRows: number) => {
 };
 
 async function createNewReport(
-  req: Request,
+  req: RequestWithLogger,
 ): Promise<
   Result<
     { response: api.GenerateApiResponse; pipelineJob: PipelineJob },
@@ -276,6 +266,7 @@ async function createNewReport(
     firebaseAuthToken,
     userConfig,
     jsonUrl,
+    req.log,
   );
 
   // Validate required Firebase data
@@ -330,7 +321,7 @@ async function createNewReport(
   };
 }
 
-export default async function create(req: Request, res: Response) {
+export default async function create(req: RequestWithLogger, res: Response) {
   try {
     const result = await createNewReport(req);
     if (result.tag === "failure") {
@@ -344,7 +335,14 @@ export default async function create(req: Request, res: Response) {
       jobId: result.value.response.filename,
     });
   } catch (e) {
-    console.error(e);
+    req.log.error(
+      {
+        error: e,
+        errorMessage:
+          e instanceof Error ? e.message : "An unknown error occurred",
+      },
+      "Create report error",
+    );
     res.status(500).send({
       error: {
         message: e instanceof Error ? e.message : "An unknown error occurred.",

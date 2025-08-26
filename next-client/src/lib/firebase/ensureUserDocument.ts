@@ -1,8 +1,10 @@
 import { User } from "firebase/auth";
 import { fetchToken } from "./getIdToken";
-import { logger } from "tttc-common/logger";
+import { logger } from "tttc-common/logger/browser";
 import pRetry, { AbortError } from "p-retry";
 import { APIError, isAPIError } from "../types/api";
+
+const ensureUserLogger = logger.child({ module: "ensure-user-client" });
 
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_REQUEST_TIMEOUT = 408;
@@ -55,10 +57,13 @@ async function callUserEnsureAPI(token: string): Promise<{
     error.status = response.status;
     error.errorData = errorData;
 
-    logger.error("CLIENT: API call failed:", {
-      status: response.status,
-      errorData,
-    });
+    ensureUserLogger.error(
+      {
+        status: response.status,
+        errorData,
+      },
+      "API call failed",
+    );
 
     throw error;
   }
@@ -75,17 +80,20 @@ async function attemptEnsureUserDocument(
   user: UserDocument;
   message: string;
 }> {
-  logger.info(`CLIENT: Ensuring user document for UID: ${user.uid}`);
+  ensureUserLogger.info({ uid: user.uid }, "Ensuring user document");
 
   // Get token (with optional refresh)
   let token: string;
   if (forceTokenRefresh) {
     token = await user.getIdToken(true);
-    logger.info("CLIENT: Using refreshed token");
+    ensureUserLogger.info("Using refreshed token");
   } else {
     const tokenResult = await fetchToken(user);
     if (tokenResult.tag === "failure") {
-      logger.error("CLIENT: Failed to get ID token:", tokenResult.error);
+      ensureUserLogger.error(
+        { error: tokenResult.error },
+        "Failed to get ID token",
+      );
       throw new AbortError(
         tokenResult.error instanceof Error
           ? tokenResult.error
@@ -94,7 +102,7 @@ async function attemptEnsureUserDocument(
     }
     if (!tokenResult.value) {
       const err = new Error("No authentication token available");
-      logger.error("CLIENT: No token available for user");
+      ensureUserLogger.error("No token available for user");
       throw new AbortError(err);
     }
     token = tokenResult.value;
@@ -102,8 +110,9 @@ async function attemptEnsureUserDocument(
 
   try {
     const result = await callUserEnsureAPI(token);
-    logger.info(
-      `CLIENT: User document ensured successfully for UID: ${result.uid}`,
+    ensureUserLogger.info(
+      { uid: result.uid },
+      "User document ensured successfully",
     );
     return result;
   } catch (error: unknown) {
@@ -113,7 +122,7 @@ async function attemptEnsureUserDocument(
       error.status === HTTP_UNAUTHORIZED &&
       !forceTokenRefresh
     ) {
-      logger.info("CLIENT: Token may be expired, retrying with refresh");
+      ensureUserLogger.info("Token may be expired, retrying with refresh");
       return attemptEnsureUserDocument(user, true);
     }
 
@@ -136,20 +145,25 @@ export async function ensureUserDocumentOnClient(
       minTimeout: 1000,
       maxTimeout: 10000,
       onFailedAttempt: (error) => {
-        logger.warn(
-          `CLIENT: Attempt ${error.attemptNumber} failed for user ${user.uid}. ${error.retriesLeft} retries left.`,
+        ensureUserLogger.warn(
+          {
+            attemptNumber: error.attemptNumber,
+            uid: user.uid,
+            retriesLeft: error.retriesLeft,
+          },
+          "Ensure user document attempt failed",
         );
       },
     });
 
-    logger.info(
-      "CLIENT: User document ensured successfully for UID:",
-      result.uid,
+    ensureUserLogger.info(
+      { uid: result.uid },
+      "User document ensured successfully",
     );
 
     // Check waitlist status from the returned user document
     if (!result.user) {
-      logger.error("CLIENT: No user document returned from ensure endpoint");
+      ensureUserLogger.error("No user document returned from ensure endpoint");
       return {
         tag: "failure",
         error: "No user document returned",
@@ -158,12 +172,15 @@ export async function ensureUserDocumentOnClient(
     }
 
     const userDoc = result.user;
-    logger.debug("CLIENT: Checking waitlist status for user", {
-      isWaitlistApproved: userDoc.isWaitlistApproved,
-    });
+    ensureUserLogger.debug(
+      {
+        isWaitlistApproved: userDoc.isWaitlistApproved,
+      },
+      "Checking waitlist status for user",
+    );
 
     if (!userDoc.isWaitlistApproved) {
-      logger.info("CLIENT: User is not waitlist approved, signing out");
+      ensureUserLogger.info("User is not waitlist approved, signing out");
       await signOut();
       return { tag: "waitlisted", uid: result.uid };
     }
@@ -171,9 +188,12 @@ export async function ensureUserDocumentOnClient(
     return { tag: "success", uid: result.uid };
   } catch (error) {
     const isAborted = error instanceof AbortError;
-    logger.error(
-      `CLIENT: Failed to ensure user document for ${user.uid}:`,
-      error,
+    ensureUserLogger.error(
+      {
+        uid: user.uid,
+        error,
+      },
+      "Failed to ensure user document",
     );
 
     return {

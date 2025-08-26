@@ -7,6 +7,8 @@ import type {
 } from "../types";
 import { logger } from "../../logger";
 
+const localLogger = logger.child({ module: "analytics-local" });
+
 /**
  * Local analytics provider implementation
  * Logs analytics events to console and optionally to structured logs
@@ -34,20 +36,21 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      if (this.debug) {
-        logger.info(`LOCAL ANALYTICS: Event tracked: {
-          eventName: ${event.name},
-          userId: ${event.context?.user?.userId},
-          sessionId: ${event.context?.sessionId},
-          platform: ${event.context?.platform},
-          hasProperties: ${!!event.properties},
-          propertiesCount: ${event.properties ? Object.keys(event.properties).length : 0}
-        }`);
-      } else {
-        logger.info(`LOCAL ANALYTICS: Event tracked: ${event.name}`);
-      }
+      localLogger.info(
+        {
+          eventName: event.name,
+          userId: event.context?.user?.userId,
+          sessionId: event.context?.sessionId,
+          platform: event.context?.platform,
+          hasProperties: !!event.properties,
+          propertiesCount: event.properties
+            ? Object.keys(event.properties).length
+            : 0,
+        },
+        "Event tracked",
+      );
     } catch (error) {
-      // Silently fail to not disrupt application flow
+      // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
 
@@ -60,19 +63,20 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      if (this.debug) {
-        logger.info(`LOCAL ANALYTICS: User identified: {
-          userId: ${identify.userId},
-          hasTraits: ${!!identify.traits},
-          traitsCount: ${identify.traits ? Object.keys(identify.traits).length : 0},
-          sessionId: ${identify.context?.sessionId},
-          platform: ${identify.context?.platform}
-        }`);
-      } else {
-        logger.info(`LOCAL ANALYTICS: User identified: ${identify.userId}`);
-      }
+      localLogger.info(
+        {
+          userId: identify.userId,
+          hasTraits: !!identify.traits,
+          traitsCount: identify.traits
+            ? Object.keys(identify.traits).length
+            : 0,
+          sessionId: identify.context?.sessionId,
+          platform: identify.context?.platform,
+        },
+        "User identified",
+      );
     } catch (error) {
-      // Silently fail to not disrupt application flow
+      // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
 
@@ -89,21 +93,20 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      if (this.debug) {
-        logger.info(`LOCAL ANALYTICS: Page tracked: {
-          pageName: ${name},
-          userId: ${context?.user?.userId},
-          sessionId: ${context?.sessionId},
-          platform: ${context?.platform},
-          url: ${context?.url},
-          hasProperties: ${!!properties},
-          propertiesCount: ${properties ? Object.keys(properties).length : 0}
-        }`);
-      } else {
-        logger.info(`LOCAL ANALYTICS: Page tracked: ${name}`);
-      }
+      localLogger.info(
+        {
+          pageName: name,
+          userId: context?.user?.userId,
+          sessionId: context?.sessionId,
+          platform: context?.platform,
+          url: context?.url,
+          hasProperties: !!properties,
+          propertiesCount: properties ? Object.keys(properties).length : 0,
+        },
+        "Page tracked",
+      );
     } catch (error) {
-      // Silently fail to not disrupt application flow
+      // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
 
@@ -116,17 +119,9 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      if (this.debug) {
-        logger.info(
-          "LOCAL ANALYTICS: Flush requested: { timestamp: " +
-            new Date().toISOString() +
-            " }",
-        );
-      } else {
-        logger.info("LOCAL ANALYTICS: Flush requested");
-      }
+      localLogger.info({}, "Flush requested");
     } catch (error) {
-      // Silently fail to not disrupt application flow
+      // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
 
@@ -135,17 +130,9 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
    */
   async shutdown(): Promise<void> {
     try {
-      if (this.debug) {
-        logger.info(
-          "LOCAL ANALYTICS: Analytics shutdown: { timestamp: " +
-            new Date().toISOString() +
-            " }",
-        );
-      } else {
-        logger.info("LOCAL ANALYTICS: Analytics shutdown");
-      }
+      localLogger.info({}, "Analytics shutdown");
     } catch (error) {
-      // Silently fail to not disrupt application flow
+      // Silently handle logging errors to prevent disrupting analytics flow
     }
     this.ready = false;
   }

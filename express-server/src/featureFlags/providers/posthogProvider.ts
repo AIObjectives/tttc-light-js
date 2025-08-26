@@ -2,6 +2,8 @@ import { PostHog } from "posthog-node";
 import { FeatureFlagProvider, FeatureFlagContext } from "../types";
 import { logger } from "tttc-common/logger";
 
+const posthogLogger = logger.child({ module: "feature-flags-posthog" });
+
 export class PostHogFeatureFlagProvider implements FeatureFlagProvider {
   private posthog: PostHog;
 
@@ -28,9 +30,12 @@ export class PostHogFeatureFlagProvider implements FeatureFlagProvider {
       );
       return Boolean(result);
     } catch (error) {
-      logger.error(
-        `POSTHOG ERROR: Error checking feature flag ${flagName}:`,
-        error,
+      posthogLogger.error(
+        {
+          error,
+          flagName,
+        },
+        "Error checking feature flag",
       );
       return false;
     }
@@ -50,24 +55,30 @@ export class PostHogFeatureFlagProvider implements FeatureFlagProvider {
         },
       );
       if (result === null || result === undefined) {
-        logger.info(`POSTHOG INFO: flag ${flagName} returned a null value`);
+        posthogLogger.info({ flagName }, "Flag returned null value");
         return null;
       }
       switch (typeof result) {
         case "boolean":
         case "string":
           return result;
-          break;
         default:
-          logger.error(
-            `POSTHOG ERROR: Invalid type returned when fetching feature flag feature flag: ${flagName}`,
+          posthogLogger.error(
+            {
+              flagName,
+              resultType: typeof result,
+            },
+            "Invalid type returned when fetching feature flag",
           );
           return null;
       }
     } catch (error) {
-      logger.error(
-        `POSTHOG ERROR: Error getting feature flag ${flagName}:`,
-        error,
+      posthogLogger.error(
+        {
+          error,
+          flagName,
+        },
+        "Error getting feature flag",
       );
       return null;
     }
@@ -86,7 +97,7 @@ export class PostHogFeatureFlagProvider implements FeatureFlagProvider {
       );
       return result || {};
     } catch (error) {
-      logger.error("POSTHOG ERROR: Error getting all feature flags:", error);
+      posthogLogger.error({ error }, "Error getting all feature flags");
       return {};
     }
   }

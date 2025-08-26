@@ -1,4 +1,6 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+import { Logger } from "pino";
+import { RequestWithLogger } from "../types/request";
 import {
   verifyUser,
   ensureUserDocument,
@@ -9,29 +11,26 @@ import {
 import { DecodedIdToken } from "firebase-admin/auth";
 import { sendError } from "./sendError";
 import { z } from "zod";
-import { logger } from "tttc-common/logger";
 
 const feedbackRequest = z.object({
   text: z.string(),
   firebaseAuthToken: z.string(),
 });
 
-export default async function feedback(req: Request, res: Response) {
-  console.log("[UserAccount] EXPRESS FEEDBACK: Feedback endpoint called");
+export default async function feedback(req: RequestWithLogger, res: Response) {
+  req.log.info("Feedback endpoint called");
   try {
     const parsed = feedbackRequest.safeParse(req.body);
 
     if (!parsed.success) {
-      console.log("[UserAccount] EXPRESS FEEDBACK: Invalid request format");
+      req.log.warn("Invalid request format");
       return sendError(res, 400, "Invalid request format", "ValidationError");
     }
 
     const { text, firebaseAuthToken } = parsed.data;
 
     const decodedUser: DecodedIdToken = await verifyUser(firebaseAuthToken);
-    console.log(
-      `[UserAccount] EXPRESS FEEDBACK: Token verified for UID: ${decodedUser.uid}`,
-    );
+    req.log.info({ uid: decodedUser.uid }, "Token verified");
 
     // Ensure user document exists (in case feedback is submitted before other operations)
     const userDocRef = db
@@ -57,18 +56,13 @@ export default async function feedback(req: Request, res: Response) {
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log(
-      `[UserAccount] EXPRESS FEEDBACK: Feedback submitted successfully for UID: ${decodedUser.uid}`,
-    );
+    req.log.info({ uid: decodedUser.uid }, "Feedback submitted successfully");
     res.json({
       success: true,
       message: "Feedback submitted successfully",
     });
   } catch (error) {
-    console.error(
-      "[UserAccount] EXPRESS FEEDBACK: Error submitting feedback:",
-      error,
-    );
+    req.log.error({ error }, "Error submitting feedback");
     const message =
       error instanceof Error ? error.message : "Unknown error occurred";
     sendError(res, 500, message, "FeedbackError");

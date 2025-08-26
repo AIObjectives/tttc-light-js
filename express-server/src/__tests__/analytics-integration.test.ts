@@ -11,6 +11,16 @@ import {
 } from "../analytics";
 import { Env } from "../types/context";
 
+// Mock child logger
+const childLogger = vi.hoisted(() => {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+});
+
 // Mock logger
 vi.mock("tttc-common/logger", () => ({
   logger: {
@@ -18,6 +28,7 @@ vi.mock("tttc-common/logger", () => ({
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
+    child: vi.fn(() => childLogger),
   },
 }));
 
@@ -45,8 +56,9 @@ describe("Analytics Integration with Common Package", () => {
     ANALYTICS_HOST: "https://app.posthog.com",
     ANALYTICS_FLUSH_AT: 20,
     ANALYTICS_FLUSH_INTERVAL: 10000,
-    ANALYTICS_DEBUG: false,
     ANALYTICS_ENABLED: true,
+    ANALYTICS_DEBUG: false,
+    FIREBASE_ADMIN_PROJECT_ID: undefined,
     ...overrides,
   });
 

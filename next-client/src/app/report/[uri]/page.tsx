@@ -7,6 +7,9 @@ import { z } from "zod";
 import ReportProgress from "@/components/reportProgress/ReportProgress";
 import Feedback from "@/components/feedback/Feedback";
 import pRetry from "p-retry";
+import { logger } from "tttc-common/logger/browser";
+
+const reportPageLogger = logger.child({ module: "report-page" });
 
 const waitingMessage = z.object({
   message: z.string(),
@@ -62,8 +65,12 @@ const handleResponseData = async (
         {
           retries: 2,
           onFailedAttempt: (error) => {
-            console.log(
-              `Failed to fetch status response. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+            reportPageLogger.warn(
+              {
+                attemptNumber: error.attemptNumber,
+                retriesLeft: error.retriesLeft,
+              },
+              "Failed to fetch status response, retrying",
             );
           },
         },
@@ -91,10 +98,13 @@ const handleResponseData = async (
       return { tag: "error", message: "Unknown error" };
     }
   } catch (e) {
-    console.error("Unexpected error in handleResponseData", {
-      url,
-      error: e,
-    });
+    reportPageLogger.error(
+      {
+        url,
+        error: e,
+      },
+      "Unexpected error in handleResponseData",
+    );
     return { tag: "error", message: "Failed to process response data" };
   }
 };
@@ -122,16 +132,23 @@ async function getReportState(
       {
         retries: 2,
         onFailedAttempt: (error) => {
-          console.log(
-            `Failed to fetch report status. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+          reportPageLogger.warn(
+            {
+              attemptNumber: error.attemptNumber,
+              retriesLeft: error.retriesLeft,
+            },
+            "Failed to fetch report status, retrying",
           );
         },
       },
     ).catch((error) => {
-      console.error("Failed to fetch report status", {
-        statusUrl,
-        error,
-      });
+      reportPageLogger.error(
+        {
+          statusUrl,
+          error,
+        },
+        "Failed to fetch report status",
+      );
       return { type: "error", message: "Failed to fetch report status." };
     });
 

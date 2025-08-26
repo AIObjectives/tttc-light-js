@@ -20,8 +20,10 @@ import Link from "next/link";
 import { useUser } from "@/lib/hooks/getUser";
 import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
 import { logAuthEvent } from "@/lib/firebase/authEvents";
-import { logger } from "tttc-common/logger";
+import { logger } from "tttc-common/logger/browser";
 import { useState, useEffect } from "react";
+
+const loginLogger = logger.child({ module: "login-button" });
 import { Col } from "@/components/layout";
 
 const getInitials = (name: string) =>
@@ -43,40 +45,41 @@ export default function LoginButton() {
 
   const handleSignIn = async () => {
     try {
-      logger.debug("Sign in button clicked");
+      loginLogger.debug("Sign in button clicked");
       const result = await signInWithGoogle();
-      logger.info("Sign in successful", {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName,
-      });
+      loginLogger.info(
+        {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+        },
+        "Sign in successful",
+      );
       // Log signin event to server
       await logAuthEvent("signin", result.user);
     } catch (error) {
-      logger.error("Sign in failed", error);
+      loginLogger.error({ error }, "Sign in failed");
     }
   };
 
   const handleSignOut = async () => {
     try {
-      logger.debug(
+      loginLogger.debug(
+        {
+          uid: user?.uid,
+          email: user?.email,
+          displayName: user?.displayName,
+        },
         "Sign out button clicked",
-        user
-          ? {
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-            }
-          : undefined,
       );
 
       // Log signout event to server (before actually signing out)
       await logAuthEvent("signout");
 
       await signOut();
-      logger.info("Sign out successful");
+      loginLogger.info("Sign out successful");
     } catch (error) {
-      logger.error("Sign out failed", error);
+      loginLogger.error({ error }, "Sign out failed");
     }
   };
 

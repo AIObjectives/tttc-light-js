@@ -16,9 +16,20 @@ import type {
 } from "../types";
 import { CommonEvents } from "../types";
 
+// Mock the child logger
+const mockChildLogger = vi.hoisted(() => {
+  return {
+    info: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  };
+});
+
 // Mock the logger
 vi.mock("../../logger", () => ({
   logger: {
+    child: vi.fn(() => mockChildLogger),
     info: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),

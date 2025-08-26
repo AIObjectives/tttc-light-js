@@ -32,11 +32,20 @@ vi.mock("posthog-node", () => {
 });
 
 // Mock logger
+const { mockChildLogger } = vi.hoisted(() => ({
+  mockChildLogger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 vi.mock("tttc-common/logger", () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    child: vi.fn(() => mockChildLogger),
   },
 }));
 
