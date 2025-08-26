@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import express from "express";
 import request from "supertest";
+import pinoHttp from "pino-http";
+import { logger } from "tttc-common/logger";
 import { validateOpenAIApiKeyHeader } from "../middleware";
 
 describe("validateOpenAIApiKeyHeader middleware", () => {
@@ -74,6 +76,7 @@ describe("validateOpenAIApiKeyHeader middleware", () => {
   ) => {
     const testApp = express();
     testApp.use(express.json());
+    testApp.use(pinoHttp({ logger }));
 
     if (setupFn) {
       setupFn(testApp);

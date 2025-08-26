@@ -15,16 +15,18 @@ import {
 import { Env } from "./types/context";
 import { logger } from "tttc-common/logger";
 
+const analyticsLogger = logger.child({ module: "analytics-client" });
+
 /**
  * Initializes analytics for the express server
  * @param env - Environment configuration object
  */
 export async function initializeAnalyticsClient(env: Env): Promise<void> {
   try {
-    logger.info("ANALYTICS: Starting analytics client initialization", {
-      provider: env.ANALYTICS_PROVIDER,
-      enabled: env.ANALYTICS_ENABLED,
-    });
+    analyticsLogger.info(
+      { provider: env.ANALYTICS_PROVIDER, enabled: env.ANALYTICS_ENABLED },
+      "Starting analytics client initialization",
+    );
 
     // Create analytics configuration from environment
     const config: AnalyticsConfig = createAnalyticsConfig(
@@ -41,13 +43,16 @@ export async function initializeAnalyticsClient(env: Env): Promise<void> {
     // Initialize analytics
     await initializeAnalytics(config);
 
-    logger.info("ANALYTICS: Analytics client initialized successfully", {
-      provider: env.ANALYTICS_PROVIDER,
-      enabled: env.ANALYTICS_ENABLED,
-    });
+    analyticsLogger.info(
+      {
+        provider: env.ANALYTICS_PROVIDER,
+        enabled: env.ANALYTICS_ENABLED,
+      },
+      "Analytics client initialized successfully",
+    );
   } catch (error) {
     // Log error but don't throw - analytics should not block server startup
-    logger.error("ANALYTICS: Failed to initialize analytics client", error);
+    analyticsLogger.error({ error }, "Failed to initialize analytics client");
   }
 }
 
@@ -59,18 +64,18 @@ export async function shutdownAnalyticsClient(): Promise<void> {
     const analytics = getAnalytics();
 
     if (!analytics.isInitialized()) {
-      logger.info("ANALYTICS: No analytics client to shutdown");
+      analyticsLogger.info("No analytics client to shutdown");
       return;
     }
 
-    logger.info("ANALYTICS: Starting analytics client shutdown");
+    analyticsLogger.info("Starting analytics client shutdown");
 
     // Shutdown analytics
     await analytics.shutdown();
 
-    logger.info("ANALYTICS: Analytics client shutdown completed");
+    analyticsLogger.info("Analytics client shutdown completed");
   } catch (error) {
-    logger.error("ANALYTICS: Unexpected error during shutdown", error);
+    analyticsLogger.error({ error }, "Unexpected error during shutdown");
   }
 }
 

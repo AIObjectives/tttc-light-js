@@ -18,9 +18,19 @@ import {
 import { CommonEvents } from "../types";
 import type { AnalyticsConfig } from "../types";
 
+const mockChildLogger = vi.hoisted(() => {
+  return {
+    info: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  };
+});
+
 // Mock the logger
 vi.mock("../../logger", () => ({
   logger: {
+    child: vi.fn(() => mockChildLogger),
     info: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),

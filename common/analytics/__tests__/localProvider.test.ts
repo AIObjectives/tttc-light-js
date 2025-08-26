@@ -12,12 +12,22 @@ import type {
 import { CommonEvents } from "../types";
 
 // Mock the logger
+const mockChildLogger = vi.hoisted(() => {
+  return {
+    info: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  };
+});
+
 vi.mock("../../logger", () => ({
   logger: {
     info: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
+    child: vi.fn(() => mockChildLogger),
   },
 }));
 
@@ -102,9 +112,9 @@ describe("LocalAnalyticsProvider", () => {
 
       await debugProvider.track(mockEvent);
 
-      const { logger } = await import("../../logger");
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Event tracked:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "Event tracked",
       );
     });
 
@@ -186,9 +196,9 @@ describe("LocalAnalyticsProvider", () => {
 
       await debugProvider.identify(mockIdentify);
 
-      const { logger } = await import("../../logger");
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: User identified:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "User identified",
       );
     });
 
@@ -251,9 +261,9 @@ describe("LocalAnalyticsProvider", () => {
         mockContext,
       );
 
-      const { logger } = await import("../../logger");
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Page tracked:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "Page tracked",
       );
     });
 
@@ -294,9 +304,9 @@ describe("LocalAnalyticsProvider", () => {
 
       await debugProvider.flush();
 
-      const { logger } = await import("../../logger");
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Flush requested:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "Flush requested",
       );
     });
   });
@@ -315,9 +325,9 @@ describe("LocalAnalyticsProvider", () => {
 
       await debugProvider.shutdown();
 
-      const { logger } = await import("../../logger");
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Analytics shutdown:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "Analytics shutdown",
       );
     });
 
@@ -333,8 +343,7 @@ describe("LocalAnalyticsProvider", () => {
   describe("error handling", () => {
     it("should handle track errors gracefully", async () => {
       // Mock logger to throw an error
-      const { logger } = await import("../../logger");
-      vi.mocked(logger.info).mockImplementation(() => {
+      mockChildLogger.info.mockImplementation(() => {
         throw new Error("Logging error");
       });
 
@@ -348,8 +357,7 @@ describe("LocalAnalyticsProvider", () => {
 
     it("should handle identify errors gracefully", async () => {
       // Mock logger to throw an error
-      const { logger } = await import("../../logger");
-      vi.mocked(logger.info).mockImplementation(() => {
+      mockChildLogger.info.mockImplementation(() => {
         throw new Error("Logging error");
       });
 
@@ -363,8 +371,7 @@ describe("LocalAnalyticsProvider", () => {
 
     it("should handle page errors gracefully", async () => {
       // Mock logger to throw an error
-      const { logger } = await import("../../logger");
-      vi.mocked(logger.info).mockImplementation(() => {
+      mockChildLogger.info.mockImplementation(() => {
         throw new Error("Logging error");
       });
 
@@ -376,8 +383,7 @@ describe("LocalAnalyticsProvider", () => {
 
     it("should handle flush errors gracefully", async () => {
       // Mock logger to throw an error
-      const { logger } = await import("../../logger");
-      vi.mocked(logger.debug).mockImplementation(() => {
+      mockChildLogger.debug.mockImplementation(() => {
         throw new Error("Logging error");
       });
 
@@ -389,8 +395,7 @@ describe("LocalAnalyticsProvider", () => {
 
     it("should handle shutdown errors gracefully", async () => {
       // Mock logger to throw an error
-      const { logger } = await import("../../logger");
-      vi.mocked(logger.info).mockImplementation(() => {
+      mockChildLogger.info.mockImplementation(() => {
         throw new Error("Logging error");
       });
 
@@ -613,8 +618,6 @@ describe("LocalAnalyticsProvider", () => {
 
   describe("logging behavior verification", () => {
     it("should log structured data correctly", async () => {
-      const { logger } = await import("../../logger");
-
       await provider.track({
         name: CommonEvents.USER_SIGNIN,
         properties: { method: "firebase" },
@@ -624,27 +627,25 @@ describe("LocalAnalyticsProvider", () => {
         },
       });
 
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Event tracked:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "Event tracked",
       );
     });
 
     it("should log identify operations correctly", async () => {
-      const { logger } = await import("../../logger");
-
       await provider.identify({
         userId: "user123",
         traits: { name: "John", email: "john@example.com" },
       });
 
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: User identified:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "User identified",
       );
     });
 
     it("should log page views correctly", async () => {
-      const { logger } = await import("../../logger");
-
       await provider.page(
         "Dashboard",
         { section: "analytics" },
@@ -654,19 +655,18 @@ describe("LocalAnalyticsProvider", () => {
         },
       );
 
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Page tracked:"),
+      expect(mockChildLogger.info).toHaveBeenCalledWith(
+        expect.any(Object),
+        "Page tracked",
       );
     });
 
     it("should log operations without crashing when properties are missing", async () => {
-      const { logger } = await import("../../logger");
-
       await provider.track({ name: "minimal_event" });
       await provider.identify({ userId: "user123" });
       await provider.page("Minimal Page");
 
-      expect(logger.info).toHaveBeenCalledTimes(3);
+      expect(mockChildLogger.info).toHaveBeenCalledTimes(3);
     });
   });
 });

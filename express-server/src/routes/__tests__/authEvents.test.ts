@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Request, Response } from "express";
+import { Response } from "express";
+import { RequestWithLogger } from "../../types/request";
 import authEvents from "../authEvents";
 import { verifyUser } from "../../Firebase";
 import { sendError } from "../sendError.js";
+import { Logger } from "pino";
 
 // Mock Firebase functions
 vi.mock("../../Firebase", () => ({
@@ -26,10 +28,23 @@ vi.mock("tttc-common/logger", () => ({
 }));
 
 describe("Auth Events Route", () => {
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
   let mockVerifyUser: any;
   let mockSendError: any;
+  let mockLogger: Logger;
+
+  const createMockRequest = (body: any = {}): RequestWithLogger => {
+    return {
+      body,
+      log: mockLogger,
+    } as RequestWithLogger;
+  };
+
+  const createMockResponse = (): Partial<Response> => {
+    return {
+      json: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+    };
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -37,14 +52,17 @@ describe("Auth Events Route", () => {
     mockVerifyUser = vi.mocked(verifyUser);
     mockSendError = vi.mocked(sendError);
 
-    mockRequest = {
-      body: {},
-    };
-
-    mockResponse = {
-      json: vi.fn(),
-      status: vi.fn().mockReturnThis(),
-    };
+    mockLogger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+      trace: vi.fn(),
+      fatal: vi.fn(),
+      child: vi.fn(),
+      level: "info",
+      silent: false,
+    } as any;
   });
 
   afterEach(() => {
@@ -60,16 +78,17 @@ describe("Auth Events Route", () => {
         name: "Test User",
       };
 
-      mockRequest.body = {
+      const mockRequest = createMockRequest({
         event: "signin",
         firebaseAuthToken: "valid-token",
         clientTimestamp: "2024-01-15T10:30:00.000Z",
-      };
+      });
+      const mockResponse = createMockResponse();
 
       mockVerifyUser.mockResolvedValue(mockDecodedUser);
 
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(mockRequest, mockResponse as Response);
 
       // Assert
       expect(mockVerifyUser).toHaveBeenCalledWith("valid-token");
@@ -82,13 +101,14 @@ describe("Auth Events Route", () => {
 
     it("should handle signout events without token", async () => {
       // Arrange
-      mockRequest.body = {
+      const mockRequest = createMockRequest({
         event: "signout",
         clientTimestamp: "2024-01-15T10:35:00.000Z",
-      };
+      });
+      const mockResponse = createMockResponse();
 
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(mockRequest, mockResponse as Response);
 
       // Assert
       expect(mockVerifyUser).not.toHaveBeenCalled();
@@ -100,13 +120,14 @@ describe("Auth Events Route", () => {
 
     it("should reject invalid event types", async () => {
       // Arrange
-      mockRequest.body = {
+      const mockRequest = createMockRequest({
         event: "invalid-event",
         clientTimestamp: "2024-01-15T10:30:00.000Z",
-      };
+      });
+      const mockResponse = createMockResponse();
 
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(mockRequest, mockResponse as Response);
 
       // Assert
       expect(mockSendError).toHaveBeenCalledWith(
@@ -119,13 +140,14 @@ describe("Auth Events Route", () => {
 
     it("should reject signin events without token", async () => {
       // Arrange
-      mockRequest.body = {
+      const mockRequest = createMockRequest({
         event: "signin",
         clientTimestamp: "2024-01-15T10:30:00.000Z",
-      };
+      });
+      const mockResponse = createMockResponse();
 
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(mockRequest, mockResponse as Response);
 
       // Assert
       expect(mockSendError).toHaveBeenCalledWith(
@@ -138,17 +160,18 @@ describe("Auth Events Route", () => {
 
     it("should handle invalid Firebase tokens", async () => {
       // Arrange
-      mockRequest.body = {
+      const mockRequest = createMockRequest({
         event: "signin",
         firebaseAuthToken: "invalid-token",
         clientTimestamp: "2024-01-15T10:30:00.000Z",
-      };
+      });
+      const mockResponse = createMockResponse();
 
       const authError = new Error("Invalid token");
       mockVerifyUser.mockRejectedValue(authError);
 
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(mockRequest, mockResponse as Response);
 
       // Assert
       expect(mockSendError).toHaveBeenCalledWith(
@@ -161,12 +184,13 @@ describe("Auth Events Route", () => {
 
     it("should handle malformed request bodies", async () => {
       // Arrange
-      mockRequest.body = {
+      const mockRequest = createMockRequest({
         invalidField: "test",
-      };
+      });
+      const mockResponse = createMockResponse();
 
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(mockRequest, mockResponse as Response);
 
       // Assert
       expect(mockSendError).toHaveBeenCalledWith(
@@ -185,25 +209,22 @@ describe("Auth Events Route", () => {
         name: "Monitor User",
       };
 
-      mockRequest.body = {
+      const mockRequest = createMockRequest({
         event: "signin",
         firebaseAuthToken: "valid-token",
         clientTimestamp: "2024-01-15T10:30:00.000Z",
-      };
+      });
+      const mockResponse = createMockResponse();
 
       mockVerifyUser.mockResolvedValue(mockDecodedUser);
 
-      const { logger } = await import("tttc-common/logger");
-      const mockLogger = vi.mocked(logger);
-
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(mockRequest, mockResponse as Response);
 
       // Assert
-      expect(mockLogger.auth).toHaveBeenCalledWith(
-        "signin",
-        "test-uid-monitoring",
-        "monitor@example.com",
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        { uid: "test-uid-monitoring", email: "monitor@example.com" },
+        "User signing in",
       );
     });
   });

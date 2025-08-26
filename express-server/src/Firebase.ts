@@ -10,27 +10,23 @@ import {
 } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger";
 
+const firebaseLogger = logger.child({ module: "firebase" });
+
 const env: Env = validateEnv();
 
-console.log(
-  "[UserAccount] STARTUP: Environment validation successful, initializing Firebase...",
-);
+firebaseLogger.info("Environment validation successful, initializing Firebase");
 
 const FIREBASE_CREDENTIALS = JSON.parse(
   Buffer.from(env.FIREBASE_CREDENTIALS_ENCODED!, "base64").toString("utf-8"),
 );
 
-console.log(
-  "[UserAccount] STARTUP: Firebase credentials parsed, creating admin app...",
-);
+firebaseLogger.info("Firebase credentials parsed, creating admin app");
 
 const app = admin.initializeApp({
   credential: admin.credential.cert(FIREBASE_CREDENTIALS),
 });
 
-console.log(
-  "[UserAccount] STARTUP: Firebase admin app initialized successfully",
-);
+firebaseLogger.info("Firebase admin app initialized successfully");
 
 const db = admin.firestore(app);
 
@@ -41,9 +37,9 @@ const getCollectionName = useGetCollectionName(env.NODE_ENV);
 // Export for use in other routes
 export { db, admin, getCollectionName };
 
-console.log(
-  "[UserAccount] STARTUP: express Firebase.ts module loaded, NODE_ENV:",
-  env.NODE_ENV,
+firebaseLogger.info(
+  { nodeEnv: env.NODE_ENV },
+  "Express Firebase.ts module loaded",
 );
 
 /**
@@ -117,11 +113,14 @@ export async function ensureUserDocument(
   email: string | null = null,
   displayName: string | null = null,
 ): Promise<UserDocument> {
-  logger.debug("ensureUserDocument called", {
-    firebaseUid,
-    email,
-    displayName,
-  });
+  firebaseLogger.debug(
+    {
+      firebaseUid,
+      email,
+      displayName,
+    },
+    "ensureUserDocument called",
+  );
   try {
     const userRef = db.collection(getCollectionName("USERS")).doc(firebaseUid);
     const userDoc = await userRef.get();
@@ -186,7 +185,7 @@ export async function ensureUserDocument(
       lastLoginAt: userData.lastLoginAt?.toDate() || new Date(),
     } as UserDocument;
   } catch (error) {
-    logger.error("Error ensuring user document", error);
+    firebaseLogger.error({ error }, "Error ensuring user document");
     throw new Error(
       `Failed to ensure user document for ${firebaseUid}: ${error instanceof Error ? error.message : "Unknown error"}`,
     );

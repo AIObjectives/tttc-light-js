@@ -47,7 +47,7 @@ describe("CSV Security in Create Route", () => {
     app = express();
     app.use(express.json());
 
-    // Mock request context
+    // Mock request context and logger
     app.use((req, res, next) => {
       req.context = {
         env: {
@@ -76,6 +76,21 @@ describe("CSV Security in Create Route", () => {
           FIREBASE_ADMIN_PROJECT_ID: "test-project",
         },
       };
+      // Mock logger for RequestWithLogger interface
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+        child: vi.fn(),
+        level: "info",
+        silent: false,
+      } as any;
+
+      mockLogger.child.mockReturnValue(mockLogger);
+      req.log = mockLogger;
       next();
     });
 

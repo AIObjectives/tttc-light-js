@@ -1,10 +1,12 @@
 import { feedbackRequest } from "@/lib/types/clientRoutes";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { logger } from "tttc-common/logger";
+import { logger } from "tttc-common/logger/browser";
+
+const feedbackApiLogger = logger.child({ module: "api-feedback" });
 
 export async function POST(request: Request) {
-  logger.info("FEEDBACK API: Feedback POST request received");
+  feedbackApiLogger.info("Feedback POST request received");
   try {
     const json = await request.json();
     const parsed = feedbackRequest.safeParse(json);
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
     const authorization = headersList.get("Authorization");
 
     if (!authorization?.startsWith("Bearer ")) {
-      logger.warn("FEEDBACK API: No valid Authorization header found");
+      feedbackApiLogger.warn("No valid Authorization header found");
       return NextResponse.json(
         { response: ["error", { message: "Unauthorized - missing token" }] },
         { status: 401 },
@@ -28,14 +30,17 @@ export async function POST(request: Request) {
     }
 
     const token = authorization.split("Bearer ")[1];
-    logger.debug(
-      "FEEDBACK API: Got token, calling express server feedback endpoint",
+    feedbackApiLogger.debug(
+      "Got token, calling express server feedback endpoint",
     );
 
     // Call the express server's feedback endpoint
     const expressUrl =
       process.env.PIPELINE_EXPRESS_URL || "http://localhost:8080";
-    logger.debug(`FEEDBACK API: Calling ${expressUrl}/feedback`);
+    feedbackApiLogger.debug(
+      { expressUrl },
+      "Calling express server feedback endpoint",
+    );
 
     const expressResponse = await fetch(`${expressUrl}/feedback`, {
       method: "POST",
@@ -48,15 +53,19 @@ export async function POST(request: Request) {
       }),
     });
 
-    logger.debug(
-      `FEEDBACK API: Express server response status: ${expressResponse.status}`,
+    feedbackApiLogger.debug(
+      { status: expressResponse.status },
+      "Express server response received",
     );
 
     if (!expressResponse.ok) {
       const errorData = await expressResponse.json().catch(() => ({}));
-      logger.error(
-        `FEEDBACK API: Express server error: ${expressResponse.status}`,
-        errorData,
+      feedbackApiLogger.error(
+        {
+          status: expressResponse.status,
+          errorData,
+        },
+        "Express server error",
       );
       return NextResponse.json(
         { response: ["error", { message: "Failed to submit feedback" }] },
@@ -65,14 +74,14 @@ export async function POST(request: Request) {
     }
 
     const result = await expressResponse.json();
-    logger.info(
-      "FEEDBACK API: Feedback submitted successfully via express server",
+    feedbackApiLogger.info(
+      "Feedback submitted successfully via express server",
     );
     return NextResponse.json({
       response: ["data", "success"],
     });
   } catch (error) {
-    logger.error("FEEDBACK API: Failed to submit feedback:", error);
+    feedbackApiLogger.error({ error }, "Failed to submit feedback");
     return NextResponse.json(
       { response: ["error", { message: "An error occurred" }] },
       { status: 500 },

@@ -1,12 +1,16 @@
 import "dotenv/config";
-import express, { Request, Response, NextFunction } from "express";
+import express, { Response, NextFunction } from "express";
+import { RequestWithLogger } from "./types/request";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import helmet from "helmet";
+import pinoHttp from "pino-http";
+import { logger } from "tttc-common/logger";
 import create from "./routes/create";
 import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
 import authEvents from "./routes/authEvents";
+
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
 import { setupWorkers } from "./workers";
@@ -17,15 +21,13 @@ import {
   createCorsOptions,
   logCorsConfiguration,
 } from "./utils/corsConfig";
-import {
-  initializeFeatureFlags,
-  shutdownFeatureFlags,
-  isFeatureEnabled,
-} from "./featureFlags";
+import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
 import {
   initializeAnalyticsClient,
   shutdownAnalyticsClient,
 } from "./analytics";
+
+const serverLogger = logger.child({ module: "server" });
 
 const port = process.env.PORT || 8080;
 
@@ -78,6 +80,9 @@ if (process.env.NODE_ENV === "production") {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static("public"));
 
+// HTTP request logging with pino
+app.use(pinoHttp({ logger }));
+
 // Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));
 
@@ -109,7 +114,7 @@ const defaultRateLimiter = rateLimit({
 const rateLimiter =
   process.env.NODE_ENV === "production"
     ? defaultRateLimiter
-    : (_req: Request, _res: Response, next: NextFunction) => next();
+    : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
 
 /**
  * Creates report
@@ -142,48 +147,48 @@ app.get("/test", async (_req, res) => {
 });
 
 const server = app.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}`);
+  serverLogger.info({ port }, "Server started");
 });
 
 // Graceful shutdown handling
 async function gracefulShutdown(signal: string) {
-  console.log(`Received ${signal}. Starting graceful shutdown...`);
+  serverLogger.info({ signal }, "Starting graceful shutdown");
 
   // Stop accepting new connections
   server.close(async (err) => {
     if (err) {
-      console.error("Error during server shutdown:", err);
+      serverLogger.error({ error: err }, "Error during server shutdown");
       process.exit(1);
     }
 
-    console.log("HTTP server closed");
+    serverLogger.info("HTTP server closed");
 
     try {
       // Close Redis connection
       if (connection) {
         connection.disconnect();
-        console.log("Redis connection closed");
+        serverLogger.info("Redis connection closed");
       }
 
       // Shutdown feature flags
       await shutdownFeatureFlags();
-      console.log("Feature flags shutdown complete");
+      serverLogger.info("Feature flags shutdown complete");
 
       // Shutdown analytics client
       await shutdownAnalyticsClient();
-      console.log("Analytics client shutdown complete");
+      serverLogger.info("Analytics client shutdown complete");
 
-      console.log("Graceful shutdown complete");
+      serverLogger.info("Graceful shutdown complete");
       process.exit(0);
     } catch (error) {
-      console.error("Error during graceful shutdown:", error);
+      serverLogger.error({ error }, "Error during graceful shutdown");
       process.exit(1);
     }
   });
 
   // Force exit if graceful shutdown takes too long
   setTimeout(() => {
-    console.error("Graceful shutdown timed out, forcing exit");
+    serverLogger.error("Graceful shutdown timed out, forcing exit");
     process.exit(1);
   }, 10000); // 10 second timeout
 }
