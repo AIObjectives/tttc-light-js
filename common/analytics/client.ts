@@ -64,10 +64,9 @@ export class Analytics implements AnalyticsClient {
       }
 
       const environmentInfo = getEnvironmentInfo();
-      logger.info(`ANALYTICS: Initialized ${config.provider} provider`, {
-        platform: environmentInfo.platform,
-        environment: config.environment || getEnvironmentName(),
-      });
+      logger.info(
+        `ANALYTICS: Initialized ${config.provider} provider (platform=${environmentInfo.platform} env=${config.environment || getEnvironmentName()})`,
+      );
     } catch (error) {
       logger.error(
         "ANALYTICS: Failed to initialize provider, falling back to local provider",

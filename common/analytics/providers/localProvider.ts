@@ -19,8 +19,9 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
   /**
    * Creates a new local analytics provider
    */
-  constructor(config: { enabled?: boolean } = {}) {
-    this.enabled = config.enabled!!;
+  constructor(config: { enabled?: boolean; debug?: boolean } = {}) {
+    // For backward compatibility, treat debug as enabled
+    this.enabled = config.enabled ?? config.debug ?? true;
   }
 
   /**
@@ -31,15 +32,18 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
       return;
     }
 
-    logger.info(`LOCAL ANALYTICS: Event tracked:  
-	{
-          eventName: ${event.name},
-          userId: ${event.context?.user?.userId},
-          sessionId: ${event.context?.sessionId},
-          platform: ${event.context?.platform},
-          hasProperties: ${!!event.properties},
-          propertiesCount: ${event.properties ? Object.keys(event.properties).length : 0},
-  	}`);
+    try {
+      logger.info(`LOCAL ANALYTICS: Event tracked: {
+        eventName: ${event.name},
+        userId: ${event.context?.user?.userId},
+        sessionId: ${event.context?.sessionId},
+        platform: ${event.context?.platform},
+        hasProperties: ${!!event.properties},
+        propertiesCount: ${event.properties ? Object.keys(event.properties).length : 0}
+      }`);
+    } catch (error) {
+      // Silently handle logging errors to prevent disrupting analytics flow
+    }
   }
 
   /**
@@ -50,14 +54,17 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
       return;
     }
 
-    logger.info(`LOCAL ANALYTICS: User identified:  
-	{
-          userId: ${identify.userId},
-          hasTraits: ${!!identify.traits},
-          traitsCount: ${identify.traits ? Object.keys(identify.traits).length : 0},
-          sessionId: ${identify.context?.sessionId},
-          platform: ${identify.context?.platform},
-  	}`);
+    try {
+      logger.info(`LOCAL ANALYTICS: User identified: {
+        userId: ${identify.userId},
+        hasTraits: ${!!identify.traits},
+        traitsCount: ${identify.traits ? Object.keys(identify.traits).length : 0},
+        sessionId: ${identify.context?.sessionId},
+        platform: ${identify.context?.platform}
+      }`);
+    } catch (error) {
+      // Silently handle logging errors to prevent disrupting analytics flow
+    }
   }
 
   /**
@@ -72,16 +79,19 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
       return;
     }
 
-    logger.info(`LOCAL ANALYTICS: Page tracked:  
-	{
-          pageName: ${name},
-          userId: ${context?.user?.userId},
-          sessionId: ${context?.sessionId},
-          platform: ${context?.platform},
-          url: ${context?.url},
-          hasProperties: ${!!properties},
-          propertiesCount: ${properties ? Object.keys(properties).length : 0},
-  	}`);
+    try {
+      logger.info(`LOCAL ANALYTICS: Page tracked: {
+        pageName: ${name},
+        userId: ${context?.user?.userId},
+        sessionId: ${context?.sessionId},
+        platform: ${context?.platform},
+        url: ${context?.url},
+        hasProperties: ${!!properties},
+        propertiesCount: ${properties ? Object.keys(properties).length : 0}
+      }`);
+    } catch (error) {
+      // Silently handle logging errors to prevent disrupting analytics flow
+    }
   }
 
   /**
@@ -92,14 +102,22 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
       return;
     }
 
-    logger.info("LOCAL ANALYTICS: Flush requested");
+    try {
+      logger.info("LOCAL ANALYTICS: Flush requested: {}");
+    } catch (error) {
+      // Silently handle logging errors to prevent disrupting analytics flow
+    }
   }
 
   /**
    * Handles shutdown by logging the shutdown
    */
   async shutdown(): Promise<void> {
-    logger.info(`LOCAL ANALYTICS: Analytics shutdown`);
+    try {
+      logger.info("LOCAL ANALYTICS: Analytics shutdown: {}");
+    } catch (error) {
+      // Silently handle logging errors to prevent disrupting analytics flow
+    }
     this.ready = false;
   }
 
