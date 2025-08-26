@@ -7,7 +7,10 @@ import { CustomError } from "./error";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
 import { Result } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
 import { Env } from "./types/context";
+
+const storageLogger = logger.child({ module: "storage" });
 
 const fileContent = z.union([schema.pipelineOutput, schema.uiReportData]);
 type FileContent = z.infer<typeof fileContent>;
@@ -83,27 +86,39 @@ export class Bucket extends Storage {
             value: parsed.data,
           };
         } else {
-          console.error("Invalid JSON format in file", {
-            fileName,
-            error: parsed.error,
-          });
+          storageLogger.error(
+            {
+              fileName,
+              error: parsed.error,
+            },
+            "Invalid JSON format in file",
+          );
           return {
             tag: "failure",
             error: new InvalidJSONFormat(parsed.error),
           };
         }
       } catch (jsonErr) {
-        console.error("JSON parse error in file", {
-          fileName,
-          error: jsonErr,
-        });
+        storageLogger.error(
+          {
+            fileName,
+            error: jsonErr,
+          },
+          "JSON parse error in file",
+        );
         return {
           tag: "failure",
           error: new InvalidJSONFormat(jsonErr),
         };
       }
     } catch (e) {
-      console.error("Failed to download file", { fileName, error: e });
+      storageLogger.error(
+        {
+          fileName,
+          error: e,
+        },
+        "Failed to download file",
+      );
       return {
         tag: "failure",
         error: new BucketGetError(e),

@@ -1,5 +1,8 @@
 import retry from "async-retry";
 import { Client } from "undici";
+import { logger } from "tttc-common/logger";
+
+const retryLogger = logger.child({ module: "retry-config" });
 
 /**
  * Default retry configuration for PyServer API calls
@@ -49,8 +52,12 @@ const clientPool = new Map<string, Client>();
  */
 export function getHttpClient(baseUrl: string): Client {
   if (!clientPool.has(baseUrl)) {
-    console.log(
-      `[RetryConfig] Creating new HTTP client for ${baseUrl} with ${HTTP_TIMEOUTS.HEADERS_TIMEOUT}ms headers timeout`,
+    retryLogger.info(
+      {
+        baseUrl,
+        headersTimeout: HTTP_TIMEOUTS.HEADERS_TIMEOUT,
+      },
+      "Creating new HTTP client",
     );
     const client = new Client(baseUrl, {
       headersTimeout: HTTP_TIMEOUTS.HEADERS_TIMEOUT,
@@ -81,8 +88,8 @@ export async function closeAllClients(): Promise<void> {
  * Useful when timeout settings change
  */
 export async function refreshClientPool(): Promise<void> {
-  console.log(
-    "[RetryConfig] Refreshing client pool to pick up new timeout configurations",
+  retryLogger.info(
+    "Refreshing client pool to pick up new timeout configurations",
   );
   await closeAllClients();
 }
@@ -93,7 +100,7 @@ export async function refreshClientPool(): Promise<void> {
 export async function refreshClient(baseUrl: string): Promise<void> {
   const client = clientPool.get(baseUrl);
   if (client) {
-    console.log(`[RetryConfig] Refreshing client for ${baseUrl}`);
+    retryLogger.info({ baseUrl }, "Refreshing client");
     await client.close();
     clientPool.delete(baseUrl);
   }
@@ -107,7 +114,7 @@ function setupCleanupHandlers() {
     try {
       await closeAllClients();
     } catch (error) {
-      console.error("Error during cleanup:", error);
+      retryLogger.error({ error }, "Error during cleanup");
     }
   };
 
@@ -124,8 +131,14 @@ setupCleanupHandlers();
  */
 export function createRetryLogger(operation: string) {
   return (error: Error, attempt: number) => {
-    console.log(
-      `[${operation}] Retry attempt ${attempt}/${DEFAULT_RETRY_OPTIONS.retries! + 1}. Error: ${error.message}`,
+    retryLogger.warn(
+      {
+        operation,
+        attempt,
+        maxAttempts: DEFAULT_RETRY_OPTIONS.retries! + 1,
+        error: error.message,
+      },
+      "Retry attempt",
     );
   };
 }

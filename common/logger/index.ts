@@ -31,7 +31,7 @@ const customCensor = (value: any, path: string[]): any => {
 };
 
 // Configure pino logger based on environment
-const logger = pino({
+const loggerConfig: any = {
   level: isDevelopment ? "debug" : "info",
   redact: {
     paths: [
@@ -48,30 +48,38 @@ const logger = pino({
     censor: customCensor,
     remove: false,
   },
-  browser: isBrowser
-    ? {
-        // In browser, use console methods
-        write: {
-          debug: console.log,
-          info: console.log,
-          warn: console.warn,
-          error: console.error,
-        },
-        serialize: false,
-      }
-    : undefined,
-  // For Node.js environments, use pretty printing in development
-  transport:
-    !isBrowser && isDevelopment
-      ? {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-            translateTime: "HH:MM:ss Z",
-            ignore: "pid,hostname",
-          },
-        }
-      : undefined,
-});
+};
+
+if (isBrowser) {
+  // Browser configuration - use console methods
+  console.log("I should be getting here");
+  loggerConfig.browser = {
+    write: {
+      debug: console.log,
+      info: console.log,
+      warn: console.warn,
+      error: console.error,
+    },
+    serialize: false,
+  };
+} else if (isDevelopment && typeof require !== "undefined") {
+  // Node.js development configuration - use pretty printing
+  // Only use pino-pretty in pure Node.js environments (not webpack/bundled)
+  try {
+    loggerConfig.transport = {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "HH:MM:ss Z",
+        ignore: "pid,hostname",
+      },
+    };
+  } catch (e) {
+    // Fallback to basic logging if pino-pretty is not available
+    console.warn("pino-pretty not available, using basic logging");
+  }
+}
+
+const logger = pino(loggerConfig);
 
 export { logger };

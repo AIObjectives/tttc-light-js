@@ -2,6 +2,8 @@ import { User } from "firebase/auth";
 import { fetchToken } from "./getIdToken";
 import { logger } from "tttc-common/logger";
 
+const authEventsLogger = logger.child({ module: "auth-events-client" });
+
 /**
  * Log authentication events to the server for proper monitoring
  * This ensures auth events are logged server-side where they can be monitored and secured
@@ -26,9 +28,7 @@ export async function logAuthEvent(
       if (tokenResult.tag === "success" && tokenResult.value) {
         body.token = tokenResult.value;
       } else {
-        logger.warn(
-          "[UserAccount] CLIENT: Could not get token for signin event logging",
-        );
+        authEventsLogger.warn("Could not get token for signin event logging");
         return;
       }
     }
@@ -43,17 +43,26 @@ export async function logAuthEvent(
     });
 
     if (!response.ok) {
-      logger.warn(
-        `[UserAccount] CLIENT: Failed to log ${event} event to server:`,
-        response.status,
+      authEventsLogger.warn(
+        {
+          event,
+          status: response.status,
+        },
+        "Failed to log auth event to server",
       );
     } else {
-      logger.info(`CLIENT: ${event} event logged to server successfully`);
+      authEventsLogger.info(
+        { event },
+        "Auth event logged to server successfully",
+      );
     }
   } catch (error) {
-    logger.warn(
-      `[UserAccount] CLIENT: Error logging ${event} event to server:`,
-      error,
+    authEventsLogger.warn(
+      {
+        event,
+        error,
+      },
+      "Error logging auth event to server",
     );
   }
 }

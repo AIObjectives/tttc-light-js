@@ -335,7 +335,14 @@ export default async function create(req: RequestWithLogger, res: Response) {
       jobId: result.value.response.filename,
     });
   } catch (e) {
-    console.error(e);
+    req.log.error(
+      {
+        error: e,
+        errorMessage:
+          e instanceof Error ? e.message : "An unknown error occurred",
+      },
+      "Create report error",
+    );
     res.status(500).send({
       error: {
         message: e instanceof Error ? e.message : "An unknown error occurred.",

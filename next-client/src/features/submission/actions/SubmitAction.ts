@@ -8,6 +8,9 @@ import {
 import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { validatedServerEnv } from "@/server-env";
+import { logger } from "tttc-common/logger";
+
+const submitActionLogger = logger.child({ module: "submit-action" });
 
 const parseCSV = async (file: File): Promise<SourceRow[]> => {
   const buffer = await file.arrayBuffer();
@@ -48,13 +51,19 @@ export default async function submitAction(
     cruxesEnabled: formData.get("cruxesEnabled") === "on",
   });
   const dataPayload: DataPayload = ["csv", data];
-  console.log("submit action crux", config.cruxesEnabled);
+  submitActionLogger.debug(
+    { cruxesEnabled: config.cruxesEnabled },
+    "Submit action crux config",
+  );
   const body: GenerateApiRequest = {
     userConfig: config,
     data: dataPayload,
     firebaseAuthToken,
   };
-  console.log("submit action body", body.userConfig.cruxesEnabled);
+  submitActionLogger.debug(
+    { cruxesEnabled: body.userConfig.cruxesEnabled },
+    "Submit action body config",
+  );
   const url = new URL("create", validatedServerEnv.PIPELINE_EXPRESS_URL);
 
   const response = await fetch(url, {

@@ -23,7 +23,7 @@ export async function initializeAnalyticsClient(env: Env): Promise<void> {
   try {
     logger.info(
       { provider: env.ANALYTICS_PROVIDER, enabled: env.ANALYTICS_ENABLED },
-      "ANALYTICS: Starting analytics client initialization",
+      "Starting analytics client initialization",
     );
 
     // Create analytics configuration from environment
@@ -46,7 +46,7 @@ export async function initializeAnalyticsClient(env: Env): Promise<void> {
         provider: env.ANALYTICS_PROVIDER,
         enabled: env.ANALYTICS_ENABLED,
       },
-      "ANALYTICS: Analytics client initialized successfully",
+      "Analytics client initialized successfully",
     );
   } catch (error) {
     // Log error but don't throw - analytics should not block server startup
@@ -62,16 +62,16 @@ export async function shutdownAnalyticsClient(): Promise<void> {
     const analytics = getAnalytics();
 
     if (!analytics.isInitialized()) {
-      logger.info("ANALYTICS: No analytics client to shutdown");
+      logger.info("No analytics client to shutdown");
       return;
     }
 
-    logger.info("ANALYTICS: Starting analytics client shutdown");
+    logger.info("Starting analytics client shutdown");
 
     // Shutdown analytics
     await analytics.shutdown();
 
-    logger.info("ANALYTICS: Analytics client shutdown completed");
+    logger.info("Analytics client shutdown completed");
   } catch (error) {
     logger.error({ error }, "ANALYTICS: Unexpected error during shutdown");
   }

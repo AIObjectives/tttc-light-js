@@ -3,6 +3,7 @@ import { Env } from "../types/context";
 import { createStorage } from "../storage";
 import { Job } from "bullmq";
 import * as apiPyserver from "tttc-common/apiPyserver";
+import { logger } from "tttc-common/logger";
 import {
   Result,
   failure,
@@ -17,6 +18,8 @@ import { randomUUID } from "crypto";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 import * as Firebase from "../Firebase";
 import * as api from "tttc-common/api";
+
+const pipelineLogger = logger.child({ module: "pipeline" });
 
 type FirebaseDetails = {
   reportDataUri: string;
@@ -134,7 +137,10 @@ export async function pipelineJob(job: Job<PipelineJob>) {
         : `${secs} seconds`,
   };
 
-  console.log(`Pipeline completed in ${finalTracker.duration}`);
+  pipelineLogger.info(
+    { duration: finalTracker.duration },
+    "Pipeline completed",
+  );
 
   // The pipeline is set to output this schema.LLMPipelineOutput function, so
   // take our data and form the output object
@@ -187,14 +193,21 @@ export async function pipelineJob(job: Job<PipelineJob>) {
       numPeople: new Set(sources.map((s) => s.interview)).size,
       createdDate: new Date(date),
     });
-    console.log("Finished report");
+    pipelineLogger.info("Finished report");
     await job.updateProgress({
       status: api.reportJobStatus.Values.finished,
     });
   } else {
     const err = finalResult.error;
 
-    console.error("An error occured: ", err.name, err.message);
+    pipelineLogger.error(
+      {
+        error: err,
+        errorName: err.name,
+        errorMessage: err.message,
+      },
+      "Pipeline error occurred",
+    );
     // We can handle specific errors here if we want.
     throw err;
   }
@@ -214,7 +227,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   > = makePipelineComments(data);
 
   // Update job progress
-  console.log("Step 1: generating taxonomy of topics and subtopics");
+  pipelineLogger.info("Step 1: generating taxonomy of topics and subtopics");
   await job.updateProgress({
     status: api.reportJobStatus.Values.clustering,
   });
@@ -226,7 +239,9 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   > = await flatMapResultAsync(pipelineComments, doTopicTreeStep);
 
   // update job progress
-  console.log("Step 2: extracting claims matching the topics and subtopics");
+  pipelineLogger.info(
+    "Step 2: extracting claims matching the topics and subtopics",
+  );
   await job.updateProgress({
     status: api.reportJobStatus.Values.extraction,
   });
@@ -238,7 +253,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   > = await flatMapResultAsync(topicTreeStep, (val) => doClaimsStep(val.data));
 
   // update job progress
-  console.log("Step 3: cleaning and sorting the taxonomy");
+  pipelineLogger.info("Step 3: cleaning and sorting the taxonomy");
   await job.updateProgress({
     status: api.reportJobStatus.Values.sorting,
   });
@@ -251,7 +266,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     doSortClaimsTreeStep(val.data),
   );
 
-  console.log("Doing optional addons step");
+  pipelineLogger.info("Doing optional addons step");
   const addonsStep = await flatMapResultAsync(
     sequenceResult([claimsStep, topicTreeStep] as const),
     async ([claim, topic]) => {
@@ -269,9 +284,15 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
       );
     },
   );
-  console.log("cruxes", addonsStep, config.options.cruxes);
+  pipelineLogger.debug(
+    {
+      addonsStep: addonsStep.tag === "success" ? "success" : "failure",
+      cruxesEnabled: config.options.cruxes,
+    },
+    "Cruxes step completed",
+  );
   // update job progress
-  console.log("Step 4: wrapping up....");
+  pipelineLogger.info("Step 4: wrapping up");
   await job.updateProgress({
     status: api.reportJobStatus.Values.wrappingup,
   });
@@ -472,8 +493,14 @@ const makePipelineComments = (
 };
 
 const logTokensInTracker = (tracker: schema.Tracker, stepName: string) => {
-  console.log(
-    `${stepName}: Cost:$${tracker.costs};Tok_in:${tracker.prompt_tokens};Tok_out:${tracker.completion_tokens}`,
+  pipelineLogger.info(
+    {
+      stepName,
+      costs: tracker.costs,
+      promptTokens: tracker.prompt_tokens,
+      completionTokens: tracker.completion_tokens,
+    },
+    "Step token usage",
   );
 };
 

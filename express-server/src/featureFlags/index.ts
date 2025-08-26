@@ -4,6 +4,8 @@ import { PostHogFeatureFlagProvider } from "./providers/posthogProvider";
 import { logger } from "tttc-common/logger";
 import { Env } from "../types/context";
 
+const featureFlagsLogger = logger.child({ module: "feature-flags" });
+
 let featureFlagProvider: FeatureFlagProvider | null = null;
 
 export function initializeFeatureFlags(env: Env): FeatureFlagProvider {
@@ -30,9 +32,9 @@ export function initializeFeatureFlags(env: Env): FeatureFlagProvider {
       throw new Error(`Unknown feature flag provider: ${provider}`);
   }
 
-  logger.info(
-    `[FEATURE FLAGS] Feature flags initialized with %s provider`,
-    provider.toString(),
+  featureFlagsLogger.info(
+    { provider: provider.toString() },
+    "Feature flags initialized",
   );
   return featureFlagProvider!;
 }
@@ -42,8 +44,8 @@ export async function isFeatureEnabled(
   context: FeatureFlagContext = {},
 ): Promise<boolean> {
   if (!featureFlagProvider) {
-    logger.warn(
-      "[FEATURE FLAGS] Feature flags not initialized, returning false for all flags",
+    featureFlagsLogger.warn(
+      "Feature flags not initialized, returning false for all flags",
     );
     return false;
   }
@@ -56,9 +58,7 @@ export async function getFeatureFlag(
   context: FeatureFlagContext = {},
 ): Promise<string | boolean | null> {
   if (!featureFlagProvider) {
-    logger.warn(
-      "[FEATURE FLAGS] Feature flags not initialized, returning null",
-    );
+    featureFlagsLogger.warn("Feature flags not initialized, returning null");
     return null;
   }
 
@@ -69,8 +69,8 @@ export async function getAllFeatureFlags(
   context: FeatureFlagContext = {},
 ): Promise<Record<string, string | boolean>> {
   if (!featureFlagProvider) {
-    console.warn(
-      "[FEATURE FLAGS] Feature flags not initialized, returning empty object",
+    featureFlagsLogger.warn(
+      "Feature flags not initialized, returning empty object",
     );
     return {};
   }
@@ -83,9 +83,9 @@ export async function shutdownFeatureFlags(): Promise<void> {
     try {
       await featureFlagProvider.shutdown();
     } catch (error) {
-      logger.warn(
-        error,
-        "[FEATURE FLAGS] Error during shutdown, continuing anyway",
+      featureFlagsLogger.warn(
+        { error },
+        "Error during shutdown, continuing anyway",
       );
     }
     featureFlagProvider = null;

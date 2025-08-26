@@ -17,6 +17,9 @@ import { toast } from "sonner";
 import Icons from "@/assets/icons";
 import { cn } from "@/lib/utils/shadcn";
 import { fetchToken } from "@/lib/firebase/getIdToken";
+import { logger } from "tttc-common/logger";
+
+const feedbackLogger = logger.child({ module: "feedback-component" });
 
 export default function Feedback({ className }: { className?: string }) {
   return (
@@ -116,7 +119,7 @@ function FeedbackForm() {
         toast.error(apiResult[1].message);
       }
     } catch (error) {
-      console.error("Feedback submission failed:", error);
+      feedbackLogger.error({ error }, "Feedback submission failed");
       toast.error("Failed to submit feedback");
     }
 

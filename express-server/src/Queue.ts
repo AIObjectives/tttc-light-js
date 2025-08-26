@@ -1,7 +1,10 @@
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
 import { exit } from "process";
+import { logger } from "tttc-common/logger";
 import { Env } from "./types/context";
+
+const queueLogger = logger.child({ module: "queue" });
 
 export const setupConnection = (env: Env) => {
   const connection = new IORedis(env.REDIS_URL, {
@@ -14,11 +17,18 @@ export const setupConnection = (env: Env) => {
   });
 
   connection.on("connect", () => {
-    console.log("Redis is connected");
+    queueLogger.info("Redis is connected");
   });
 
   connection.on("error", (e) => {
-    console.error("Redis connection error: ", e.name, e.message);
+    queueLogger.error(
+      {
+        error: e,
+        errorName: e.name,
+        errorMessage: e.message,
+      },
+      "Redis connection error",
+    );
     exit(1);
   });
 

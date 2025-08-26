@@ -16,12 +16,22 @@ vi.mock("../lib/firebase/ensureUserDocument", () => ({
 }));
 
 // Mock logger
+const { mockChildLogger } = vi.hoisted(() => ({
+  mockChildLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 vi.mock("tttc-common/logger", () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    child: vi.fn(() => mockChildLogger),
   },
 }));
 

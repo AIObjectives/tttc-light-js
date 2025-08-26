@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Env } from "./types/context";
+import { RequestWithLogger } from "./types/request";
 
 /**
  * Adds context to the request object
@@ -50,19 +51,23 @@ const createSecurityErrorResponse = (
  * Logs security validation failures for audit purposes
  */
 const logSecurityFailure = (
-  req: Request,
+  req: RequestWithLogger,
   reason: string,
   details?: Record<string, any>,
 ) => {
-  console.warn(`[SECURITY] API key validation failed: ${reason}`, {
-    timestamp: new Date().toISOString(),
-    ip: req.ip || req.socket?.remoteAddress,
-    userAgent: req.get("User-Agent"),
-    origin: req.get("Origin"),
-    path: req.path,
-    method: req.method,
-    ...details,
-  });
+  req.log.warn(
+    {
+      reason,
+      timestamp: new Date().toISOString(),
+      ip: req.ip || req.socket?.remoteAddress,
+      userAgent: req.get("User-Agent"),
+      origin: req.get("Origin"),
+      path: req.path,
+      method: req.method,
+      ...details,
+    },
+    "API key validation failed",
+  );
 };
 
 /**
@@ -76,7 +81,7 @@ const logSecurityFailure = (
  * - Uses constant-time validation where possible
  */
 export const validateOpenAIApiKeyHeader = () => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: RequestWithLogger, res: Response, next: NextFunction) => {
     const apiKey =
       req.headers["x-openai-api-key"] || req.headers["X-OpenAI-API-Key"];
 

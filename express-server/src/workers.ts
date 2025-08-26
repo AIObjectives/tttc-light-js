@@ -1,7 +1,10 @@
 import { Worker, Job } from "bullmq";
 import * as firebase from "./Firebase";
 import Redis from "ioredis";
+import { logger } from "tttc-common/logger";
 import { PipelineJob, pipelineJob } from "./jobs/pipeline";
+
+const workersLogger = logger.child({ module: "workers" });
 
 const setupPipelineWorker = (connection: Redis, queueName: string) => {
   const pipeLineWorker = new Worker(
@@ -31,11 +34,16 @@ const setupPipelineWorker = (connection: Redis, queueName: string) => {
         // throw new Error("Could not update Firestore reportJob to failed status: " + e.message)
       }
     }
-    console.error(
-      "Pipeline worker failed: " +
-        (e instanceof Error ? `${e.message}: ${e.stack}` : e),
+    workersLogger.error(
+      {
+        error: e,
+        jobId: job?.id,
+        jobData: job?.data,
+        errorMessage: e instanceof Error ? e.message : String(e),
+        errorStack: e instanceof Error ? e.stack : undefined,
+      },
+      "Pipeline worker failed",
     );
-    // TODO: Logging 🪵
   });
 
   return pipeLineWorker;

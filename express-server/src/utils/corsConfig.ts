@@ -1,4 +1,7 @@
 import { Env } from "../types/context";
+import { logger } from "tttc-common/logger";
+
+const corsLogger = logger.child({ module: "cors" });
 
 // CORS Security Constants - Keep in sync with Python server
 export const PREFLIGHT_CACHE_SECONDS = 24 * 60 * 60; // 24 hours
@@ -34,29 +37,35 @@ export function createCorsOriginValidator(allowedOrigins: string[]) {
       // Note: Requests without origin headers are typically from server-to-server calls,
       // mobile apps, or tools like Postman. We allow these in all environments.
       if (!origin) {
-        console.debug("[CORS] Allowing request with no origin header");
+        corsLogger.debug("Allowing request with no origin header");
         return callback(null, true);
       }
 
       if (allowedOrigins.includes(origin)) {
-        console.debug(`[CORS] Allowed origin ${origin}`);
+        corsLogger.debug({ origin }, "Allowed origin");
         callback(null, true);
       } else {
         const error = new Error(`Origin ${origin} not allowed by CORS policy`);
-        console.warn(`[CORS] Blocked origin ${origin}`, {
-          origin,
-          allowedOrigins,
-          timestamp: new Date().toISOString(),
-        });
+        corsLogger.warn(
+          {
+            origin,
+            allowedOrigins,
+            timestamp: new Date().toISOString(),
+          },
+          "Blocked origin",
+        );
         callback(error);
       }
     } catch (err) {
       // Handle unexpected errors in CORS validation
-      console.error("[CORS] Unexpected error in origin validation", {
-        error: err,
-        origin: origin || "undefined",
-        allowedOriginsCount: allowedOrigins.length,
-      });
+      corsLogger.error(
+        {
+          error: err,
+          origin: origin || "undefined",
+          allowedOriginsCount: allowedOrigins.length,
+        },
+        "Unexpected error in origin validation",
+      );
       // Fail secure: reject on unexpected errors
       callback(new Error("CORS validation failed due to internal error"));
     }
@@ -89,9 +98,12 @@ export function createCorsOptions(allowedOrigins: string[]) {
  * Log CORS configuration on startup for debugging
  */
 export function logCorsConfiguration(config: CorsOriginConfig) {
-  console.info("[CORS] Configuration initialized", {
-    environment: config.environment,
-    allowedOrigins: config.origins,
-    preflightCacheSeconds: PREFLIGHT_CACHE_SECONDS,
-  });
+  corsLogger.info(
+    {
+      environment: config.environment,
+      allowedOrigins: config.origins,
+      preflightCacheSeconds: PREFLIGHT_CACHE_SECONDS,
+    },
+    "Configuration initialized",
+  );
 }

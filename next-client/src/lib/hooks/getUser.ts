@@ -6,6 +6,8 @@ import { User } from "firebase/auth";
 import { ensureUserDocumentOnClient } from "@/lib/firebase/ensureUserDocument";
 import { logger } from "tttc-common/logger";
 
+const userHookLogger = logger.child({ module: "user-hook-client" });
+
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,11 +25,11 @@ export function useUser() {
       const unsubscribe = onAuthStateChanged(async (authUser: User | null) => {
         if (!mounted) return;
 
-        logger.debug("CLIENT: Auth state changed", authUser);
+        userHookLogger.debug({ uid: authUser?.uid }, "Auth state changed");
 
         // Detect logout: previous user existed but current user is null
         if (previousUserRef.current && !authUser) {
-          logger.info("CLIENT: User logged out");
+          userHookLogger.info("User logged out");
           // Clear ensured users when user logs out
           ensuredUsersRef.current = new Set();
           setIsWaitlisted(false);
@@ -44,36 +46,35 @@ export function useUser() {
           if (!ensuredUsersRef.current.has(authUser.uid)) {
             let ensurePromise = ensurePromisesRef.current.get(authUser.uid);
             if (!ensurePromise) {
-              logger.debug(
-                "CLIENT ENSURE: Ensuring user document for new user",
-              );
+              userHookLogger.debug("Ensuring user document for new user");
               const uid = authUser.uid; // Store UID in a local variable to avoid race conditions
               ensurePromise = ensureUserDocumentOnClient(authUser)
                 .then((result) => {
                   if (!mounted) return;
                   // Don't add to ensuredUsersRef so it will retry next time
                   if (result.tag === "success") {
-                    logger.info(
-                      `CLIENT ENSURE: User document ensured successfully for ${uid}`,
+                    userHookLogger.info(
+                      { uid },
+                      "User document ensured successfully",
                     );
                     ensuredUsersRef.current.add(uid);
                     setIsWaitlisted(false);
                   } else if (result.tag === "waitlisted") {
-                    logger.info("User is waitlisted");
+                    userHookLogger.info("User is waitlisted");
                     setIsWaitlisted(true);
                     // Don't add to ensured users since they're waitlisted
                   } else {
-                    logger.error(
+                    userHookLogger.error(
+                      { error: result.error },
                       "Failed to ensure user document",
-                      result.error,
                     );
                   }
                 })
                 .catch((error) => {
                   if (!mounted) return;
-                  logger.error(
-                    "CLIENT ENSURE: Unexpected error in user document creation",
-                    error,
+                  userHookLogger.error(
+                    { error },
+                    "Unexpected error in user document creation",
                   );
                 })
                 .finally(() => {
@@ -83,7 +84,7 @@ export function useUser() {
             }
             // Do not await ensurePromise; let it run in the background
           } else {
-            logger.debug("CLIENT ENSURE: User document already ensured");
+            userHookLogger.debug("User document already ensured");
           }
         }
       });
@@ -93,7 +94,7 @@ export function useUser() {
         unsubscribe();
       };
     } catch (err) {
-      logger.error("CLIENT: Failed to initialize auth:", err);
+      userHookLogger.error({ error: err }, "Failed to initialize auth");
       if (mounted) {
         setError(
           err instanceof Error ? err.message : "Auth initialization failed",

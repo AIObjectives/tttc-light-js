@@ -45,7 +45,6 @@ describe("Analytics Integration with Common Package", () => {
     ANALYTICS_HOST: "https://app.posthog.com",
     ANALYTICS_FLUSH_AT: 20,
     ANALYTICS_FLUSH_INTERVAL: 10000,
-    ANALYTICS_DEBUG: false,
     ANALYTICS_ENABLED: true,
     ...overrides,
   });
