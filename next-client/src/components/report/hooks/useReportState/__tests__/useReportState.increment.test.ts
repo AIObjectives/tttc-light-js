@@ -27,31 +27,25 @@ describe("Topic Node", () => {
   const newState1 = incrementTopic(state, getTestTopic(state).id);
   const newState2 = incrementTopic(newState1, getTestTopic(newState1).id);
   describe("Precheck", () => {
-    test("Make sure our test topic's children length is >= 3", () => {
-      expect(getTestTopic(state).children.length).greaterThanOrEqual(3);
+    test("Make sure our test topic's children length is >= 6", () => {
+      expect(getTestTopic(state).children.length).greaterThanOrEqual(6);
     });
 
-    test("Make sure our test topic's pag is set to default or children length - 1, whichever is smaller", () => {
-      const expectedPag = Math.min(
-        defaultTopicPagination,
-        getTestTopic(state).children.length - 1,
-      );
-      expect(getTestTopic(state).pagination).toBe(expectedPag);
+    test("Make sure our test topic's pag is set to default", () => {
+      expect(getTestTopic(state).pagination).toBe(defaultTopicPagination);
     });
   });
 
-  test("Incrementing once results in the topic's pagination going up by the set amount, capped at children length - 1", () => {
-    const expected = Math.min(
+  test("Incrementing once results in the topic's pagination going up by the set amount", () => {
+    expect(getTestTopic(newState1).pagination).toBe(
       defaultTopicPagination + defaultAddTopicPagination,
-      getTestTopic(state).children.length - 1,
     );
-    expect(getTestTopic(newState1).pagination).toBe(expected);
   });
 
-  test("Incrementing twice caps at children length - 1", () => {
-    // Since we have only 3 children (index 0, 1, 2), max pagination is 2
-    const maxPagination = getTestTopic(state).children.length - 1;
-    expect(getTestTopic(newState2).pagination).toBe(maxPagination);
+  test("Incrementing twice works", () => {
+    expect(getTestTopic(newState2).pagination).toBe(
+      defaultTopicPagination + defaultAddTopicPagination * 2,
+    );
   });
 
   test("Caps at children's length", () => {

@@ -59,8 +59,8 @@ describe("Closing -> Topic.isOpen", () => {
 });
 
 describe.skip("Closing -> Topic.pagination", () => {
-  const testTopicIdx = 0;
-  const testSubtopicHighIdx = 2;
+  const testTopicIdx = 3;
+  const testSubtopicHighIdx = 7;
   const getTestTopic = (state: ReportState) => getTopic(state, testTopicIdx);
   const getTestSubtopicHigh = (state: ReportState) =>
     getSubtopic(state, testTopicIdx, testSubtopicHighIdx);
@@ -78,8 +78,8 @@ describe.skip("Closing -> Topic.pagination", () => {
 });
 
 describe("Closing -> Subtopic.pagination", () => {
-  const testTopicIdx = 0;
-  const testSubtopicHighIdx = 2;
+  const testTopicIdx = 3;
+  const testSubtopicHighIdx = 7;
   const testClaimHighIdx = 4;
   const getTestSubtopicHigh = (state: ReportState) =>
     getSubtopic(state, testTopicIdx, testSubtopicHighIdx);
