@@ -1,4 +1,5 @@
-name: "Chromatic"
+name:
+  "Chromatic"
 
   # Docs recommend on push: https://www.chromatic.com/docs/github-actions/#recommended-configuration-for-build-events
 on: push
@@ -33,4 +34,4 @@ jobs:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           autoAcceptChanges: "main" # keeps main clean https://www.chromatic.com/docs/github-actions/#github-squashrebase-merge-and-the-main-branch
           skip: "dependabot/**" # skip dependabot branches
-          workingDir: './next-client' # for some reason we need this here as well.
+          workingDir: "./next-client" # for some reason we need this here as well.
