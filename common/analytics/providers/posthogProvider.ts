@@ -5,9 +5,9 @@ import type {
   AnalyticsContext,
   AnalyticsProperties,
   AnalyticsConfig,
-} from '../types';
-import { logger } from '../../logger';
-import { PostHog } from 'posthog-node'
+} from "../types";
+import { logger } from "../../logger";
+import { PostHog } from "posthog-node";
 
 /**
  * PostHog analytics provider implementation for server environments
@@ -23,9 +23,9 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
    */
   constructor(config: AnalyticsConfig) {
     this.config = config;
-    
+
     if (!config.apiKey) {
-      throw new Error('PostHog API key is required');
+      throw new Error("PostHog API key is required");
     }
   }
 
@@ -39,15 +39,15 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
 
     try {
       this.posthog = new PostHog(this.config.apiKey!, {
-        host: this.config.host || 'https://us.i.posthog.com',
+        host: this.config.host || "https://us.i.posthog.com",
         flushAt: this.config.flushAt || 20,
         flushInterval: this.config.flushInterval || 10000,
       });
 
       this.ready = true;
-      logger.info('POSTHOG ANALYTICS: Provider initialized successfully');
+      logger.info("[POSTHOG ANALYTICS] Provider initialized successfully");
     } catch (error) {
-      logger.error('POSTHOG ANALYTICS ERROR: Failed to initialize provider:', error);
+      logger.error(error, "[POSTHOG ANALYTICS] Failed to initialize provider:");
       throw error;
     }
   }
@@ -59,22 +59,27 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
     await this.ensureInitialized();
 
     try {
-      const distinctId = event.context?.user?.userId || 'anonymous';
-      const properties = this.buildEventProperties(event.properties, event.context);
+      const distinctId = event.context?.user?.userId || "anonymous";
+      const properties = this.buildEventProperties(
+        event.properties,
+        event.context,
+      );
 
       await this.executeWithRetry(
-        async () => this.posthog.capture({
-          distinctId,
-          event: event.name,
-          properties,
-        }),
-        'track',
-        event.name
+        async () =>
+          this.posthog.capture({
+            distinctId,
+            event: event.name,
+            properties,
+          }),
+        "track",
+        event.name,
       );
     } catch (error) {
       logger.error(
-        `POSTHOG ANALYTICS ERROR: Failed to track event ${event.name}:`,
-        error
+        error,
+        "[POSTHOG ANALYTICS] Failed to track event: %s",
+        event.name,
       );
     }
   }
@@ -89,17 +94,19 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
       const properties = this.cleanProperties(identify.traits || {});
 
       await this.executeWithRetry(
-        async () => this.posthog.identify({
-          distinctId: identify.userId,
-          properties,
-        }),
-        'identify',
-        identify.userId
+        async () =>
+          this.posthog.identify({
+            distinctId: identify.userId,
+            properties,
+          }),
+        "identify",
+        identify.userId,
       );
     } catch (error) {
       logger.error(
-        `POSTHOG ANALYTICS ERROR: Failed to identify user ${identify.userId}:`,
-        error
+        error,
+        "[POSTHOG ANALYTICS] Failed to identify user: %s",
+        identify.userId,
       );
     }
   }
@@ -107,33 +114,39 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
   /**
    * Tracks a page view via PostHog
    */
-  async page(name: string, properties?: AnalyticsProperties, context?: AnalyticsContext): Promise<void> {
+  async page(
+    name: string,
+    properties?: AnalyticsProperties,
+    context?: AnalyticsContext,
+  ): Promise<void> {
     await this.ensureInitialized();
 
     try {
-      const distinctId = context?.user?.userId || 'anonymous';
+      const distinctId = context?.user?.userId || "anonymous";
       const eventProperties = this.buildEventProperties(
         {
           $current_url: context?.url || name,
           page_name: name,
           ...properties,
         },
-        context
+        context,
       );
 
       await this.executeWithRetry(
-        async () => this.posthog.capture({
-          distinctId,
-          event: '$pageview',
-          properties: eventProperties,
-        }),
-        'page',
-        name
+        async () =>
+          this.posthog.capture({
+            distinctId,
+            event: "$pageview",
+            properties: eventProperties,
+          }),
+        "page",
+        name,
       );
     } catch (error) {
       logger.error(
-        `POSTHOG ANALYTICS ERROR: Failed to track page view ${name}:`,
-        error
+        error,
+        "[POSTHOG ANALYTICS] Failed to track page view %s",
+        name,
       );
     }
   }
@@ -149,7 +162,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
     try {
       await this.posthog.flush();
     } catch (error) {
-      logger.error('POSTHOG ANALYTICS ERROR: Failed to flush data:', error);
+      logger.error(error, "[POSTHOG ANALYTICS] Failed to flush data");
     }
   }
 
@@ -166,7 +179,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
       this.posthog = null;
       this.ready = false;
     } catch (error) {
-      logger.error('POSTHOG ANALYTICS ERROR: Failed to shutdown PostHog:', error);
+      logger.error(error, "[POSTHOG ANALYTICS] Failed to shutdown PostHog");
     }
   }
 
@@ -191,7 +204,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
    */
   private buildEventProperties(
     properties?: AnalyticsProperties,
-    context?: AnalyticsContext
+    context?: AnalyticsContext,
   ): AnalyticsProperties {
     const eventProperties: AnalyticsProperties = {
       ...this.cleanProperties(properties || {}),
@@ -203,10 +216,13 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
       if (context.user.email) {
         eventProperties.email = context.user.email;
       }
-      
+
       // Merge user properties
       if (context.user.properties) {
-        Object.assign(eventProperties, this.cleanProperties(context.user.properties));
+        Object.assign(
+          eventProperties,
+          this.cleanProperties(context.user.properties),
+        );
       }
     }
 
@@ -248,7 +264,9 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
   /**
    * Cleans properties by removing undefined values and handling circular references
    */
-  private cleanProperties(properties: AnalyticsProperties): AnalyticsProperties {
+  private cleanProperties(
+    properties: AnalyticsProperties,
+  ): AnalyticsProperties {
     const cleaned: AnalyticsProperties = {};
 
     for (const [key, value] of Object.entries(properties)) {
@@ -276,15 +294,17 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
   private async executeWithRetry<T>(
     operation: () => Promise<T>,
     operationType: string,
-    identifier: string
+    identifier: string,
   ): Promise<T> {
     try {
       return await operation();
     } catch (error) {
       // Log the first attempt failure and retry once
       logger.warn(
-        `POSTHOG ANALYTICS RETRY: ${operationType} operation failed for ${identifier}, retrying...`,
-        error
+        error,
+        `[POSTHOG ANALYTICS] RETRY: %s operation failed for %s, retrying...`,
+        operationType,
+        identifier,
       );
 
       try {
@@ -292,8 +312,10 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
       } catch (retryError) {
         // Log the final failure and re-throw
         logger.error(
-          `POSTHOG ANALYTICS ERROR: ${operationType} operation failed after retry for ${identifier}:`,
-          retryError
+          retryError,
+          "[POSTHOG ANALYTICS] %s operation failed after retry for %s:",
+          operationType,
+          identifier,
         );
         throw retryError;
       }

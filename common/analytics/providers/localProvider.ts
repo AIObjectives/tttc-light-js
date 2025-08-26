@@ -33,14 +33,16 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info(`LOCAL ANALYTICS: Event tracked: {
-        eventName: ${event.name},
-        userId: ${event.context?.user?.userId},
-        sessionId: ${event.context?.sessionId},
-        platform: ${event.context?.platform},
-        hasProperties: ${!!event.properties},
-        propertiesCount: ${event.properties ? Object.keys(event.properties).length : 0}
-      }`);
+      logger.info("LOCAL ANALYTICS: Event tracked: %o", {
+        eventName: event.name,
+        userId: event.context?.user?.userId,
+        sessionId: event.context?.sessionId,
+        platform: event.context?.platform,
+        hasProperties: !!event.properties,
+        propertiesCount: event.properties
+          ? Object.keys(event.properties).length
+          : 0,
+      });
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -55,13 +57,13 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info(`LOCAL ANALYTICS: User identified: {
-        userId: ${identify.userId},
-        hasTraits: ${!!identify.traits},
-        traitsCount: ${identify.traits ? Object.keys(identify.traits).length : 0},
-        sessionId: ${identify.context?.sessionId},
-        platform: ${identify.context?.platform}
-      }`);
+      logger.info("LOCAL ANALYTICS: User identified: %o", {
+        userId: identify.userId,
+        hasTraits: !!identify.traits,
+        traitsCount: identify.traits ? Object.keys(identify.traits).length : 0,
+        sessionId: identify.context?.sessionId,
+        platform: identify.context?.platform,
+      });
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -80,15 +82,15 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info(`LOCAL ANALYTICS: Page tracked: {
-        pageName: ${name},
-        userId: ${context?.user?.userId},
-        sessionId: ${context?.sessionId},
-        platform: ${context?.platform},
-        url: ${context?.url},
-        hasProperties: ${!!properties},
-        propertiesCount: ${properties ? Object.keys(properties).length : 0}
-      }`);
+      logger.info("LOCAL ANALYTICS: Page tracked: %o", {
+        pageName: name,
+        userId: context?.user?.userId,
+        sessionId: context?.sessionId,
+        platform: context?.platform,
+        url: context?.url,
+        hasProperties: !!properties,
+        propertiesCount: properties ? Object.keys(properties).length : 0,
+      });
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -103,7 +105,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info("LOCAL ANALYTICS: Flush requested: {}");
+      logger.info("LOCAL ANALYTICS: Flush requested: %o", {});
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -114,7 +116,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
    */
   async shutdown(): Promise<void> {
     try {
-      logger.info("LOCAL ANALYTICS: Analytics shutdown: {}");
+      logger.info("LOCAL ANALYTICS: Analytics shutdown: %o", {});
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }

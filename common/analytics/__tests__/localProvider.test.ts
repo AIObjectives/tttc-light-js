@@ -104,7 +104,8 @@ describe("LocalAnalyticsProvider", () => {
 
       const { logger } = await import("../../logger");
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Event tracked:"),
+        "LOCAL ANALYTICS: Event tracked: %o",
+        expect.any(Object),
       );
     });
 
@@ -188,7 +189,8 @@ describe("LocalAnalyticsProvider", () => {
 
       const { logger } = await import("../../logger");
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: User identified:"),
+        "LOCAL ANALYTICS: User identified: %o",
+        expect.any(Object),
       );
     });
 
@@ -253,7 +255,8 @@ describe("LocalAnalyticsProvider", () => {
 
       const { logger } = await import("../../logger");
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Page tracked:"),
+        "LOCAL ANALYTICS: Page tracked: %o",
+        expect.any(Object),
       );
     });
 
@@ -296,7 +299,8 @@ describe("LocalAnalyticsProvider", () => {
 
       const { logger } = await import("../../logger");
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Flush requested:"),
+        "LOCAL ANALYTICS: Flush requested: %o",
+        expect.any(Object),
       );
     });
   });
@@ -317,7 +321,8 @@ describe("LocalAnalyticsProvider", () => {
 
       const { logger } = await import("../../logger");
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Analytics shutdown:"),
+        "LOCAL ANALYTICS: Analytics shutdown: %o",
+        expect.any(Object),
       );
     });
 
@@ -625,7 +630,8 @@ describe("LocalAnalyticsProvider", () => {
       });
 
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Event tracked:"),
+        "LOCAL ANALYTICS: Event tracked: %o",
+        expect.any(Object),
       );
     });
 
@@ -638,7 +644,8 @@ describe("LocalAnalyticsProvider", () => {
       });
 
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: User identified:"),
+        "LOCAL ANALYTICS: User identified: %o",
+        expect.any(Object),
       );
     });
 
@@ -655,7 +662,8 @@ describe("LocalAnalyticsProvider", () => {
       );
 
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("LOCAL ANALYTICS: Page tracked:"),
+        "LOCAL ANALYTICS: Page tracked: %o",
+        expect.any(Object),
       );
     });
 
