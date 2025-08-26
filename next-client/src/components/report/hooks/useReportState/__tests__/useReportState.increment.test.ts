@@ -67,7 +67,7 @@ describe("Subtopic Node", () => {
   const newState2 = incrementSubtopic(newState1, getTestSubtopic(state).id);
 
   describe("Precheck", () => {
-    test("Make sure our test subtopic's children legnth is >= 10", () => {
+    test("Make sure our test subtopic's children length is >= 10", () => {
       expect(getTestSubtopic(state).children.length).toBeGreaterThanOrEqual(10);
     });
 

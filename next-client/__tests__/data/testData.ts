@@ -1,6 +1,6 @@
 import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
-import jsonData from "./healMichigan.json";
+import jsonData from "./aiAssemblies.json";
 
 export const reportData: schema.ReportDataObj = (() => {
   const llmPipelineSafeParse = schema.llmPipelineOutput.safeParse(jsonData);
@@ -10,5 +10,5 @@ export const reportData: schema.ReportDataObj = (() => {
   if (pipelineSafeParse.success) return pipelineSafeParse.data.data[1];
   const dataSafeParse = schema.reportDataObj.safeParse(jsonData);
   if (dataSafeParse.success) return dataSafeParse.data;
-  else throw new Error("Incorrect format in dummydata");
+  else throw new Error("Incorrect format in testdata");
 })();
