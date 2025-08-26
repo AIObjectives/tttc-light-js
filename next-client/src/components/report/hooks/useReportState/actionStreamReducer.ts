@@ -59,13 +59,7 @@ export function actionStreamReducer(
      * Set's a topic's pagination to an arbitrary value.
      */
     case "setTopicPagination": {
-      return modifyTopic((node) => ({
-        ...node,
-        pagination: Math.min(
-          Math.max(payload.pag, 0),
-          node.children.length - 1,
-        ),
-      }))(state, payload.path);
+      return modifyTopic(topicNodePagSetter(payload.pag))(state, payload.path);
     }
     /**
      * Increments a topic's pagination by a set amount
@@ -98,13 +92,10 @@ export function actionStreamReducer(
      * Sets a subtopic's pagination to an arbitrary value.
      */
     case "setSubtopicPagination": {
-      return modifySubtopic((node) => ({
-        ...node,
-        pagination: Math.min(
-          Math.max(payload.pag, 0),
-          node.children.length - 1,
-        ),
-      }))(state, payload.path);
+      return modifySubtopic(subtopicNodePagSetter(payload.pag))(
+        state,
+        payload.path,
+      );
     }
     /**
      * Sets a subtopic's pagination to its maximal value
