@@ -21,12 +21,20 @@ import type {
 import { CommonEvents } from "../types";
 
 // Mock the logger
+const mockChildLogger = {
+  info: vi.fn(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+};
+
 vi.mock("../../logger", () => ({
   logger: {
     info: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
+    child: vi.fn(() => mockChildLogger),
   },
 }));
 
@@ -191,10 +199,9 @@ describe("PostHogAnalyticsProvider", () => {
       // This should not throw but should log error
       await expect(provider.track(event)).rejects.toThrow();
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] Failed to initialize provider:",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        { error: expect.any(Error) },
+        "Failed to initialize provider",
       );
     });
 
@@ -210,10 +217,9 @@ describe("PostHogAnalyticsProvider", () => {
       // This should throw an error during track
       await expect(provider.track(event)).rejects.toThrow();
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] Failed to initialize provider:",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        { error: expect.any(Error) },
+        "Failed to initialize provider",
       );
     });
 
@@ -382,12 +388,13 @@ describe("PostHogAnalyticsProvider", () => {
 
       expect(mockPostHogInstance.capture).toHaveBeenCalledTimes(2);
 
-      const { logger } = await import("../../logger");
-      expect(logger.warn).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] RETRY: %s operation failed for %s, retrying...",
-        "track",
-        "test_event",
+      expect(mockChildLogger.warn).toHaveBeenCalledWith(
+        {
+          error: expect.any(Error),
+          operationType: "track",
+          identifier: "test_event",
+        },
+        "Operation failed, retrying",
       );
     });
 
@@ -401,12 +408,13 @@ describe("PostHogAnalyticsProvider", () => {
 
       expect(mockPostHogInstance.capture).toHaveBeenCalledTimes(2);
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] %s operation failed after retry for %s:",
-        "track",
-        "test_event",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        {
+          error: expect.any(Error),
+          operationType: "track",
+          identifier: "test_event",
+        },
+        "Operation failed after retry",
       );
     });
 
@@ -422,10 +430,9 @@ describe("PostHogAnalyticsProvider", () => {
       // Should throw during initialization
       await expect(uninitializedProvider.track(event)).rejects.toThrow();
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] Failed to initialize provider:",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        { error: expect.any(Error) },
+        "Failed to initialize provider",
       );
     });
   });
@@ -502,12 +509,13 @@ describe("PostHogAnalyticsProvider", () => {
 
       expect(mockPostHogInstance.identify).toHaveBeenCalledTimes(2);
 
-      const { logger } = await import("../../logger");
-      expect(logger.warn).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] RETRY: %s operation failed for %s, retrying...",
-        "identify",
-        "user123",
+      expect(mockChildLogger.warn).toHaveBeenCalledWith(
+        {
+          error: expect.any(Error),
+          operationType: "identify",
+          identifier: "user123",
+        },
+        "Operation failed, retrying",
       );
     });
 
@@ -521,12 +529,13 @@ describe("PostHogAnalyticsProvider", () => {
 
       expect(mockPostHogInstance.identify).toHaveBeenCalledTimes(2);
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] %s operation failed after retry for %s:",
-        "identify",
-        "user123",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        {
+          error: expect.any(Error),
+          operationType: "identify",
+          identifier: "user123",
+        },
+        "Operation failed after retry",
       );
     });
   });
@@ -577,12 +586,13 @@ describe("PostHogAnalyticsProvider", () => {
 
       expect(mockPostHogInstance.capture).toHaveBeenCalledTimes(2);
 
-      const { logger } = await import("../../logger");
-      expect(logger.warn).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] RETRY: %s operation failed for %s, retrying...",
-        "page",
-        "Test Page",
+      expect(mockChildLogger.warn).toHaveBeenCalledWith(
+        {
+          error: expect.any(Error),
+          operationType: "page",
+          identifier: "Test Page",
+        },
+        "Operation failed, retrying",
       );
     });
 
@@ -593,12 +603,13 @@ describe("PostHogAnalyticsProvider", () => {
 
       await provider.page("Error Page");
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] %s operation failed after retry for %s:",
-        "page",
-        "Error Page",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        {
+          error: expect.any(Error),
+          operationType: "page",
+          identifier: "Error Page",
+        },
+        "Operation failed after retry",
       );
     });
   });
@@ -623,10 +634,9 @@ describe("PostHogAnalyticsProvider", () => {
 
       await provider.flush();
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] Failed to flush data",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        { error: expect.any(Error) },
+        "Failed to flush data",
       );
     });
 
@@ -664,10 +674,9 @@ describe("PostHogAnalyticsProvider", () => {
 
       await provider.shutdown();
 
-      const { logger } = await import("../../logger");
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.any(Error),
-        "[POSTHOG ANALYTICS] Failed to shutdown PostHog",
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        { error: expect.any(Error) },
+        "Failed to shutdown PostHog",
       );
     });
 

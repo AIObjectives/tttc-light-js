@@ -31,7 +31,8 @@ export function initializeFeatureFlags(env: Env): FeatureFlagProvider {
   }
 
   logger.info(
-    `FEATURE FLAGS: Feature flags initialized with ${provider} provider`,
+    `[FEATURE FLAGS] Feature flags initialized with %s provider`,
+    provider.toString(),
   );
   return featureFlagProvider!;
 }
@@ -42,7 +43,7 @@ export async function isFeatureEnabled(
 ): Promise<boolean> {
   if (!featureFlagProvider) {
     logger.warn(
-      "FEATURE FLAGS: Feature flags not initialized, returning false for all flags",
+      "[FEATURE FLAGS] Feature flags not initialized, returning false for all flags",
     );
     return false;
   }
@@ -55,7 +56,9 @@ export async function getFeatureFlag(
   context: FeatureFlagContext = {},
 ): Promise<string | boolean | null> {
   if (!featureFlagProvider) {
-    logger.warn("FEATURE FLAGS: Feature flags not initialized, returning null");
+    logger.warn(
+      "[FEATURE FLAGS] Feature flags not initialized, returning null",
+    );
     return null;
   }
 
@@ -67,7 +70,7 @@ export async function getAllFeatureFlags(
 ): Promise<Record<string, string | boolean>> {
   if (!featureFlagProvider) {
     console.warn(
-      "FEATURE FLAGS: Feature flags not initialized, returning empty object",
+      "[FEATURE FLAGS] Feature flags not initialized, returning empty object",
     );
     return {};
   }
@@ -81,8 +84,8 @@ export async function shutdownFeatureFlags(): Promise<void> {
       await featureFlagProvider.shutdown();
     } catch (error) {
       logger.warn(
-        "FEATURE FLAGS: Error during shutdown, continuing anyway",
         error,
+        "[FEATURE FLAGS] Error during shutdown, continuing anyway",
       );
     }
     featureFlagProvider = null;

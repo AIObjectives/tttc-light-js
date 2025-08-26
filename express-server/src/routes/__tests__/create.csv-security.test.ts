@@ -47,7 +47,7 @@ describe("CSV Security in Create Route", () => {
     app = express();
     app.use(express.json());
 
-    // Mock request context
+    // Mock request context and logger
     app.use((req, res, next) => {
       req.context = {
         env: {
@@ -61,6 +61,18 @@ describe("CSV Security in Create Route", () => {
           REDIS_CONNECTION_STRING: "redis://localhost:6379",
           PIPELINE_EXPRESS_URL: "http://localhost:8080",
         },
+      };
+      // Mock logger for RequestWithLogger interface
+      req.log = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+        child: vi.fn(() => req.log),
+        level: "info",
+        silent: false,
       };
       next();
     });

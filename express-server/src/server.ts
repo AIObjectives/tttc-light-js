@@ -1,8 +1,11 @@
 import "dotenv/config";
-import express, { Request, Response, NextFunction } from "express";
+import express, { Response, NextFunction } from "express";
+import { RequestWithLogger } from "./types/request";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import helmet from "helmet";
+import pinoHttp from "pino-http";
+import { logger } from "tttc-common/logger";
 import create from "./routes/create";
 import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
@@ -17,11 +20,7 @@ import {
   createCorsOptions,
   logCorsConfiguration,
 } from "./utils/corsConfig";
-import {
-  initializeFeatureFlags,
-  shutdownFeatureFlags,
-  isFeatureEnabled,
-} from "./featureFlags";
+import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
 import {
   initializeAnalyticsClient,
   shutdownAnalyticsClient,
@@ -78,6 +77,9 @@ if (process.env.NODE_ENV === "production") {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static("public"));
 
+// HTTP request logging with pino
+app.use(pinoHttp({ logger }));
+
 // Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));
 
@@ -109,7 +111,7 @@ const defaultRateLimiter = rateLimit({
 const rateLimiter =
   process.env.NODE_ENV === "production"
     ? defaultRateLimiter
-    : (_req: Request, _res: Response, next: NextFunction) => next();
+    : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
 
 /**
  * Creates report

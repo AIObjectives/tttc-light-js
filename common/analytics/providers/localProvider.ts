@@ -7,6 +7,8 @@ import type {
 } from "../types";
 import { logger } from "../../logger";
 
+const localLogger = logger.child({ module: "analytics-local" });
+
 /**
  * Local analytics provider implementation
  * Logs analytics events to console and optionally to structured logs
@@ -33,16 +35,19 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info("LOCAL ANALYTICS: Event tracked: %o", {
-        eventName: event.name,
-        userId: event.context?.user?.userId,
-        sessionId: event.context?.sessionId,
-        platform: event.context?.platform,
-        hasProperties: !!event.properties,
-        propertiesCount: event.properties
-          ? Object.keys(event.properties).length
-          : 0,
-      });
+      localLogger.info(
+        {
+          eventName: event.name,
+          userId: event.context?.user?.userId,
+          sessionId: event.context?.sessionId,
+          platform: event.context?.platform,
+          hasProperties: !!event.properties,
+          propertiesCount: event.properties
+            ? Object.keys(event.properties).length
+            : 0,
+        },
+        "Event tracked",
+      );
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -57,13 +62,18 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info("LOCAL ANALYTICS: User identified: %o", {
-        userId: identify.userId,
-        hasTraits: !!identify.traits,
-        traitsCount: identify.traits ? Object.keys(identify.traits).length : 0,
-        sessionId: identify.context?.sessionId,
-        platform: identify.context?.platform,
-      });
+      localLogger.info(
+        {
+          userId: identify.userId,
+          hasTraits: !!identify.traits,
+          traitsCount: identify.traits
+            ? Object.keys(identify.traits).length
+            : 0,
+          sessionId: identify.context?.sessionId,
+          platform: identify.context?.platform,
+        },
+        "User identified",
+      );
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -82,15 +92,18 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info("LOCAL ANALYTICS: Page tracked: %o", {
-        pageName: name,
-        userId: context?.user?.userId,
-        sessionId: context?.sessionId,
-        platform: context?.platform,
-        url: context?.url,
-        hasProperties: !!properties,
-        propertiesCount: properties ? Object.keys(properties).length : 0,
-      });
+      localLogger.info(
+        {
+          pageName: name,
+          userId: context?.user?.userId,
+          sessionId: context?.sessionId,
+          platform: context?.platform,
+          url: context?.url,
+          hasProperties: !!properties,
+          propertiesCount: properties ? Object.keys(properties).length : 0,
+        },
+        "Page tracked",
+      );
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -105,7 +118,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      logger.info("LOCAL ANALYTICS: Flush requested: %o", {});
+      localLogger.info({}, "Flush requested");
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
@@ -116,7 +129,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
    */
   async shutdown(): Promise<void> {
     try {
-      logger.info("LOCAL ANALYTICS: Analytics shutdown: %o", {});
+      localLogger.info({}, "Analytics shutdown");
     } catch (error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }

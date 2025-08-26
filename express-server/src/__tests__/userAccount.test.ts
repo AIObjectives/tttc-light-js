@@ -45,12 +45,22 @@ vi.mock("tttc-common/firebase", () => ({
 }));
 
 // Mock the logger
+const { mockChildLogger } = vi.hoisted(() => ({
+  mockChildLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 vi.mock("tttc-common/logger", () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    child: vi.fn(() => mockChildLogger),
   },
 }));
 
@@ -162,11 +172,14 @@ describe("User Account Handling", () => {
         createdAt: expect.any(Object), // FieldValue.serverTimestamp()
         lastLoginAt: expect.any(Object), // FieldValue.serverTimestamp()
       });
-      expect(logger.debug).toHaveBeenCalledWith("ensureUserDocument called", {
-        firebaseUid: uid,
-        email,
-        displayName,
-      });
+      expect(mockChildLogger.debug).toHaveBeenCalledWith(
+        {
+          firebaseUid: uid,
+          email,
+          displayName,
+        },
+        "ensureUserDocument called",
+      );
     });
 
     it("should update existing user document with new login time", async () => {
@@ -316,9 +329,9 @@ describe("User Account Handling", () => {
         "Failed to ensure user document for test-uid-error: Firebase connection failed",
       );
 
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(mockChildLogger.error).toHaveBeenCalledWith(
+        { error },
         "Error ensuring user document",
-        error,
       );
     });
 

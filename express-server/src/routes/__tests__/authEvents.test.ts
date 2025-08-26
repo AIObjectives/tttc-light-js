@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Request, Response } from "express";
+import { Response } from "express";
+import { RequestWithLogger } from "../../types/request";
 import authEvents from "../authEvents";
 import { verifyUser } from "../../Firebase";
 import { sendError } from "../sendError.js";
@@ -39,6 +40,17 @@ describe("Auth Events Route", () => {
 
     mockRequest = {
       body: {},
+      log: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+        child: vi.fn(),
+        level: "info",
+        silent: false,
+      },
     };
 
     mockResponse = {
@@ -193,17 +205,16 @@ describe("Auth Events Route", () => {
 
       mockVerifyUser.mockResolvedValue(mockDecodedUser);
 
-      const { logger } = await import("tttc-common/logger");
-      const mockLogger = vi.mocked(logger);
-
       // Act
-      await authEvents(mockRequest as Request, mockResponse as Response);
+      await authEvents(
+        mockRequest as RequestWithLogger,
+        mockResponse as Response,
+      );
 
       // Assert
-      expect(mockLogger.auth).toHaveBeenCalledWith(
-        "signin",
-        "test-uid-monitoring",
-        "monitor@example.com",
+      expect(mockRequest.log.info).toHaveBeenCalledWith(
+        { uid: "test-uid-monitoring", email: "monitor@example.com" },
+        "User signing in",
       );
     });
   });

@@ -1,9 +1,9 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+import { RequestWithLogger } from "src/types/request";
 import { verifyUser } from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { sendError } from "./sendError";
 import { z } from "zod";
-import { logger } from "tttc-common/logger";
 import { getAnalytics, CommonEvents } from "tttc-common/analytics";
 
 const authEventRequest = z.object({
@@ -12,13 +12,16 @@ const authEventRequest = z.object({
   clientTimestamp: z.string().optional(),
 });
 
-export default async function authEvents(req: Request, res: Response) {
-  logger.info("EXPRESS AUTH EVENTS: Auth event endpoint called");
+export default async function authEvents(
+  req: RequestWithLogger,
+  res: Response,
+) {
+  req.log.info("Auth event endpoint called");
   try {
     const parsed = authEventRequest.safeParse(req.body);
 
     if (!parsed.success) {
-      logger.warn("EXPRESS AUTH EVENTS: Invalid request format");
+      req.log.warn("Invalid request format");
       return sendError(res, 400, "Invalid request format", "ValidationError");
     }
 
@@ -27,7 +30,10 @@ export default async function authEvents(req: Request, res: Response) {
     if (event === "signin" && firebaseAuthToken) {
       const decodedUser: DecodedIdToken = await verifyUser(firebaseAuthToken);
 
-      logger.auth("signin", decodedUser.uid, decodedUser.email);
+      req.log.info(
+        { uid: decodedUser.uid, email: decodedUser.email },
+        "User signing in",
+      );
 
       // Track signin event with analytics
       trackAuthEventAnalytics(
@@ -43,7 +49,7 @@ export default async function authEvents(req: Request, res: Response) {
         uid: decodedUser.uid,
       });
     } else if (event === "signout") {
-      logger.auth("signout");
+      req.log.info("user signing out");
 
       res.json({
         success: true,
@@ -58,7 +64,7 @@ export default async function authEvents(req: Request, res: Response) {
       );
     }
   } catch (error) {
-    logger.error("EXPRESS AUTH EVENTS: Error logging auth event:", error);
+    req.log.error(error, "Error logging auth event");
     const message =
       error instanceof Error ? error.message : "Unknown error occurred";
     sendError(res, 500, message, "AuthEventError");

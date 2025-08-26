@@ -7,6 +7,8 @@ import type {
   AnalyticsConfig,
 } from "../types";
 import { logger } from "../../logger";
+
+const posthogLogger = logger.child({ module: "analytics-posthog" });
 import { PostHog } from "posthog-node";
 
 /**
@@ -45,9 +47,9 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
       });
 
       this.ready = true;
-      logger.info("[POSTHOG ANALYTICS] Provider initialized successfully");
+      posthogLogger.info("Provider initialized successfully");
     } catch (error) {
-      logger.error(error, "[POSTHOG ANALYTICS] Failed to initialize provider:");
+      posthogLogger.error({ error }, "Failed to initialize provider");
       throw error;
     }
   }
@@ -76,10 +78,9 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
         event.name,
       );
     } catch (error) {
-      logger.error(
-        error,
-        "[POSTHOG ANALYTICS] Failed to track event: %s",
-        event.name,
+      posthogLogger.error(
+        { error, eventName: event.name },
+        "Failed to track event",
       );
     }
   }
@@ -103,10 +104,9 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
         identify.userId,
       );
     } catch (error) {
-      logger.error(
-        error,
-        "[POSTHOG ANALYTICS] Failed to identify user: %s",
-        identify.userId,
+      posthogLogger.error(
+        { error, userId: identify.userId },
+        "Failed to identify user",
       );
     }
   }
@@ -143,10 +143,9 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
         name,
       );
     } catch (error) {
-      logger.error(
-        error,
-        "[POSTHOG ANALYTICS] Failed to track page view %s",
-        name,
+      posthogLogger.error(
+        { error, pageName: name },
+        "Failed to track page view",
       );
     }
   }
@@ -162,7 +161,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
     try {
       await this.posthog.flush();
     } catch (error) {
-      logger.error(error, "[POSTHOG ANALYTICS] Failed to flush data");
+      posthogLogger.error({ error }, "Failed to flush data");
     }
   }
 
@@ -179,7 +178,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
       this.posthog = null;
       this.ready = false;
     } catch (error) {
-      logger.error(error, "[POSTHOG ANALYTICS] Failed to shutdown PostHog");
+      posthogLogger.error({ error }, "Failed to shutdown PostHog");
     }
   }
 
@@ -300,22 +299,18 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
       return await operation();
     } catch (error) {
       // Log the first attempt failure and retry once
-      logger.warn(
-        error,
-        `[POSTHOG ANALYTICS] RETRY: %s operation failed for %s, retrying...`,
-        operationType,
-        identifier,
+      posthogLogger.warn(
+        { error, operationType, identifier },
+        "Operation failed, retrying",
       );
 
       try {
         return await operation();
       } catch (retryError) {
         // Log the final failure and re-throw
-        logger.error(
-          retryError,
-          "[POSTHOG ANALYTICS] %s operation failed after retry for %s:",
-          operationType,
-          identifier,
+        posthogLogger.error(
+          { error: retryError, operationType, identifier },
+          "Operation failed after retry",
         );
         throw retryError;
       }

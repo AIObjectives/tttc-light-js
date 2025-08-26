@@ -21,10 +21,10 @@ import { logger } from "tttc-common/logger";
  */
 export async function initializeAnalyticsClient(env: Env): Promise<void> {
   try {
-    logger.info("ANALYTICS: Starting analytics client initialization", {
-      provider: env.ANALYTICS_PROVIDER,
-      enabled: env.ANALYTICS_ENABLED,
-    });
+    logger.info(
+      { provider: env.ANALYTICS_PROVIDER, enabled: env.ANALYTICS_ENABLED },
+      "ANALYTICS: Starting analytics client initialization",
+    );
 
     // Create analytics configuration from environment
     const config: AnalyticsConfig = createAnalyticsConfig(
@@ -41,13 +41,16 @@ export async function initializeAnalyticsClient(env: Env): Promise<void> {
     // Initialize analytics
     await initializeAnalytics(config);
 
-    logger.info("ANALYTICS: Analytics client initialized successfully", {
-      provider: env.ANALYTICS_PROVIDER,
-      enabled: env.ANALYTICS_ENABLED,
-    });
+    logger.info(
+      {
+        provider: env.ANALYTICS_PROVIDER,
+        enabled: env.ANALYTICS_ENABLED,
+      },
+      "ANALYTICS: Analytics client initialized successfully",
+    );
   } catch (error) {
     // Log error but don't throw - analytics should not block server startup
-    logger.error("ANALYTICS: Failed to initialize analytics client", error);
+    logger.error({ error }, "ANALYTICS: Failed to initialize analytics client");
   }
 }
 
@@ -70,7 +73,7 @@ export async function shutdownAnalyticsClient(): Promise<void> {
 
     logger.info("ANALYTICS: Analytics client shutdown completed");
   } catch (error) {
-    logger.error("ANALYTICS: Unexpected error during shutdown", error);
+    logger.error({ error }, "ANALYTICS: Unexpected error during shutdown");
   }
 }
 

@@ -29,8 +29,9 @@ export class PostHogFeatureFlagProvider implements FeatureFlagProvider {
       return Boolean(result);
     } catch (error) {
       logger.error(
-        `POSTHOG ERROR: Error checking feature flag ${flagName}:`,
         error,
+        `[POSTHOG] Error checking feature flag %s:`,
+        flagName,
       );
       return false;
     }
@@ -50,25 +51,22 @@ export class PostHogFeatureFlagProvider implements FeatureFlagProvider {
         },
       );
       if (result === null || result === undefined) {
-        logger.info(`POSTHOG INFO: flag ${flagName} returned a null value`);
+        logger.info(`POSTHOG INFO: flag %s returned a null value`, flagName);
         return null;
       }
       switch (typeof result) {
         case "boolean":
         case "string":
           return result;
-          break;
         default:
           logger.error(
-            `POSTHOG ERROR: Invalid type returned when fetching feature flag feature flag: ${flagName}`,
+            `[POSTHOG] Invalid type returned when fetching feature flag feature flag: %s`,
+            flagName,
           );
           return null;
       }
     } catch (error) {
-      logger.error(
-        `POSTHOG ERROR: Error getting feature flag ${flagName}:`,
-        error,
-      );
+      logger.error(error, `[POSTHOG] Error getting feature flag %s:`, flagName);
       return null;
     }
   }
@@ -86,7 +84,7 @@ export class PostHogFeatureFlagProvider implements FeatureFlagProvider {
       );
       return result || {};
     } catch (error) {
-      logger.error("POSTHOG ERROR: Error getting all feature flags:", error);
+      logger.error(error, "[POSTHOG] Error getting all feature flags");
       return {};
     }
   }
