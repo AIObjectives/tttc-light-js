@@ -16,7 +16,6 @@ import {
   generateRequestId,
   getAppVersion,
   getEnvironmentName,
-  isDevelopment,
 } from "./environment";
 import { logger } from "../logger";
 
@@ -40,7 +39,9 @@ export class Analytics implements AnalyticsClient {
   async initialize(config: AnalyticsConfig): Promise<void> {
     // Prevent re-initialization if already initialized
     if (this.isInitialized()) {
-      logger.warn("ANALYTICS: Already initialized, skipping re-initialization");
+      logger.warn(
+        "[ANALYTICS] Already initialized, skipping re-initialization",
+      );
       return;
     }
 
@@ -49,7 +50,7 @@ export class Analytics implements AnalyticsClient {
 
     // Check if analytics is disabled
     if (config.enabled === false) {
-      logger.info("ANALYTICS: Disabled by configuration");
+      logger.info("[ANALYTICS]: Disabled by configuration");
       this.provider = new LocalAnalyticsProvider({ enabled: false });
       return;
     }
@@ -65,12 +66,15 @@ export class Analytics implements AnalyticsClient {
 
       const environmentInfo = getEnvironmentInfo();
       logger.info(
-        `ANALYTICS: Initialized ${config.provider} provider (platform=${environmentInfo.platform} env=${config.environment || getEnvironmentName()})`,
+        "[ANALYTICS]: Initialized %s provider (platform=%s env=%s)",
+        config.provider?.toString()!,
+        environmentInfo.platform,
+        config.environment || getEnvironmentName(),
       );
     } catch (error) {
       logger.error(
-        "ANALYTICS: Failed to initialize provider, falling back to local provider",
         error,
+        "[ANALYTICS]: Failed to initialize provider, falling back to local provider",
       );
 
       // Fallback to local provider on initialization failure
@@ -100,7 +104,7 @@ export class Analytics implements AnalyticsClient {
   async track(event: AnalyticsEvent): Promise<void> {
     if (!this.provider) {
       logger.warn(
-        "ANALYTICS: Provider not initialized, skipping event tracking",
+        "[ANALYTICS]: Provider not initialized, skipping event tracking",
       );
       return;
     }
@@ -110,7 +114,7 @@ export class Analytics implements AnalyticsClient {
       const enhancedEvent = this.enhanceEvent(event);
       await this.provider.track(enhancedEvent);
     } catch (error) {
-      logger.error(`ANALYTICS: Failed to track event ${event.name}`, error);
+      logger.error(error, `[ANALYTICS]: Failed to track event %s`, event.name);
     }
   }
 
@@ -132,7 +136,7 @@ export class Analytics implements AnalyticsClient {
   async identify(identify: AnalyticsIdentify): Promise<void> {
     if (!this.provider) {
       logger.warn(
-        "ANALYTICS: Provider not initialized, skipping user identification",
+        "[ANALYTICS]: Provider not initialized, skipping user identification",
       );
       return;
     }
@@ -143,8 +147,9 @@ export class Analytics implements AnalyticsClient {
       await this.provider.identify(enhancedIdentify);
     } catch (error) {
       logger.error(
-        `ANALYTICS: Failed to identify user ${identify.userId}`,
         error,
+        `[ANALYTICS]: Failed to identify user %s`,
+        identify.userId,
       );
     }
   }
@@ -167,7 +172,7 @@ export class Analytics implements AnalyticsClient {
   ): Promise<void> {
     if (!this.provider) {
       logger.warn(
-        "ANALYTICS: Provider not initialized, skipping page tracking",
+        "[ANALYTICS]: Provider not initialized, skipping page tracking",
       );
       return;
     }
@@ -177,7 +182,7 @@ export class Analytics implements AnalyticsClient {
       const enhancedContext = this.enhanceContext(context);
       await this.provider.page(name, properties, enhancedContext);
     } catch (error) {
-      logger.error(`ANALYTICS: Failed to track page ${name}`, error);
+      logger.error(error, `[ANALYTICS]: Failed to track page %s`, name);
     }
   }
 
@@ -197,9 +202,9 @@ export class Analytics implements AnalyticsClient {
 
     try {
       await this.provider.flush();
-      logger.debug("ANALYTICS: Successfully flushed analytics data");
+      logger.debug("[ANALYTICS]: Successfully flushed analytics data");
     } catch (error) {
-      logger.error("ANALYTICS: Failed to flush analytics data", error);
+      logger.error(error, "[ANALYTICS]: Failed to flush analytics data");
     }
   }
 
@@ -219,10 +224,10 @@ export class Analytics implements AnalyticsClient {
 
     try {
       await this.provider.shutdown();
-      logger.info("ANALYTICS: Successfully shut down analytics provider");
+      logger.info("[ANALYTICS]: Successfully shut down analytics provider");
       this.provider = null;
     } catch (error) {
-      logger.error("ANALYTICS: Failed to shutdown analytics provider", error);
+      logger.error(error, "[ANALYTICS]: Failed to shutdown analytics provider");
     }
   }
 
@@ -285,7 +290,7 @@ export class Analytics implements AnalyticsClient {
         // For PostHog, we only support server-side implementation
         if (environmentInfo.platform === "browser") {
           logger.warn(
-            "ANALYTICS: PostHog browser provider not available, falling back to local provider",
+            "[ANALYTICS]: PostHog browser provider not available, falling back to local provider",
           );
           return new LocalAnalyticsProvider({
             enabled: config.enabled,

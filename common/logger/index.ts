@@ -35,6 +35,9 @@ const logger = pino({
   level: isDevelopment ? "debug" : "info",
   redact: {
     paths: [
+      "uid",
+      "email",
+      "displayName",
       "user.uid",
       "user.email",
       "user.displayName",
