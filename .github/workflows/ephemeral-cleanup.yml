@@ -1,0 +1,102 @@
+name: Cleanup Ephemeral Environment
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+env:
+  PROJECT_ID: tttc-light-js
+  REGION: us-central1
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Get frontend URL before deletion
+        id: get-frontend-url
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          FRONTEND_URL=$(gcloud run services describe dev-t3c-next-client-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)' 2>/dev/null || echo "")
+          if [ -n "$FRONTEND_URL" ]; then
+            FRONTEND_DOMAIN=$(echo "$FRONTEND_URL" | sed 's|https://||' | sed 's|http://||')
+            echo "frontend_domain=$FRONTEND_DOMAIN" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Delete Cloud Run services
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+
+          # Delete services (ignore errors if they don't exist)
+          gcloud run services delete dev-t3c-next-client-pr-${PR_NUMBER} --region=$REGION --quiet || echo "Frontend service not found"
+          gcloud run services delete dev-t3c-express-server-pr-${PR_NUMBER} --region=$REGION --quiet || echo "Backend service not found"
+          gcloud run services delete dev-pyserver-pr-${PR_NUMBER} --region=$REGION --quiet || echo "Python service not found"
+
+      - name: Remove domain from Firebase authorized domains
+        if: steps.get-frontend-url.outputs.frontend_domain != ''
+        run: |
+          FRONTEND_DOMAIN="${{ steps.get-frontend-url.outputs.frontend_domain }}"
+
+          # Get access token
+          ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
+
+          # Fetch current authorized domains
+          CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config")
+
+          # Extract current domains and remove the target domain
+          CURRENT_DOMAINS=$(echo "$CURRENT_CONFIG" | jq -r '.authorizedDomains // []' | jq -r '.[]')
+
+          # Check if domain exists
+          if echo "$CURRENT_DOMAINS" | grep -q "^$FRONTEND_DOMAIN$"; then
+            # Create new domains array without the target domain
+            NEW_DOMAINS_JSON=$(echo "$CURRENT_DOMAINS" | grep -v "^$FRONTEND_DOMAIN$" | jq -R -s 'split("\n")[:-1]')
+            
+            # Update authorized domains
+            curl -X PATCH \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"authorizedDomains\": $NEW_DOMAINS_JSON}" \
+              "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config?updateMask=authorizedDomains"
+            
+            echo "Removed $FRONTEND_DOMAIN from authorized domains"
+          else
+            echo "Domain $FRONTEND_DOMAIN not found in authorized domains"
+          fi
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr_number = context.payload.pull_request.number;
+
+            const comment = `🧹 **Ephemeral Environment Cleaned Up**
+
+            All Cloud Run services for PR #${pr_number} have been deleted.`;
+
+            github.rest.issues.createComment({
+              issue_number: pr_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

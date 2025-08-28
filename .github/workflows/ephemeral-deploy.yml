@@ -1,0 +1,214 @@
+name: Deploy Ephemeral Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: tttc-light-js
+  REGION: us-central1
+  GAR_LOCATION: us-central1
+
+jobs:
+  pre-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: log execution mode
+        run: |
+          if [ "${{ github.event.act }}" = "true" ]; then
+              echo "::notice:: Running locally with act - express server deploy skipped"
+            else
+              echo "::notice:: Running in CI - deploying express server"
+            fi
+  deploy:
+    name: Deploy Development Environment
+    if: ${{!github.event.act}}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
+
+      - name: Register gcloud as credential helper for Google support Docker registries
+        run: |
+          gcloud auth configure-docker
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Write .env file for Next Client
+        run: |
+          echo "${{ secrets.ENV_CLIENT }}" > next-client/.env
+
+      - name: Build and push Docker image for Next Client
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          COMMIT_SHA=${{ github.sha }}
+          SHORT_SHA=${COMMIT_SHA:0:7}
+          docker build -f next-client/Dockerfile -t gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
+          docker push gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
+
+      - name: Build and push Docker image for Express Server
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          COMMIT_SHA=${{ github.sha }}
+          SHORT_SHA=${COMMIT_SHA:0:7}
+
+          docker build -f express-server/Dockerfile -t gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA} .
+          docker push gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA}
+
+      - name: Build and push Docker image for Python server
+        run: |
+          # Build and tag images with PR number
+          PR_NUMBER=${{ github.event.number }}
+          COMMIT_SHA=${{ github.sha }}
+          SHORT_SHA=${COMMIT_SHA:0:7}
+
+          docker build -f pyserver/Dockerfile -t gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA} .
+          docker push gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA}
+
+      - name: Prepare deployment manifests
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          COMMIT_SHA=${{ github.sha }}
+          SHORT_SHA=${COMMIT_SHA:0:7}
+
+          # Create temp directory for processed manifests
+          mkdir -p deploy/temp
+
+          # Process each manifest
+          for service in next-client express-server pyserver; do
+            cp deploy/cloudrun/${service}.yaml deploy/temp/${service}.yaml
+            
+            # Replace placeholders
+            sed -i "s/PR_NUMBER/${PR_NUMBER}/g" deploy/temp/${service}.yaml
+            sed -i "s/TAG/pr-${PR_NUMBER}-${SHORT_SHA}/g" deploy/temp/${service}.yaml
+            sed -i "s/HASH/${SHORT_SHA}/g" deploy/temp/${service}.yaml
+          done
+
+      - name: Deploy to Cloud Run
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+
+          # Deploy each service
+          gcloud run services replace deploy/temp/express-server.yaml --region=$REGION
+          gcloud run services replace deploy/temp/pyserver.yaml --region=$REGION
+          gcloud run services replace deploy/temp/next-client.yaml --region=$REGION
+
+          # Make services publicly accessible
+          gcloud run services add-iam-policy-binding dev-t3c-express-server-pr-${PR_NUMBER} \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --region=$REGION
+            
+          gcloud run services add-iam-policy-binding dev-pyserver-pr-${PR_NUMBER} \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --region=$REGION
+            
+          gcloud run services add-iam-policy-binding dev-t3c-next-client-pr-${PR_NUMBER} \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --region=$REGION
+
+      - name: Get service URLs
+        id: get-urls
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+
+          FRONTEND_URL=$(gcloud run services describe dev-t3c-next-client-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+          BACKEND_URL=$(gcloud run services describe dev-t3c-express-server-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+          PYTHON_URL=$(gcloud run services describe dev-pyserver-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+
+          echo "frontend_url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "python_url=$PYTHON_URL" >> $GITHUB_OUTPUT
+
+      - name: Update service URL environment variables
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+
+          gcloud run services update dev-pyserver-pr-${PR_NUMBER} \
+            --region=$REGION \
+            --update-env-vars \
+              ALLOWED_ORIGINS=${{steps.get-urls.outputs.backend_url}}
+
+          gcloud run services update dev-t3c-express-server-pr-${PR_NUMBER} \
+            --region=$REGION \
+            --update-env-vars \
+              ALLOWED_ORIGINS=${{steps.get-urls.outputs.frontend_url}},PYSERVER_URL=${{steps.get-urls.outputs.python_url}},CLIENT_BASE_URL=${{steps.get-urls.outputs.frontend_url}}
+
+          gcloud run services update dev-t3c-next-client-pr-${PR_NUMBER} \
+            --region=$REGION \
+            --update-env-vars \
+              PIPELINE_EXPRESS_URL=${{steps.get-urls.outputs.backend_url}}
+
+      - name: Add domain to Firebase authorized domains
+        run: |
+          # Extract domain from frontend URL
+          FRONTEND_DOMAIN=$(echo "${{ steps.get-urls.outputs.frontend_url }}" | sed 's|https://||' | sed 's|http://||')
+
+          # Get access token
+          ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
+
+          # Fetch current authorized domains
+          CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config")
+
+          # Extract current domains and add new one
+          CURRENT_DOMAINS=$(echo "$CURRENT_CONFIG" | jq -r '.authorizedDomains // []' | jq -r '.[]')
+
+          # Check if domain already exists
+          if echo "$CURRENT_DOMAINS" | grep -q "^$FRONTEND_DOMAIN$"; then
+            echo "Domain $FRONTEND_DOMAIN already authorized"
+          else
+            # Create new domains array
+            NEW_DOMAINS_JSON=$(echo "$CURRENT_DOMAINS" | jq -R -s 'split("\n")[:-1] + ["'$FRONTEND_DOMAIN'"]')
+            
+            # Update authorized domains
+            curl -X PATCH \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"authorizedDomains\": $NEW_DOMAINS_JSON}" \
+              "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config?updateMask=authorizedDomains"
+            
+            echo "Added $FRONTEND_DOMAIN to authorized domains"
+          fi
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr_number = context.payload.pull_request.number;
+            const frontend_url = "${{ steps.get-urls.outputs.frontend_url }}";
+            const backend_url = "${{ steps.get-urls.outputs.backend_url }}";
+            const python_url = "${{ steps.get-urls.outputs.python_url }}";
+
+            const comment = `🚀 **Ephemeral Environment Deployed**
+
+            **Frontend**: ${frontend_url}
+            **Backend API**: ${backend_url}
+            **Python Service**: ${python_url}
+
+            This environment will be automatically cleaned up when the PR is closed or merged.`;
+
+            github.rest.issues.createComment({
+              issue_number: pr_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
