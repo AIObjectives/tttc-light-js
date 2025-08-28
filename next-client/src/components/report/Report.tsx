@@ -408,9 +408,18 @@ export function ReportTitle({
   nTopics,
   dateStr,
 }: IReportTitle) {
-  function ReportTitleIconsLeft() {
-    return (
-      <Row gap={4} className="h-5 flex-wrap">
+  return (
+    <Col gap={2} className="pb-1">
+      {/* Title and copy button */}
+      <Row gap={2} className="justify-between">
+        <h3>
+          <a id={`${title}`}>{title}</a>
+        </h3>
+        <CopyLinkButton anchor={title} />
+      </Row>
+
+      {/* Stat details. Split into two parts for easy wrapping */}
+      <Row gap={4} className="flex-wrap gap-y-1">
         {/* Number of topics */}
         <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
           {nThemes} topics
@@ -419,14 +428,8 @@ export function ReportTitle({
         <TextIcon icon={<Icons.Topic />}>{nTopics} subtopics</TextIcon>
         {/* Number of claims */}
         <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
-        <Separator orientation="vertical" />
-      </Row>
-    );
-  }
-
-  function ReportTitleIconsRight() {
-    return (
-      <Row gap={4} className="h-5">
+        {/* Separator */}
+        <Separator orientation="vertical" className="hidden sm:block" />
         {/* Number of people */}
         <TextIcon icon={<Icons.People size={16} className="self-center" />}>
           {nPeople} people
@@ -439,24 +442,6 @@ export function ReportTitle({
             day: "numeric",
           }).format(new Date(dateStr))}
         </TextIcon>
-      </Row>
-    );
-  }
-
-  return (
-    <Col gap={2} className="pb-1">
-      {/* Title and copy button */}
-      <Row gap={2} className="justify-between">
-        <h3>
-          <a id={`${title}`}>{title}</a>
-        </h3>
-        <CopyLinkButton anchor={title} />
-      </Row>
-
-      {/* Stat details. Split into two parts for easy wrapping */}
-      <Row gap={4} className="min-h-5 flex-wrap gap-y-2">
-        <ReportTitleIconsLeft />
-        <ReportTitleIconsRight />
       </Row>
     </Col>
   );
