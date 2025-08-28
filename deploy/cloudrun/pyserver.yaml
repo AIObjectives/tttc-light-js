@@ -1,0 +1,33 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: dev-pyserver-pr-PR_NUMBER
+  labels:
+    env: development
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/ingress: internal
+    run.googleapis.com/ingress-status: internal
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "1"
+        autoscaling.knative.dev/minScale: "0"
+        run.googleapis.com/vpc-access-connector: projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con
+        run.googleapis.com/vpc-access-egress: all-traffic
+    spec:
+      containerConcurrency: 1000
+      timeoutSeconds: 300
+      containers:
+        - image: gcr.io/tttc-light-js/dev-pyserver:TAG
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ALLOWED_ORIGINS
+              value: "https://t3c-next-client-pr-TAG.a.run.app"
+
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
