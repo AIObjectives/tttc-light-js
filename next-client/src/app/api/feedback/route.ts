@@ -6,7 +6,7 @@ import { logger } from "tttc-common/logger/browser";
 const feedbackApiLogger = logger.child({ module: "api-feedback" });
 
 export async function POST(request: Request) {
-  feedbackApiLogger.info("Feedback POST request received");
+  feedbackApiLogger.info({ req: request }, "Feedback POST request received");
   try {
     const json = await request.json();
     const parsed = feedbackRequest.safeParse(json);
@@ -22,7 +22,10 @@ export async function POST(request: Request) {
     const authorization = headersList.get("Authorization");
 
     if (!authorization?.startsWith("Bearer ")) {
-      feedbackApiLogger.warn("No valid Authorization header found");
+      feedbackApiLogger.warn(
+        { req: request },
+        "No valid Authorization header found",
+      );
       return NextResponse.json(
         { response: ["error", { message: "Unauthorized - missing token" }] },
         { status: 401 },
@@ -31,6 +34,7 @@ export async function POST(request: Request) {
 
     const token = authorization.split("Bearer ")[1];
     feedbackApiLogger.debug(
+      {},
       "Got token, calling express server feedback endpoint",
     );
 
@@ -75,6 +79,7 @@ export async function POST(request: Request) {
 
     const result = await expressResponse.json();
     feedbackApiLogger.info(
+      {},
       "Feedback submitted successfully via express server",
     );
     return NextResponse.json({

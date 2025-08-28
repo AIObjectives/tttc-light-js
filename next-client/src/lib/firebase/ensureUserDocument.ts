@@ -86,7 +86,7 @@ async function attemptEnsureUserDocument(
   let token: string;
   if (forceTokenRefresh) {
     token = await user.getIdToken(true);
-    ensureUserLogger.info("Using refreshed token");
+    ensureUserLogger.info({}, "Using refreshed token");
   } else {
     const tokenResult = await fetchToken(user);
     if (tokenResult.tag === "failure") {
@@ -102,7 +102,7 @@ async function attemptEnsureUserDocument(
     }
     if (!tokenResult.value) {
       const err = new Error("No authentication token available");
-      ensureUserLogger.error("No token available for user");
+      ensureUserLogger.error({ error: err }, "No token available for user");
       throw new AbortError(err);
     }
     token = tokenResult.value;
@@ -122,7 +122,7 @@ async function attemptEnsureUserDocument(
       error.status === HTTP_UNAUTHORIZED &&
       !forceTokenRefresh
     ) {
-      ensureUserLogger.info("Token may be expired, retrying with refresh");
+      ensureUserLogger.info({}, "Token may be expired, retrying with refresh");
       return attemptEnsureUserDocument(user, true);
     }
 
@@ -163,7 +163,10 @@ export async function ensureUserDocumentOnClient(
 
     // Check waitlist status from the returned user document
     if (!result.user) {
-      ensureUserLogger.error("No user document returned from ensure endpoint");
+      ensureUserLogger.error(
+        {},
+        "No user document returned from ensure endpoint",
+      );
       return {
         tag: "failure",
         error: "No user document returned",

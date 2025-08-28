@@ -36,7 +36,7 @@ export function useUser() {
 
         // Detect logout: previous user existed but current user is null
         if (previousUserRef.current && !authUser) {
-          userHookLogger.info("User logged out");
+          userHookLogger.info({}, "User logged out");
           // Clear ensured users when user logs out
           ensuredUsersRef.current = new Set();
           setIsWaitlisted(false);
@@ -67,7 +67,7 @@ export function useUser() {
                     ensuredUsersRef.current.add(uid);
                     setIsWaitlisted(false);
                   } else if (result.tag === "waitlisted") {
-                    userHookLogger.info("User is waitlisted");
+                    userHookLogger.info({ uid }, "User is waitlisted");
                     setIsWaitlisted(true);
                     // Don't add to ensured users since they're waitlisted
                   } else {
