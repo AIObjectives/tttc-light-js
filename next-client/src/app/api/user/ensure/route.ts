@@ -5,13 +5,16 @@ import { logger } from "tttc-common/logger/browser";
 const ensureUserApiLogger = logger.child({ module: "api-ensure-user" });
 
 export async function POST(request: Request) {
-  ensureUserApiLogger.info("User ensure POST request received");
+  ensureUserApiLogger.info({}, "User ensure POST request received");
   try {
     const headersList = await headers();
     const authorization = headersList.get("Authorization");
 
     if (!authorization?.startsWith("Bearer ")) {
-      ensureUserApiLogger.warn("No valid Authorization header found");
+      ensureUserApiLogger.warn(
+        { req: request },
+        "No valid Authorization header found",
+      );
       return NextResponse.json(
         { error: "Unauthorized - missing token" },
         { status: 401 },

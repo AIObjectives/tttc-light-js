@@ -28,7 +28,10 @@ export async function logAuthEvent(
       if (tokenResult.tag === "success" && tokenResult.value) {
         body.token = tokenResult.value;
       } else {
-        authEventsLogger.warn("Could not get token for signin event logging");
+        authEventsLogger.warn(
+          { user },
+          "Could not get token for signin event logging",
+        );
         return;
       }
     }

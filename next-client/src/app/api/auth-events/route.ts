@@ -4,13 +4,13 @@ import { logger } from "tttc-common/logger/browser";
 const authEventsApiLogger = logger.child({ module: "api-auth-events" });
 
 export async function POST(request: Request) {
-  authEventsApiLogger.info("Auth event request received");
+  authEventsApiLogger.info({ req: request }, "Auth event request received");
   try {
     const body = await request.json();
     const { event, clientTimestamp, token } = body;
 
     if (!event || !["signin", "signout"].includes(event)) {
-      authEventsApiLogger.warn("Invalid event type");
+      authEventsApiLogger.warn({ event }, "Invalid event type");
       return NextResponse.json(
         { error: "Invalid event type" },
         { status: 400 },
@@ -71,6 +71,7 @@ export async function POST(request: Request) {
 
     const result = await expressResponse.json();
     authEventsApiLogger.info(
+      {},
       "Auth event logged successfully via express server",
     );
     return NextResponse.json({ success: true, message: result.message });
