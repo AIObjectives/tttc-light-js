@@ -1,0 +1,28 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: pyserver-brandon-pr-PR_NUMBER
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        autoscaling.knative.dev/maxScale: "3"
+        autoscaling.knative.dev/minScale: "0"
+    spec:
+      containerConcurrency: 1000
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/tttc-light-js/pyserver-brandon:TAG
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: development
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"

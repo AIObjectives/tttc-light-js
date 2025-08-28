@@ -1,0 +1,161 @@
+name: Deploy Ephemeral Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+env:
+  PROJECT_ID: tttc-light-js
+  REGION: us-central1
+  GAR_LOCATION: us-central1
+
+jobs:
+  pre-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: log execution mode
+        run: |
+          if [ "${{ github.event.act }}" = "true" ]; then
+              echo "::notice:: Running locally with act - express server deploy skipped"
+            else
+              echo "::notice:: Running in CI - deploying express server"
+            fi
+  deploy:
+    name: Deploy Development Environment
+    if: ${{!github.event.act}}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
+
+    - name: Register gcloud as credential helper for Google support Docker registries
+      run: |
+        gcloud auth configure-docker
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Write .env file for Next Client
+      run: |
+        echo "${{ secrets.ENV_CLIENT }}" > next-client/.env
+    
+    - name: Build and push Docker image for Next Client
+      run: |
+        docker build -f next-client/Dockerfile -t gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
+        docker push gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
+
+
+    - name: Write .env files for Express Server
+      run: |
+        echo "${{secrets.ENV_EXPRESS_SERVER }} > express-server/.env"
+
+    - name: Build and push images
+      run: |
+        # Build and tag images with PR number
+        PR_NUMBER=${{ github.event.number }}
+        COMMIT_SHA=${{ github.sha }}
+        SHORT_SHA=${COMMIT_SHA:0:7}
+        
+        # Build Next.js client
+        docker build -f next-client/Dockerfile -t gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
+        docker push gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
+        
+        # Build Express server
+        docker build -f express-server/Dockerfile -t gcr.io/$PROJECT_ID/t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA} .
+        docker push gcr.io/$PROJECT_ID/t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA}
+        
+        # Build Python server
+        docker build -f pyserver/Dockerfile -t gcr.io/$PROJECT_ID/pyserver-brandon:pr-${PR_NUMBER}-${SHORT_SHA} .
+        docker push gcr.io/$PROJECT_ID/pyserver-brandon:pr-${PR_NUMBER}-${SHORT_SHA}
+
+    - name: Prepare deployment manifests
+      run: |
+        PR_NUMBER=${{ github.event.number }}
+        COMMIT_SHA=${{ github.sha }}
+        SHORT_SHA=${COMMIT_SHA:0:7}
+        
+        # Create temp directory for processed manifests
+        mkdir -p deploy/temp
+        
+        # Process each manifest
+        for service in next-client express-server pyserver; do
+          cp deploy/cloudrun/${service}.yaml deploy/temp/${service}.yaml
+          
+          # Replace placeholders
+          sed -i "s/PR_NUMBER/${PR_NUMBER}/g" deploy/temp/${service}.yaml
+          sed -i "s/TAG/pr-${PR_NUMBER}-${SHORT_SHA}/g" deploy/temp/${service}.yaml
+          sed -i "s/HASH/${SHORT_SHA}/g" deploy/temp/${service}.yaml
+        done
+
+    - name: Deploy to Cloud Run
+      run: |
+        PR_NUMBER=${{ github.event.number }}
+        
+        # Deploy each service
+        gcloud run services replace deploy/temp/express-server.yaml --region=$REGION
+        gcloud run services replace deploy/temp/pyserver.yaml --region=$REGION
+        gcloud run services replace deploy/temp/next-client.yaml --region=$REGION
+        
+        # Make services publicly accessible
+        gcloud run services add-iam-policy-binding t3c-express-server-pr-${PR_NUMBER} \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --region=$REGION
+          
+        gcloud run services add-iam-policy-binding pyserver-brandon-pr-${PR_NUMBER} \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --region=$REGION
+          
+        gcloud run services add-iam-policy-binding t3c-next-client-pr-${PR_NUMBER} \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --region=$REGION
+
+    - name: Get service URLs
+      id: get-urls
+      run: |
+        PR_NUMBER=${{ github.event.number }}
+        
+        FRONTEND_URL=$(gcloud run services describe t3c-next-client-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+        BACKEND_URL=$(gcloud run services describe t3c-express-server-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+        PYTHON_URL=$(gcloud run services describe pyserver-brandon-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+        
+        echo "frontend_url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+        echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+        echo "python_url=$PYTHON_URL" >> $GITHUB_OUTPUT
+
+    - name: Comment PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const pr_number = context.payload.pull_request.number;
+          const frontend_url = "${{ steps.get-urls.outputs.frontend_url }}";
+          const backend_url = "${{ steps.get-urls.outputs.backend_url }}";
+          const python_url = "${{ steps.get-urls.outputs.python_url }}";
+          
+          const comment = `🚀 **Ephemeral Environment Deployed**
+          
+          **Frontend**: ${frontend_url}
+          **Backend API**: ${backend_url}
+          **Python Service**: ${python_url}
+          
+          This environment will be automatically cleaned up when the PR is closed or merged.`;
+          
+          github.rest.issues.createComment({
+            issue_number: pr_number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

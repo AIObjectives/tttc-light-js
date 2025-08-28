@@ -1,0 +1,32 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: t3c-express-server-pr-PR_NUMBER
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        autoscaling.knative.dev/maxScale: "1"
+        autoscaling.knative.dev/minScale: "0"
+    spec:
+      containerConcurrency: 1000
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/tttc-light-js/t3c-express-server:TAG
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: FRONTEND_URL
+          value: "https://t3c-next-client-pr-PR_NUMBER-HASH.a.run.app"
+        - name: PYTHON_SERVICE_URL
+          value: "https://pyserver-brandon-pr-PR_NUMBER-HASH.a.run.app"
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"

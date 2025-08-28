@@ -1,0 +1,51 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: tttc-light-js
+
+build:
+  artifacts:
+  - image: gcr.io/tttc-light-js/t3c-next-client
+    context: .
+    docker:
+      dockerfile: next-client/Dockerfile
+  - image: gcr.io/tttc-light-js/t3c-express-server
+    context: .
+    docker:
+      dockerfile: express-server/Dockerfile
+  - image: gcr.io/tttc-light-js/pyserver-brandon
+    context: .
+    docker:
+      dockerfile: pyserver/Dockerfile
+
+deploy:
+  cloudrun:
+    projectid: tttc-light-js
+    region: us-central1
+
+profiles:
+- name: dev
+  build:
+    artifacts:
+    - image: gcr.io/tttc-light-js/t3c-next-client
+      context: .
+      docker:
+        dockerfile: next-client/Dockerfile
+      platforms: ["linux/amd64"]
+    - image: gcr.io/tttc-light-js/t3c-express-server
+      context: .
+      docker:
+        dockerfile: express-server/Dockerfile
+      platforms: ["linux/amd64"]
+    - image: gcr.io/tttc-light-js/pyserver-brandon
+      context: .
+      docker:
+        dockerfile: pyserver/Dockerfile
+      platforms: ["linux/amd64"]
+    tagPolicy:
+      envTemplate:
+        template: "{{.PR_NUMBER}}-{{.GITHUB_SHA_SHORT}}"
+  deploy:
+    cloudrun:
+      projectid: tttc-light-js
+      region: us-central1
