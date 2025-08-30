@@ -17,15 +17,20 @@ vi.mock("../sendError.js", () => ({
 }));
 
 // Mock logger
-vi.mock("tttc-common/logger", () => ({
-  logger: {
+vi.mock("tttc-common/logger", () => {
+  const mockLogger = {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     auth: vi.fn(),
-  },
-}));
+    child: vi.fn(),
+  };
+  mockLogger.child.mockReturnValue(mockLogger);
+  return {
+    logger: mockLogger,
+  };
+});
 
 describe("Auth Events Route", () => {
   let mockVerifyUser: any;

@@ -56,6 +56,7 @@ function MyReportsUI({ userId }: { userId: string }) {
         <Spinner />
       </Center>
     );
+
   if (result.tag === "failure" || user === null)
     return (
       <Center>

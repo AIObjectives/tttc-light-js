@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express, { Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { RequestWithLogger } from "./types/request";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
@@ -14,7 +14,13 @@ import authEvents from "./routes/authEvents";
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
 import { setupWorkers } from "./workers";
-import { getReportStatusHandler, getReportDataHandler } from "./routes/report";
+import {
+  getReportStatusHandler,
+  getReportDataHandler,
+  getReportByIdDataHandler,
+  getReportByIdStatusHandler,
+  migrateReportUrlHandler,
+} from "./routes/report";
 import { setupConnection } from "./Queue";
 import {
   getAllowedOrigins,
@@ -110,11 +116,28 @@ const defaultRateLimiter = rateLimit({
   },
 });
 
+// Stricter rate limiter for report endpoints
+const reportRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 30, // Limit each IP to 30 report requests per windowMs
+  message: {
+    error: {
+      message: "Too many requests, please try again later.",
+      code: "RateLimitExceeded",
+    },
+  },
+});
+
 // Skip rate limiting in development
 const rateLimiter =
   process.env.NODE_ENV === "production"
     ? defaultRateLimiter
     : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
+
+const reportLimiter =
+  process.env.NODE_ENV === "production"
+    ? reportRateLimiter
+    : (_req: Request, _res: Response, next: NextFunction) => next();
 
 /**
  * Creates report
@@ -139,8 +162,23 @@ app.post("/auth-events", rateLimiter, authEvents);
 /**
  * Gets a report
  */
-app.get("/report/:reportUri/status", rateLimiter, getReportStatusHandler);
-app.get("/report/:reportUri/data", rateLimiter, getReportDataHandler);
+app.get("/report/:reportUri/status", reportLimiter, getReportStatusHandler);
+app.get("/report/:reportUri/data", reportLimiter, getReportDataHandler);
+
+/**
+ * Gets a report by Firebase document ID (requires authentication)
+ */
+app.get("/report/id/:reportId/data", reportLimiter, getReportByIdDataHandler);
+app.get(
+  "/report/id/:reportId/status",
+  reportLimiter,
+  getReportByIdStatusHandler,
+);
+
+/**
+ * Migrates legacy report URL to new ID-based URL
+ */
+app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
 
 app.get("/test", async (_req, res) => {
   return res.send("hi");

@@ -1,5 +1,4 @@
 import Report from "@/components/report/Report";
-import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import * as utils from "tttc-common/utils";
@@ -8,6 +7,8 @@ import ReportProgress from "@/components/reportProgress/ReportProgress";
 import Feedback from "@/components/feedback/Feedback";
 import pRetry from "p-retry";
 import { logger } from "tttc-common/logger/browser";
+import LegacyReportWrapper from "@/components/report/LegacyReportWrapper";
+import { handleResponseData } from "@/lib/report/handleResponseData";
 
 const reportPageLogger = logger.child({ module: "report-page" });
 
@@ -24,90 +25,6 @@ type ReportDataState = {
   url: string;
 };
 type ReportDataErrorState = { type: "reportDataError"; message: string };
-
-type HandleResponseResult =
-  | { tag: "status"; status: api.ReportJobStatus }
-  | { tag: "report"; data: schema.UIReportData }
-  | { tag: "error"; message: string };
-
-/**
- * When the data resource is fetched, we want to read it and decide how to handle it.
- *
- * - Waiting message: If it looks like the job hasn't finished, then ping the server and see if we can
- * determine its job status
- *
- * - Old schema: If the report data was generated prior to the introduction of v2 schema, then we need to
- * run it through a function that maps the data to the current schema
- *
- * - TODO Downloaded report schema
- *
- * - Current schema: we can just return this
- */
-const handleResponseData = async (
-  data: unknown,
-  url: string,
-): Promise<HandleResponseResult> => {
-  try {
-    if (waitingMessage.safeParse(data).success) {
-      const { status } = await pRetry(
-        async () => {
-          const response = await fetch(
-            z
-              .string()
-              .url()
-              .parse(
-                `${process.env.PIPELINE_EXPRESS_URL}/report/${encodeURIComponent(url)}`,
-              ),
-          );
-          const json = await response.json();
-          return api.getReportResponse.parse(json);
-        },
-        {
-          retries: 2,
-          onFailedAttempt: (error) => {
-            reportPageLogger.warn(
-              {
-                attemptNumber: error.attemptNumber,
-                retriesLeft: error.retriesLeft,
-              },
-              "Failed to fetch status response, retrying",
-            );
-          },
-        },
-      );
-      return { tag: "status", status: status as api.ReportJobStatus };
-    } else if (schema.llmPipelineOutput.safeParse(data).success) {
-      // if the data is from the old schema, then translate it into the new one
-      const newSchemaData = getReportDataObj(
-        schema.llmPipelineOutput.parse(data),
-      );
-      return { tag: "report", data: schema.uiReportData.parse(newSchemaData) };
-    } else if (schema.pipelineOutput.safeParse(data).success) {
-      return {
-        tag: "report",
-        data: schema.uiReportData.parse(
-          schema.pipelineOutput.parse(data).data[1],
-        ),
-      };
-    } else if (schema.downloadReportSchema.safeParse(data).success) {
-      return {
-        tag: "report",
-        data: schema.downloadReportSchema.parse(data)[1].data[1],
-      };
-    } else {
-      return { tag: "error", message: "Unknown error" };
-    }
-  } catch (e) {
-    reportPageLogger.error(
-      {
-        url,
-        error: e,
-      },
-      "Unexpected error in handleResponseData",
-    );
-    return { tag: "error", message: "Failed to process response data" };
-  }
-};
 
 async function getReportState(
   encodedUri: string,
@@ -246,7 +163,7 @@ async function getReportState(
       if (reportData.type === "reportDataError") {
         return reportData;
       }
-      const parsedData = await handleResponseData(reportData, url);
+      const parsedData = await handleResponseData(reportData, url, true);
 
       switch (parsedData.tag) {
         case "status":
@@ -283,6 +200,16 @@ export default async function ReportPage({
 }) {
   const { uri } = await params;
   const encodedUri = encodeURIComponent(decodeURIComponent(uri)); // This is probably overly strict now.
+
+  // Wrap the entire page in LegacyReportWrapper for migration handling
+  return (
+    <LegacyReportWrapper uri={uri}>
+      <ReportPageContent encodedUri={encodedUri} />
+    </LegacyReportWrapper>
+  );
+}
+
+async function ReportPageContent({ encodedUri }: { encodedUri: string }) {
   const state = await getReportState(encodedUri);
 
   switch (state.type) {

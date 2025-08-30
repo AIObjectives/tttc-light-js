@@ -1,8 +1,27 @@
 import { z } from "zod";
 
-export const reportRef = z.object({
+// Allowed placeholder URIs during report processing
+const ALLOWED_PLACEHOLDER_URIS = [
+  "about:blank", // Standard placeholder for pending reports
+] as const;
+
+// Schema for report data URIs that allows placeholder values during processing
+const reportDataUriSchema = z.string().refine(
+  (uri) => {
+    // Allow explicitly allowed placeholder URIs and valid HTTPS URLs
+    return (
+      ALLOWED_PLACEHOLDER_URIS.includes(uri as any) ||
+      z.string().url().safeParse(uri).success
+    );
+  },
+  { message: "Must be a valid URL or allowed placeholder" },
+);
+
+// Schema for report references in Firestore
+const reportRefSchema = z.object({
+  id: z.string(), // Document ID from Firestore (stable report ID)
   userId: z.string(),
-  reportDataUri: z.string().url(),
+  reportDataUri: reportDataUriSchema,
   title: z.string(),
   description: z.string(),
   numTopics: z.number(),
@@ -16,7 +35,13 @@ export const reportRef = z.object({
         : arg,
     z.date(),
   ),
+  // Job ID for the job that generated this report
+  jobId: z.string().optional(),
+  // Schema version for broader migration support
+  schemaVersion: z.number().optional(), // Incremental schema version for future migrations
 });
+
+export const reportRef = reportRefSchema;
 
 export type ReportRef = z.infer<typeof reportRef>;
 
@@ -37,7 +62,6 @@ export const reportJob = z.object({
   title: z.string(),
   description: z.string(),
   reportDataUri: z.string().url(),
-  // createdAt: z.date(),
   createdAt: z.preprocess(
     (arg) =>
       firebaseTimestamp.safeParse(arg).success
@@ -45,6 +69,8 @@ export const reportJob = z.object({
         : arg,
     z.date(),
   ),
+  // Schema version for future migrations
+  schemaVersion: z.number().optional(),
 });
 
 export type ReportJob = z.infer<typeof reportJob>;
@@ -73,6 +99,8 @@ export const userDocument = z.object({
         : arg,
     z.date(),
   ),
+  // Schema version for future migrations
+  schemaVersion: z.number().optional(),
 });
 
 export type UserDocument = z.infer<typeof userDocument>;
@@ -88,6 +116,16 @@ export const JOB_STATUS = {
   PENDING: "pending",
   FINISHED: "finished",
   FAILED: "failed",
+} as const;
+
+/**
+ * Current schema versions for different document types
+ * Increment these when making breaking schema changes
+ */
+export const SCHEMA_VERSIONS = {
+  REPORT_REF: 1, // Current schema with placeholder URI security
+  REPORT_JOB: 1, // Current schema with timestamps and optional fields
+  USER_DOCUMENT: 1, // Current schema with roles and waitlist support
 } as const;
 
 export const useGetCollectionName =

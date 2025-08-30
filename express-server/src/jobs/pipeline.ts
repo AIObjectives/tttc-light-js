@@ -25,6 +25,7 @@ type FirebaseDetails = {
   reportDataUri: string;
   userId: string;
   firebaseJobId: string;
+  reportId?: string; // Stable report ID for URL persistence (optional for backward compatibility)
 };
 
 interface LLM {
@@ -174,25 +175,43 @@ export async function pipelineJob(job: Job<PipelineJob>) {
   if (finalResult.tag === "success") {
     // add the json data to storage
     const resultValue = finalResult.value;
-    const _ = await storage.save(filename, JSON.stringify(resultValue));
+    const saveResult = await storage.save(
+      filename,
+      JSON.stringify(resultValue),
+    );
 
-    // Add the job ref to Firebase
+    if (saveResult.tag === "failure") {
+      throw new Error(
+        `Failed to save final report: ${saveResult.error.message}`,
+      );
+    }
+
+    // Add the job ref to Firebase using stable report ID
     const resultData = resultValue.data;
     const { topics, sources, date } = resultData[1];
     const { firebaseDetails } = config;
 
-    // ! TODO Error handling for this stuff
-    Firebase.addReportRef(firebaseDetails.firebaseJobId, {
-      ...firebaseDetails,
-      title,
-      description: description,
-      numTopics: topics.length,
-      numSubtopics: topics.flatMap((t) => t.subtopics).length,
-      numClaims: topics.flatMap((t) => t.subtopics.flatMap((s) => s.claims))
-        .length,
-      numPeople: new Set(sources.map((s) => s.interview)).size,
-      createdDate: new Date(date),
-    });
+    // Update existing ReportRef document with final statistics
+    const reportId = firebaseDetails.reportId || firebaseDetails.firebaseJobId;
+
+    // Update reportDataUri to point to the final report file
+    const finalReportUri = saveResult.value;
+    await Firebase.updateReportRefDataUri(reportId, finalReportUri);
+
+    await Firebase.updateReportRefWithStats(
+      reportId,
+      firebaseDetails.firebaseJobId,
+      {
+        title,
+        description: description,
+        numTopics: topics.length,
+        numSubtopics: topics.flatMap((t) => t.subtopics).length,
+        numClaims: topics.flatMap((t) => t.subtopics.flatMap((s) => s.claims))
+          .length,
+        numPeople: new Set(sources.map((s) => s.interview)).size,
+        createdDate: new Date(date),
+      },
+    );
     pipelineLogger.info("Finished report");
     await job.updateProgress({
       status: api.reportJobStatus.Values.finished,

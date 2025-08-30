@@ -15,7 +15,7 @@ import {
 } from "../../elements";
 import { Col, Row } from "@/components/layout";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function Headline() {
   return (
@@ -83,6 +83,20 @@ export function CreateReport() {
 
 export function MobileHamburgerMenu() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Render a placeholder button during SSR to maintain layout
+  if (!isMounted) {
+    return (
+      <Button variant={"ghost"} className="p-1 visible sm:hidden" disabled>
+        <Icons.Menu />
+      </Button>
+    );
+  }
 
   return (
     <Sheet modal={false} open={isOpen} onOpenChange={(val) => setIsOpen(val)}>
