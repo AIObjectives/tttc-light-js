@@ -37,10 +37,6 @@ jobs:
         with:
           project_id: tttc-light-js
       ####
-      - name: Write .env file for Pyserver
-        run: |
-          echo "${{ secrets.ENV_PYSERVER }}" > pyserver/.env
-
       - name: Build Docker image
         run: |
           docker build -t gcr.io/tttc-light-js/stage-t3c-pyserver -f pyserver/Dockerfile .
@@ -57,6 +53,3 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
-
-      - name: Remove .env file
-        run: rm -f pyserver/.env
