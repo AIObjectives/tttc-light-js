@@ -38,10 +38,6 @@ jobs:
 
       ####
 
-      - name: Write .env file for Express
-        run: |
-          echo "${{ secrets.ENV_EXPRESS_SERVER }}" > express-server/.env
-
       - name: Build Docker image
         run: |
           docker build -t gcr.io/tttc-light-js/stage-t3c-express-server -f express-server/Dockerfile .
@@ -58,6 +54,3 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
-
-      - name: Remove .env file
-        run: rm -f express-server/.env
