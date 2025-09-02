@@ -4,6 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
+  workflow_dispatch:
+
 
 env:
   PROJECT_ID: tttc-light-js
@@ -52,32 +54,35 @@ jobs:
     
     - name: Build and push Docker image for Next Client
       run: |
-        docker build -f next-client/Dockerfile -t gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
-        docker push gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
+        PR_NUMBER=${{ github.event.number }}
+        COMMIT_SHA=${{ github.sha }}
+        SHORT_SHA=${COMMIT_SHA:0:7}
+        docker build -f next-client/Dockerfile -t gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
+        docker push gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
 
 
     - name: Write .env files for Express Server
       run: |
         echo "${{secrets.ENV_EXPRESS_SERVER }} > express-server/.env"
 
-    - name: Build and push images
+    - name: Build and push Docker image for Express Server
+      run: |
+        PR_NUMBER=${{ github.event.number }}
+        COMMIT_SHA=${{ github.sha }}
+        SHORT_SHA=${COMMIT_SHA:0:7}
+        
+        docker build -f express-server/Dockerfile -t gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA} .
+        docker push gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA}
+
+    - name: Build and push Docker image for Python server
       run: |
         # Build and tag images with PR number
         PR_NUMBER=${{ github.event.number }}
         COMMIT_SHA=${{ github.sha }}
         SHORT_SHA=${COMMIT_SHA:0:7}
         
-        # Build Next.js client
-        docker build -f next-client/Dockerfile -t gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
-        docker push gcr.io/$PROJECT_ID/t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
-        
-        # Build Express server
-        docker build -f express-server/Dockerfile -t gcr.io/$PROJECT_ID/t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA} .
-        docker push gcr.io/$PROJECT_ID/t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA}
-        
-        # Build Python server
-        docker build -f pyserver/Dockerfile -t gcr.io/$PROJECT_ID/pyserver-brandon:pr-${PR_NUMBER}-${SHORT_SHA} .
-        docker push gcr.io/$PROJECT_ID/pyserver-brandon:pr-${PR_NUMBER}-${SHORT_SHA}
+        docker build -f pyserver/Dockerfile -t gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA} .
+        docker push gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA}
 
     - name: Prepare deployment manifests
       run: |
@@ -108,17 +113,17 @@ jobs:
         gcloud run services replace deploy/temp/next-client.yaml --region=$REGION
         
         # Make services publicly accessible
-        gcloud run services add-iam-policy-binding t3c-express-server-pr-${PR_NUMBER} \
+        gcloud run services add-iam-policy-binding dev-t3c-express-server-pr-${PR_NUMBER} \
           --member="allUsers" \
           --role="roles/run.invoker" \
           --region=$REGION
           
-        gcloud run services add-iam-policy-binding pyserver-brandon-pr-${PR_NUMBER} \
+        gcloud run services add-iam-policy-binding dev-pyserver-pr-${PR_NUMBER} \
           --member="allUsers" \
           --role="roles/run.invoker" \
           --region=$REGION
           
-        gcloud run services add-iam-policy-binding t3c-next-client-pr-${PR_NUMBER} \
+        gcloud run services add-iam-policy-binding dev-t3c-next-client-pr-${PR_NUMBER} \
           --member="allUsers" \
           --role="roles/run.invoker" \
           --region=$REGION
@@ -128,13 +133,25 @@ jobs:
       run: |
         PR_NUMBER=${{ github.event.number }}
         
-        FRONTEND_URL=$(gcloud run services describe t3c-next-client-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
-        BACKEND_URL=$(gcloud run services describe t3c-express-server-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
-        PYTHON_URL=$(gcloud run services describe pyserver-brandon-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+        FRONTEND_URL=$(gcloud run services describe dev-t3c-next-client-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+        BACKEND_URL=$(gcloud run services describe dev-t3c-express-server-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+        PYTHON_URL=$(gcloud run services describe dev-pyserver-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
         
         echo "frontend_url=$FRONTEND_URL" >> $GITHUB_OUTPUT
         echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
         echo "python_url=$PYTHON_URL" >> $GITHUB_OUTPUT
+
+    - name: Update service URL environment variables
+      run: |
+        gcloud run services update dev-t3c-pyserver-pr-${PR_NUMBER} --update-env-vars ALLOWED_ORIGINS=${{steps.get-urls.outputs.backend_url}}
+        gcloud run services update dev-t3c-express-server-pr-${PR_NUMBER} --update-env-vars \ 
+          ALLOWED_ORIGINS=${{steps.get-urls.outputs.frontend_url}}, \
+          PYSERVER_URL=${{steps.get-urls.outputs.python_url}}, \
+          CLIENT_BASE_URL=${{steps.get-urls.outputs.frontend_url}}
+        gcloud run services update dev-t3c-next-client-pr-${PR_NUMBER} --update-env-vars PIPELINE_EXPRESS_URL=${{steps.get-urls.ooutputs.backend_url}}
+          
+          
+
 
     - name: Comment PR
       uses: actions/github-script@v7

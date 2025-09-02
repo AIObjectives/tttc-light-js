@@ -1,32 +1,104 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: t3c-express-server-pr-PR_NUMBER
+  name: dev-t3c-express-server-pr-PR_NUMBER
+  labels:
+    env: development
+    cloud.googleapis.com/location: us-central1
   annotations:
-    run.googleapis.com/ingress: all
-    run.googleapis.com/execution-environment: gen2
+    run.googleapis.com/ingress: internal
+    run.googleapis.com/ingress-status: internal
 spec:
   template:
     metadata:
+      labels:
+        env: development
+        run.googleapis.com/startupProbeType: Default
       annotations:
-        run.googleapis.com/execution-environment: gen2
-        autoscaling.knative.dev/maxScale: "1"
+        autoscaling.knative.dev/maxScale: '100'
         autoscaling.knative.dev/minScale: "0"
+        run.googleapis.com/vpc-access-connector: >-
+          projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con
+        run.googleapis.com/vpc-access-egress: all-traffic
+        run.googleapis.com/startup-cpu-boost: 'true'
     spec:
-      containerConcurrency: 1000
-      timeoutSeconds: 300
+      containerConcurrency: 80
+      timeoutSeconds: 3600
+      serviceAccountName: 384505539696-compute@developer.gserviceaccount.com
       containers:
-      - image: gcr.io/tttc-light-js/t3c-express-server:TAG
+      - name: dev-t3c-express-server
+        image: gcr.io/tttc-light-js/dev-t3c-express-server:TAG
         ports:
-        - containerPort: 8080
+        - name: http1
+          containerPort: 8080
         env:
-        - name: NODE_ENV
-          value: production
-        - name: FRONTEND_URL
-          value: "https://t3c-next-client-pr-PR_NUMBER-HASH.a.run.app"
-        - name: PYTHON_SERVICE_URL
-          value: "https://pyserver-brandon-pr-PR_NUMBER-HASH.a.run.app"
+          - name: NODE_ENV
+            value: production
+          - name: PYSERVER_URL
+            value: "placeholder"
+          - name: OPENAI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                key: latest
+                name: openai-api-key
+          - name: GCLOUD_STORAGE_BUCKET
+            value: tttc-light-dev
+          - name: CLIENT_BASE_URL
+            value: 'placeholder'
+          - name: GOOGLE_CREDENTIALS_ENCODED
+            valueFrom:
+              secretKeyRef:
+                key: latest
+                name: google-credentials
+          - name: OPENAI_API_KEY_PASSWORD
+            value: 'null'
+          - name: FIREBASE_DATABASE_URL
+            value: 'https://tttc-light-js.firebaseapp.com'
+          - name: REDIS_URL
+            value: 'redis://10.16.80.3:6379'
+          - name: FIREBASE_CREDENTIALS_ENCODED
+            valueFrom:
+              secretKeyRef:
+                key: latest
+                name: firebase-credentials
+          - name: ALLOWED_GCS_BUCKETS
+            value: >-
+              tttc-test-2-bucket,tttc-light-newbucket,tttc-light-dev,tttc-light-js-justin-private
+          - name: REDIS_QUEUE_NAME
+            value: staging
+          - name: ALLOWED_ORIGINS
+            value: "https://t3c-next-client-pr-TAG.a.run.app"
+          - name: FEATURE_FLAG_PROVIDER
+            value: posthog
+          - name: FEATURE_FLAG_API_KEY
+            valueFrom:
+              secretKeyRef:
+                key: latest
+                name: feature-flag-api-key
+          - name: FEATURE_FLAG_HOST
+            value: 'https://us.i.posthog.com'
+          - name: ANALYTICS_PROVIDER
+            value: posthog
+          - name: ANALYTICS_HOST
+            value: 'https://us.i.posthog.com'
+          - name: ANALYTICS_ENABLED
+            value: 'false'
+          - name: ANALYTICS_API_KEY
+            valueFrom:
+              secretKeyRef:
+                key: latest
+                name: analytics-api-key
+
         resources:
           limits:
-            cpu: "1"
-            memory: "512Mi"
+            cpu: 2000m
+            memory: 1Gi
+        startupProbe:
+          timeoutSeconds: 240
+          periodSeconds: 240
+          failureThreshold: 1
+          tcpSocket:
+            port: 8080
+  traffic:
+  - percent: 100
+    latestRevision: true
