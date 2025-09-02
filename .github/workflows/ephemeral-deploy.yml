@@ -61,10 +61,6 @@ jobs:
         docker push gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
 
 
-    - name: Write .env files for Express Server
-      run: |
-        echo "${{secrets.ENV_EXPRESS_SERVER }} > express-server/.env"
-
     - name: Build and push Docker image for Express Server
       run: |
         PR_NUMBER=${{ github.event.number }}
@@ -149,9 +145,6 @@ jobs:
           PYSERVER_URL=${{steps.get-urls.outputs.python_url}}, \
           CLIENT_BASE_URL=${{steps.get-urls.outputs.frontend_url}}
         gcloud run services update dev-t3c-next-client-pr-${PR_NUMBER} --update-env-vars PIPELINE_EXPRESS_URL=${{steps.get-urls.ooutputs.backend_url}}
-          
-          
-
 
     - name: Comment PR
       uses: actions/github-script@v7

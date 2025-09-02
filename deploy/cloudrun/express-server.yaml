@@ -16,10 +16,10 @@ spec:
         run.googleapis.com/startupProbeType: Default
       annotations:
         autoscaling.knative.dev/maxScale: '100'
-        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/minScale: '0'
         run.googleapis.com/vpc-access-connector: >-
-          projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con
-        run.googleapis.com/vpc-access-egress: all-traffic
+          'projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con'
+        run.googleapis.com/vpc-access-egress: 'all-traffic'
         run.googleapis.com/startup-cpu-boost: 'true'
     spec:
       containerConcurrency: 80
@@ -35,7 +35,7 @@ spec:
           - name: NODE_ENV
             value: production
           - name: PYSERVER_URL
-            value: "placeholder"
+            value: 'https://example.com'
           - name: OPENAI_API_KEY
             valueFrom:
               secretKeyRef:
@@ -44,7 +44,7 @@ spec:
           - name: GCLOUD_STORAGE_BUCKET
             value: tttc-light-dev
           - name: CLIENT_BASE_URL
-            value: 'placeholder'
+            value: 'https://example.com'
           - name: GOOGLE_CREDENTIALS_ENCODED
             valueFrom:
               secretKeyRef:
