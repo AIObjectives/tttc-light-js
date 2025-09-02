@@ -17,7 +17,7 @@ spec:
       annotations:
         autoscaling.knative.dev/maxScale: '100'
         autoscaling.knative.dev/minScale: '0'
-        run.googleapis.com/vpc-access-connector: projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con
+        run.googleapis.com/vpc-access-connector: prod-us-central1-vpc-con
         run.googleapis.com/vpc-access-egress: all-traffic
         run.googleapis.com/startup-cpu-boost: 'true'
     spec:
