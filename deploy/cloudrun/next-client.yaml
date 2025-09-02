@@ -2,14 +2,15 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: dev-t3c-next-client-PR_NUMBER
+  labels:
+    env: development
+    cloud.googleapis.com/location: us-central1
   annotations:
     run.googleapis.com/ingress: all
-    run.googleapis.com/execution-environment: gen2
 spec:
   template:
     metadata:
       annotations:
-        run.googleapis.com/execution-environment: gen2
         autoscaling.knative.dev/maxScale: "1"
         autoscaling.knative.dev/minScale: "0"
         run.googleapis.com/vpc-access-connector: projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con
