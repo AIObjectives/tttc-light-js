@@ -48,6 +48,9 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
+
     - name: Write .env file for Next Client
       run: |
         echo "${{ secrets.ENV_CLIENT }}" > next-client/.env

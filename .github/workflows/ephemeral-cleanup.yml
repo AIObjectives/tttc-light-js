@@ -30,6 +30,9 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
+
     - name: Get frontend URL before deletion
       id: get-frontend-url
       run: |
