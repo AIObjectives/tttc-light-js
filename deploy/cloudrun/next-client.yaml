@@ -23,8 +23,20 @@ spec:
         ports:
         - containerPort: 3000
         env:
-        - name: NODE_ENV
-          value: production
+          - name: NEXT_PUBLIC_FIREBASE_API_KEY
+            value: AIzaSyCW4pR-FIGhypc97NFP5yJTAgzzLFPyhTg
+          - name: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+            value: tttc-light-js.firebaseapp.com
+          - name: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+            value: tttc-light-js
+          - name: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+            value: tttc-light-js.firebasestorage.app
+          - name: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+            value: '384505539696'
+          - name: NEXT_PUBLIC_FIREBASE_APP_ID
+            value: '1:384505539696:web:e3395d2ecc7cfd59a958b5'
+          - name: PIPELINE_EXPRESS_URL
+            value: 'https://example.com'
         resources:
           limits:
             cpu: "1"

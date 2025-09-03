@@ -23,6 +23,10 @@ spec:
       - image: gcr.io/tttc-light-js/dev-pyserver:TAG
         ports:
         - containerPort: 8000
+        env:
+          - name: ALLOWED_ORIGINS
+            value: "https://t3c-next-client-pr-TAG.a.run.app"
+
         resources:
           limits:
             cpu: "1"
