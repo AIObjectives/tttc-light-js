@@ -161,11 +161,35 @@ jobs:
 
     - name: Add domain to Firebase authorized domains
       run: |
-        # Extract domain from frontend URL and add to Firebase authorized domains
+        # Extract domain from frontend URL
         FRONTEND_DOMAIN=$(echo "${{ steps.get-urls.outputs.frontend_url }}" | sed 's|https://||' | sed 's|http://||')
-        firebase auth:domains:add $FRONTEND_DOMAIN --project=$PROJECT_ID
-      env:
-        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        
+        # Get access token
+        ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
+        
+        # Fetch current authorized domains
+        CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+          "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config")
+        
+        # Extract current domains and add new one
+        CURRENT_DOMAINS=$(echo "$CURRENT_CONFIG" | jq -r '.authorizedDomains // []' | jq -r '.[]')
+        
+        # Check if domain already exists
+        if echo "$CURRENT_DOMAINS" | grep -q "^$FRONTEND_DOMAIN$"; then
+          echo "Domain $FRONTEND_DOMAIN already authorized"
+        else
+          # Create new domains array
+          NEW_DOMAINS_JSON=$(echo "$CURRENT_DOMAINS" | jq -R -s 'split("\n")[:-1] + ["'$FRONTEND_DOMAIN'"]')
+          
+          # Update authorized domains
+          curl -X PATCH \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"authorizedDomains\": $NEW_DOMAINS_JSON}" \
+            "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config?updateMask=authorizedDomains"
+          
+          echo "Added $FRONTEND_DOMAIN to authorized domains"
+        fi
 
     - name: Comment PR
       uses: actions/github-script@v7

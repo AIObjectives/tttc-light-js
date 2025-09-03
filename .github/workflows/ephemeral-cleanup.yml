@@ -55,9 +55,34 @@ jobs:
     - name: Remove domain from Firebase authorized domains
       if: steps.get-frontend-url.outputs.frontend_domain != ''
       run: |
-        firebase auth:domains:remove ${{ steps.get-frontend-url.outputs.frontend_domain }} --project=$PROJECT_ID
-      env:
-        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        FRONTEND_DOMAIN="${{ steps.get-frontend-url.outputs.frontend_domain }}"
+        
+        # Get access token
+        ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
+        
+        # Fetch current authorized domains
+        CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+          "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config")
+        
+        # Extract current domains and remove the target domain
+        CURRENT_DOMAINS=$(echo "$CURRENT_CONFIG" | jq -r '.authorizedDomains // []' | jq -r '.[]')
+        
+        # Check if domain exists
+        if echo "$CURRENT_DOMAINS" | grep -q "^$FRONTEND_DOMAIN$"; then
+          # Create new domains array without the target domain
+          NEW_DOMAINS_JSON=$(echo "$CURRENT_DOMAINS" | grep -v "^$FRONTEND_DOMAIN$" | jq -R -s 'split("\n")[:-1]')
+          
+          # Update authorized domains
+          curl -X PATCH \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"authorizedDomains\": $NEW_DOMAINS_JSON}" \
+            "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config?updateMask=authorizedDomains"
+          
+          echo "Removed $FRONTEND_DOMAIN from authorized domains"
+        else
+          echo "Domain $FRONTEND_DOMAIN not found in authorized domains"
+        fi
 
     - name: Comment PR
       uses: actions/github-script@v7
