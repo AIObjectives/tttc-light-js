@@ -149,9 +149,7 @@ jobs:
         gcloud run services update dev-t3c-express-server-pr-${PR_NUMBER} \
           --region=$REGION \
           --update-env-vars \
-            ALLOWED_ORIGINS=${{steps.get-urls.outputs.frontend_url}},\
-            PYSERVER_URL=${{steps.get-urls.outputs.python_url}},\
-            CLIENT_BASE_URL=${{steps.get-urls.outputs.frontend_url}}
+            ALLOWED_ORIGINS=${{steps.get-urls.outputs.frontend_url}},PYSERVER_URL=${{steps.get-urls.outputs.python_url}},CLIENT_BASE_URL=${{steps.get-urls.outputs.frontend_url}}
 
         gcloud run services update dev-t3c-next-client-pr-${PR_NUMBER} \
           --region=$REGION \
