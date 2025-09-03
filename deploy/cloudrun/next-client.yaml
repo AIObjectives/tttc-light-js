@@ -1,7 +1,7 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: dev-t3c-next-client-PR_NUMBER
+  name: dev-t3c-next-client-pr-PR_NUMBER
   labels:
     env: development
     cloud.googleapis.com/location: us-central1
