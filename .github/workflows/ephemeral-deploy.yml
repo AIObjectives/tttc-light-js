@@ -141,7 +141,7 @@ jobs:
       run: |
         PR_NUMBER=${{ github.event.number }}
 
-        gcloud run services update dev-t3c-pyserver-pr-${PR_NUMBER} \
+        gcloud run services update dev-pyserver-pr-${PR_NUMBER} \
           --region=$REGION \
           --update-env-vars \
             ALLOWED_ORIGINS=${{steps.get-urls.outputs.backend_url}}
