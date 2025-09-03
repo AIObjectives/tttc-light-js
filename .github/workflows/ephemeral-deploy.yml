@@ -156,6 +156,14 @@ jobs:
           --update-env-vars \
             PIPELINE_EXPRESS_URL=${{steps.get-urls.outputs.backend_url}}
 
+    - name: Add domain to Firebase authorized domains
+      run: |
+        # Extract domain from frontend URL and add to Firebase authorized domains
+        FRONTEND_DOMAIN=$(echo "${{ steps.get-urls.outputs.frontend_url }}" | sed 's|https://||' | sed 's|http://||')
+        firebase auth:domains:add $FRONTEND_DOMAIN --project=$PROJECT_ID
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
     - name: Comment PR
       uses: actions/github-script@v7
       with:
