@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Response } from "express";
 import { RequestWithLogger } from "../../types/request";
-import { migrateReportUrlHandler, getReportByIdDataHandler } from "../report";
+import {
+  migrateReportUrlHandler,
+  getReportByIdDataHandler,
+  getReportByIdMetadataHandler,
+} from "../report";
 import * as Firebase from "../../Firebase";
 import { ReportRef } from "tttc-common/firebase";
 import * as api from "tttc-common/api";
@@ -497,6 +501,76 @@ describe("Report Route Handlers", () => {
       await getReportByIdDataHandler(mockReq, mockRes as Response);
 
       expect(Firebase.getReportRefById).not.toHaveBeenCalled(); // Should not reach Firebase
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe("getReportByIdMetadataHandler", () => {
+    const testReportId = "abc123def456ghi789jk";
+    const mockReportRef: ReportRef = {
+      id: testReportId,
+      userId: "user123",
+      reportDataUri:
+        "https://storage.googleapis.com/test-bucket/reports/test-report.json",
+      title: "Test Report",
+      description: "Test Description",
+      numTopics: 5,
+      numSubtopics: 10,
+      numClaims: 10,
+      numPeople: 3,
+      createdDate: new Date("2025-01-01"),
+      jobId: "job123",
+    };
+
+    it("should successfully return report metadata", async () => {
+      mockReq = createMockRequest({ reportId: testReportId });
+      vi.mocked(Firebase.getReportRefById).mockResolvedValue(mockReportRef);
+
+      await getReportByIdMetadataHandler(mockReq, mockRes as Response);
+
+      expect(mockRes.json).toHaveBeenCalledWith(mockReportRef);
+      expect(mockRes.set).toHaveBeenCalledWith(
+        "Cache-Control",
+        "private, max-age=300",
+      );
+    });
+
+    it("should handle invalid report ID format", async () => {
+      mockReq.params = { reportId: "invalid-id!" };
+
+      await getReportByIdMetadataHandler(mockReq, mockRes as Response);
+
+      expect(Firebase.getReportRefById).not.toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+    });
+
+    it("should handle report not found", async () => {
+      mockReq.params = { reportId: testReportId };
+      vi.mocked(Firebase.getReportRefById).mockResolvedValue(null);
+
+      await getReportByIdMetadataHandler(mockReq, mockRes as Response);
+
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+    });
+
+    it("should handle Firebase errors gracefully", async () => {
+      mockReq.params = { reportId: testReportId };
+      vi.mocked(Firebase.getReportRefById).mockRejectedValue(
+        new Error("Firebase error"),
+      );
+
+      await getReportByIdMetadataHandler(mockReq, mockRes as Response);
+
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle malicious report ID input", async () => {
+      const maliciousId = "../../../etc/passwd";
+      mockReq.params = { reportId: maliciousId };
+
+      await getReportByIdMetadataHandler(mockReq, mockRes as Response);
+
+      expect(Firebase.getReportRefById).not.toHaveBeenCalled();
       expect(mockRes.status).toHaveBeenCalledWith(404);
     });
   });

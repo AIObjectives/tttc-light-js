@@ -182,41 +182,73 @@ export async function createReportJobAndRef(
   },
   reportId?: string, // Optional pre-generated reportId
 ): Promise<{ jobId: string; reportId: string }> {
-  // Input validation
-  userIdSchema.parse(reportRefData.userId);
-  titleSchema.parse(reportRefData.title);
+  try {
+    // Input validation
+    userIdSchema.parse(reportRefData.userId);
+    titleSchema.parse(reportRefData.title);
 
-  const jobRef = db.collection(getCollectionName("REPORT_JOB")).doc();
-  const reportRef = reportId
-    ? db.collection(getCollectionName("REPORT_REF")).doc(reportId)
-    : db.collection(getCollectionName("REPORT_REF")).doc();
+    const jobRef = db.collection(getCollectionName("REPORT_JOB")).doc();
+    const reportRef = reportId
+      ? db.collection(getCollectionName("REPORT_REF")).doc(reportId)
+      : db.collection(getCollectionName("REPORT_REF")).doc();
 
-  await db.runTransaction(async (transaction) => {
-    const jobData = prepareJobData(jobDetails);
-    const reportData = prepareReportRefForCreation(
-      reportRefData,
-      reportRef.id,
-      jobRef.id,
+    await db.runTransaction(async (transaction) => {
+      try {
+        const jobData = prepareJobData(jobDetails);
+        const reportData = prepareReportRefForCreation(
+          reportRefData,
+          reportRef.id,
+          jobRef.id,
+        );
+
+        transaction.set(jobRef, jobData);
+
+        transaction.set(reportRef, reportData);
+      } catch (transactionError) {
+        firebaseLogger.error(
+          {
+            error: transactionError,
+            errorMessage:
+              transactionError instanceof Error
+                ? transactionError.message
+                : String(transactionError),
+          },
+          "Error inside transaction",
+        );
+        throw transactionError;
+      }
+    });
+
+    firebaseLogger.info(
+      {
+        jobId: jobRef.id,
+        reportId: reportRef.id,
+        hasUserId: !!reportRefData.userId,
+        hasTitle: !!reportRefData.title,
+      },
+      "Atomically created ReportJob and ReportRef",
     );
 
-    transaction.set(jobRef, jobData);
-    transaction.set(reportRef, reportData);
-  });
-
-  firebaseLogger.info(
-    {
+    return {
       jobId: jobRef.id,
       reportId: reportRef.id,
-      hasUserId: !!reportRefData.userId,
-      hasTitle: !!reportRefData.title,
-    },
-    "Atomically created ReportJob and ReportRef",
-  );
-
-  return {
-    jobId: jobRef.id,
-    reportId: reportRef.id,
-  };
+    };
+  } catch (error) {
+    firebaseLogger.error(
+      {
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        reportRefData: {
+          userId: reportRefData.userId,
+          title: reportRefData.title,
+          hasReportDataUri: !!reportRefData.reportDataUri,
+        },
+      },
+      "Failed to create ReportJob and ReportRef",
+    );
+    throw error;
+  }
 }
 
 /**
@@ -323,9 +355,12 @@ export async function updateReportJobDataUri(
       { reportDataUri },
       `Report job ${jobId} not found`,
     );
-    logger.info(`Updated reportDataUri for job ${jobId}`);
+    firebaseLogger.info({ jobId }, "Updated reportDataUri for job");
   } catch (error) {
-    logger.error({ error }, `Failed to update reportDataUri for ${jobId}`);
+    firebaseLogger.error(
+      { error, jobId },
+      "Failed to update reportDataUri for job",
+    );
     throw error;
   }
 }
@@ -344,11 +379,11 @@ export async function updateReportRefDataUri(
       { reportDataUri },
       `Report ref ${reportId} not found`,
     );
-    logger.info(`Updated reportDataUri for report ref ${reportId}`);
+    firebaseLogger.info({ reportId }, "Updated reportDataUri for report ref");
   } catch (error) {
-    logger.error(
-      { error },
-      `Failed to update reportDataUri for report ref ${reportId}`,
+    firebaseLogger.error(
+      { error, reportId },
+      "Failed to update reportDataUri for report ref",
     );
     throw error;
   }
@@ -456,7 +491,7 @@ export async function findReportRefByUri(
 ): Promise<{ id: string; data: ReportRef } | null> {
   // Input validation
   if (!isValidReportUri(reportDataUri)) {
-    logger.debug("Invalid or empty reportDataUri provided");
+    firebaseLogger.debug("Invalid or empty reportDataUri provided");
     return null;
   }
 
@@ -470,14 +505,17 @@ export async function findReportRefByUri(
       .get();
 
     if (query.empty) {
-      logger.debug({ hasUri: !!reportDataUri }, "No ReportRef found for URI");
+      firebaseLogger.debug(
+        { hasUri: !!reportDataUri },
+        "No ReportRef found for URI",
+      );
       return null;
     }
 
     const doc = query.docs[0];
     const data = doc.data();
 
-    logger.debug(
+    firebaseLogger.debug(
       {
         docId: doc.id,
         hasTitle: !!data.title,
@@ -490,7 +528,7 @@ export async function findReportRefByUri(
       data: data as ReportRef,
     };
   } catch (error) {
-    logger.error(
+    firebaseLogger.error(
       { error, hasUri: !!reportDataUri },
       "Firebase error finding ReportRef by URI",
     );
@@ -513,12 +551,15 @@ export async function getReportRefById(
     const doc = await docRef.get();
 
     if (!doc.exists) {
-      logger.debug({ hasReportId: !!reportId }, "No ReportRef found for ID");
+      firebaseLogger.debug(
+        { hasReportId: !!reportId },
+        "No ReportRef found for ID",
+      );
       return null;
     }
 
     const data = doc.data();
-    logger.debug(
+    firebaseLogger.debug(
       {
         hasReportId: !!reportId,
         hasTitle: !!data?.title,
@@ -528,7 +569,7 @@ export async function getReportRefById(
 
     return data as ReportRef;
   } catch (error) {
-    logger.error({ error }, "Error getting ReportRef by ID");
+    firebaseLogger.error({ error }, "Error getting ReportRef by ID");
     return null;
   }
 }

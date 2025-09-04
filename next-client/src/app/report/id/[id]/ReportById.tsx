@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Spinner } from "@/components/elements";
-import { getFirebaseDb } from "@/lib/firebase/clientApp";
-import { doc, getDoc } from "firebase/firestore";
-import { useGetCollectionName, ReportRef } from "tttc-common/firebase";
+import { ReportRef } from "tttc-common/firebase";
 import Report from "@/components/report/Report";
 import ReportProgress from "@/components/reportProgress/ReportProgress";
 import Feedback from "@/components/feedback/Feedback";
@@ -13,14 +11,13 @@ import * as api from "tttc-common/api";
 import * as utils from "tttc-common/utils";
 import pRetry from "p-retry";
 import { handleResponseData } from "@/lib/report/handleResponseData";
+import { logger } from "tttc-common/logger/browser";
+
+const reportLogger = logger.child({ module: "report-by-id" });
 
 interface ReportByIdProps {
   reportId: string;
 }
-
-const NODE_ENV =
-  process.env.NODE_ENV === "production" ? "production" : "development";
-const getCollectionName = useGetCollectionName(NODE_ENV);
 
 // Clear state types for report loading
 type ReportState =
@@ -81,7 +78,7 @@ function ReportByIdContent({ reportId }: ReportByIdProps) {
           break;
       }
     } catch (error) {
-      console.error("Failed to load report:", error);
+      reportLogger.error({ error }, "Failed to load report");
       setState({
         type: "error",
         message:
@@ -98,11 +95,22 @@ function ReportByIdContent({ reportId }: ReportByIdProps) {
 async function fetchReportMetadata(
   reportId: string,
 ): Promise<ReportRef | null> {
-  const db = getFirebaseDb();
-  const docRef = doc(db, getCollectionName("REPORT_REF"), reportId);
-  const docSnap = await getDoc(docRef);
+  try {
+    const response = await fetch(`/api/report/id/${reportId}/metadata`);
 
-  return docSnap.exists() ? (docSnap.data() as ReportRef) : null;
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`Failed to fetch metadata: ${response.status}`);
+    }
+
+    const metadata = await response.json();
+    return metadata as ReportRef;
+  } catch (error) {
+    reportLogger.error({ error }, "Error fetching report metadata");
+    return null;
+  }
 }
 
 async function fetchReportData(
@@ -123,9 +131,13 @@ async function fetchReportData(
       {
         retries: 2,
         onFailedAttempt: (error) => {
-          console.log(
-            `Retry ${error.attemptNumber}/${error.retriesLeft + error.attemptNumber} failed:`,
-            error.message,
+          reportLogger.debug(
+            {
+              attemptNumber: error.attemptNumber,
+              retriesLeft: error.retriesLeft,
+              message: error.message,
+            },
+            "Report data fetch retry failed",
           );
         },
       },
@@ -138,7 +150,7 @@ async function fetchReportData(
 
     return { success: true, data: reportData };
   } catch (error) {
-    console.error("Failed to fetch report data:", error);
+    reportLogger.error({ error }, "Failed to fetch report data");
     return { success: false, error: "Failed to fetch report data" };
   }
 }
@@ -159,11 +171,14 @@ async function processReportData(
     case "report":
       return { type: "ready", data: parsedData.data };
     case "error":
-      console.error("Report parse error:", {
-        reportId,
-        error: parsedData.message,
-        reportData,
-      });
+      reportLogger.error(
+        {
+          reportId,
+          error: parsedData.message,
+          reportData,
+        },
+        "Report parse error",
+      );
       return { type: "error", message: parsedData.message };
     default:
       utils.assertNever(parsedData);

@@ -201,6 +201,7 @@ const handleUserAuthenticationAndCreateDocuments = async (
         numPeople: 0, // Placeholder, will be updated
         createdDate: new Date(),
       },
+      preGeneratedReportId, // Use the same reportId as storage filename
     );
 
     createLogger.info(
