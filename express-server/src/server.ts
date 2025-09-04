@@ -19,6 +19,7 @@ import {
   getReportDataHandler,
   getReportByIdDataHandler,
   getReportByIdStatusHandler,
+  getReportByIdMetadataHandler,
   migrateReportUrlHandler,
 } from "./routes/report";
 import { setupConnection } from "./Queue";
@@ -173,6 +174,11 @@ app.get(
   "/report/id/:reportId/status",
   reportLimiter,
   getReportByIdStatusHandler,
+);
+app.get(
+  "/report/id/:reportId/metadata",
+  reportLimiter,
+  getReportByIdMetadataHandler,
 );
 
 /**

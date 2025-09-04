@@ -367,3 +367,34 @@ export async function getReportByIdDataHandler(
     );
   }
 }
+
+export async function getReportByIdMetadataHandler(
+  req: RequestWithLogger & { auth?: DecodedIdToken },
+  res: Response,
+) {
+  const reportId = req.params.reportId;
+
+  // Basic validation
+  if (!isValidFirebaseId(reportId)) {
+    return sendError(res, 404, "Report not found", "ReportNotFound");
+  }
+
+  try {
+    const reportRef = await getReportRefById(reportId);
+    if (!reportRef) {
+      return sendError(res, 404, "Report not found", "ReportNotFound");
+    }
+
+    // Add cache headers for metadata
+    res.set("Cache-Control", "private, max-age=300"); // 5 minutes
+    res.json(reportRef);
+  } catch (error) {
+    reportLogger.error({ error, reportId }, "Error getting report metadata");
+    return sendError(
+      res,
+      500,
+      "Failed to fetch report metadata",
+      "MetadataError",
+    );
+  }
+}
