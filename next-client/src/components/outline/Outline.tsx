@@ -112,10 +112,10 @@ function OutlineItem({
       >
         {/* The Minus icon should appear on hover, but shouldn't shift the spacing */}
         <div
-          className={`${node.isHighlighted ? `visible ${node.color}` : "invisible"} content-center`}
+          className={`${node.isHighlighted ? `visible ${node.color}` : "invisible"} content-center w-3`}
           onClick={onBodyClick}
         >
-          <Icons.Minus size={12} className="stroke-[1px]" />
+          <Icons.Minus width={16} />
         </div>
         {/* Nested items should be further to the right */}
 
