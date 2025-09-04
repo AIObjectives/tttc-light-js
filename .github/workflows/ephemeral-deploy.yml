@@ -13,6 +13,7 @@ env:
 
 jobs:
   pre-deploy:
+    permissions: {}
     runs-on: ubuntu-latest
     steps:
       - name: log execution mode
