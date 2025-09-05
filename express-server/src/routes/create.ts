@@ -255,7 +255,7 @@ const buildPipelineJob = (
         cruxes: updatedConfig.cruxesEnabled,
       },
       llm: {
-        model: "gpt-4o-mini", // ! Change when we allow different models
+        model: "gpt-5-mini", // ! Change when we allow different models
       },
     },
     data: updatedConfig.data,
