@@ -120,7 +120,7 @@ const defaultRateLimiter = rateLimit({
 // Stricter rate limiter for report endpoints
 const reportRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 30, // Limit each IP to 30 report requests per windowMs
+  max: 60, // Limit each IP to 60 report requests per windowMs (1 per 5 seconds)
   message: {
     error: {
       message: "Too many requests, please try again later.",
@@ -177,7 +177,7 @@ app.get(
 );
 app.get(
   "/report/id/:reportId/metadata",
-  reportLimiter,
+  rateLimiter, // Use default rate limiter (100 req/15 min) for read-only metadata
   getReportByIdMetadataHandler,
 );
 
