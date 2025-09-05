@@ -8,7 +8,7 @@
 DRY_RUN = False
 
 # cheapest for testing
-MODEL = "gpt-4o-mini"  # prod default: "gpt-4-turbo-preview"
+MODEL = "gpt-5-mini"  # prod default: "gpt-4-turbo-preview"
 
 COST_BY_MODEL = {
     # GPT-4o mini: Input is $0.150 / 1M tokens, Output is $0.600 / 1M tokens
@@ -17,6 +17,8 @@ COST_BY_MODEL = {
     # GPT-4o : Input is $2.50 / 1M tokens, Output is $10.00/1M tokens
     # or: input is $0.0025/1K tokens, output is $0.01/1K tokens
     "gpt-4o": {"in_per_1K": 0.0025, "out_per_1K": 0.01},
+    # GPT-5-mini: Input is $0.250 / 1M tokens, Output is $2.00/1M tokens
+    "gpt-5-mini": {"in_per_1K": 0.00025, "out_per_1k": 0.002}
 }
 
 # for web-app mode, require at least 3 words in order to extract meaningful claims
