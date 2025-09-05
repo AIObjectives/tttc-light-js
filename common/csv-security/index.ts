@@ -9,7 +9,7 @@ import sanitizeHtml from "sanitize-html";
 
 // Security configuration constants
 export const CSV_SECURITY_CONFIG = {
-  MAX_FILE_SIZE: 150 * 1024, // 150KB limit
+  MAX_FILE_SIZE: 150 * 1024, // 150KB default limit (can be overridden)
   MAX_ROWS: 10000,
   MAX_COLUMNS: 50,
   MAX_CELL_LENGTH: 32000,
@@ -103,14 +103,15 @@ export function sanitizeCSVCell(content: string): string {
  */
 export function validateCSVStructure(
   buffer: ArrayBuffer,
+  maxFileSize: number = CSV_SECURITY_CONFIG.MAX_FILE_SIZE,
 ): Result<ArrayBuffer, CSVSecurityError> {
   const content = Buffer.from(buffer).toString("utf8");
 
   // Check file size
-  if (buffer.byteLength > CSV_SECURITY_CONFIG.MAX_FILE_SIZE) {
+  if (buffer.byteLength > maxFileSize) {
     return failure({
       tag: "OVERSIZE_CONTENT",
-      message: `File size ${buffer.byteLength} exceeds limit of ${CSV_SECURITY_CONFIG.MAX_FILE_SIZE} bytes`,
+      message: `File size ${buffer.byteLength} exceeds limit of ${maxFileSize} bytes`,
       severity: "high",
     });
   }
@@ -261,12 +262,13 @@ export function validateParsedData(
  */
 export async function validateCSVSecurity(
   file: File,
+  maxFileSize?: number,
 ): Promise<Result<string, CSVSecurityError>> {
   try {
     const buffer = await file.arrayBuffer();
 
     // Step 1: Validate structure for CSV bombs
-    const structureResult = validateCSVStructure(buffer);
+    const structureResult = validateCSVStructure(buffer, maxFileSize);
     if (structureResult.tag === "failure") {
       return structureResult;
     }

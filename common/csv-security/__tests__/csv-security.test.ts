@@ -119,6 +119,38 @@ describe("CSV Security Module", () => {
       expect(result.error.severity).toBe("high");
     });
 
+    it("should accept files within custom size limit", () => {
+      // Create a small CSV that tests the size limit logic
+      const csvContent =
+        "id,comment,interview\nrow1,data1,data2\nrow2,data3,data4\n";
+      const buffer = Buffer.from(csvContent);
+      // Create a properly sized ArrayBuffer
+      const arrayBuffer = buffer.buffer.slice(
+        buffer.byteOffset,
+        buffer.byteOffset + buffer.length,
+      );
+      const customLimit = 200; // 200 bytes (well above our small CSV)
+      const result = validateCSVStructure(arrayBuffer, customLimit);
+      expect(result.tag).toBe("success");
+    });
+
+    it("should reject files exceeding custom size limit", () => {
+      const buffer = Buffer.alloc(300); // 300 bytes
+      // Create a properly sized ArrayBuffer
+      const arrayBuffer = buffer.buffer.slice(
+        buffer.byteOffset,
+        buffer.byteOffset + buffer.length,
+      );
+      const customLimit = 200; // 200 bytes
+      const result = validateCSVStructure(arrayBuffer, customLimit);
+      expect(result.tag).toBe("failure");
+      if (result.tag === "failure") {
+        expect(result.error.tag).toBe("OVERSIZE_CONTENT");
+        expect(result.error.message).toContain("300");
+        expect(result.error.message).toContain("200");
+      }
+    });
+
     it("should reject CSV with too many rows", () => {
       // Create a CSV that exceeds row limit but stays under file size limit
       let csvContent = "a,b,c\n";

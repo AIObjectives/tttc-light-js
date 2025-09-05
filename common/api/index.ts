@@ -51,3 +51,10 @@ export const migrationApiResponse = z.discriminatedUnion("success", [
 ]);
 
 export type MigrationApiResponse = z.infer<typeof migrationApiResponse>;
+
+export const userCapabilitiesResponse = z.object({
+  csvSizeLimit: z.number().min(0),
+  // Future capabilities can be added here
+});
+
+export type UserCapabilitiesResponse = z.infer<typeof userCapabilitiesResponse>;
