@@ -23,8 +23,16 @@ interface ReportByIdProps {
 type ReportState =
   | { type: "loading" }
   | { type: "not-found" }
+  | { type: "rate-limited" }
   | { type: "generating"; jobStatus: api.ReportJobStatus }
   | { type: "ready"; data: schema.UIReportData; url: string }
+  | { type: "error"; message: string };
+
+// Type-safe result for metadata fetching
+type MetadataResult =
+  | { type: "success"; data: ReportRef }
+  | { type: "not-found" }
+  | { type: "rate-limited" }
   | { type: "error"; message: string };
 
 export default function ReportById({ reportId }: ReportByIdProps) {
@@ -46,11 +54,28 @@ function ReportByIdContent({ reportId }: ReportByIdProps) {
   const loadReport = async () => {
     try {
       // Step 1: Get report metadata from Firebase
-      const reportRef = await fetchReportMetadata(reportId);
-      if (!reportRef) {
-        setState({ type: "not-found" });
-        return;
+      const metadataResult = await fetchReportMetadata(reportId);
+
+      switch (metadataResult.type) {
+        case "not-found":
+          setState({ type: "not-found" });
+          return;
+        case "rate-limited":
+          setState({ type: "rate-limited" });
+          return;
+        case "error":
+          reportLogger.error(
+            { reportId, error: metadataResult.message },
+            "Failed to load report due to metadata error",
+          );
+          setState({ type: "error", message: metadataResult.message });
+          return;
+        case "success":
+          // Continue with the report data
+          break;
       }
+
+      const reportRef = metadataResult.data;
 
       // Step 2: Fetch actual report data
       const reportData = await fetchReportData(reportId);
@@ -92,24 +117,45 @@ function ReportByIdContent({ reportId }: ReportByIdProps) {
 
 // Separate functions for each step - much clearer!
 
-async function fetchReportMetadata(
-  reportId: string,
-): Promise<ReportRef | null> {
+async function fetchReportMetadata(reportId: string): Promise<MetadataResult> {
   try {
     const response = await fetch(`/api/report/id/${reportId}/metadata`);
 
     if (!response.ok) {
       if (response.status === 404) {
-        return null;
+        reportLogger.info({ reportId }, "Report metadata not found");
+        return { type: "not-found" };
       }
-      throw new Error(`Failed to fetch metadata: ${response.status}`);
+      if (response.status === 429) {
+        reportLogger.warn(
+          { reportId, status: 429 },
+          "Rate limited when fetching report metadata",
+        );
+        return { type: "rate-limited" };
+      }
+      // Don't hide other errors - propagate them
+      reportLogger.error(
+        { reportId, status: response.status },
+        "Unexpected error fetching report metadata",
+      );
+      return {
+        type: "error",
+        message: `Failed to fetch metadata: ${response.status}`,
+      };
     }
 
     const metadata = await response.json();
-    return metadata as ReportRef;
+    reportLogger.debug({ reportId }, "Successfully fetched report metadata");
+    return { type: "success", data: metadata as ReportRef };
   } catch (error) {
-    reportLogger.error({ error }, "Error fetching report metadata");
-    return null;
+    reportLogger.error(
+      { error, reportId },
+      "Network error fetching report metadata",
+    );
+    return {
+      type: "error",
+      message: error instanceof Error ? error.message : "Network error",
+    };
   }
 }
 
@@ -196,6 +242,20 @@ function renderReportState(state: ReportState): JSX.Element {
 
     case "not-found":
       return <ReportProgress status="notFound" />;
+
+    case "rate-limited":
+      return (
+        <div className="w-full h-full content-center justify-items-center">
+          <div className="text-center space-y-4">
+            <p className="text-orange-600 font-medium">
+              Too many requests - please wait a moment before refreshing
+            </p>
+            <p className="text-sm text-gray-500">
+              Rate limiting helps keep our service stable for everyone
+            </p>
+          </div>
+        </div>
+      );
 
     case "generating":
       return <ReportProgress status={state.jobStatus} />;
