@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils/shadcn";
 import { useParseCsv } from "../hooks/useParseCSV";
 import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
 import { toast } from "sonner";
+import { formatBytes } from "@/lib/api/userLimits";
+import { useUserCapabilities } from "../hooks/useUserCapabilities";
 
 export const FormHeader = () => (
   <Col gap={3}>
@@ -44,8 +46,8 @@ export const FormHeader = () => (
           exact URL (we’re adding password-protected & private reports soon).
         </li>
         <li>
-          Dataset uploads are limited to 100KB &ndash; but we pay the OpenAI
-          analysis costs
+          Dataset uploads are limited to 150KB by default &ndash; but we pay the
+          OpenAI analysis costs
         </li>
         <li>
           After this alpha phase, we'll support analysis of larger datasets
@@ -142,8 +144,13 @@ export function FormDataInput({
 
   const fileName = useReactiveValue(() => files?.item(0)?.name || "", [files]);
   const [modelOpen, setModalOpen] = useState<boolean>(false);
+  const { userSizeLimit, capabilitiesLoaded } = useUserCapabilities();
 
-  const { result } = useParseCsv(files);
+  // Only parse CSV after capabilities are loaded to avoid race conditions
+  const { result } = useParseCsv(
+    capabilitiesLoaded ? files : undefined,
+    userSizeLimit,
+  );
 
   useEffect(() => {
     if (!result) return;
@@ -155,7 +162,7 @@ export function FormDataInput({
         const description =
           result.error.tag === "Broken file"
             ? "File is broken or has no data"
-            : "File is too large - 150kb limit";
+            : `File is too large - ${formatBytes(userSizeLimit)} limit`;
         toast.error("Error", {
           description: description,
           position: "top-center",
@@ -165,7 +172,7 @@ export function FormDataInput({
         setModalOpen(true);
       }
     }
-  }, [result]);
+  }, [result, userSizeLimit]);
 
   const handleCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const maybeFiles = event.target.files;
@@ -274,7 +281,11 @@ export function FormDataInput({
 }
 
 export function CostEstimate({ files }: { files: FileList | undefined }) {
-  const cost = useCostEstimate(files);
+  const { userSizeLimit, capabilitiesLoaded } = useUserCapabilities();
+  const cost = useCostEstimate(
+    capabilitiesLoaded ? files : undefined,
+    userSizeLimit,
+  );
   return (
     <Col gap={4}>
       <h4>Cost</h4>

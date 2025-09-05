@@ -36,8 +36,8 @@ const calcCost = (charCount: number) => (charCount / oneMbCharSize) * costPerMb;
  * Hook for getting the cost estimate.
  * Returns a string of either the amount, "loading" if Promise not resolved, "-.--" if no file is uploaded, or "error" if error during parsing.
  */
-export function useCostEstimate(files: FileList | undefined) {
-  const { isLoading, result } = useParseCsv(files);
+export function useCostEstimate(files: FileList | undefined, maxSize?: number) {
+  const { isLoading, result } = useParseCsv(files, maxSize);
 
   if (isLoading) return "Loading...";
   else if (result === undefined) return "$-.--";

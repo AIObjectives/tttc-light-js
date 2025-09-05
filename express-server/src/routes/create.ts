@@ -14,6 +14,8 @@ import { Env } from "../types/context";
 import { sendError } from "./sendError";
 import { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import { getUserCapabilities, DEFAULT_LIMITS } from "tttc-common/permissions";
+import { isFeatureEnabled } from "../featureFlags";
 
 const createLogger = logger.child({ module: "create" });
 
@@ -107,10 +109,18 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-const validateDataSize = (data: schema.DataPayload) => {
-  const datastr = JSON.stringify(data);
-  if (datastr.length > 150 * 1024) {
-    throw new Error("Data too big - limit of 150kb for alpha");
+const validateFileSize = (
+  actualDataSize: number | undefined,
+  maxFileSize: number,
+  isCsv: boolean,
+) => {
+  // Only validate file size for CSV uploads
+  if (isCsv && typeof actualDataSize === "number") {
+    if (actualDataSize > maxFileSize) {
+      throw new Error(
+        `File is too large - ${Math.round(maxFileSize / 1024)}KB limit`,
+      );
+    }
   }
 };
 
@@ -279,6 +289,68 @@ const useAnonymousNames = (numOfEmptyInterviewRows: number) => {
   };
 };
 
+/**
+ * Calculate the size of parsed data in bytes
+ * @param data Array of parsed row objects
+ * @returns Size in bytes or undefined if no data
+ */
+const calculateDataSize = (data: schema.SourceRow[]): number | undefined => {
+  if (!data || data.length === 0) {
+    return undefined;
+  }
+
+  // Calculate the size of the JSON representation of the data
+  // This is what's actually being transmitted and processed
+  const jsonString = JSON.stringify(data);
+
+  return Buffer.byteLength(jsonString, "utf8");
+};
+
+const getUserCsvSizeLimit = async (
+  firebaseAuthToken: string | null,
+): Promise<number> => {
+  let userCsvSizeLimit = DEFAULT_LIMITS.csvSizeLimit;
+
+  if (firebaseAuthToken) {
+    try {
+      const decodedToken = await firebase.verifyUser(firebaseAuthToken);
+      if (decodedToken) {
+        // Check feature flag
+        const largeUploadsEnabled = await isFeatureEnabled(
+          "large_uploads_enabled",
+          { userId: decodedToken.uid },
+        );
+        const userRef = firebase.db
+          .collection(firebase.getCollectionName("USERS"))
+          .doc(decodedToken.uid);
+        const userDoc = await userRef.get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const roles = userData?.roles || [];
+          const capabilities = getUserCapabilities(roles, largeUploadsEnabled);
+          userCsvSizeLimit = capabilities.csvSizeLimit;
+          createLogger.info(
+            {
+              uid: decodedToken.uid,
+              roles,
+              largeUploadsEnabled,
+              capabilities,
+            },
+            "User CSV size limit determined with feature flag",
+          );
+        }
+      }
+    } catch (error) {
+      createLogger.warn(
+        { error },
+        "Failed to get user roles/feature flags, using default limit",
+      );
+    }
+  }
+
+  return userCsvSizeLimit;
+};
+
 async function createNewReport(
   req: RequestWithLogger,
 ): Promise<
@@ -292,8 +364,28 @@ async function createNewReport(
   const body = api.generateApiRequest.parse(req.body);
   const { data, userConfig, firebaseAuthToken } = body;
 
-  // Validate data size
-  validateDataSize(data);
+  // Get user's CSV size limit based on roles and feature flags
+  const userCsvSizeLimit = await getUserCsvSizeLimit(firebaseAuthToken);
+
+  // Validate file size for CSV uploads
+  const isCsv = data[0] === "csv";
+
+  // Calculate actual size of received data (server-side validation)
+  let actualDataSize: number | undefined;
+  if (isCsv && data[1]) {
+    const csvRows = data[1] as schema.SourceRow[];
+    actualDataSize = calculateDataSize(csvRows);
+
+    if (actualDataSize !== undefined) {
+      req.log.debug(
+        { actualDataSize, sourceType: data[0] },
+        "Data size calculated for validation",
+      );
+    }
+  }
+
+  // Validate actual data size against user's limit
+  validateFileSize(actualDataSize, userCsvSizeLimit, isCsv);
 
   // Parse and process data
   const _parsedData = await parseData(data);

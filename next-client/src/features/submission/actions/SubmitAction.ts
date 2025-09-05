@@ -31,7 +31,8 @@ export default async function submitAction(
   // TODO: redact/overwrite API key, other fields are fine to log
   // console.log("starting to parse", formData);
   // if csv file is empty, return error
-  const data = await parseCSV(formData.get("dataInput") as File);
+  const file = formData.get("dataInput") as File;
+  const data = await parseCSV(file);
   if (!data || !data.length) {
     throw new Error("Missing data. Check your csv file");
   }

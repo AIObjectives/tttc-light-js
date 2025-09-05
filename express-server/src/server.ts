@@ -11,6 +11,7 @@ import create from "./routes/create";
 import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
 import authEvents from "./routes/authEvents";
+import { getUserLimits } from "./routes/user";
 
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
@@ -198,6 +199,11 @@ app.get(
  * Migrates legacy report URL to new ID-based URL
  */
 app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
+
+/**
+ * Get the current user's capabilities and limits
+ */
+app.get("/api/user/limits", rateLimiter, getUserLimits);
 
 app.get("/test", async (_req, res) => {
   return res.send("hi");

@@ -28,6 +28,7 @@
     "./functional-utils/*",
     "./logger/*",
     "./morphisms/**/*",
+    "./permissions/*",
     "./prompts/*",
     "./schema/*",
     "./types/*",

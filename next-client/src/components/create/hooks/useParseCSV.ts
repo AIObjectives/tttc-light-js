@@ -7,11 +7,13 @@
  * There's some somewhat questionable FP standins that would be better if we actually used a full FP library. Go back and redo this in the future if we do.
  */
 
+import { useCallback } from "react";
 import { AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
 import Papa from "papaparse";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
 import { failure, success, Result } from "tttc-common/functional-utils";
+import { DEFAULT_LIMITS } from "tttc-common/permissions";
 
 /**
  * Shape of error that can be returned by useParseCSV. Use this to build specific errors
@@ -48,12 +50,12 @@ const CsvErrors = z.union([badFormatCsv, brokenFile, sizeError]);
 type CSVErrors = z.infer<typeof CsvErrors>;
 
 /**
- * ! Temporary for alpha - limit size of file
+ * Check file size against the provided limit
  */
-const sizeCheck = (buffer: ArrayBuffer): Result<ArrayBuffer, SizeError> => {
-  const kiloByte = 1024;
-  // TODO: configure devprod filesize flag
-  const maxSize = 150 * kiloByte;
+const sizeCheck = (
+  buffer: ArrayBuffer,
+  maxSize: number,
+): Result<ArrayBuffer, SizeError> => {
   if (buffer.byteLength > maxSize) {
     return failure({ tag: "Size Error" });
   } else {
@@ -112,11 +114,12 @@ const correctlyFormattedCsv = (
  */
 const parseCsv = async (
   file: File,
+  maxSize: number,
 ): Promise<Result<schema.SourceRow[], CSVErrors>> => {
   const buffer = await file.arrayBuffer();
 
   // Basic size check for immediate feedback
-  const isCorrectSize = sizeCheck(buffer);
+  const isCorrectSize = sizeCheck(buffer, maxSize);
   if (isCorrectSize.tag === "failure") {
     return isCorrectSize;
   }
@@ -134,11 +137,19 @@ const parseCsv = async (
 
 /**
  * Hook for parsing csv files for creating reports - returns an async state
+ * @param files - The FileList from file input
+ * @param maxSize - Maximum allowed file size in bytes
  */
 export function useParseCsv(
   files: FileList | undefined,
+  maxSize: number = DEFAULT_LIMITS.csvSizeLimit,
 ): AsyncState<schema.SourceRow[], CSVErrors> {
   const file = files?.item(0) || undefined;
 
-  return useAsyncState(parseCsv, file);
+  const parseCsvCallback = useCallback(
+    (file: File) => parseCsv(file, maxSize),
+    [maxSize],
+  );
+
+  return useAsyncState(parseCsvCallback, file);
 }
