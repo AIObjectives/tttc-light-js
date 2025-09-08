@@ -135,6 +135,7 @@ export const env = z.object({
     .default("false")
     .transform((val) => val.toLowerCase() === "true"),
   FIREBASE_ADMIN_PROJECT_ID: z.string().optional(),
+  RATE_LIMIT_PREFIX: z.string().optional().default("dev"),
 });
 
 export type Env = z.infer<typeof env>;
