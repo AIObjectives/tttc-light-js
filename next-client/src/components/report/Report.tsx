@@ -40,6 +40,7 @@ import {
   OutlineStateAction,
   useOutlineState,
 } from "../outline/hooks/useOutlineState";
+import { downloadReportData } from "@/lib/report/downloadUtils";
 
 const ToolBarFrame = ({
   children,
@@ -265,7 +266,7 @@ function Report({
               {state.children.map((themeNode) => (
                 <Theme key={themeNode.data.id} node={themeNode} />
               ))}
-              <Appendix filename={reportData.title} reportUri={reportUri} />
+              <Appendix filename={reportData.title} reportData={reportData} />
             </Col>
           }
           ToolBar={
@@ -566,37 +567,15 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
 }
 
 function Appendix({
-  reportUri,
+  reportData,
   filename,
 }: {
-  reportUri: string;
+  reportData: schema.UIReportData;
   filename: string;
 }) {
-  const handleDownload = async () => {
-    console.log(reportUri);
+  const handleDownload = () => {
     try {
-      const fetchUrl = `/api/report/download/${encodeURIComponent(reportUri)}`;
-      const response = await fetch(fetchUrl, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        toast.error("An error occured: could not download report data");
-        return;
-      }
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename + "-" + Date.now();
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      window.URL.revokeObjectURL(downloadUrl);
+      downloadReportData(reportData, filename);
     } catch (error) {
       toast.error(
         `Failed to download report data: ${(error as Error).message}`,
