@@ -52,6 +52,7 @@
     "pino-http": "^10.5.0",
     "posthog-node": "^4.18.0",
     "prettier": "^3.2.5",
+    "rate-limit-redis": "^4.2.2",
     "tttc-common": "file:../common",
     "undici": "^7.5.0",
     "zod": "3.22.4"

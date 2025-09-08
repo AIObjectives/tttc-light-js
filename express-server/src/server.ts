@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import { RequestWithLogger } from "./types/request";
 import rateLimit from "express-rate-limit";
+import { RedisStore, type RedisReply } from "rate-limit-redis";
 import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
@@ -115,6 +116,11 @@ const defaultRateLimiter = rateLimit({
       code: "RateLimitExceeded",
     },
   },
+  store: new RedisStore({
+    sendCommand: (command: string, ...args: string[]) =>
+      connection.call(command, ...args) as Promise<RedisReply>,
+    prefix: "rate-limit-default",
+  }),
 });
 
 // Stricter rate limiter for report endpoints
@@ -127,6 +133,11 @@ const reportRateLimiter = rateLimit({
       code: "RateLimitExceeded",
     },
   },
+  store: new RedisStore({
+    sendCommand: (command: string, ...args: string[]) =>
+      connection.call(command, ...args) as Promise<RedisReply>,
+    prefix: "rate-limit-report",
+  }),
 });
 
 // Skip rate limiting in development
@@ -138,7 +149,7 @@ const rateLimiter =
 const reportLimiter =
   process.env.NODE_ENV === "production"
     ? reportRateLimiter
-    : (_req: Request, _res: Response, next: NextFunction) => next();
+    : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
 
 /**
  * Creates report
