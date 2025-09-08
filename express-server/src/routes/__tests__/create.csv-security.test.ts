@@ -90,6 +90,7 @@ describe("CSV Security in Create Route", () => {
           ANALYTICS_FLUSH_AT: 20,
           ANALYTICS_FLUSH_INTERVAL: 10000,
           ANALYTICS_DEBUG: false,
+          RATE_LIMIT_PREFIX: "test",
         },
       };
       // Mock logger for RequestWithLogger interface

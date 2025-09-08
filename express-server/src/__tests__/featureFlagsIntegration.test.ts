@@ -53,6 +53,7 @@ const createMockEnv = (
   ANALYTICS_ENABLED: false,
   ANALYTICS_DEBUG: false,
   FIREBASE_ADMIN_PROJECT_ID: undefined,
+  RATE_LIMIT_PREFIX: "test",
 });
 
 // Mock validateEnv to return a valid test environment

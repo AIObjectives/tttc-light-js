@@ -87,6 +87,8 @@ spec:
                 secretKeyRef:
                   key: latest
                   name: analytics-api-key
+            - name: RATE_LIMIT_PREFIX
+              value: dev-PR_NUMBER
 
           resources:
             limits:

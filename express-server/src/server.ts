@@ -107,6 +107,8 @@ initializeAnalyticsClient(env);
 // This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
 setupWorkers(connection, env.REDIS_QUEUE_NAME);
 
+const rateLimitPrefix = env.RATE_LIMIT_PREFIX;
+
 const defaultRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
@@ -119,7 +121,7 @@ const defaultRateLimiter = rateLimit({
   store: new RedisStore({
     sendCommand: (command: string, ...args: string[]) =>
       connection.call(command, ...args) as Promise<RedisReply>,
-    prefix: "rate-limit-default",
+    prefix: `${rateLimitPrefix}-rate-limit-default`,
   }),
 });
 
@@ -136,7 +138,7 @@ const reportRateLimiter = rateLimit({
   store: new RedisStore({
     sendCommand: (command: string, ...args: string[]) =>
       connection.call(command, ...args) as Promise<RedisReply>,
-    prefix: "rate-limit-report",
+    prefix: `${rateLimitPrefix}-rate-limit-report`,
   }),
 });
 
