@@ -10,7 +10,7 @@ const authEventsLogger = logger.child({ module: "auth-events-client" });
  */
 export async function logAuthEvent(
   event: "signin" | "signout",
-  user?: User,
+  user: User,
 ): Promise<void> {
   try {
     let body: {
@@ -22,18 +22,15 @@ export async function logAuthEvent(
       clientTimestamp: new Date().toISOString(),
     };
 
-    // For signin events, include the Firebase token for verification
-    if (event === "signin" && user) {
-      const tokenResult = await fetchToken(user);
-      if (tokenResult.tag === "success" && tokenResult.value) {
-        body.token = tokenResult.value;
-      } else {
-        authEventsLogger.warn(
-          { user },
-          "Could not get token for signin event logging",
-        );
-        return;
-      }
+    const tokenResult = await fetchToken(user);
+    if (tokenResult.tag === "success" && tokenResult.value) {
+      body.token = tokenResult.value;
+    } else {
+      authEventsLogger.warn(
+        { user },
+        "Could not get token for auth-event event logging",
+      );
+      return;
     }
 
     // Call our Next.js API route which will proxy to the express server
