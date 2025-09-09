@@ -74,10 +74,14 @@ export default function LoginButton() {
       );
 
       // Log signout event to server (before actually signing out)
-      await logAuthEvent("signout");
+      if (!user) {
+        throw new Error("Sign out attempted with no user");
+      }
+
+      await logAuthEvent("signout", user);
 
       await signOut();
-      loginLogger.info("Sign out successful");
+      loginLogger.info({}, "Sign out successful");
     } catch (error) {
       loginLogger.error({ error }, "Sign out failed");
     }

@@ -30,16 +30,12 @@ export async function POST(request: Request) {
     const expressBody: {
       event: string;
       clientTimestamp: string;
-      firebaseAuthToken?: string;
+      firebaseAuthToken: string;
     } = {
       event,
       clientTimestamp,
+      firebaseAuthToken: token,
     };
-
-    // Include Firebase token for signin events
-    if (event === "signin" && token) {
-      expressBody.firebaseAuthToken = token;
-    }
 
     const expressResponse = await fetch(`${expressUrl}/auth-events`, {
       method: "POST",
@@ -65,7 +61,7 @@ export async function POST(request: Request) {
       );
       return NextResponse.json(
         { error: "Failed to log auth event" },
-        { status: 500 },
+        { status: expressResponse.status },
       );
     }
 
