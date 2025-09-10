@@ -53,7 +53,7 @@ fancy_scifi_15 = [{"text" : "More epic fantasy worlds","speaker" : "Alice","id":
 # NOTE: gpt-4o-mini is cheaper/better for basic tests, but it fails on some very basic deduplication
 API_KEY = os.getenv('OPENAI_API_KEY')
 base_llm = {
-  "model_name" : "gpt-4o-mini",
+  "model_name" : "gpt-5-mini",
   "system_prompt": config.SYSTEM_PROMPT,
   "api_key" : API_KEY
 }
