@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isValidReportUri } from "tttc-common/utils";
+import { isValidReportUri, FIRESTORE_ID_REGEX } from "tttc-common/utils";
 
 interface LegacyReportWrapperProps {
   uri: string;
@@ -20,6 +20,12 @@ export default function LegacyReportWrapper({
     const checkForMigration = async () => {
       // Decode URI for validation (it comes URL-encoded from the route)
       const decodedUri = decodeURIComponent(uri);
+
+      // Skip migration for Firebase document IDs (they're already in the new format)
+      if (FIRESTORE_ID_REGEX.test(decodedUri)) {
+        setIsChecking(false);
+        return;
+      }
 
       // Validate URI before attempting migration
       if (!isValidReportUri(decodedUri)) {

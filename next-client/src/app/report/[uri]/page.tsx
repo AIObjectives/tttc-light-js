@@ -2,7 +2,6 @@ import Report from "@/components/report/Report";
 import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import * as utils from "tttc-common/utils";
-import { z } from "zod";
 import ReportProgress from "@/components/reportProgress/ReportProgress";
 import Feedback from "@/components/feedback/Feedback";
 import pRetry from "p-retry";
@@ -11,10 +10,6 @@ import LegacyReportWrapper from "@/components/report/LegacyReportWrapper";
 import { handleResponseData } from "@/lib/report/handleResponseData";
 
 const reportPageLogger = logger.child({ module: "report-page" });
-
-const waitingMessage = z.object({
-  message: z.string(),
-});
 
 type NotFoundState = { type: "notFound" };
 type ProgressState = { type: "progress"; status: api.ReportJobStatus };
@@ -36,15 +31,19 @@ async function getReportState(
   | ReportDataErrorState
 > {
   const baseApiUrl = process.env.PIPELINE_EXPRESS_URL ?? "";
-  const statusUrl = `${baseApiUrl}/report/${encodedUri}/status`;
+  const unifiedUrl = `${baseApiUrl}/report/${encodedUri}`;
+
   try {
-    const statusJson = await pRetry(
+    const reportResponse = await pRetry(
       async () => {
-        const statusRes = await fetch(statusUrl);
-        if (!statusRes.ok) {
-          throw new Error(`Failed to fetch report status: ${statusRes.status}`);
+        const response = await fetch(unifiedUrl);
+        if (!response.ok) {
+          if (response.status === 404) {
+            return { notFound: true };
+          }
+          throw new Error(`Failed to fetch report: ${response.status}`);
         }
-        return await statusRes.json();
+        return await response.json();
       },
       {
         retries: 2,
@@ -54,25 +53,17 @@ async function getReportState(
               attemptNumber: error.attemptNumber,
               retriesLeft: error.retriesLeft,
             },
-            "Failed to fetch report status, retrying",
+            "Failed to fetch report, retrying",
           );
         },
       },
-    ).catch((error) => {
-      reportPageLogger.error(
-        {
-          statusUrl,
-          error,
-        },
-        "Failed to fetch report status",
-      );
-      return { type: "error", message: "Failed to fetch report status." };
-    });
+    );
 
-    if (statusJson.type === "error") {
-      return statusJson;
+    if (reportResponse.notFound) {
+      return { type: "notFound" };
     }
-    const status = statusJson.status as api.ReportJobStatus;
+
+    const status = reportResponse.status as api.ReportJobStatus;
 
     if (status === "failed") {
       return { type: "progress", status };
@@ -81,58 +72,12 @@ async function getReportState(
       return { type: "progress", status };
     }
 
-    // Fetch either signed or fallback URL for report data
-    const dataUrl = `${baseApiUrl}/report/${encodedUri}/data`;
-    const dataJson = await pRetry(
-      async () => {
-        const dataRes = await fetch(dataUrl);
-        if (!dataRes.ok) {
-          throw new Error(`Failed to fetch report data URL: ${dataRes.status}`);
-        }
-        return await dataRes.json();
-      },
-      {
-        retries: 2,
-        onFailedAttempt: (error) => {
-          console.log(
-            `Failed to fetch report data URL. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
-          );
-        },
-      },
-    ).catch((error) => {
-      console.error("Failed to fetch report data URL", {
-        dataUrl,
-        error,
-      });
-      return {
-        type: "error",
-        message:
-          "Failed to fetch report data. The file may not be public, may not exist, or you may not have access.",
-      };
-    });
-
-    if (dataJson.type === "error") {
-      return dataJson;
-    }
-
-    const url = dataJson.url as string | undefined;
-    if (url === undefined) {
-      console.error("Failed to get report data URL", {
-        dataUrl,
-        dataJson,
-      });
-      return {
-        type: "error",
-        message:
-          "Failed to fetch report data. The file may not be public, may not exist, or you may not have access.",
-      };
-    }
-
-    // Fetch the actual report data
-    try {
+    // If finished, we should have a dataUrl
+    if (status === "finished" && reportResponse.dataUrl) {
+      // Fetch the actual report data from the signed URL
       const reportData = await pRetry(
         async () => {
-          const reportRes = await fetch(url);
+          const reportRes = await fetch(reportResponse.dataUrl);
           if (!reportRes.ok) {
             throw new Error(
               `Failed to fetch report data from storage: ${reportRes.status}`,
@@ -143,53 +88,48 @@ async function getReportState(
         {
           retries: 2,
           onFailedAttempt: (error) => {
-            console.log(
-              `Failed to fetch report data from storage. Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+            reportPageLogger.warn(
+              {
+                attemptNumber: error.attemptNumber,
+                retriesLeft: error.retriesLeft,
+              },
+              "Failed to fetch report data, retrying",
             );
           },
         },
-      ).catch((error) => {
-        console.error("Failed to fetch report data from storage", {
-          url,
-          error,
-        });
+      );
+
+      // Process the report data
+      const result = await handleResponseData(reportData, encodedUri, true);
+
+      if (result.tag === "report") {
         return {
-          type: "reportDataError",
-          message:
-            "Failed to fetch report data. The file may not be public or may not exist.",
+          type: "reportData",
+          data: result.data,
+          url: reportResponse.dataUrl,
         };
-      });
-
-      if (reportData.type === "reportDataError") {
-        return reportData;
+      } else if (result.tag === "error") {
+        return { type: "reportDataError", message: result.message };
+      } else {
+        // This shouldn't happen with the unified endpoint
+        return { type: "progress", status: result.status };
       }
-      const parsedData = await handleResponseData(reportData, url, true);
-
-      switch (parsedData.tag) {
-        case "status":
-          return { type: "progress", status: parsedData.status };
-        case "report":
-          return { type: "reportData", data: parsedData.data, url: url };
-        case "error":
-          console.error("Report data parse error", { url, reportData });
-          return { type: "reportDataError", message: parsedData.message };
-        default:
-          utils.assertNever(parsedData);
-      }
-    } catch (e) {
-      console.error("Exception while fetching or parsing report data", {
-        url,
-        error: e,
-      });
-      return {
-        type: "reportDataError",
-        message:
-          "Failed to fetch report data. The file may not be public or may not exist.",
-      };
     }
-  } catch (e) {
-    console.error("Unexpected error loading report", { statusUrl, error: e });
-    return { type: "error", message: "Unexpected error loading report." };
+
+    return { type: "notFound" };
+  } catch (error) {
+    reportPageLogger.error(
+      {
+        unifiedUrl,
+        error,
+      },
+      "Failed to fetch report",
+    );
+    return {
+      type: "error",
+      message:
+        error instanceof Error ? error.message : "Failed to fetch report",
+    };
   }
 }
 
@@ -216,7 +156,7 @@ async function ReportPageContent({ encodedUri }: { encodedUri: string }) {
     case "notFound":
       return <ReportProgress status="notFound" />;
     case "progress":
-      return <ReportProgress status={state.status} />;
+      return <ReportProgress status={state.status} identifier={encodedUri} />;
     case "error":
       return <p>{state.message}</p>;
     case "reportData":

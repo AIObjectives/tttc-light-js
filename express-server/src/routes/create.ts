@@ -419,10 +419,7 @@ async function createNewReport(
   if (createdReportId === null)
     throw new Error("Failed to create report reference.");
 
-  const reportUrl = new URL(
-    `report/id/${reportId}`,
-    CLIENT_BASE_URL,
-  ).toString();
+  const reportUrl = new URL(`report/${reportId}`, CLIENT_BASE_URL).toString();
 
   // ! Brandon: This config object should be phased out
   // @ts-ignore
