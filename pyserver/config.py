@@ -18,7 +18,7 @@ COST_BY_MODEL = {
     # or: input is $0.0025/1K tokens, output is $0.01/1K tokens
     "gpt-4o": {"in_per_1K": 0.0025, "out_per_1K": 0.01},
     # GPT-5-mini: Input is $0.250 / 1M tokens, Output is $2.00/1M tokens
-    "gpt-5-mini": {"in_per_1K": 0.00025, "out_per_1k": 0.002}
+    "gpt-5-mini": {"in_per_1K": 0.00025, "out_per_1K": 0.002}
 }
 
 # for web-app mode, require at least 3 words in order to extract meaningful claims

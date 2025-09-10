@@ -21,6 +21,7 @@ def token_cost(model_name:str, tok_in:int, tok_out:int):
   if model_name not in config.COST_BY_MODEL:
     print("model undefined!")
     return -1
+
   return 0.001 * (tok_in  *  config.COST_BY_MODEL[model_name]["in_per_1K"] + tok_out * config.COST_BY_MODEL[model_name]["out_per_1K"])
 
 def cute_print(json_obj):
