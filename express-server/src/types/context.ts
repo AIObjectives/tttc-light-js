@@ -101,8 +101,14 @@ export const env = z.object({
   FEATURE_FLAG_API_KEY: z.string().optional(),
   FEATURE_FLAG_HOST: z.string().optional().default("https://us.i.posthog.com"),
   LOCAL_FLAGS: z
-    .record(z.string(), z.union([z.string(), z.boolean(), z.number()]))
-    .optional(),
+    .string()
+    .optional()
+    .transform(transformLocalFlags)
+    .pipe(
+      z
+        .record(z.string(), z.union([z.string(), z.boolean(), z.number()]))
+        .optional(),
+    ),
 
   // Analytics Configuration
   ANALYTICS_PROVIDER: z.enum(["posthog", "local"]).default("local"),
@@ -137,6 +143,15 @@ export const env = z.object({
   FIREBASE_ADMIN_PROJECT_ID: z.string().optional(),
   RATE_LIMIT_PREFIX: z.string().optional().default("dev"),
 });
+
+function transformLocalFlags(val?: string) {
+  if (!val || val.trim() === "") return undefined;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return undefined;
+  }
+}
 
 export type Env = z.infer<typeof env>;
 

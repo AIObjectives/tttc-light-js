@@ -22,6 +22,7 @@ describe("CORS Service Integration Tests", () => {
       PYSERVER_URL: "http://localhost:8000",
       REDIS_URL: "redis://localhost:6379",
       ALLOWED_ORIGINS: "http://localhost:3000",
+      ALLOWED_GCS_BUCKETS: "test-bucket,another-bucket",
     };
 
     // Create Express app with CORS - simulating real server setup

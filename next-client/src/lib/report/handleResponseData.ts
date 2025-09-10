@@ -1,7 +1,6 @@
 import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
-import * as utils from "tttc-common/utils";
 import { z } from "zod";
 import pRetry from "p-retry";
 
@@ -31,9 +30,7 @@ export const handleResponseData = async (
 ): Promise<HandleResponseResult> => {
   try {
     if (waitingMessage.safeParse(data).success) {
-      const statusUrl = isLegacyUrl
-        ? `${process.env.PIPELINE_EXPRESS_URL}/report/${encodeURIComponent(identifier)}/status`
-        : `/api/report/id/${identifier}/status`;
+      const statusUrl = `${process.env.PIPELINE_EXPRESS_URL}/report/${encodeURIComponent(identifier)}`;
 
       const { status } = await pRetry(
         async () => {

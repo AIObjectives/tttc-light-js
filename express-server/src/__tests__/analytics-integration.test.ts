@@ -50,7 +50,6 @@ describe("Analytics Integration with Common Package", () => {
     FEATURE_FLAG_PROVIDER: "local",
     FEATURE_FLAG_API_KEY: undefined,
     FEATURE_FLAG_HOST: "https://app.posthog.com",
-    LOCAL_FLAGS: undefined,
     ANALYTICS_PROVIDER: "local",
     ANALYTICS_API_KEY: undefined,
     ANALYTICS_HOST: "https://app.posthog.com",

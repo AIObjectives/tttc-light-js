@@ -6,6 +6,24 @@ const reportDataUriSchema = z.union([
   z.string().url(),
 ]);
 
+// Report status enum - single source of truth for report state
+const reportStatus = z.enum([
+  "created", // Initial state, job not yet queued
+  "queued", // Job queued but not started
+  "processing", // Job is actively running (with sub-states)
+  "completed", // Job finished successfully, data available
+  "failed", // Job failed permanently
+  "cancelled", // Job was cancelled
+]);
+
+export type ReportStatus = z.infer<typeof reportStatus>;
+export { reportStatus };
+
+// Processing sub-states for detailed progress tracking
+const processingSubState = z
+  .enum(["clustering", "extraction", "sorting", "dedup", "wrappingup"])
+  .optional();
+
 // Schema for report references in Firestore
 const reportRefSchema = z.object({
   id: z.string(), // Document ID from Firestore (stable report ID)
@@ -28,6 +46,20 @@ const reportRefSchema = z.object({
   jobId: z.string().optional(),
   // Schema version for broader migration support
   schemaVersion: z.number().optional(), // Incremental schema version for future migrations
+
+  // AUTHORITATIVE STATUS FIELDS - Optional for backward compatibility
+  status: reportStatus.optional(),
+  processingSubState: processingSubState,
+  lastStatusUpdate: z
+    .preprocess(
+      (arg) =>
+        firebaseTimestamp.safeParse(arg).success
+          ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+          : arg,
+      z.date(),
+    )
+    .optional(),
+  errorMessage: z.string().optional(), // Details when status is "failed"
 });
 
 export const reportRef = reportRefSchema;
