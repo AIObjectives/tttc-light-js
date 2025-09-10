@@ -552,12 +552,18 @@ def all_comments_to_claims(
         if claims and len(claims["claims"]) > 0:
             comms_to_claims.extend([c for c in claims["claims"]])
 
-        TK_2_IN += usage.prompt_tokens
-        TK_2_OUT += usage.completion_tokens
-        TK_2_TOT += usage.total_tokens
+        # Handle cases where usage is None (e.g., when content is rejected by sanitization)
+        # This occurs when sanitize_prompt() detects potential prompt injection
+        if usage is not None:
+            TK_2_IN += usage.prompt_tokens
+            TK_2_OUT += usage.completion_tokens
+            TK_2_TOT += usage.total_tokens
+        else:
+            # Log when content is rejected by sanitization
+            print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
 
         # format for logging to W&B
-        if log_to_wandb:
+        if log_to_wandb and claims:
             viz_claims = cute_print(claims["claims"])
             comms_to_claims_html.append([comment.text, viz_claims])
 
