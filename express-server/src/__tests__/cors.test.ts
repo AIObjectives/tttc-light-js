@@ -55,6 +55,7 @@ describe("CORS Security Configuration", () => {
     process.env = { ...originalEnv };
     process.env.NODE_ENV = "development";
     process.env.ALLOWED_ORIGINS = "http://localhost:3000";
+    process.env.ALLOWED_GCS_BUCKETS = "test-bucket,another-bucket";
   });
 
   afterEach(() => {

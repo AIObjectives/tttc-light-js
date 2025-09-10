@@ -54,6 +54,23 @@ export class Bucket extends Storage {
   private storageUrl = (fileName: string) =>
     `https://storage.googleapis.com/${this.name}/${fileName}`;
 
+  async fileExists(fileName: string): Promise<boolean> {
+    try {
+      const file = this.bucket.file(fileName);
+      const [exists] = await file.exists();
+      return exists;
+    } catch (e) {
+      storageLogger.error(
+        {
+          fileName,
+          error: e,
+        },
+        "Failed to check if file exists",
+      );
+      return false;
+    }
+  }
+
   async getUrl(fileName: string): Promise<Result<string, StorageGetUrlError>> {
     const expiresInSeconds: number = 60 * 60; // 1 hour default
     // fileName must be decoded (with spaces not %20), not encoded
