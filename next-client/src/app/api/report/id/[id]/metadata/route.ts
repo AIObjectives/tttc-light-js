@@ -52,7 +52,7 @@ export async function GET(
     }
 
     const metadata = await expressResponse.json();
-    reportMetadataLogger.debug("Report metadata fetched successfully");
+    reportMetadataLogger.debug({}, "Report metadata fetched successfully");
 
     return NextResponse.json(metadata);
   } catch (error) {

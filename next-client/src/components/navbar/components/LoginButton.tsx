@@ -45,7 +45,7 @@ export default function LoginButton() {
 
   const handleSignIn = async () => {
     try {
-      loginLogger.debug("Sign in button clicked");
+      loginLogger.debug({}, "Sign in button clicked");
       const result = await signInWithGoogle();
       loginLogger.info(
         {

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
 import { FIRESTORE_ID_REGEX } from "tttc-common/utils";
 
+const reportApiLogger = logger.child({ module: "report-api" });
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -17,7 +19,7 @@ export async function GET(
       );
     }
 
-    logger.debug(`REPORT API: Fetching report data for ID: ${id}`);
+    reportApiLogger.debug({ reportId: id }, `Fetching report data`);
 
     // Call the express server's report ID endpoint
     const expressUrl =
@@ -30,8 +32,9 @@ export async function GET(
       },
     });
 
-    logger.debug(
-      `REPORT API: Express server response status: ${expressResponse.status}`,
+    reportApiLogger.debug(
+      { status: expressResponse.status },
+      `Express server response status`,
     );
 
     if (!expressResponse.ok) {
@@ -46,12 +49,13 @@ export async function GET(
 
     // Express returns { url: signedUrl }, we need to fetch the actual data
     if (result.url) {
-      logger.debug("REPORT API: Fetching data from signed URL");
+      reportApiLogger.debug({}, "Fetching data from signed URL");
       const dataResponse = await fetch(result.url);
 
       if (!dataResponse.ok) {
-        logger.error(
-          `Failed to fetch data from signed URL: ${dataResponse.status}`,
+        reportApiLogger.error(
+          { status: dataResponse.status },
+          `Failed to fetch data from signed URL`,
         );
         return NextResponse.json(
           { error: "Failed to fetch report data from storage" },
@@ -60,15 +64,15 @@ export async function GET(
       }
 
       const reportData = await dataResponse.json();
-      logger.debug("REPORT API: Report data fetched successfully");
+      reportApiLogger.debug({}, "Report data fetched successfully");
       return NextResponse.json(reportData);
     }
 
     // Fallback for legacy or error cases
-    logger.debug("REPORT API: No URL provided, returning result as-is");
+    reportApiLogger.debug({}, "No URL provided, returning result as-is");
     return NextResponse.json(result);
   } catch (error) {
-    logger.error({ error }, "Error in report data API");
+    reportApiLogger.error({ error }, "Error in report data API");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

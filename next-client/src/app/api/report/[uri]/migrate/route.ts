@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
 
+const migrateApiLogger = logger.child({ module: "api-migrate" });
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ uri: string }> },
@@ -15,7 +17,7 @@ export async function GET(
       );
     }
 
-    logger.debug(`MIGRATION API: Attempting migration for URI: ${uri}`);
+    migrateApiLogger.debug({ uri }, `Attempting migration for URI`);
 
     // Call the express server's migration endpoint
     const expressUrl =
@@ -31,17 +33,21 @@ export async function GET(
       },
     );
 
-    logger.debug(
-      `MIGRATION API: Express server response status: ${expressResponse.status}`,
+    migrateApiLogger.debug(
+      { status: expressResponse.status },
+      `Express server response status`,
     );
 
     if (!expressResponse.ok) {
       const errorData = await expressResponse
         .text()
         .catch(() => "Unknown error");
-      logger.error(
-        { errorData },
-        `MIGRATION API: Express server error: ${expressResponse.status}`,
+      migrateApiLogger.error(
+        {
+          errorData,
+          status: expressResponse.status,
+        },
+        `Express server error`,
       );
 
       // Pass through the status code from express
@@ -52,11 +58,11 @@ export async function GET(
     }
 
     const result = await expressResponse.json();
-    logger.debug("MIGRATION API: Migration successful", result);
+    migrateApiLogger.debug({ result }, "Migration successful");
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error({ error }, "MIGRATION API: Failed to migrate URL");
+    migrateApiLogger.error({ error }, "Failed to migrate URL");
     return NextResponse.json(
       { error: "Failed to migrate URL" },
       { status: 500 },
