@@ -98,7 +98,7 @@ export function SubtopicClaims({
 }) {
   return (
     <Col>
-      <p className="leading-6 pl-8 text-base font-medium">Claims</p>
+      <p className="leading-6 pl-4 md:pl-8 text-base font-medium">Claims</p>
       <Col gap={4}>
         <Col>
           {claimNodes.map((claimNode, i) => {

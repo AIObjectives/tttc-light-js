@@ -15,14 +15,16 @@ function CopyButton({
   const copy = async () => navigator.clipboard.writeText(copyStr);
   const notify = async () => toast.success(successMessage);
   return (
-    <Button
-      size={"icon"}
-      variant={"outline"}
-      onClick={() => copy().then(notify)}
-      data-testid={"copybutton"}
-    >
-      <Icons.Copy size={16} className="" />
-    </Button>
+    <div>
+      <Button
+        size={"icon"}
+        variant={"outline"}
+        onClick={() => copy().then(notify)}
+        data-testid={"copybutton"}
+      >
+        <Icons.Copy size={16} className="" />
+      </Button>
+    </div>
   );
 }
 

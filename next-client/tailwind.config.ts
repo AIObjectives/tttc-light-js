@@ -67,7 +67,7 @@ const config = {
         },
         theme_blueSea: {
           DEFAULT: "hsl(var(--theme-blueSea))",
-          accent: "hsl(var(--x-accent))",
+          accent: "hsl(var(--theme-blueSea-accent))",
         },
         theme_blueSky: {
           DEFAULT: "hsl(var(--theme-blueSky))",
