@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
 import { FIRESTORE_ID_REGEX } from "tttc-common/utils";
 
+const reportStatusLogger = logger.child({ module: "report-status-api" });
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -17,7 +19,7 @@ export async function GET(
       );
     }
 
-    logger.debug(`REPORT STATUS API: Fetching status for ID: ${id}`);
+    reportStatusLogger.debug({ id }, `Fetching status`);
 
     // Call the express server's report ID status endpoint
     const expressUrl =
@@ -33,8 +35,9 @@ export async function GET(
       },
     );
 
-    logger.debug(
-      `REPORT STATUS API: Express server response status: ${expressResponse.status}`,
+    reportStatusLogger.debug(
+      { status: expressResponse.status },
+      `Express server response status`,
     );
 
     if (!expressResponse.ok) {
@@ -46,11 +49,11 @@ export async function GET(
     }
 
     const result = await expressResponse.json();
-    logger.debug("REPORT STATUS API: Report status fetched successfully");
+    reportStatusLogger.debug({}, "Report status fetched successfully");
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error({ error }, "Error in report status API");
+    reportStatusLogger.error({ error }, "Error in report status API");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

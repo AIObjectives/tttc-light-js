@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
+const reportStatusApiLogger = logger.child({ module: "report-status-api" });
 
 export async function GET(
   request: Request,
@@ -15,7 +16,7 @@ export async function GET(
       );
     }
 
-    logger.debug(`STATUS API: Checking status for URI: ${uri}`);
+    reportStatusApiLogger.debug({ uri }, `Checking status for URI`);
 
     // Call the express server's status endpoint
     const expressUrl =
@@ -31,15 +32,16 @@ export async function GET(
       },
     );
 
-    logger.debug(
-      `STATUS API: Express server response status: ${expressResponse.status}`,
+    reportStatusApiLogger.debug(
+      { status: expressResponse.status },
+      `Express server response status`,
     );
 
     if (!expressResponse.ok) {
       const errorData = await expressResponse
         .text()
         .catch(() => "Unknown error");
-      logger.error(
+      reportStatusApiLogger.error(
         { errorData },
         `STATUS API: Express server error: ${expressResponse.status}`,
       );
@@ -52,11 +54,11 @@ export async function GET(
     }
 
     const result = await expressResponse.json();
-    logger.debug("STATUS API: Status fetched successfully", result);
+    reportStatusApiLogger.debug({ result }, "Status fetched successfully");
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error({ error }, "STATUS API: Failed to fetch report status");
+    reportStatusApiLogger.error({ error }, "Failed to fetch report status");
     return NextResponse.json(
       { error: "Failed to fetch report status" },
       { status: 500 },

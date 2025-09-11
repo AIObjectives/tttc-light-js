@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       );
       return NextResponse.json(
         { response: ["error", { message: "Failed to submit feedback" }] },
-        { status: 500 },
+        { status: expressResponse.status },
       );
     }
 

@@ -65,10 +65,10 @@ export async function POST(request: Request) {
       );
       return NextResponse.json(
         {
-          error: "Failed to ensure user document via express server",
+          error: "Failed to ensure user document",
           details: errorText,
         },
-        { status: 500 },
+        { status: expressResponse.status },
       );
     }
 
