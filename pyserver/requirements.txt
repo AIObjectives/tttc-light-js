@@ -4,3 +4,4 @@ pydantic
 wandb
 uvicorn
 python-dotenv
+psutil

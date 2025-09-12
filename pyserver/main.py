@@ -20,7 +20,12 @@ import math
 import os
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Dict
+from collections import defaultdict
+import time
+import asyncio
+from threading import Lock
+import psutil
 
 import wandb
 from dotenv import load_dotenv
@@ -40,9 +45,136 @@ from simple_sanitizer import basic_sanitize, sanitize_prompt_length, sanitize_fo
 
 load_dotenv()
 
-# Configure logging for CORS security monitoring
-logging.basicConfig(level=logging.INFO)
+# Configure logging for CORS security monitoring and API call tracking
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+# Global API call tracker with thread safety
+class APICallTracker:
+    def __init__(self):
+        self.lock = Lock()
+        self.reset()
+    
+    def reset(self):
+        with self.lock:
+            self.calls = defaultdict(list)
+            self.call_counts = defaultdict(int)
+            self.total_calls = 0
+            self.start_time = time.time()
+    
+    def track_call(self, step: str, context: Dict):
+        """Track an API call with context information"""
+        # Capture data under lock first
+        should_log = False
+        log_data = None
+        
+        with self.lock:
+            self.total_calls += 1
+            self.call_counts[step] += 1
+            self.calls[step].append({
+                'timestamp': time.time(),
+                'context': context,
+                'call_number': self.total_calls
+            })
+            
+            # Check if we should log (every 50 calls) and capture data
+            if self.total_calls % 50 == 0:
+                should_log = True
+                elapsed = time.time() - self.start_time
+                log_data = {
+                    'total_calls': self.total_calls,
+                    'elapsed': elapsed,
+                    'call_counts': dict(self.call_counts)  # Copy to avoid race conditions
+                }
+        
+        # Perform I/O operations outside the lock
+        if should_log and log_data:
+            logger.info(f"API CALL SUMMARY: Total={log_data['total_calls']}, Elapsed={log_data['elapsed']:.1f}s")
+            for step_name, count in log_data['call_counts'].items():
+                logger.info(f"  {step_name}: {count} calls")
+    
+    def get_summary(self):
+        with self.lock:
+            elapsed = time.time() - self.start_time if hasattr(self, 'start_time') else 0
+            return {
+                'total_calls': self.total_calls,
+                'elapsed_seconds': elapsed,
+                'calls_per_step': dict(self.call_counts),
+                'average_call_rate': self.total_calls / elapsed if elapsed > 0 else 0
+            }
+
+api_tracker = APICallTracker()
+
+# Concurrency configuration for rate limiting
+MAX_CONCURRENCY = int(os.getenv("PYSERVER_MAX_CONCURRENCY", "6"))  # Default to 6 concurrent requests
+ENABLE_CONCURRENT_PROCESSING = os.getenv("ENABLE_CONCURRENT_PROCESSING", "true").lower() == "true"  # Enabled by default
+concurrency_semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
+
+# API rate limiting backpressure - reduced for better performance
+API_RATE_LIMIT_DELAY = float(os.getenv("API_RATE_LIMIT_DELAY", "0.05"))  # 50ms between API calls
+
+# Request-scoped processing tracking with thread safety
+class ProcessingTracker:
+    def __init__(self):
+        self.lock = Lock()
+        self.active_requests = 0
+        self.request_stats = {}  # request_id -> stats
+    
+    def start_request(self, request_id: str, total_comments: int):
+        with self.lock:
+            self.active_requests += 1
+            self.request_stats[request_id] = {
+                "total_comments": total_comments,
+                "completed_comments": 0,
+                "start_time": time.time(),
+                "last_progress_update": time.time()
+            }
+    
+    def update_progress(self, request_id: str, completed_count: int = 1):
+        with self.lock:
+            if request_id in self.request_stats:
+                self.request_stats[request_id]["completed_comments"] += completed_count
+                self.request_stats[request_id]["last_progress_update"] = time.time()
+    
+    def end_request(self, request_id: str):
+        with self.lock:
+            self.active_requests = max(0, self.active_requests - 1)
+            if request_id in self.request_stats:
+                del self.request_stats[request_id]
+    
+    def cleanup_stale_requests(self, max_age_seconds: int = 3600):
+        """Clean up request stats that are older than max_age_seconds (default 1 hour)"""
+        current_time = time.time()
+        stale_requests = []
+        
+        with self.lock:
+            for request_id, stats in self.request_stats.items():
+                if current_time - stats["start_time"] > max_age_seconds:
+                    stale_requests.append(request_id)
+            
+            # Remove stale requests
+            for request_id in stale_requests:
+                del self.request_stats[request_id]
+                self.active_requests = max(0, self.active_requests - 1)
+        
+        if stale_requests:
+            logger.warning(f"Cleaned up {len(stale_requests)} stale request entries older than {max_age_seconds}s")
+    
+    def get_summary(self):
+        with self.lock:
+            total_comments = sum(stats["total_comments"] for stats in self.request_stats.values())
+            completed_comments = sum(stats["completed_comments"] for stats in self.request_stats.values())
+            return {
+                "active_requests": self.active_requests,
+                "total_comments": total_comments,
+                "completed_comments": completed_comments,
+                "progress_percentage": (completed_comments / total_comments * 100) if total_comments > 0 else 0
+            }
+
+processing_tracker = ProcessingTracker()
 
 app = FastAPI()
 
@@ -162,6 +294,41 @@ def read_root():
     # TODO: setup/relevant defaults?
     return {"Hello": "World"}
 
+@app.get("/health/processing")
+async def processing_health_check():
+    """Health check endpoint to monitor concurrent processing progress"""
+    summary = processing_tracker.get_summary()
+    
+    # Get memory usage
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_percent = process.memory_percent()
+    memory_mb = round(memory_info.rss / 1024 / 1024, 1)
+    
+    # Check memory limits (fail health check if > 80% memory or > 1.6GB)
+    MAX_MEMORY_MB = 1600  # 1.6GB limit (80% of 2GB Cloud Run limit)
+    health_status = "healthy"
+    if memory_percent > 80 or memory_mb > MAX_MEMORY_MB:
+        health_status = "memory_warning"
+    
+    return {
+        "status": "processing" if summary["active_requests"] > 0 else "idle",
+        "health": health_status,
+        "active_requests": summary["active_requests"],
+        "progress": {
+            "total_comments": summary["total_comments"],
+            "completed_comments": summary["completed_comments"],
+            "progress_percentage": summary["progress_percentage"]
+        },
+        "performance": {
+            "concurrency_enabled": ENABLE_CONCURRENT_PROCESSING,
+            "concurrency_limit": MAX_CONCURRENCY,
+            "memory_usage_mb": memory_mb,
+            "memory_percent": round(memory_percent, 1),
+            "memory_limit_mb": MAX_MEMORY_MB
+        }
+    }
+
 ###################################
 # Step 1: Comments to Topic Tree  #
 # ---------------------------------#
@@ -255,6 +422,10 @@ def comments_to_tree(
         print("dry_run topic tree")
         return config.MOCK_RESPONSE["topic_tree"]
     
+    # Reset tracker for new report processing
+    api_tracker.reset()
+    logger.info(f"Starting topic_tree processing with {len(req.comments)} comments")
+    
     # Basic sanitization - just check for prompt injection and length
     client = OpenAI(api_key=x_openai_api_key)
 
@@ -270,6 +441,14 @@ def comments_to_tree(
     
     # Basic prompt length check
     full_prompt = sanitize_prompt_length(full_prompt)
+    
+    # Track API call
+    api_tracker.track_call('topic_tree', {
+        'num_comments': len(req.comments),
+        'prompt_length': len(full_prompt),
+        'model': req.llm.model_name
+    })
+    logger.info(f"API Call #{api_tracker.total_calls}: topic_tree (comments={len(req.comments)})")
 
     response = client.chat.completions.create(
         model=req.llm.model_name,
@@ -345,7 +524,7 @@ def comments_to_tree(
     return sanitize_for_output(response_data)
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str) -> dict:
+def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
     
     Args:
@@ -373,6 +552,16 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str) -> dict
     full_prompt += (
         "\n" + taxonomy_string + "\nAnd then here is the comment:\n" + sanitized_comment
     )
+    
+    # Track API call
+    api_tracker.track_call('comment_to_claims', {
+        'comment_index': comment_index,
+        'comment_length': len(comment),
+        'tree_size': len(tree),
+        'model': llm.model_name
+    })
+    if comment_index >= 0:
+        logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment #{comment_index + 1})")
 
     response = client.chat.completions.create(
         model=llm.model_name,
@@ -400,11 +589,37 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str) -> dict
     return {"claims": claims_obj, "usage": response.usage}
 
 
+async def comment_to_claims_async(processing_context: dict, llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1) -> dict:
+    """Async wrapper for comment_to_claims with concurrency control and progress tracking"""
+    async with concurrency_semaphore:
+        try:
+            # Add backpressure delay to prevent API rate limiting
+            if API_RATE_LIMIT_DELAY > 0:
+                await asyncio.sleep(API_RATE_LIMIT_DELAY)
+            
+            # Run the synchronous function in a thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, 
+                comment_to_claims,
+                llm, comment, tree, api_key, comment_index
+            )
+            
+            # Update progress stats
+            processing_tracker.update_progress(processing_context["request_id"])
+            
+            return result
+        except Exception as e:
+            # Still update progress on error to avoid appearing stalled
+            processing_tracker.update_progress(processing_context["request_id"])
+            raise e
+
+
 ####################################
 # Step 2: Extract and place claims #
 # ----------------------------------#
 @app.post("/claims")
-def all_comments_to_claims(
+async def all_comments_to_claims(
     req: CommentTopicTree, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
 ) -> dict:
     """Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
@@ -528,161 +743,221 @@ def all_comments_to_claims(
     TK_2_TOT = 0
 
     node_counts = {}
-    # TODO: batch this so we're not sending the tree each time
-    for i_c, comment in enumerate(req.comments):
-        # TODO: timing for comments
-        # print("comment: ", i_c)
-        # print("time: ", datetime.now())
-        if comment_is_meaningful(comment.text):
-            response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key)
+    
+    # Initialize request-scoped processing tracking
+    request_id = f"claims_{int(time.time() * 1000)}_{id(req)}"
+    processing_tracker.start_request(request_id, len(req.comments))
+    
+    # Clean up stale requests periodically to prevent memory leaks
+    processing_tracker.cleanup_stale_requests()
+    
+    # Log processing start
+    logger.info(f"Starting claims extraction for {len(req.comments)} comments")
+    
+    # Check if concurrent processing is enabled
+    comment_count = len(req.comments)
+    if ENABLE_CONCURRENT_PROCESSING:
+        logger.info(f"Processing {comment_count} comments with concurrent processing (concurrency: {MAX_CONCURRENCY})")
+    else:
+        logger.info(f"Processing {comment_count} comments sequentially (concurrent processing disabled)")
+    
+    try:
+        # Filter meaningful comments first
+        meaningful_comments = []
+        for i_c, comment in enumerate(req.comments):
+            if comment_is_meaningful(comment.text):
+                meaningful_comments.append((i_c, comment))
+            else:
+                print(f"warning: empty comment in claims: comment #{i_c}")
+        
+        # Process comments based on concurrency setting
+        processing_context = {"request_id": request_id}
+        responses = []
+        
+        if ENABLE_CONCURRENT_PROCESSING:
+            # Process comments concurrently
+            tasks = []
+            for i_c, comment in meaningful_comments:
+                task = comment_to_claims_async(processing_context, req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c)
+                tasks.append((task, comment))
+            
+            # Wait for all tasks to complete and track failures
+            responses_with_comments = await asyncio.gather(*[task for task, _ in tasks], return_exceptions=True)
+            responses = list(zip(responses_with_comments, [comment for _, comment in meaningful_comments]))
+            
+            # Count and log failures for monitoring
+            failed_count = sum(1 for response, _ in responses if isinstance(response, Exception))
+            if failed_count > 0:
+                success_rate = ((len(responses) - failed_count) / len(responses)) * 100
+                logger.warning(f"Concurrent processing completed with {failed_count}/{len(responses)} failures (success rate: {success_rate:.1f}%)")
+                
+                # If more than 50% failed, this might indicate a systemic issue
+                if failed_count > len(responses) / 2:
+                    logger.error(f"High failure rate detected: {failed_count}/{len(responses)} failed. This may indicate an API or system issue.")
+            else:
+                logger.info(f"Concurrent processing completed successfully for all {len(responses)} comments")
         else:
-            print("warning: empty comment in claims:" + comment.text)
-            continue
-        try:
-            claims = response["claims"]
-            for claim in claims["claims"]:
-                claim.update({"commentId": comment.id, "speaker": comment.speaker})
-        except Exception:
-            print("Step 2: no claims for comment: ", response)
-            claims = None
-            continue
+            # Process comments sequentially (original behavior)
+            for i_c, comment in meaningful_comments:
+                try:
+                    response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c)
+                    responses.append((response, comment))
+                    processing_tracker.update_progress(request_id)
+                except Exception as e:
+                    print(f"Error processing comment {comment.id}: {e}")
+                    responses.append((e, comment))
+        
+        # Process results
+        for response, comment in responses:
+            if isinstance(response, Exception):
+                print(f"Error processing comment {comment.id}: {response}")
+                continue  # Skip to next response for exceptions
+                
+            try:
+                claims = response["claims"]
+                for claim in claims["claims"]:
+                    claim.update({"commentId": comment.id, "speaker": comment.speaker})
+            except Exception:
+                print("Step 2: no claims for comment: ", response)
+                claims = None
+                continue
+                
+            usage = response["usage"]
+            if claims and len(claims["claims"]) > 0:
+                comms_to_claims.extend([c for c in claims["claims"]])
+
+            # Handle cases where usage is None (e.g., when content is rejected by sanitization)
+            if usage is not None:
+                TK_2_IN += usage.prompt_tokens
+                TK_2_OUT += usage.completion_tokens
+                TK_2_TOT += usage.total_tokens
+            else:
+                print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
+
+            # format for logging to W&B
+            if log_to_wandb and claims:
+                viz_claims = cute_print(claims["claims"])
+                comms_to_claims_html.append([comment.text, viz_claims])
+
+
         # reference format
-        # {'claims': [{'claim': 'Dogs are superior pets.', commentId:'c1', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs'}]}
-        usage = response["usage"]
-        if claims and len(claims["claims"]) > 0:
-            comms_to_claims.extend([c for c in claims["claims"]])
+        # [{'claim': 'Cats are the best household pets.', 'commentId':'c1', 'quote': 'I love cats', 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Cats'},
+        # {'commentId':'c2','claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'speaker' : 'Bob', 'topicName': 'Pets', 'subtopicName': 'Dogs'},
+        # {'commentId':'c3', 'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Birds'}]
 
-        # Handle cases where usage is None (e.g., when content is rejected by sanitization)
-        # This occurs when sanitize_prompt() detects potential prompt injection
-        if usage is not None:
-            TK_2_IN += usage.prompt_tokens
-            TK_2_OUT += usage.completion_tokens
-            TK_2_TOT += usage.total_tokens
-        else:
-            # Log when content is rejected by sanitization
-            print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
-
-        # format for logging to W&B
-        if log_to_wandb and claims:
-            viz_claims = cute_print(claims["claims"])
-            comms_to_claims_html.append([comment.text, viz_claims])
-
-    # reference format
-    # [{'claim': 'Cats are the best household pets.', 'commentId':'c1', 'quote': 'I love cats', 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Cats'},
-    # {'commentId':'c2','claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'speaker' : 'Bob', 'topicName': 'Pets', 'subtopicName': 'Dogs'},
-    # {'commentId':'c3', 'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Birds'}]
-
-    # count the claims in each subtopic
-    for claim in comms_to_claims:
-        if "topicName" not in claim:
-            print("claim unassigned to topic: ", claim)
-            continue
-        if claim["topicName"] in node_counts:
-            node_counts[claim["topicName"]]["total"] += 1
-            node_counts[claim["topicName"]]["speakers"].add(claim["speaker"])
-            if "subtopicName" in claim:
-                if (
-                    claim["subtopicName"]
-                    in node_counts[claim["topicName"]]["subtopics"]
-                ):
-                    node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
-                        "total"
-                    ] += 1
-                    node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
-                        "claims"
-                    ].append(claim)
-                    node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
-                        "speakers"
-                    ].add(claim["speaker"])
-                else:
-                    node_counts[claim["topicName"]]["subtopics"][
-                        claim["subtopicName"]
-                    ] = {
-                        "total": 1,
-                        "claims": [claim],
-                        "speakers": set([claim["speaker"]]),
-                    }
-        else:
-            node_counts[claim["topicName"]] = {
-                "total": 1,
-                "speakers": set([claim["speaker"]]),
-                "subtopics": {
-                    claim["subtopicName"]: {
-                        "total": 1,
-                        "claims": [claim],
-                        "speakers": set([claim["speaker"]]),
-                    },
-                },
-            }
-    # after inserting claims: check if any of the topics/subtopics are empty
-    for topic in req.tree["taxonomy"]:
-        if "subtopics" in topic:
-            for subtopic in topic["subtopics"]:
-                # check if subtopic in node_counts
-                if topic["topicName"] in node_counts:
+        # count the claims in each subtopic
+        for claim in comms_to_claims:
+            if "topicName" not in claim:
+                print("claim unassigned to topic: ", claim)
+                continue
+            if claim["topicName"] in node_counts:
+                node_counts[claim["topicName"]]["total"] += 1
+                node_counts[claim["topicName"]]["speakers"].add(claim["speaker"])
+                if "subtopicName" in claim:
                     if (
-                        subtopic["subtopicName"]
-                        not in node_counts[topic["topicName"]]["subtopics"]
+                        claim["subtopicName"]
+                        in node_counts[claim["topicName"]]["subtopics"]
                     ):
-                        # this is an empty subtopic!
-                        print("EMPTY SUBTOPIC: ", subtopic["subtopicName"])
-                        node_counts[topic["topicName"]]["subtopics"][
-                            subtopic["subtopicName"]
-                        ] = {"total": 0, "claims": [], "speakers": set()}
-                else:
-                    # could we have an empty topic? certainly
-                    print("EMPTY TOPIC: ", topic["topicName"])
-                    node_counts[topic["topicName"]] = {
-                        "total": 0,
-                        "speakers": set(),
-                        "subtopics": {
-                            "None": {"total": 0, "claims": [], "speakers": set()},
+                        node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
+                            "total"
+                        ] += 1
+                        node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
+                            "claims"
+                        ].append(claim)
+                        node_counts[claim["topicName"]]["subtopics"][claim["subtopicName"]][
+                            "speakers"
+                        ].add(claim["speaker"])
+                    else:
+                        node_counts[claim["topicName"]]["subtopics"][
+                            claim["subtopicName"]
+                        ] = {
+                            "total": 1,
+                            "claims": [claim],
+                            "speakers": set([claim["speaker"]]),
+                        }
+            else:
+                node_counts[claim["topicName"]] = {
+                    "total": 1,
+                    "speakers": set([claim["speaker"]]),
+                    "subtopics": {
+                        claim["subtopicName"]: {
+                            "total": 1,
+                            "claims": [claim],
+                            "speakers": set([claim["speaker"]]),
                         },
-                    }
-    # compute LLM costs for this step's tokens
-    s2_total_cost = token_cost(req.llm.model_name, TK_2_IN, TK_2_OUT)
+                    },
+                }
+        # after inserting claims: check if any of the topics/subtopics are empty
+        for topic in req.tree["taxonomy"]:
+            if "subtopics" in topic:
+                for subtopic in topic["subtopics"]:
+                    # check if subtopic in node_counts
+                    if topic["topicName"] in node_counts:
+                        if (
+                            subtopic["subtopicName"]
+                            not in node_counts[topic["topicName"]]["subtopics"]
+                        ):
+                            # this is an empty subtopic!
+                            print("EMPTY SUBTOPIC: ", subtopic["subtopicName"])
+                            node_counts[topic["topicName"]]["subtopics"][
+                                subtopic["subtopicName"]
+                            ] = {"total": 0, "claims": [], "speakers": set()}
+                    else:
+                        # could we have an empty topic? certainly
+                        print("EMPTY TOPIC: ", topic["topicName"])
+                        node_counts[topic["topicName"]] = {
+                            "total": 0,
+                            "speakers": set(),
+                            "subtopics": {
+                                "None": {"total": 0, "claims": [], "speakers": set()},
+                            },
+                        }
+        # compute LLM costs for this step's tokens
+        s2_total_cost = token_cost(req.llm.model_name, TK_2_IN, TK_2_OUT)
 
-    # Note: we will now be sending speaker names to W&B
-    if log_to_wandb:
-        try:
-            exp_group_name = str(log_to_wandb)
-            wandb.init(
-                project=config.WANDB_PROJECT_NAME, group=exp_group_name, resume="allow",
-            )
-            wandb.config.update(
-                {
-                    "s2_claims/model": req.llm.model_name,
-                    "s2_claims/user_prompt": req.llm.user_prompt,
-                    "s2_claims/system_prompt": req.llm.system_prompt,
-                },
-            )
-            wandb.log(
-                {
-                    "U_tok_N/claims": TK_2_TOT,
-                    "U_tok_in/claims": TK_2_IN,
-                    "U_tok_out/claims": TK_2_OUT,
-                    "rows_to_claims": wandb.Table(
-                        data=comms_to_claims_html, columns=["comments", "claims"],
-                    ),
-                    "cost/s2_claims": s2_total_cost,
-                },
-            )
-        except Exception:
-            print("Failed to log wandb run")
+        # Note: we will now be sending speaker names to W&B
+        if log_to_wandb:
+            try:
+                exp_group_name = str(log_to_wandb)
+                wandb.init(
+                    project=config.WANDB_PROJECT_NAME, group=exp_group_name, resume="allow",
+                )
+                wandb.config.update(
+                    {
+                        "s2_claims/model": req.llm.model_name,
+                        "s2_claims/user_prompt": req.llm.user_prompt,
+                        "s2_claims/system_prompt": req.llm.system_prompt,
+                    },
+                )
+                wandb.log(
+                    {
+                        "U_tok_N/claims": TK_2_TOT,
+                        "U_tok_in/claims": TK_2_IN,
+                        "U_tok_out/claims": TK_2_OUT,
+                        "rows_to_claims": wandb.Table(
+                            data=comms_to_claims_html, columns=["comments", "claims"],
+                        ),
+                        "cost/s2_claims": s2_total_cost,
+                    },
+                )
+            except Exception:
+                print("Failed to log wandb run")
 
-    net_usage = {
-        "total_tokens": TK_2_TOT,
-        "prompt_tokens": TK_2_IN,
-        "completion_tokens": TK_2_OUT,
-    }
-    
-    response_data = {"data": node_counts, "usage": net_usage, "cost": s2_total_cost}
-    
-    # Filter PII from final output for user privacy
-    return sanitize_for_output(response_data)
+        net_usage = {
+            "total_tokens": TK_2_TOT,
+            "prompt_tokens": TK_2_IN,
+            "completion_tokens": TK_2_OUT,
+        }
+        
+        response_data = {"data": node_counts, "usage": net_usage, "cost": s2_total_cost}
+        # Filter PII from final output for user privacy
+        return sanitize_for_output(response_data)
+    finally:
+        # Ensure request tracking is always cleaned up to prevent memory leaks
+        processing_tracker.end_request(request_id)
 
 
-def dedup_claims(claims: list, llm: LLMConfig, api_key: str) -> dict:
+def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "", subtopic_name: str = "") -> dict:
     """Given a list of claims for a given subtopic, identify which ones are near-duplicates.
 
     Args:  
@@ -707,6 +982,15 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str) -> dict:
     
     # Basic prompt length check
     full_prompt = sanitize_prompt_length(full_prompt)
+    
+    # Track API call
+    api_tracker.track_call('dedup_claims', {
+        'topic': topic_name,
+        'subtopic': subtopic_name,
+        'num_claims': len(claims),
+        'model': config.MODEL
+    })
+    logger.info(f"API Call #{api_tracker.total_calls}: dedup_claims ({topic_name}/{subtopic_name}, {len(claims)} claims)")
 
     response = client.chat.completions.create(
         model=config.MODEL,
@@ -967,7 +1251,7 @@ def sort_claims_tree(
             # no need to deduplicate single claims
             if subtopic_data["total"] > 1:
                 try:
-                    response = dedup_claims(subtopic_data["claims"], llm=llm, api_key=x_openai_api_key)
+                    response = dedup_claims(subtopic_data["claims"], llm=llm, api_key=x_openai_api_key, topic_name=topic, subtopic_name=subtopic)
                 except Exception:
                     print(
                         "Step 3: no deduped claims response for: ",
@@ -1227,7 +1511,7 @@ def controversy_matrix(cont_mat: list) -> list:
 
 
 def cruxes_for_topic(
-    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict, api_key: str
+    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict, api_key: str, subtopic_index: int = -1
 ) -> dict:
     """For each fully-described subtopic, provide all the relevant claims with an anonymized
     numeric speaker id, and ask the LLM for a crux claim that best splits the speakers' opinions
@@ -1263,6 +1547,16 @@ def cruxes_for_topic(
     
     # Basic prompt length check
     full_prompt = sanitize_prompt_length(full_prompt)
+    
+    # Track API call
+    api_tracker.track_call('cruxes_for_topic', {
+        'topic': topic,
+        'num_claims': len(claims),
+        'num_speakers': len(speaker_set),
+        'subtopic_index': subtopic_index,
+        'model': llm.model_name
+    })
+    logger.info(f"API Call #{api_tracker.total_calls}: cruxes_for_topic ({topic}, {len(claims)} claims, {len(speaker_set)} speakers)")
 
     response = client.chat.completions.create(
         model=llm.model_name,
@@ -1324,6 +1618,12 @@ def cruxes_from_tree(
     # TODO: can we get this from client?
     speaker_map = full_speaker_map(req.crux_tree)
     # print("speaker ids: ", speaker_map)
+    
+    # Count total subtopics to process
+    total_subtopics = sum(len(td["subtopics"]) for td in req.crux_tree.values())
+    logger.info(f"Starting cruxes extraction for {total_subtopics} subtopics")
+    
+    subtopic_counter = 0
     for topic, topic_details in req.crux_tree.items():
         subtopics = topic_details["subtopics"]
         for subtopic, subtopic_details in subtopics.items():
@@ -1342,8 +1642,9 @@ def cruxes_from_tree(
                 subtopic_desc = "No further details"
 
             topic_title = topic + ", " + subtopic
+            subtopic_counter += 1
             llm_response = cruxes_for_topic(
-                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key,
+                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key, subtopic_index=subtopic_counter
             )
             if not llm_response:
                 print("warning: no crux response from LLM")
@@ -1490,6 +1791,16 @@ def cruxes_from_tree(
         "prompt_tokens": TK_IN,
         "completion_tokens": TK_OUT,
     }
+    # Add API call summary to response
+    api_summary = api_tracker.get_summary()
+    logger.info(f"\n=== FINAL API CALL SUMMARY ===")
+    logger.info(f"Total API calls: {api_summary['total_calls']}")
+    logger.info(f"Time elapsed: {api_summary['elapsed_seconds']:.1f} seconds")
+    logger.info(f"Calls by step:")
+    for step, count in api_summary['calls_per_step'].items():
+        logger.info(f"  - {step}: {count} calls")
+    logger.info(f"Average rate: {api_summary['average_call_rate']:.2f} calls/second")
+    
     cruxes = [
         {"cruxClaim": c[0], "agree": c[1], "disagree": c[2], "explanation": c[3]}
         for c in crux_claims
@@ -1500,6 +1811,7 @@ def cruxes_from_tree(
         "topCruxes": top_cruxes,
         "usage": net_usage,
         "cost": s4_total_cost,
+        "api_call_summary": api_summary  # Include summary in response
     }
     
     # Filter PII from final output for user privacy

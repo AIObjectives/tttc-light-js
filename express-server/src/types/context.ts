@@ -142,6 +142,16 @@ export const env = z.object({
     .transform((val) => val.toLowerCase() === "true"),
   FIREBASE_ADMIN_PROJECT_ID: z.string().optional(),
   RATE_LIMIT_PREFIX: z.string().optional().default("dev"),
+
+  // Concurrency settings for Python server
+  PYSERVER_MAX_CONCURRENCY: z
+    .string()
+    .optional()
+    .default("8") // Match pyserver default
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => !isNaN(val) && val > 0 && val <= 20, {
+      message: "PYSERVER_MAX_CONCURRENCY must be between 1 and 20",
+    }),
 });
 
 function transformLocalFlags(val?: string) {

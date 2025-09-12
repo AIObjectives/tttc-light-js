@@ -91,6 +91,7 @@ describe("CSV Security in Create Route", () => {
           ANALYTICS_FLUSH_INTERVAL: 10000,
           ANALYTICS_DEBUG: false,
           RATE_LIMIT_PREFIX: "test",
+          PYSERVER_MAX_CONCURRENCY: 5,
         },
       };
       // Mock logger for RequestWithLogger interface

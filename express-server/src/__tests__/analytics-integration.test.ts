@@ -59,6 +59,7 @@ describe("Analytics Integration with Common Package", () => {
     ANALYTICS_DEBUG: false,
     FIREBASE_ADMIN_PROJECT_ID: undefined,
     RATE_LIMIT_PREFIX: "test",
+    PYSERVER_MAX_CONCURRENCY: 5,
     ...overrides,
   });
 

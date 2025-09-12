@@ -54,6 +54,7 @@ const createMockEnv = (
   ANALYTICS_DEBUG: false,
   FIREBASE_ADMIN_PROJECT_ID: undefined,
   RATE_LIMIT_PREFIX: "test",
+  PYSERVER_MAX_CONCURRENCY: 5,
 });
 
 // Mock validateEnv to return a valid test environment
