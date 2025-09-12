@@ -1,5 +1,4 @@
 import retry from "async-retry";
-import { Client } from "undici";
 import { logger } from "tttc-common/logger";
 
 const retryLogger = logger.child({ module: "retry-config" });
@@ -30,101 +29,9 @@ export const TEST_RETRY_OPTIONS = {
 };
 
 /**
- * HTTP client timeout configuration
+ * Operation timeout configuration for retry logic
  */
-export const HTTP_TIMEOUTS = {
-  // 2 minutes per request - LLM processing can take time
-  REQUEST_TIMEOUT: 120000,
-  HEADERS_TIMEOUT: 120000,
-  BODY_TIMEOUT: 120000,
-  KEEP_ALIVE_TIMEOUT: 30000,
-  // Total operation timeout to prevent indefinite hangs (8 minutes with retries)
-  OPERATION_TIMEOUT: 480000,
-} as const;
-
-/**
- * Shared HTTP client pool to avoid creating new connections on each retry
- */
-const clientPool = new Map<string, Client>();
-
-/**
- * Gets or creates a shared HTTP client for the given base URL
- */
-export function getHttpClient(baseUrl: string): Client {
-  if (!clientPool.has(baseUrl)) {
-    retryLogger.info(
-      {
-        baseUrl,
-        headersTimeout: HTTP_TIMEOUTS.HEADERS_TIMEOUT,
-      },
-      "Creating new HTTP client",
-    );
-    const client = new Client(baseUrl, {
-      headersTimeout: HTTP_TIMEOUTS.HEADERS_TIMEOUT,
-      bodyTimeout: HTTP_TIMEOUTS.BODY_TIMEOUT,
-      keepAliveTimeout: HTTP_TIMEOUTS.KEEP_ALIVE_TIMEOUT,
-      // Enable connection pooling with pipelining
-      pipelining: 1,
-    });
-    clientPool.set(baseUrl, client);
-  }
-  return clientPool.get(baseUrl)!;
-}
-
-/**
- * Cleanup function to close all HTTP clients
- * Should be called during application shutdown
- */
-export async function closeAllClients(): Promise<void> {
-  const closePromises = Array.from(clientPool.values()).map((client) =>
-    client.close(),
-  );
-  await Promise.all(closePromises);
-  clientPool.clear();
-}
-
-/**
- * Refresh client pool to pick up new timeout configurations
- * Useful when timeout settings change
- */
-export async function refreshClientPool(): Promise<void> {
-  retryLogger.info(
-    "Refreshing client pool to pick up new timeout configurations",
-  );
-  await closeAllClients();
-}
-
-/**
- * Force refresh a specific client to pick up new timeout configurations
- */
-export async function refreshClient(baseUrl: string): Promise<void> {
-  const client = clientPool.get(baseUrl);
-  if (client) {
-    retryLogger.info({ baseUrl }, "Refreshing client");
-    await client.close();
-    clientPool.delete(baseUrl);
-  }
-}
-
-/**
- * Setup process cleanup handlers to prevent resource leaks
- */
-function setupCleanupHandlers() {
-  const cleanup = async () => {
-    try {
-      await closeAllClients();
-    } catch (error) {
-      retryLogger.error({ error }, "Error during cleanup");
-    }
-  };
-
-  process.on("SIGTERM", cleanup);
-  process.on("SIGINT", cleanup);
-  process.on("beforeExit", cleanup);
-}
-
-// Initialize cleanup handlers
-setupCleanupHandlers();
+export const OPERATION_TIMEOUT = 600000; // 10 minutes
 
 /**
  * Creates a retry logger with context
@@ -148,7 +55,7 @@ export function createRetryLogger(operation: string) {
  */
 export function withOperationTimeout<T>(
   operation: Promise<T>,
-  timeoutMs: number = HTTP_TIMEOUTS.OPERATION_TIMEOUT,
+  timeoutMs: number = OPERATION_TIMEOUT,
   operationName: string = "Operation",
 ): Promise<T> {
   return Promise.race([
@@ -212,7 +119,7 @@ export async function withRetry<T>(
           options.retries > 0 ? createRetryLogger(operationName) : undefined,
       },
     ),
-    HTTP_TIMEOUTS.OPERATION_TIMEOUT,
+    OPERATION_TIMEOUT, // Use consistent timeout for all operations
     operationName,
   );
 }

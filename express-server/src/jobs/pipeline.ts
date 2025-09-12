@@ -18,6 +18,7 @@ import { randomUUID } from "crypto";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 import * as Firebase from "../Firebase";
 import * as api from "tttc-common/api";
+import { getAnalytics } from "tttc-common/analytics";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
 
@@ -75,15 +76,83 @@ type PipelineErrors =
 export async function pipelineJob(job: Job<PipelineJob>) {
   const jobdata = job.data;
   const { data, config, reportDetails } = jobdata;
-  const { auth, env } = config;
+  const { env } = config;
   const { title, description, question, filename } = reportDetails;
+
+  // Get analytics client
+  const analytics = getAnalytics();
+
+  // Calculate data size once for all analytics (simple and accurate)
+  // TODO: Consider performance optimization for very large datasets (10k+ rows)
+  // JSON.stringify can block main thread for 100-500ms on large reports
+  const numRows = data.length;
+  const actualDataSize = JSON.stringify(data).length;
+
+  pipelineLogger.info(
+    {
+      jobId: job.id,
+      reportId: config.firebaseDetails?.reportId,
+      actualDataSize,
+      numRows,
+      filename,
+    },
+    "Pipeline job started",
+  );
+
+  // Collect analytics data - will be sent in batch at end to avoid blocking
+  const analyticsData: Record<string, any> = {
+    userId: config.firebaseDetails.userId,
+    job_id: job.id,
+    report_id: config.firebaseDetails?.reportId,
+    actual_data_size_bytes: actualDataSize,
+    num_rows: numRows,
+    model: config.llm.model,
+    has_cruxes: config.options.cruxes,
+    started_at: Date.now(),
+  };
+
   // Create our storage object for storing the pipeline's output json
   const storage = createStorage(env);
 
   // Do each of the steps in the pipeline
   // This returns the results of each of the steps.
+  pipelineLogger.info({ jobId: job.id }, "Starting pipeline steps");
+  const pipelineStart = Date.now();
   const { topicTreeStep, claimsStep, sortedStep, addonsStep } =
     await doPipelineSteps(job);
+  const pipelineEnd = Date.now();
+  const pipelineDuration = pipelineEnd - pipelineStart;
+  const processingRate = Math.round((numRows / pipelineDuration) * 1000);
+  const dataEfficiency = Math.round(actualDataSize / numRows);
+
+  pipelineLogger.info(
+    {
+      jobId: job.id,
+      duration: pipelineDuration,
+      stepsCompleted: {
+        topicTree: topicTreeStep.tag === "success",
+        claims: claimsStep.tag === "success",
+        sorted: sortedStep.tag === "success",
+        addons: addonsStep.tag === "success",
+      },
+      analytics: {
+        processingRateRowsPerSecond: processingRate,
+        dataEfficiency: dataEfficiency, // bytes per row
+      },
+    },
+    "Pipeline steps completed",
+  );
+
+  // Add pipeline performance data to analytics batch
+  analyticsData.pipeline_duration_ms = pipelineDuration;
+  analyticsData.processing_rate_rows_per_sec = processingRate;
+  analyticsData.data_efficiency_bytes_per_row = dataEfficiency;
+  analyticsData.steps_success = {
+    topic_tree: topicTreeStep.tag === "success",
+    claims: claimsStep.tag === "success",
+    sorted: sortedStep.tag === "success",
+    addons: addonsStep.tag === "success",
+  };
 
   // Summarizes all of the Usage objects into a single tracker object.
   // As of right now, it will skip over the failed steps and summarize only the success
@@ -175,16 +244,72 @@ export async function pipelineJob(job: Job<PipelineJob>) {
   if (finalResult.tag === "success") {
     // add the json data to storage
     const resultValue = finalResult.value;
+    const resultValueJson = JSON.stringify(resultValue); // Calculate once
+    const reportJsonSize = resultValueJson.length;
+    pipelineLogger.info(
+      {
+        jobId: job.id,
+        reportJsonSize,
+        filename,
+      },
+      "Saving final report to storage",
+    );
+
     const saveResult = await storage.save(
       filename,
-      JSON.stringify(resultValue),
+      resultValueJson, // Reuse the already stringified JSON
     );
 
     if (saveResult.tag === "failure") {
+      pipelineLogger.error(
+        {
+          jobId: job.id,
+          error: saveResult.error,
+          filename,
+          reportJsonSize,
+        },
+        "Failed to save final report",
+      );
       throw new Error(
         `Failed to save final report: ${saveResult.error.message}`,
       );
     }
+
+    const outputExpansionFactor =
+      Math.round((reportJsonSize / actualDataSize) * 100) / 100;
+    const sizeEfficiencyBytesPerRow = Math.round(reportJsonSize / numRows);
+
+    pipelineLogger.info(
+      {
+        jobId: job.id,
+        savedUrl: saveResult.value,
+        reportJsonSize,
+        analytics: {
+          outputExpansionFactor,
+          sizeEfficiencyBytesPerRow,
+        },
+      },
+      "Final report saved successfully",
+    );
+
+    // Add completion data to analytics batch and send once
+    analyticsData.status = "completed";
+    analyticsData.total_duration_ms = Date.now() - analyticsData.started_at;
+    analyticsData.output_size_bytes = reportJsonSize;
+    analyticsData.output_expansion_factor = outputExpansionFactor;
+    analyticsData.size_efficiency_bytes_per_row = sizeEfficiencyBytesPerRow;
+    analyticsData.total_prompt_tokens = finalTracker.prompt_tokens;
+    analyticsData.total_completion_tokens = finalTracker.completion_tokens;
+    analyticsData.total_tokens = finalTracker.total_tokens;
+    analyticsData.total_cost = finalTracker.costs;
+
+    // Send consolidated analytics in single deferred call
+    setImmediate(() => {
+      analytics?.track({
+        name: "report_completed",
+        properties: analyticsData,
+      });
+    });
 
     // Add the job ref to Firebase using stable report ID
     const resultData = resultValue.data;
@@ -227,6 +352,22 @@ export async function pipelineJob(job: Job<PipelineJob>) {
       },
       "Pipeline error occurred",
     );
+
+    // Add failure data to analytics batch and send once
+    analyticsData.status = "failed";
+    analyticsData.error_name = err.name;
+    analyticsData.error_message = err.message;
+    analyticsData.failed_at_stage = "final_processing";
+    analyticsData.total_duration_ms = Date.now() - analyticsData.started_at;
+
+    // Send consolidated failure analytics in single deferred call
+    setImmediate(() => {
+      analytics?.track({
+        name: "report_failed",
+        properties: analyticsData,
+      });
+    });
+
     // We can handle specific errors here if we want.
     throw err;
   }
@@ -246,16 +387,46 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   > = makePipelineComments(data);
 
   // Update job progress
-  pipelineLogger.info("Step 1: generating taxonomy of topics and subtopics");
+  pipelineLogger.info(
+    {
+      jobId: job.id,
+      numComments:
+        pipelineComments.tag === "success" ? pipelineComments.value.length : 0,
+    },
+    "Step 1: generating taxonomy of topics and subtopics",
+  );
   await job.updateProgress({
     status: api.reportJobStatus.Values.clustering,
   });
 
   // do topic tree step
+  const stepStart = Date.now();
   const topicTreeStep: PyserverResult<
     ClaimStepProps,
     PipelineErrors | MissingInterviewAttributionsError
   > = await flatMapResultAsync(pipelineComments, doTopicTreeStep);
+
+  if (topicTreeStep.tag === "failure") {
+    pipelineLogger.error(
+      {
+        jobId: job.id,
+        error: topicTreeStep.error,
+        errorName: topicTreeStep.error.name,
+        errorMessage: topicTreeStep.error.message,
+        duration: Date.now() - stepStart,
+      },
+      "Topic tree step failed",
+    );
+  } else {
+    pipelineLogger.info(
+      {
+        jobId: job.id,
+        duration: Date.now() - stepStart,
+        numTopics: topicTreeStep.value.data.tree.taxonomy.length,
+      },
+      "Topic tree step completed successfully",
+    );
+  }
 
   // update job progress
   pipelineLogger.info(

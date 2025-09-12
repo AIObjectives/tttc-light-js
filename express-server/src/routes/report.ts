@@ -475,22 +475,28 @@ export async function getUnifiedReportHandler(
   try {
     const analytics = getAnalytics();
     if (analytics) {
-      await analytics.track({
-        name: "report_url_accessed",
-        properties: {
-          url_type: urlType,
-          is_firebase_id: isFirebaseId,
-          identifier_length: identifier.length,
-          // Use privacy-safe hash instead of truncated identifier
-          identifier_hash: createIdentifierHash(identifier),
-          timestamp: Date.now(),
-        },
-        // Remove user context to prevent correlation with identifier patterns
-      });
+      // Don't await analytics to avoid blocking the response
+      analytics
+        .track({
+          name: "report_url_accessed",
+          properties: {
+            url_type: urlType,
+            is_firebase_id: isFirebaseId,
+            identifier_length: identifier.length,
+            // Use privacy-safe hash instead of truncated identifier
+            identifier_hash: createIdentifierHash(identifier),
+            timestamp: Date.now(),
+          },
+          // Remove user context to prevent correlation with identifier patterns
+        })
+        .catch((error) => {
+          // Analytics failures shouldn't break the request, but we want to know about them
+          reportLogger.warn({ error }, "Analytics tracking failed");
+        });
     }
   } catch (error) {
-    // Analytics failures shouldn't break the request
-    reportLogger.debug({ error }, "Analytics tracking failed");
+    // Analytics failures shouldn't break the request, but we want to know about them
+    reportLogger.warn({ error }, "Analytics tracking failed");
   }
 
   if (isFirebaseId) {

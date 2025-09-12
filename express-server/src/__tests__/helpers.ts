@@ -22,5 +22,6 @@ export function createMinimalTestEnv() {
     ANALYTICS_PROVIDER: "local" as const,
     ANALYTICS_ENABLED: "false",
     RATE_LIMIT_PREFIX: "test",
+    PYSERVER_MAX_CONCURRENCY: "5",
   };
 }
