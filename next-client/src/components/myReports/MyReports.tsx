@@ -7,7 +7,7 @@ import { ReportRef } from "tttc-common/firebase";
 import Link from "next/link";
 
 const reportLink = (id: string) =>
-  location.protocol + "//" + location.host + `/report/id/${id}`;
+  location.protocol + "//" + location.host + `/report/${id}`;
 
 interface MyReportsProps {
   reports: ReportRef[];
