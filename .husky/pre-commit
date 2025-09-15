@@ -1,21 +1,103 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Function to check if Docker is installed
+check_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "🐳 Docker not found. Installing Docker..."
+    install_docker
+  else
+    echo "🐳 Docker is already installed"
+  fi
+}
+
+# Function to install Docker
+install_docker() {
+  if command -v apt >/dev/null 2>&1; then
+    # Ubuntu/Debian
+    echo "📦 Installing Docker via apt..."
+    sudo apt update
+    sudo apt install -y docker.io
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker $USER
+  elif command -v yum >/dev/null 2>&1; then
+    # RHEL/CentOS/Fedora
+    echo "📦 Installing Docker via yum..."
+    sudo yum install -y docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker $USER
+  elif command -v dnf >/dev/null 2>&1; then
+    # Modern Fedora
+    echo "📦 Installing Docker via dnf..."
+    sudo dnf install -y docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker $USER
+  else
+    echo "❌ Unable to install Docker automatically. Please install Docker manually."
+    echo "Visit: https://docs.docker.com/get-docker/"
+    exit 1
+  fi
+
+  # Verify installation
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "❌ Docker installation failed"
+    exit 1
+  fi
+
+  echo "✅ Docker installed successfully"
+  echo "⚠️  You may need to log out and back in for Docker permissions to take effect"
+}
+
+# Function to run Gitleaks scan
+run_gitleaks() {
+  echo "🔐 Running Gitleaks secret scan..."
+
+  # Pull the latest Gitleaks image
+  echo "📥 Pulling Gitleaks Docker image..."
+  if ! docker pull ghcr.io/gitleaks/gitleaks:latest; then
+    echo "❌ Failed to pull Gitleaks image"
+    exit 1
+  fi
+
+  # Get the absolute path of the repository
+  REPO_PATH=$(pwd)
+
+  # Run Gitleaks on staged files
+  echo "🔍 Scanning for secrets in staged files..."
+  if ! docker run --rm -v "$REPO_PATH:/path" ghcr.io/gitleaks/gitleaks:latest git --pre-commit --staged --verbose /path; then
+    echo "❌ Secrets detected! Commit blocked."
+    echo "Please remove the secrets and try again."
+    exit 1
+  fi
+
+  echo "✅ No secrets detected"
+}
+
+# Check Docker installation
+check_docker
+
 # Get all staged files that are JavaScript, TypeScript, JSX, TSX, CSS, SCSS, HTML, JSON, or MD
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(js|jsx|ts|tsx|css|scss|html|json|md)$" || true)
 
-# Exit if there are no relevant files
-if [ -z "$STAGED_FILES" ]; then
-  echo "👍 No files to format. Proceeding with commit..."
-  exit 0
+# Run Prettier if there are relevant files
+if [ -n "$STAGED_FILES" ]; then
+  echo "🔍 Running Prettier on staged files..."
+
+  # Format all staged files and re-add them to staging
+  echo "$STAGED_FILES" | xargs npx prettier --write || true
+
+  # Add the formatted files back to staging
+  echo "$STAGED_FILES" | xargs git add
+
+  echo "✅ Prettier formatting complete!"
+else
+  echo "👍 No files to format"
 fi
 
-echo "🔍 Running Prettier on staged files..."
+# Run Gitleaks scan on all staged files
+run_gitleaks
 
-# Format all staged files and re-add them to staging
-echo "$STAGED_FILES" | xargs npx prettier --write || true
-
-# Add the formatted files back to staging
-echo "$STAGED_FILES" | xargs git add
-
-echo "✅ Prettier formatting complete!"
+echo "🎉 All checks passed! Proceeding with commit..."

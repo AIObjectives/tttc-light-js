@@ -6,7 +6,8 @@
     "format": "npx prettier . --write",
     "dev": "node dev.js",
     "build": "node build.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "scan": "npx gitleaks detect --all"
   },
   "author": "Bruno Marnette",
   "license": "MIT",
@@ -14,6 +15,7 @@
     "node": ">=24"
   },
   "devDependencies": {
+    "@ziul285/gitleaks": "^1.0.0",
     "husky": "^9.0.11",
     "prettier": "3.2.5",
     "typescript": "^5.3.3"
