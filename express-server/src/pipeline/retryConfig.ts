@@ -34,12 +34,12 @@ export const TEST_RETRY_OPTIONS = {
  */
 export const HTTP_TIMEOUTS = {
   // 2 minutes per request - LLM processing can take time
-  REQUEST_TIMEOUT: 120000,
-  HEADERS_TIMEOUT: 120000,
-  BODY_TIMEOUT: 120000,
-  KEEP_ALIVE_TIMEOUT: 30000,
+  REQUEST_TIMEOUT: 12000000,
+  HEADERS_TIMEOUT: 12000000,
+  BODY_TIMEOUT: 12000000,
+  KEEP_ALIVE_TIMEOUT: 3000000,
   // Total operation timeout to prevent indefinite hangs (8 minutes with retries)
-  OPERATION_TIMEOUT: 480000,
+  OPERATION_TIMEOUT: 48000000,
 } as const;
 
 /**
