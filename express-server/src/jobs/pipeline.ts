@@ -22,6 +22,33 @@ import { getAnalytics } from "tttc-common/analytics";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
 
+/**
+ * Pipeline-specific status update that doesn't fail the pipeline on status update failures
+ * Uses Firebase retry logic but logs and continues on final failure
+ */
+async function updatePipelineStatus(
+  reportId: string,
+  status: string,
+  subState?: string,
+): Promise<void> {
+  try {
+    // Validate status and convert to proper type
+    const validatedStatus = Firebase.validateStatusValue(status);
+    const options = subState ? { subState } : undefined;
+    await Firebase.updateReportRefStatusWithRetry(
+      reportId,
+      validatedStatus,
+      options,
+    );
+  } catch (error) {
+    // Log error but don't fail pipeline - status updates are non-critical for pipeline execution
+    pipelineLogger.error(
+      { reportId, status, subState, error },
+      "Status update failed after all retries - continuing pipeline",
+    );
+  }
+}
+
 type FirebaseDetails = {
   reportDataUri: string;
   userId: string;
@@ -337,6 +364,10 @@ export async function pipelineJob(job: Job<PipelineJob>) {
         createdDate: new Date(date),
       },
     );
+
+    // Set ReportRef status to completed
+    await updatePipelineStatus(reportId, "completed");
+
     pipelineLogger.info("Finished report");
     await job.updateProgress({
       status: api.reportJobStatus.Values.finished,
@@ -398,6 +429,10 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   await job.updateProgress({
     status: api.reportJobStatus.Values.clustering,
   });
+  // Update reportRef to keep status in sync with correct sub-state
+  const reportIdForStatus =
+    config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId;
+  await updatePipelineStatus(reportIdForStatus, "processing", "clustering");
 
   // do topic tree step
   const stepStart = Date.now();
@@ -435,6 +470,12 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   await job.updateProgress({
     status: api.reportJobStatus.Values.extraction,
   });
+  // Update reportRef to keep status in sync with correct sub-state
+  await updatePipelineStatus(
+    config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
+    "processing",
+    "extraction",
+  );
 
   // do claims step
   const claimsStep: PyserverResult<
@@ -447,6 +488,12 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   await job.updateProgress({
     status: api.reportJobStatus.Values.sorting,
   });
+  // Update reportRef to keep status in sync with correct sub-state
+  await updatePipelineStatus(
+    config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
+    "processing",
+    "sorting",
+  );
 
   // do sort step
   const sortedStep: PyserverResult<
@@ -486,6 +533,12 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   await job.updateProgress({
     status: api.reportJobStatus.Values.wrappingup,
   });
+  // Update reportRef to keep status in sync with correct sub-state
+  await updatePipelineStatus(
+    config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
+    "processing",
+    "wrappingup",
+  );
 
   return { topicTreeStep, claimsStep, sortedStep, addonsStep };
 }

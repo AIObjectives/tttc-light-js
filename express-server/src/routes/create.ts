@@ -16,6 +16,7 @@ import { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities, DEFAULT_LIMITS } from "tttc-common/permissions";
 import { isFeatureEnabled } from "../featureFlags";
+const REPORT_PLACEHOLDER_MESSAGE = "Your data is being generated";
 
 const createLogger = logger.child({ module: "create" });
 
@@ -154,7 +155,7 @@ const createAndSaveReport = async (
 
   const saveResult = await storage.save(
     filename,
-    JSON.stringify({ message: "Your data is being generated" }),
+    JSON.stringify({ message: REPORT_PLACEHOLDER_MESSAGE }),
   );
 
   if (saveResult.tag === "failure") {
@@ -197,7 +198,6 @@ const handleUserAuthenticationAndCreateDocuments = async (
         title: userConfig.title,
         description: userConfig.description,
         reportDataUri: jsonUrl, // Use actual URL from storage
-        status: "pending",
         createdAt: new Date(),
       },
       {

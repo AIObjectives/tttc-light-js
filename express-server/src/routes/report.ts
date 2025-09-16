@@ -1,14 +1,14 @@
 import { Response } from "express";
 import { RequestWithLogger } from "../types/request";
 import * as api from "tttc-common/api";
-import { pipelineQueue } from "../server";
 import { Bucket } from "../storage";
 import { sendError } from "./sendError";
 import { Result } from "tttc-common/functional-utils";
 import {
   findReportRefByUri,
   getReportRefById,
-  getReportVersion,
+  db,
+  getCollectionName,
 } from "../Firebase";
 import { logger } from "tttc-common/logger";
 import { FIRESTORE_ID_REGEX } from "tttc-common/utils";
@@ -58,6 +58,23 @@ function hasAuthoritativeStatus(
   lastStatusUpdate?: Date;
 } {
   return typeof reportRef.status === "string";
+}
+
+/**
+ * Detects if a report is completed based on metadata indicators
+ * Uses fast heuristics first, avoids expensive file reads when possible
+ */
+function isReportCompletedByMetadata(reportRef: ReportRef): boolean {
+  // Fast metadata checks only - no file I/O
+  return !!(
+    reportRef.reportDataUri &&
+    reportRef.reportDataUri.trim() !== "" &&
+    reportRef.reportDataUri.startsWith("https://storage.googleapis.com/") &&
+    typeof reportRef.numTopics === "number" &&
+    typeof reportRef.numClaims === "number" &&
+    reportRef.numTopics > 0 &&
+    reportRef.numClaims > 0
+  );
 }
 
 /**
@@ -173,39 +190,100 @@ async function validateReportFileContent(
 }
 
 /**
- * Fallback to job status when file validation fails
+ * Gets the status from a REPORT_JOB document (legacy fallback)
  */
-async function fallbackToJobStatus(
-  reportRef: ReportRef,
-  reportId: string,
-  reason: string,
-): Promise<api.ReportJobStatus> {
-  const jobLookupId = getJobLookupId(reportRef, reportId);
-  const status = await getResolvedJobStatus(jobLookupId);
-  reportLogger.debug(
-    { reportId, jobLookupId, status, reason },
-    "Legacy: Fallback to job status",
-  );
-  return status;
+async function getReportJobStatus(jobId: string): Promise<string | null> {
+  try {
+    const doc = await db
+      .collection(getCollectionName("REPORT_JOB"))
+      .doc(jobId)
+      .get();
+    if (!doc.exists) {
+      return null;
+    }
+    const data = doc.data();
+    return data?.status || null;
+  } catch (error) {
+    reportLogger.debug({ jobId, error }, "Failed to get REPORT_JOB status");
+    return null;
+  }
 }
 
 /**
- * Legacy status determination logic - use for reports without authoritative status
- * This encapsulates the old brittle logic for backward compatibility
+ * Maps legacy REPORT_JOB status to API status values
  */
-async function getLegacyStatus(
+function mapJobStatusToApiStatus(jobStatus: string): api.ReportJobStatus {
+  switch (jobStatus) {
+    case "pending":
+      return api.reportJobStatus.Values.queued;
+    case "finished":
+      return api.reportJobStatus.Values.finished;
+    case "failed":
+      return api.reportJobStatus.Values.failed;
+    default:
+      reportLogger.debug(
+        { jobStatus },
+        "Unknown REPORT_JOB status, defaulting to failed",
+      );
+      return api.reportJobStatus.Values.failed;
+  }
+}
+
+/**
+ * Determines status for legacy reports that don't have authoritative status in REPORT_REF
+ * Uses efficient fallback chain: REPORT_JOB status -> file checks -> failed
+ */
+async function determineLegacyStatus(
   reportRef: ReportRef,
   reportId: string,
   req: RequestWithLogger,
 ): Promise<api.ReportJobStatus> {
-  // No data URI means report is not complete
+  reportLogger.debug(
+    { reportId },
+    "Legacy: Determining status for report without authoritative status",
+  );
+
+  // FAST PATH: Check REPORT_JOB status first (most legacy reports will have this)
+  if (reportRef.jobId) {
+    try {
+      const jobStatus = await getReportJobStatus(reportRef.jobId);
+      if (jobStatus) {
+        reportLogger.debug(
+          { reportId, jobId: reportRef.jobId, jobStatus },
+          "Legacy: Found REPORT_JOB status, using as authoritative",
+        );
+        return mapJobStatusToApiStatus(jobStatus);
+      }
+    } catch (error) {
+      reportLogger.debug(
+        { reportId, jobId: reportRef.jobId, error },
+        "Legacy: Could not get REPORT_JOB status, falling back to file check",
+      );
+    }
+  }
+
+  // SLOW PATH: Fall back to file-based checking only if no job status
+  reportLogger.debug(
+    { reportId },
+    "Legacy: No REPORT_JOB status found, checking file existence",
+  );
+
+  // No data URI means report processing never completed
   if (!reportRef.reportDataUri || reportRef.reportDataUri.trim() === "") {
-    return fallbackToJobStatus(reportRef, reportId, "No reportDataUri");
+    reportLogger.debug(
+      { reportId },
+      "Legacy: No reportDataUri found - report likely failed or never completed",
+    );
+    return api.reportJobStatus.Values.failed;
   }
 
   // Validate URI format
   if (!reportRef.reportDataUri.startsWith("https://storage.googleapis.com/")) {
-    return fallbackToJobStatus(reportRef, reportId, "Invalid URI format");
+    reportLogger.warn(
+      { reportId, invalidUri: reportRef.reportDataUri },
+      "Legacy: Invalid URI format",
+    );
+    return api.reportJobStatus.Values.failed;
   }
 
   // Parse URI
@@ -215,7 +293,7 @@ async function getLegacyStatus(
       { reportId, invalidUri: reportRef.reportDataUri },
       "Legacy: Could not parse GCS URI",
     );
-    return fallbackToJobStatus(reportRef, reportId, "URI parse failed");
+    return api.reportJobStatus.Values.failed;
   }
 
   // Validate bucket is allowed
@@ -226,18 +304,15 @@ async function getLegacyStatus(
         reportId,
         bucket: parsed.bucket,
         allowedBuckets: allowedBuckets.join(","),
+        reportDataUri: reportRef.reportDataUri,
       },
       "Legacy: Bucket not in allowed list",
     );
-    return fallbackToJobStatus(
-      reportRef,
-      reportId,
-      "Unauthorized bucket access",
-    );
+    return api.reportJobStatus.Values.failed;
   }
 
-  // Check file existence and content
   try {
+    // Check if file exists in storage
     const storage = new Bucket(
       req.context.env.GOOGLE_CREDENTIALS_ENCODED,
       parsed.bucket,
@@ -245,82 +320,39 @@ async function getLegacyStatus(
     const fileExists = await storage.fileExists(parsed.fileName);
 
     if (!fileExists) {
-      reportLogger.warn(
-        { reportId, fileName: parsed.fileName, bucket: parsed.bucket },
-        "Legacy: Report has URI but file doesn't exist",
+      reportLogger.debug(
+        { reportId },
+        "Legacy: File does not exist - report likely failed",
       );
-      return fallbackToJobStatus(reportRef, reportId, "File does not exist");
+      return api.reportJobStatus.Values.failed;
     }
 
-    // File exists - validate content
-    const hasValidContent = await validateReportFileContent(
+    // File exists - validate contents to ensure it's a real report
+    const isValid = await validateReportFileContent(
       storage,
       parsed.fileName,
       reportId,
     );
-    if (hasValidContent) {
-      return api.reportJobStatus.Values.finished;
-    } else {
-      return fallbackToJobStatus(
-        reportRef,
-        reportId,
-        "File contains invalid data",
+    if (!isValid) {
+      reportLogger.debug(
+        { reportId },
+        "Legacy: File exists but contains invalid content",
       );
+      return api.reportJobStatus.Values.failed;
     }
+
+    // File exists and has valid content - report is finished
+    reportLogger.debug(
+      { reportId },
+      "Legacy: Valid report file found - status is finished",
+    );
+    return api.reportJobStatus.Values.finished;
   } catch (error) {
     reportLogger.error(
-      { reportId, error },
+      { reportId, error, parsed },
       "Legacy: Error checking file existence",
     );
-    return fallbackToJobStatus(reportRef, reportId, "Storage error");
-  }
-}
-
-/**
- * Gets job lookup ID for status checking
- */
-function getJobLookupId(reportRef: ReportRef, reportId: string): string {
-  if (getReportVersion(reportRef) === "legacy") {
-    const filename = reportRef.reportDataUri
-      .split("/")
-      .pop()
-      ?.replace(".json", "");
-    if (!filename) {
-      throw new Error("Invalid report data URI");
-    }
-    return filename;
-  } else {
-    return reportRef.jobId || reportId;
-  }
-}
-
-/**
- * Resolves job status with simplified error handling
- */
-async function getResolvedJobStatus(
-  jobLookupId: string,
-): Promise<api.ReportJobStatus> {
-  const jobState = await pipelineQueue.getJobState(jobLookupId);
-
-  // Simple status mapping
-  switch (jobState) {
-    case "unknown":
-      return api.reportJobStatus.Values["notFound"];
-    case "completed":
-      return api.reportJobStatus.Values.finished;
-    case "failed":
-      return api.reportJobStatus.Values.failed;
-    case "waiting":
-      return api.reportJobStatus.Values.queued;
-    default:
-      // For "active" or other states, get from job progress
-      try {
-        const job = await pipelineQueue.getJob(jobLookupId);
-        const progress = await job.progress;
-        return progress.status || api.reportJobStatus.Values.clustering;
-      } catch {
-        return api.reportJobStatus.Values.clustering; // Default fallback
-      }
+    return api.reportJobStatus.Values.failed;
   }
 }
 
@@ -530,7 +562,7 @@ async function handleIdBasedReport(
       "Determining report status",
     );
 
-    // Use authoritative status if available (new reports)
+    // Use authoritative status from ReportRef (single source of truth)
     if (hasAuthoritativeStatus(reportRef)) {
       reportLogger.debug(
         { reportId, authoritativeStatus: reportRef.status },
@@ -542,23 +574,34 @@ async function handleIdBasedReport(
         reportId,
       );
 
-      // If mapping succeeded, use it; otherwise fall back to legacy logic
-      if (mappedStatus) {
-        status = mappedStatus;
-      } else {
-        reportLogger.warn(
-          { reportId, unknownStatus: reportRef.status },
-          "Unknown authoritative status, falling back to legacy logic",
-        );
-        status = await getLegacyStatus(reportRef, reportId, req);
-      }
+      status = mappedStatus || api.reportJobStatus.Values.failed; // Default to failed if mapping fails
     } else {
-      // Legacy reports without authoritative status - use existing logic
-      reportLogger.debug(
+      reportLogger.info(
         { reportId },
-        "No authoritative status found, using legacy status determination",
+        "No authoritative status field - falling back to legacy report heuristics",
       );
-      status = await getLegacyStatus(reportRef, reportId, req);
+
+      // Check if report is completed based on metadata indicators
+      const isCompleted = isReportCompletedByMetadata(reportRef);
+      if (isCompleted) {
+        reportLogger.info(
+          {
+            reportId,
+            numTopics: reportRef.numTopics,
+            numClaims: reportRef.numClaims,
+            hasReportDataUri: !!reportRef.reportDataUri,
+          },
+          "Legacy heuristic: Report detected as completed with validated file content",
+        );
+        status = api.reportJobStatus.Values.finished;
+      } else {
+        // Legacy reports without authoritative status - determine from file existence
+        reportLogger.info(
+          { reportId },
+          "Legacy heuristic: Metadata incomplete or file invalid - checking file existence status",
+        );
+        status = await determineLegacyStatus(reportRef, reportId, req);
+      }
     }
 
     if (isReportDataReady(status, reportRef.reportDataUri)) {

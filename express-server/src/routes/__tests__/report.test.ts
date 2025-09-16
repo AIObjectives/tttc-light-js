@@ -164,6 +164,10 @@ const createTestReportRef = (
   numPeople: 3,
   createdDate: TEST_CONSTANTS.FIXED_DATE,
   jobId: TEST_CONSTANTS.JOB_ID,
+  // Include new status fields for consistent behavior
+  status: "completed",
+  lastStatusUpdate: TEST_CONSTANTS.FIXED_DATE,
+  processingSubState: null,
   ...overrides,
 });
 
@@ -221,7 +225,7 @@ describe("Report Routes", () => {
 
   describe("getUnifiedReportHandler", () => {
     it("should handle Firebase ID and return finished report", async () => {
-      const testReportRef = createTestReportRef();
+      const testReportRef = createTestReportRef({ status: "completed" });
       const mockStorage = createMockStorage();
 
       setupRequestParams({ identifier: testReportId }, mockReq);
@@ -271,6 +275,8 @@ describe("Report Routes", () => {
         numSubtopics: 0,
         numClaims: 0,
         numPeople: 0,
+        status: "processing",
+        processingSubState: "clustering",
       });
 
       mockReq.params = { identifier: testReportId };
@@ -306,7 +312,7 @@ describe("Report Routes", () => {
     });
 
     it("should handle storage errors gracefully", async () => {
-      const testReportRef = createTestReportRef();
+      const testReportRef = createTestReportRef({ status: "completed" });
       const mockStorage = createMockStorage("", true); // shouldFail = true
 
       mockReq.params = { identifier: testReportId };

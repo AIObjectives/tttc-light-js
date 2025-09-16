@@ -3,9 +3,7 @@ import { Env, validateEnv } from "./types/context";
 import {
   ReportJob,
   ReportRef,
-  JobStatus,
   useGetCollectionName,
-  JOB_STATUS,
   UserDocument,
   SCHEMA_VERSIONS,
 } from "tttc-common/firebase";
@@ -99,7 +97,6 @@ function prepareJobData(jobDetails: ReportJob): any {
   return {
     ...jobDetails,
     createdAt: createTimestamp(jobDetails.createdAt || new Date()),
-    status: jobDetails.status || JOB_STATUS.PENDING,
     schemaVersion: SCHEMA_VERSIONS.REPORT_JOB,
   };
 }
@@ -114,6 +111,8 @@ function prepareReportRefForCreation(
     id: reportId,
     createdDate: createTimestamp(reportRefData.createdDate),
     jobId: jobId,
+    status: "queued", // Set initial status
+    lastStatusUpdate: createTimestamp(new Date()),
     schemaVersion: SCHEMA_VERSIONS.REPORT_REF,
   };
 }
@@ -155,7 +154,6 @@ export async function addReportRef(
  * Adds a report job (processing report) and returns an id
  */
 export async function addReportJob({
-  status = JOB_STATUS.PENDING,
   createdAt = new Date(),
   ...jobDetails
 }: ReportJob) {
@@ -165,7 +163,6 @@ export async function addReportJob({
   await docRef.set({
     ...jobDetails,
     createdAt: admin.firestore.Timestamp.fromDate(createdAt),
-    status,
   });
 
   return docRef.id;
@@ -318,30 +315,6 @@ export async function updateReportRefWithStats(
 export class JobNotFoundError extends Error {}
 
 /**
- * Updates the status of a job doc. Returns void.
- */
-export async function updateReportJobStatus(jobId: string, status: JobStatus) {
-  try {
-    const docRef = db.collection(getCollectionName("REPORT_JOB")).doc(jobId);
-
-    await db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(docRef);
-      if (!doc.exists) {
-        throw new Error(`Report job ${jobId} not found`);
-      }
-      transaction.update(docRef, { status });
-    });
-  } catch (e) {
-    // preserve original error for better stack traces
-    if (e instanceof JobNotFoundError) {
-      throw e;
-    }
-    const message = e instanceof Error ? e.message : e?.toString();
-    throw new Error(`Failed to update job status: ${message}`);
-  }
-}
-
-/**
  * Updates the reportDataUri of a report job document
  */
 export async function updateReportJobDataUri(
@@ -386,6 +359,277 @@ export async function updateReportRefDataUri(
       "Failed to update reportDataUri for report ref",
     );
     throw error;
+  }
+}
+
+interface StatusUpdateOptions {
+  subState?: string;
+  errorMessage?: string;
+}
+
+// Valid status values and transition rules
+const VALID_STATUSES = [
+  "created",
+  "queued",
+  "processing",
+  "completed",
+  "failed",
+  "cancelled",
+] as const;
+type ValidReportStatus = (typeof VALID_STATUSES)[number];
+
+// Define valid status transitions to prevent invalid state changes
+const VALID_STATUS_TRANSITIONS: Record<string, ValidReportStatus[]> = {
+  created: ["queued", "failed"],
+  queued: ["processing", "failed", "cancelled"],
+  processing: ["completed", "failed", "cancelled"],
+  completed: [], // Terminal state
+  failed: ["queued"], // Allow retry
+  cancelled: [], // Terminal state
+};
+
+function isValidStatusTransition(
+  from: string | undefined,
+  to: string,
+): boolean {
+  // If no current status, allow any valid status
+  if (!from) return VALID_STATUSES.includes(to as ValidReportStatus);
+
+  // Allow same-status transitions (for updating substates)
+  if (from === to) return true;
+
+  // Check if transition is allowed
+  const allowedTransitions = VALID_STATUS_TRANSITIONS[from] || [];
+  return allowedTransitions.includes(to as ValidReportStatus);
+}
+
+export function validateStatusValue(status: string): ValidReportStatus {
+  if (!VALID_STATUSES.includes(status as ValidReportStatus)) {
+    throw new Error(
+      `Invalid status value: ${status}. Valid values: ${VALID_STATUSES.join(", ")}`,
+    );
+  }
+  return status as ValidReportStatus;
+}
+
+/**
+ * Normalizes the legacy string parameter into a proper options object
+ */
+function normalizeStatusUpdateOptions(
+  status: string,
+  optionsOrLegacyString: StatusUpdateOptions | string,
+): StatusUpdateOptions {
+  if (typeof optionsOrLegacyString === "string") {
+    return status === "processing"
+      ? { subState: optionsOrLegacyString }
+      : { errorMessage: optionsOrLegacyString };
+  }
+  return optionsOrLegacyString;
+}
+
+/**
+ * Builds the update data object for Firestore transaction
+ */
+function buildStatusUpdateData(
+  validatedStatus: ValidReportStatus,
+  options: StatusUpdateOptions,
+  currentStatus: string | undefined,
+): { [key: string]: any } {
+  const updateData: { [key: string]: any } = {
+    status: validatedStatus,
+    lastStatusUpdate: createTimestamp(new Date()),
+    processingSubState: options.subState || null,
+  };
+
+  // Add error message if provided
+  if (options.errorMessage) {
+    updateData.errorMessage = options.errorMessage;
+  }
+
+  // Clear error message when transitioning away from failed status
+  if (currentStatus === "failed" && validatedStatus !== "failed") {
+    updateData.errorMessage = "";
+  }
+
+  return updateData;
+}
+
+/**
+ * Logs successful status transition
+ */
+function logStatusTransition(
+  reportId: string,
+  validatedStatus: ValidReportStatus,
+  currentStatus: string | undefined,
+  processingSubState: string | null,
+): void {
+  firebaseLogger.info(
+    {
+      reportId,
+      status: validatedStatus,
+      previousStatus: currentStatus,
+      processingSubState,
+      transitionTime: new Date().toISOString(),
+    },
+    "Status transition completed successfully",
+  );
+}
+
+/**
+ * Updates the status of a report ref document with validation and transaction safety
+ *
+ * @param reportId - The Firebase document ID of the report
+ * @param status - The new status to set (must be a valid transition)
+ * @param optionsOrLegacyString - Either StatusUpdateOptions object or legacy string parameter
+ *
+ * @example
+ * // Basic status update
+ * await updateReportRefStatus("report123", "completed");
+ *
+ * // With sub-state for processing
+ * await updateReportRefStatus("report123", "processing", { subState: "clustering" });
+ *
+ * // With error message for failed status
+ * await updateReportRefStatus("report123", "failed", { errorMessage: "Processing error" });
+ *
+ * @throws {Error} If the report document is not found
+ * @throws {Error} If the status value is invalid
+ * @throws {Error} If the status transition is not allowed
+ */
+// Overloaded function signatures for backward compatibility
+export async function updateReportRefStatus(
+  reportId: string,
+  status: string,
+  errorMessageOrSubState?: string,
+): Promise<void>;
+export async function updateReportRefStatus(
+  reportId: string,
+  status: string,
+  options: StatusUpdateOptions,
+): Promise<void>;
+export async function updateReportRefStatus(
+  reportId: string,
+  status: string,
+  optionsOrLegacyString: StatusUpdateOptions | string = {},
+) {
+  try {
+    // Validate status value first
+    const validatedStatus = validateStatusValue(status);
+
+    // Handle both legacy string parameter and new options object
+    const options = normalizeStatusUpdateOptions(status, optionsOrLegacyString);
+
+    const docRef = db.collection(getCollectionName("REPORT_REF")).doc(reportId);
+
+    // Use transaction for safe status updates with validation
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      if (!doc.exists) {
+        throw new Error(`Report ref ${reportId} not found`);
+      }
+
+      const currentData = doc.data();
+      const currentStatus = currentData?.status;
+
+      // Validate status transition
+      if (!isValidStatusTransition(currentStatus, validatedStatus)) {
+        firebaseLogger.warn(
+          { reportId, currentStatus, attemptedStatus: validatedStatus },
+          "Invalid status transition attempted",
+        );
+        throw new Error(
+          `Invalid status transition: ${currentStatus} → ${validatedStatus}`,
+        );
+      }
+
+      // Build update data and apply transaction
+      const updateData = buildStatusUpdateData(
+        validatedStatus,
+        options,
+        currentStatus,
+      );
+      transaction.update(docRef, updateData);
+
+      // Log successful transition
+      logStatusTransition(
+        reportId,
+        validatedStatus,
+        currentStatus,
+        updateData.processingSubState,
+      );
+    });
+  } catch (error) {
+    firebaseLogger.error(
+      {
+        error,
+        reportId,
+        status,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      },
+      "Failed to update status for report ref",
+    );
+    throw error;
+  }
+}
+
+/**
+ * Wrapper for updateReportRefStatus with retry logic and standardized error handling
+ * Use this in critical contexts like workers and pipelines where status updates must succeed
+ *
+ * @param reportId - The Firebase document ID of the report
+ * @param status - The new status to set (must be a valid transition)
+ * @param options - Optional sub-state and error message parameters
+ * @param retries - Number of retry attempts (default: 2)
+ *
+ * @throws {Error} If all retry attempts fail after exponential backoff
+ * @throws {Error} If the report document is not found (propagated from updateReportRefStatus)
+ * @throws {Error} If the status value is invalid (propagated from updateReportRefStatus)
+ * @throws {Error} If the status transition is not allowed (propagated from updateReportRefStatus)
+ */
+export async function updateReportRefStatusWithRetry(
+  reportId: string,
+  status: ValidReportStatus,
+  options?: { subState?: string; errorMessage?: string },
+  retries = 2,
+): Promise<void> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      if (options?.errorMessage) {
+        await updateReportRefStatus(reportId, status, options.errorMessage);
+      } else if (options?.subState) {
+        await updateReportRefStatus(reportId, status, {
+          subState: options.subState,
+        });
+      } else {
+        await updateReportRefStatus(reportId, status);
+      }
+      return; // Success
+    } catch (error) {
+      firebaseLogger.warn(
+        {
+          error,
+          reportId,
+          status,
+          attempt: attempt + 1,
+          maxRetries: retries,
+          options,
+        },
+        `Status update attempt ${attempt + 1} failed`,
+      );
+
+      if (attempt === retries - 1) {
+        // Final attempt failed - log and throw
+        firebaseLogger.error(
+          { error, reportId, status, totalAttempts: retries, options },
+          "Status update failed after all retries",
+        );
+        throw error;
+      }
+
+      // Wait before retry with exponential backoff
+      const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
   }
 }
 
