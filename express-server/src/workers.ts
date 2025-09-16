@@ -16,22 +16,45 @@ const setupPipelineWorker = (connection: Redis, queueName: string) => {
   );
 
   pipeLineWorker.on("failed", async (job, e) => {
-    // Update Firestore reportJob to failed status
+    // Update REPORT_REF collection to failed status
     try {
       if (!job?.data.config.firebaseDetails) {
         throw new firebase.JobNotFoundError();
       }
-      await firebase.updateReportJobStatus(
-        job.data.config.firebaseDetails.firebaseJobId,
+
+      const { firebaseJobId, reportId } = job.data.config.firebaseDetails;
+      const errorMessage = e instanceof Error ? e.message : String(e);
+
+      // Update REPORT_REF collection only (REPORT_JOB no longer tracks status)
+      await firebase.updateReportRefStatusWithRetry(
+        reportId || firebaseJobId, // Use reportId if available, fallback to firebaseJobId
         "failed",
+        { errorMessage },
       );
-    } catch (e) {
+
+      workersLogger.info(
+        {
+          firebaseJobId,
+          reportId: reportId || firebaseJobId,
+          errorMessage,
+        },
+        "Updated REPORT_REF collection to failed status",
+      );
+    } catch (updateError) {
       // if job not found, don't throw a fit
-      if (e instanceof firebase.JobNotFoundError) {
+      if (updateError instanceof firebase.JobNotFoundError) {
         return;
-      } else if (e instanceof Error) {
+      } else if (updateError instanceof Error) {
+        workersLogger.error(
+          {
+            error: updateError,
+            originalJobError: e,
+            jobId: job?.id,
+          },
+          "Failed to update Firebase REPORT_REF to failed status",
+        );
         // TODO: do we want to throw an error here?
-        // throw new Error("Could not update Firestore reportJob to failed status: " + e.message)
+        // throw new Error("Could not update Firestore REPORT_REF to failed status: " + updateError.message)
       }
     }
     workersLogger.error(

@@ -22,7 +22,7 @@ export { reportStatus };
 // Processing sub-states for detailed progress tracking
 const processingSubState = z
   .enum(["clustering", "extraction", "sorting", "dedup", "wrappingup"])
-  .optional();
+  .nullish();
 
 // Schema for report references in Firestore
 const reportRefSchema = z.object({
@@ -85,11 +85,6 @@ type FirebaseTimestamp = z.infer<typeof firebaseTimestamp>;
 
 export const reportJob = z.object({
   userId: z.string(),
-  status: z.union([
-    z.literal("pending"),
-    z.literal("finished"),
-    z.literal("failed"),
-  ]),
   title: z.string(),
   description: z.string(),
   reportDataUri: z.string().url(),
@@ -105,8 +100,6 @@ export const reportJob = z.object({
 });
 
 export type ReportJob = z.infer<typeof reportJob>;
-
-export type JobStatus = ReportJob["status"];
 
 export const userDocument = z.object({
   firebaseUid: z.string(),
@@ -141,12 +134,6 @@ const COLLECTIONS = {
   REPORT_JOB: "reportJob",
   FEEDBACK: "feedback",
   USERS: "users",
-} as const;
-
-export const JOB_STATUS = {
-  PENDING: "pending",
-  FINISHED: "finished",
-  FAILED: "failed",
 } as const;
 
 /**

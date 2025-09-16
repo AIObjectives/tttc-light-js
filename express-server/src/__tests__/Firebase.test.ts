@@ -74,6 +74,7 @@ vi.mock("../Firebase", async () => {
     ...actual,
     findReportRefByUri: vi.fn(),
     getReportRefById: vi.fn(),
+    updateReportRefStatus: vi.fn(),
   };
 });
 
@@ -242,6 +243,84 @@ describe("Firebase Report Functions", () => {
       const result = await Firebase.getReportRefById(null);
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe("Firebase.updateReportRefStatus", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("should update status successfully with timestamp", async () => {
+      const reportId = "test-report-id";
+      const status = "completed";
+
+      vi.mocked(Firebase.updateReportRefStatus).mockResolvedValue();
+
+      await Firebase.updateReportRefStatus(reportId, status);
+
+      expect(Firebase.updateReportRefStatus).toHaveBeenCalledWith(
+        reportId,
+        status,
+      );
+    });
+
+    it("should include error message for failed status", async () => {
+      const reportId = "test-report-id";
+      const status = "failed";
+      const errorMessage = "Processing error occurred";
+
+      vi.mocked(Firebase.updateReportRefStatus).mockResolvedValue();
+
+      await Firebase.updateReportRefStatus(reportId, status, errorMessage);
+
+      expect(Firebase.updateReportRefStatus).toHaveBeenCalledWith(
+        reportId,
+        status,
+        errorMessage,
+      );
+    });
+
+    it("should handle document not found gracefully", async () => {
+      const reportId = "nonexistent-report";
+      const status = "failed";
+
+      vi.mocked(Firebase.updateReportRefStatus).mockRejectedValue(
+        new Error("Report ref nonexistent-report not found"),
+      );
+
+      await expect(
+        Firebase.updateReportRefStatus(reportId, status),
+      ).rejects.toThrow("Report ref nonexistent-report not found");
+    });
+
+    it("should handle empty status gracefully", async () => {
+      const reportId = "test-report-id";
+      const status = "";
+
+      vi.mocked(Firebase.updateReportRefStatus).mockResolvedValue();
+
+      await Firebase.updateReportRefStatus(reportId, status);
+
+      expect(Firebase.updateReportRefStatus).toHaveBeenCalledWith(
+        reportId,
+        status,
+      );
+    });
+
+    it("should handle different status values", async () => {
+      const reportId = "test-report-id";
+      const testStatuses = ["queued", "processing", "completed", "failed"];
+
+      vi.mocked(Firebase.updateReportRefStatus).mockResolvedValue();
+
+      for (const status of testStatuses) {
+        await Firebase.updateReportRefStatus(reportId, status);
+        expect(Firebase.updateReportRefStatus).toHaveBeenCalledWith(
+          reportId,
+          status,
+        );
+      }
     });
   });
 });
