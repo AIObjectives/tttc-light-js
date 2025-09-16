@@ -38,7 +38,15 @@ const setupPipelineWorker = (connection: Redis, queueName: string) => {
       {
         error: e,
         jobId: job?.id,
-        jobData: job?.data,
+        // Only log minimal, non-sensitive debugging info
+        debugInfo: job?.data
+          ? {
+              firebaseJobId: job.data.config?.firebaseDetails?.firebaseJobId,
+              reportId: job.data.config?.firebaseDetails?.reportId,
+              hasData: !!job.data.data,
+              dataRowCount: job.data.data?.length,
+            }
+          : undefined,
         errorMessage: e instanceof Error ? e.message : String(e),
         errorStack: e instanceof Error ? e.stack : undefined,
       },
