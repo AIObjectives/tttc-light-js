@@ -10,17 +10,17 @@ Keep the topic and subtopic names very concise and use the short description to 
 Return a JSON object of the form {
   "taxonomy": [
     {
-      "topicName": string, 
-      "topicShortDescription": string,
+      "topicName": string,
+      "topicShortDescription": string (max 30 characters),
       "subtopics": [
         {
-          "subtopicName": string,  
-          "subtopicShortDescription": string, 
+          "subtopicName": string,
+          "subtopicShortDescription": string (max 140 characters),
         },
         ...
       ]
-    }, 
-    ... 
+    },
+    ...
   ]
 }
 
@@ -74,7 +74,26 @@ Return a JSON object of the form {
 And now, here are the claims:
 \${claims}`;
 
-export const defaultCruxPrompt = `I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
+export const defaultSummariesPrompt = `
+I'm going to give you a JSON object containing a list of topics with their descriptions, subtopics, and claims.
+For each topic I want you to generate a detailed summary of the subtopics and claims for that topic. The summary
+should not exceed 140 characters.
+
+Return a JSON object in the form {
+  "summaries": [
+    {
+      "topicName": string, // from the given list of topics
+      "summary": string // max 140 characters
+    }
+  ]
+}
+
+And now here are the topics:
+\${topics}
+`;
+
+export const defaultCruxPrompt = `
+I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
 identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
 which would best split the participants into two groups, based on all their
 statements on this topic: one group which would agree with the statement, and one which would disagree.

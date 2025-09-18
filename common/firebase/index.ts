@@ -21,7 +21,14 @@ export { reportStatus };
 
 // Processing sub-states for detailed progress tracking
 const processingSubState = z
-  .enum(["clustering", "extraction", "sorting", "dedup", "wrappingup"])
+  .enum([
+    "clustering",
+    "extraction",
+    "sorting",
+    "dedup",
+    "wrappingup",
+    "summarizing",
+  ])
   .nullish();
 
 // Schema for report references in Firestore

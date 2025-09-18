@@ -75,6 +75,33 @@ mock_openai_usage = {
     "total_tokens": 150
 }
 
+mock_topic_summaries_response = {
+    "summaries": [
+        {
+            "topicName": "Pets",
+            "topicShortDescription": "General opinions about common household pets.",
+            "topicSummary": "People share positive feelings about cats and dogs, with some uncertainty about birds as pets.",
+            "subtopics": [
+                {
+                    "subtopicName": "Cats",
+                    "subtopicShortDescription": "Positive sentiments towards cats.",
+                    "topicSummary": "Cat lovers express strong affection for feline companions."
+                },
+                {
+                    "subtopicName": "Dogs",
+                    "subtopicShortDescription": "Positive sentiments towards dogs.",
+                    "topicSummary": "Dog enthusiasts praise canine loyalty and companionship."
+                },
+                {
+                    "subtopicName": "Birds",
+                    "subtopicShortDescription": "Uncertainty or mixed feelings about birds.",
+                    "topicSummary": "Mixed opinions on birds reflect uncertainty about avian pets."
+                }
+            ]
+        }
+    ]
+}
+
 def create_mock_openai_response(content):
     """Create a mock OpenAI API response"""
     mock_response = Mock()
@@ -156,7 +183,41 @@ class TestPipelineEndpoints:
         assert "usage" in response_json
         assert "cost" in response_json
 
-    @patch('main.OpenAI') 
+    @patch('main.OpenAI')
+    def test_topic_summaries_endpoint(self, mock_openai_class):
+        """Test the topic summaries endpoint with mocked OpenAI"""
+        # Setup mock
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
+        mock_client.chat.completions.create.return_value = create_mock_openai_response(mock_topic_summaries_response)
+
+        # Test data
+        request_data = {
+            "llm": {
+                "model_name": "gpt-4o-mini",
+                "system_prompt": config.SYSTEM_PROMPT,
+                "user_prompt": config.TOPIC_SUMMARY_PROMPT
+            },
+            "tree": {"taxonomy": mock_topic_tree_response["taxonomy"]},
+            "claims": mock_claims_response
+        }
+
+        # Make request
+        response = client.post(
+            "/topic_summaries",
+            json=request_data,
+            headers={"X-OpenAI-API-Key": "mock-api-key"}
+        )
+
+        # Assertions
+        assert response.status_code == 200
+        response_json = response.json()
+        assert "data" in response_json
+        assert "usage" in response_json
+        assert "cost" in response_json
+        assert response_json["data"] == mock_topic_summaries_response["summaries"]
+
+    @patch('main.OpenAI')
     def test_full_pipeline_mocked(self, mock_openai_class):
         """Test the complete pipeline with mocked OpenAI responses"""
         # Setup mock
@@ -198,10 +259,37 @@ class TestPipelineEndpoints:
         
         assert response.status_code == 200
         claims_data = response.json()["data"]
-        
+
         # Verify we got the expected structure - the claims endpoint returns a dict, not a list
         assert isinstance(claims_data, dict)
         assert len(claims_data) > 0
+
+        # Step 3: Topic Summaries
+        mock_client.chat.completions.create.return_value = create_mock_openai_response(mock_topic_summaries_response)
+
+        request_data = {
+            "llm": {
+                "model_name": "gpt-4o-mini",
+                "system_prompt": config.SYSTEM_PROMPT,
+                "user_prompt": config.TOPIC_SUMMARY_PROMPT
+            },
+            "tree": {"taxonomy": tree_data},
+            "claims": claims_data
+        }
+
+        response = client.post(
+            "/topic_summaries",
+            json=request_data,
+            headers={"X-OpenAI-API-Key": "mock-api-key"}
+        )
+
+        assert response.status_code == 200
+        summaries_data = response.json()["data"]
+
+        # Verify topic summaries structure
+        assert isinstance(summaries_data, list)
+        assert len(summaries_data) > 0
+        assert "topicSummary" in summaries_data[0]
 
     def test_endpoint_requires_api_key(self):
         """Test that endpoints require API key header"""

@@ -39,11 +39,11 @@ Return a JSON object of the form {
   "taxonomy": [
     {
       "topicName": string,
-      "topicShortDescription": string,
+      "topicShortDescription": string (max 30 characters),
       "subtopics": [
         {
           "subtopicName": string,
-          "subtopicShortDescription": string,
+          "subtopicShortDescription": string (max 140 characters),
         },
         ...
       ]
@@ -99,6 +99,20 @@ Return a JSON object of the form {
 }
 
 And now, here are the claims:"""
+
+TOPIC_SUMMARY_PROMPT = """
+I'm going to give youa JSON object containing a list of topics with their descriptions, subtopics, and claims. 
+For each topic I want you to generate a detailed summary of the subtopics and claims for that topic.  The summary
+should not exceed 140 characters. 
+
+Return a JSON object in the form {
+    "summaries": [
+        "topicName": string // from the given list of topics
+        "summary": string // max 140 characters.
+    ]
+}
+
+And now here are the topics:"""
 
 CRUX_PROMPT = """
 I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,

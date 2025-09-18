@@ -119,6 +119,14 @@ export function useFormState() {
     },
   });
 
+  const summariesInstructions = useFormItem({
+    initialValue: prompts.defaultSummariesPrompt,
+    statusEval: (val) => {
+      if (!val.trim()) return failure({ message: "Add the prompt" });
+      return success(val);
+    },
+  });
+
   const cruxInstructions = useFormItem({
     initialValue: prompts.defaultCruxPrompt,
     statusEval: (val) => {
@@ -152,6 +160,7 @@ export function useFormState() {
       clusteringInstructions,
       extractionInstructions,
       dedupInstructions,
+      summariesInstructions,
     ];
 
     return (
@@ -170,6 +179,7 @@ export function useFormState() {
     clusteringInstructions,
     extractionInstructions,
     dedupInstructions,
+    summariesInstructions,
     cruxInstructions,
     cruxesEnabled,
     isFormInvalid,

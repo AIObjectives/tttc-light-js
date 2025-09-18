@@ -18,6 +18,11 @@ export type SortClaimTreeStep = ConstructPipelineStep<
   apiPyserver.SortClaimsTreeRequest
 >;
 
+export type TopicSummariesStep = ConstructPipelineStep<
+  "topic_summaries",
+  apiPyserver.TopicSummariesRequest
+>;
+
 export type CruxesStep = ConstructPipelineStep<
   "cruxes",
   apiPyserver.CruxesRequest
@@ -27,4 +32,5 @@ export type PipelineStep =
   | TopicTreeStep
   | ClaimsStep
   | SortClaimTreeStep
+  | TopicSummariesStep
   | CruxesStep;

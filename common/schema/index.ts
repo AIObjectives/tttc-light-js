@@ -69,6 +69,7 @@ export const llmUserConfig = z.object({
   clusteringInstructions: z.string().min(1),
   extractionInstructions: z.string().min(1),
   dedupInstructions: z.string().min(1),
+  summariesInstructions: z.string().min(1),
   cruxInstructions: z.string(),
   cruxesEnabled: z.boolean(),
 });
@@ -94,6 +95,7 @@ export const oldOptions = z.object({
   clusteringInstructions: z.string(),
   extractionInstructions: z.string(),
   dedupInstructions: z.string(),
+  summariesInstructions: z.string(),
   cruxInstructions: z.string(),
   cruxesEnabled: z.boolean(),
   batchSize: z.number(),
@@ -165,6 +167,7 @@ export type LLMSubtopic = z.infer<typeof llmSubtopic>;
 
 export const llmTopic = z.object({
   topicName: z.string(),
+  topicSummary: z.string().optional(),
   topicShortDescription: z.string().optional(),
   topicId: z.string().optional(),
   claimsCount: z.number().optional(),
@@ -398,6 +401,7 @@ export const topic = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
+  summary: z.string().optional(),
   context: z.string().optional(),
   subtopics: z.array(subtopic),
   topicColor: z.string(),
