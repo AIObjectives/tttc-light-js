@@ -312,28 +312,6 @@ export default function AboutPage() {
         <ContentGroup>
           <h3 id="privacy-security">Privacy & security</h3>
 
-          <h5>Data handling</h5>
-          <ul className="list-disc list-outside pl-6">
-            <li>
-              Data transmission: When you use "Talk to the City," your text
-              input (specifically the “comment” column of a CSV) is sent to
-              OpenAI's API for processing.
-            </li>
-            <li>
-              No data retention by OpenAI: OpenAI does not store the data sent
-              to its API for long-term use, in accordance with their API usage
-              policies. However, your inputs may be temporarily processed to
-              improve their AI models unless you explicitly opt out.
-            </li>
-            {/*<li>
-    Encryption and deletion of OpenAI API Keys: Your keys are encrypted
-    throughout our platform (sent via SSL-encrypted headers), and are not
-    stored locally or on any device or within the application once your
-    report is completed. We only use your API keys for the purpose of
-    generating your report.
-  </li>*/}
-          </ul>
-
           <h5>What we collect</h5>
           <ul className="list-disc list-outside pl-6">
             <li>
@@ -353,8 +331,42 @@ export default function AboutPage() {
               third-party tracking cookies are used.
             </li>
             <li>
-              No sensitive data: We discourage users from sharing personal,
-              sensitive, or identifiable information in their input.
+              No sensitive data: Users are encouraged to refrain from submitting
+              any personal, sensitive, confidential, or otherwise individually
+              identifiable information. T3C disclaims any responsibility or
+              liability for the inclusion of prohibited data in user
+              submissions.
+            </li>
+          </ul>
+
+          <h5>Data handling</h5>
+          <ul className="list-disc list-outside pl-6">
+            <li>
+              Data transmission: When you use "Talk to the City," your text
+              input (specifically the “comment” column of a CSV) is transmitted
+              securely to OpenAI's API for processing. This processing step is
+              required to generate summaries, reports, and insights from T3C.
+            </li>
+            <li>
+              Limited data retention by OpenAI: OpenAI does not use data
+              submitted via API for long-term use for improving its models.
+              However,in accordance with{" "}
+              <a
+                target="_blank"
+                href="https://platform.openai.com/docs/guides/your-data"
+              >
+                OpenAI’s API policy
+              </a>{" "}
+              your inputs may be retained for up to 30 days for the sole purpose
+              of monitoring for fraud and abuse. After this period, the data is
+              deleted.
+            </li>
+            <li>
+              No-Opt Out of Retention: Participants should be aware that this
+              30-day retention is a standard condition of using OpenAI’s API. At
+              this time, Talk to the City does not qualify for OpenAI’s “Zero
+              Data Retention” service tier, and therefore we cannot offer an
+              opt-out of this temporary retention.
             </li>
           </ul>
 
@@ -384,9 +396,10 @@ export default function AboutPage() {
 
           <h5>Third-party sharing</h5>
           <p>
-            No additional sharing: Your data is sent exclusively to OpenAI for
-            processing. We do not share, sell, or distribute your data to any
-            entity.
+            No additional sharing: Your data is sent exclusively to select
+            providers including OpenAI, Google Cloud Platform, Posthog, and
+            Weights and Biases for processing. We do not share, sell, or
+            distribute your data to any entity.
           </p>
 
           <h5>Your rights</h5>
@@ -404,9 +417,21 @@ export default function AboutPage() {
               processing.
             </li>
             <li>
-              EU/UK rights: Additional rights under GDPR/UK GDPR include the
-              right to object to processing and the right to lodge a complaint
-              with supervisory authorities.
+              Additional Privacy Rights: Participants in the EU and UK have
+              rights under GDPR/UK GDPR, including access, correction, deletion,
+              portability, the right to object to processing, and the right to
+              lodge a complaint with a supervisory authority. California
+              residents have rights under the CCPA, including access to and
+              deletion of personal information, the right to know what data is
+              collected, and the right to request that data not be sold or
+              shared.
+            </li>
+            <li>
+              All such requests can be made by contacting{" "}
+              <a className="underline" href="mailto:hello@objectives.org">
+                hello@objectives.org
+              </a>
+              .
             </li>
           </ul>
 
@@ -434,7 +459,7 @@ export default function AboutPage() {
               confidential data through the service.
             </li>
             <li>
-              Compliance: Ensure your use of the service complies with
+              CCompliance: Ensure your use of the service complies with
               applicable laws and regulations.
             </li>
           </ul>
@@ -446,7 +471,7 @@ export default function AboutPage() {
             Significant changes will be communicated directly to users.
           </p>
           <p className="text-muted-foreground">
-            Policy last updated: 9 Feb 2025
+            Policy last updated: 18 Sept 2025
           </p>
         </ContentGroup>
       </ContentGroupContainer>
