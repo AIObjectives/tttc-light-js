@@ -135,6 +135,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
     clusteringInstructions,
     extractionInstructions,
     dedupInstructions,
+    summariesInstructions,
     cruxInstructions,
     cruxesEnabled,
     isFormInvalid,
@@ -157,6 +158,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
               clusteringInstructions={clusteringInstructions}
               extractionInstructions={extractionInstructions}
               dedupInstructions={dedupInstructions}
+              summariesInstructions={summariesInstructions}
               cruxInstructions={cruxInstructions}
               cruxesEnabled={cruxesEnabled}
             />

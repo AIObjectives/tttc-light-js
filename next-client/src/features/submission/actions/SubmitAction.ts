@@ -45,6 +45,7 @@ export default async function submitAction(
     systemInstructions: formData.get("systemInstructions"),
     extractionInstructions: formData.get("extractionInstructions"),
     dedupInstructions: formData.get("dedupInstructions"),
+    summariesInstructions: formData.get("summariesInstructions"),
     cruxInstructions: formData.get("cruxInstructions"),
     /**
      * ! Checkbox inputs get modeled as 'on' | undefined for some reason. Do this until we refactor CreateReport

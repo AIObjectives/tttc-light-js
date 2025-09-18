@@ -17,8 +17,8 @@ pets_conflict = [{"id":"1", "text":"I love cats", "speaker" : "Alice"},{"id":"2"
 
 
 
-dupes_pets_5 = [{"id":"a", "text":"I love cats"},{"id":"b", "text":"dogs are great"},{"id":"c","text":"I'm not sure about birds"},\
-                {"id":"d","text":"I really really love cats"},{"id":"e","text":"I don't know about birds"}]
+dupes_pets_5 = [{"id":"a", "text":"I love cats", "speaker": "Alice"},{"id":"b", "text":"dogs are great", "speaker": "Charles"},{"id":"c","text":"I'm not sure about birds", "speaker": "Bob"},\
+        {"id":"d","text":"I really really love cats", "speaker": "Fiona"},{"id":"e","text":"I don't know about birds", "speaker": "Stan"}]
 
 longer_pets_15 = [{"id":"0", "text":"I love cats", "speaker" : "Alice"},{"id":"1","text":"I really really love dogs", "speaker" : "Bob"},{"id":"2","text":"I'm not sure about birds", "speaker" : "Charles"},\
   {"id":"3","text" : "Cats are my favorite", "speaker" : "Dany"},{"id":"4","text" : "Lizards are terrifying", "speaker" : "Alice"}, {"id":"5", "text" : "Lizards are so friggin scary", "speaker" : "Charles"},\
@@ -71,6 +71,7 @@ dupe_claims_4o_ids = {'Pets': {'total': 5, 'subtopics': {'Cats': {'total': 2, 'c
 dupe_claims_4o_speakers = {'Pets': {'total': 5, 'subtopics': {'Cats': {'total': 2, 'claims': [{'claim': 'Cats are the best household pets.', 'quote': 'I love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'a', "speaker" : "Alice"}, {'claim': 'Cats are the best household pets.', 'quote': 'I really really love cats', 'topicName': 'Pets', 'subtopicName': 'Cats', 'commentId': 'd', "speaker" : "Dany"}]}, 'Dogs': {'total': 1, 'claims': [{'claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'topicName': 'Pets', 'subtopicName': 'Dogs', 'commentId': 'b', "speaker" : "Bob"}]}, 'Birds': {'total': 2, 'claims': [{'claim': 'Birds are not ideal pets for everyone.', 'quote': "I'm not sure about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'c', "speaker" : "Charles"}, {'claim': 'There is uncertainty about birds as pets.', 'quote': "I don't know about birds.", 'topicName': 'Pets', 'subtopicName': 'Birds', 'commentId': 'e', "speaker" : "Elinor"}]}}}}
 
 
+sample_sorted_tree = [{"topicName": "Pets", "topicShortDescription": "Pet preferences", "subtopics": [{"subtopicName": "Cats", "subtopicShortDescription": "Cat opinions", "claims": [{"claim": "Cats are great pets", "quote": "I love cats"}]}]}]
 
 # maximize readability
 def json_print(json_obj):
@@ -89,6 +90,7 @@ def test_topic_tree(comments=min_pets_3):
   response = client.post("/topic_tree/", json=request, headers=headers)
   json_print(response.json())
 
+@require_api_key()
 def test_claims(comments=dupes_pets_5):
   llm = base_llm.copy()
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
@@ -97,6 +99,7 @@ def test_claims(comments=dupes_pets_5):
   response = client.post("/claims/", json=request, headers=headers)
   print(json.dumps(response.json(), indent=4))
 
+@require_api_key()
 def test_dupes(claims_tree=dupe_claims_4o_speakers):
   llm = base_llm.copy()
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
@@ -105,6 +108,16 @@ def test_dupes(claims_tree=dupe_claims_4o_speakers):
   response = client.put("/sort_claims_tree/", json=request, headers=headers)
   print(json.dumps(response.json(), indent=4))
 
+
+@require_api_key()
+def test_topic_summaries():
+  llm = base_llm.copy()
+  llm.update({"user_prompt" : config.TOPIC_SUMMARY_PROMPT})
+  request ={"llm" : llm, "tree" : sample_sorted_tree}
+  headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
+  response = client.post("/topic_summaries", json=request, headers=headers)
+  json_print(response.json())
+
 @require_api_key()
 def test_cruxes(comments=longer_pets_15):
   llm = base_llm.copy()
@@ -112,14 +125,14 @@ def test_cruxes(comments=longer_pets_15):
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
   headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
-  taxonomy = client.post("/topic_tree/", json=request, headers=headers).json()["data"]
+  taxonomy = client.post("/topic_tree/", json=request, headers=headers).json()
   json_print(taxonomy)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"model_name" : "gpt-4o-mini"})
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :taxonomy}}
-  claims = client.post("/claims/", json=request, headers=headers).json()["data"]
+  claims = client.post("/claims/", json=request, headers=headers).json()
   json_print(claims)
 
   print("\n\nStep 3: Cruxes\n\n")
@@ -137,20 +150,27 @@ def test_full_pipeline(comments=dupes_pets_5):
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
   headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
-  tree = client.post("/topic_tree/", json=request, headers=headers).json()["data"]
+  tree = client.post("/topic_tree/", json=request, headers=headers).json()
   json_print(tree)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :tree}}
-  claims = client.post("/claims/", json=request, headers=headers).json()["data"]
+  claims = client.post("/claims/", json=request, headers=headers).json()
   json_print(claims)
 
   print("\n\nStep 3: Dedup & sort\n\n")
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
-  request ={"llm" : llm, "tree" : claims , "sort" : "numPeople"}
+  request ={"llm" : llm, "tree" : claims["data"] , "sort" : "numPeople"}
   full_tree = client.put("/sort_claims_tree/", json=request, headers=headers)
   print(json.dumps(full_tree.json(), indent=4))
+
+  print("\n\nStep 4: Create Topic Summaries\n\n")
+  llm.update({"user_prompt" : config.TOPIC_SUMMARY_PROMPT})
+  request ={"llm" : llm, "tree": full_tree.json() }
+  summaries = client.post("/topic_summaries", json=request, headers=headers)
+  print(json.dumps(summaries.json(), indent=4))
+
 
 #################
 # W&B log tests #
@@ -177,30 +197,44 @@ def test_wb_dupes():
   response = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request)
   json_print(response.json())
 
+def test_wb_topic_summaries():
+  llm = base_llm
+  llm.update({"user_prompt" : config.TOPIC_SUMMARY_PROMPT})
+  request ={"llm" : llm, "tree" : sample_sorted_tree}
+  response = client.post("/topic_summaries?log_to_wandb=local_test_0", json=request)
+  json_print(response.json())
+
 @require_api_key()
 def test_wb_full_pipeline(comments=dupes_pets_5):
   print("Step 1: Topic tree\n\n")
   llm = base_llm
+  headers = {"X-OpenAI-API-Key": llm.get("api_key") or "test-key-placeholder"}
   # fancier model for more precise deduplication
   llm.update({"model_name" : "gpt-4o"})
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
-  tree = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request).json()["data"]
+  tree = client.post("/topic_tree/?log_to_wandb=local_test_0", json=request, headers=headers).json()
   json_print(tree)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" :tree}}
-  claims = client.post("/claims/?log_to_wandb=local_test_0", json=request).json()["data"]
+  claims = client.post("/claims/?log_to_wandb=local_test_0", json=request, headers=headers).json()
   json_print(claims)
 
   print("\n\nStep 3: Dedup & sort\n\n")
   llm.update({"user_prompt" : config.CLAIM_DEDUP_PROMPT})
   request ={"llm" : llm, "tree" : claims }
-  full_tree = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request)
+  full_tree = client.put("/sort_claims_tree/?log_to_wandb=local_test_0", json=request, headers=headers)
   print(full_tree)
   #.json()["data"]
   #json_print(full_tree)
+
+  print("\n\nStep 4: Create Topic Summaries\n\n")
+  llm.update({"user_prompt" : config.TOPIC_SUMMARY_PROMPT})
+  request ={"llm" : llm, "tree": full_tree.json() }
+  summaries = client.post("/topic_summaries/?log_to_wandb=local_test_0", json=request, headers=headers)
+  print(json.dumps(summaries.json(), indent=4))
 
 @require_api_key()
 def test_wb_cruxes_pipeline(comments=pets_conflict):
@@ -211,20 +245,20 @@ def test_wb_cruxes_pipeline(comments=pets_conflict):
   llm.update({"model_name" : "gpt-4o-mini"})
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
-  taxonomy = client.post("/topic_tree/?log_to_wandb=tavern", json=request).json()["data"]
+  taxonomy = client.post("/topic_tree/?log_to_wandb=tavern", json=request).json()
   json_print(taxonomy)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" : taxonomy}}
-  claims = client.post("/claims/?log_to_wandb=tavern", json=request).json()["data"]
+  claims = client.post("/claims/?log_to_wandb=tavern", json=request).json()
   json_print(claims)
 
   print("\n\nStep 3: Cruxes\n\n")
   llm.update({"user_prompt" : config.CRUX_PROMPT})
   request ={"llm" : llm, "topics" : taxonomy, "tree" : claims}
   cruxes = client.post("/cruxes/?log_to_wandb=tavern", json=request) #.json()["data"]
-  json_print(cruxes.json()["data"])
+  json_print(cruxes.json())
 
 
 @require_api_key()
@@ -239,14 +273,14 @@ def test_from_json(json_file="test_comments.json"):
   llm.update({"model_name" : "gpt-4o"})
   llm.update({"user_prompt" : config.COMMENT_TO_TREE_PROMPT})
   request ={"llm" : llm, "comments" : comments} 
-  taxonomy = client.post("/topic_tree/?log_to_wandb=full_log", json=request).json()["data"]
+  taxonomy = client.post("/topic_tree/?log_to_wandb=full_log", json=request).json()
   json_print(taxonomy)
 
   print("\n\nStep 2: Claims\n\n")
   llm.update({"model_name" : "gpt-4o"})
   llm.update({"user_prompt" : config.COMMENT_TO_CLAIMS_PROMPT})
   request ={"llm" : llm, "comments" : comments, "tree" : {"taxonomy" : taxonomy}}
-  claims = client.post("/claims/?log_to_wandb=full_log", json=request).json()["data"]
+  claims = client.post("/claims/?log_to_wandb=full_log", json=request).json()
   json_print(claims)
 
   print("\n\nStep 3: Cruxes\n\n")

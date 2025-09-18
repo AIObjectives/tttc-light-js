@@ -1460,6 +1460,103 @@ def sort_claims_tree(
     return sanitize_for_output(response_data)
 
 
+########################################
+# Step 4: Generate Topic Summaries    #
+# -------------------------------------#
+@app.post("/topic_summaries")
+def generate_topic_summaries(
+    req: dict, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+) -> dict:
+    """Generate summaries for each topic based on the complete processed tree with all claims.
+
+    Input format:
+    - tree: the fully processed topic tree with all claims, duplicates handled
+    - llm: LLM configuration with model, system prompt, and user prompt
+
+    Output format:
+    - summaries: array of topic summaries with topicName and summary
+    - usage: token usage information
+    - cost: cost information
+    """
+    if dry_run or config.DRY_RUN:
+        print("dry_run topic summaries")
+        return {"summaries": [], "usage": {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}, "cost": 0.0}
+
+    client = OpenAI(api_key=x_openai_api_key)
+
+    # Extract topics and their data for summarization
+    tree_data = req["tree"]
+    llm_config = req["llm"]
+
+    # Build the prompt with all topic information
+    full_prompt = llm_config["user_prompt"]
+    full_prompt += "\n" + json.dumps(tree_data, indent=2)
+
+    # Basic prompt length check
+    full_prompt = sanitize_prompt_length(full_prompt)
+
+    response = client.chat.completions.create(
+        model=llm_config["model_name"],
+        messages=[
+            {"role": "system", "content": llm_config["system_prompt"]},
+            {"role": "user", "content": full_prompt},
+        ],
+        temperature=0.0,
+        response_format={"type": "json_object"},
+    )
+
+    try:
+        summaries_result = json.loads(response.choices[0].message.content)
+    except Exception:
+        print("Step 4: no topic summaries: ", response)
+        summaries_result = {"summaries": []}
+
+    usage = response.usage
+    # compute LLM costs for this step's tokens
+    s4_total_cost = token_cost(
+        llm_config["model_name"], usage.prompt_tokens, usage.completion_tokens,
+    )
+
+    if log_to_wandb:
+        try:
+            exp_group_name = str(log_to_wandb)
+            wandb.init(
+                project=config.WANDB_PROJECT_NAME, group=exp_group_name, resume="allow",
+            )
+            wandb.config.update(
+                {
+                    "s4_summaries/model": llm_config["model_name"],
+                    "s4_summaries/user_prompt": llm_config["user_prompt"],
+                    "s4_summaries/system_prompt": llm_config["system_prompt"],
+                },
+            )
+            wandb.log(
+                {
+                    "U_tok_N/summaries": usage.total_tokens,
+                    "U_tok_in/summaries": usage.prompt_tokens,
+                    "U_tok_out/summaries": usage.completion_tokens,
+                    "cost/s4_summaries": s4_total_cost,
+                },
+            )
+        except Exception:
+            print("Failed to create wandb run")
+
+    net_usage = {
+        "total_tokens": usage.total_tokens,
+        "prompt_tokens": usage.prompt_tokens,
+        "completion_tokens": usage.completion_tokens,
+    }
+
+    response_data = {
+        "data": summaries_result.get("summaries", []),
+        "usage": net_usage,
+        "cost": s4_total_cost,
+    }
+
+    # Filter PII from final output for user privacy
+    return sanitize_for_output(response_data)
+
+
 ###########################################
 # Optional / New Feature & Research Steps #
 # -----------------------------------------#

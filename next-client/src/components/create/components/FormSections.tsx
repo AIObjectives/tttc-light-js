@@ -311,12 +311,14 @@ const CustomizePrompts = ({
   clusteringInstructions,
   extractionInstructions,
   dedupInstructions,
+  summariesInstructions,
 }: {
   show: boolean;
   systemInstructions: FormItemState<string>;
   clusteringInstructions: FormItemState<string>;
   extractionInstructions: FormItemState<string>;
   dedupInstructions: FormItemState<string>;
+  summariesInstructions: FormItemState<string>;
 }) => {
   return (
     <Col gap={8} className={show ? "" : "hidden"}>
@@ -349,9 +351,15 @@ const CustomizePrompts = ({
       />
       <CustomizePromptSection
         title="Step 3 – Merging claims prompt"
-        subheader="In the last step, AI collects very similar or near-duplicate statements under one representative claim"
+        subheader="In the third step, AI collects very similar or near-duplicate statements under one representative claim"
         inputName="dedupInstructions"
         formState={dedupInstructions}
+      />
+      <CustomizePromptSection
+        title="Step 4 – Topic summaries prompt"
+        subheader="In the final step, AI generates concise summaries for each topic based on all the processed claims and subtopics"
+        inputName="summariesInstructions"
+        formState={summariesInstructions}
       />
     </Col>
   );
@@ -407,6 +415,7 @@ export function AdvancedSettings({
   clusteringInstructions,
   extractionInstructions,
   dedupInstructions,
+  summariesInstructions,
   cruxInstructions,
   cruxesEnabled,
 }: {
@@ -414,6 +423,7 @@ export function AdvancedSettings({
   clusteringInstructions: FormItemState<string>;
   extractionInstructions: FormItemState<string>;
   dedupInstructions: FormItemState<string>;
+  summariesInstructions: FormItemState<string>;
   cruxInstructions: FormItemState<string>;
   cruxesEnabled: FormItemState<boolean>;
 }) {
@@ -437,6 +447,7 @@ export function AdvancedSettings({
         clusteringInstructions={clusteringInstructions}
         extractionInstructions={extractionInstructions}
         dedupInstructions={dedupInstructions}
+        summariesInstructions={summariesInstructions}
       />
       <EnableResearchFeatures
         show={show}

@@ -255,6 +255,7 @@ const getTopicsFromTaxonomy =
       id: uuid(),
       title: leaf.topicName,
       description: leaf.topicShortDescription!,
+      summary: leaf.topicSummary,
       subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
       topicColor: colorPicker(idx),
     }));
