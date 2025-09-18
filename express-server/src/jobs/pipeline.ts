@@ -65,6 +65,7 @@ interface Instructions {
   clusteringInstructions: string;
   extractionInstructions: string;
   dedupInstructions: string;
+  summariesInstructions: string;
   cruxInstructions: string;
 }
 
@@ -145,7 +146,7 @@ export async function pipelineJob(job: Job<PipelineJob>) {
   // This returns the results of each of the steps.
   pipelineLogger.info({ jobId: job.id }, "Starting pipeline steps");
   const pipelineStart = Date.now();
-  const { topicTreeStep, claimsStep, sortedStep, addonsStep } =
+  const { topicTreeStep, claimsStep, sortedStep, summariesStep, addonsStep } =
     await doPipelineSteps(job);
   const pipelineEnd = Date.now();
   const pipelineDuration = pipelineEnd - pipelineStart;
@@ -183,36 +184,56 @@ export async function pipelineJob(job: Job<PipelineJob>) {
 
   // Summarizes all of the Usage objects into a single tracker object.
   // As of right now, it will skip over the failed steps and summarize only the success
-  const tracker = summarizeUsage([topicTreeStep, claimsStep, sortedStep]);
+  const tracker = summarizeUsage([
+    topicTreeStep,
+    claimsStep,
+    sortedStep,
+    summariesStep,
+  ]);
   logTokensInTracker(tracker, "Total output");
 
   // Unpack the data from each of the steps
   const topicData = mapResult(topicTreeStep, (t) => t.data);
   const claimsData = mapResult(claimsStep, (c) => c.data);
   const sortData = mapResult(sortedStep, (s) => s.data);
+  const summariesData = mapResult(summariesStep, (s) => s.data);
 
   // Goes from Result<Step, Errors>[] -> Result<Step[], Errors>
-  const outputData = sequenceResult([topicData, claimsData, sortData] as const);
+  const outputData = sequenceResult([
+    topicData,
+    claimsData,
+    sortData,
+    summariesData,
+  ] as const);
 
   // We need to take the data we made from the pipeline steps and format it into
   // the Taxonomy object
   const newTaxonomyResult = mapResult(
     outputData,
-    ([topicData, _, sortData]) => {
-      const newTax: schema.Taxonomy = topicData.tree.taxonomy.map((t) => ({
+    ([topicData, _, sortData, summariesData]) => {
+      // Create a map of topic names to summaries for quick lookup
+      const summariesMap = new Map<string, string>();
+      summariesData.forEach(
+        (summary: { topicName: string; summary: string }) => {
+          summariesMap.set(summary.topicName, summary.summary);
+        },
+      );
+
+      const newTax: schema.Taxonomy = topicData.tree.taxonomy.map((t: any) => ({
         ...t,
         topicId: randomUUID(),
-        subtopics: t.subtopics.map((sub) => ({
+        topicSummary: summariesMap.get(t.topicName), // Add the topic summary
+        subtopics: t.subtopics.map((sub: any) => ({
           ...sub,
           subtopicId: randomUUID(),
           // @ts-ignore // TODO FIX THIS
           claims: sortData
-            .find(([tag]) => tag === t.topicName)[1]
-            .topics?.find(([key]) => key === sub.subtopicName)[1]
-            .claims.map((clm) => ({
+            .find(([tag]: [string, any]) => tag === t.topicName)[1]
+            .topics?.find(([key]: [string, any]) => key === sub.subtopicName)[1]
+            .claims.map((clm: any) => ({
               ...clm,
               claimId: randomUUID(),
-              duplicates: clm.duplicates.map((dup) => ({
+              duplicates: clm.duplicates.map((dup: any) => ({
                 ...dup,
                 claimId: randomUUID(),
               })),
@@ -409,8 +430,13 @@ export async function pipelineJob(job: Job<PipelineJob>) {
  */
 async function doPipelineSteps(job: Job<PipelineJob>) {
   const { config, data } = job.data;
-  const { doClaimsStep, doSortClaimsTreeStep, doTopicTreeStep, doAddons } =
-    makePyserverFuncs(config);
+  const {
+    doClaimsStep,
+    doSortClaimsTreeStep,
+    doTopicTreeStep,
+    doTopicSummariesStep,
+    doAddons,
+  } = makePyserverFuncs(config);
 
   const pipelineComments: Result<
     PipelineComment[],
@@ -503,6 +529,20 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     doSortClaimsTreeStep(val.data),
   );
 
+  // update job progress
+  pipelineLogger.info("Step 4: generating topic summaries");
+  await job.updateProgress({
+    status: api.reportJobStatus.Values.summarizing,
+  });
+
+  // do topic summaries step
+  const summariesStep: PyserverResult<
+    TopicSummariesProps,
+    PipelineErrors | MissingInterviewAttributionsError
+  > = await flatMapResultAsync(sortedStep, (val) =>
+    doTopicSummariesStep(val.data),
+  );
+
   pipelineLogger.info("Doing optional addons step");
   const addonsStep = await flatMapResultAsync(
     sequenceResult([claimsStep, topicTreeStep] as const),
@@ -540,7 +580,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     "wrappingup",
   );
 
-  return { topicTreeStep, claimsStep, sortedStep, addonsStep };
+  return { topicTreeStep, claimsStep, sortedStep, summariesStep, addonsStep };
 }
 
 /**
@@ -565,6 +605,11 @@ type SortClaimsProps = {
  * Output of the sort claims response
  */
 type OutputProps = apiPyserver.SortClaimsTreeResponse["data"];
+
+/**
+ * Ouput of the topic summaries repsonse
+ */
+type TopicSummariesProps = apiPyserver.TopicSummariesResponse["data"];
 
 /**
  * Generic type for the type of information sent back from the pyserver.
@@ -617,6 +662,13 @@ const PipelineOutputToProps = {
       stepName: "Sort Step",
     };
   },
+  makeSummariesProps: (reply: apiPyserver.TopicSummariesResponse) => {
+    return {
+      ...reply,
+      stepName: "Summaries Step",
+      data: reply.data,
+    };
+  },
 };
 
 /**
@@ -629,11 +681,13 @@ const makePyserverFuncs = (config: PipelineConfig) => {
     topicTreeLLMConfig,
     claimsLLMConfig,
     dedupLLMConfig,
+    summariesLLMConfig,
     cruxesLLMConfig,
   ]: apiPyserver.LLMConfig[] = [
     instructions.clusteringInstructions,
     instructions.extractionInstructions,
     instructions.dedupInstructions,
+    instructions.summariesInstructions,
     instructions.cruxInstructions,
   ].map((prompt) => ({
     system_prompt: instructions.systemInstructions,
@@ -705,11 +759,25 @@ const makePyserverFuncs = (config: PipelineConfig) => {
       mapResult(val, (arg) => PipelineOutputToProps.makeOutputProps(arg)),
     );
 
+  /**
+   * Calls the topic summaries step on the pyserver
+   */
+  const doTopicSummariesStep = async (tree: OutputProps) =>
+    await Pyserver.topicSummariesPipelineStep(env, {
+      tree,
+      llm: summariesLLMConfig,
+    }).then((val) =>
+      mapResult(val, (reply) =>
+        PipelineOutputToProps.makeSummariesProps(reply),
+      ),
+    );
+
   return {
     doTopicTreeStep,
     doClaimsStep,
     doAddons,
     doSortClaimsTreeStep,
+    doTopicSummariesStep,
   };
 };
 

@@ -28,6 +28,7 @@ export const reportJobStatus = z.enum([
   "finished",
   "failed",
   "notFound",
+  "summarizing",
 ]);
 
 export type ReportJobStatus = z.infer<typeof reportJobStatus>;
