@@ -19,11 +19,12 @@ export default function Landing() {
       <div className="px-4">
         <LandingHero className="w-full h-auto" />
       </div>
-      <About />
+      <WhatIsT3C />
       <AudreyTangQuote />
       <Organizations />
       <CaseStudies />
       <HowItWorks />
+      <WhyT3CIsDifferent />
     </Col>
   );
 }
@@ -38,24 +39,75 @@ const Title = () => (
   </Col>
 );
 
-const About = () => (
+const WhatIsT3C = () => (
   <Col className="p-8" gap={2}>
-    <h4>About</h4>
-    <p>
-      An open-source AI tool that distills insights from large-scale public
-      input, while preserving details of individual views. Leaders and
-      policymakers need to understand the people they organize and govern, but
-      traditional methods either sacrifice depth for scale or scale for depth.
-      Talk to the City bridges this gap with an open-source AI platform that
-      turns large-scale conversations into actionable insights while preserving
-      individual perspectives—from local town halls to national policy
-      discussions.
+    <h4>What is Talk to the City (T3C)</h4>
+    <p className="text-muted-foreground">
+      <span className="p-medium text-black">Talk to the City (T3C)</span> is an
+      open-source tool that helps large groups of people coordinate by
+      understanding each other better. It’s designed for public consultations,
+      civic dialogue, and collaborative problem-solving—any situation where many
+      voices need to be heard and turned into actionable insights.
     </p>
     <p className="text-muted-foreground">
-      Learn more:{" "}
-      <a href="/about" className="underline">
-        About Talk to the City
-      </a>
+      Unlike most AI tools, which summarize text but risk producing errors or
+      hallucinations, T3C is built for{" "}
+      <span className="p-medium text-black">trust</span>, and structures the
+      summarized public input so that every theme or idea is grounded directly
+      in participant quotes. Its reports allow decision-makers to see broad
+      themes, then drill down to the exact statements behind them. This design
+      makes the analysis not only more reliable, but also auditable—participants
+      and stakeholders can check that their words are represented faithfully.
+    </p>
+  </Col>
+);
+
+const WhyT3CIsDifferent = () => (
+  <Col gap={4} className="p-8">
+    <h4>Why T3C is Different</h4>
+
+    <p className="text-muted-foreground">
+      <span className="p-medium text-black">Depth and scale, together</span> -
+      Focus groups capture nuance, and polls capture scale. T3C does both.
+    </p>
+
+    <p className="text-muted-foreground">
+      <span className="p-medium text-black">
+        More trustworthy than standard AI
+      </span>{" "}
+      - By grounding every claim in verified quotes, T3C minimizes the
+      hallucination problem that plagues other LLM tools.
+    </p>
+
+    <p className="text-muted-foreground">
+      <span className="p-medium text-black">
+        Open-source and public-interest driven
+      </span>{" "}
+      - Built by the nonprofit AI Objectives Institute, T3C is open-source and
+      transparent by design.
+    </p>
+
+    <p className="text-muted-foreground">
+      <span className="p-medium text-black">Proven in practice</span> -
+      Governments, unions, and advocacy groups have already used T3C to turn
+      thousands of individual voices into clear, actionable agendas.
+    </p>
+
+    <p>
+      Previous versions of Talk to the City have been used by the Taiwanese
+      government and the Taiwan AI Assembly, unions, policy makers and more. See
+      our <a href="https://talktothe.city/about#case-studies">case studies</a>{" "}
+      for more details.
+    </p>
+    <p>
+      Built by the{" "}
+      <a href="https://ai.objectives.institute/">AI Objectives Institute</a>.
+      All code is open-source on{" "}
+      <a href="https://github.com/AIObjectives/tttc-light-js">Github</a>.
+    </p>
+    <p>
+      Have a question we didn't answer here, or interested in direct support in
+      using Talk to the City? Reach out at hello@aiobjectives.org.
     </p>
   </Col>
 );
@@ -249,12 +301,12 @@ const HowItWorks = () => (
         borderColor="border-theme_violet"
         num={1}
       />
-      <p className="p-medium">Gather</p>
+      <p className="p-medium">Collect voices at scale</p>
     </Row>
     <p className="text-muted-foreground">
-      Gather and analyze qualitative data from a group of any size. Process
-      unstructured text, long form responses, and video interviews, or prompt
-      participants over Whatsapp with a custom chatbot.
+      Input can be survey responses, interviews, meeting transcripts, social
+      media discussions, or structured conversations with T3C’s survey AI-driven
+      tool through WhatsApp.
     </p>
 
     <Row gap={2} className="items-center">
@@ -263,12 +315,12 @@ const HowItWorks = () => (
         borderColor="border-theme_blueSea"
         num={2}
       />
-      <p className="p-medium">Explore</p>
+      <p className="p-medium">Analyze with Large Language Models (LLM)</p>
     </Row>
 
     <p className="text-muted-foreground">
-      Explore from core themes within the data all the way down to individual
-      claims and quotes made by each participant.
+      T3C uses large language models to identify themes and summarize specific
+      claims.
     </p>
 
     <Row gap={2} className="items-center">
@@ -277,12 +329,25 @@ const HowItWorks = () => (
         borderColor="border-theme_purple"
         num={3}
       />
-      <p className="p-medium">Share</p>
+      <p className="p-medium">Ground insights in quotes</p>
     </Row>
 
     <p className="text-muted-foreground">
-      Share your findings and the voices within your communities to inform
-      direction and decision making.
+      Each summary links back to participant statements, so you can always see
+      the source.
+    </p>
+
+    <Row gap={2} className="items-center">
+      <NumSignpost
+        backgroundColor="bg-theme_blueSky-accent"
+        borderColor="border-theme_blueSky"
+        num={3}
+      />
+      <p className="p-medium">Interactive reports</p>
+    </Row>
+    <p className="text-muted-foreground">
+      Results are shared in an online report, where you can explore themes and
+      dive into the details behind them.
     </p>
   </Col>
 );
