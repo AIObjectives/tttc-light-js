@@ -57,7 +57,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
   ref,
 ) {
   const { topicNode } = useContext(TopicContext);
-  const { title, description } = topicNode.data;
+  const { title, description, summary } = topicNode.data;
 
   return (
     <Card data-testid={"topic-item"}>

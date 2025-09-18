@@ -129,6 +129,7 @@ describe("CSV Security in Create Route", () => {
       clusteringInstructions: "Test Clustering",
       extractionInstructions: "Test Extraction",
       dedupInstructions: "Test Dedup",
+      summariesInstructions: "Test Summaries",
       cruxInstructions: "Test Crux",
       cruxesEnabled: false,
     },

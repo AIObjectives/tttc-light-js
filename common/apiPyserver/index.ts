@@ -38,6 +38,7 @@ export const pipelineSteps = z.enum([
   "topic_tree",
   "claims",
   "sort_claims_tree",
+  "topic_summaries",
   "cruxes",
 ]);
 export type PipelineSteps = z.infer<typeof pipelineSteps>;
@@ -281,3 +282,27 @@ export const cruxesRequest = z.object({
 });
 
 export type CruxesRequest = z.infer<typeof cruxesRequest>;
+
+//  ********************************
+//  * topic_summaries
+//  ********************************/
+
+export const topicSummariesRequest = z.object({
+  tree: sortedTopic.array(),
+  llm: llmConfig,
+});
+
+export type TopicSummariesRequest = z.infer<typeof topicSummariesRequest>;
+
+const topicSummary = z.object({
+  topicName: z.string(),
+  summary: z.string(),
+});
+
+export const topicSummariesResponse = z.object({
+  data: topicSummary.array(),
+  usage,
+  cost: z.number(),
+});
+
+export type TopicSummariesResponse = z.infer<typeof topicSummariesResponse>;
