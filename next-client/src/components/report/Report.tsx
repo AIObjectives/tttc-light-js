@@ -76,12 +76,12 @@ function ReportLayout({
   return (
     <Row className="flex w-full min-h-screen">
       {/* Outline section */}
-      <Col className="hidden md:block min-w-[279px] flex-grow">
+      {/* <Col className="hidden md:block min-w-[279px] flex-grow">
         <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
           <div className="w-full h-14" />
         </ToolBarFrame>
         <div className="sticky top-20">{Outline}</div>
-      </Col>
+      </Col> */}
 
       <Sheet open={isMobileOutlineOpen} onOpenChange={setIsMobileOutlineOpen}>
         <SheetContent side={"left"} className="px-0 pt-0 top-0 max-w-[280px]">
@@ -249,7 +249,7 @@ function Report({
       }}
     >
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
-      <div className="mb-36">
+      <div className="mb-36 flex-grow self-center">
         <ReportLayout
           isMobileOutlineOpen={isMobileOutlineOpen}
           setIsMobileOutlineOpen={setIsMobileOutlineOpen}

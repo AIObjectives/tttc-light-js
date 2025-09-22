@@ -4,6 +4,7 @@ import { Button } from "../elements";
 import Icons from "@/assets/icons";
 import { ReactNode } from "react";
 import { toast } from "sonner";
+import tailwind from "tailwind.config";
 
 function CopyButton({
   copyStr,
@@ -22,7 +23,10 @@ function CopyButton({
         onClick={() => copy().then(notify)}
         data-testid={"copybutton"}
       >
-        <Icons.Copy size={16} className="" />
+        <Icons.Copy
+          size={16}
+          color={`${tailwind.theme.extend.colors.muted.foreground}`}
+        />
       </Button>
     </div>
   );
