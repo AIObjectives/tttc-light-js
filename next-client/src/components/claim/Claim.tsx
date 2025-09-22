@@ -5,6 +5,8 @@ import * as schema from "tttc-common/schema";
 import { getQuotes } from "tttc-common/morphisms";
 import { InteractiveQuoteCard } from "./HoverQuoteCard";
 import { CopyLinkButton } from "../copyButton/CopyButton";
+import { getThemeColor } from "@/lib/color";
+import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
 
 /**
  * Claim component that includes the claim text, quote icon, and link button
@@ -34,12 +36,10 @@ function ClaimHeader({ claim }: { claim: schema.Claim }) {
   const quoteNum = getQuotes(claim).length;
   return (
     <Row gap={2} className={`items-center`}>
-      <p>
-        <span className="font-medium">#{number}</span>
+      <p className="p2">
+        #{number}
         &ensp;
-        <a id={`${title}`} className={"text-muted-foreground"}>
-          {title}
-        </a>
+        <a id={`${title}`}>{title}</a>
       </p>
       <InteractiveQuoteCard
         claim={claim}
@@ -50,13 +50,15 @@ function ClaimHeader({ claim }: { claim: schema.Claim }) {
 }
 
 export function QuoteIcon({ num }: { num: number }) {
+  const fill = useThemeContextColor("fill");
+  const color = useThemeContextColor("text");
   return (
     <Row
       gap={1}
       className="px-2 py-[2px] border rounded-sm min-w-fit items-center"
     >
-      <Icons.QuoteBubble className="fill-muted-foreground" />
-      <p className="p2 text-muted-foreground">{num}</p>
+      <Icons.QuoteBubble className={`${fill}`} />
+      <p className={`p2 ${color}`}>{num}</p>
     </Row>
   );
 }

@@ -11,6 +11,7 @@ export const themeColorMap = {
     text: "text-theme_violet",
     textHover: "hover:text-theme_violet",
     groupHoverBgAccent: "group-hover:bg-theme_violet-accent",
+    fill: "fill-theme_violet",
   },
   blueSea: {
     bg: "bg-theme_blueSea",
@@ -22,6 +23,7 @@ export const themeColorMap = {
     text: "text-theme_blueSea",
     textHover: "hover:text-theme_blueSea",
     groupHoverBgAccent: "group-hover:bg-theme_blueSea-accent",
+    fill: "fill-theme_blueSea",
   },
   blueSky: {
     bg: "bg-theme_blueSky",
@@ -33,6 +35,7 @@ export const themeColorMap = {
     text: "text-theme_blueSky",
     textHover: "hover:text-theme_blueSky",
     groupHoverBgAccent: "group-hover:bg-theme_blueSky-accent",
+    fill: "fill-theme_blueSky",
   },
   greenLeaf: {
     bg: "bg-theme_greenLeaf",
@@ -44,6 +47,7 @@ export const themeColorMap = {
     text: "text-theme_greenLeaf",
     textHover: "hover:text-theme_greenLeaf",
     groupHoverBgAccent: "group-hover:bg-theme_greenLeaf-accent",
+    fill: "fill-theme_greenLeaf",
   },
   greenLime: {
     bg: "bg-theme_greenLime",
@@ -55,6 +59,7 @@ export const themeColorMap = {
     text: "text-theme_greenLime",
     textHover: "hover:text-theme_greenLime",
     groupHoverBgAccent: "group-hover:bg-theme_greenLime-accent",
+    fill: "fill-theme_greenLime",
   },
   yellow: {
     bg: "bg-theme_yellow",
@@ -66,6 +71,7 @@ export const themeColorMap = {
     text: "text-theme_yellow",
     textHover: "hover:text-theme_yellow",
     groupHoverBgAccent: "group-hover:bg-theme_yellow-accent",
+    fill: "fill-theme_yellow",
   },
   red: {
     bg: "bg-theme_red",
@@ -77,6 +83,7 @@ export const themeColorMap = {
     text: "text-theme_red",
     textHover: "hover:text-theme_red",
     groupHoverBgAccent: "group-hover:bg-theme_red-accent",
+    fill: "fill-theme_red",
   },
   purple: {
     bg: "bg-theme_purple",
@@ -88,6 +95,7 @@ export const themeColorMap = {
     text: "text-theme_purple",
     textHover: "hover:text-theme_purple",
     groupHoverBgAccent: "group-hover:bg-theme_purple-accent",
+    fill: "fill-theme_purple",
   },
   brown: {
     bg: "bg-theme_brown",
@@ -99,6 +107,7 @@ export const themeColorMap = {
     text: "text-theme_brown",
     textHover: "hover:text-theme_brown",
     groupHoverBgAccent: "group-hover:bg-theme_brown-accent",
+    fill: "fill-theme_brown",
   },
 } as const;
 
