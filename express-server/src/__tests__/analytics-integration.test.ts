@@ -60,6 +60,8 @@ describe("Analytics Integration with Common Package", () => {
     FIREBASE_ADMIN_PROJECT_ID: undefined,
     RATE_LIMIT_PREFIX: "test",
     PYSERVER_MAX_CONCURRENCY: 5,
+    PUBSUB_TOPIC_NAME: "test-topic",
+    PUBSUB_SUBSCRIPTION_NAME: "test-sub",
     ...overrides,
   });
 

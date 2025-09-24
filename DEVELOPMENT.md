@@ -20,7 +20,7 @@ This guide covers setting up a local development environment for Talk to the Cit
        └─────────────────────────────────────┘
 ```
 
-**External Services**: Firebase (Auth), Google Cloud Storage (Reports), Redis (Jobs)
+**External Services**: Firebase (Auth), Google Cloud Storage (Reports), Redis (Rate Limiting), Google Pub/Sub (Jobs)
 
 ### Data Flow
 
@@ -48,6 +48,7 @@ You'll also need service accounts and API keys for:
 
 - Firebase project (authentication and database)
 - Google Cloud Storage (report storage)
+- Google Cloud Pubsub (queuing jobs for LLM processing)
 - OpenAI or similar API (LLM processing)
 
 These cloud services are required even for local development, so basic instructions are provided below.
@@ -132,7 +133,7 @@ npm run build
 
 ### 3. Redis
 
-Used for job queue management.
+Used for rate limiting.
 
 **Install Redis:**
 
@@ -152,7 +153,25 @@ redis-server
 redis-cli ping  # Should return "PONG"
 ```
 
-### 4. pyserver (Python/FastAPI)
+### 4. GCP Pubsub Emulator
+
+You will need the google cloud CLI tool.
+Follow this link for installation instructions: [GCP CLI tool](https://cloud.google.com/sdk/docs/install)
+
+**Install the Emulator**
+
+```bash
+gcloud components install pubsub-emulator
+gcloud components update
+```
+
+**Start the Emulator**
+
+```bash
+gcloud beta emulators pubsub start
+```
+
+### 5. pyserver (Python/FastAPI)
 
 Handles LLM processing calls.
 
@@ -185,7 +204,7 @@ pytest
 # For coverage: pytest --cov=.
 ```
 
-### 5. express-server (Node.js/Express)
+### 6. express-server (Node.js/Express)
 
 Main backend API that coordinates with pyserver and manages jobs.
 

@@ -55,6 +55,8 @@ const createMockEnv = (
   FIREBASE_ADMIN_PROJECT_ID: undefined,
   RATE_LIMIT_PREFIX: "test",
   PYSERVER_MAX_CONCURRENCY: 5,
+  PUBSUB_TOPIC_NAME: "test-topic",
+  PUBSUB_SUBSCRIPTION_NAME: "test-sub",
 });
 
 // Mock validateEnv to return a valid test environment
@@ -74,6 +76,8 @@ vi.mock("../types/context", () => ({
     FEATURE_FLAG_API_KEY: undefined,
     FEATURE_FLAG_HOST: "https://test.posthog.com",
     LOCAL_FLAGS: undefined,
+    PUBSUB_TOPIC_NAME: "test-topic",
+    PUBSUB_SUBSCRIPTION_NAME: "test-sub",
   })),
 }));
 

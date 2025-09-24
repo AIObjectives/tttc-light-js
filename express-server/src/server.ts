@@ -15,12 +15,12 @@ import { getUserLimits } from "./routes/user";
 
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
-import { setupWorkers } from "./workers";
 import {
   migrateReportUrlHandler,
   getUnifiedReportHandler,
 } from "./routes/report";
-import { setupConnection } from "./Queue";
+import { createQueue, Queue } from "./queue";
+import Redis from "ioredis";
 import {
   getAllowedOrigins,
   createCorsOptions,
@@ -31,6 +31,8 @@ import {
   initializeAnalyticsClient,
   shutdownAnalyticsClient,
 } from "./analytics";
+
+import { setupWorkers } from "./workers";
 
 const serverLogger = logger.child({ module: "server" });
 
@@ -91,9 +93,20 @@ app.use(pinoHttp({ logger }));
 // Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));
 
-const { connection, pipelineQueue: plq } = setupConnection(env);
+// Create and start the queue
+const pipelineQueue = createQueue(env);
+pipelineQueue.listen();
 
-export const pipelineQueue = plq;
+// Create Redis connection for rate limiting
+const redisConnection = new Redis(env.REDIS_URL, {
+  connectionName: "Express-Pipeline",
+  maxRetriesPerRequest: null,
+});
+
+// Setup Legacy workers (remove after queue switch over)
+setupWorkers(redisConnection, env.REDIS_QUEUE_NAME);
+
+export { pipelineQueue };
 
 // Initialize feature flags
 initializeFeatureFlags(env);
@@ -101,8 +114,7 @@ initializeFeatureFlags(env);
 // Initialize analytics client (non-blocking)
 initializeAnalyticsClient(env);
 
-// This is added here so that the worker gets initialized. Queue is referenced in /create, so its initialized there.
-setupWorkers(connection, env.REDIS_QUEUE_NAME);
+// Queue is now listening for jobs automatically
 
 const rateLimitPrefix = env.RATE_LIMIT_PREFIX;
 
@@ -117,7 +129,7 @@ const defaultRateLimiter = rateLimit({
   },
   store: new RedisStore({
     sendCommand: (command: string, ...args: string[]) =>
-      connection.call(command, ...args) as Promise<RedisReply>,
+      redisConnection.call(command, ...args) as Promise<RedisReply>,
     prefix: `${rateLimitPrefix}-rate-limit-default`,
   }),
 });
@@ -134,7 +146,7 @@ const reportRateLimiter = rateLimit({
   },
   store: new RedisStore({
     sendCommand: (command: string, ...args: string[]) =>
-      connection.call(command, ...args) as Promise<RedisReply>,
+      redisConnection.call(command, ...args) as Promise<RedisReply>,
     prefix: `${rateLimitPrefix}-rate-limit-report`,
   }),
 });
@@ -207,9 +219,15 @@ async function gracefulShutdown(signal: string) {
     serverLogger.info("HTTP server closed");
 
     try {
-      // Close Redis connection
-      if (connection) {
-        connection.disconnect();
+      // Close queue connection
+      if (pipelineQueue) {
+        await pipelineQueue.close();
+        serverLogger.info("Queue connection closed");
+      }
+
+      // Close Redis connection for rate limiting
+      if (redisConnection) {
+        redisConnection.disconnect();
         serverLogger.info("Redis connection closed");
       }
 

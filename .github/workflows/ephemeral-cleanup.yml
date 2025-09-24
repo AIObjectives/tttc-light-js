@@ -43,6 +43,18 @@ jobs:
             echo "frontend_domain=$FRONTEND_DOMAIN" >> $GITHUB_OUTPUT
           fi
 
+      - name: Delete Pub/Sub topic and subscription
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          TOPIC_NAME="dev-pipeline-pr-${PR_NUMBER}"
+          SUBSCRIPTION_NAME="dev-pipeline-pr-${PR_NUMBER}-subscription"
+
+          # Delete subscription first (ignore errors if it doesn't exist)
+          gcloud pubsub subscriptions delete $SUBSCRIPTION_NAME || echo "Subscription not found"
+
+          # Delete topic (ignore errors if it doesn't exist)
+          gcloud pubsub topics delete $TOPIC_NAME || echo "Topic not found"
+
       - name: Delete Cloud Run services
         run: |
           PR_NUMBER=${{ github.event.number }}

@@ -65,6 +65,12 @@ spec:
                 tttc-test-2-bucket,tttc-light-newbucket,tttc-light-dev,tttc-light-js-justin-private
             - name: REDIS_QUEUE_NAME
               value: dev-PR_NUMBER
+            - name: PUBSUB_TOPIC_NAME
+              value: dev-pipeline-pr-PR_NUMBER
+            - name: PUBSUB_SUBSCRIPTION_NAME
+              value: dev-pipeline-pr-PR_NUMBER-subscription
+            - name: GOOGLE_CLOUD_PROJECT_ID
+              value: tttc-light-js
             - name: ALLOWED_ORIGINS
               value: "https://t3c-next-client-pr-TAG.a.run.app"
             - name: FEATURE_FLAG_PROVIDER
