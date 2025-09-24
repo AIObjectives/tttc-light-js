@@ -65,7 +65,6 @@ const asExpressResponse = (mockRes: MockResponse): Response =>
 // Mock the server pipeline queue import
 vi.mock("../../server", () => ({
   pipelineQueue: {
-    getJobState: vi.fn(),
     getJob: vi.fn(),
   },
 }));
@@ -231,13 +230,6 @@ describe("Report Routes", () => {
       setupRequestParams({ identifier: testReportId }, mockReq);
       vi.mocked(Firebase.getReportRefById).mockResolvedValue(testReportRef);
 
-      // Mock job status as finished
-      const mockJob: MockJob = {
-        progress: Promise.resolve({ status: "finished" }),
-      };
-      vi.mocked(pipelineQueue.getJobState).mockResolvedValue("completed");
-      vi.mocked(pipelineQueue.getJob).mockResolvedValue(mockJob);
-
       setupStorageMock(mockStorage);
 
       await getUnifiedReportHandler(mockReq, asExpressResponse(mockRes));
@@ -282,13 +274,6 @@ describe("Report Routes", () => {
       mockReq.params = { identifier: testReportId };
       vi.mocked(Firebase.getReportRefById).mockResolvedValue(testReportRef);
 
-      // Mock job status as processing
-      vi.mocked(pipelineQueue.getJobState).mockResolvedValue("active");
-      const mockJob: MockJob = {
-        progress: Promise.resolve({ status: "clustering" }),
-      };
-      vi.mocked(pipelineQueue.getJob).mockResolvedValue(mockJob);
-
       await getUnifiedReportHandler(mockReq, asExpressResponse(mockRes));
 
       expect(mockRes.json).toHaveBeenCalledWith({
@@ -317,9 +302,6 @@ describe("Report Routes", () => {
 
       mockReq.params = { identifier: testReportId };
       vi.mocked(Firebase.getReportRefById).mockResolvedValue(testReportRef);
-
-      // Mock job as completed
-      vi.mocked(pipelineQueue.getJobState).mockResolvedValue("completed");
 
       setupStorageMock(mockStorage);
 

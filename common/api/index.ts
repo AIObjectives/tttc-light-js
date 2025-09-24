@@ -24,11 +24,11 @@ export const reportJobStatus = z.enum([
   "extraction",
   "sorting",
   "dedup",
+  "summarizing",
   "wrappingup",
   "finished",
   "failed",
   "notFound",
-  "summarizing",
 ]);
 
 export type ReportJobStatus = z.infer<typeof reportJobStatus>;

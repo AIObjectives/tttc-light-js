@@ -476,9 +476,21 @@ export default async function create(req: RequestWithLogger, res: Response) {
     // Queue the pipeline job in the background
     // Use firebaseJobId as queue job ID but stable reportId-based filename for storage
     // This ensures consistent storage location for regeneration scenarios
-    pipelineQueue.add("generate-report", result.value.pipelineJob, {
-      jobId: result.value.pipelineJob.config.firebaseDetails.firebaseJobId,
-    });
+    try {
+      await pipelineQueue.enqueue(result.value.pipelineJob);
+    } catch (queueError) {
+      // Log queue error but don't fail the request since response is already sent
+      req.log.error(
+        {
+          error: queueError,
+          errorMessage:
+            queueError instanceof Error
+              ? queueError.message
+              : "Queue error occurred",
+        },
+        "Failed to enqueue pipeline job",
+      );
+    }
   } catch (e) {
     req.log.error(
       {

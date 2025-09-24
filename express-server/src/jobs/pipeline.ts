@@ -1,7 +1,6 @@
 import * as schema from "tttc-common/schema";
 import { Env } from "../types/context";
 import { createStorage } from "../storage";
-import { Job } from "bullmq";
 import * as apiPyserver from "tttc-common/apiPyserver";
 import { logger } from "tttc-common/logger";
 import {
@@ -17,7 +16,6 @@ import * as Pyserver from "../pipeline/";
 import { randomUUID } from "crypto";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 import * as Firebase from "../Firebase";
-import * as api from "tttc-common/api";
 import { getAnalytics } from "tttc-common/analytics";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
@@ -101,9 +99,8 @@ type PipelineErrors =
   | Pyserver.InvalidResponseDataError
   | Pyserver.TimeoutError;
 
-export async function pipelineJob(job: Job<PipelineJob>) {
-  const jobdata = job.data;
-  const { data, config, reportDetails } = jobdata;
+export async function pipelineJob(job: PipelineJob) {
+  const { data, config, reportDetails } = job;
   const { env } = config;
   const { title, description, question, filename } = reportDetails;
 
@@ -115,11 +112,11 @@ export async function pipelineJob(job: Job<PipelineJob>) {
   // JSON.stringify can block main thread for 100-500ms on large reports
   const numRows = data.length;
   const actualDataSize = JSON.stringify(data).length;
+  const reportId = config.firebaseDetails?.reportId;
 
   pipelineLogger.info(
     {
-      jobId: job.id,
-      reportId: config.firebaseDetails?.reportId,
+      reportId: reportId,
       actualDataSize,
       numRows,
       filename,
@@ -130,8 +127,7 @@ export async function pipelineJob(job: Job<PipelineJob>) {
   // Collect analytics data - will be sent in batch at end to avoid blocking
   const analyticsData: Record<string, any> = {
     userId: config.firebaseDetails.userId,
-    job_id: job.id,
-    report_id: config.firebaseDetails?.reportId,
+    report_id: reportId,
     actual_data_size_bytes: actualDataSize,
     num_rows: numRows,
     model: config.llm.model,
@@ -144,7 +140,7 @@ export async function pipelineJob(job: Job<PipelineJob>) {
 
   // Do each of the steps in the pipeline
   // This returns the results of each of the steps.
-  pipelineLogger.info({ jobId: job.id }, "Starting pipeline steps");
+  pipelineLogger.info({ reportId }, "Starting pipeline steps");
   const pipelineStart = Date.now();
   const { topicTreeStep, claimsStep, sortedStep, summariesStep, addonsStep } =
     await doPipelineSteps(job);
@@ -155,7 +151,7 @@ export async function pipelineJob(job: Job<PipelineJob>) {
 
   pipelineLogger.info(
     {
-      jobId: job.id,
+      reportId: reportId,
       duration: pipelineDuration,
       stepsCompleted: {
         topicTree: topicTreeStep.tag === "success",
@@ -296,7 +292,6 @@ export async function pipelineJob(job: Job<PipelineJob>) {
     const reportJsonSize = resultValueJson.length;
     pipelineLogger.info(
       {
-        jobId: job.id,
         reportJsonSize,
         filename,
       },
@@ -311,7 +306,6 @@ export async function pipelineJob(job: Job<PipelineJob>) {
     if (saveResult.tag === "failure") {
       pipelineLogger.error(
         {
-          jobId: job.id,
           error: saveResult.error,
           filename,
           reportJsonSize,
@@ -329,7 +323,6 @@ export async function pipelineJob(job: Job<PipelineJob>) {
 
     pipelineLogger.info(
       {
-        jobId: job.id,
         savedUrl: saveResult.value,
         reportJsonSize,
         analytics: {
@@ -388,13 +381,8 @@ export async function pipelineJob(job: Job<PipelineJob>) {
 
     // Set ReportRef status to completed
     await updatePipelineStatus(reportId, "completed");
-
-    pipelineLogger.info("Finished report");
-    await job.updateProgress({
-      status: api.reportJobStatus.Values.finished,
-    });
   } else {
-    const err = finalResult.error;
+    const err = finalResult.error as Error;
 
     pipelineLogger.error(
       {
@@ -428,8 +416,8 @@ export async function pipelineJob(job: Job<PipelineJob>) {
 /**
  * Does each of the steps in the pyserver pipeline
  */
-async function doPipelineSteps(job: Job<PipelineJob>) {
-  const { config, data } = job.data;
+async function doPipelineSteps(job: PipelineJob) {
+  const { config, data } = job;
   const {
     doClaimsStep,
     doSortClaimsTreeStep,
@@ -443,18 +431,18 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     MissingInterviewAttributionsError
   > = makePipelineComments(data);
 
+  const reportId = config.firebaseDetails?.reportId;
+
   // Update job progress
   pipelineLogger.info(
     {
-      jobId: job.id,
+      reportId: reportId,
       numComments:
         pipelineComments.tag === "success" ? pipelineComments.value.length : 0,
     },
     "Step 1: generating taxonomy of topics and subtopics",
   );
-  await job.updateProgress({
-    status: api.reportJobStatus.Values.clustering,
-  });
+
   // Update reportRef to keep status in sync with correct sub-state
   const reportIdForStatus =
     config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId;
@@ -470,7 +458,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   if (topicTreeStep.tag === "failure") {
     pipelineLogger.error(
       {
-        jobId: job.id,
+        reportId: reportId,
         error: topicTreeStep.error,
         errorName: topicTreeStep.error.name,
         errorMessage: topicTreeStep.error.message,
@@ -481,7 +469,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   } else {
     pipelineLogger.info(
       {
-        jobId: job.id,
+        reportId: reportId,
         duration: Date.now() - stepStart,
         numTopics: topicTreeStep.value.data.tree.taxonomy.length,
       },
@@ -493,9 +481,6 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
   pipelineLogger.info(
     "Step 2: extracting claims matching the topics and subtopics",
   );
-  await job.updateProgress({
-    status: api.reportJobStatus.Values.extraction,
-  });
   // Update reportRef to keep status in sync with correct sub-state
   await updatePipelineStatus(
     config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
@@ -511,9 +496,6 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
 
   // update job progress
   pipelineLogger.info("Step 3: cleaning and sorting the taxonomy");
-  await job.updateProgress({
-    status: api.reportJobStatus.Values.sorting,
-  });
   // Update reportRef to keep status in sync with correct sub-state
   await updatePipelineStatus(
     config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
@@ -531,9 +513,11 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
 
   // update job progress
   pipelineLogger.info("Step 4: generating topic summaries");
-  await job.updateProgress({
-    status: api.reportJobStatus.Values.summarizing,
-  });
+  await updatePipelineStatus(
+    config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
+    "processing",
+    "summarizing",
+  );
 
   // do topic summaries step
   const summariesStep: PyserverResult<
@@ -569,10 +553,7 @@ async function doPipelineSteps(job: Job<PipelineJob>) {
     "Cruxes step completed",
   );
   // update job progress
-  pipelineLogger.info("Step 4: wrapping up");
-  await job.updateProgress({
-    status: api.reportJobStatus.Values.wrappingup,
-  });
+  pipelineLogger.info("Step 5: wrapping up");
   // Update reportRef to keep status in sync with correct sub-state
   await updatePipelineStatus(
     config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,

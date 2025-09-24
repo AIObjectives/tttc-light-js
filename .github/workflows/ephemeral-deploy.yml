@@ -82,6 +82,21 @@ jobs:
           docker build -f pyserver/Dockerfile -t gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA} .
           docker push gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA}
 
+      - name: Create Pub/Sub topic and subscription
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          TOPIC_NAME="dev-pipeline-pr-${PR_NUMBER}"
+          SUBSCRIPTION_NAME="dev-pipeline-pr-${PR_NUMBER}-subscription"
+
+          # Create topic (ignore if already exists)
+          gcloud pubsub topics create $TOPIC_NAME || echo "Topic already exists"
+
+          # Create subscription (ignore if already exists)
+          gcloud pubsub subscriptions create $SUBSCRIPTION_NAME \
+            --topic=$TOPIC_NAME \
+            --ack-deadline=600 \
+            --message-retention-duration=7d || echo "Subscription already exists"
+
       - name: Prepare deployment manifests
         run: |
           PR_NUMBER=${{ github.event.number }}
@@ -94,7 +109,7 @@ jobs:
           # Process each manifest
           for service in next-client express-server pyserver; do
             cp deploy/cloudrun/${service}.yaml deploy/temp/${service}.yaml
-            
+
             # Replace placeholders
             sed -i "s/PR_NUMBER/${PR_NUMBER}/g" deploy/temp/${service}.yaml
             sed -i "s/TAG/pr-${PR_NUMBER}-${SHORT_SHA}/g" deploy/temp/${service}.yaml

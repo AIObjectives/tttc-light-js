@@ -60,6 +60,10 @@ export const env = z.object({
   REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
   ALLOWED_GCS_BUCKETS: z.string().transform((val) => val.split(",")),
   REDIS_QUEUE_NAME: z.string().default("pipeline"),
+  // Queue system configuration (optional in test environment)
+  PUBSUB_TOPIC_NAME: z.string().optional().default("test-topic"),
+  PUBSUB_SUBSCRIPTION_NAME: z.string().optional().default("test-subscription"),
+  GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
   ALLOWED_ORIGINS: z
     .string({
       required_error: "ALLOWED_ORIGINS is required in all environments",
