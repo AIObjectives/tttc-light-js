@@ -13,9 +13,9 @@ from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
-# Reasonable limits
-MAX_COMMENT_LENGTH = 10000  # Generous but prevents abuse
-MAX_PROMPT_LENGTH = 100000  # OpenAI has its own limits anyway
+# Extremely permissive limits - close to disabling
+MAX_COMMENT_LENGTH = 10000000  # 10 million chars (~10MB of text)
+MAX_PROMPT_LENGTH = 50000000  # 50 million chars (~50MB) - far exceeds any API limits
 
 # Simple configuration
 ENABLE_PII_FILTERING = os.getenv("ENABLE_PII_FILTERING", "true").lower() == "true"
