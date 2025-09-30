@@ -971,14 +971,20 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
     client = OpenAI(api_key=api_key)
 
     # add claims with enumerated ids (relative to this subtopic only)
+    # Include claim text, quote text, and IDs so LLM can group effectively
     full_prompt = llm.user_prompt
     for i, orig_claim in enumerate(claims):
         # Basic sanitization check
-        sanitized_claim, is_safe = basic_sanitize(orig_claim["claim"], f"dedup_claim_{i}")
-        if is_safe:
-            full_prompt += "\nclaimId" + str(i) + ": " + sanitized_claim
+        sanitized_claim, is_safe_claim = basic_sanitize(orig_claim["claim"], f"dedup_claim_{i}")
+        sanitized_quote, is_safe_quote = basic_sanitize(orig_claim.get("quote", ""), f"dedup_quote_{i}")
+
+        if is_safe_claim and is_safe_quote:
+            full_prompt += f"\nclaimId{i}:"
+            full_prompt += f"\n  - claim: {sanitized_claim}"
+            full_prompt += f"\n  - quote: {sanitized_quote}"
+            full_prompt += f"\n  - quoteId: quote{i}"
         else:
-            logger.warning(f"Skipping unsafe claim in dedup")
+            logger.warning(f"Skipping unsafe claim or quote in dedup")
     
     # Basic prompt length check
     full_prompt = sanitize_prompt_length(full_prompt)
@@ -1009,8 +1015,9 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
     try:
         deduped_claims_obj = json.loads(deduped_claims)
     except JSONDecodeError:
-        print("json failure;dedup:", deduped_claims)
-        deduped_claims_obj = deduped_claims
+        logger.error(f"JSON parse failure in dedup_claims, returning empty result")
+        logger.error(f"json failure;dedup: {deduped_claims[:500]}")  # Only print first 500 chars
+        deduped_claims_obj = {"groupedClaims": []}  # Return empty but valid structure
     return {"dedup_claims": deduped_claims_obj, "usage": response.usage}
 
 
@@ -1261,83 +1268,100 @@ def sort_claims_tree(
                 deduped = response["dedup_claims"]
                 usage = response["usage"]
 
-                # check for duplicates bidirectionally, as we may get either of these scenarios
-                # for the same pair of claims:
-                # {'nesting': {'claimId0': [], 'claimId1': ['claimId0']}} => {0: [1], 1: [0]}
-                # {'nesting': {'claimId0': ['claimId1'], 'claimId1': []}} => {0: [1], 1: [0]}
-                # anecdata: recent models may be better about this?
-
-                claim_set = {}
-                if "nesting" in deduped:
-                    # implementation notes:
-                    # - MOST claims should NOT be near-duplicates
-                    # - nesting where |claim_vals| > 0 should be a smaller set than |subtopic_data["claims"]|
-                    # - but also we won't have duplicate info bidirectionally — A may be dupe of B, but B not dupe of A
-                    for claim_key, claim_vals in deduped["nesting"].items():
-                        # this claim_key has some duplicates
-                        if len(claim_vals) > 0:
-                            # extract relative index
-                            claim_id = int(claim_key.split("Id")[1])
-                            dupe_ids = [
-                                int(dupe_claim_key.split("Id")[1])
-                                for dupe_claim_key in claim_vals
-                            ]
-                            # assume duplication is symmetric: add claim_id to dupe_ids, check that each of these maps to the others
-                            all_dupes = [claim_id]
-                            all_dupes.extend(dupe_ids)
-                            for curr_id, dupe in enumerate(all_dupes):
-                                other_ids = [
-                                    d for i, d in enumerate(all_dupes) if i != curr_id
-                                ]
-                                if dupe in claim_set:
-                                    for other_id in other_ids:
-                                        if other_id not in claim_set[dupe]:
-                                            claim_set[dupe].append(other_id)
-                                else:
-                                    claim_set[dupe] = other_ids
-
-                accounted_for_ids = {}
+                # Process grouped claims from LLM deduplication
                 deduped_claims = []
-                # for each claim in our original list
-                for claim_id, claim in enumerate(subtopic_data["claims"]):
-                    # add speakers of all claims
-                    if "speaker" in claim:
-                        speaker = claim["speaker"]
-                    else:
-                        print("no speaker provided:", claim)
-                        speaker = "unknown"
-                    per_topic_speakers.add(speaker)
+                accounted_claim_ids = set()
 
-                    # only create a new claim if we haven't visited this one already
-                    if claim_id not in accounted_for_ids:
-                        clean_claim = {k: v for k, v in claim.items()}
-                        clean_claim["duplicates"] = []
+                # Process grouped claims format
+                # Each group consolidates multiple claims/quotes under a single higher-level claim
+                for group in deduped.get("groupedClaims", []):
+                    # Extract originalClaimIds - these reference indices in subtopic_data["claims"]
+                    original_claim_ids = []
+                    for claim_id_str in group.get("originalClaimIds", []):
+                        try:
+                            if isinstance(claim_id_str, str) and "claimId" in claim_id_str:
+                                original_claim_ids.append(int(claim_id_str.replace("claimId", "")))
+                            elif isinstance(claim_id_str, int):
+                                original_claim_ids.append(claim_id_str)
+                        except (ValueError, IndexError):
+                            logger.warning(f"Could not parse claim ID: {claim_id_str}")
+                            continue
 
-                        # if this claim has some duplicates
-                        if claim_id in claim_set:
-                            dupe_ids = claim_set[claim_id]
-                            for dupe_id in dupe_ids:
-                                if dupe_id not in accounted_for_ids:
-                                    dupe_claim = {
-                                        k: v
-                                        for k, v in subtopic_data["claims"][
-                                            dupe_id
-                                        ].items()
-                                    }
-                                    dupe_claim["duplicated"] = True
+                    if not original_claim_ids:
+                        logger.warning(f"Group has no valid claim IDs: {group}")
+                        continue
 
-                                    # add all duplicates as children of main claim
-                                    clean_claim["duplicates"].append(dupe_claim)
+                    # Validate all claim IDs are within bounds
+                    valid_claim_ids = [
+                        cid for cid in original_claim_ids
+                        if cid < len(subtopic_data["claims"])
+                    ]
+                    if not valid_claim_ids:
+                        logger.warning(f"Group has no valid claim IDs within bounds: {original_claim_ids}")
+                        continue
 
-                                    accounted_for_ids[dupe_id] = 1
+                    # Track which claims we've accounted for
+                    accounted_claim_ids.update(valid_claim_ids)
 
-                        # add verified claim (may be identical if it has no dupes, except for duplicates: [] field)
-                        deduped_claims.append(clean_claim)
-                        accounted_for_ids[claim_id] = 1
+                    # Use the first claim as the base, but with the new grouped claim text
+                    primary_claim_id = valid_claim_ids[0]
+                    base_claim = subtopic_data["claims"][primary_claim_id]
+
+                    # Create the new grouped claim with aggregated quotes
+                    grouped_claim = {k: v for k, v in base_claim.items()}
+                    # Use LLM's grouped claim text, fallback to original if empty/missing
+                    claim_text = group.get("claimText", "").strip() or base_claim["claim"]
+                    grouped_claim["claim"] = claim_text
+                    grouped_claim["duplicates"] = []
+
+                    # Add all speakers to the topic speaker set
+                    if "speaker" in base_claim:
+                        per_topic_speakers.add(base_claim["speaker"])
+
+                    # Add the remaining claims as duplicates (with their original quotes)
+                    for claim_id in valid_claim_ids[1:]:
+                        dupe_claim = {k: v for k, v in subtopic_data["claims"][claim_id].items()}
+                        dupe_claim["duplicated"] = True
+                        grouped_claim["duplicates"].append(dupe_claim)
+
+                        # Add their speakers too
+                        if "speaker" in dupe_claim:
+                            per_topic_speakers.add(dupe_claim["speaker"])
+
+                    deduped_claims.append(grouped_claim)
+
+                # Validate all claims were grouped - add missing claims as single-item groups
+                all_claim_ids = set(range(len(subtopic_data["claims"])))
+                missing_claim_ids = all_claim_ids - accounted_claim_ids
+                if missing_claim_ids:
+                    logger.warning(
+                        f"LLM missed {len(missing_claim_ids)} claims in grouping for {subtopic}, "
+                        f"adding them as single-item groups"
+                    )
+                    for missing_id in sorted(missing_claim_ids):
+                        claim = {k: v for k, v in subtopic_data["claims"][missing_id].items()}
+                        claim["duplicates"] = []
+                        if "speaker" in claim:
+                            per_topic_speakers.add(claim["speaker"])
+                        deduped_claims.append(claim)
+
+
+                # Preserve all claims - single-quote claims may represent important minority voices
+                # The aggressive deduplication prompt should have already consolidated similar claims
+                # Any remaining single-quote claims likely represent unique perspectives worth preserving
+                filtered_deduped_claims = deduped_claims
+
+                # Log statistics about claim distribution for monitoring
+                single_quote_count = sum(1 for c in deduped_claims if len(c["duplicates"]) == 0)
+                multi_quote_count = len(deduped_claims) - single_quote_count
+                if single_quote_count > 0:
+                    logger.info(
+                        f"{subtopic}: {multi_quote_count} grouped claims, {single_quote_count} unique single-voice claims preserved"
+                    )
 
                 # sort so the most duplicated claims are first
                 sorted_deduped_claims = sorted(
-                    deduped_claims, key=lambda x: len(x["duplicates"]), reverse=True,
+                    filtered_deduped_claims, key=lambda x: len(x["duplicates"]), reverse=True,
                 )
                 if log_to_wandb:
                     dupe_logs.append(
