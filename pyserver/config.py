@@ -23,6 +23,17 @@ COST_BY_MODEL = {
 MIN_WORD_COUNT_FOR_MEANING = 3
 MIN_CHAR_COUNT_FOR_MEANING = 10
 
+# ============================================================================
+# PROMPTS - TEST-ONLY DEFAULTS
+# ============================================================================
+# NOTE: These prompts are ONLY used in test files (test_pipeline.py, etc.)
+# Production API (main.py) receives prompts from the frontend via the API request.
+# The source of truth for production prompts is: common/prompts/index.ts
+#
+# These should be kept in sync with common/prompts/index.ts for consistency,
+# but they serve as convenient defaults for standalone Python testing.
+# ============================================================================
+
 SYSTEM_PROMPT = """
 You are a professional research assistant. You have helped run many public consultations,
 surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights.
@@ -55,26 +66,39 @@ Now here is the list of comments:
 """
 
 COMMENT_TO_CLAIMS_PROMPT = """
-I'm going to give you a comment made by a participant and a list of topics and subtopics
-which have already been extracted.
-I want you to extract a list of concise claims that the participant may support.
+I'm going to give you a comment made by a participant and a list of topics and subtopics which have already been extracted.
+I want you to extract the most important concise claims that the participant may support.
 We are only interested in claims that can be mapped to one of the given topic and subtopic.
 The claim must be fairly general but not a platitude.
 It must be something that other people may potentially disagree with. Each claim must also be atomic.
+
+CRITICAL EXTRACTION RULES - STRICT ENFORCEMENT:
+1. Extract ZERO claims for comments that are vague, meandering, or lack a clear point
+2. Extract ZERO claims for anecdotes without a broader principle
+3. Extract multiple claims if the comment contains distinct, substantial debatable positions, but treat similar points as variations of one claim rather than separate claims
+4. ONLY extract claims that represent genuinely debatable positions
+5. DO NOT extract claims that are:
+   - Platitudes or truisms ("communication is important")
+   - Mere descriptions of experiences without advocating a position
+   - Minor variations of the same underlying idea
+   - Questions or musings without clear stances
+
+QUALITY THRESHOLD: If you're unsure whether a comment contains a substantial claim worth extracting, err on the side of extracting NOTHING. It's better to miss marginal claims than to create noise.
+
 For each claim, please also provide a relevant quote from the transcript.
 The quote must be as concise as possible while still supporting the argument.
 The quote doesn't need to be a logical argument.
 It could also be a personal story or anecdote illustrating why the interviewee would make this claim.
 You may use "[...]" in the quote to skip the less interesting bits of the quote.
-/return a JSON object of the form {
+
+Return a JSON object of the form {
   "claims": [
     {
       "claim": string, // a very concise extracted claim
       "quote": string // the exact quote,
       "topicName": string // from the given list of topics
       "subtopicName": string // from the list of subtopics
-    },
-    // ...
+    }
   ]
 }
 
@@ -84,24 +108,75 @@ Now here is the list of topics/subtopics:"""
 # comments: And then here is the comment:"""
 
 CLAIM_DEDUP_PROMPT = """
-I'm going to give you a JSON object containing a list of claims with some ids.
-I want you to remove any near-duplicate claims from the list by nesting some claims under some top-level claims.
-For example, if we have 5 claims and claim 3 and 5 are similar to claim 2, we will nest claim 3 and 5 under claim 2.
-The nesting will be represented as a JSON object where the keys are the ids of the
-top-level claims and the values are lists of ids of the nested claims.
+You are grouping claims to help users understand which themes matter most in this consultation. Your goal is to consolidate similar claims into well-supported groups while preserving genuinely unique perspectives.
+
+You will receive a list of claims with IDs, claim text, and quote text for each.
+
+GROUPING DECISION FRAMEWORK:
+
+Step 1 - Identify Core Themes:
+Ask yourself: "What are the 3-5 main ideas or concerns being expressed across ALL these claims?"
+These themes become your candidate groups.
+
+Step 2 - Apply Grouping Criteria:
+Group claims together if they share ANY of these:
+✓ Same underlying concern or problem (even if different solutions proposed)
+✓ Same recommendation or solution (even if different reasoning)
+✓ Same value or principle being expressed
+✓ Different aspects of the same topic (e.g., "cost too high" + "pricing unclear" = pricing concerns)
+✓ Specific examples of a general pattern
+
+Keep claims separate ONLY if:
+✗ They address completely different topics within this subtopic
+✗ They represent opposing positions (agree vs disagree on something)
+✗ One is about process/how, the other is about outcome/what
+
+Step 3 - Write Strong Group Claims:
+For each group, write a claim that:
+- Captures the shared essence at a higher level of abstraction
+- Uses language and concepts that appear in the original claims (avoid introducing new terminology)
+- Is specific enough to be meaningful (avoid vague platitudes like "improve X")
+- Could plausibly be supported by all quotes in the group
+- Uses clear, simple language
+- Stays faithful to what participants actually said
+
+Step 4 - Validate Your Groups:
+- Prioritize natural thematic coherence over hitting specific group counts
+- Each group should represent a distinct, meaningful theme
+- Single-claim groups should be relatively uncommon - if you have many, consider whether you're missing higher-level themes that connect claims
+- Avoid over-consolidation: don't force claims together just to reduce group count
+- The right number of groups depends on the natural diversity of perspectives in the input
+
+EXAMPLES OF GOOD GROUPING:
+
+Input claims:
+- "Parking fees are too expensive"
+- "The parking pass system is confusing"
+- "We need more parking spaces"
+
+Good grouped claim: "Parking access and affordability need improvement"
+Why: All three address parking as a barrier, even though they emphasize different aspects.
+
+Input claims:
+- "We should prioritize renewable energy"
+- "The city should ban plastic bags"
+
+Bad grouping: "Environmental initiatives needed"
+Why: These are different environmental policies that shouldn't be lumped together just because they're both environmental.
 
 Return a JSON object of the form {
-  "nesting": {
-    "claimId1": [],
-    "claimId2": ["claimId3", "claimId5"],
-    "claimId4": []
-  }
+  "groupedClaims": [
+    {
+      "claimText": "A higher-level claim that represents all quotes in this group",
+      "originalClaimIds": ["claimId1", "claimId3", "claimId5"]
+    }
+  ]
 }
 
-And now, here are the claims:"""
+Now here are the claims to group:"""
 
 TOPIC_SUMMARY_PROMPT = """
-I'm going to give youa JSON object containing a list of topics with their descriptions, subtopics, and claims. 
+I'm going to give you a JSON object containing a list of topics with their descriptions, subtopics, and claims. 
 For each topic I want you to generate a detailed summary of the subtopics and claims for that topic.  The summary
 should not exceed 140 characters. 
 
