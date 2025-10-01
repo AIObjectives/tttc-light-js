@@ -108,7 +108,7 @@ export class GooglePubSubQueue implements Queue {
       }
     });
 
-    this.subscription.on("error", (error) => {
+    this.subscription.on("error", (error: Error) => {
       pubsubLogger.error({ error }, "Pubsub listener encountered an error");
     });
   }
