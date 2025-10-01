@@ -267,19 +267,20 @@ function ExpandTopic() {
 
   return (
     <>
-      <Separator className={`${isOpen ? "" : "hidden"}`} />
       {isOpen && data.context ? (
         <TopicContextDescription context={data.context} />
       ) : (
         <></>
       )}
-      {subtopicNodes.map((node, i) => (
-        <SubtopicItem
-          subtopicNode={node}
-          show={isOpen && i <= pagination}
-          key={node.id}
-        />
-      ))}
+      <Col className="px-3 sm:px-8 gap-y-4">
+        {subtopicNodes.map((node, i) => (
+          <SubtopicItem
+            subtopicNode={node}
+            show={isOpen && i <= pagination}
+            key={node.id}
+          />
+        ))}
+      </Col>
       {isOpen && pagination <= subtopicNodes.length && (
         <>
           <ShowMoreButton

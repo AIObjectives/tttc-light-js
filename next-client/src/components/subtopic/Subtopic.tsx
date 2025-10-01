@@ -1,7 +1,7 @@
 import React, { forwardRef } from "react";
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
-import { ExpandableText, Separator, TextIcon } from "../elements";
+import { ExpandableText, TextIcon } from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import { Claim } from "../claim";
 import { Col, Row } from "../layout";
@@ -20,7 +20,7 @@ export const Subtopic = forwardRef<
 >(function TopicComponent({ subtopicNode, onExpandSubtopic }, ref) {
   return (
     <div data-testid={"subtopic-item"}>
-      <Col gap={4} className="py-6 sm:py-8" ref={ref}>
+      <Col gap={4} className="py-3 sm:py-8 border rounded-[8px]" ref={ref}>
         <SubtopicSummary
           title={subtopicNode.data.title}
           description={subtopicNode.data.description}
@@ -32,7 +32,6 @@ export const Subtopic = forwardRef<
           onExpandSubtopic={onExpandSubtopic}
         />
       </Col>
-      <Separator />
     </div>
   );
 });
