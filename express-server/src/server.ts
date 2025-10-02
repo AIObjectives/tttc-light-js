@@ -97,11 +97,11 @@ app.use(contextMiddleware(env));
 const pipelineQueue = createQueue(env);
 pipelineQueue.listen().catch(async (error: Error) => {
   serverLogger.error(
-  { error}, 
-  "Failed to start pipeline queue listener - exiting",
+    { error },
+    "Failed to start pipeline queue listener - exiting",
   );
-  await gracefulShutdown("QUEUE_LISTEN_ERROR")
-})
+  await gracefulShutdown("QUEUE_LISTEN_ERROR");
+});
 
 // Create Redis connection for rate limiting
 const redisConnection = new Redis(env.REDIS_URL, {
