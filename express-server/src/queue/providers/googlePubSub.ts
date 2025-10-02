@@ -90,22 +90,24 @@ export class GooglePubSubQueue implements Queue {
       { subscription: this.subscription.name },
       "Pubsub now listening",
     );
-    this.subscription.on("message", async (message: Message) => {
+    this.subscription.on("message", (message: Message) => {
       const jobData = JSON.parse(message.data.toString()) as PipelineJob;
-      try {
-        await processJob(jobData);
-        message.ack();
-      } catch (error) {
-        pubsubLogger.error(
-          {
-            error: error,
-            messageId: message.id,
-          },
-          "Pubsub Queue encountered and error while processing message",
-        );
-        message.nack();
-        await processJobFailure(jobData, error);
-      }
+
+      processJob(jobData)
+        .then(() => {
+          message.ack(); // Only ack on success
+        })
+        .catch((error: Error) => {
+          pubsubLogger.error(
+            {
+              error: error,
+              messageId: message.id,
+            },
+            "Pubsub Queue encountered and error while processing message",
+          );
+          message.nack();
+          processJobFailure(jobData, error);
+        });
     });
 
     this.subscription.on("error", (error) => {
