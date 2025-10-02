@@ -92,6 +92,8 @@ const statusToProgress = (status: api.ReportJobStatus) => {
       return 50;
     case "dedup":
       return 60;
+    case "summarizing":
+      return 70;
     case "wrappingup":
       return 80;
     case "finished":
@@ -120,6 +122,8 @@ const statusMessage = (status: api.ReportJobStatus) => {
       return "Sorting claims";
     case "dedup":
       return "Removing duplicates...";
+    case "summarizing":
+      return "Generating topic summaries...";
     case "wrappingup":
       return "Wrapping up...";
     case "finished":
