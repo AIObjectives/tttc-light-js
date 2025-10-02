@@ -6,23 +6,6 @@ import { PipelineJob, pipelineJob } from "./jobs/pipeline";
 
 const workersLogger = logger.child({ module: "workers" });
 
-// setupPipelineWorker is here so that if any jobs remain in the Redis queue after implementing the new pubsub feature they can be processed.  This should be removed after that.
-const setupPipelineWorker = (connection: Redis, queueName: string) => {
-  const pipelineWorker = new Worker(
-    queueName,
-    async (job: Job) => {
-      await processJob(job.data);
-    },
-    { connection, stalledInterval: 3000000, skipStalledCheck: true }, // ! the stalledInterval and skipStalledCheck is a magical solution to the timeout problem. Need to find a better long-term fix
-  );
-
-  pipelineWorker.on("failed", async (job, err) => {
-    await processJobFailure(job?.data, err);
-  });
-
-  return pipelineWorker;
-};
-
 export async function processJob(job: PipelineJob) {
   await pipelineJob(job);
 }
@@ -86,7 +69,3 @@ export async function processJobFailure(job: PipelineJob, err: any) {
     "Pipeline worker failed",
   );
 }
-
-export const setupWorkers = (connection: Redis, queueName: string) => {
-  setupPipelineWorker(connection, queueName);
-};
