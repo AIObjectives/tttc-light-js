@@ -32,8 +32,6 @@ import {
   shutdownAnalyticsClient,
 } from "./analytics";
 
-import { setupWorkers } from "./workers";
-
 const serverLogger = logger.child({ module: "server" });
 
 const port = process.env.PORT || 8080;
@@ -108,9 +106,6 @@ const redisConnection = new Redis(env.REDIS_URL, {
   connectionName: "Express-Pipeline",
   maxRetriesPerRequest: null,
 });
-
-// Setup Legacy workers (remove after queue switch over)
-setupWorkers(redisConnection, env.REDIS_QUEUE_NAME);
 
 export { pipelineQueue };
 

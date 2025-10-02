@@ -1,18 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Worker, Job } from "bullmq";
-import Redis from "ioredis";
 import * as firebase from "../Firebase";
-import { setupWorkers } from "../workers";
-import { PipelineJob } from "../jobs/pipeline";
+import { processJob, processJobFailure } from "../workers";
+import { PipelineJob, pipelineJob } from "../jobs/pipeline";
 
 // Mock dependencies
-vi.mock("bullmq", () => ({
-  Worker: vi.fn(),
-  Job: vi.fn(),
-}));
-
-vi.mock("ioredis", () => ({
-  default: vi.fn(),
+vi.mock("../jobs/pipeline", () => ({
+  pipelineJob: vi.fn(),
+  PipelineJob: {},
 }));
 
 vi.mock("../Firebase", () => ({
@@ -37,76 +31,132 @@ vi.mock("tttc-common/logger", () => ({
 }));
 
 describe("Workers", () => {
-  let mockWorker: any;
-  let mockConnection: Redis;
-  let failureHandler: (job: Job<PipelineJob>, error: Error) => Promise<void>;
-
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Create a mock worker that captures the failure handler
-    mockWorker = {
-      on: vi.fn((event, handler) => {
-        if (event === "failed") {
-          failureHandler = handler;
-        }
-      }),
-    };
-
-    vi.mocked(Worker).mockImplementation(() => mockWorker);
-    mockConnection = {} as Redis;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe("setupWorkers", () => {
-    it("should create a pipeline worker with correct configuration", () => {
-      const queueName = "test-queue";
+  describe("processJob", () => {
+    it("should call pipelineJob with the provided job data", async () => {
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            reportDataUri: "test-uri",
+            userId: "test-user",
+            firebaseJobId: "test-job",
+            reportId: "report-123",
+          },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
+        },
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
-      setupWorkers(mockConnection, queueName);
+      vi.mocked(pipelineJob).mockResolvedValue(undefined);
 
-      expect(Worker).toHaveBeenCalledWith(queueName, expect.any(Function), {
-        connection: mockConnection,
-        stalledInterval: 3000000,
-        skipStalledCheck: true,
-      });
+      await processJob(mockJob);
+
+      expect(pipelineJob).toHaveBeenCalledWith(mockJob);
     });
 
-    it("should register a failure handler", () => {
-      setupWorkers(mockConnection, "test-queue");
+    it("should propagate errors from pipelineJob", async () => {
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            reportDataUri: "test-uri",
+            userId: "test-user",
+            firebaseJobId: "test-job",
+          },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
+        },
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
-      expect(mockWorker.on).toHaveBeenCalledWith(
-        "failed",
-        expect.any(Function),
+      const testError = new Error("Pipeline processing failed");
+      vi.mocked(pipelineJob).mockRejectedValue(testError);
+
+      await expect(processJob(mockJob)).rejects.toThrow(
+        "Pipeline processing failed",
       );
     });
   });
 
-  describe("Pipeline Worker Failure Handler", () => {
-    beforeEach(() => {
-      setupWorkers(mockConnection, "test-queue");
-    });
-
+  describe("processJobFailure", () => {
     it("should update REPORT_REF on failure", async () => {
-      const mockJob = {
-        id: "job-123",
-        data: {
-          config: {
-            firebaseDetails: {
-              firebaseJobId: "firebase-job-123",
-              reportId: "report-456",
-            },
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            firebaseJobId: "firebase-job-123",
+            reportId: "report-456",
+            reportDataUri: "test-uri",
+            userId: "test-user",
           },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
         },
-      } as Job<PipelineJob>;
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
       const mockError = new Error("Processing failed");
 
       vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
 
-      await failureHandler(mockJob, mockError);
+      await processJobFailure(mockJob, mockError);
 
       expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
         "report-456",
@@ -116,23 +166,42 @@ describe("Workers", () => {
     });
 
     it("should handle missing reportId by falling back to firebaseJobId", async () => {
-      const mockJob = {
-        id: "job-123",
-        data: {
-          config: {
-            firebaseDetails: {
-              firebaseJobId: "firebase-job-123",
-              // reportId is missing
-            },
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            firebaseJobId: "firebase-job-123",
+            reportDataUri: "test-uri",
+            userId: "test-user",
+            // reportId is missing
           },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
         },
-      } as Job<PipelineJob>;
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
       const mockError = new Error("Processing failed");
 
       vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
 
-      await failureHandler(mockJob, mockError);
+      await processJobFailure(mockJob, mockError);
 
       expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
         "firebase-job-123", // Should use firebaseJobId as fallback
@@ -142,23 +211,42 @@ describe("Workers", () => {
     });
 
     it("should handle non-Error objects gracefully", async () => {
-      const mockJob = {
-        id: "job-123",
-        data: {
-          config: {
-            firebaseDetails: {
-              firebaseJobId: "firebase-job-123",
-              reportId: "report-456",
-            },
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            firebaseJobId: "firebase-job-123",
+            reportId: "report-456",
+            reportDataUri: "test-uri",
+            userId: "test-user",
           },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
         },
-      } as Job<PipelineJob>;
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
       const mockError = "String error message";
 
       vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
 
-      await failureHandler(mockJob, mockError as any);
+      await processJobFailure(mockJob, mockError as any);
 
       expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
         "report-456",
@@ -168,17 +256,36 @@ describe("Workers", () => {
     });
 
     it("should not throw on JobNotFoundError", async () => {
-      const mockJob = {
-        id: "job-123",
-        data: {
-          config: {
-            firebaseDetails: {
-              firebaseJobId: "firebase-job-123",
-              reportId: "report-456",
-            },
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            firebaseJobId: "firebase-job-123",
+            reportId: "report-456",
+            reportDataUri: "test-uri",
+            userId: "test-user",
           },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
         },
-      } as Job<PipelineJob>;
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
       const mockError = new Error("Processing failed");
 
@@ -187,40 +294,80 @@ describe("Workers", () => {
       );
 
       // Should not throw
-      await expect(failureHandler(mockJob, mockError)).resolves.not.toThrow();
+      await expect(
+        processJobFailure(mockJob, mockError),
+      ).resolves.not.toThrow();
     });
 
     it("should handle missing firebaseDetails gracefully", async () => {
-      const mockJob = {
-        id: "job-123",
-        data: {
-          config: {
-            // firebaseDetails is missing
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          // firebaseDetails is missing
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
           },
+          api_key: "test-key",
+          options: { cruxes: false },
         },
-      } as Job<PipelineJob>;
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      } as any;
 
       const mockError = new Error("Processing failed");
 
       // Should not throw even with missing firebaseDetails
-      await expect(failureHandler(mockJob, mockError)).resolves.not.toThrow();
+      await expect(
+        processJobFailure(mockJob, mockError),
+      ).resolves.not.toThrow();
 
       // Should not call update functions
       expect(firebase.updateReportRefStatusWithRetry).not.toHaveBeenCalled();
     });
 
     it("should handle partial update failures gracefully", async () => {
-      const mockJob = {
-        id: "job-123",
-        data: {
-          config: {
-            firebaseDetails: {
-              firebaseJobId: "firebase-job-123",
-              reportId: "report-456",
-            },
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            firebaseJobId: "firebase-job-123",
+            reportId: "report-456",
+            reportDataUri: "test-uri",
+            userId: "test-user",
           },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
         },
-      } as Job<PipelineJob>;
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
       const mockError = new Error("Processing failed");
 
@@ -230,21 +377,42 @@ describe("Workers", () => {
       );
 
       // Should not throw even if update fails
-      await expect(failureHandler(mockJob, mockError)).resolves.not.toThrow();
+      await expect(
+        processJobFailure(mockJob, mockError),
+      ).resolves.not.toThrow();
     });
 
     it("should handle update timing correctly", async () => {
-      const mockJob = {
-        id: "job-123",
-        data: {
-          config: {
-            firebaseDetails: {
-              firebaseJobId: "firebase-job-123",
-              reportId: "report-456",
-            },
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            firebaseJobId: "firebase-job-123",
+            reportId: "report-456",
+            reportDataUri: "test-uri",
+            userId: "test-user",
           },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
         },
-      } as Job<PipelineJob>;
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
 
       const mockError = new Error("Processing failed");
 
@@ -258,7 +426,7 @@ describe("Workers", () => {
       );
 
       const startTime = Date.now();
-      await failureHandler(mockJob, mockError);
+      await processJobFailure(mockJob, mockError);
       const endTime = Date.now();
 
       // Should have been called
@@ -273,10 +441,57 @@ describe("Workers", () => {
 
       // Should not throw with null job
       await expect(
-        failureHandler(null as any, mockError),
+        processJobFailure(null as any, mockError),
       ).resolves.not.toThrow();
 
       expect(firebase.updateReportRefStatusWithRetry).not.toHaveBeenCalled();
+    });
+
+    it("should log appropriate error information when processing fails", async () => {
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            firebaseJobId: "firebase-job-123",
+            reportId: "report-456",
+            reportDataUri: "test-uri",
+            userId: "test-user",
+          },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          api_key: "test-key",
+          options: { cruxes: false },
+        },
+        data: [{ id: "testId", comment: "test data" }],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
+
+      const mockError = new Error("Processing failed");
+      mockError.stack = "Error: Processing failed\n    at test";
+
+      vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
+
+      await processJobFailure(mockJob, mockError);
+
+      // Should call the firebase update function
+      expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
+        "report-456",
+        "failed",
+        { errorMessage: "Processing failed" },
+      );
     });
   });
 });
