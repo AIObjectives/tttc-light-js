@@ -36,9 +36,6 @@ export function getThemeColor<
     colorParse.success
       ? colorParse.data
       : (() => {
-          console.error(
-            `Color ${color} is not a valid topic color - picking random color`,
-          );
           return schema.topicColors.options[
             Math.floor(murmurhash(color) * schema.topicColors.options.length)
           ];
