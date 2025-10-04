@@ -1,5 +1,77 @@
+import { SourceRow } from "../schema";
+
 export function assertNever(x: never): never {
   throw new Error("Unexpected object: " + JSON.stringify(x));
+}
+
+/**
+ * Formats raw CSV data with flexible column name mapping
+ * Supports multiple CSV formats (WhatsApp, standard T3C, etc.)
+ * @param data - Raw parsed CSV data with any column names
+ * @returns Formatted data conforming to SourceRow schema
+ */
+export function formatData(data: Record<string, unknown>[]): SourceRow[] {
+  // Flexible column name mapping for different CSV formats
+  // Note: Column precedence is determined by array order - first match wins
+  // Comparison is case-insensitive
+  const ID_COLS = ["id", "comment-id", "row-id", "i"];
+  const COMMENT_COLS = [
+    "comment",
+    "comment-body",
+    "response",
+    "answer",
+    "text",
+  ];
+  const INTERVIEW_COLS = [
+    "interview",
+    "name",
+    "extraquestion1", // WhatsApp format alternate name column
+    "speaker name",
+    "speaker-name",
+    "author",
+    "speaker-id",
+    "speaker_id",
+  ];
+
+  if (!data || !data.length) {
+    throw Error("Invalid or empty data file");
+  }
+  const keys = Object.keys(data[0]);
+  const lowerKeys = new Map(keys.map((k) => [k.toLowerCase(), k]));
+
+  const id_column = ID_COLS.map((col) => lowerKeys.get(col.toLowerCase())).find(
+    (matchedKey) => matchedKey,
+  );
+  const comment_column = COMMENT_COLS.map((col) =>
+    lowerKeys.get(col.toLowerCase()),
+  ).find((matchedKey) => matchedKey);
+  const interview_column = INTERVIEW_COLS.map((col) =>
+    lowerKeys.get(col.toLowerCase()),
+  ).find((matchedKey) => matchedKey);
+
+  if (!comment_column) {
+    throw Error(
+      `The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`,
+    );
+  }
+  return data.map((row, index: number) => {
+    // Use row index as fallback ID when no ID column exists
+    // This ensures every row has a unique identifier
+    const id = id_column ? String(row[id_column]) : String(index);
+    const comment = String(row[comment_column]);
+    const res: SourceRow = { id, comment };
+    if (lowerKeys.has("video")) {
+      res.video = String(row[lowerKeys.get("video")!]);
+    }
+    // Use flexible interview column mapping
+    if (interview_column) {
+      res.interview = String(row[interview_column]);
+    }
+    if (lowerKeys.has("timestamp")) {
+      res.timestamp = String(row[lowerKeys.get("timestamp")!]);
+    }
+    return res;
+  });
 }
 
 /**

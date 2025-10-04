@@ -1,5 +1,3 @@
-import { SourceRow } from "tttc-common/schema";
-
 // sync version of sha256 hash to make strong unique urls
 // that do not leak
 const { createHash } = require("crypto");
@@ -23,27 +21,5 @@ export function uniqueSlug(str: string): string {
   return sha256Final;
 }
 
-export function formatData(data: any): SourceRow[] {
-  const ID_COLS = ["id", "Id", "ID", "comment-id", "i"];
-  const COMMENT_COLS = ["comment", "Comment", "comment-body"];
-  if (!data || !data.length) {
-    throw Error("Invalid or empty data file");
-  }
-  const keys = new Set(Object.keys(data[0]));
-  const id_column = ID_COLS.find((x) => keys.has(x));
-  const comment_column = COMMENT_COLS.find((x) => keys.has(x));
-  if (!comment_column) {
-    throw Error(
-      `The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`,
-    );
-  }
-  return data.map((row: any, i: number) => {
-    const id = String({ ...row, i }[id_column!]);
-    const comment = row[comment_column];
-    const res: SourceRow = { id, comment };
-    if (keys.has("video")) res.video = row.video;
-    if (keys.has("interview")) res.interview = row.interview;
-    if (keys.has("timestamp")) res.timestamp = row.timestamp;
-    return res;
-  });
-}
+// Re-export formatData from common for backward compatibility
+export { formatData } from "tttc-common/utils";

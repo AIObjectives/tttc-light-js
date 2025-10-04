@@ -5,7 +5,7 @@ import { fetchSpreadsheetData } from "../googlesheet";
 import { createStorage } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
-import { formatData } from "../utils";
+import { formatData } from "tttc-common/utils";
 import { pipelineQueue } from "../server";
 import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
