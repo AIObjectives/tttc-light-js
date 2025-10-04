@@ -9,15 +9,19 @@ import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { validatedServerEnv } from "@/server-env";
 import { logger } from "tttc-common/logger/browser";
+import { formatData } from "tttc-common/utils";
 
 const submitActionLogger = logger.child({ module: "submit-action" });
 
 const parseCSV = async (file: File): Promise<SourceRow[]> => {
   const buffer = await file.arrayBuffer();
-  return Papa.parse(Buffer.from(buffer).toString(), {
+  const parseResult = Papa.parse(Buffer.from(buffer).toString(), {
     header: true,
     skipEmptyLines: true,
-  }).data as SourceRow[];
+  });
+
+  // Format raw CSV data to SourceRow format with flexible column mapping
+  return formatData(parseResult.data as Record<string, unknown>[]);
 };
 
 export default async function submitAction(
