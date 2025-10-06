@@ -23,8 +23,20 @@ describe("CSV Security Module", () => {
 
     it("should detect Calc formula injection", () => {
       expect(detectCSVInjection("+SUM(1+1)")).toBe(true);
+      expect(detectCSVInjection("+IF(A1>0,1,0)")).toBe(true);
       expect(detectCSVInjection("-SUM(1+1)")).toBe(true);
+      expect(detectCSVInjection("-IF(A1>0,1,0)")).toBe(true);
       expect(detectCSVInjection("@SUM(1+1)")).toBe(true);
+      expect(detectCSVInjection("@IF(A1>0,1,0)")).toBe(true);
+    });
+
+    it("should detect lowercase Calc formulas", () => {
+      expect(detectCSVInjection("+sum(1+1)")).toBe(true);
+      expect(detectCSVInjection("+if(A1>0,1,0)")).toBe(true);
+      expect(detectCSVInjection("-average(A1:A10)")).toBe(true);
+      expect(detectCSVInjection("-count(B1:B5)")).toBe(true);
+      expect(detectCSVInjection("@sum(1+1)")).toBe(true);
+      expect(detectCSVInjection("@max(A1:A10)")).toBe(true);
     });
 
     it("should detect tab-prefixed formulas", () => {
@@ -51,6 +63,29 @@ describe("CSV Security Module", () => {
       expect(detectCSVInjection("Temperature: -5°C")).toBe(false);
     });
 
+    it("should allow Twitter-style @username mentions", () => {
+      expect(detectCSVInjection("@username")).toBe(false);
+      expect(detectCSVInjection("@user_123")).toBe(false);
+      expect(detectCSVInjection("@JohnDoe")).toBe(false);
+      expect(detectCSVInjection("@username: great point!")).toBe(false);
+      expect(detectCSVInjection("I agree with @username")).toBe(false);
+    });
+
+    it("should allow legitimate uses of + and - symbols", () => {
+      // Plus signs
+      expect(detectCSVInjection("+1")).toBe(false);
+      expect(detectCSVInjection("+5%")).toBe(false);
+      expect(detectCSVInjection("+1-555-1234")).toBe(false);
+      expect(detectCSVInjection("+2°C")).toBe(false);
+
+      // Minus signs
+      expect(detectCSVInjection("-5")).toBe(false);
+      expect(detectCSVInjection("-10.99")).toBe(false);
+      expect(detectCSVInjection("-5°C")).toBe(false);
+      expect(detectCSVInjection("- Item one")).toBe(false);
+      expect(detectCSVInjection("- That's interesting")).toBe(false);
+    });
+
     it("should handle edge cases", () => {
       expect(detectCSVInjection("")).toBe(false);
       expect(detectCSVInjection("   ")).toBe(false);
@@ -64,6 +99,12 @@ describe("CSV Security Module", () => {
       expect(sanitizeCSVCell("+SUM(1+1)")).toBe("'+SUM(1+1)");
       expect(sanitizeCSVCell("-SUM(1+1)")).toBe("'-SUM(1+1)");
       expect(sanitizeCSVCell("@SUM(1+1)")).toBe("'@SUM(1+1)");
+    });
+
+    it("should prefix lowercase formulas", () => {
+      expect(sanitizeCSVCell("+sum(1+1)")).toBe("'+sum(1+1)");
+      expect(sanitizeCSVCell("-average(A1:A10)")).toBe("'-average(A1:A10)");
+      expect(sanitizeCSVCell("@max(A1:A10)")).toBe("'@max(A1:A10)");
     });
 
     it("should sanitize dangerous protocols", () => {
@@ -104,6 +145,29 @@ describe("CSV Security Module", () => {
       expect(sanitizeCSVCell("Normal text")).toBe("Normal text");
       expect(sanitizeCSVCell("john@example.com")).toBe("john@example.com");
       expect(sanitizeCSVCell("Price: $10.99")).toBe("Price: $10.99");
+    });
+
+    it("should preserve Twitter-style @username mentions", () => {
+      expect(sanitizeCSVCell("@username")).toBe("@username");
+      expect(sanitizeCSVCell("@user_123")).toBe("@user_123");
+      expect(sanitizeCSVCell("@JohnDoe")).toBe("@JohnDoe");
+      expect(sanitizeCSVCell("@username: great point!")).toBe(
+        "@username: great point!",
+      );
+    });
+
+    it("should preserve legitimate + and - symbols", () => {
+      // Plus signs
+      expect(sanitizeCSVCell("+1")).toBe("+1");
+      expect(sanitizeCSVCell("+5%")).toBe("+5%");
+      expect(sanitizeCSVCell("+1-555-1234")).toBe("+1-555-1234");
+      expect(sanitizeCSVCell("+2°C")).toBe("+2°C");
+
+      // Minus signs
+      expect(sanitizeCSVCell("-5")).toBe("-5");
+      expect(sanitizeCSVCell("-10.99")).toBe("-10.99");
+      expect(sanitizeCSVCell("-5°C")).toBe("-5°C");
+      expect(sanitizeCSVCell("- Item one")).toBe("- Item one");
     });
   });
 
