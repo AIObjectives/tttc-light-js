@@ -152,7 +152,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormHeader />
             <FormDescription title={title} description={description} />
             <FormDataInput files={files} setFiles={setFiles} />
-            <CostEstimate files={files} />
+            {/* <CostEstimate files={files} /> */}
             <AdvancedSettings
               systemInstructions={systemInstructions}
               clusteringInstructions={clusteringInstructions}
