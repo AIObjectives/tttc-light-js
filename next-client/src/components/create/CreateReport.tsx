@@ -19,6 +19,7 @@ import { useFormState } from "./hooks/useFormState";
 import {
   AdvancedSettings,
   CostEstimate,
+  FormAbout,
   FormDataInput,
   FormDescription,
   FormHeader,
@@ -150,6 +151,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
         <SubmitFormControl response={state}>
           <Col gap={8} className="mb-20">
             <FormHeader />
+            <FormAbout />
             <FormDescription title={title} description={description} />
             <FormDataInput files={files} setFiles={setFiles} />
             <CostEstimate files={files} />

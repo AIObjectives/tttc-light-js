@@ -18,10 +18,40 @@ import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
 import { toast } from "sonner";
 import { formatBytes } from "@/lib/api/userLimits";
 import { useUserCapabilities } from "../hooks/useUserCapabilities";
+import Icons from "@/assets/icons";
+import Link from "next/link";
 
 export const FormHeader = () => (
   <Col gap={3}>
-    <h3>Create a Report</h3>
+    <h3>Report details</h3>
+    <Row
+      gap={2}
+      className="p-4 border self-stretch items-center justify-center rounded-[2px]"
+    >
+      <div>
+        <Icons.WhatsApp />
+      </div>
+      <p className="p2 text-muted-foreground flex-grow">
+        Gather report responses using our survey bot directly from participants'
+        devices.
+      </p>
+      <Link
+        target="_blank"
+        href={
+          "https://docs.google.com/forms/d/e/1FAIpQLSfl9vVzX83F537RrAi1JoqvvCr0ScbBtHOx41dnLX7ynX5djA/viewform"
+        }
+      >
+        <Button variant={"secondary"} type="button">
+          Use it
+        </Button>
+      </Link>
+    </Row>
+  </Col>
+);
+
+export const FormAbout = () => (
+  <Col gap={3}>
+    <h3>About</h3>
     <div className="text-muted-foreground">
       <p>
         We send the contents of the data uploaded below through OpenAI’s API to
@@ -75,7 +105,7 @@ export const FormDescription = ({
 }) => {
   return (
     <Col gap={4}>
-      <h4>Report details</h4>
+      <h4>Description</h4>
       <Col gap={2}>
         <Col>
           <label htmlFor="title" className="font-medium">
