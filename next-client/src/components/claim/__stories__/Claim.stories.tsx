@@ -1,7 +1,11 @@
-import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Claim, QuoteIcon as QuoteIconComponent } from "..";
 import { reportData } from "../../../../stories/data/dummyData";
+import { TopicContext } from "../../topic/Topic";
+import { stateBuilder } from "../../report/hooks/useReportState/utils";
+
+const reportState = stateBuilder(reportData.topics);
+const topicNode = reportState.children[0];
 
 const meta = {
   title: "Claim",
@@ -12,9 +16,15 @@ const meta = {
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <div>
-        <Story />
-      </div>
+      <TopicContext.Provider
+        value={{
+          topicNode,
+        }}
+      >
+        <div>
+          <Story />
+        </div>
+      </TopicContext.Provider>
     ),
   ],
 } satisfies Meta<typeof Claim>;

@@ -9,9 +9,6 @@ import { TopicContext } from "../topic/Topic";
 const reportState = stateBuilder(reportData.topics);
 const topicNode = reportState.children[0];
 const subtopicNode = topicNode.children[0];
-/**
- * ! This story will be broken until the component is refactored
- */
 
 const meta = {
   title: "Subtopic",
