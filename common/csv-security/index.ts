@@ -45,9 +45,9 @@ export type CSVSecurityError =
 export function detectCSVInjection(content: string): boolean {
   const dangerousPatterns = [
     /^=.*$/, // Excel formulas
-    /^\+.*$/, // Calc formulas
-    /^-.*$/, // Calc formulas
-    /^@.*$/, // Calc formulas
+    /^\+[a-zA-Z]+\(/i, // Calc formulas with function calls (e.g., +SUM(), +sum()) - allows +1, +5%
+    /^-[a-zA-Z]+\(/i, // Calc formulas with function calls (e.g., -SUM(), -sum()) - allows -5, - bullets
+    /^@[a-zA-Z]+\(/i, // Calc formulas with function calls (e.g., @SUM(), @sum()) - allows @username
     /^\t=.*$/, // Tab-prefixed formulas
     /DDE\s*\(/i, // Dynamic Data Exchange
     /cmd\s*\|/i, // Command injection
@@ -69,8 +69,12 @@ export function sanitizeCSVCell(content: string): string {
     return String(content);
   }
 
-  // Remove dangerous formula prefixes
-  let sanitized = content.replace(/^[=+\-@]/, "'$&");
+  // Remove dangerous formula prefixes (+, -, @ only if followed by function call pattern)
+  let sanitized = content
+    .replace(/^=/, "'$&")
+    .replace(/^(\+[a-zA-Z]+\()/i, "'$1")
+    .replace(/^(-[a-zA-Z]+\()/i, "'$1")
+    .replace(/^(@[a-zA-Z]+\()/i, "'$1");
 
   // Remove or escape dangerous patterns
   sanitized = sanitized
