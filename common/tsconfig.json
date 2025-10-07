@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./dist", // Output directory for compiled JS files
     "module": "NodeNext", // Use CommonJS modules for Node.js
-    "target": "es6", // Target ES6 (or a higher version if needed)
+    "target": "es2022",
     "declaration": true, // Generate declaration files
     "sourceMap": true, // Generate source maps
     "composite": true, // Enable project references,
@@ -16,7 +16,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "resolveJsonModule": true,
-    "lib": ["ES2019", "DOM"]
+    "lib": ["ES2022", "DOM"]
   },
   "include": [
     "*",
@@ -24,6 +24,7 @@
     "./api/*",
     "./apiPyserver/*",
     "./csv-security/*",
+    "./evaluations/**/*",
     "./firebase/*",
     "./functional-utils/*",
     "./logger/*",
