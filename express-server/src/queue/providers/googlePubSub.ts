@@ -103,10 +103,10 @@ export class GooglePubSubQueue implements Queue {
               error: error,
               messageId: message.id,
             },
-            "Pubsub Queue encountered and error while processing message",
+            "Job processing failed - marking as failed without automatic retry",
           );
-          message.nack();
           processJobFailure(jobData, error);
+          message.ack(); // Acknowledge to prevent automatic retry loops
         });
     });
 
