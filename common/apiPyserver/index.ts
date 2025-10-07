@@ -32,6 +32,16 @@ export type LLMConfig = z.infer<typeof llmConfig>;
 export const OPENAI_API_KEY_HEADER = "X-OpenAI-API-Key";
 
 /**
+ * Header name for Report ID (for logging and tracing)
+ */
+export const REPORT_ID_HEADER = "X-Report-ID";
+
+/**
+ * Header name for User ID (for logging and tracing)
+ */
+export const USER_ID_HEADER = "X-User-ID";
+
+/**
  * Pipeline line broken into a few steps.
  */
 export const pipelineSteps = z.enum([

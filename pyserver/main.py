@@ -52,6 +52,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def get_report_logger(user_id: str = None, report_id: str = None):
+    """Get a logger with report context for better debugging across concurrent reports"""
+    context_parts = []
+    if user_id:
+        context_parts.append(f"user_{user_id}")
+    if report_id:
+        context_parts.append(f"report_{report_id}")
+
+    if context_parts:
+        return logger.getChild(".".join(context_parts))
+    return logger
+
 # Global API call tracker with thread safety
 class APICallTracker:
     def __init__(self):
@@ -336,6 +348,8 @@ async def processing_health_check():
 def comments_to_tree(
     req: CommentsLLMConfig,
     x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"),
+    x_report_id: str = Header(None, alias="X-Report-ID"),
+    x_user_id: str = Header(None, alias="X-User-ID"),
     log_to_wandb: str = config.WANDB_GROUP_LOG_NAME,
     dry_run=False,
 ) -> dict:
@@ -421,10 +435,13 @@ def comments_to_tree(
     if dry_run or config.DRY_RUN:
         print("dry_run topic tree")
         return config.MOCK_RESPONSE["topic_tree"]
-    
+
+    # Get report-specific logger
+    report_logger = get_report_logger(x_user_id, x_report_id)
+
     # Reset tracker for new report processing
     api_tracker.reset()
-    logger.info(f"Starting topic_tree processing with {len(req.comments)} comments")
+    report_logger.info(f"Starting topic_tree processing with {len(req.comments)} comments")
     
     # Basic sanitization - just check for prompt injection and length
     client = OpenAI(api_key=x_openai_api_key)
@@ -437,7 +454,7 @@ def comments_to_tree(
         if is_safe and comment_is_meaningful(sanitized_text):
             full_prompt += "\n" + sanitized_text
         elif not is_safe:
-            logger.warning(f"Rejecting unsafe comment in topic_tree")
+            report_logger.warning(f"Rejecting unsafe comment in topic_tree")
     
     # Basic prompt length check
     full_prompt = sanitize_prompt_length(full_prompt)
@@ -448,7 +465,7 @@ def comments_to_tree(
         'prompt_length': len(full_prompt),
         'model': req.llm.model_name
     })
-    logger.info(f"API Call #{api_tracker.total_calls}: topic_tree (comments={len(req.comments)})")
+    report_logger.info(f"API Call #{api_tracker.total_calls}: topic_tree (comments={len(req.comments)})")
 
     response = client.chat.completions.create(
         model=req.llm.model_name,
@@ -524,24 +541,26 @@ def comments_to_tree(
     return sanitize_for_output(response_data)
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1) -> dict:
+def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
-    
+
     Args:
         llm (dict): The LLM configuration, including model name, system prompt, and user prompt.
         comment (str): The comment text to analyze and extract claims from.
         tree (dict): The taxonomy/topic tree to provide context for the comment.
         api_key (str): The API key for authenticating with the OpenAI client.
-    
+        report_id (str, optional): Optional report ID for logging context.
+
     Returns:
         dict: A dictionary containing the extracted claims and usage information.
     """
     client = OpenAI(api_key=api_key)
-    
+    report_logger = get_report_logger(None, report_id)
+
     # Basic sanitization check
     sanitized_comment, is_safe = basic_sanitize(comment, "comment_to_claims")
     if not is_safe:
-        logger.warning(f"Rejecting unsafe comment in comment_to_claims")
+        report_logger.warning(f"Rejecting unsafe comment in comment_to_claims")
         return {"claims": {"claims": []}, "usage": None}
 
     # add taxonomy and sanitized comment to prompt template
@@ -561,7 +580,7 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
         'model': llm.model_name
     })
     if comment_index >= 0:
-        logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment #{comment_index + 1})")
+        report_logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment #{comment_index + 1})")
 
     response = client.chat.completions.create(
         model=llm.model_name,
@@ -596,13 +615,13 @@ async def comment_to_claims_async(processing_context: dict, llm: dict, comment: 
             # Add backpressure delay to prevent API rate limiting
             if API_RATE_LIMIT_DELAY > 0:
                 await asyncio.sleep(API_RATE_LIMIT_DELAY)
-            
+
             # Run the synchronous function in a thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
-                None, 
+                None,
                 comment_to_claims,
-                llm, comment, tree, api_key, comment_index
+                llm, comment, tree, api_key, comment_index, processing_context.get("report_id")
             )
             
             # Update progress stats
@@ -620,7 +639,7 @@ async def comment_to_claims_async(processing_context: dict, llm: dict, comment: 
 # ----------------------------------#
 @app.post("/claims")
 async def all_comments_to_claims(
-    req: CommentTopicTree, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+    req: CommentTopicTree, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), x_report_id: str = Header(None, alias="X-Report-ID"), x_user_id: str = Header(None, alias="X-User-ID"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
 ) -> dict:
     """Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
     Place each claim under the correct subtopic in the tree.
@@ -736,6 +755,10 @@ async def all_comments_to_claims(
     if dry_run or config.DRY_RUN:
         print("dry_run claims")
         return config.MOCK_RESPONSE["claims"]
+
+    # Get report-specific logger
+    report_logger = get_report_logger(x_user_id, x_report_id)
+
     comms_to_claims = []
     comms_to_claims_html = []
     TK_2_IN = 0
@@ -743,23 +766,23 @@ async def all_comments_to_claims(
     TK_2_TOT = 0
 
     node_counts = {}
-    
+
     # Initialize request-scoped processing tracking
     request_id = f"claims_{int(time.time() * 1000)}_{id(req)}"
     processing_tracker.start_request(request_id, len(req.comments))
-    
+
     # Clean up stale requests periodically to prevent memory leaks
     processing_tracker.cleanup_stale_requests()
-    
+
     # Log processing start
-    logger.info(f"Starting claims extraction for {len(req.comments)} comments")
-    
+    report_logger.info(f"Starting claims extraction for {len(req.comments)} comments")
+
     # Check if concurrent processing is enabled
     comment_count = len(req.comments)
     if ENABLE_CONCURRENT_PROCESSING:
-        logger.info(f"Processing {comment_count} comments with concurrent processing (concurrency: {MAX_CONCURRENCY})")
+        report_logger.info(f"Processing {comment_count} comments with concurrent processing (concurrency: {MAX_CONCURRENCY})")
     else:
-        logger.info(f"Processing {comment_count} comments sequentially (concurrent processing disabled)")
+        report_logger.info(f"Processing {comment_count} comments sequentially (concurrent processing disabled)")
     
     try:
         # Filter meaningful comments first
@@ -771,7 +794,7 @@ async def all_comments_to_claims(
                 print(f"warning: empty comment in claims: comment #{i_c}")
         
         # Process comments based on concurrency setting
-        processing_context = {"request_id": request_id}
+        processing_context = {"request_id": request_id, "report_id": x_report_id}
         responses = []
         
         if ENABLE_CONCURRENT_PROCESSING:
@@ -789,18 +812,18 @@ async def all_comments_to_claims(
             failed_count = sum(1 for response, _ in responses if isinstance(response, Exception))
             if failed_count > 0:
                 success_rate = ((len(responses) - failed_count) / len(responses)) * 100
-                logger.warning(f"Concurrent processing completed with {failed_count}/{len(responses)} failures (success rate: {success_rate:.1f}%)")
-                
+                report_logger.warning(f"Concurrent processing completed with {failed_count}/{len(responses)} failures (success rate: {success_rate:.1f}%)")
+
                 # If more than 50% failed, this might indicate a systemic issue
                 if failed_count > len(responses) / 2:
-                    logger.error(f"High failure rate detected: {failed_count}/{len(responses)} failed. This may indicate an API or system issue.")
+                    report_logger.error(f"High failure rate detected: {failed_count}/{len(responses)} failed. This may indicate an API or system issue.")
             else:
-                logger.info(f"Concurrent processing completed successfully for all {len(responses)} comments")
+                report_logger.info(f"Concurrent processing completed successfully for all {len(responses)} comments")
         else:
             # Process comments sequentially (original behavior)
             for i_c, comment in meaningful_comments:
                 try:
-                    response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c)
+                    response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c, report_id=x_report_id)
                     responses.append((response, comment))
                     processing_tracker.update_progress(request_id)
                 except Exception as e:
@@ -957,18 +980,20 @@ async def all_comments_to_claims(
         processing_tracker.end_request(request_id)
 
 
-def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "", subtopic_name: str = "") -> dict:
+def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "", subtopic_name: str = "", report_id: str = None) -> dict:
     """Given a list of claims for a given subtopic, identify which ones are near-duplicates.
 
-    Args:  
-        claims (list): A list of claims to be deduplicated.  
-        llm (LLMConfig): The LLM configuration containing prompts and model details.  
-        api_key (str): The API key for authenticating with the OpenAI client.  
-    
-    Returns:  
-        dict: A dictionary containing the deduplicated claims and usage information.  
+    Args:
+        claims (list): A list of claims to be deduplicated.
+        llm (LLMConfig): The LLM configuration containing prompts and model details.
+        api_key (str): The API key for authenticating with the OpenAI client.
+        report_id (str): Optional report ID for logging context.
+
+    Returns:
+        dict: A dictionary containing the deduplicated claims and usage information.
     """
     client = OpenAI(api_key=api_key)
+    report_logger = get_report_logger(None, report_id)
 
     # add claims with enumerated ids (relative to this subtopic only)
     # Include claim text, quote text, and IDs so LLM can group effectively
@@ -984,7 +1009,7 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
             full_prompt += f"\n  - quote: {sanitized_quote}"
             full_prompt += f"\n  - quoteId: quote{i}"
         else:
-            logger.warning(f"Skipping unsafe claim or quote in dedup")
+            report_logger.warning(f"Skipping unsafe claim or quote in dedup")
     
     # Basic prompt length check
     full_prompt = sanitize_prompt_length(full_prompt)
@@ -996,7 +1021,7 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
         'num_claims': len(claims),
         'model': config.MODEL
     })
-    logger.info(f"API Call #{api_tracker.total_calls}: dedup_claims ({topic_name}/{subtopic_name}, {len(claims)} claims)")
+    report_logger.info(f"API Call #{api_tracker.total_calls}: dedup_claims ({topic_name}/{subtopic_name}, {len(claims)} claims)")
 
     response = client.chat.completions.create(
         model=config.MODEL,
@@ -1026,7 +1051,7 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
 # -----------------------------------#
 @app.put("/sort_claims_tree/")
 def sort_claims_tree(
-    req: ClaimTreeLLMConfig, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+    req: ClaimTreeLLMConfig, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), x_report_id: str = Header(None, alias="X-Report-ID"), x_user_id: str = Header(None, alias="X-User-ID"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
 ) -> dict:
     """Sort the topic/subtopic tree so that the most popular claims, subtopics, and topics
     all appear first. Deduplicate claims within each subtopic so that any near-duplicates appear as
@@ -1237,6 +1262,10 @@ def sort_claims_tree(
     if dry_run or config.DRY_RUN:
        print("dry_run sort tree")
        return config.MOCK_RESPONSE["sort_claims_tree"]
+
+    # Get report-specific logger
+    report_logger = get_report_logger(x_user_id, x_report_id)
+
     claims_tree = req.tree
     llm = req.llm
     TK_IN = 0
@@ -1258,7 +1287,7 @@ def sort_claims_tree(
             # no need to deduplicate single claims
             if subtopic_data["total"] > 1:
                 try:
-                    response = dedup_claims(subtopic_data["claims"], llm=llm, api_key=x_openai_api_key, topic_name=topic, subtopic_name=subtopic)
+                    response = dedup_claims(subtopic_data["claims"], llm=llm, api_key=x_openai_api_key, topic_name=topic, subtopic_name=subtopic, report_id=x_report_id)
                 except Exception:
                     print(
                         "Step 3: no deduped claims response for: ",
@@ -1355,7 +1384,7 @@ def sort_claims_tree(
                 single_quote_count = sum(1 for c in deduped_claims if len(c["duplicates"]) == 0)
                 multi_quote_count = len(deduped_claims) - single_quote_count
                 if single_quote_count > 0:
-                    logger.info(
+                    report_logger.info(
                         f"{subtopic}: {multi_quote_count} grouped claims, {single_quote_count} unique single-voice claims preserved"
                     )
 
@@ -1489,7 +1518,7 @@ def sort_claims_tree(
 # -------------------------------------#
 @app.post("/topic_summaries")
 def generate_topic_summaries(
-    req: dict, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+    req: dict, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), x_report_id: str = Header(None, alias="X-Report-ID"), x_user_id: str = Header(None, alias="X-User-ID"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
 ) -> dict:
     """Generate summaries for each topic based on the complete processed tree with all claims.
 
@@ -1632,7 +1661,7 @@ def controversy_matrix(cont_mat: list) -> list:
 
 
 def cruxes_for_topic(
-    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict, api_key: str, subtopic_index: int = -1
+    llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict, api_key: str, subtopic_index: int = -1, report_id: str = None
 ) -> dict:
     """For each fully-described subtopic, provide all the relevant claims with an anonymized
     numeric speaker id, and ask the LLM for a crux claim that best splits the speakers' opinions
@@ -1640,6 +1669,7 @@ def cruxes_for_topic(
     Requires an explicit API key in api_key.
     """
     client = OpenAI(api_key=api_key)
+    report_logger = get_report_logger(None, report_id)
     claims_anon = []
     speaker_set = set()
     for claim in claims:
@@ -1657,9 +1687,9 @@ def cruxes_for_topic(
     # Basic sanitization for topic info
     sanitized_topic, topic_safe = basic_sanitize(topic, "cruxes_topic")
     sanitized_topic_desc, desc_safe = basic_sanitize(topic_desc, "cruxes_desc")
-    
+
     if not (topic_safe and desc_safe):
-        logger.warning(f"Rejecting unsafe topic/description in cruxes")
+        report_logger.warning(f"Rejecting unsafe topic/description in cruxes")
         return None
 
     full_prompt = llm.user_prompt
@@ -1677,7 +1707,7 @@ def cruxes_for_topic(
         'subtopic_index': subtopic_index,
         'model': llm.model_name
     })
-    logger.info(f"API Call #{api_tracker.total_calls}: cruxes_for_topic ({topic}, {len(claims)} claims, {len(speaker_set)} speakers)")
+    report_logger.info(f"API Call #{api_tracker.total_calls}: cruxes_for_topic ({topic}, {len(claims)} claims, {len(speaker_set)} speakers)")
 
     response = client.chat.completions.create(
         model=llm.model_name,
@@ -1720,7 +1750,7 @@ def top_k_cruxes(cont_mat: list, cruxes: list, top_k: int = 0) -> list:
 
 @app.post("/cruxes")
 def cruxes_from_tree(
-    req: CruxesLLMConfig, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False,
+    req: CruxesLLMConfig, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), x_report_id: str = Header(None, alias="X-Report-ID"), x_user_id: str = Header(None, alias="X-User-ID"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False,
 ) -> dict:
     """Given a topic, description, and corresponding list of claims with numerical speaker ids, extract the
     crux claims that would best split the claims into agree/disagree sides.
@@ -1729,6 +1759,10 @@ def cruxes_from_tree(
     if dry_run or config.DRY_RUN:
         print("dry_run cruxes")
         return config.MOCK_RESPONSE["cruxes"]
+
+    # Get report-specific logger
+    report_logger = get_report_logger(x_user_id, x_report_id)
+
     cruxes_main = []
     crux_claims = []
     TK_IN = 0
@@ -1739,10 +1773,10 @@ def cruxes_from_tree(
     # TODO: can we get this from client?
     speaker_map = full_speaker_map(req.crux_tree)
     # print("speaker ids: ", speaker_map)
-    
+
     # Count total subtopics to process
     total_subtopics = sum(len(td["subtopics"]) for td in req.crux_tree.values())
-    logger.info(f"Starting cruxes extraction for {total_subtopics} subtopics")
+    report_logger.info(f"Starting cruxes extraction for {total_subtopics} subtopics")
     
     subtopic_counter = 0
     for topic, topic_details in req.crux_tree.items():
@@ -1765,7 +1799,7 @@ def cruxes_from_tree(
             topic_title = topic + ", " + subtopic
             subtopic_counter += 1
             llm_response = cruxes_for_topic(
-                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key, subtopic_index=subtopic_counter
+                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key, subtopic_index=subtopic_counter, report_id=x_report_id
             )
             if not llm_response:
                 print("warning: no crux response from LLM")
@@ -1914,13 +1948,13 @@ def cruxes_from_tree(
     }
     # Add API call summary to response
     api_summary = api_tracker.get_summary()
-    logger.info(f"\n=== FINAL API CALL SUMMARY ===")
-    logger.info(f"Total API calls: {api_summary['total_calls']}")
-    logger.info(f"Time elapsed: {api_summary['elapsed_seconds']:.1f} seconds")
-    logger.info(f"Calls by step:")
+    report_logger.info(f"\n=== FINAL API CALL SUMMARY ===")
+    report_logger.info(f"Total API calls: {api_summary['total_calls']}")
+    report_logger.info(f"Time elapsed: {api_summary['elapsed_seconds']:.1f} seconds")
+    report_logger.info(f"Calls by step:")
     for step, count in api_summary['calls_per_step'].items():
-        logger.info(f"  - {step}: {count} calls")
-    logger.info(f"Average rate: {api_summary['average_call_rate']:.2f} calls/second")
+        report_logger.info(f"  - {step}: {count} calls")
+    report_logger.info(f"Average rate: {api_summary['average_call_rate']:.2f} calls/second")
     
     cruxes = [
         {"cruxClaim": c[0], "agree": c[1], "disagree": c[2], "explanation": c[3]}
