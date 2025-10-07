@@ -117,6 +117,7 @@ export async function pipelineJob(job: PipelineJob) {
   pipelineLogger.info(
     {
       reportId: reportId,
+      userId: config.firebaseDetails.userId,
       actualDataSize,
       numRows,
       filename,
@@ -418,20 +419,20 @@ export async function pipelineJob(job: PipelineJob) {
  */
 async function doPipelineSteps(job: PipelineJob) {
   const { config, data } = job;
+  const reportId = config.firebaseDetails?.reportId;
+  const userId = config.firebaseDetails?.userId;
   const {
     doClaimsStep,
     doSortClaimsTreeStep,
     doTopicTreeStep,
     doTopicSummariesStep,
     doAddons,
-  } = makePyserverFuncs(config);
+  } = makePyserverFuncs(config, userId, reportId);
 
   const pipelineComments: Result<
     PipelineComment[],
     MissingInterviewAttributionsError
   > = makePipelineComments(data);
-
-  const reportId = config.firebaseDetails?.reportId;
 
   // Update job progress
   pipelineLogger.info(
@@ -655,7 +656,11 @@ const PipelineOutputToProps = {
 /**
  * This builds each of the step functions called in doPipelineSteps
  */
-const makePyserverFuncs = (config: PipelineConfig) => {
+const makePyserverFuncs = (
+  config: PipelineConfig,
+  userId?: string,
+  reportId?: string,
+) => {
   const { instructions, llm, api_key, env } = config;
   // Make each config object for each call
   const [
@@ -681,10 +686,15 @@ const makePyserverFuncs = (config: PipelineConfig) => {
    * Calls the topic tree step on the pyserver, and then reshapes the response to the next step's props
    */
   const doTopicTreeStep = async (comments: apiPyserver.PipelineComment[]) =>
-    await Pyserver.topicTreePipelineStep(env, {
-      comments,
-      llm: topicTreeLLMConfig,
-    }).then((val) =>
+    await Pyserver.topicTreePipelineStep(
+      env,
+      {
+        comments,
+        llm: topicTreeLLMConfig,
+      },
+      userId,
+      reportId,
+    ).then((val) =>
       mapResult(val, (arg) =>
         PipelineOutputToProps.makeClaimsProps(arg, comments),
       ),
@@ -697,10 +707,15 @@ const makePyserverFuncs = (config: PipelineConfig) => {
     tree: { taxonomy: apiPyserver.PartialTopic[] };
     comments: apiPyserver.PipelineComment[];
   }) =>
-    await Pyserver.claimsPipelineStep(env, {
-      ...args,
-      llm: claimsLLMConfig,
-    }).then((val) =>
+    await Pyserver.claimsPipelineStep(
+      env,
+      {
+        ...args,
+        llm: claimsLLMConfig,
+      },
+      userId,
+      reportId,
+    ).then((val) =>
       mapResult(val, (reply) => PipelineOutputToProps.makeSortedProps(reply)),
     );
 
@@ -710,7 +725,12 @@ const makePyserverFuncs = (config: PipelineConfig) => {
     top_k: number;
   };
   const doCruxStep = async (args: CruxProps) =>
-    await Pyserver.cruxesPipelineStep(env, { ...args, llm: cruxesLLMConfig });
+    await Pyserver.cruxesPipelineStep(
+      env,
+      { ...args, llm: cruxesLLMConfig },
+      userId,
+      reportId,
+    );
 
   type Addons = Partial<{
     crux: CruxProps;
@@ -733,10 +753,15 @@ const makePyserverFuncs = (config: PipelineConfig) => {
     tree: apiPyserver.ClaimsTree;
     sort: string;
   }) =>
-    await Pyserver.sortClaimsTreePipelineStep(env, {
-      ...arg,
-      llm: dedupLLMConfig,
-    }).then((val) =>
+    await Pyserver.sortClaimsTreePipelineStep(
+      env,
+      {
+        ...arg,
+        llm: dedupLLMConfig,
+      },
+      userId,
+      reportId,
+    ).then((val) =>
       mapResult(val, (arg) => PipelineOutputToProps.makeOutputProps(arg)),
     );
 
@@ -744,10 +769,15 @@ const makePyserverFuncs = (config: PipelineConfig) => {
    * Calls the topic summaries step on the pyserver
    */
   const doTopicSummariesStep = async (tree: OutputProps) =>
-    await Pyserver.topicSummariesPipelineStep(env, {
-      tree,
-      llm: summariesLLMConfig,
-    }).then((val) =>
+    await Pyserver.topicSummariesPipelineStep(
+      env,
+      {
+        tree,
+        llm: summariesLLMConfig,
+      },
+      userId,
+      reportId,
+    ).then((val) =>
       mapResult(val, (reply) =>
         PipelineOutputToProps.makeSummariesProps(reply),
       ),
