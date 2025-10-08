@@ -473,7 +473,6 @@ def comments_to_tree(
             {"role": "system", "content": req.llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
     )
     try:
@@ -591,7 +590,6 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             },
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
     )
     try:
@@ -1029,7 +1027,6 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
             {"role": "system", "content": llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
     )
     try:
@@ -1715,7 +1712,6 @@ def cruxes_for_topic(
             {"role": "system", "content": llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
     )
     crux = response.choices[0].message.content
