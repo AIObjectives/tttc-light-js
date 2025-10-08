@@ -33,6 +33,7 @@ from fastapi import FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel
+from structured_schemas import create_claims_schema_from_taxonomy, create_taxonomy_prompt_with_constraints
 
 
 
@@ -563,48 +564,55 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
         report_logger.warning(f"Rejecting unsafe comment in comment_to_claims")
         return {"claims": {"claims": []}, "usage": None}
 
-    # add taxonomy and sanitized comment to prompt template
-    taxonomy_string = json.dumps(tree)
+    # Create structured output schema from taxonomy
+    # This physically constrains the LLM to only generate valid topic/subtopic names
+    # TypeScript always sends: tree: { taxonomy: [...] }
+    taxonomy_list = tree.get("taxonomy", [])
 
-    # TODO: prompt nit, shorten this to just "Comment:"
-    full_prompt = llm.user_prompt
-    full_prompt += (
-        "\n" + taxonomy_string + "\nAnd then here is the comment:\n" + sanitized_comment
-    )
-    
+    if not taxonomy_list:
+        report_logger.error(f"Empty taxonomy in tree object")
+        raise ValueError("Empty taxonomy - cannot create structured output schema")
+
+    ClaimsSchema = create_claims_schema_from_taxonomy(taxonomy_list)
+
+    # Build prompt with explicit taxonomy constraints
+    # This is "belt and suspenders" with structured outputs
+    taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
+    full_prompt = llm.user_prompt + "\n\n" + taxonomy_constraints + "\n\nComment:\n" + sanitized_comment
+
     # Track API call
     api_tracker.track_call('comment_to_claims', {
         'comment_index': comment_index,
         'comment_length': len(comment),
-        'tree_size': len(tree),
-        'model': llm.model_name
+        'tree_size': len(taxonomy_list),
+        'model': llm.model_name,
+        'structured_outputs': True
     })
     if comment_index >= 0:
         report_logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment #{comment_index + 1})")
 
-    response = client.chat.completions.create(
+    # Make the API call with structured outputs (required)
+    response = client.beta.chat.completions.parse(
         model=llm.model_name,
         messages=[
-            {
-                "role": "system",
-                "content": llm.system_prompt,
-            },
+            {"role": "system", "content": llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
         temperature=0.0,
-        response_format={"type": "json_object"},
+        response_format=ClaimsSchema,
     )
-    try:
-        claims = response.choices[0].message.content
-    except Exception:
-        print("Step 2: no response: ", response)
-        claims = {}
-    # TODO: json.loads(claims) fails sometimes
-    try:
-        claims_obj = json.loads(claims)
-    except JSONDecodeError:
-        print("json_parse_failure;claims:", claims)
-        claims_obj = claims
+
+    # Extract parsed object - model_dump(mode='json') properly serializes enums to strings
+    parsed_claims = response.choices[0].message.parsed
+    claims_list = [claim.model_dump(mode='json') for claim in parsed_claims.claims]
+
+    # Log if no claims extracted (for debugging empty reports)
+    if len(claims_list) == 0:
+        report_logger.warning(f"Structured outputs returned 0 claims for comment {comment_index + 1}. Comment length: {len(comment)}")
+    else:
+        report_logger.info(f"Extracted {len(claims_list)} claims for comment {comment_index + 1}")
+
+    claims_obj = {"claims": claims_list}
     return {"claims": claims_obj, "usage": response.usage}
 
 

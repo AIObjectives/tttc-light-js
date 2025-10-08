@@ -47,6 +47,67 @@ async function updatePipelineStatus(
   }
 }
 
+/**
+ * Maps a subtopic from the taxonomy to include claims and UUIDs
+ * Handles cases where no claims were extracted for a subtopic
+ */
+function mapSubtopicWithClaims(
+  sub: { subtopicName: string; subtopicShortDescription: string },
+  topicName: string,
+  sortData: apiPyserver.SortClaimsTreeResponse["data"],
+): schema.LLMSubtopic {
+  // Find the topic in sortData
+  const topicEntry = sortData.find(([tag]) => tag === topicName);
+  if (!topicEntry) {
+    pipelineLogger.error(
+      {
+        topicName,
+        availableTopics: sortData.map(([tag]) => tag),
+      },
+      "Topic not found in sortData",
+    );
+    throw new Error(`Topic "${topicName}" not found in sortData`);
+  }
+
+  // Find the subtopic within the topic (exact match only - structured outputs guarantee exact names)
+  const subtopicEntry = topicEntry[1].topics?.find(
+    ([key]) => key === sub.subtopicName,
+  );
+
+  // If no match, handle as empty subtopic (no claims extracted for this category)
+  if (!subtopicEntry) {
+    pipelineLogger.warn(
+      {
+        topicName,
+        subtopicName: sub.subtopicName,
+        availableSubtopics: topicEntry[1].topics?.map(([key]) => key) || [],
+      },
+      "Subtopic not found in sortData - creating empty subtopic (no claims extracted for this category)",
+    );
+
+    // Return subtopic with empty claims array
+    // This happens when taxonomy includes a subtopic but LLM didn't extract any claims for it
+    return {
+      ...sub,
+      subtopicId: randomUUID(),
+      claims: [] as schema.LLMClaim[],
+    };
+  }
+
+  return {
+    ...sub,
+    subtopicId: randomUUID(),
+    claims: subtopicEntry[1].claims.map((clm) => ({
+      ...clm,
+      claimId: randomUUID(),
+      duplicates: clm.duplicates.map((dup) => ({
+        ...dup,
+        claimId: randomUUID(),
+      })),
+    })) as schema.LLMClaim[],
+  };
+}
+
 type FirebaseDetails = {
   reportDataUri: string;
   userId: string;
@@ -216,27 +277,16 @@ export async function pipelineJob(job: PipelineJob) {
         },
       );
 
-      const newTax: schema.Taxonomy = topicData.tree.taxonomy.map((t: any) => ({
-        ...t,
-        topicId: randomUUID(),
-        topicSummary: summariesMap.get(t.topicName), // Add the topic summary
-        subtopics: t.subtopics.map((sub: any) => ({
-          ...sub,
-          subtopicId: randomUUID(),
-          // @ts-ignore // TODO FIX THIS
-          claims: sortData
-            .find(([tag]: [string, any]) => tag === t.topicName)[1]
-            .topics?.find(([key]: [string, any]) => key === sub.subtopicName)[1]
-            .claims.map((clm: any) => ({
-              ...clm,
-              claimId: randomUUID(),
-              duplicates: clm.duplicates.map((dup: any) => ({
-                ...dup,
-                claimId: randomUUID(),
-              })),
-            })) as schema.LLMClaim[],
-        })),
-      }));
+      const newTax: schema.Taxonomy = topicData.tree.taxonomy.map(
+        (t: apiPyserver.PartialTopic) => ({
+          ...t,
+          topicId: randomUUID(),
+          topicSummary: summariesMap.get(t.topicName), // Add the topic summary
+          subtopics: t.subtopics.map((sub) =>
+            mapSubtopicWithClaims(sub, t.topicName, sortData),
+          ),
+        }),
+      );
       return newTax;
     },
   );
