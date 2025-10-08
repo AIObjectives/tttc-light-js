@@ -32,6 +32,7 @@ import InfoSvg from "./InfoSvg";
 import LogoSvg from "./LogoSvg";
 import TTTC_SVG from "./TTTC";
 import MobileOutlineSvg from "./MobileOutlineSvg";
+import WhatsAppSvg from "./WhatsappSvg";
 
 const Icons = () => <></>;
 
@@ -104,5 +105,7 @@ Icons.Reset = (props: { className?: string }) => <ResetSVG {...props} />;
 Icons.MobileOutline = (props: { className?: string }) => (
   <MobileOutlineSvg {...props} />
 );
+
+Icons.WhatsApp = (props: { className?: string }) => <WhatsAppSvg {...props} />;
 
 export default Icons;
