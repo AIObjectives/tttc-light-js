@@ -216,4 +216,116 @@ describe("Pipeline tests", () => {
 
     expect(schema.pipelineOutput.safeParse(data).success).true;
   });
+
+  test("Subtopics with zero claims are filtered out", () => {
+    const mockPipelineData: schema.LLMPipelineOutput = {
+      ...pipelineData,
+      tree: [
+        {
+          topicName: "Test Topic",
+          topicShortDescription: "Test description",
+          subtopics: [
+            {
+              subtopicName: "Subtopic with claims",
+              subtopicShortDescription: "Has claims",
+              claims: [
+                {
+                  claim: "Test claim",
+                  claimId: "claim-1",
+                  quote: "Test quote",
+                  commentId: pipelineData.data[0].id,
+                  topicName: "Test Topic",
+                },
+              ],
+            },
+            {
+              subtopicName: "Empty subtopic",
+              subtopicShortDescription: "No claims",
+              claims: [],
+            },
+            {
+              subtopicName: "Undefined subtopic",
+              subtopicShortDescription: "Undefined claims",
+            },
+          ],
+        },
+      ],
+    };
+
+    const reportData = getReportDataObj(mockPipelineData);
+
+    // Should only have the subtopic with claims
+    expect(reportData.topics[0].subtopics.length).toBe(1);
+    expect(reportData.topics[0].subtopics[0].title).toBe(
+      "Subtopic with claims",
+    );
+    expect(reportData.topics[0].subtopics[0].claims.length).toBe(1);
+
+    // Explicitly assert that subtopics with undefined claims are filtered out
+    const subtopicTitles = reportData.topics[0].subtopics.map(
+      (subtopic) => subtopic.title,
+    );
+    expect(subtopicTitles).not.toContain("Undefined subtopic");
+    expect(subtopicTitles).not.toContain("Empty subtopic");
+  });
+
+  test("Topics with zero subtopics are filtered out", () => {
+    const mockPipelineData: schema.LLMPipelineOutput = {
+      ...pipelineData,
+      tree: [
+        {
+          topicName: "Topic with subtopics",
+          topicShortDescription: "Has subtopics with claims",
+          subtopics: [
+            {
+              subtopicName: "Valid subtopic",
+              subtopicShortDescription: "Has claims",
+              claims: [
+                {
+                  claim: "Test claim",
+                  claimId: "claim-1",
+                  quote: "Test quote",
+                  commentId: pipelineData.data[0].id,
+                  topicName: "Topic with subtopics",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          topicName: "Topic with only empty subtopics",
+          topicShortDescription: "All subtopics have no claims",
+          subtopics: [
+            {
+              subtopicName: "Empty subtopic 1",
+              subtopicShortDescription: "No claims",
+              claims: [],
+            },
+            {
+              subtopicName: "Empty subtopic 2",
+              subtopicShortDescription: "No claims",
+            },
+          ],
+        },
+        {
+          topicName: "Topic with no subtopics at all",
+          topicShortDescription: "Empty subtopics array",
+          subtopics: [],
+        },
+      ],
+    };
+
+    const reportData = getReportDataObj(mockPipelineData);
+
+    // Should only have the topic with valid subtopics
+    expect(reportData.topics.length).toBe(1);
+    expect(reportData.topics[0].title).toBe("Topic with subtopics");
+    expect(reportData.topics[0].subtopics.length).toBe(1);
+    expect(reportData.topics[0].subtopics[0].title).toBe("Valid subtopic");
+
+    // Explicitly assert that topics with no subtopics are filtered out
+    const topicTitles = reportData.topics.map((topic) => topic.title);
+    expect(topicTitles).not.toContain("Topic with only empty subtopics");
+    expect(topicTitles).not.toContain("Topic with no subtopics at all");
+  });
 }); // Close describe block
