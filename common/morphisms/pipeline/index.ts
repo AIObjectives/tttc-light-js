@@ -121,10 +121,10 @@ const numberClaims = () => {
 };
 
 const topicNumClaims = (topic: schema.LLMTopic): number =>
-  topic.subtopics.flatMap((s) => s.claims).length;
+  topic.subtopics.flatMap((s) => s.claims ?? []).length;
 
 const subtopicNumClaims = (subtopic: schema.LLMSubtopic): number =>
-  subtopic.claims!.length;
+  subtopic.claims?.length ?? 0;
 
 const sortTax = (tax: schema.Taxonomy) =>
   tax.sort((t1, t2) => {
@@ -239,26 +239,33 @@ const getReferenceEndIndex = (clm: schema.LLMClaim, fullText: string) =>
 const getSubtopicsFromLLMSubTopics =
   (claimMap: ClaimMap) =>
   (subtopics: schema.LLMSubtopic[]): schema.Subtopic[] =>
-    subtopics.map((subtopic) => ({
-      id: uuid(),
-      title: subtopic.subtopicName,
-      description: subtopic.subtopicShortDescription!,
-      claims: subtopic.claims
-        ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
-        : [],
-    }));
+    subtopics
+      .map((subtopic) => ({
+        id: uuid(),
+        title: subtopic.subtopicName,
+        description: subtopic.subtopicShortDescription!,
+        claims: subtopic.claims
+          ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
+          : [],
+      }))
+      .filter(
+        (subtopic) =>
+          Array.isArray(subtopic.claims) && subtopic.claims.length > 0,
+      );
 
 const getTopicsFromTaxonomy =
   (claimMap: ClaimMap) =>
   (tree: schema.Taxonomy): schema.Topic[] =>
-    tree.map((leaf, idx) => ({
-      id: uuid(),
-      title: leaf.topicName,
-      description: leaf.topicShortDescription!,
-      summary: leaf.topicSummary,
-      subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
-      topicColor: colorPicker(idx),
-    }));
+    tree
+      .map((leaf, idx) => ({
+        id: uuid(),
+        title: leaf.topicName,
+        description: leaf.topicShortDescription!,
+        summary: leaf.topicSummary,
+        subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
+        topicColor: colorPicker(idx),
+      }))
+      .filter((topic) => topic.subtopics.length > 0);
 
 export const getReportDataObj = (
   pipelineOutput: schema.LLMPipelineOutput,
