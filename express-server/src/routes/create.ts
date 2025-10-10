@@ -15,7 +15,6 @@ import { sendError } from "./sendError";
 import { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities, DEFAULT_LIMITS } from "tttc-common/permissions";
-import { isFeatureEnabled } from "../featureFlags";
 const REPORT_PLACEHOLDER_MESSAGE = "Your data is being generated";
 
 const createLogger = logger.child({ module: "create" });
@@ -315,11 +314,6 @@ const getUserCsvSizeLimit = async (
     try {
       const decodedToken = await firebase.verifyUser(firebaseAuthToken);
       if (decodedToken) {
-        // Check feature flag
-        const largeUploadsEnabled = await isFeatureEnabled(
-          "large_uploads_enabled",
-          { userId: decodedToken.uid },
-        );
         const userRef = firebase.db
           .collection(firebase.getCollectionName("USERS"))
           .doc(decodedToken.uid);
@@ -327,23 +321,22 @@ const getUserCsvSizeLimit = async (
         if (userDoc.exists) {
           const userData = userDoc.data();
           const roles = userData?.roles || [];
-          const capabilities = getUserCapabilities(roles, largeUploadsEnabled);
+          const capabilities = getUserCapabilities(roles);
           userCsvSizeLimit = capabilities.csvSizeLimit;
           createLogger.info(
             {
               uid: decodedToken.uid,
               roles,
-              largeUploadsEnabled,
               capabilities,
             },
-            "User CSV size limit determined with feature flag",
+            "User CSV size limit determined from roles",
           );
         }
       }
     } catch (error) {
       createLogger.warn(
         { error },
-        "Failed to get user roles/feature flags, using default limit",
+        "Failed to get user roles, using default limit",
       );
     }
   }
