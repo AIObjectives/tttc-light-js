@@ -3,7 +3,6 @@ import { RequestWithLogger } from "../types/request";
 import * as firebase from "../Firebase";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities } from "tttc-common/permissions";
-import { isFeatureEnabled } from "../featureFlags";
 import { sendError } from "./sendError";
 import * as api from "tttc-common/api";
 
@@ -46,20 +45,14 @@ export async function getUserLimits(
       roles = userData?.roles || [];
     }
 
-    // Check feature flag for large uploads
-    const largeUploadsEnabled = await isFeatureEnabled(
-      "large_uploads_enabled",
-      { userId: decodedUser.uid },
-    );
-
-    // Get user capabilities based on roles and feature flags
-    const capabilities = getUserCapabilities(roles, largeUploadsEnabled);
+    // Get user capabilities based on roles
+    const capabilities = getUserCapabilities(roles);
 
     // Validate response schema
     const validatedResponse = api.userCapabilitiesResponse.parse(capabilities);
 
     userLogger.info(
-      { uid: decodedUser.uid, roles, largeUploadsEnabled, capabilities },
+      { uid: decodedUser.uid, roles, capabilities },
       "User limits retrieved",
     );
 

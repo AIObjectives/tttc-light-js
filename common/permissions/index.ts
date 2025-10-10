@@ -28,19 +28,13 @@ export const DEFAULT_LIMITS = {
 } as const;
 
 /**
- * Get the CSV size limit for a user based on their roles and feature flags
+ * Get the CSV size limit for a user based on their roles
  * @param roles Array of role strings from the user document
- * @param largeUploadsEnabled System-wide feature flag (from PostHog/environment) that controls
- *                            whether users with the large_uploads role can actually use larger limits.
- *                            This is NOT a user-specific setting.
  * @returns Maximum allowed CSV file size in bytes
  */
-export function getUserCsvSizeLimit(
-  roles: string[],
-  largeUploadsEnabled: boolean = false,
-): number {
-  // Check if user has large_uploads role AND feature flag is enabled
-  if (roles.includes("large_uploads") && largeUploadsEnabled) {
+export function getUserCsvSizeLimit(roles: string[]): number {
+  // Check if user has large_uploads role
+  if (roles.includes("large_uploads")) {
     return CAPABILITIES.large_uploads.csvSizeLimit;
   }
 
@@ -49,19 +43,13 @@ export function getUserCsvSizeLimit(
 }
 
 /**
- * Get user capabilities based on their roles and current system configuration
+ * Get user capabilities based on their roles
  * @param roles Array of role strings from the user document
- * @param largeUploadsEnabled System-wide feature flag (from PostHog/environment) that controls
- *                            whether users with the large_uploads role can actually use larger limits.
- *                            This is NOT a user-specific setting.
  * @returns Object containing all user capabilities
  */
-export function getUserCapabilities(
-  roles: string[],
-  largeUploadsEnabled: boolean = false,
-) {
+export function getUserCapabilities(roles: string[]) {
   return {
-    csvSizeLimit: getUserCsvSizeLimit(roles, largeUploadsEnabled),
+    csvSizeLimit: getUserCsvSizeLimit(roles),
     // Future capabilities can be added here
   };
 }

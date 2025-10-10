@@ -18,30 +18,18 @@ describe("Permission System", () => {
       expect(limit).toBe(DEFAULT_LIMITS.csvSizeLimit);
     });
 
-    it("should return default limit for users with large_uploads role but no feature flag", () => {
-      const limit = getUserCsvSizeLimit(["large_uploads"], false);
-      expect(limit).toBe(DEFAULT_LIMITS.csvSizeLimit);
-    });
-
-    it("should return 2MB limit for users with large_uploads role AND feature flag enabled", () => {
-      const limit = getUserCsvSizeLimit(["large_uploads"], true);
+    it("should return 2MB limit for users with large_uploads role", () => {
+      const limit = getUserCsvSizeLimit(["large_uploads"]);
       expect(limit).toBe(CAPABILITIES.large_uploads.csvSizeLimit);
     });
 
-    it("should return 2MB limit even with multiple roles including large_uploads when feature flag enabled", () => {
-      const limit = getUserCsvSizeLimit(
-        ["some_role", "large_uploads", "another_role"],
-        true,
-      );
+    it("should return 2MB limit even with multiple roles including large_uploads", () => {
+      const limit = getUserCsvSizeLimit([
+        "some_role",
+        "large_uploads",
+        "another_role",
+      ]);
       expect(limit).toBe(CAPABILITIES.large_uploads.csvSizeLimit);
-    });
-
-    it("should return default limit even with multiple roles including large_uploads when feature flag disabled", () => {
-      const limit = getUserCsvSizeLimit(
-        ["some_role", "large_uploads", "another_role"],
-        false,
-      );
-      expect(limit).toBe(DEFAULT_LIMITS.csvSizeLimit);
     });
 
     it("should handle empty roles array gracefully", () => {
@@ -59,10 +47,10 @@ describe("Permission System", () => {
       });
     });
 
-    it("should return default capabilities for users with large_uploads role (feature flag not considered)", () => {
+    it("should return large upload capabilities for users with large_uploads role", () => {
       const capabilities = getUserCapabilities(["large_uploads"]);
       expect(capabilities).toEqual({
-        csvSizeLimit: DEFAULT_LIMITS.csvSizeLimit,
+        csvSizeLimit: CAPABILITIES.large_uploads.csvSizeLimit,
       });
     });
 
