@@ -20,7 +20,7 @@ import math
 import os
 import sys
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 import time
 import asyncio
@@ -33,6 +33,7 @@ from fastapi import FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel
+import tiktoken
 
 
 
@@ -120,13 +121,43 @@ class APICallTracker:
 
 api_tracker = APICallTracker()
 
-# Concurrency configuration for rate limiting
-MAX_CONCURRENCY = int(os.getenv("PYSERVER_MAX_CONCURRENCY", "6"))  # Default to 6 concurrent requests
-ENABLE_CONCURRENT_PROCESSING = os.getenv("ENABLE_CONCURRENT_PROCESSING", "true").lower() == "true"  # Enabled by default
+# Concurrency configuration for batch processing
+MAX_CONCURRENCY = int(os.getenv("PYSERVER_MAX_CONCURRENCY", "6"))  # Default to 6 concurrent batch requests
 concurrency_semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
 # API rate limiting backpressure - reduced for better performance
 API_RATE_LIMIT_DELAY = float(os.getenv("API_RATE_LIMIT_DELAY", "0.05"))  # 50ms between API calls
+
+# Batch processing configuration - reduces API calls by processing multiple comments per call
+# Batch size is dynamically calculated based on content length and model context window
+
+# Initialize tiktoken encoding for accurate token counting
+# Using cl100k_base encoding (used by GPT-4, GPT-4o, GPT-3.5-turbo, and text-embedding-ada-002)
+TIKTOKEN_ENCODING = tiktoken.get_encoding("cl100k_base")
+
+# All models we use have 128K context windows
+CONTEXT_WINDOW = 128000
+
+# Reserve tokens for output - based on typical claims extraction output
+# Typical claim output: ~50-100 tokens per claim, 20-40 claims per batch = 2000-4000 tokens
+# Adding buffer for JSON structure overhead = 4000 total
+RESERVED_OUTPUT_TOKENS = 4000  # Reserve for model output (claims extraction with buffer)
+
+# Maximum comments per batch - prevents excessive API response time and improves error recovery
+# Set conservatively to balance throughput and latency
+MAX_BATCH_SIZE = 20
+
+# Add 15% safety margin to batch sizing to prevent context window overflow
+# Accounts for tiktoken estimation variance and edge cases in formatting
+BATCH_SAFETY_MARGIN = 0.15  # 15% safety margin for batch token estimation
+
+# Batch formatting overhead - calculated programmatically from actual format
+BATCH_SEPARATOR = "\n---\n"
+COMMENT_PREFIX_TEMPLATE = "Comment {i} (commentId: {id}):\n"
+# Calculate formatting overhead by measuring a sample with max-length ID
+# Count tokens (not characters) for accurate batch sizing - uses tiktoken encoding
+_sample_formatting = BATCH_SEPARATOR + COMMENT_PREFIX_TEMPLATE.format(i=999, id="x" * 20)
+PER_COMMENT_FORMATTING_OVERHEAD = len(TIKTOKEN_ENCODING.encode(_sample_formatting))
 
 # Request-scoped processing tracking with thread safety
 class ProcessingTracker:
@@ -333,7 +364,7 @@ async def processing_health_check():
             "progress_percentage": summary["progress_percentage"]
         },
         "performance": {
-            "concurrency_enabled": ENABLE_CONCURRENT_PROCESSING,
+            "batch_processing": True,
             "concurrency_limit": MAX_CONCURRENCY,
             "memory_usage_mb": memory_mb,
             "memory_percent": round(memory_percent, 1),
@@ -541,75 +572,364 @@ def comments_to_tree(
     return sanitize_for_output(response_data)
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None) -> dict:
-    """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
+def estimate_token_count(text: str) -> int:
+    """Count tokens using tiktoken's cl100k_base encoding.
+
+    Uses the same tokenizer as GPT-4, GPT-4o, and GPT-3.5-turbo for accurate token counting.
 
     Args:
-        llm (dict): The LLM configuration, including model name, system prompt, and user prompt.
-        comment (str): The comment text to analyze and extract claims from.
-        tree (dict): The taxonomy/topic tree to provide context for the comment.
-        api_key (str): The API key for authenticating with the OpenAI client.
-        report_id (str, optional): Optional report ID for logging context.
+        text: The text to count tokens for
 
     Returns:
-        dict: A dictionary containing the extracted claims and usage information.
+        Number of tokens in the text
+    """
+    return len(TIKTOKEN_ENCODING.encode(text))
+
+
+
+
+
+
+def _validate_batch_overhead(fixed_overhead: int, available_tokens: int) -> None:
+    """Validate that fixed overhead doesn't exceed available context window.
+
+    Args:
+        fixed_overhead: Total fixed overhead in tokens
+        available_tokens: Available tokens for input
+
+    Raises:
+        ValueError: If fixed overhead exceeds available tokens
+    """
+    if fixed_overhead >= available_tokens:
+        error_msg = (
+            f"Fixed overhead ({fixed_overhead} tokens) exceeds available context window "
+            f"({available_tokens} tokens). Cannot create batches."
+        )
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
+
+def _log_batch_statistics(
+    batches: List[List[Tuple[int, Comment]]],
+    total_comments: int,
+    model_name: str,
+    fixed_overhead: int,
+    skipped_comments: int
+) -> None:
+    """Log batch statistics for monitoring and debugging.
+
+    Args:
+        batches: List of batches created
+        total_comments: Total number of comments processed
+        model_name: Name of the model being used
+        fixed_overhead: Fixed overhead in tokens
+        skipped_comments: Number of comments skipped
+    """
+    batch_sizes = [len(batch) for batch in batches]
+    if batch_sizes:
+        avg_batch_size = sum(batch_sizes) / len(batch_sizes)
+        min_batch_size = min(batch_sizes)
+        max_batch_size = max(batch_sizes)
+        logger.info(
+            f"Dynamic batching: model={model_name}, total_comments={total_comments}, "
+            f"num_batches={len(batches)}, batch_size_range=[{min_batch_size}-{max_batch_size}], "
+            f"avg_batch_size={avg_batch_size:.1f}, fixed_overhead={fixed_overhead} tokens, "
+            f"safety_margin={BATCH_SAFETY_MARGIN*100}%"
+        )
+        if skipped_comments > 0:
+            logger.warning(
+                f"Skipped {skipped_comments} comments that exceeded context window limits"
+            )
+    else:
+        # Distinguish between no comments and failed batch creation
+        if total_comments > 0:
+            logger.warning(
+                f"Dynamic batching: No batches created from {total_comments} comments. "
+                f"All comments may have exceeded context window limits."
+            )
+        else:
+            logger.info("Dynamic batching: No comments to process")
+
+
+def create_dynamic_batches(
+    comments: List[Tuple[int, Comment]],
+    tree: dict,
+    llm_config: dict
+) -> List[List[Tuple[int, Comment]]]:
+    """Create batches by counting actual tokens for each comment and grouping to fit context window.
+
+    This approach is more accurate than heuristics - we count tokens for each comment individually
+    and build batches that maximize utilization while staying within the context window.
+
+    Strategy:
+    1. Calculate fixed overhead (system prompt + user prompt + full taxonomy)
+    2. For each comment, estimate its token count (including formatting overhead)
+    3. Apply safety margin to prevent context window overflow
+    4. Validate individual comments don't exceed context window
+    5. Greedily add comments to current batch until adding another would exceed limit
+    6. Start a new batch when needed
+    7. Cap batch size at MAX_BATCH_SIZE for practical reasons
+
+    Args:
+        comments: List of (comment_index, Comment) tuples to batch
+        tree: The taxonomy tree dictionary
+        llm_config: LLM configuration dict with keys: model_name, system_prompt, user_prompt
+
+    Returns:
+        List of batches, where each batch is a list of (comment_index, Comment) tuples
+
+    Raises:
+        ValueError: If fixed overhead exceeds available context window
+    """
+    if not comments:
+        return []
+
+    model_name = llm_config.get("model_name", "gpt-4o-mini")
+
+    # Calculate available tokens for input
+    available_tokens = CONTEXT_WINDOW - RESERVED_OUTPUT_TOKENS
+
+    # Estimate fixed overhead tokens (same for all batches)
+    system_prompt_tokens = estimate_token_count(llm_config.get("system_prompt", ""))
+    user_prompt_tokens = estimate_token_count(llm_config.get("user_prompt", ""))
+
+    # Use full taxonomy to preserve accuracy - descriptions help with proper claim classification
+    taxonomy_tokens = estimate_token_count(json.dumps(tree))
+
+    fixed_overhead = system_prompt_tokens + user_prompt_tokens + taxonomy_tokens
+
+    # Validate fixed overhead doesn't exceed context window
+    _validate_batch_overhead(fixed_overhead, available_tokens)
+
+    # Apply safety margin to available space for comments
+    available_for_comments = int((available_tokens - fixed_overhead) * (1 - BATCH_SAFETY_MARGIN))
+
+    # Build batches by counting tokens for each comment
+    batches: List[List[Tuple[int, Comment]]] = []
+    current_batch: List[Tuple[int, Comment]] = []
+    current_batch_tokens = 0
+    skipped_comments = 0
+
+    for comment_index, comment in comments:
+        # Estimate tokens for this specific comment
+        comment_tokens = estimate_token_count(comment.text) + PER_COMMENT_FORMATTING_OVERHEAD
+
+        # Validate individual comment doesn't exceed available space
+        if comment_tokens > available_for_comments:
+            logger.error(
+                f"Comment {comment.id} at index {comment_index} exceeds available context window: "
+                f"{comment_tokens} > {available_for_comments} tokens (with {BATCH_SAFETY_MARGIN*100}% safety margin). "
+                f"Skipping this comment. Consider increasing context window or shortening comments."
+            )
+            skipped_comments += 1
+            continue
+
+        # Check if adding this comment would exceed the limit
+        would_exceed = (current_batch_tokens + comment_tokens) > available_for_comments
+        at_max_size = len(current_batch) >= MAX_BATCH_SIZE
+
+        if would_exceed or at_max_size:
+            # Start a new batch if current batch is not empty
+            if current_batch:
+                batches.append(current_batch)
+                current_batch = []
+                current_batch_tokens = 0
+
+        # Add comment to current batch
+        current_batch.append((comment_index, comment))
+        current_batch_tokens += comment_tokens
+
+    # Don't forget the last batch
+    if current_batch:
+        batches.append(current_batch)
+
+    # Log batch statistics
+    _log_batch_statistics(batches, len(comments), model_name, fixed_overhead, skipped_comments)
+
+    return batches
+
+
+def batch_comments_to_claims(
+    llm: dict,
+    comments_with_metadata: List[Tuple[int, Comment]],
+    tree: dict,
+    api_key: str,
+    batch_index: int = -1,
+    report_id: Optional[str] = None
+) -> dict:
+    """Process multiple comments in a single API call to reduce API overhead.
+
+    This reduces the number of API calls by 6-8x through:
+    1. Batching multiple comments per API call (dynamically sized batches based on token count)
+    2. Structured outputs with JSON Schema for guaranteed valid responses
+
+    Args:
+        llm: The LLM configuration dict with model_name, system_prompt, user_prompt
+        comments_with_metadata: List of (comment_index, Comment) tuples to process
+        tree: The taxonomy/topic tree to provide context for the comments
+        api_key: The API key for authenticating with the OpenAI client
+        batch_index: Index of this batch for logging (default: -1)
+        report_id: Optional report ID for logging context
+
+    Returns:
+        Dictionary with keys:
+            - claims_by_comment: Dict mapping comment IDs to their extracted claims
+            - usage: OpenAI usage object with token counts
+            - batch_id: Unique identifier for this batch (for usage deduplication)
+            - batch_size: Number of comments in this batch
     """
     client = OpenAI(api_key=api_key)
     report_logger = get_report_logger(None, report_id)
 
-    # Basic sanitization check
-    sanitized_comment, is_safe = basic_sanitize(comment, "comment_to_claims")
-    if not is_safe:
-        report_logger.warning(f"Rejecting unsafe comment in comment_to_claims")
-        return {"claims": {"claims": []}, "usage": None}
-
-    # add taxonomy and sanitized comment to prompt template
+    # Use full taxonomy to preserve accuracy
     taxonomy_string = json.dumps(tree)
 
-    # TODO: prompt nit, shorten this to just "Comment:"
+    # Build the prompt with multiple comments
     full_prompt = llm.user_prompt
-    full_prompt += (
-        "\n" + taxonomy_string + "\nAnd then here is the comment:\n" + sanitized_comment
-    )
-    
+    full_prompt += "\n" + taxonomy_string
+    full_prompt += "\n\nNow here are the comments to analyze (extract claims from each):\n"
+
+    valid_comments = []
+    for i, (comment_index, comment) in enumerate(comments_with_metadata):
+        # Basic sanitization check
+        sanitized_comment, is_safe = basic_sanitize(comment.text, f"batch_comment_{i}")
+        if is_safe:
+            full_prompt += f"{BATCH_SEPARATOR}{COMMENT_PREFIX_TEMPLATE.format(i=i, id=comment.id)}{sanitized_comment}\n"
+            valid_comments.append((comment_index, comment, i))
+        else:
+            report_logger.warning(f"Rejecting unsafe comment in batch_comments_to_claims")
+
+    if not valid_comments:
+        return {"claims_by_comment": {}, "usage": None}
+
     # Track API call
-    api_tracker.track_call('comment_to_claims', {
-        'comment_index': comment_index,
-        'comment_length': len(comment),
-        'tree_size': len(tree),
+    api_tracker.track_call('batch_comments_to_claims', {
+        'batch_index': batch_index,
+        'batch_size': len(valid_comments),
+        'comment_indices': [idx for idx, _, _ in valid_comments],
         'model': llm.model_name
     })
-    if comment_index >= 0:
-        report_logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment #{comment_index + 1})")
 
+    comment_ids_str = ", ".join([f"#{idx + 1}" for idx, _, _ in valid_comments])
+    report_logger.info(
+        f"API Call #{api_tracker.total_calls}: batch_comments_to_claims "
+        f"(batch #{batch_index + 1}, {len(valid_comments)} comments: {comment_ids_str})"
+    )
+
+    # Use structured outputs for better reliability
     response = client.chat.completions.create(
         model=llm.model_name,
         messages=[
-            {
-                "role": "system",
-                "content": llm.system_prompt,
-            },
+            {"role": "system", "content": llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
         temperature=0.0,
-        response_format={"type": "json_object"},
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "batch_claims_extraction",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "results": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "commentId": {"type": "string"},
+                                    "claims": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "claim": {"type": "string"},
+                                                "quote": {"type": "string"},
+                                                "topicName": {"type": "string"},
+                                                "subtopicName": {"type": "string"}
+                                            },
+                                            "required": ["claim", "quote", "topicName", "subtopicName"],
+                                            "additionalProperties": False
+                                        }
+                                    }
+                                },
+                                "required": ["commentId", "claims"],
+                                "additionalProperties": False
+                            }
+                        }
+                    },
+                    "required": ["results"],
+                    "additionalProperties": False
+                }
+            }
+        }
     )
+
     try:
-        claims = response.choices[0].message.content
-    except Exception:
-        print("Step 2: no response: ", response)
-        claims = {}
-    # TODO: json.loads(claims) fails sometimes
-    try:
-        claims_obj = json.loads(claims)
-    except JSONDecodeError:
-        print("json_parse_failure;claims:", claims)
-        claims_obj = claims
-    return {"claims": claims_obj, "usage": response.usage}
+        result = json.loads(response.choices[0].message.content)
+        results_by_comment_id = {
+            item["commentId"]: item["claims"]
+            for item in result.get("results", [])
+        }
+
+        # Validate all expected comment IDs are present in the response
+        expected_ids = {comment.id for _, comment, _ in valid_comments}
+        returned_ids = set(results_by_comment_id.keys())
+        missing_ids = expected_ids - returned_ids
+
+        if missing_ids:
+            report_logger.warning(
+                f"Batch {batch_index}: Missing results for {len(missing_ids)} comment IDs: {list(missing_ids)[:5]}..."
+                if len(missing_ids) > 5 else
+                f"Batch {batch_index}: Missing results for comment IDs: {missing_ids}"
+            )
+            # Add empty claims for missing comments
+            for comment_id in missing_ids:
+                results_by_comment_id[comment_id] = []
+
+        # Check if entire batch returned zero claims
+        total_claims = sum(len(claims) for claims in results_by_comment_id.values())
+        if total_claims == 0 and len(valid_comments) > 0:
+            report_logger.warning(
+                f"Batch {batch_index}: Returned zero claims for all {len(valid_comments)} comments. "
+                f"This may indicate low-quality comments or prompt issues."
+            )
+
+    except (JSONDecodeError, KeyError, TypeError, IndexError) as e:
+        # Handle all expected parsing errors gracefully by returning empty results
+        # This ensures batch processing continues even if one batch fails
+        error_type = type(e).__name__
+        report_logger.error(f"Batch {batch_index}: {error_type} parsing batch claims response: {e}")
+        results_by_comment_id = {}
+    except Exception as e:
+        # Log truly unexpected errors with full traceback for debugging
+        # These may indicate systemic issues that need investigation
+        report_logger.exception(f"Batch {batch_index}: Unexpected error parsing batch claims response: {e}")
+        results_by_comment_id = {}
+
+    # Generate unique batch ID for usage tracking deduplication
+    # Format: batch_{report_id}_{batch_index}_{timestamp}
+    batch_id = f"batch_{report_id or 'unknown'}_{batch_index}_{int(time.time() * 1000)}"
+
+    return {
+        "claims_by_comment": results_by_comment_id,
+        "usage": response.usage,
+        "batch_id": batch_id,  # Unique ID for usage deduplication tracking
+        "batch_size": len(valid_comments)  # Track how many comments shared this API call
+    }
 
 
-async def comment_to_claims_async(processing_context: dict, llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1) -> dict:
-    """Async wrapper for comment_to_claims with concurrency control and progress tracking"""
+
+
+async def batch_comments_to_claims_async(
+    processing_context: dict,
+    llm: dict,
+    comments_batch: List[tuple],
+    tree: dict,
+    api_key: str,
+    batch_index: int = -1
+) -> dict:
+    """Async wrapper for batch_comments_to_claims with concurrency control and progress tracking"""
     async with concurrency_semaphore:
         try:
             # Add backpressure delay to prevent API rate limiting
@@ -620,17 +940,28 @@ async def comment_to_claims_async(processing_context: dict, llm: dict, comment: 
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
                 None,
-                comment_to_claims,
-                llm, comment, tree, api_key, comment_index, processing_context.get("report_id")
+                batch_comments_to_claims,
+                llm,
+                comments_batch,
+                tree,
+                api_key,
+                batch_index,
+                processing_context.get("report_id")
             )
-            
-            # Update progress stats
-            processing_tracker.update_progress(processing_context["request_id"])
-            
+
+            # Update progress stats for all comments in batch
+            processing_tracker.update_progress(
+                processing_context["request_id"],
+                completed_count=len(comments_batch)
+            )
+
             return result
         except Exception as e:
             # Still update progress on error to avoid appearing stalled
-            processing_tracker.update_progress(processing_context["request_id"])
+            processing_tracker.update_progress(
+                processing_context["request_id"],
+                completed_count=len(comments_batch)
+            )
             raise e
 
 
@@ -775,15 +1106,11 @@ async def all_comments_to_claims(
     processing_tracker.cleanup_stale_requests()
 
     # Log processing start
-    report_logger.info(f"Starting claims extraction for {len(req.comments)} comments")
+    report_logger.info(
+        f"Processing {len(req.comments)} comments with batch processing "
+        f"(dynamic batch sizing, concurrency: {MAX_CONCURRENCY})"
+    )
 
-    # Check if concurrent processing is enabled
-    comment_count = len(req.comments)
-    if ENABLE_CONCURRENT_PROCESSING:
-        report_logger.info(f"Processing {comment_count} comments with concurrent processing (concurrency: {MAX_CONCURRENCY})")
-    else:
-        report_logger.info(f"Processing {comment_count} comments sequentially (concurrent processing disabled)")
-    
     try:
         # Filter meaningful comments first
         meaningful_comments = []
@@ -792,50 +1119,101 @@ async def all_comments_to_claims(
                 meaningful_comments.append((i_c, comment))
             else:
                 print(f"warning: empty comment in claims: comment #{i_c}")
-        
-        # Process comments based on concurrency setting
+
+        # Process comments in batches (6-8x fewer API calls)
+        # Build batches by counting tokens for each comment individually
         processing_context = {"request_id": request_id, "report_id": x_report_id}
         responses = []
-        
-        if ENABLE_CONCURRENT_PROCESSING:
-            # Process comments concurrently
-            tasks = []
-            for i_c, comment in meaningful_comments:
-                task = comment_to_claims_async(processing_context, req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c)
-                tasks.append((task, comment))
-            
-            # Wait for all tasks to complete and track failures
-            responses_with_comments = await asyncio.gather(*[task for task, _ in tasks], return_exceptions=True)
-            responses = list(zip(responses_with_comments, [comment for _, comment in meaningful_comments]))
-            
-            # Count and log failures for monitoring
-            failed_count = sum(1 for response, _ in responses if isinstance(response, Exception))
-            if failed_count > 0:
-                success_rate = ((len(responses) - failed_count) / len(responses)) * 100
-                report_logger.warning(f"Concurrent processing completed with {failed_count}/{len(responses)} failures (success rate: {success_rate:.1f}%)")
 
-                # If more than 50% failed, this might indicate a systemic issue
-                if failed_count > len(responses) / 2:
-                    report_logger.error(f"High failure rate detected: {failed_count}/{len(responses)} failed. This may indicate an API or system issue.")
+        batches_list = create_dynamic_batches(
+            meaningful_comments,
+            req.tree,
+            {"model_name": req.llm.model_name, "system_prompt": req.llm.system_prompt, "user_prompt": req.llm.user_prompt}
+        )
+
+        # Add batch indices for logging
+        batches = [(i, batch) for i, batch in enumerate(batches_list)]
+        report_logger.info(f"Created {len(batches)} dynamic batches from {len(meaningful_comments)} comments")
+
+        # Process batches concurrently
+        batch_tasks = []
+        for batch_index, batch in batches:
+            task = batch_comments_to_claims_async(
+                processing_context,
+                req.llm,
+                batch,
+                req.tree,
+                x_openai_api_key,
+                batch_index
+            )
+            batch_tasks.append((task, batch))
+
+        # Wait for all batch tasks to complete
+        batch_responses = await asyncio.gather(*[task for task, _ in batch_tasks], return_exceptions=True)
+
+        # Unpack batch responses into individual comment responses
+        for batch_result, (_, batch_comments) in zip(batch_responses, batch_tasks):
+            if isinstance(batch_result, Exception):
+                # If batch failed, mark all comments in batch as failed
+                report_logger.error(f"Batch processing failed: {batch_result}")
+                for _, comment in batch_comments:
+                    responses.append((batch_result, comment))
             else:
-                report_logger.info(f"Concurrent processing completed successfully for all {len(responses)} comments")
+                # Validate response structure before processing
+                if not isinstance(batch_result, dict) or "claims_by_comment" not in batch_result:
+                    error = ValueError(f"Invalid batch response structure: {type(batch_result).__name__}")
+                    report_logger.error(
+                        f"Batch returned invalid structure (expected dict with 'claims_by_comment', "
+                        f"got {type(batch_result).__name__}). Marking all comments in batch as failed."
+                    )
+                    for _, comment in batch_comments:
+                        responses.append((error, comment))
+                    continue
+
+                # Extract individual comment results from batch
+                claims_by_comment = batch_result.get("claims_by_comment", {})
+                usage = batch_result.get("usage")
+                batch_id = batch_result.get("batch_id")  # Unique ID for this batch
+                batch_size = batch_result.get("batch_size", len(batch_comments))
+
+                # Track usage at batch level instead of distributing (more accurate)
+                # Each batch has a unique batch_id for usage deduplication
+                # All comments in the same batch share the same batch_id and usage object
+                for _, comment in batch_comments:
+                    comment_claims = claims_by_comment.get(comment.id, [])
+                    # Create response in same format as single comment processing
+                    comment_response = {
+                        "claims": {"claims": comment_claims},
+                        "usage": usage,  # Full batch usage (will be deduplicated by batch_id)
+                        "batch_id": batch_id,  # For usage deduplication
+                        "batch_size": batch_size  # Track how many comments shared this usage
+                    }
+                    responses.append((comment_response, comment))
+
+        # Count and log failures
+        failed_count = sum(1 for response, _ in responses if isinstance(response, Exception))
+        if failed_count > 0:
+            success_rate = ((len(responses) - failed_count) / len(responses)) * 100
+            report_logger.warning(
+                f"Batch processing completed with {failed_count}/{len(responses)} failures "
+                f"(success rate: {success_rate:.1f}%)"
+            )
         else:
-            # Process comments sequentially (original behavior)
-            for i_c, comment in meaningful_comments:
-                try:
-                    response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c, report_id=x_report_id)
-                    responses.append((response, comment))
-                    processing_tracker.update_progress(request_id)
-                except Exception as e:
-                    print(f"Error processing comment {comment.id}: {e}")
-                    responses.append((e, comment))
+            report_logger.info(
+                f"Batch processing completed successfully: {len(batches)} batches, "
+                f"{len(responses)} comments processed"
+            )
         
         # Process results
+        # Track which batches we've already counted to avoid double-counting usage
+        # Use explicit batch_id instead of object identity for better maintainability
+        counted_batch_ids: set = set()
+
         for response, comment in responses:
             if isinstance(response, Exception):
                 print(f"Error processing comment {comment.id}: {response}")
                 continue  # Skip to next response for exceptions
-                
+
             try:
                 claims = response["claims"]
                 for claim in claims["claims"]:
@@ -844,16 +1222,32 @@ async def all_comments_to_claims(
                 print("Step 2: no claims for comment: ", response)
                 claims = None
                 continue
-                
-            usage = response["usage"]
+
+            usage = response.get("usage")
+            batch_id = response.get("batch_id")
+            batch_size = response.get("batch_size", 1)
+
             if claims and len(claims["claims"]) > 0:
                 comms_to_claims.extend([c for c in claims["claims"]])
 
             # Handle cases where usage is None (e.g., when content is rejected by sanitization)
             if usage is not None:
-                TK_2_IN += usage.prompt_tokens
-                TK_2_OUT += usage.completion_tokens
-                TK_2_TOT += usage.total_tokens
+                # Only count usage once per batch using explicit batch_id
+                should_count_usage = batch_id is None or batch_id not in counted_batch_ids
+
+                if should_count_usage:
+                    TK_2_IN += usage.prompt_tokens
+                    TK_2_OUT += usage.completion_tokens
+                    TK_2_TOT += usage.total_tokens
+
+                    # Track this batch_id to prevent double-counting
+                    if batch_id is not None:
+                        counted_batch_ids.add(batch_id)
+                        if batch_size > 1:
+                            report_logger.debug(
+                                f"Counted batch {batch_id}: {usage.total_tokens} tokens "
+                                f"shared across {batch_size} comments"
+                            )
             else:
                 print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
 
