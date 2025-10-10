@@ -8,8 +8,8 @@
     "build": "node build.js",
     "prepare": "husky"
   },
-  "author": "Bruno Marnette",
-  "license": "MIT",
+  "author": "AI Objectives Institute",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=24"
   },
