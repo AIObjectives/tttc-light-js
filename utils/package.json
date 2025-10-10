@@ -6,8 +6,8 @@
   "scripts": {
     "start": "ts-node src/index.ts"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "AI Objectives Institute",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@types/csv-parse": "^1.1.12",
     "@types/fs-extra": "^11.0.4",

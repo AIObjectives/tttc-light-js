@@ -71,8 +71,8 @@
     "build": "npx tsc",
     "watch": "npx tsc --watch --outDir ./dist"
   },
-  "author": "",
-  "license": "MIT",
+  "author": "AI Objectives Institute",
+  "license": "Apache-2.0",
   "dependencies": {
     "pino": "^9.9.0",
     "pino-pretty": "^13.1.1",

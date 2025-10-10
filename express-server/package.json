@@ -11,8 +11,8 @@
     "test": "vitest",
     "start": "node dist/server.js"
   },
-  "author": "Bruno Marnette",
-  "license": "MIT",
+  "author": "AI Objectives Institute",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@babel/cli": "^7.23.9",
     "@babel/core": "^7.24.0",
