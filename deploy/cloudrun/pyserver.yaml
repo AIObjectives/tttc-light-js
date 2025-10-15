@@ -26,6 +26,8 @@ spec:
           env:
             - name: ALLOWED_ORIGINS
               value: "https://t3c-next-client-pr-TAG.a.run.app"
+            - name: REDIS_URL
+              value: "redis://10.16.80.3:6379"
 
           resources:
             limits:

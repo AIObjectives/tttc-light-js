@@ -52,4 +52,6 @@ jobs:
             --image gcr.io/tttc-light-js/stage-t3c-pyserver \
             --platform managed \
             --region us-central1 \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --vpc-connector projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con \
+            --set-env-vars REDIS_URL=redis://10.16.80.3:6379

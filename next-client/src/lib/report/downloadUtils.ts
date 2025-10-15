@@ -5,26 +5,19 @@
 import * as schema from "tttc-common/schema";
 
 /**
- * Downloads report data as a JSON file directly from UIReportData
- * @param reportData The report data to download
+ * Downloads report data from in-memory PipelineOutput
+ * This preserves the complete PipelineOutput including auditLog, metadata, etc.
+ *
+ * @param pipelineOutput The complete pipeline output object
  * @param filename Base filename (without extension)
  */
 export function downloadReportData(
-  reportData: schema.UIReportData,
+  pipelineOutput: schema.PipelineOutput,
   filename: string,
 ): void {
   try {
-    // Create the downloadable report format
-    const downloadableReport: schema.DownloadDataReportSchema = [
-      "v0.2",
-      {
-        data: ["v0.2", reportData],
-        downloadTimestamp: Date.now(),
-      },
-    ];
-
-    // Convert to JSON and create blob
-    const jsonString = JSON.stringify(downloadableReport, null, 2);
+    // Convert to JSON string with formatting
+    const jsonString = JSON.stringify(pipelineOutput, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
     const downloadUrl = window.URL.createObjectURL(blob);
 

@@ -580,6 +580,65 @@ const v0_2_ReportMetadata = z.tuple([z.literal("v0.2"), reportMetadataObj]);
 const reportMetadata = v0_2_ReportMetadata; // make union when we have more versions
 
 /********************************
+ * Processing Audit Log
+ * Tracks comment processing decisions for transparency and debugging
+ * Defined here before PipelineOutput since it's referenced there
+ ********************************/
+
+export const auditLogEntry = z.object({
+  commentId: z.string(),
+  commentText: z.string().optional(), // Excluded from stored artifact for privacy
+  textPreview: z.string().optional(), // First 200 chars of comment for human readability
+  interview: z.string().optional(), // Speaker/interview name from CSV
+  step: z.enum([
+    "input",
+    "sanitization_filter",
+    "meaningfulness_filter",
+    "claims_extraction",
+    "deduplication",
+  ]),
+  action: z.enum([
+    "received",
+    "accepted",
+    "rejected",
+    "modified",
+    "deduplicated",
+  ]),
+  reason: z.string().optional(),
+  details: z.record(z.unknown()).optional(),
+  timestamp: z.string(),
+  // Additional tracking fields
+  commentLength: z.number().optional(), // Length of comment text
+  claimsExtracted: z.number().optional(), // Number of claims extracted from this comment
+  claimIds: z.array(z.string()).optional(), // IDs of claims generated from this comment
+  topicAssignments: z.array(z.string()).optional(), // Topics/subtopics this claim was assigned to
+  deduplicatedWith: z.array(z.string()).optional(), // IDs of claims this was merged with (DEPRECATED)
+  primaryClaimId: z.string().optional(), // For deduplication: the surviving claim ID
+  mergedClaimIds: z.array(z.string()).optional(), // For deduplication: all claims merged into primary
+});
+
+export type AuditLogEntry = z.infer<typeof auditLogEntry>;
+
+export const processingAuditLog = z.object({
+  version: z.literal("1.0").default("1.0"), // Audit log schema version for future migrations
+  reportId: z.string(),
+  createdAt: z.string(),
+  inputCommentCount: z.number(),
+  finalQuoteCount: z.number(),
+  modelName: z.string(), // Single model used for all LLM operations in this report
+  entries: z.array(auditLogEntry),
+  summary: z.object({
+    rejectedBySanitization: z.number(),
+    rejectedByMeaningfulness: z.number(),
+    rejectedByClaimsExtraction: z.number(),
+    deduplicated: z.number(),
+    accepted: z.number(),
+  }),
+});
+
+export type ProcessingAuditLog = z.infer<typeof processingAuditLog>;
+
+/********************************
  * Pipeline output
  * What the object received from the LLM pipeline should look like.
  ********************************/
@@ -587,6 +646,7 @@ const reportMetadata = v0_2_ReportMetadata; // make union when we have more vers
 export const pipelineOutput = z.object({
   data: reportData,
   metadata: reportMetadata,
+  auditLog: processingAuditLog.optional(),
 });
 
 export type PipelineOutput = z.infer<typeof pipelineOutput>;
