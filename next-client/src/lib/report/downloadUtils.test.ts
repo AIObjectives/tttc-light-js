@@ -60,12 +60,26 @@ afterEach(() => {
 });
 
 describe("downloadReportData", () => {
-  const mockReportData: schema.UIReportData = {
+  const mockUIReportData: schema.UIReportData = {
     title: "Test Report",
     description: "A test report",
     date: "2025-01-01",
     topics: [],
     questionAnswers: [],
+  };
+
+  const mockPipelineOutput: schema.PipelineOutput = {
+    data: ["v0.2", mockUIReportData],
+    metadata: [
+      "v0.2",
+      {
+        csvColumnNames: [],
+        hasInterview: false,
+        interviewName: null,
+        claimExtractionPrompt: "test prompt",
+        processingNote: null,
+      },
+    ],
   };
 
   it("should create a download link with correct filename and timestamp", () => {
@@ -74,7 +88,7 @@ describe("downloadReportData", () => {
 
     vi.spyOn(Date, "now").mockReturnValue(mockTimestamp);
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     expect(mockCreateElement).toHaveBeenCalledWith("a");
 
@@ -89,31 +103,25 @@ describe("downloadReportData", () => {
 
     vi.spyOn(Date, "now").mockReturnValue(mockTimestamp);
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     expect(global.Blob).toHaveBeenCalledWith(
       [expect.stringContaining('"title": "Test Report"')],
       { type: "application/json" },
     );
 
-    // Check that the blob content includes the proper download schema structure
+    // Check that the blob content includes the PipelineOutput structure
     const blobCall = (global.Blob as any).mock.calls[0];
     const jsonContent = blobCall[0][0];
     const parsedContent = JSON.parse(jsonContent);
 
-    expect(parsedContent).toEqual([
-      "v0.2",
-      {
-        data: ["v0.2", mockReportData],
-        downloadTimestamp: mockTimestamp,
-      },
-    ]);
+    expect(parsedContent).toEqual(mockPipelineOutput);
   });
 
   it("should create object URL from blob and set it as link href", () => {
     const filename = "test-report";
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     expect(mockCreateObjectURL).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -128,7 +136,7 @@ describe("downloadReportData", () => {
   it("should append link to document body, click it, then remove it", () => {
     const filename = "test-report";
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     const mockLink = mockCreateElement.mock.results[0].value;
 
@@ -140,7 +148,7 @@ describe("downloadReportData", () => {
   it("should clean up object URL after download", () => {
     const filename = "test-report";
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     expect(mockRevokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
   });
@@ -148,15 +156,15 @@ describe("downloadReportData", () => {
   it("should format JSON with proper indentation", () => {
     const filename = "test-report";
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     const blobCall = (global.Blob as any).mock.calls[0];
     const jsonContent = blobCall[0][0];
 
     // Check that JSON is formatted with 2-space indentation
-    expect(jsonContent).toContain('[\n  "v0.2",');
-    expect(jsonContent).toContain('    "data": [');
-    expect(jsonContent).toContain("\n]");
+    expect(jsonContent).toContain('{\n  "data":');
+    expect(jsonContent).toContain('  "metadata":');
+    expect(jsonContent).toContain("\n}");
   });
 
   it("should handle complex report data correctly", () => {
@@ -180,15 +188,31 @@ describe("downloadReportData", () => {
       ],
     };
 
+    const complexPipelineOutput: schema.PipelineOutput = {
+      data: ["v0.2", complexReportData],
+      metadata: [
+        "v0.2",
+        {
+          csvColumnNames: [],
+          hasInterview: false,
+          interviewName: null,
+          claimExtractionPrompt: "test prompt",
+          processingNote: null,
+        },
+      ],
+    };
+
     const filename = "complex-report";
 
-    expect(() => downloadReportData(complexReportData, filename)).not.toThrow();
+    expect(() =>
+      downloadReportData(complexPipelineOutput, filename),
+    ).not.toThrow();
 
     const blobCall = (global.Blob as any).mock.calls[0];
     const jsonContent = blobCall[0][0];
     const parsedContent = JSON.parse(jsonContent);
 
-    expect(parsedContent[1].data[1]).toEqual(complexReportData);
+    expect(parsedContent.data[1]).toEqual(complexReportData);
   });
 
   it("should throw error with descriptive message on failure", () => {
@@ -197,9 +221,9 @@ describe("downloadReportData", () => {
     // Force JSON.stringify to throw an error
     const circularObj = {} as any;
     circularObj.self = circularObj;
-    const badReportData = circularObj as schema.UIReportData;
+    const badPipelineOutput = circularObj as schema.PipelineOutput;
 
-    expect(() => downloadReportData(badReportData, filename)).toThrow(
+    expect(() => downloadReportData(badPipelineOutput, filename)).toThrow(
       /Failed to download report data:/,
     );
   });
@@ -210,7 +234,7 @@ describe("downloadReportData", () => {
 
     vi.spyOn(Date, "now").mockReturnValue(mockTimestamp);
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     const mockLink = mockCreateElement.mock.results[0].value;
     expect(mockLink.download).toBe(`-${mockTimestamp}.json`);
@@ -222,7 +246,7 @@ describe("downloadReportData", () => {
 
     vi.spyOn(Date, "now").mockReturnValue(mockTimestamp);
 
-    downloadReportData(mockReportData, filename);
+    downloadReportData(mockPipelineOutput, filename);
 
     const mockLink = mockCreateElement.mock.results[0].value;
     expect(mockLink.download).toBe(`${filename}-${mockTimestamp}.json`);

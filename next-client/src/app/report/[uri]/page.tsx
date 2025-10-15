@@ -17,6 +17,7 @@ type ErrorState = { type: "error"; message: string };
 type ReportDataState = {
   type: "reportData";
   data: schema.UIReportData;
+  rawPipelineOutput: schema.PipelineOutput;
   url: string;
 };
 type ReportDataErrorState = { type: "reportDataError"; message: string };
@@ -99,13 +100,17 @@ async function getReportState(
         },
       );
 
-      // Process the report data
+      // Parse the raw pipeline output first
+      const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
+
+      // Process the report data for UI rendering
       const result = await handleResponseData(reportData, encodedUri, true);
 
       if (result.tag === "report") {
         return {
           type: "reportData",
           data: result.data,
+          rawPipelineOutput,
           url: reportResponse.dataUrl,
         };
       } else if (result.tag === "error") {
@@ -162,7 +167,11 @@ async function ReportPageContent({ encodedUri }: { encodedUri: string }) {
     case "reportData":
       return (
         <div>
-          <Report reportData={state.data} reportUri={state.url} />
+          <Report
+            reportData={state.data}
+            reportUri={state.url}
+            rawPipelineOutput={state.rawPipelineOutput}
+          />
           <Feedback className="hidden lg:block" />
         </div>
       );

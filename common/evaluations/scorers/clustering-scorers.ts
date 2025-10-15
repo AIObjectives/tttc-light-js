@@ -41,6 +41,8 @@ export const sampleClusteringData = {
 // Scorer for valid JSON structure
 export const jsonStructureScorer = weave.op(function jsonStructureScorer({
   modelOutput,
+}: {
+  modelOutput: { taxonomy: LLMTopic[] };
 }) {
   try {
     const hasValidStructure =
@@ -115,6 +117,9 @@ export const jsonStructureScorer = weave.op(function jsonStructureScorer({
 export const topicCoverageScorer = weave.op(function topicCoverageScorer({
   modelOutput,
   datasetRow,
+}: {
+  modelOutput: { taxonomy: LLMTopic[] };
+  datasetRow: { comments: string; expectedTaxonomy?: { taxonomy: LLMTopic[] } };
 }) {
   if (!modelOutput?.taxonomy) {
     return { topic_coverage_score: 0, reason: "No taxonomy found" };
@@ -163,6 +168,9 @@ export const topicCoverageScorer = weave.op(function topicCoverageScorer({
 export const contentQualityScorer = weave.op(function contentQualityScorer({
   modelOutput,
   datasetRow,
+}: {
+  modelOutput: { taxonomy: LLMTopic[] };
+  datasetRow: { comments: string; expectedTaxonomy?: { taxonomy: LLMTopic[] } };
 }) {
   if (!modelOutput?.taxonomy) {
     return { content_quality_score: 0, reason: "No taxonomy found" };
@@ -230,7 +238,16 @@ export const contentQualityScorer = weave.op(function contentQualityScorer({
 
 // Scorer for semantic similarity against expected results
 export const semanticSimilarityScorer = weave.op(
-  function semanticSimilarityScorer({ modelOutput, datasetRow }) {
+  function semanticSimilarityScorer({
+    modelOutput,
+    datasetRow,
+  }: {
+    modelOutput: { taxonomy: LLMTopic[] };
+    datasetRow: {
+      comments: string;
+      expectedTaxonomy: { taxonomy: LLMTopic[] };
+    };
+  }) {
     if (!modelOutput?.taxonomy || !datasetRow?.expectedTaxonomy) {
       return { semantic_similarity_score: 0, reason: "Missing taxonomy data" };
     }
@@ -351,11 +368,16 @@ function hasKeyTermOverlap(text1: string, text2: string): boolean {
 // Helper function to create a clustering model using the defaultClusteringPrompt
 export function createClusteringModel(
   openaiClient: any,
-  hydratePromptLiterals: Function,
+  hydratePromptLiterals: (
+    template: string,
+    variables: Record<string, string>,
+  ) => string,
   defaultClusteringPrompt: string,
   systemPrompt: string,
 ) {
-  return weave.op(async function clusteringModel(input) {
+  return weave.op(async function clusteringModel(input: {
+    datasetRow: { comments: string };
+  }) {
     const hydratedPrompt = hydratePromptLiterals(defaultClusteringPrompt, {
       comments: input.datasetRow.comments,
     });

@@ -160,9 +160,11 @@ export const ReportContext = createContext<{
 function Report({
   reportData,
   reportUri,
+  rawPipelineOutput,
 }: {
   reportData: schema.UIReportData;
   reportUri: string;
+  rawPipelineOutput: schema.PipelineOutput;
 }) {
   // Report State reducer
   const [state, _dispatch] = useReportState(reportData.topics);
@@ -266,7 +268,10 @@ function Report({
               {state.children.map((themeNode) => (
                 <Theme key={themeNode.data.id} node={themeNode} />
               ))}
-              <Appendix filename={reportData.title} reportData={reportData} />
+              <Appendix
+                filename={reportData.title}
+                rawPipelineOutput={rawPipelineOutput}
+              />
             </Col>
           }
           ToolBar={
@@ -555,15 +560,15 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
 }
 
 function Appendix({
-  reportData,
+  rawPipelineOutput,
   filename,
 }: {
-  reportData: schema.UIReportData;
+  rawPipelineOutput: schema.PipelineOutput;
   filename: string;
 }) {
   const handleDownload = () => {
     try {
-      downloadReportData(reportData, filename);
+      downloadReportData(rawPipelineOutput, filename);
     } catch (error) {
       toast.error(
         `Failed to download report data: ${(error as Error).message}`,

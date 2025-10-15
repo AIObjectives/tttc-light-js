@@ -43,6 +43,7 @@ sys.path.append(str(current_dir))
 import config
 from utils import cute_print, full_speaker_map, token_cost, topic_desc_map, comment_is_meaningful
 from simple_sanitizer import basic_sanitize, sanitize_prompt_length, sanitize_for_output
+from audit_logger import ProcessingAuditLogger, set_audit_logger, get_audit_logger, clear_audit_logger
 
 load_dotenv()
 
@@ -443,19 +444,43 @@ def comments_to_tree(
     # Reset tracker for new report processing
     api_tracker.reset()
     report_logger.info(f"Starting topic_tree processing with {len(req.comments)} comments")
-    
+
+    # Get or create audit logger from Redis
+    from audit_log_redis import get_audit_log_from_redis, save_audit_log_to_redis
+
+    audit_logger = get_audit_log_from_redis(x_report_id or "unknown")
+    if not audit_logger:
+        # First endpoint hit - audit log should exist from Express init
+        report_logger.warning(f"Audit log not found in Redis for report {x_report_id}, creating new one")
+        audit_logger = ProcessingAuditLogger(
+            report_id=x_report_id or "unknown",
+            input_comment_count=len(req.comments)
+        )
+    set_audit_logger(audit_logger)
+
     # Basic sanitization - just check for prompt injection and length
     client = OpenAI(api_key=x_openai_api_key)
 
     # append comments to prompt with basic sanitization
     full_prompt = req.llm.user_prompt
     for comment in req.comments:
+        # Log input comment with interview and length
+        audit_logger.log_input(
+            comment.id,
+            interview=getattr(comment, 'interview', None),
+            comment_length=len(comment.text),
+            text=comment.text
+        )
+
         # Basic sanitization check
         sanitized_text, is_safe = basic_sanitize(comment.text, "topic_tree_comment")
         if is_safe and comment_is_meaningful(sanitized_text):
             full_prompt += "\n" + sanitized_text
         elif not is_safe:
+            audit_logger.log_sanitization_filter(comment.id, "Failed basic_sanitize check", text=comment.text)
             report_logger.warning(f"Rejecting unsafe comment in topic_tree")
+        else:
+            audit_logger.log_meaningfulness_filter(comment.id, "Failed comment_is_meaningful check", text=comment.text)
     
     # Basic prompt length check
     full_prompt = sanitize_prompt_length(full_prompt)
@@ -537,12 +562,18 @@ def comments_to_tree(
         "usage": usage.model_dump(),
         "cost": s1_total_cost,
     }
-    
+
+    # Save audit log to Redis before returning
+    audit_logger = get_audit_logger()
+    if audit_logger:
+        save_audit_log_to_redis(audit_logger)
+    clear_audit_logger()
+
     # Filter PII from final output for user privacy
     return sanitize_for_output(response_data)
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None) -> dict:
+def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None, interview: str = None) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
 
     Args:
@@ -562,6 +593,11 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
     sanitized_comment, is_safe = basic_sanitize(comment, "comment_to_claims")
     if not is_safe:
         report_logger.warning(f"Rejecting unsafe comment in comment_to_claims")
+        # Log to audit if available
+        audit_logger = get_audit_logger()
+        if audit_logger and comment_index is not None:
+            comment_id = str(comment_index)
+            audit_logger.log_sanitization_filter(comment_id, "Failed sanitization in comment_to_claims", text=comment)
         return {"claims": {"claims": []}, "usage": None}
 
     # Create structured output schema from taxonomy
@@ -588,8 +624,8 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
         'model': llm.model_name,
         'structured_outputs': True
     })
-    if comment_index >= 0:
-        report_logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment #{comment_index + 1})")
+    if comment_index is not None:
+        report_logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment {comment_index})")
 
     # Make the API call with structured outputs (required)
     response = client.beta.chat.completions.parse(
@@ -607,16 +643,68 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
     claims_list = [claim.model_dump(mode='json') for claim in parsed_claims.claims]
 
     # Log if no claims extracted (for debugging empty reports)
+    audit_logger = get_audit_logger()
     if len(claims_list) == 0:
-        report_logger.warning(f"Structured outputs returned 0 claims for comment {comment_index + 1}. Comment length: {len(comment)}")
+        report_logger.warning(f"Structured outputs returned 0 claims for comment {comment_index}. Comment length: {len(comment)}")
+        if audit_logger and comment_index is not None:
+            comment_id = str(comment_index)
+            # Build LLM metadata for reproducibility
+            llm_metadata = {
+                "model": llm.model_name,
+                "prompt_version": "v1.0",  # Update when prompt changes
+                "temperature": getattr(llm, 'temperature', None),
+            }
+            audit_logger.log_claims_extraction_empty(
+                comment_id,
+                llm_metadata=llm_metadata,
+                interview=interview,
+                text=comment
+            )
     else:
-        report_logger.info(f"Extracted {len(claims_list)} claims for comment {comment_index + 1}")
+        report_logger.info(f"Extracted {len(claims_list)} claims for comment {comment_index}")
+        if audit_logger and comment_index is not None:
+            comment_id = str(comment_index)
+            # Extract topic assignments and claim text from claims
+            topic_assignments = []
+            claim_texts = []
+            for claim in claims_list:
+                topic = claim.get("topicName", "")
+                subtopic = claim.get("subtopicName", "")
+                if topic and subtopic:
+                    topic_assignments.append(f"{topic}/{subtopic}")
+                elif topic:
+                    topic_assignments.append(topic)
+
+                # Store claim text for traceability (first 100 chars)
+                claim_text = claim.get("claim", "")
+                if claim_text:
+                    claim_texts.append(claim_text[:100])
+
+            # Build LLM metadata for reproducibility
+            llm_metadata = {
+                "model": llm.model_name,
+                "prompt_version": "v1.0",  # Update when prompt changes
+                "temperature": getattr(llm, 'temperature', None),
+            }
+
+            # For now, claim_ids will be the same as comment_id since we don't have unique claim IDs yet
+            # The commentId field is added later in the pipeline (line 908)
+            audit_logger.log_claims_extraction_success(
+                comment_id,
+                num_claims=len(claims_list),
+                claim_ids=[comment_id] * len(claims_list),  # Multiple claims from same comment
+                llm_metadata=llm_metadata,
+                interview=interview,
+                topic_assignments=topic_assignments if topic_assignments else None,
+                details={"claims": claim_texts} if claim_texts else None,
+                text=comment
+            )
 
     claims_obj = {"claims": claims_list}
     return {"claims": claims_obj, "usage": response.usage}
 
 
-async def comment_to_claims_async(processing_context: dict, llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1) -> dict:
+async def comment_to_claims_async(processing_context: dict, llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, interview: str = None) -> dict:
     """Async wrapper for comment_to_claims with concurrency control and progress tracking"""
     async with concurrency_semaphore:
         try:
@@ -629,7 +717,7 @@ async def comment_to_claims_async(processing_context: dict, llm: dict, comment: 
             result = await loop.run_in_executor(
                 None,
                 comment_to_claims,
-                llm, comment, tree, api_key, comment_index, processing_context.get("report_id")
+                llm, comment, tree, api_key, comment_index, processing_context.get("report_id"), interview
             )
             
             # Update progress stats
@@ -767,6 +855,15 @@ async def all_comments_to_claims(
     # Get report-specific logger
     report_logger = get_report_logger(x_user_id, x_report_id)
 
+    # Get audit logger from Redis
+    from audit_log_redis import get_audit_log_from_redis, save_audit_log_to_redis
+
+    audit_logger = get_audit_log_from_redis(x_report_id or "unknown")
+    if audit_logger:
+        set_audit_logger(audit_logger)
+    else:
+        report_logger.warning(f"No audit log found in Redis for report {x_report_id}")
+
     comms_to_claims = []
     comms_to_claims_html = []
     TK_2_IN = 0
@@ -809,7 +906,7 @@ async def all_comments_to_claims(
             # Process comments concurrently
             tasks = []
             for i_c, comment in meaningful_comments:
-                task = comment_to_claims_async(processing_context, req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c)
+                task = comment_to_claims_async(processing_context, req.llm, comment.text, req.tree, x_openai_api_key, comment_index=comment.id, interview=comment.speaker)
                 tasks.append((task, comment))
             
             # Wait for all tasks to complete and track failures
@@ -831,7 +928,7 @@ async def all_comments_to_claims(
             # Process comments sequentially (original behavior)
             for i_c, comment in meaningful_comments:
                 try:
-                    response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=i_c, report_id=x_report_id)
+                    response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=comment.id, report_id=x_report_id, interview=comment.speaker)
                     responses.append((response, comment))
                     processing_tracker.update_progress(request_id)
                 except Exception as e:
@@ -980,12 +1077,24 @@ async def all_comments_to_claims(
             "completion_tokens": TK_2_OUT,
         }
         
-        response_data = {"data": node_counts, "usage": net_usage, "cost": s2_total_cost}
+        # Get audit log before cleaning up
+        # Save audit log to Redis before returning
+        audit_logger = get_audit_logger()
+        if audit_logger:
+            save_audit_log_to_redis(audit_logger)
+
+        response_data = {
+            "data": node_counts,
+            "usage": net_usage,
+            "cost": s2_total_cost,
+        }
         # Filter PII from final output for user privacy
         return sanitize_for_output(response_data)
     finally:
         # Ensure request tracking is always cleaned up to prevent memory leaks
         processing_tracker.end_request(request_id)
+        # Clear audit logger
+        clear_audit_logger()
 
 
 def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "", subtopic_name: str = "", report_id: str = None) -> dict:
@@ -1274,6 +1383,15 @@ def sort_claims_tree(
     # Get report-specific logger
     report_logger = get_report_logger(x_user_id, x_report_id)
 
+    # Get audit logger from Redis
+    from audit_log_redis import get_audit_log_from_redis, save_audit_log_to_redis
+
+    audit_logger = get_audit_log_from_redis(x_report_id or "unknown")
+    if audit_logger:
+        set_audit_logger(audit_logger)
+    else:
+        report_logger.warning(f"No audit log found in Redis for report {x_report_id}")
+
     claims_tree = req.tree
     llm = req.llm
     TK_IN = 0
@@ -1355,15 +1473,48 @@ def sort_claims_tree(
                     if "speaker" in base_claim:
                         per_topic_speakers.add(base_claim["speaker"])
 
+                    # Collect merged claim IDs and texts for audit logging
+                    merged_comment_ids = []
+                    merged_claims_data = []
+
                     # Add the remaining claims as duplicates (with their original quotes)
                     for claim_id in valid_claim_ids[1:]:
                         dupe_claim = {k: v for k, v in subtopic_data["claims"][claim_id].items()}
                         dupe_claim["duplicated"] = True
                         grouped_claim["duplicates"].append(dupe_claim)
 
+                        # Collect merged IDs and claim data (text + speaker)
+                        if "commentId" in dupe_claim:
+                            merged_comment_ids.append(str(dupe_claim["commentId"]))
+                            merged_claims_data.append({
+                                "text": dupe_claim.get("claim", "")[:200],
+                                "speaker": dupe_claim.get("speaker", "unknown")
+                            })
+
                         # Add their speakers too
                         if "speaker" in dupe_claim:
                             per_topic_speakers.add(dupe_claim["speaker"])
+
+                    # Log deduplication as a single group operation
+                    audit_logger = get_audit_logger()
+                    if audit_logger and len(merged_comment_ids) > 0 and "commentId" in base_claim:
+                        # Include claim texts and speakers for traceability (first 200 chars of text)
+                        details = {
+                            "primary_claim": {
+                                "text": base_claim.get("claim", "")[:200],
+                                "speaker": base_claim.get("speaker", "unknown")
+                            },
+                            "merged_claims": merged_claims_data,
+                            "grouped_claim": claim_text[:200],
+                            "num_claims_merged": len(merged_comment_ids),
+                            "topic": f"{base_claim.get('topicName', '')}/{base_claim.get('subtopicName', '')}"
+                        }
+                        audit_logger.log_deduplication(
+                            primary_claim_id=str(base_claim["commentId"]),
+                            merged_claim_ids=merged_comment_ids,
+                            details=details,
+                            text=claim_text  # Claim text for human-readable preview
+                        )
 
                     deduped_claims.append(grouped_claim)
 
@@ -1418,7 +1569,7 @@ def sort_claims_tree(
                     if "speaker" in subtopic_data["claims"][0]:
                         speaker = subtopic_data["claims"][0]["speaker"]
                     else:
-                        print("no speaker provided:", claim)
+                        print("no speaker provided:", subtopic_data["claims"][0])
                         speaker = "unknown"
                     per_topic_speakers.add(speaker)
                 else:
@@ -1515,8 +1666,18 @@ def sort_claims_tree(
         "completion_tokens": TK_OUT,
     }
 
-    response_data = {"data": full_sort_tree, "usage": net_usage, "cost": s3_total_cost}
-    
+    # Save audit log to Redis before returning
+    audit_logger = get_audit_logger()
+    if audit_logger:
+        save_audit_log_to_redis(audit_logger)
+    clear_audit_logger()
+
+    response_data = {
+        "data": full_sort_tree,
+        "usage": net_usage,
+        "cost": s3_total_cost,
+    }
+
     # Filter PII from final output for user privacy
     return sanitize_for_output(response_data)
 

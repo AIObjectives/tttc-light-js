@@ -5,3 +5,4 @@ wandb
 uvicorn
 python-dotenv
 psutil
+redis

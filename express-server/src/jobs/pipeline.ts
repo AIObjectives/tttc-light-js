@@ -17,6 +17,12 @@ import { randomUUID } from "crypto";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 import * as Firebase from "../Firebase";
 import { getAnalytics } from "tttc-common/analytics";
+import {
+  initializeAuditLog,
+  getAuditLog,
+  deleteAuditLog,
+} from "../utils/auditLogRedis";
+import Redis from "ioredis";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
 
@@ -204,8 +210,14 @@ export async function pipelineJob(job: PipelineJob) {
   // This returns the results of each of the steps.
   pipelineLogger.info({ reportId }, "Starting pipeline steps");
   const pipelineStart = Date.now();
-  const { topicTreeStep, claimsStep, sortedStep, summariesStep, addonsStep } =
-    await doPipelineSteps(job);
+  const {
+    topicTreeStep,
+    claimsStep,
+    sortedStep,
+    summariesStep,
+    addonsStep,
+    auditLog,
+  } = await doPipelineSteps(job);
   const pipelineEnd = Date.now();
   const pipelineDuration = pipelineEnd - pipelineStart;
   const processingRate = Math.round((numRows / pipelineDuration) * 1000);
@@ -334,7 +346,14 @@ export async function pipelineJob(job: PipelineJob) {
   );
 
   // Take the pipeline object and translate it into our updated schema
-  const finalResult = mapResult(outputResult, llmPipelineToSchema);
+  const finalResult = mapResult(outputResult, (pipelineOutput) => {
+    const result = llmPipelineToSchema(pipelineOutput);
+    // Add audit log if available
+    if (auditLog) {
+      return { ...result, auditLog };
+    }
+    return result;
+  });
 
   if (finalResult.tag === "success") {
     // add the json data to storage
@@ -471,6 +490,39 @@ async function doPipelineSteps(job: PipelineJob) {
   const { config, data } = job;
   const reportId = config.firebaseDetails?.reportId;
   const userId = config.firebaseDetails?.userId;
+
+  // Get Redis connection for audit log
+  // TODO: Improve dependency injection by adding redis to PipelineConfig
+  const redis = new Redis(config.env.REDIS_URL, {
+    connectionName: "Pipeline-AuditLog",
+    maxRetriesPerRequest: 3,
+    connectTimeout: 10000, // 10 seconds
+    commandTimeout: 5000, // 5 seconds per command
+    enableReadyCheck: true,
+    lazyConnect: false,
+    retryStrategy: (times) => {
+      if (times > 3) return null; // Stop retrying after 3 attempts
+      return Math.min(times * 100, 3000); // Exponential backoff up to 3s
+    },
+  });
+
+  // Initialize audit log in Redis before pipeline starts
+  const commentCount = data.length;
+  if (reportId) {
+    try {
+      await initializeAuditLog(redis, reportId, commentCount);
+      pipelineLogger.info(
+        { reportId, commentCount },
+        "Initialized audit log in Redis",
+      );
+    } catch (error) {
+      pipelineLogger.error(
+        { reportId, error },
+        "Failed to initialize audit log in Redis",
+      );
+    }
+  }
+
   const {
     doClaimsStep,
     doSortClaimsTreeStep,
@@ -612,7 +664,44 @@ async function doPipelineSteps(job: PipelineJob) {
     "wrappingup",
   );
 
-  return { topicTreeStep, claimsStep, sortedStep, summariesStep, addonsStep };
+  // Retrieve final audit log from Redis
+  let finalAuditLog: schema.ProcessingAuditLog | undefined;
+  if (reportId) {
+    try {
+      const auditLog = await getAuditLog(redis, reportId);
+      if (auditLog) {
+        finalAuditLog = auditLog;
+        pipelineLogger.info(
+          {
+            reportId,
+            inputCount: auditLog.inputCommentCount,
+            finalCount: auditLog.finalQuoteCount,
+            summary: auditLog.summary,
+          },
+          "Retrieved final audit log from Redis",
+        );
+        // Clean up Redis after retrieval
+        await deleteAuditLog(redis, reportId);
+      }
+    } catch (error) {
+      pipelineLogger.error(
+        { reportId, error },
+        "Failed to retrieve audit log from Redis",
+      );
+    }
+  }
+
+  // Close Redis connection
+  redis.disconnect();
+
+  return {
+    topicTreeStep,
+    claimsStep,
+    sortedStep,
+    summariesStep,
+    addonsStep,
+    auditLog: finalAuditLog,
+  };
 }
 
 /**
@@ -627,11 +716,9 @@ type ClaimStepProps = {
 
 /**
  * Props that the pyserver takes for the sort step
+ * Note: we omit llm from SortClaimsTreeRequest since it's added by doSortClaimsTreeStep
  */
-type SortClaimsProps = {
-  tree: apiPyserver.ClaimsTree;
-  sort: string;
-};
+type SortClaimsProps = Omit<apiPyserver.SortClaimsTreeRequest, "llm">;
 
 /**
  * Output of the sort claims response
@@ -680,7 +767,8 @@ const PipelineOutputToProps = {
   },
   makeSortedProps: (reply: apiPyserver.ClaimsReply) => {
     return {
-      ...reply,
+      usage: reply.usage,
+      cost: reply.cost,
       stepName: "Claims Step",
       data: {
         tree: reply.data,
@@ -756,8 +844,8 @@ const makePyserverFuncs = (
   const doClaimsStep = async (args: {
     tree: { taxonomy: apiPyserver.PartialTopic[] };
     comments: apiPyserver.PipelineComment[];
-  }) =>
-    await Pyserver.claimsPipelineStep(
+  }) => {
+    const result = await Pyserver.claimsPipelineStep(
       env,
       {
         ...args,
@@ -765,9 +853,12 @@ const makePyserverFuncs = (
       },
       userId,
       reportId,
-    ).then((val) =>
-      mapResult(val, (reply) => PipelineOutputToProps.makeSortedProps(reply)),
     );
+
+    return mapResult(result, (reply) =>
+      PipelineOutputToProps.makeSortedProps(reply),
+    );
+  };
 
   type CruxProps = {
     topics: apiPyserver.PartialTopic[];
@@ -799,10 +890,7 @@ const makePyserverFuncs = (
   /**
    * Calls the sort step on the pyserver
    */
-  const doSortClaimsTreeStep = async (arg: {
-    tree: apiPyserver.ClaimsTree;
-    sort: string;
-  }) =>
+  const doSortClaimsTreeStep = async (arg: SortClaimsProps) =>
     await Pyserver.sortClaimsTreePipelineStep(
       env,
       {
