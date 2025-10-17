@@ -10,7 +10,17 @@ import {
   sampleClusteringData,
 } from "./scorers/clustering-scorers.js";
 import {
+  extractionJsonStructureScorer,
+  claimQualityScorer,
+  taxonomyAlignmentScorer,
+  quoteRelevanceScorer,
+  extractionCompletenessScorer,
+  createExtractionModel,
+  extractionTestCases,
+} from "./scorers/extraction-scorers.js";
+import {
   defaultClusteringPrompt,
+  defaultExtractionPrompt,
   defaultSystemPrompt,
   hydratePromptLiterals,
 } from "../prompts/index.js";
@@ -34,9 +44,15 @@ const clusteringModel = createClusteringModel(
   defaultSystemPrompt,
 );
 
-async function main() {
-  await weave.init("t3c-pipeline-evaluation");
+// Create extraction model with system prompt
+const extractionModel = createExtractionModel(
+  openaiClient,
+  hydratePromptLiterals,
+  defaultExtractionPrompt,
+  defaultSystemPrompt,
+);
 
+async function runClusteringEvaluation() {
   const clusteringDataset = new weave.Dataset({
     name: "T3C Clustering Dataset",
     rows: clusteringExamples,
@@ -53,10 +69,66 @@ async function main() {
   });
 
   console.log("Running T3C clustering evaluation...");
-  const results = await clusteringEvaluation.evaluate({
+  const clusteringResults = await clusteringEvaluation.evaluate({
     model: clusteringModel,
   });
-  console.log("Results:", JSON.stringify(results, null, 2));
+  console.log(
+    "Clustering Results:",
+    JSON.stringify(clusteringResults, null, 2),
+  );
+  return clusteringResults;
+}
+
+async function runExtractionEvaluation() {
+  const extractionDataset = new weave.Dataset({
+    name: "T3C Extraction Dataset",
+    rows: extractionTestCases,
+  });
+
+  const extractionEvaluation = new weave.Evaluation({
+    dataset: extractionDataset,
+    scorers: [
+      extractionJsonStructureScorer,
+      claimQualityScorer,
+      taxonomyAlignmentScorer,
+      quoteRelevanceScorer,
+      extractionCompletenessScorer,
+    ],
+  });
+
+  console.log("Running T3C extraction evaluation...");
+  const extractionResults = await extractionEvaluation.evaluate({
+    model: extractionModel,
+  });
+  console.log(
+    "Extraction Results:",
+    JSON.stringify(extractionResults, null, 2),
+  );
+  return extractionResults;
+}
+
+async function main() {
+  await weave.init("t3c-pipeline-evaluation");
+
+  const evaluationType = process.argv[2];
+
+  switch (evaluationType) {
+    case "clustering":
+      console.log("Running clustering evaluation...\n");
+      await runClusteringEvaluation();
+      break;
+    case "extraction":
+      console.log("Running extraction evaluation...\n");
+      await runExtractionEvaluation();
+      break;
+    default:
+      console.log(
+        "Running full T3C pipeline evaluation (clustering + extraction)...\n",
+      );
+      await runClusteringEvaluation();
+      await runExtractionEvaluation();
+      break;
+  }
 }
 
 main();
