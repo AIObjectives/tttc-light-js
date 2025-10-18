@@ -2,8 +2,13 @@ import Icons from "@/assets/icons";
 import { Card, CardContent } from "@/components/elements";
 import { Col, Row } from "@/components/layout";
 import { QuoteText } from "@/components/quote/Quote";
+import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
 import React from "react";
-
+import {
+  createAnalyticsConfig,
+  getAnalytics,
+  initializeAnalytics,
+} from "tttc-common/analytics";
 const ContentGroup = ({ children }: React.PropsWithChildren) => (
   <Col gap={3}>{children}</Col>
 );
@@ -42,7 +47,9 @@ const Outline = () => (
  * About page for T3C
  * TODO: The spacing between the bullet point and its text is off from the designs. Find a way to control this.
  */
-export default function AboutPage() {
+export default async function AboutPage() {
+  const analytics = await serverSideAnalyticsClient();
+  await analytics.page("About");
   return (
     <Col className="p-8 w-[832px] m-auto">
       <ContentGroupContainer>
