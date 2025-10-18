@@ -500,34 +500,14 @@ export function AdvancedSettings({
 
 export function TermsAndConditions() {
   return (
-    <div className="text-muted-foreground">
-      <h4>Preliminary Terms of Service</h4>
-      <br />
-      <p>
-        By accessing the Talk to the City report creation feature, users comply
-        with the following terms and conditions:
-      </p>
-      <br />
-      <p>
-        Data Processing: Upon submission, your data will be transmitted to
-        OpenAI's API for processing and subsequent storage on our platform.
-        Users maintain responsibility for the data they submit.
-      </p>
-      <br />
-      <p>Important Disclosures:</p>
-      <ul className="list-disc list-outside pl-6">
-        <li>
-          Exercise appropriate caution when submitting text containing sensitive
-          or personally identifiable information
-        </li>
-        <li>
-          Generated reports are assigned a unique URL and are publicly
-          accessible by default
-        </li>
-        <li>
-          Features for private and password-protected reports are in development
-        </li>
-      </ul>
-    </div>
+    <Col gap={3}>
+      <h4>Terms</h4>
+      <a
+        href="https://docs.google.com/document/d/1Q8h7vKrEeH1Ynh4a5iz5C85wbz7iyG0p/edit"
+        className="p2 text-muted-foreground underline"
+      >
+        T3C Terms of Use
+      </a>
+    </Col>
   );
 }
