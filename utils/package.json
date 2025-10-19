@@ -4,7 +4,8 @@
   "description": "utilities for T3C",
   "main": "index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start": "tsx src/index.ts",
+    "migrate-legacy": "tsx src/scripts/migrate-legacy-report.ts"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
@@ -15,7 +16,10 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.14.0",
     "csv-parse": "^5.6.0",
+    "dotenv": "^16.4.7",
+    "firebase-admin": "^13.0.1",
     "fs-extra": "^11.3.0",
     "tttc-common": "file:../common",
     "uuid": "^11.0.5",
