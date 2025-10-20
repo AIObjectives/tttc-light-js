@@ -4,9 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { onAuthStateChanged } from "@/lib/firebase/auth";
 import { User } from "firebase/auth";
 import { ensureUserDocumentOnClient } from "@/lib/firebase/ensureUserDocument";
-import { logger } from "tttc-common/logger/browser";
-
-const userHookLogger = logger.child({ module: "user-hook-client" });
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
@@ -25,18 +22,15 @@ export function useUser() {
       const unsubscribe = onAuthStateChanged(async (authUser: User | null) => {
         if (!mounted) return;
 
-        userHookLogger.debug(
-          {
-            uid: authUser?.uid,
-            email: authUser?.email,
-            displayName: authUser?.displayName,
-          },
-          "Auth state changed",
-        );
+        console.debug("[user-hook-client] Auth state changed", {
+          uid: authUser?.uid,
+          email: authUser?.email,
+          displayName: authUser?.displayName,
+        });
 
         // Detect logout: previous user existed but current user is null
         if (previousUserRef.current && !authUser) {
-          userHookLogger.info({}, "User logged out");
+          console.info("[user-hook-client] User logged out");
           // Clear ensured users when user logs out
           ensuredUsersRef.current = new Set();
           setIsWaitlisted(false);
@@ -53,35 +47,39 @@ export function useUser() {
           if (!ensuredUsersRef.current.has(authUser.uid)) {
             let ensurePromise = ensurePromisesRef.current.get(authUser.uid);
             if (!ensurePromise) {
-              userHookLogger.debug({}, "Ensuring user document for new user");
+              console.debug(
+                "[user-hook-client] Ensuring user document for new user",
+              );
               const uid = authUser.uid; // Store UID in a local variable to avoid race conditions
               ensurePromise = ensureUserDocumentOnClient(authUser)
                 .then((result) => {
                   if (!mounted) return;
                   // Don't add to ensuredUsersRef so it will retry next time
                   if (result.tag === "success") {
-                    userHookLogger.info(
+                    console.info(
+                      "[user-hook-client] User document ensured successfully",
                       { uid },
-                      "User document ensured successfully",
                     );
                     ensuredUsersRef.current.add(uid);
                     setIsWaitlisted(false);
                   } else if (result.tag === "waitlisted") {
-                    userHookLogger.info({ uid }, "User is waitlisted");
+                    console.info("[user-hook-client] User is waitlisted", {
+                      uid,
+                    });
                     setIsWaitlisted(true);
                     // Don't add to ensured users since they're waitlisted
                   } else {
-                    userHookLogger.error(
+                    console.error(
+                      "[user-hook-client] Failed to ensure user document",
                       { error: result.error },
-                      "Failed to ensure user document",
                     );
                   }
                 })
                 .catch((error) => {
                   if (!mounted) return;
-                  userHookLogger.error(
+                  console.error(
+                    "[user-hook-client] Unexpected error in user document creation",
                     { error },
-                    "Unexpected error in user document creation",
                   );
                 })
                 .finally(() => {
@@ -91,7 +89,7 @@ export function useUser() {
             }
             // Do not await ensurePromise; let it run in the background
           } else {
-            userHookLogger.debug({}, "User document already ensured");
+            console.debug("[user-hook-client] User document already ensured");
           }
         }
       });
@@ -101,7 +99,9 @@ export function useUser() {
         unsubscribe();
       };
     } catch (err) {
-      userHookLogger.error({ error: err }, "Failed to initialize auth");
+      console.error("[user-hook-client] Failed to initialize auth", {
+        error: err,
+      });
       if (mounted) {
         setError(
           err instanceof Error ? err.message : "Auth initialization failed",
@@ -114,5 +114,11 @@ export function useUser() {
     }
   }, []);
 
-  return { user, loading, error, isWaitlisted };
+  return {
+    user,
+    loading,
+    error,
+    isWaitlisted,
+    emailVerified: user?.emailVerified ?? false,
+  };
 }

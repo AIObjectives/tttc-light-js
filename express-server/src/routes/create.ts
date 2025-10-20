@@ -223,6 +223,27 @@ const handleUserAuthenticationAndCreateDocuments = async (
   );
 
   if (decodedUser) {
+    // Check if user signed up with email/password and hasn't verified their email
+    // Note: firebase.sign_in_provider is only present in real Firebase tokens
+    const isEmailPasswordUser =
+      decodedUser.firebase?.sign_in_provider === "password";
+    const isEmailVerified = decodedUser.email_verified === true;
+
+    if (isEmailPasswordUser && !isEmailVerified) {
+      createLogger.warn(
+        {
+          uid: decodedUser.uid,
+          email: decodedUser.email,
+          provider: decodedUser.firebase?.sign_in_provider,
+          emailVerified: isEmailVerified,
+        },
+        "Email verification required for email/password users",
+      );
+      throw new Error(
+        "Email verification required. Please check your inbox for a verification link, or click 'Resend Verification Email' to get a new one.",
+      );
+    }
+
     createLogger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
     await firebase.ensureUserDocument(
       decodedUser.uid,
