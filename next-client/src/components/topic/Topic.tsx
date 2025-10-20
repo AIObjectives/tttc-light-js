@@ -58,7 +58,6 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
 ) {
   const { topicNode } = useContext(TopicContext);
   const { title, description, summary } = topicNode.data;
-
   return (
     <Card data-testid={"topic-item"}>
       <CardContent ref={ref}>
@@ -77,6 +76,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
           </TopicInteractiveGraphic>
         </Col>
       </CardContent>
+      {summary && topicNode.isOpen && <TopicSummary summary={summary} />}
       <ExpandTopic />
     </Card>
   );
@@ -117,6 +117,15 @@ export function TopicContextDescription({
       </Col>
       <Separator />
     </>
+  );
+}
+
+export function TopicSummary({ summary }: { summary: string }) {
+  return (
+    <Col gap={2} className="px-4 sm:px-8 pb-6">
+      <h5>Summary</h5>
+      <p>{summary}</p>
+    </Col>
   );
 }
 
@@ -266,7 +275,7 @@ function ExpandTopic() {
   const { isOpen, pagination, children: subtopicNodes, data } = topicNode;
 
   return (
-    <>
+    <Col>
       {isOpen && data.context ? (
         <TopicContextDescription context={data.context} />
       ) : (
@@ -290,7 +299,7 @@ function ExpandTopic() {
           />
         </>
       )}
-    </>
+    </Col>
   );
 }
 
