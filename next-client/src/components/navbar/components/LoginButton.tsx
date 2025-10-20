@@ -22,6 +22,7 @@ import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
 import { logAuthEvent } from "@/lib/firebase/authEvents";
 import { logger } from "tttc-common/logger/browser";
 import { useState, useEffect } from "react";
+import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
 
 const loginLogger = logger.child({ module: "login-button" });
 import { Col } from "@/components/layout";
@@ -36,6 +37,7 @@ export default function LoginButton() {
   const { user, loading, error, isWaitlisted } = useUser();
   const [showAccessLimitedModal, setShowAccessLimitedModal] =
     useState<boolean>(false);
+  const [showEmailAuth, setShowEmailAuth] = useState<boolean>(false);
 
   useEffect(() => {
     if (isWaitlisted) {
@@ -43,23 +45,20 @@ export default function LoginButton() {
     }
   }, [isWaitlisted]);
 
-  const handleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     try {
-      loginLogger.debug({}, "Sign in button clicked");
-      const result = await signInWithGoogle();
-      loginLogger.info(
-        {
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-        },
-        "Sign in successful",
-      );
-      // Log signin event to server
-      await logAuthEvent("signin", result.user);
+      loginLogger.debug({}, "Google sign in button clicked");
+      // Initiates redirect to Google sign-in page
+      // The redirect result will be handled by RedirectHandler component
+      await signInWithGoogle();
+      // Note: Code after this won't execute as browser redirects to Google
     } catch (error) {
-      loginLogger.error({ error }, "Sign in failed");
+      loginLogger.error({ error }, "Google sign in redirect failed");
     }
+  };
+
+  const handleSignInClick = () => {
+    setShowEmailAuth(true);
   };
 
   const handleSignOut = async () => {
@@ -99,7 +98,7 @@ export default function LoginButton() {
     return (
       <div>
         <Button
-          onClick={handleSignIn}
+          onClick={handleSignInClick}
           variant="destructive"
           title={`Auth Error: ${error}`}
         >
@@ -112,7 +111,50 @@ export default function LoginButton() {
     <div>
       {!user ? (
         <>
-          <Button onClick={handleSignIn}>Sign in</Button>
+          <Button onClick={handleSignInClick}>Sign in</Button>
+
+          {/* Email/Password Auth Dialog */}
+          <Dialog open={showEmailAuth} onOpenChange={setShowEmailAuth}>
+            <DialogContent className="gap-y-8">
+              <Col gap={2}>
+                <DialogTitle>Sign in with Email</DialogTitle>
+                <DialogDescription>
+                  Sign in or create an account using your email address.
+                </DialogDescription>
+              </Col>
+              <EmailPasswordAuthForm
+                onSuccess={async (result) => {
+                  loginLogger.info(
+                    {
+                      uid: result.user.uid,
+                      email: result.user.email,
+                    },
+                    "Email auth successful",
+                  );
+                  await logAuthEvent("signin", result.user);
+                  setShowEmailAuth(false);
+                }}
+                onError={(error) => {
+                  loginLogger.error({ error }, "Email auth failed");
+                }}
+              />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or
+                  </span>
+                </div>
+              </div>
+              <Button onClick={handleGoogleSignIn} variant="outline">
+                Sign in with Google
+              </Button>
+            </DialogContent>
+          </Dialog>
+
+          {/* Access Limited Dialog */}
           <Dialog
             open={showAccessLimitedModal}
             onOpenChange={setShowAccessLimitedModal}

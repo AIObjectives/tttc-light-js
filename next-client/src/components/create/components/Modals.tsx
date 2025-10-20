@@ -11,6 +11,7 @@ import {
 } from "@/components/elements";
 import { Button } from "@/components/elements";
 import { signInWithGoogle } from "@/lib/firebase/auth";
+import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
 import {
   Dialog,
   DialogContent,
@@ -54,23 +55,42 @@ export function PoorlyFormattedModal({
 }
 
 export const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
-  const handleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      console.error("Sign in failed:", error);
+      console.error("Google sign in failed:", error);
     }
   };
 
   return (
     <Dialog open={isOpen}>
-      <DialogContent className="gap-10">
+      <DialogContent className="gap-6">
         <DialogHeader>
-          <DialogTitle>Login to create a report</DialogTitle>
+          <DialogTitle>Sign in to create a report</DialogTitle>
+          <DialogDescription>
+            Choose your preferred sign-in method
+          </DialogDescription>
         </DialogHeader>
-        <DialogDescription>
-          <Button onClick={handleSignIn}>Login</Button>
-        </DialogDescription>
+        <EmailPasswordAuthForm
+          onSuccess={() => {
+            console.log("Email auth successful");
+          }}
+          onError={(error) => {
+            console.error("Email auth failed:", error);
+          }}
+        />
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or</span>
+          </div>
+        </div>
+        <Button onClick={handleGoogleSignIn} variant="outline">
+          Sign in with Google
+        </Button>
       </DialogContent>
     </Dialog>
   );

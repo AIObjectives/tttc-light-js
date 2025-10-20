@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { onAuthStateChanged } from "@/lib/firebase/auth";
+import { onAuthStateChanged, handleRedirectResult } from "@/lib/firebase/auth";
 import { User } from "firebase/auth";
 import { ensureUserDocumentOnClient } from "@/lib/firebase/ensureUserDocument";
+import { logAuthEvent } from "@/lib/firebase/authEvents";
 import { logger } from "tttc-common/logger/browser";
 
 const userHookLogger = logger.child({ module: "user-hook-client" });
+
+// Global flag to ensure redirect result is only checked once across ALL component instances
+let hasCheckedRedirectGlobally = false;
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
@@ -20,6 +24,43 @@ export function useUser() {
 
   useEffect(() => {
     let mounted = true;
+
+    // Check for redirect result on mount (only once across all component instances)
+    const checkRedirectOnMount = async () => {
+      if (hasCheckedRedirectGlobally) {
+        userHookLogger.debug({}, "Redirect already checked, skipping");
+        return;
+      }
+      hasCheckedRedirectGlobally = true;
+
+      try {
+        userHookLogger.debug({}, "Checking for redirect result on mount");
+        const result = await handleRedirectResult();
+
+        if (result) {
+          userHookLogger.info(
+            {
+              uid: result.user.uid,
+              email: result.user.email,
+              displayName: result.user.displayName,
+            },
+            "Google sign-in redirect completed successfully",
+          );
+          // Log signin event to server
+          await logAuthEvent("signin", result.user);
+        } else {
+          userHookLogger.debug({}, "No pending redirect result");
+        }
+      } catch (error) {
+        userHookLogger.error(
+          { error },
+          "Error processing Google sign-in redirect",
+        );
+      }
+    };
+
+    // Check redirect result immediately
+    checkRedirectOnMount();
 
     try {
       const unsubscribe = onAuthStateChanged(async (authUser: User | null) => {
@@ -114,5 +155,11 @@ export function useUser() {
     }
   }, []);
 
-  return { user, loading, error, isWaitlisted };
+  return {
+    user,
+    loading,
+    error,
+    isWaitlisted,
+    emailVerified: user?.emailVerified ?? false,
+  };
 }
