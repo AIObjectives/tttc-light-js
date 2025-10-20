@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -11,13 +11,12 @@ import {
 } from "@/components/elements";
 import { Button } from "@/components/elements";
 import { signInWithGoogle } from "@/lib/firebase/auth";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/elements";
+import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { Dialog, DialogContent, DialogTitle } from "@/components/elements";
+import { logger } from "tttc-common/logger/browser";
+
+const signinModalLogger = logger.child({ module: "signin-modal" });
 
 export function PoorlyFormattedModal({
   isOpen,
@@ -54,23 +53,49 @@ export function PoorlyFormattedModal({
 }
 
 export const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
-  const handleSignIn = async () => {
+  const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(
+    "signin",
+  );
+
+  const handleGoogleSignIn = async () => {
     try {
+      signinModalLogger.debug({}, "Google sign in button clicked");
       await signInWithGoogle();
     } catch (error) {
-      console.error("Sign in failed:", error);
+      signinModalLogger.error({ error }, "Google sign in failed");
     }
   };
 
   return (
     <Dialog open={isOpen}>
-      <DialogContent className="gap-10">
-        <DialogHeader>
-          <DialogTitle>Login to create a report</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
-          <Button onClick={handleSignIn}>Login</Button>
-        </DialogDescription>
+      <DialogContent
+        className="gap-2 p-6 z-[100] max-w-[400px]"
+        overlayProps={{ className: "opacity-20 z-[90]" }}
+      >
+        <DialogTitle className="text-2xl font-semibold tracking-tight">
+          {authMode === "reset"
+            ? "Password reset"
+            : "Sign in or create an account"}
+        </DialogTitle>
+        {authMode !== "reset" && (
+          <div className="flex flex-col gap-2 mt-4">
+            <GoogleSignInButton onClick={handleGoogleSignIn} />
+            <div className="flex items-center justify-center py-2">
+              <span className="text-sm font-medium text-foreground tracking-wide">
+                or
+              </span>
+            </div>
+          </div>
+        )}
+        <EmailPasswordAuthForm
+          onSuccess={() => {
+            signinModalLogger.info({}, "Email auth successful");
+          }}
+          onError={(error) => {
+            signinModalLogger.error({ error }, "Email auth failed");
+          }}
+          onModeChange={setAuthMode}
+        />
       </DialogContent>
     </Dialog>
   );

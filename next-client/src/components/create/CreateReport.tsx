@@ -13,6 +13,7 @@ import { fetchToken } from "@/lib/firebase/getIdToken";
 import {} from "./components/FormHelpers";
 import { SigninModal } from "./components/Modals";
 import { useDeferredValue } from "./hooks/useDeferredValue";
+import { EmailVerificationPrompt } from "@/components/auth/EmailVerificationPrompt";
 
 import { success } from "tttc-common/functional-utils";
 import { useFormState } from "./hooks/useFormState";
@@ -29,20 +30,25 @@ import {
 /**
  * Hook for fetching the user's OAuth token. Needed before report form is shown.
  */
-function getUserToken(): AsyncState<string | null, Error> {
-  const { user, loading } = useUser();
+function getUserToken(): AsyncState<string | null, Error> & {
+  user: ReturnType<typeof useUser>["user"];
+  emailVerified: boolean;
+} {
+  const { user, loading, emailVerified } = useUser();
 
   // Only run fetchToken when loading is false and user exists
   const shouldFetch = !loading && !!user;
   const userId = user?.uid ?? null;
 
-  return useAsyncState(
+  const asyncState = useAsyncState(
     async () => {
       if (!shouldFetch) return success(null);
       else return await fetchToken(user);
     },
     shouldFetch ? userId : null, // Only changes when userId changes
   );
+
+  return { ...asyncState, user, emailVerified };
 }
 
 /**
@@ -63,7 +69,7 @@ const initialState: api.GenerateApiResponse | null = null;
  * Root component, fetches user's token and then renders the report
  */
 export default function CreateReport() {
-  const { isLoading, result } = getUserToken();
+  const { isLoading, result, user, emailVerified } = getUserToken();
 
   /**
    * If we haven't gotten the user's OAuth token, show the loading state
@@ -84,7 +90,13 @@ export default function CreateReport() {
 
   if (result.tag === "success") {
     const token = result.value;
-    return <CreateReportComponent token={token} />;
+    return (
+      <CreateReportComponent
+        token={token}
+        user={user}
+        emailVerified={emailVerified}
+      />
+    );
   }
 
   return (
@@ -97,7 +109,15 @@ export default function CreateReport() {
 /**
  * Component for user to submit requests to create reports
  */
-function CreateReportComponent({ token }: { token: string | null }) {
+function CreateReportComponent({
+  token,
+  user,
+  emailVerified,
+}: {
+  token: string | null;
+  user: ReturnType<typeof useUser>["user"];
+  emailVerified: boolean;
+}) {
   const [modalOpen, setModalOpen] = useState(false);
   const submitActionWithToken = bindTokenToAction(token, submitAction);
   const [state, formAction] = useActionState(
@@ -131,7 +151,14 @@ function CreateReportComponent({ token }: { token: string | null }) {
     isFormInvalid,
   } = useFormState();
 
-  const isDisabled = isFormInvalid(files, token);
+  // Check if user is signed in with email/password (not Google)
+  // Google sign-ins are automatically verified
+  const isEmailPasswordUser =
+    user?.providerData.some((provider) => provider.providerId === "password") ??
+    false;
+  const needsEmailVerification = isEmailPasswordUser && !emailVerified;
+
+  const isDisabled = isFormInvalid(files, token) || needsEmailVerification;
 
   return (
     <>
@@ -142,6 +169,9 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <h3>Create a report</h3>
             <FormHeader />
             <FormAbout />
+            {needsEmailVerification && (
+              <EmailVerificationPrompt userEmail={user?.email ?? null} />
+            )}
             <FormDescription title={title} description={description} />
             <FormDataInput files={files} setFiles={setFiles} />
             {/* <CostEstimate files={files} /> */}
