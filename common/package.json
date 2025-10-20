@@ -72,7 +72,8 @@
     "watch": "npx tsc --watch --outDir ./dist",
     "eval:pipeline": "npx tsx evaluations/pipeline-evaluate.ts",
     "eval:clustering": "npx tsx evaluations/pipeline-evaluate.ts clustering",
-    "eval:extraction": "npx tsx evaluations/pipeline-evaluate.ts extraction"
+    "eval:extraction": "npx tsx evaluations/pipeline-evaluate.ts extraction",
+    "eval:deduplication": "npx tsx evaluations/pipeline-evaluate.ts deduplication"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
