@@ -1,0 +1,34 @@
+{
+  "name": "pipeline-worker",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\" && npx prettier ./dist --write",
+    "dev": "ts-node src/index.ts",
+    "test": "vitest",
+    "start": "node dist/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@babel/cli": "^7.23.9",
+    "@babel/core": "^7.24.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.23.3",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-typescript": "^7.23.3",
+    "@types/node": "^20.11.24",
+    "babel-plugin-module-resolver": "^5.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "vitest": "^3.1.2"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "prettier": "^3.2.5",
+    "tttc-common": "file:../common"
+  }
+}
