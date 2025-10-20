@@ -51,7 +51,7 @@ export default async function AboutPage() {
   const analytics = await serverSideAnalyticsClient();
   await analytics.page("About");
   return (
-    <Col className="p-8 w-[832px] m-auto">
+    <Col className="p-8 max-w-[832px] m-auto">
       <ContentGroupContainer>
         <ContentGroup>
           <h2>About</h2>
@@ -274,6 +274,17 @@ export default async function AboutPage() {
             </a>{" "}
             is available in Google Sheets.
           </p>
+
+          <h5>How can I make an audio transcription?</h5>
+          <ul className="list-disc list-inside pl-2">
+            <p>
+              We have a{" "}
+              <a className="underline" href="/help">
+                detailed guide here
+              </a>
+              .
+            </p>
+          </ul>
 
           <h5>How do I customize the analysis prompts?</h5>
           <p>You can modify prompts to:</p>
