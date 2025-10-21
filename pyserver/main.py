@@ -792,7 +792,6 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
             llm_metadata = {
                 "model": llm.model_name,
                 "prompt_version": "v1.0",  # Update when prompt changes
-                "temperature": getattr(llm, 'temperature', None),
             }
             audit_logger.log_claims_extraction_empty(
                 comment_id,
@@ -824,7 +823,6 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
             llm_metadata = {
                 "model": llm.model_name,
                 "prompt_version": "v1.0",  # Update when prompt changes
-                "temperature": getattr(llm, 'temperature', None),
             }
 
             # For now, claim_ids will be the same as comment_id since we don't have unique claim IDs yet
