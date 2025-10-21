@@ -590,7 +590,7 @@ def comments_to_tree(
             {"role": "user", "content": full_prompt},
         ],
         response_format={"type": "json_object"},
-        reasoning={"effort": "low"},
+        reasoning_effort="low",
     )
     try:
         tree = json.loads(response.choices[0].message.content)
@@ -1419,7 +1419,7 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
             {"role": "user", "content": full_prompt},
         ],
         response_format={"type": "json_object"},
-        reasoning={"effort": "low"},
+        reasoning_effort="low",
     )
     try:
         deduped_claims = response.choices[0].message.content
@@ -1996,7 +1996,7 @@ def generate_topic_summaries(
             {"role": "user", "content": full_prompt},
         ],
         response_format={"type": "json_object"},
-        reasoning={"effort": "low"}
+        reasoning_effort="low"
     )
 
     try:
@@ -2171,7 +2171,7 @@ def cruxes_for_topic(
             {"role": "user", "content": full_prompt},
         ],
         response_format={"type": "json_object"},
-        reasoning={"effort": "low"},
+        reasoning_effort="low",
 
     )
     crux = response.choices[0].message.content
