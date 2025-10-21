@@ -138,8 +138,7 @@ Return a JSON object of the form {
 Now here are the claims to group:
 \${claims}`;
 
-export const defaultSummariesPrompt = `
-I'm going to give you a JSON object containing a list of topics with their descriptions, subtopics, and claims.
+export const defaultSummariesPrompt = `I'm going to give you a JSON object containing a list of topics with their descriptions, subtopics, and claims.
 For each topic I want you to generate a detailed summary of the subtopics and claims for that topic. The summary
 should not exceed 140 words.
 
@@ -156,6 +155,13 @@ And now here are the topics:
 \${topics}
 `;
 
+/**
+ * Crux extraction prompt (applied per subtopic, not per topic)
+ *
+ * Note: The prompt uses "topic" terminology for simplicity, but this is actually
+ * applied to each SUBTOPIC individually. The code passes "Topic, Subtopic" as the
+ * topic name and only includes claims from that specific subtopic.
+ */
 export const defaultCruxPrompt = `I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
 identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
 which would best split the participants into two groups, based on all their

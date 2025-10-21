@@ -399,15 +399,15 @@ const CustomizePrompts = ({
  * Cruxes Feature: Identifies controversial statements that divide participants.
  *
  * Generates "crux claims" - synthesized statements (not original quotes) that best
- * split participants into agree/disagree groups for each subtopic.
+ * capture the most divisive perspective within each subtopic.
  *
  * Requirements for generation:
  * - ≥2 speakers per subtopic
  * - ≥2 claims per subtopic
  * - cruxesEnabled checkbox = true
  *
- * Output: report.data[1].addOns = { cruxClaims[], topCruxes[], controversyMatrix[][] }
- * Debug: node utils/check-cruxes.js <report.json>
+ * Output: report.data[1].addOns = { subtopicCruxes[], topicScores[], speakerCruxMatrix }
+ * Each subtopic gets one crux with controversy scoring (0-1, higher = more evenly split)
  */
 export const EnableResearchFeatures = ({
   show,
@@ -434,15 +434,15 @@ export const EnableResearchFeatures = ({
           </label>
         </Row>
         <p className="p2 text-muted-foreground">
-          Suggest pairs of perspective-summarizing "crux" statements which would
-          best split participants into agree/disagree groups or sides of about
-          equal size.
+          For each subtopic, identify the most divisive perspective that splits
+          participants into agree/disagree groups. Scores each crux by how
+          evenly participants are divided (higher = more controversial).
         </p>
       </Col>
 
       <CustomizePromptSection
         title="Crux extraction prompt"
-        subheader="In this optional step, the AI suggests pairs of `crux` statements to summarize the most controverisal perspectives within each topic."
+        subheader="In this optional step, the AI identifies the most controversial statement within each subtopic and scores how evenly it divides participants."
         inputName="cruxInstructions"
         show={cruxesEnabled.state}
         formState={cruxInstructions}
