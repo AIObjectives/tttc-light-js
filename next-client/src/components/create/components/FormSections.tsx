@@ -395,6 +395,20 @@ const CustomizePrompts = ({
   );
 };
 
+/**
+ * Cruxes Feature: Identifies controversial statements that divide participants.
+ *
+ * Generates "crux claims" - synthesized statements (not original quotes) that best
+ * split participants into agree/disagree groups for each subtopic.
+ *
+ * Requirements for generation:
+ * - ≥2 speakers per subtopic
+ * - ≥2 claims per subtopic
+ * - cruxesEnabled checkbox = true
+ *
+ * Output: report.data[1].addOns = { cruxClaims[], topCruxes[], controversyMatrix[][] }
+ * Debug: node utils/check-cruxes.js <report.json>
+ */
 export const EnableResearchFeatures = ({
   show,
   cruxesEnabled,
@@ -410,12 +424,12 @@ export const EnableResearchFeatures = ({
         <h4>Enable Research Features</h4>
         <Row gap={2}>
           <Switch
-            id="cruxEnabled"
-            name="cruxEnabled"
+            id="cruxesEnabled"
+            name="cruxesEnabled"
             checked={cruxesEnabled.state}
             onCheckedChange={(val) => cruxesEnabled.setState(val)}
           />
-          <label className="font-medium" htmlFor="cruxEnabled">
+          <label className="font-medium" htmlFor="cruxesEnabled">
             Extract cruxes to distill conflicting opinions
           </label>
         </Row>

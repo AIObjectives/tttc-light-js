@@ -630,6 +630,32 @@ async function doPipelineSteps(job: PipelineJob) {
     doTopicSummariesStep(val.data),
   );
 
+  /**
+   * Step 5: Optional Add-ons (Cruxes)
+   *
+   * Cruxes identify controversial statements that divide participants.
+   * Only runs if config.options.cruxes = true (from frontend toggle).
+   *
+   * Input:
+   * - topics: taxonomy from Step 1 (topic tree)
+   * - crux_tree: sorted claims from Step 3 (with speaker attribution)
+   * - top_k: Number of most controversial pairs to return (default 10)
+   *
+   * Process (pyserver):
+   * - For each subtopic with ≥2 speakers and ≥2 claims:
+   *   - Anonymize speaker names before LLM call (privacy)
+   *   - LLM generates synthesized "crux claim" that splits participants
+   *   - Track who agrees/disagrees with each crux
+   * - Build controversy matrix scoring all crux pairs
+   * - Return top K most divisive pairs
+   *
+   * Output (if successful): { cruxClaims[], topCruxes[], controversyMatrix[][] }
+   * Output (if disabled): {} (empty object)
+   *
+   * Debugging:
+   * - If addOns is empty {}, check: config.options.cruxes, data requirements, pyserver logs
+   * - Use: node utils/check-cruxes.js <report.json>
+   */
   pipelineLogger.info("Doing optional addons step");
   const addonsStep = await flatMapResultAsync(
     sequenceResult([claimsStep, topicTreeStep] as const),
@@ -639,22 +665,38 @@ async function doPipelineSteps(job: PipelineJob) {
           ? {
               crux: {
                 topics: topic.data.tree.taxonomy,
-                // ! does this ever change?
-                top_k: 10,
-                crux_tree: claim.data.tree,
+                top_k: 10, // Top 10 most controversial crux pairs
+                crux_tree: claim.data.tree, // Sorted claims with speaker info
               },
             }
           : {},
       );
     },
   );
-  pipelineLogger.debug(
-    {
-      addonsStep: addonsStep.tag === "success" ? "success" : "failure",
-      cruxesEnabled: config.options.cruxes,
-    },
-    "Cruxes step completed",
-  );
+  // Log detailed cruxes results for debugging
+  if (config.options.cruxes) {
+    if (addonsStep.tag === "success") {
+      const cruxCount = addonsStep.value?.cruxClaims?.length || 0;
+      const topCount = addonsStep.value?.topCruxes?.length || 0;
+      pipelineLogger.info(
+        {
+          cruxClaimsGenerated: cruxCount,
+          topCruxPairs: topCount,
+          hasControversyMatrix: !!addonsStep.value?.controversyMatrix,
+        },
+        "Cruxes generated successfully",
+      );
+    } else {
+      pipelineLogger.error(
+        {
+          error: addonsStep.error,
+        },
+        "Cruxes step failed",
+      );
+    }
+  } else {
+    pipelineLogger.debug("Cruxes step skipped (not enabled)");
+  }
   // update job progress
   pipelineLogger.info("Step 5: wrapping up");
   // Update reportRef to keep status in sync with correct sub-state
