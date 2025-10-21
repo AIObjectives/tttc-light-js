@@ -51,9 +51,7 @@ export default async function submitAction(
     dedupInstructions: formData.get("dedupInstructions"),
     summariesInstructions: formData.get("summariesInstructions"),
     cruxInstructions: formData.get("cruxInstructions"),
-    /**
-     * ! Checkbox inputs get modeled as 'on' | undefined for some reason. Do this until we refactor CreateReport
-     */
+    // Checkbox inputs use 'on' | undefined, not true | false
     cruxesEnabled: formData.get("cruxesEnabled") === "on",
   });
   const dataPayload: DataPayload = ["csv", data];

@@ -156,8 +156,7 @@ And now here are the topics:
 \${topics}
 `;
 
-export const defaultCruxPrompt = `
-I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
+export const defaultCruxPrompt = `I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
 identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
 which would best split the participants into two groups, based on all their
 statements on this topic: one group which would agree with the statement, and one which would disagree.
