@@ -11,11 +11,11 @@ Return a JSON object of the form {
   "taxonomy": [
     {
       "topicName": string,
-      "topicShortDescription": string (max 30 characters),
+      "topicShortDescription": string (max 30 words),
       "subtopics": [
         {
           "subtopicName": string,
-          "subtopicShortDescription": string (max 140 characters),
+          "subtopicShortDescription": string (max 80 words),
         },
         ...
       ]
@@ -141,13 +141,13 @@ Now here are the claims to group:
 export const defaultSummariesPrompt = `
 I'm going to give you a JSON object containing a list of topics with their descriptions, subtopics, and claims.
 For each topic I want you to generate a detailed summary of the subtopics and claims for that topic. The summary
-should not exceed 140 characters.
+should not exceed 140 words.
 
 Return a JSON object in the form {
   "summaries": [
     {
       "topicName": string, // from the given list of topics
-      "summary": string // max 140 characters
+      "summary": string // max 140 words
     }
   ]
 }
