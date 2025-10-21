@@ -1795,46 +1795,50 @@ def generate_topic_summaries(
 # on each subtopic (along with the parent topic and a short description). We anonymize
 # the claims before sending them to the LLM to protect PII and minimize any potential bias
 # based on known speaker identity (e.g. when processing claims made by popular writers)
-def controversy_matrix(cont_mat: list) -> list:
-    """Compute a controversy matrix from individual speaker opinions on crux claims,
-    as predicted by an LLM. For each pair of cruxes, for each speaker:
-    # - add 0 only if the speaker agrees with both cruxes
-    # - add 0.5 if the speaker has an opinion on one crux, but no known opinion on the other
-    # - add 1 if the speaker has a known different opinion on each crux (agree/disagree or disagree/agree)
-    # Sum the totals for each pair of cruxes in the corresponding cell in the cross-product
-    # and return the matrix of scores.
-    """
-    cm = [[0 for a in range(len(cont_mat))] for b in range(len(cont_mat))]
+def calculate_controversy_scores(agree_speakers: list, disagree_speakers: list, total_speakers: int) -> dict:
+    """Calculate simple controversy metrics for a single crux.
 
-    # loop through all the crux statements,
-    for claim_index, row in enumerate(cont_mat):
-        # these are the scores for each speaker
-        per_speaker_scores = row[1:]
-        for score_index, score in enumerate(per_speaker_scores):
-            # we want this speaker's scores for all statements except current one
-            other_scores = [
-                item[score_index + 1] for item in cont_mat[claim_index + 1 :]
-            ]
-            for other_index, other_score in enumerate(other_scores):
-                # if the scores match, there is no controversy — do not add anything
-                if score != other_score:
-                    # we only know one of the opinions
-                    if score == 0 or other_score == 0:
-                        cm[claim_index][claim_index + other_index + 1] += 0.5
-                        cm[claim_index + other_index + 1][claim_index] += 0.5
-                    # these opinions are different — max controversy
-                    else:
-                        cm[claim_index][claim_index + other_index + 1] += 1
-                        cm[claim_index + other_index + 1][claim_index] += 1
-    return cm
+    Simplified scoring replaces complex pairwise controversy matrix.
+
+    Returns:
+    - agreementScore: 0-1 (ratio of speakers who agree / total speakers)
+    - disagreementScore: 0-1 (ratio of speakers who disagree / total speakers)
+    - controversyScore: 0-1 (how evenly split the opinions are)
+      - 1.0 = perfectly split 50/50
+      - 0.0 = unanimous or no opinions
+      - Formula: min(agreementScore, disagreementScore) * 2
+    """
+    num_agree = len(agree_speakers)
+    num_disagree = len(disagree_speakers)
+
+    agreement_score = num_agree / total_speakers if total_speakers > 0 else 0
+    disagreement_score = num_disagree / total_speakers if total_speakers > 0 else 0
+
+    # Controversy is highest when opinions are evenly split
+    # min() gives us the smaller group, *2 normalizes to 0-1 range
+    controversy_score = min(agreement_score, disagreement_score) * 2
+
+    return {
+        "agreementScore": agreement_score,
+        "disagreementScore": disagreement_score,
+        "controversyScore": controversy_score
+    }
 
 
 def cruxes_for_topic(
     llm: dict, topic: str, topic_desc: str, claims: list, speaker_map: dict, api_key: str, subtopic_index: int = -1, report_id: str = None
 ) -> dict:
-    """For each fully-described subtopic, provide all the relevant claims with an anonymized
+    """Generate a crux claim for a single subtopic.
+
+    NOTE: Despite the function name, this operates on SUBTOPICS, not topics.
+    The 'topic' parameter is actually formatted as "Topic, Subtopic" by the caller,
+    and 'claims' contains only claims from that specific subtopic.
+
+    For each fully-described subtopic, provide all the relevant claims with an anonymized
     numeric speaker id, and ask the LLM for a crux claim that best splits the speakers' opinions
-    on this topic (ideally into two groups of equal size for agreement vs disagreement with the crux claim).
+    on this subtopic (ideally into two groups of equal size for agreement vs disagreement with the crux claim).
+
+    Requirements: ≥2 speakers AND ≥2 claims in the subtopic (checked here and in caller).
     Requires an explicit API key in api_key.
     """
     client = OpenAI(api_key=api_key)
@@ -1895,26 +1899,92 @@ def cruxes_for_topic(
     return {"crux": crux_obj, "usage": response.usage}
 
 
-def top_k_cruxes(cont_mat: list, cruxes: list, top_k: int = 0) -> list:
-    """Return the top K most controversial crux pairs.
-    Optionally let the caller set K, otherwise default
-    to the ceiling of the square root of the number of crux claims.
+def calculate_topic_scores(subtopic_cruxes_by_topic: dict) -> list:
+    """Calculate aggregated controversy scores for each topic.
+
+    Rolls up subtopic-level cruxes to topic-level metrics for sorting.
+
+    Args:
+        subtopic_cruxes_by_topic: Dict mapping topic names to list of subtopic cruxes
+
+    Returns:
+        List of topic scores with averageControversy, subtopicCount, totalSpeakers
     """
-    if top_k == 0:
-        K = min(math.ceil(math.sqrt(len(cruxes))), 10)
-    else:
-        K = top_k
-    # let's sort a triangular half of the symmetrical matrix (diagonal is all zeros)
-    scores = []
-    for x in range(len(cont_mat)):
-        for y in range(x + 1, len(cont_mat)):
-            scores.append([cont_mat[x][y], x, y])
-    all_scored_cruxes = sorted(scores, key=lambda x: x[0], reverse=True)
-    top_cruxes = [
-        {"score": score, "cruxA": cruxes[x], "cruxB": cruxes[y]}
-        for score, x, y in all_scored_cruxes[:K]
+    topic_scores = []
+
+    for topic_name, cruxes in subtopic_cruxes_by_topic.items():
+        if not cruxes:
+            continue
+
+        # Calculate average controversy across all subtopics
+        controversy_scores = [c["controversyScore"] for c in cruxes]
+        avg_controversy = sum(controversy_scores) / len(controversy_scores) if controversy_scores else 0
+
+        # Count unique speakers across all subtopics
+        all_speakers = set()
+        for crux in cruxes:
+            all_speakers.update(crux["agree"])
+            all_speakers.update(crux["disagree"])
+
+        topic_scores.append({
+            "topic": topic_name,
+            "averageControversy": avg_controversy,
+            "subtopicCount": len(cruxes),
+            "totalSpeakers": len(all_speakers)
+        })
+
+    return topic_scores
+
+
+def build_speaker_crux_matrix(subtopic_cruxes: list, all_speakers: list) -> dict:
+    """Build a Speaker × Crux agreement matrix for visualization.
+
+    Creates a matrix showing each speaker's position (agree/disagree/no_position)
+    on each crux, useful for identifying voting patterns and coalitions.
+
+    Args:
+        subtopic_cruxes: List of subtopic crux objects with agree/disagree lists
+        all_speakers: List of all speaker IDs in format "id:name"
+
+    Returns:
+        Dict with speakers, cruxLabels, and matrix[speakerIdx][cruxIdx]
+    """
+    if not subtopic_cruxes or not all_speakers:
+        return {
+            "speakers": [],
+            "cruxLabels": [],
+            "matrix": []
+        }
+
+    # Build crux labels (e.g., "AI Safety → Regulation")
+    crux_labels = [
+        f"{crux['topic']} → {crux['subtopic']}"
+        for crux in subtopic_cruxes
     ]
-    return top_cruxes
+
+    # Initialize matrix with "no_position" for all
+    matrix = [
+        ["no_position" for _ in subtopic_cruxes]
+        for _ in all_speakers
+    ]
+
+    # Fill in positions based on agree/disagree lists
+    for crux_idx, crux in enumerate(subtopic_cruxes):
+        agree_set = set(crux["agree"])
+        disagree_set = set(crux["disagree"])
+
+        for speaker_idx, speaker in enumerate(all_speakers):
+            if speaker in agree_set:
+                matrix[speaker_idx][crux_idx] = "agree"
+            elif speaker in disagree_set:
+                matrix[speaker_idx][crux_idx] = "disagree"
+            # else remains "no_position"
+
+    return {
+        "speakers": all_speakers,
+        "cruxLabels": crux_labels,
+        "matrix": matrix
+    }
 
 
 @app.post("/cruxes")
@@ -1932,126 +2002,122 @@ def cruxes_from_tree(
     # Get report-specific logger
     report_logger = get_report_logger(x_user_id, x_report_id)
 
-    cruxes_main = []
-    crux_claims = []
+    subtopic_cruxes = []
+    subtopic_cruxes_by_topic = {}  # For topic-level rollups
     TK_IN = 0
     TK_OUT = 0
     TK_TOT = 0
     topic_desc = topic_desc_map(req.topics)
 
-    # TODO: can we get this from client?
+    # Get full speaker map from data
     speaker_map = full_speaker_map(req.crux_tree)
-    # print("speaker ids: ", speaker_map)
+    total_speakers = len(speaker_map)
 
     # Count total subtopics to process
     total_subtopics = sum(len(td["subtopics"]) for td in req.crux_tree.values())
-    report_logger.info(f"Starting cruxes extraction for {total_subtopics} subtopics")
-    
+    report_logger.info(f"Starting simplified cruxes extraction for {total_subtopics} subtopics")
+
     subtopic_counter = 0
     for topic, topic_details in req.crux_tree.items():
         subtopics = topic_details["subtopics"]
+        if topic not in subtopic_cruxes_by_topic:
+            subtopic_cruxes_by_topic[topic] = []
+
         for subtopic, subtopic_details in subtopics.items():
-            # all claims for subtopic
-            # TODO: reduce how many subtopics we analyze for cruxes, based on minimum representation
-            # in known speaker comments?
             claims = subtopic_details["claims"]
             if len(claims) < 2:
-                print("fewer than 2 claims: ", subtopic)
+                report_logger.debug(f"Skipping subtopic '{subtopic}' - fewer than 2 claims")
                 continue
 
             if subtopic in topic_desc:
                 subtopic_desc = topic_desc[subtopic]
             else:
-                print("no description for subtopic:", subtopic)
+                report_logger.debug(f"No description for subtopic: {subtopic}")
                 subtopic_desc = "No further details"
 
             topic_title = topic + ", " + subtopic
             subtopic_counter += 1
             llm_response = cruxes_for_topic(
-                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key, subtopic_index=subtopic_counter, report_id=x_report_id
+                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key,
+                subtopic_index=subtopic_counter, report_id=x_report_id
             )
             if not llm_response:
-                print("warning: no crux response from LLM")
+                report_logger.warning(f"No crux response from LLM for {topic_title}")
                 continue
+
             try:
                 crux = llm_response["crux"]["crux"]
                 usage = llm_response["usage"]
-            except Exception:
-                print("warning: crux response parsing failed")
+            except Exception as e:
+                report_logger.error(f"Failed to parse crux response for {topic_title}: {e}")
                 continue
 
+            # Map speaker IDs back to names
             ids_to_speakers = {v: k for k, v in speaker_map.items()}
-            spoken_claims = [c["speaker"] + ": " + c["claim"] for c in claims]
 
-            # create more readable table: crux only, named speakers who agree, named speakers who disagree
             crux_claim = crux["cruxClaim"]
             agree = crux["agree"]
             disagree = crux["disagree"]
-            try:
-                explanation = crux["explanation"]
-            except Exception:
-                explanation = "N/A"
+            explanation = crux.get("explanation", "N/A")
 
-            # let's add back the names to the sanitized/speaker-ids-only
-            # in the agree/disagree claims
-            agree = [a.split(":")[0] for a in agree]
-            disagree = [a.split(":")[0] for a in disagree]
-            named_agree = [a + ":" + ids_to_speakers[a] for a in agree]
-            named_disagree = [d + ":" + ids_to_speakers[d] for d in disagree]
-            crux_claims.append([crux_claim, named_agree, named_disagree, explanation])
+            # Extract speaker IDs and deduplicate
+            # LLM may return just IDs ("7") or "ID:claim text" format
+            # We need just the speaker ID part before the first colon
+            agree_ids = list(set([str(a).split(":")[0] for a in agree]))
+            disagree_ids = list(set([str(d).split(":")[0] for d in disagree]))
 
-            # most readable form:
-            # - crux claim, explanation, agree, disagree
-            # - all claims prepended with speaker names
-            # - topic & subctopic, description
-            cruxes_main.append(
-                [
-                    crux_claim,
-                    explanation,
-                    named_agree,
-                    named_disagree,
-                    json.dumps(spoken_claims, indent=1),
-                    topic_title,
-                    subtopic_desc,
-                ],
-            )
+            # Convert speaker IDs to "id:name" format for output
+            named_agree = [speaker_id + ":" + ids_to_speakers[speaker_id] for speaker_id in agree_ids]
+            named_disagree = [speaker_id + ":" + ids_to_speakers[speaker_id] for speaker_id in disagree_ids]
+
+            # Calculate participation metadata
+            speakers_involved = len(set(named_agree + named_disagree))
+            # Count unique speakers who made claims in this subtopic
+            subtopic_speakers = set()
+            for claim in claims:
+                if "speaker" in claim:
+                    subtopic_speakers.add(claim["speaker"])
+            total_speakers_in_subtopic = len(subtopic_speakers)
+
+            # Calculate controversy scores for this subtopic
+            scores = calculate_controversy_scores(named_agree, named_disagree, total_speakers)
+
+            # Build subtopic crux object
+            subtopic_crux = {
+                "topic": topic,
+                "subtopic": subtopic,
+                "cruxClaim": crux_claim,
+                "agree": named_agree,
+                "disagree": named_disagree,
+                "explanation": explanation,
+                "agreementScore": scores["agreementScore"],
+                "disagreementScore": scores["disagreementScore"],
+                "controversyScore": scores["controversyScore"],
+                "speakersInvolved": speakers_involved,
+                "totalSpeakersInSubtopic": total_speakers_in_subtopic
+            }
+
+            subtopic_cruxes.append(subtopic_crux)
+            subtopic_cruxes_by_topic[topic].append(subtopic_crux)
 
             TK_TOT += usage.total_tokens
             TK_IN += usage.prompt_tokens
             TK_OUT += usage.completion_tokens
 
-    # convert agree/disagree to numeric scores:
-    # for each crux claim, for each speaker:
-    # - assign 1 if the speaker agrees with the crux
-    # - assign 0.5 if the speaker disagrees
-    # - assign 0 if the speaker's opinion is unknown/unspecified
-    speaker_labels = sorted(speaker_map.keys())
-    cont_mat = []
-    for row in crux_claims:
-        claim_scores = []
-        for sl in speaker_labels:
-            # associate the numeric id with the speaker so the LLM explanation
-            # is more easily interpretable (by cross-referencing adjacent columns which have the
-            # full speaker name, which is withheld from the LLM)
-            labeled_speaker = speaker_map[sl] + ":" + sl
-            if labeled_speaker in row[1]:
-                claim_scores.append(1)
-            elif labeled_speaker in row[2]:
-                claim_scores.append(0.5)
-            else:
-                claim_scores.append(0)
-        cm = [row[0]]
-        cm.extend(claim_scores)
-        cont_mat.append(cm)
-    full_controversy_matrix = controversy_matrix(cont_mat)
+    # Calculate topic-level rollup scores
+    topic_scores = calculate_topic_scores(subtopic_cruxes_by_topic)
 
-    crux_claims_only = [row[0] for row in crux_claims]
-    top_cruxes = top_k_cruxes(full_controversy_matrix, crux_claims_only, req.top_k)
+    # Build Speaker × Crux agreement matrix for visualization
+    # Sort speakers for consistent ordering
+    speaker_labels = sorted(speaker_map.keys())
+    all_speakers_formatted = [speaker_map[sl] + ":" + sl for sl in speaker_labels]
+    speaker_crux_matrix = build_speaker_crux_matrix(subtopic_cruxes, all_speakers_formatted)
+
     # compute LLM costs for this step's tokens
     s4_total_cost = token_cost(req.llm.model_name, TK_IN, TK_OUT)
 
-    # Note: we will now be sending speaker names to W&B
-    # (still not to external LLM providers, to avoid bias on crux detection and better preserve PII)
+    # Log to W&B for experiment tracking
+    # (includes speaker names but not sent to external LLM providers)
     if log_to_wandb:
         try:
             exp_group_name = str(log_to_wandb)
@@ -2062,82 +2128,88 @@ def cruxes_from_tree(
                 {
                     "s4_cruxes/model": req.llm.model_name,
                     "s4_cruxes/prompt": req.llm.user_prompt,
+                    "s4_cruxes/scoring": "simplified (per-subtopic)",
                 },
             )
-            log_top_cruxes = [[c["score"], c["cruxA"], c["cruxB"]] for c in top_cruxes]
+
+            # Log subtopic cruxes with scores
+            subtopic_data = [
+                [
+                    c["topic"],
+                    c["subtopic"],
+                    c["cruxClaim"],
+                    len(c["agree"]),
+                    len(c["disagree"]),
+                    c["controversyScore"],
+                    c["agreementScore"],
+                    c["disagreementScore"],
+                ]
+                for c in subtopic_cruxes
+            ]
             wandb.log(
                 {
                     "U_tok_N/cruxes": TK_TOT,
                     "U_tok_in/cruxes": TK_IN,
                     "U_tok_out/cruxes": TK_OUT,
                     "cost/s4_cruxes": s4_total_cost,
-                    "crux_details": wandb.Table(
-                        data=cruxes_main,
+                    "subtopic_cruxes": wandb.Table(
+                        data=subtopic_data,
                         columns=[
+                            "topic",
+                            "subtopic",
                             "crux",
-                            "reason",
-                            "agree",
-                            "disagree",
-                            "original_claims",
-                            "topic, subtopic",
-                            "description",
+                            "num_agree",
+                            "num_disagree",
+                            "controversyScore",
+                            "agreementScore",
+                            "disagreementScore",
                         ],
-                    ),
-                    "crux_top_scores": wandb.Table(
-                        data=log_top_cruxes, columns=["score", "cruxA", "cruxB"],
                     ),
                 },
             )
-            cols = ["crux"]
-            cols.extend(speaker_labels)
+
+            # Log topic-level rollups
+            topic_data = [
+                [t["topic"], t["averageControversy"], t["subtopicCount"], t["totalSpeakers"]]
+                for t in topic_scores
+            ]
             wandb.log(
                 {
-                    "crux_binary_scores": wandb.Table(data=cont_mat, columns=cols),
-                    "crux_cmat_scores": wandb.Table(
-                        data=full_controversy_matrix,
-                        columns=[
-                            "Crux " + str(i)
-                            for i in range(len(full_controversy_matrix))
-                        ],
+                    "topic_scores": wandb.Table(
+                        data=topic_data,
+                        columns=["topic", "averageControversy", "subtopicCount", "totalSpeakers"],
                     ),
-                    # TODO: render a visual of the controversy matrix
-                    # currently matplotlib requires a GUI to generate the plot, which is incompatible with pyserver config
-                    # filename = show_confusion_matrix(full_confusion_matrix, claims_only, "Test Conf Mat", "conf_mat_test.jpg")
-                    # "cont_mat_img" : wandb.Image(filename)
                 },
             )
-        except Exception:
-            print("Failed to log wandb run")
+        except Exception as e:
+            report_logger.error(f"Failed to log wandb run: {e}")
 
-    # wrap and name fields before returning
+    # Wrap and name fields before returning
     net_usage = {
         "total_tokens": TK_TOT,
         "prompt_tokens": TK_IN,
         "completion_tokens": TK_OUT,
     }
+
     # Add API call summary to response
     api_summary = api_tracker.get_summary()
-    report_logger.info(f"\n=== FINAL API CALL SUMMARY ===")
+    report_logger.info(f"\n=== CRUXES API CALL SUMMARY ===")
     report_logger.info(f"Total API calls: {api_summary['total_calls']}")
+    report_logger.info(f"Total subtopics processed: {len(subtopic_cruxes)}")
+    report_logger.info(f"Total topics: {len(topic_scores)}")
     report_logger.info(f"Time elapsed: {api_summary['elapsed_seconds']:.1f} seconds")
-    report_logger.info(f"Calls by step:")
-    for step, count in api_summary['calls_per_step'].items():
-        report_logger.info(f"  - {step}: {count} calls")
     report_logger.info(f"Average rate: {api_summary['average_call_rate']:.2f} calls/second")
-    
-    cruxes = [
-        {"cruxClaim": c[0], "agree": c[1], "disagree": c[2], "explanation": c[3]}
-        for c in crux_claims
-    ]
+
+    # Build simplified response structure
     crux_response = {
-        "cruxClaims": cruxes,
-        "controversyMatrix": full_controversy_matrix,
-        "topCruxes": top_cruxes,
+        "subtopicCruxes": subtopic_cruxes,
+        "topicScores": topic_scores,
+        "speakerCruxMatrix": speaker_crux_matrix,
         "usage": net_usage,
         "cost": s4_total_cost,
-        "api_call_summary": api_summary  # Include summary in response
+        "api_call_summary": api_summary
     }
-    
+
     # Filter PII from final output for user privacy
     return sanitize_for_output(crux_response)
 

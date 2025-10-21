@@ -334,9 +334,9 @@ export async function pipelineJob(job: PipelineJob) {
       tree,
       data,
       addOns: {
-        cruxClaims: addonsStep?.cruxClaims,
-        topCruxes: addonsStep?.topCruxes,
-        controversyMatrix: addonsStep?.controversyMatrix,
+        subtopicCruxes: addonsStep?.subtopicCruxes,
+        topicScores: addonsStep?.topicScores,
+        speakerCruxMatrix: addonsStep?.speakerCruxMatrix,
       },
       question: question,
       title: title,
@@ -631,7 +631,7 @@ async function doPipelineSteps(job: PipelineJob) {
   );
 
   /**
-   * Step 5: Optional Add-ons (Cruxes)
+   * Step 5: Optional Add-ons (Cruxes) - SIMPLIFIED VERSION
    *
    * Cruxes identify controversial statements that divide participants.
    * Only runs if config.options.cruxes = true (from frontend toggle).
@@ -639,24 +639,28 @@ async function doPipelineSteps(job: PipelineJob) {
    * Input:
    * - topics: taxonomy from Step 1 (topic tree)
    * - crux_tree: sorted claims from Step 3 (with speaker attribution)
-   * - top_k: Number of most controversial pairs to return (default 10)
    *
    * Process (pyserver):
    * - For each subtopic with ≥2 speakers and ≥2 claims:
    *   - Anonymize speaker names before LLM call (privacy)
    *   - LLM generates synthesized "crux claim" that splits participants
    *   - Track who agrees/disagrees with each crux
-   * - Build controversy matrix scoring all crux pairs
-   * - Return top K most divisive pairs
+   *   - Calculate simple controversy scores (0-1) per subtopic
+   * - Roll up to topic-level scores for sorting
    *
-   * Output (if successful): { cruxClaims[], topCruxes[], controversyMatrix[][] }
+   * Output (if successful): { subtopicCruxes[], topicScores[] }
    * Output (if disabled): {} (empty object)
+   *
+   * Scoring:
+   * - controversyScore: 0-1 (1.0 = perfect 50/50 split, 0.0 = unanimous)
+   * - agreementScore: 0-1 (ratio who agree)
+   * - disagreementScore: 0-1 (ratio who disagree)
    *
    * Debugging:
    * - If addOns is empty {}, check: config.options.cruxes, data requirements, pyserver logs
    * - Use: node utils/check-cruxes.js <report.json>
    */
-  pipelineLogger.info("Doing optional addons step");
+  pipelineLogger.info("Doing optional addons step (simplified cruxes)");
   const addonsStep = await flatMapResultAsync(
     sequenceResult([claimsStep, topicTreeStep] as const),
     async ([claim, topic]) => {
@@ -665,7 +669,7 @@ async function doPipelineSteps(job: PipelineJob) {
           ? {
               crux: {
                 topics: topic.data.tree.taxonomy,
-                top_k: 10, // Top 10 most controversial crux pairs
+                top_k: 10, // Unused in simplified version (kept for backward compat)
                 crux_tree: claim.data.tree, // Sorted claims with speaker info
               },
             }
@@ -676,15 +680,14 @@ async function doPipelineSteps(job: PipelineJob) {
   // Log detailed cruxes results for debugging
   if (config.options.cruxes) {
     if (addonsStep.tag === "success") {
-      const cruxCount = addonsStep.value?.cruxClaims?.length || 0;
-      const topCount = addonsStep.value?.topCruxes?.length || 0;
+      const subtopicCount = addonsStep.value?.subtopicCruxes?.length || 0;
+      const topicCount = addonsStep.value?.topicScores?.length || 0;
       pipelineLogger.info(
         {
-          cruxClaimsGenerated: cruxCount,
-          topCruxPairs: topCount,
-          hasControversyMatrix: !!addonsStep.value?.controversyMatrix,
+          subtopicCruxesGenerated: subtopicCount,
+          topicsScored: topicCount,
         },
-        "Cruxes generated successfully",
+        "Simplified cruxes generated successfully",
       );
     } else {
       pipelineLogger.error(
