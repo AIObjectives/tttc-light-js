@@ -5,7 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "tsx src/index.ts",
-    "migrate-legacy": "tsx src/scripts/migrate-legacy-report.ts"
+    "migrate-legacy": "tsx src/scripts/migrate-legacy-report.ts",
+    "analyze-audit": "tsx src/scripts/analyze-audit-log.ts"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
