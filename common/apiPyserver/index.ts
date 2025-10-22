@@ -287,6 +287,7 @@ export const topicSummariesRequest = z.object({
 });
 
 export type TopicSummariesRequest = z.infer<typeof topicSummariesRequest>;
+export type TopicSummary = z.infer<typeof topicSummary>;
 
 const topicSummary = z.object({
   topicName: z.string(),
