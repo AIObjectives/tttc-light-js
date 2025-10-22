@@ -19,6 +19,14 @@ import {
   extractionTestCases,
 } from "./scorers/extraction-scorers.js";
 import {
+  summariesJsonStructureScorer,
+  summaryLengthScorer,
+  summaryContentQualityScorer,
+  summariesTopicCoverageScorer,
+  createSummariesModel,
+  summariesTestCases,
+} from "./scorers/summaries-scorers.js";
+import {
   deduplicationJsonStructureScorer,
   claimCoverageScorer,
   groupingQualityScorer,
@@ -31,6 +39,7 @@ import {
   defaultClusteringPrompt,
   defaultExtractionPrompt,
   defaultDedupPrompt,
+  defaultSummariesPrompt,
   defaultSystemPrompt,
   hydratePromptLiterals,
 } from "../prompts/index.js";
@@ -67,6 +76,14 @@ const deduplicationModel = createDeduplicationModel(
   openaiClient,
   hydratePromptLiterals,
   defaultDedupPrompt,
+  defaultSystemPrompt,
+);
+
+// Create summaries model with system prompt
+const summariesModel = createSummariesModel(
+  openaiClient,
+  hydratePromptLiterals,
+  defaultSummariesPrompt,
   defaultSystemPrompt,
 );
 
@@ -153,6 +170,30 @@ async function runDeduplicationEvaluation() {
   return deduplicationResults;
 }
 
+async function runSummariesEvaluation() {
+  const summariesDataset = new weave.Dataset({
+    name: "T3C Summaries Dataset",
+    rows: summariesTestCases,
+  });
+
+  const summariesEvaluation = new weave.Evaluation({
+    dataset: summariesDataset,
+    scorers: [
+      summariesJsonStructureScorer,
+      summaryLengthScorer,
+      summaryContentQualityScorer,
+      summariesTopicCoverageScorer,
+    ],
+  });
+
+  console.log("Running T3C summaries evaluation...");
+  const summariesResults = await summariesEvaluation.evaluate({
+    model: summariesModel,
+  });
+  console.log("Summaries Results:", JSON.stringify(summariesResults, null, 2));
+  return summariesResults;
+}
+
 async function main() {
   await weave.init("t3c-pipeline-evaluation");
 
@@ -171,13 +212,18 @@ async function main() {
       console.log("Running deduplication evaluation...\n");
       await runDeduplicationEvaluation();
       break;
+    case "summaries":
+      console.log("Running summaries evaluation...\n");
+      await runSummariesEvaluation();
+      break;
     default:
       console.log(
-        "Running full T3C pipeline evaluation (clustering + extraction + deduplication)...\n",
+        "Running full T3C pipeline evaluation (clustering + extraction + deduplication + summaries)...\n",
       );
       await runClusteringEvaluation();
       await runExtractionEvaluation();
       await runDeduplicationEvaluation();
+      await runSummariesEvaluation();
       break;
   }
 }
