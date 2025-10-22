@@ -136,7 +136,7 @@ export const userDocument = z.object({
 
 export type UserDocument = z.infer<typeof userDocument>;
 
-const COLLECTIONS = {
+export const COLLECTIONS = {
   REPORT_REF: "reportRef",
   REPORT_JOB: "reportJob",
   FEEDBACK: "feedback",

@@ -24,10 +24,13 @@
     "babel-plugin-module-resolver": "^5.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
-    "vitest": "^3.1.2"
+    "vitest": "^3.1.2",
+    "zod": "^3.23.8"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "effect": "^3.18.4",
+    "firebase-admin": "^13.0.2",
     "prettier": "^3.2.5",
     "tttc-common": "file:../common"
   }
