@@ -4,7 +4,8 @@
   "description": "utilities for T3C",
   "main": "index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts",
+    "analyze-audit": "tsx src/scripts/analyze-audit-log.ts"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
