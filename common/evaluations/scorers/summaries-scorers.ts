@@ -1,5 +1,5 @@
 import * as weave from "weave";
-import type { Scorer } from "weave";
+import { TopicSummary } from "../../apiPyserver";
 
 // Sample taxonomy and claims for summaries evaluation
 export const sampleTopicsData = [
@@ -45,11 +45,10 @@ export const summariesTestCases = [
  * Scorer that validates JSON structure of summaries output
  */
 export const summariesJsonStructureScorer = weave.op(
-  function summariesJsonStructureScorer({
-    modelOutput,
-  }: {
+  function summariesJsonStructureScorer(args: {
     modelOutput?: { summaries: Array<{ topicName: string; summary: string }> };
   }) {
+    const { modelOutput } = args;
     // Check if summaries array exists
     if (!modelOutput || !Array.isArray(modelOutput.summaries)) {
       return {
@@ -86,11 +85,10 @@ export const summariesJsonStructureScorer = weave.op(
 /**
  * Scorer that checks if summaries meet length requirements (max 140 words)
  */
-export const summaryLengthScorer = weave.op(function summaryLengthScorer({
-  modelOutput,
-}: {
+export const summaryLengthScorer = weave.op(function summaryLengthScorer(args: {
   modelOutput?: { summaries: Array<{ topicName: string; summary: string }> };
 }) {
+  const { modelOutput } = args;
   if (!modelOutput?.summaries || !Array.isArray(modelOutput.summaries)) {
     return {
       summary_length_score: 0,
@@ -131,11 +129,10 @@ export const summaryLengthScorer = weave.op(function summaryLengthScorer({
  * Scorer that evaluates content quality of summaries
  */
 export const summaryContentQualityScorer = weave.op(
-  function summaryContentQualityScorer({
-    modelOutput,
-  }: {
+  function summaryContentQualityScorer(args: {
     modelOutput?: { summaries: Array<{ topicName: string; summary: string }> };
   }) {
+    const { modelOutput } = args;
     if (!modelOutput?.summaries || !Array.isArray(modelOutput.summaries)) {
       return {
         content_quality_score: 0,
@@ -198,13 +195,7 @@ export const summaryContentQualityScorer = weave.op(
  * Scorer that checks topic coverage and alignment
  */
 export const summariesTopicCoverageScorer = weave.op(
-  function summariesTopicCoverageScorer({
-    modelOutput,
-    datasetRow,
-  }: {
-    modelOutput?: { summaries: Array<{ topicName: string; summary: string }> };
-    datasetRow?: { topics: any };
-  }) {
+  function summariesTopicCoverageScorer({ modelOutput, datasetRow }) {
     if (!modelOutput?.summaries || !Array.isArray(modelOutput.summaries)) {
       return {
         topic_coverage_score: 0,
@@ -220,10 +211,10 @@ export const summariesTopicCoverageScorer = weave.op(
     }
 
     const inputTopics = new Set(
-      datasetRow.topics.map((t: any) => t.topicName.toLowerCase()),
+      datasetRow.topics.map((t: TopicSummary) => t.topicName.toLowerCase()),
     );
     const outputTopics = new Set(
-      modelOutput.summaries.map((s) => s.topicName.toLowerCase()),
+      modelOutput.summaries.map((s: TopicSummary) => s.topicName.toLowerCase()),
     );
 
     let matched = 0;
@@ -253,7 +244,7 @@ export function createSummariesModel(
   defaultSummariesPrompt: string,
   systemPrompt: string,
 ) {
-  return async (input: { datasetRow: { topics: any } }) => {
+  return weave.op(async function summariesModel(input) {
     const { topics } = input.datasetRow;
 
     const prompt = hydratePromptLiterals(defaultSummariesPrompt, {
@@ -273,5 +264,5 @@ export function createSummariesModel(
     const content = response.choices[0].message.content || "{}";
     const parsed = JSON.parse(content);
     return parsed;
-  };
+  });
 }

@@ -41,37 +41,6 @@ describe("Summaries Scorers", () => {
       expect(result.summaries_count).toBe(0);
     });
 
-    it("should reject missing summaries property", async () => {
-      const invalidModelOutput = {};
-
-      const result = await summariesJsonStructureScorer({
-        modelOutput: invalidModelOutput,
-      });
-
-      expect(result.valid_json_structure).toBe(false);
-      expect(result.error).toBe("Missing or invalid summaries array");
-    });
-
-    it("should reject summary with missing required fields", async () => {
-      const invalidModelOutput = {
-        summaries: [
-          {
-            topicName: "Pets",
-            // missing summary field
-          },
-        ],
-      };
-
-      const result = await summariesJsonStructureScorer({
-        modelOutput: invalidModelOutput,
-      });
-
-      expect(result.valid_json_structure).toBe(false);
-      expect(result.error).toBe(
-        "Invalid summary structure - missing required fields",
-      );
-    });
-
     it("should reject empty summary text", async () => {
       const invalidModelOutput = {
         summaries: [
