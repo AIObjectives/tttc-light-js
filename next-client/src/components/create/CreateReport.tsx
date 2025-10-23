@@ -155,6 +155,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
             <FormDescription title={title} description={description} />
             <FormDataInput files={files} setFiles={setFiles} />
             {/* <CostEstimate files={files} /> */}
+            <TermsAndConditions />
             <AdvancedSettings
               systemInstructions={systemInstructions}
               clusteringInstructions={clusteringInstructions}
@@ -169,7 +170,6 @@ function CreateReportComponent({ token }: { token: string | null }) {
                 Generate the report
               </Button>
             </div>
-            <TermsAndConditions />
             <br />
           </Col>
         </SubmitFormControl>
