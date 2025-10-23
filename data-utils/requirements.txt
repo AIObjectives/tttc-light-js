@@ -1,0 +1,12 @@
+# Video Transcription Tools - Python Dependencies
+# Install with: pip install -r requirements.txt
+#
+# Requires: Python 3.10 or later
+
+# OpenAI Whisper API and chat completions (tested with 2.0.0)
+openai>=1.0.0,<3.0.0
+
+# Note: ffmpeg and ffprobe must be installed separately via system package manager:
+# - Ubuntu/Debian: sudo apt-get install ffmpeg
+# - macOS: brew install ffmpeg
+# - Windows: https://ffmpeg.org/download.html
