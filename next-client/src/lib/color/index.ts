@@ -22,15 +22,9 @@ const murmurhash = (str: string): number => {
   return h / 0xffffffff;
 };
 
-/**
- * Gets the correct className for the topic color and variation
- *
- * If a topic color is provided that doesn't match what we expect, it instead maps that color to one of our topic colors.
- */
-export function getThemeColor<
-  Color extends ThemeColor,
-  Variant extends ColorVariant,
->(color: Color | string, variant: Variant): ThemeMap[Color][Variant] {
+export function getStrictColor<Color extends ThemeColor>(
+  color: Color | string,
+) {
   const colorParse = schema.topicColors.safeParse(color);
   const strictColor = (
     colorParse.success
@@ -41,6 +35,19 @@ export function getThemeColor<
           ];
         })()
   ) as Color;
+  return strictColor;
+}
+
+/**
+ * Gets the correct className for the topic color and variation
+ *
+ * If a topic color is provided that doesn't match what we expect, it instead maps that color to one of our topic colors.
+ */
+export function getThemeColor<
+  Color extends ThemeColor,
+  Variant extends ColorVariant,
+>(color: Color | string, variant: Variant): ThemeMap[Color][Variant] {
+  const strictColor = getStrictColor(color);
 
   return themeColorMap[strictColor][variant];
 }

@@ -52,13 +52,15 @@ function ClaimHeader({ claim }: { claim: schema.Claim }) {
 
 export function QuoteIcon({ num }: { num: number }) {
   const hoverBackground = useThemeContextColor("bgAccentHover");
+  const fillColor = useThemeContextColor("fill");
+  const fontColor = useThemeContextColor("text");
   return (
     <Row
       gap={1}
       className={`px-2 py-[2px] border rounded-sm min-w-fit items-center ${hoverBackground}`}
     >
-      <Icons.QuoteBubble className="fill-muted-foreground" />
-      <p className="p2 text-muted-foreground">{num}</p>
+      <Icons.QuoteBubble className={`${fillColor}`} />
+      <p className={`p2 ${fontColor}`}>{num}</p>
     </Row>
   );
 }

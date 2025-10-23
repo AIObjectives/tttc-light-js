@@ -12,6 +12,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_violet-accent",
     fill: "fill-theme_violet",
     fillAccent: "fill-theme_violet-accent",
+    fillAccentHover: "hover:fill-theme_violet-accent",
   },
   blueSea: {
     bg: "bg-theme_blueSea",
@@ -26,6 +27,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_blueSea-accent",
     fill: "fill-theme_blueSea",
     fillAccent: "fill-theme_blueSea-accent",
+    fillAccentHover: "hover:fill-theme_blueSea-accent",
   },
   blueSky: {
     bg: "bg-theme_blueSky",
@@ -40,6 +42,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_blueSky-accent",
     fill: "fill-theme_blueSky",
     fillAccent: "fill-theme_blueSky-accent",
+    fillAccentHover: "hover:fill-theme_blueSky-accent",
   },
   greenLeaf: {
     bg: "bg-theme_greenLeaf",
@@ -54,6 +57,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_greenLeaf-accent",
     fill: "fill-theme_greenLeaf",
     fillAccent: "fill-theme_greenLeaf-accent",
+    fillAccentHover: "hover:fill-theme_greenLeaf-accent",
   },
   greenLime: {
     bg: "bg-theme_greenLime",
@@ -68,6 +72,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_greenLime-accent",
     fill: "fill-theme_greenLime",
     fillAccent: "fill-theme_greenLime-accent",
+    fillAccentHover: "hover:fill-theme_greenLime-accent",
   },
   yellow: {
     bg: "bg-theme_yellow",
@@ -82,6 +87,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_yellow-accent",
     fill: "fill-theme_yellow",
     fillAccent: "fill-theme_yellow-accent",
+    fillAccentHover: "hover:fill-theme_yellow-accent",
   },
   red: {
     bg: "bg-theme_red",
@@ -96,6 +102,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_red-accent",
     fill: "fill-theme_red",
     fillAccent: "fill-theme_red-accent",
+    fillAccentHover: "hover:fill-theme_red-accent",
   },
   purple: {
     bg: "bg-theme_purple",
@@ -110,6 +117,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_purple-accent",
     fill: "fill-theme_purple",
     fillAccent: "fill-theme_purple-accent",
+    fillAccentHover: "hover:fill-theme_purple-accent",
   },
   brown: {
     bg: "bg-theme_brown",
@@ -124,6 +132,7 @@ export const themeColorMap = {
     groupHoverBgAccent: "group-hover:bg-theme_brown-accent",
     fill: "fill-theme_brown",
     fillAccent: "fill-theme_brown-accent",
+    fillAccentHover: "hover:fill-theme_brown-accent",
   },
 } as const;
 
@@ -213,3 +222,8 @@ export type FillClass = ColorVariantMap["fill"];
  * Set of all fill accent colors
  */
 export type FillAccentClass = ColorVariantMap["fillAccent"];
+
+/**
+ * Set of all fill accent hover classNames
+ */
+export type FillAccentHoverClass = ColorVariantMap["fillAccentHover"];
