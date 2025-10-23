@@ -499,8 +499,8 @@ def comments_to_tree(
             {"role": "system", "content": req.llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
+        reasoning_effort="minimal",
     )
     try:
         tree = json.loads(response.choices[0].message.content)
@@ -634,7 +634,6 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             {"role": "system", "content": llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format=ClaimsSchema,
     )
 
@@ -652,7 +651,6 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             llm_metadata = {
                 "model": llm.model_name,
                 "prompt_version": "v1.0",  # Update when prompt changes
-                "temperature": getattr(llm, 'temperature', None),
             }
             audit_logger.log_claims_extraction_empty(
                 comment_id,
@@ -684,7 +682,6 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             llm_metadata = {
                 "model": llm.model_name,
                 "prompt_version": "v1.0",  # Update when prompt changes
-                "temperature": getattr(llm, 'temperature', None),
             }
 
             # For now, claim_ids will be the same as comment_id since we don't have unique claim IDs yet
@@ -1146,8 +1143,8 @@ def dedup_claims(claims: list, llm: LLMConfig, api_key: str, topic_name: str = "
             {"role": "system", "content": llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
+        reasoning_effort="minimal",
     )
     try:
         deduped_claims = response.choices[0].message.content
@@ -1723,8 +1720,8 @@ def generate_topic_summaries(
             {"role": "system", "content": llm_config["system_prompt"]},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
+        reasoning_effort="minimal"
     )
 
     try:
@@ -1888,8 +1885,9 @@ def cruxes_for_topic(
             {"role": "system", "content": llm.system_prompt},
             {"role": "user", "content": full_prompt},
         ],
-        temperature=0.0,
         response_format={"type": "json_object"},
+        reasoning_effort="minimal",
+
     )
     crux = response.choices[0].message.content
     try:
