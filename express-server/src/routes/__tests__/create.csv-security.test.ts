@@ -277,4 +277,43 @@ describe("CSV Security in Create Route", () => {
     );
     expect(response.body.error.message).toContain("MALFORMED_STRUCTURE");
   });
+
+  it("should receive CSV data in SourceRow[] format from client", async () => {
+    // Verify that CSV data arrives pre-formatted as SourceRow[]
+    const csvData = [
+      {
+        id: "1",
+        comment: "This is a test comment",
+        interview: "Alice",
+      },
+      {
+        id: "2",
+        comment: "Another test comment",
+        interview: "Bob",
+        video: "https://example.com/video.mp4",
+      },
+    ];
+
+    setupSecurityValidationMocks(false);
+
+    const response = await request(app)
+      .post("/create")
+      .send(createValidRequestBody(csvData))
+      .expect(200);
+
+    expect(response.body.message).toBe("Request received.");
+
+    // Verify validateParsedData was called with properly formatted SourceRow[]
+    expect(validateParsedData).toHaveBeenCalledWith(csvData);
+
+    // Verify the data structure matches SourceRow schema
+    const calledData = (validateParsedData as any).mock.calls[0][0];
+    expect(calledData).toBeInstanceOf(Array);
+    calledData.forEach((row: any) => {
+      expect(row).toHaveProperty("id");
+      expect(row).toHaveProperty("comment");
+      expect(typeof row.id).toBe("string");
+      expect(typeof row.comment).toBe("string");
+    });
+  });
 });

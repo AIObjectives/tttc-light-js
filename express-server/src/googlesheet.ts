@@ -61,15 +61,16 @@ export async function fetchSpreadsheetData(
   });
 
   // extract the comments
-  const emailToData: { [key: number]: { id: string; comment: string }[] } = {};
+  // Group data by email address (string keys)
+  const emailToData: Record<
+    string,
+    Array<{ id: string; comment: string }>
+  > = {};
 
   rows.forEach((row, id) => {
-    // ! Brandon: indexing into a string and then using that to access a record with key:number ?????????
-    // ! Brandon: Adding ts ignores into this so we can use strict mode and not break stuff. This entire file needs redone.
-    // @ts-ignore
-    emailToData[row[emailColumn]] ??= [];
-    // @ts-ignore
-    emailToData[row[emailColumn]].push({
+    const email = String(row[emailColumn]);
+    emailToData[email] ??= [];
+    emailToData[email].push({
       id: String(id),
       comment: commentColumns
         .map(
@@ -79,11 +80,36 @@ export async function fetchSpreadsheetData(
     });
   });
 
-  let data;
+  // Convert grouped data to SourceRow[] with validation
+  const validateSourceRow = (row: {
+    id: string;
+    comment: string;
+  }): SourceRow => {
+    // Runtime validation: ensure required fields are present and non-empty
+    if (!row.id || typeof row.id !== "string") {
+      throw new Error(
+        "Invalid Google Sheets data: missing or invalid id field",
+      );
+    }
+    if (!row.comment || typeof row.comment !== "string") {
+      throw new Error(
+        "Invalid Google Sheets data: missing or invalid comment field",
+      );
+    }
+    // Return as SourceRow after validation
+    return row as SourceRow;
+  };
+
+  let data: SourceRow[];
   if (oneSubmissionPerEmail) {
-    data = Object.values(emailToData).map((v) => v[v.length - 1]);
+    // Take only the last submission per email
+    data = Object.values(emailToData).map((submissions) => {
+      const lastSubmission = submissions[submissions.length - 1];
+      return validateSourceRow(lastSubmission);
+    });
   } else {
-    data = Object.values(emailToData).flat();
+    // Include all submissions
+    data = Object.values(emailToData).flat().map(validateSourceRow);
   }
 
   return { data, pieCharts };

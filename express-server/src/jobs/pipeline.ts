@@ -424,6 +424,28 @@ export async function pipelineJob(job: PipelineJob) {
 
     // Add the job ref to Firebase using stable report ID
     const resultData = resultValue.data;
+
+    // Validate result data structure before destructuring
+    if (
+      !resultData?.[1]?.topics ||
+      !resultData[1].sources ||
+      !resultData[1].date
+    ) {
+      pipelineLogger.error(
+        {
+          hasResultData: !!resultData,
+          hasResultData1: !!resultData?.[1],
+          hasTopics: !!resultData?.[1]?.topics,
+          hasSources: !!resultData?.[1]?.sources,
+          hasDate: !!resultData?.[1]?.date,
+        },
+        "Pipeline result missing required fields",
+      );
+      throw new Error(
+        "Pipeline result missing required fields: topics, sources, or date",
+      );
+    }
+
     const { topics, sources, date } = resultData[1];
     const { firebaseDetails } = config;
 
@@ -441,10 +463,12 @@ export async function pipelineJob(job: PipelineJob) {
         title,
         description: description,
         numTopics: topics.length,
-        numSubtopics: topics.flatMap((t) => t.subtopics).length,
-        numClaims: topics.flatMap((t) => t.subtopics.flatMap((s) => s.claims))
-          .length,
-        numPeople: new Set(sources.map((s) => s.interview)).size,
+        numSubtopics: topics.flatMap((t) => t.subtopics ?? []).length,
+        numClaims: topics.flatMap((t) =>
+          (t.subtopics ?? []).flatMap((s) => s.claims ?? []),
+        ).length,
+        numPeople: new Set(sources.map((s) => s.interview).filter(Boolean))
+          .size,
         createdDate: new Date(date),
       },
     );
@@ -862,7 +886,6 @@ const makePyserverFuncs = (
     system_prompt: instructions.systemInstructions,
     user_prompt: prompt,
     model_name: llm.model,
-    api_key: api_key,
   }));
 
   /**
