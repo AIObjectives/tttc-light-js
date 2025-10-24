@@ -10,7 +10,7 @@
 /**
  * CSV size limits in bytes
  */
-const LARGE_UPLOAD_CSV_SIZE_LIMIT = 2 * 1024 * 1024; // 2MB
+const LARGE_UPLOAD_CSV_SIZE_LIMIT = 4 * 1024 * 1024; // 4MB
 const DEFAULT_CSV_SIZE_LIMIT = 150 * 1024; // 150KB
 
 export const CAPABILITIES = {
