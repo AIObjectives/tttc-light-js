@@ -54,7 +54,7 @@ export function formatData(data: Record<string, unknown>[]): SourceRow[] {
       `The csv file must contain a comment column (valid column names: ${COMMENT_COLS.join(", ")})`,
     );
   }
-  return data.map((row, index: number) => {
+  return data.map((row, index: number): SourceRow => {
     // Use row index as fallback ID when no ID column exists
     // This ensures every row has a unique identifier
     const id = id_column ? String(row[id_column]) : String(index);

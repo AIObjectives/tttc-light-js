@@ -36,6 +36,13 @@ vi.mock("../../featureFlags", () => ({
   isFeatureEnabled: vi.fn().mockResolvedValue(false),
 }));
 
+// Mock API schemas
+vi.mock("tttc-common/api", () => ({
+  userCapabilitiesResponse: {
+    parse: vi.fn((data) => data), // Pass through the data as-is
+  },
+}));
+
 // Mock logger
 vi.mock("tttc-common/logger", () => ({
   logger: {

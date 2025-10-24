@@ -5,7 +5,6 @@ import { fetchSpreadsheetData } from "../googlesheet";
 import { createStorage } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
-import { formatData } from "tttc-common/utils";
 import { pipelineQueue } from "../server";
 import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
@@ -31,6 +30,21 @@ class CreateReportError extends Error {
   }
 }
 
+/**
+ * Process Google Sheets data for report creation.
+ *
+ * @param googleData - Google Sheets configuration including URL and options
+ * @returns Formatted source rows and optional pie chart data
+ *
+ * @remarks
+ * Data Flow:
+ * 1. fetchSpreadsheetData() fetches and parses Google Sheets via API
+ * 2. Data is transformed into SourceRow[] format during parsing
+ * 3. Returns pre-formatted data ready for security validation
+ *
+ * Note: formatData() is NOT called here because fetchSpreadsheetData()
+ * already formats data into SourceRow[] during the parsing phase.
+ */
 const handleGoogleSheets = async (
   googleData: schema.GoogleSheetData,
 ): Promise<{ data: schema.SourceRow[]; pieCharts: schema.LLMPieChart[] }> => {
@@ -41,13 +55,39 @@ const handleGoogleSheets = async (
     googleData.oneSubmissionPerEmail,
   );
 
+  // fetchSpreadsheetData already returns properly formatted SourceRow[]
   return {
-    data: formatData(data),
+    data,
     pieCharts,
   };
 };
 
-const handleCsvData = async (csvData: schema.SourceRow[]) => {
+/**
+ * Process and validate CSV data from client.
+ *
+ * @param csvData - Pre-formatted SourceRow[] from client-side CSV parser
+ * @returns Validated and sanitized source rows
+ * @throws {CreateReportError} If security validation fails or injection is detected
+ *
+ * @remarks
+ * Data Flow:
+ * 1. Client parses CSV file using Papa Parse library
+ * 2. Client calls formatData() from tttc-common/utils to convert to SourceRow[]
+ * 3. Formatted data is sent to this endpoint
+ * 4. Server validates and sanitizes (this function)
+ * 5. Data proceeds to report generation pipeline
+ *
+ * Security Layers:
+ * - validateParsedData(): Structural validation and injection detection
+ * - detectCSVInjection(): Field-level formula injection detection
+ *
+ * Note: formatData() is NOT called here because CSV data arrives
+ * pre-formatted from the client. This function only validates and
+ * sanitizes the already-formatted data.
+ */
+const handleCsvData = async (
+  csvData: schema.SourceRow[],
+): Promise<{ data: schema.SourceRow[] }> => {
   // Comprehensive server-side security validation
   const validationResult = validateParsedData(csvData);
   if (validationResult.tag === "failure") {
@@ -78,8 +118,9 @@ const handleCsvData = async (csvData: schema.SourceRow[]) => {
     }
   }
 
+  // CSV data is already in SourceRow format from the client
   return {
-    data: formatData(csvData),
+    data: csvData,
   };
 };
 
