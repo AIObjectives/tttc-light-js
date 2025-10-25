@@ -14,6 +14,11 @@ const nextConfig = {
     // Enable modern image formats for better compression
     formats: ["image/webp", "image/avif"],
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb", // Increased from default 1MB to support larger CSV uploads
+    },
+  },
 };
 
 module.exports = nextConfig;
