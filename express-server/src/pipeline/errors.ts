@@ -17,3 +17,21 @@ export class FetchError extends CustomError<"FetchError"> {
     super("FetchError", err);
   }
 }
+
+export class PyserverOOMError extends CustomError<"PyserverOOMError"> {
+  constructor(err?: unknown) {
+    super("PyserverOOMError", err);
+  }
+}
+
+export class PyserverUnresponsiveError extends CustomError<"PyserverUnresponsiveError"> {
+  constructor(err?: unknown) {
+    super("PyserverUnresponsiveError", err);
+  }
+}
+
+export class PyserverHungError extends CustomError<"PyserverHungError"> {
+  constructor(err?: unknown) {
+    super("PyserverHungError", err);
+  }
+}

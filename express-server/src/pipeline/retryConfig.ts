@@ -7,9 +7,10 @@ const retryLogger = logger.child({ module: "retry-config" });
  * Default retry configuration for PyServer API calls
  *
  * Uses exponential backoff with jitter to prevent thundering herd issues
+ * Reduced to 2 retries with health check validation
  */
 export const DEFAULT_RETRY_OPTIONS = {
-  retries: 3,
+  retries: 2,
   factor: 2,
   minTimeout: 1000, // ms
   maxTimeout: 5000, // ms
@@ -96,13 +97,36 @@ export async function withRetry<T>(
   operationName: string,
   shouldBail: (error: unknown) => boolean = () => false,
   retryOptions?: Partial<typeof DEFAULT_RETRY_OPTIONS>,
+  onBeforeRetry?: (attempt: number) => Promise<void>,
 ): Promise<T> {
   const options = { ...getRetryOptions(), ...retryOptions };
 
   return withOperationTimeout(
     retry(
-      async (bail) => {
+      async (bail, attemptNumber) => {
         try {
+          // Run pre-retry health check if provided (skip on first attempt)
+          if (onBeforeRetry && attemptNumber > 1) {
+            try {
+              await onBeforeRetry(attemptNumber);
+            } catch (healthError) {
+              // Health check failed - bail immediately without retrying
+              retryLogger.error(
+                {
+                  operation: operationName,
+                  attempt: attemptNumber,
+                  healthError:
+                    healthError instanceof Error
+                      ? healthError.message
+                      : String(healthError),
+                },
+                "Health check failed before retry, bailing",
+              );
+              bail(healthError as Error);
+              throw healthError;
+            }
+          }
+
           return await operation();
         } catch (error) {
           // If this error shouldn't be retried, bail immediately
