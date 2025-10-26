@@ -44,6 +44,12 @@ import config
 from utils import cute_print, full_speaker_map, token_cost, topic_desc_map, comment_is_meaningful
 from simple_sanitizer import basic_sanitize, sanitize_prompt_length, sanitize_for_output
 from audit_logger import ProcessingAuditLogger, set_audit_logger, get_audit_logger, clear_audit_logger
+from llm_cache_redis import (
+    generate_cache_key,
+    get_cached_response,
+    cache_response,
+    get_cache_stats
+)
 
 load_dotenv()
 
@@ -308,23 +314,43 @@ def read_root():
     # TODO: setup/relevant defaults?
     return {"Hello": "World"}
 
+@app.get("/cache/stats")
+async def get_llm_cache_stats():
+    """Get LLM cache statistics for monitoring and debugging"""
+    from llm_cache_redis import get_cache_stats
+    return get_cache_stats()
+
+@app.post("/cache/clear")
+async def clear_llm_cache(pattern: str = None):
+    """Clear LLM cache entries (use with caution)"""
+    from llm_cache_redis import clear_cache
+    deleted = clear_cache(pattern)
+    return {
+        "success": True,
+        "deleted_entries": deleted,
+        "message": f"Cleared {deleted} cache entries"
+    }
+
 @app.get("/health/processing")
 async def processing_health_check():
-    """Health check endpoint to monitor concurrent processing progress"""
+    """Health check endpoint to monitor concurrent processing progress and cache performance"""
     summary = processing_tracker.get_summary()
-    
+
     # Get memory usage
     process = psutil.Process()
     memory_info = process.memory_info()
     memory_percent = process.memory_percent()
     memory_mb = round(memory_info.rss / 1024 / 1024, 1)
-    
+
     # Check memory limits (fail health check if > 80% memory or > 1.6GB)
     MAX_MEMORY_MB = 1600  # 1.6GB limit (80% of 2GB Cloud Run limit)
     health_status = "healthy"
     if memory_percent > 80 or memory_mb > MAX_MEMORY_MB:
         health_status = "memory_warning"
-    
+
+    # Get cache statistics
+    cache_stats = get_cache_stats()
+
     return {
         "status": "processing" if summary["active_requests"] > 0 else "idle",
         "health": health_status,
@@ -340,7 +366,8 @@ async def processing_health_check():
             "memory_usage_mb": memory_mb,
             "memory_percent": round(memory_percent, 1),
             "memory_limit_mb": MAX_MEMORY_MB
-        }
+        },
+        "cache": cache_stats
     }
 
 ###################################
@@ -573,6 +600,40 @@ def comments_to_tree(
     return sanitize_for_output(response_data)
 
 
+def extract_usage_tokens(usage) -> tuple[int, int, int]:
+    """
+    Extract token counts from usage object (handles both object and dict formats).
+
+    Args:
+        usage: Either a CompletionUsage object (from fresh API calls) or dict (from cache)
+
+    Returns:
+        Tuple of (prompt_tokens, completion_tokens, total_tokens)
+    """
+    if usage is None:
+        return 0, 0, 0
+
+    # Handle object format (from fresh API calls)
+    if hasattr(usage, 'prompt_tokens'):
+        return usage.prompt_tokens, usage.completion_tokens, usage.total_tokens
+
+    # Handle dict format (from cache)
+    if isinstance(usage, dict):
+        prompt = usage.get('prompt_tokens', 0)
+        completion = usage.get('completion_tokens', 0)
+        total = usage.get('total_tokens', 0)
+
+        # Warn if usage dict is missing expected keys (potential bug)
+        if prompt == 0 and completion == 0 and total == 0 and usage:
+            logger.warning(f"Usage dict appears malformed: {usage}")
+
+        return prompt, completion, total
+
+    # Unexpected format
+    logger.warning(f"Unexpected usage format: {type(usage)}, returning zeros")
+    return 0, 0, 0
+
+
 def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None, interview: str = None) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
 
@@ -600,21 +661,53 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             audit_logger.log_sanitization_filter(comment_id, "Failed sanitization in comment_to_claims", text=comment)
         return {"claims": {"claims": []}, "usage": None}
 
-    # Create structured output schema from taxonomy
-    # This physically constrains the LLM to only generate valid topic/subtopic names
-    # TypeScript always sends: tree: { taxonomy: [...] }
+    # Get taxonomy before caching to ensure cache key includes actual prompts sent
     taxonomy_list = tree.get("taxonomy", [])
 
     if not taxonomy_list:
         report_logger.error(f"Empty taxonomy in tree object")
         raise ValueError("Empty taxonomy - cannot create structured output schema")
 
+    # Build taxonomy constraints that will be injected into system message
+    taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
+
+    # Generate cache key from comment + ACTUAL prompts (including taxonomy constraints)
+    # IMPORTANT: System prompt in cache key must match what's actually sent to OpenAI
+    system_message_for_cache = llm.system_prompt + "\n\n" + taxonomy_constraints
+
+    cache_key = generate_cache_key(
+        comment_text=sanitized_comment,
+        taxonomy=taxonomy_list,
+        model_name=llm.model_name,
+        system_prompt=system_message_for_cache,  # Use actual system message with taxonomy
+        user_prompt_template=llm.user_prompt,
+        operation="claims",
+        temperature=0.0  # Include temperature in cache key for correctness
+    )
+
+    cached_response = get_cached_response(cache_key)
+    if cached_response is not None:
+        report_logger.debug(f"Cache hit for comment {comment_index}")
+        # Return cached response with usage dict (already in dict format from cache)
+        # usage is stored as dict in cache for JSON serialization
+        return {
+            "claims": cached_response["claims"],
+            "usage": cached_response.get("usage"),  # Already a dict from cache
+            "cached": True
+        }
+
+    # Create structured output schema from taxonomy
+    # This physically constrains the LLM to only generate valid topic/subtopic names
     ClaimsSchema = create_claims_schema_from_taxonomy(taxonomy_list)
 
-    # Build prompt with explicit taxonomy constraints
-    # This is "belt and suspenders" with structured outputs
-    taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
-    full_prompt = llm.user_prompt + "\n\n" + taxonomy_constraints + "\n\nComment:\n" + sanitized_comment
+    # Build prompts optimized for OpenAI automatic caching
+    # KEY OPTIMIZATION: Put static taxonomy in system message (cached prefix)
+    # Put dynamic comment in user message (unique per call)
+    # This allows OpenAI to cache the system message + taxonomy across all 2000 comments
+    # NOTE: system_message_for_cache already includes taxonomy constraints from above
+
+    # User message: dynamic content that changes per comment
+    user_message = llm.user_prompt + "\n\nComment:\n" + sanitized_comment
 
     # Track API call
     api_tracker.track_call('comment_to_claims', {
@@ -628,11 +721,14 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
         report_logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment {comment_index})")
 
     # Make the API call with structured outputs (required)
+    # Using optimized prompt structure for automatic caching:
+    # - System message contains static taxonomy (gets cached by OpenAI)
+    # - User message contains dynamic comment (unique per call)
     response = client.beta.chat.completions.parse(
         model=llm.model_name,
         messages=[
-            {"role": "system", "content": llm.system_prompt},
-            {"role": "user", "content": full_prompt},
+            {"role": "system", "content": system_message_for_cache},
+            {"role": "user", "content": user_message},
         ],
         temperature=0.0,
         response_format=ClaimsSchema,
@@ -641,6 +737,15 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
     # Extract parsed object - model_dump(mode='json') properly serializes enums to strings
     parsed_claims = response.choices[0].message.parsed
     claims_list = [claim.model_dump(mode='json') for claim in parsed_claims.claims]
+
+    # Log OpenAI cache performance if available (for monitoring automatic caching)
+    if hasattr(response.usage, 'prompt_tokens_details') and response.usage.prompt_tokens_details:
+        cached_tokens = getattr(response.usage.prompt_tokens_details, 'cached_tokens', 0)
+        if cached_tokens > 0:
+            cache_percentage = (cached_tokens / response.usage.prompt_tokens * 100) if response.usage.prompt_tokens > 0 else 0
+            report_logger.debug(
+                f"OpenAI cache hit: {cached_tokens}/{response.usage.prompt_tokens} tokens cached ({cache_percentage:.1f}%)"
+            )
 
     # Log if no claims extracted (for debugging empty reports)
     audit_logger = get_audit_logger()
@@ -701,7 +806,21 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             )
 
     claims_obj = {"claims": claims_list}
-    return {"claims": claims_obj, "usage": response.usage}
+
+    # Convert usage object to dict for JSON serialization
+    usage_dict = {
+        "prompt_tokens": response.usage.prompt_tokens,
+        "completion_tokens": response.usage.completion_tokens,
+        "total_tokens": response.usage.total_tokens
+    } if response.usage else None
+
+    result = {"claims": claims_obj, "usage": usage_dict, "cached": False}
+
+    # Cache the successful response for future use
+    cache_response(cache_key, result)
+
+    # Return with original usage object for immediate processing
+    return {"claims": claims_obj, "usage": response.usage, "cached": False}
 
 
 async def comment_to_claims_async(processing_context: dict, llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, interview: str = None) -> dict:
@@ -870,6 +989,12 @@ async def all_comments_to_claims(
     TK_2_OUT = 0
     TK_2_TOT = 0
 
+    # Cache hit tracking (thread-safe for concurrent processing)
+    import threading
+    cache_stats_lock = threading.Lock()
+    cache_hits = 0
+    cache_misses = 0
+
     node_counts = {}
 
     # Initialize request-scoped processing tracking
@@ -934,7 +1059,9 @@ async def all_comments_to_claims(
                 # Process responses immediately and release memory
                 for response, (i_c, comment) in zip(chunk_responses, chunk):
                     if isinstance(response, Exception):
-                        print(f"Error processing comment {comment.id}: {response}")
+                        report_logger.error(
+                            f"Error processing comment {comment.id}: {type(response).__name__}: {response}"
+                        )
                         failed_count += 1
                         continue
 
@@ -942,19 +1069,38 @@ async def all_comments_to_claims(
                         claims = response["claims"]
                         for claim in claims["claims"]:
                             claim.update({"commentId": comment.id, "speaker": comment.speaker})
-                    except Exception:
-                        print("Step 2: no claims for comment: ", response)
+                    except (KeyError, TypeError) as e:
+                        report_logger.error(
+                            f"Invalid response structure for comment {comment.id}: {type(e).__name__}: {e}"
+                        )
+                        failed_count += 1
                         continue
+                    except Exception as e:
+                        report_logger.error(
+                            f"Unexpected error processing comment {comment.id}: {type(e).__name__}: {e}",
+                            exc_info=True
+                        )
+                        failed_count += 1
+                        continue
+
+                    # Track cache hits/misses (thread-safe)
+                    with cache_stats_lock:
+                        if response.get("cached", False):
+                            cache_hits += 1
+                        else:
+                            cache_misses += 1
 
                     usage = response["usage"]
                     if claims and len(claims["claims"]) > 0:
                         comms_to_claims.extend([c for c in claims["claims"]])
 
                     # Handle cases where usage is None (e.g., when content is rejected by sanitization)
+                    # usage can be either a usage object (fresh API call) or dict (from cache)
+                    prompt_tokens, completion_tokens, total_tokens = extract_usage_tokens(usage)
                     if usage is not None:
-                        TK_2_IN += usage.prompt_tokens
-                        TK_2_OUT += usage.completion_tokens
-                        TK_2_TOT += usage.total_tokens
+                        TK_2_IN += prompt_tokens
+                        TK_2_OUT += completion_tokens
+                        TK_2_TOT += total_tokens
                     else:
                         print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
 
@@ -996,19 +1142,38 @@ async def all_comments_to_claims(
                         claims = response["claims"]
                         for claim in claims["claims"]:
                             claim.update({"commentId": comment.id, "speaker": comment.speaker})
-                    except Exception:
-                        print("Step 2: no claims for comment: ", response)
+                    except (KeyError, TypeError) as e:
+                        report_logger.error(
+                            f"Invalid response structure for comment {comment.id}: {type(e).__name__}: {e}"
+                        )
+                        failed_count += 1
                         continue
+                    except Exception as e:
+                        report_logger.error(
+                            f"Unexpected error processing comment {comment.id}: {type(e).__name__}: {e}",
+                            exc_info=True
+                        )
+                        failed_count += 1
+                        continue
+
+                    # Track cache hits/misses (thread-safe)
+                    with cache_stats_lock:
+                        if response.get("cached", False):
+                            cache_hits += 1
+                        else:
+                            cache_misses += 1
 
                     usage = response["usage"]
                     if claims and len(claims["claims"]) > 0:
                         comms_to_claims.extend([c for c in claims["claims"]])
 
                     # Handle cases where usage is None (e.g., when content is rejected by sanitization)
+                    # usage can be either a usage object (fresh API call) or dict (from cache)
+                    prompt_tokens, completion_tokens, total_tokens = extract_usage_tokens(usage)
                     if usage is not None:
-                        TK_2_IN += usage.prompt_tokens
-                        TK_2_OUT += usage.completion_tokens
-                        TK_2_TOT += usage.total_tokens
+                        TK_2_IN += prompt_tokens
+                        TK_2_OUT += completion_tokens
+                        TK_2_TOT += total_tokens
                     else:
                         print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
 
@@ -1133,6 +1298,16 @@ async def all_comments_to_claims(
             "completion_tokens": TK_2_OUT,
         }
         
+        # Calculate cache statistics
+        total_comments_processed = cache_hits + cache_misses
+        cache_hit_rate = (cache_hits / total_comments_processed * 100) if total_comments_processed > 0 else 0
+
+        # Log cache performance
+        report_logger.info(
+            f"Cache performance: {cache_hits}/{total_comments_processed} hits ({cache_hit_rate:.1f}%), "
+            f"{cache_misses} misses"
+        )
+
         # Get audit log before cleaning up
         # Save audit log to Redis before returning
         audit_logger = get_audit_logger()
@@ -1143,6 +1318,12 @@ async def all_comments_to_claims(
             "data": node_counts,
             "usage": net_usage,
             "cost": s2_total_cost,
+            "cache_stats": {
+                "hits": cache_hits,
+                "misses": cache_misses,
+                "hit_rate": cache_hit_rate,
+                "total_processed": total_comments_processed
+            }
         }
         # Filter PII from final output for user privacy
         return sanitize_for_output(response_data)
