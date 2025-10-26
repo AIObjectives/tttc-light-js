@@ -900,72 +900,128 @@ async def all_comments_to_claims(
         
         # Process comments based on concurrency setting
         processing_context = {"request_id": request_id, "report_id": x_report_id}
-        responses = []
-        
+
+        # Get memory info for logging
+        process = psutil.Process()
+        start_memory = process.memory_info().rss / 1024 / 1024  # MB
+
+        # Track failures but don't accumulate full responses to save memory
+        failed_count = 0
+        processed_count = 0
+
         if ENABLE_CONCURRENT_PROCESSING:
-            # Process comments concurrently
-            tasks = []
-            for i_c, comment in meaningful_comments:
-                task = comment_to_claims_async(processing_context, req.llm, comment.text, req.tree, x_openai_api_key, comment_index=comment.id, interview=comment.speaker)
-                tasks.append((task, comment))
-            
-            # Wait for all tasks to complete and track failures
-            responses_with_comments = await asyncio.gather(*[task for task, _ in tasks], return_exceptions=True)
-            responses = list(zip(responses_with_comments, [comment for _, comment in meaningful_comments]))
-            
-            # Count and log failures for monitoring
-            failed_count = sum(1 for response, _ in responses if isinstance(response, Exception))
+            # Process comments in chunks to avoid memory issues with large datasets
+            # Chunk size is larger than concurrency to reduce overhead while managing memory
+            # Best practice: 10-20x concurrency limit balances throughput and memory usage
+            chunk_size = MAX_CONCURRENCY * 10  # 60 comments per chunk (6 concurrent * 10)
+            total_comments = len(meaningful_comments)
+
+            report_logger.info(f"Processing {total_comments} comments in chunks of {chunk_size} (concurrency: {MAX_CONCURRENCY}, memory at start: {start_memory:.1f}MB)")
+
+            for chunk_start in range(0, total_comments, chunk_size):
+                chunk_end = min(chunk_start + chunk_size, total_comments)
+                chunk = meaningful_comments[chunk_start:chunk_end]
+
+                # Create tasks only for this chunk
+                tasks = []
+                for i_c, comment in chunk:
+                    task = comment_to_claims_async(processing_context, req.llm, comment.text, req.tree, x_openai_api_key, comment_index=comment.id, interview=comment.speaker)
+                    tasks.append((task, comment))
+
+                # Wait for this chunk to complete
+                chunk_responses = await asyncio.gather(*[task for task, _ in tasks], return_exceptions=True)
+
+                # Process responses immediately and release memory
+                for response, (i_c, comment) in zip(chunk_responses, chunk):
+                    if isinstance(response, Exception):
+                        print(f"Error processing comment {comment.id}: {response}")
+                        failed_count += 1
+                        continue
+
+                    try:
+                        claims = response["claims"]
+                        for claim in claims["claims"]:
+                            claim.update({"commentId": comment.id, "speaker": comment.speaker})
+                    except Exception:
+                        print("Step 2: no claims for comment: ", response)
+                        continue
+
+                    usage = response["usage"]
+                    if claims and len(claims["claims"]) > 0:
+                        comms_to_claims.extend([c for c in claims["claims"]])
+
+                    # Handle cases where usage is None (e.g., when content is rejected by sanitization)
+                    if usage is not None:
+                        TK_2_IN += usage.prompt_tokens
+                        TK_2_OUT += usage.completion_tokens
+                        TK_2_TOT += usage.total_tokens
+                    else:
+                        print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
+
+                    # format for logging to W&B
+                    if log_to_wandb and claims:
+                        viz_claims = cute_print(claims["claims"])
+                        comms_to_claims_html.append([comment.text, viz_claims])
+
+                    processed_count += 1
+
+                # Log progress periodically (every chunk)
+                current_memory = process.memory_info().rss / 1024 / 1024  # MB
+                progress_pct = (chunk_end / total_comments) * 100
+                report_logger.info(f"Progress: {chunk_end}/{total_comments} ({progress_pct:.1f}%) - Memory: {current_memory:.1f}MB (delta: {current_memory - start_memory:+.1f}MB)")
+
+            # Final logging
+            end_memory = process.memory_info().rss / 1024 / 1024  # MB
+
             if failed_count > 0:
-                success_rate = ((len(responses) - failed_count) / len(responses)) * 100
-                report_logger.warning(f"Concurrent processing completed with {failed_count}/{len(responses)} failures (success rate: {success_rate:.1f}%)")
+                success_rate = ((processed_count - failed_count) / processed_count) * 100 if processed_count > 0 else 0
+                report_logger.warning(f"Concurrent processing completed with {failed_count}/{processed_count} failures (success rate: {success_rate:.1f}%) - Final memory: {end_memory:.1f}MB")
 
                 # If more than 50% failed, this might indicate a systemic issue
-                if failed_count > len(responses) / 2:
-                    report_logger.error(f"High failure rate detected: {failed_count}/{len(responses)} failed. This may indicate an API or system issue.")
+                if failed_count > processed_count / 2:
+                    report_logger.error(f"High failure rate detected: {failed_count}/{processed_count} failed. This may indicate an API or system issue.")
             else:
-                report_logger.info(f"Concurrent processing completed successfully for all {len(responses)} comments")
+                report_logger.info(f"Concurrent processing completed successfully for all {processed_count} comments - Final memory: {end_memory:.1f}MB")
         else:
             # Process comments sequentially (original behavior)
+            report_logger.info(f"Processing {len(meaningful_comments)} comments sequentially (concurrent processing disabled)")
+
             for i_c, comment in meaningful_comments:
                 try:
                     response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=comment.id, report_id=x_report_id, interview=comment.speaker)
-                    responses.append((response, comment))
                     processing_tracker.update_progress(request_id)
+
+                    # Process response immediately instead of accumulating
+                    try:
+                        claims = response["claims"]
+                        for claim in claims["claims"]:
+                            claim.update({"commentId": comment.id, "speaker": comment.speaker})
+                    except Exception:
+                        print("Step 2: no claims for comment: ", response)
+                        continue
+
+                    usage = response["usage"]
+                    if claims and len(claims["claims"]) > 0:
+                        comms_to_claims.extend([c for c in claims["claims"]])
+
+                    # Handle cases where usage is None (e.g., when content is rejected by sanitization)
+                    if usage is not None:
+                        TK_2_IN += usage.prompt_tokens
+                        TK_2_OUT += usage.completion_tokens
+                        TK_2_TOT += usage.total_tokens
+                    else:
+                        print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
+
+                    # format for logging to W&B
+                    if log_to_wandb and claims:
+                        viz_claims = cute_print(claims["claims"])
+                        comms_to_claims_html.append([comment.text, viz_claims])
+
+                    processed_count += 1
+
                 except Exception as e:
                     print(f"Error processing comment {comment.id}: {e}")
-                    responses.append((e, comment))
-        
-        # Process results
-        for response, comment in responses:
-            if isinstance(response, Exception):
-                print(f"Error processing comment {comment.id}: {response}")
-                continue  # Skip to next response for exceptions
-                
-            try:
-                claims = response["claims"]
-                for claim in claims["claims"]:
-                    claim.update({"commentId": comment.id, "speaker": comment.speaker})
-            except Exception:
-                print("Step 2: no claims for comment: ", response)
-                claims = None
-                continue
-                
-            usage = response["usage"]
-            if claims and len(claims["claims"]) > 0:
-                comms_to_claims.extend([c for c in claims["claims"]])
-
-            # Handle cases where usage is None (e.g., when content is rejected by sanitization)
-            if usage is not None:
-                TK_2_IN += usage.prompt_tokens
-                TK_2_OUT += usage.completion_tokens
-                TK_2_TOT += usage.total_tokens
-            else:
-                print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
-
-            # format for logging to W&B
-            if log_to_wandb and claims:
-                viz_claims = cute_print(claims["claims"])
-                comms_to_claims_html.append([comment.text, viz_claims])
+                    failed_count += 1
 
 
         # reference format
