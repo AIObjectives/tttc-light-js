@@ -30,8 +30,9 @@ export const TEST_RETRY_OPTIONS = {
 
 /**
  * Operation timeout configuration for retry logic
+ * Increased to handle large datasets (e.g., 2000+ comments)
  */
-export const OPERATION_TIMEOUT = 600000; // 10 minutes
+export const OPERATION_TIMEOUT = 2400000; // 40 minutes
 
 /**
  * Creates a retry logger with context
