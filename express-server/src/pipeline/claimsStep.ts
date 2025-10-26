@@ -54,6 +54,7 @@ export async function claimsPipelineStep(
           // 40-minute timeout for large datasets (matches OPERATION_TIMEOUT)
           signal: AbortSignal.timeout(2400000),
         }),
+      env.PYSERVER_URL, // Enable health checks for retry logic
     );
 
     const duration = Date.now() - startTime;

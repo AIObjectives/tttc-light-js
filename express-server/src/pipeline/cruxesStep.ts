@@ -22,11 +22,14 @@ export async function cruxesPipelineStep(
     headers[apiPyserver.USER_ID_HEADER] = userId;
   }
 
-  return await handlePipelineStep(apiPyserver.cruxesResponse, () =>
-    fetch(`${env.PYSERVER_URL}/cruxes`, {
-      method: "post",
-      body: JSON.stringify(input),
-      headers,
-    }),
+  return await handlePipelineStep(
+    apiPyserver.cruxesResponse,
+    () =>
+      fetch(`${env.PYSERVER_URL}/cruxes`, {
+        method: "post",
+        body: JSON.stringify(input),
+        headers,
+      }),
+    env.PYSERVER_URL,
   );
 }

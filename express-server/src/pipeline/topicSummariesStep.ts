@@ -30,5 +30,6 @@ export async function topicSummariesPipelineStep(
         body: JSON.stringify(input),
         headers,
       }),
+    env.PYSERVER_URL,
   );
 }
