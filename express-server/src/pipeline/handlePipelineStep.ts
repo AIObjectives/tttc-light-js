@@ -54,7 +54,23 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
           "Fetch completed",
         );
 
-        const parsed = await response.json();
+        // Handle NDJSON response (pyserver sends keep-alive comments, then final JSON)
+        // Parse last non-comment line as JSON
+        const responseText = await response.text();
+        const lines = responseText
+          .split("\n")
+          .filter((line) => line.trim() && !line.trim().startsWith("//"));
+
+        if (lines.length === 0) {
+          throw new InvalidResponseDataError(
+            new Error(
+              "No valid JSON found in NDJSON response: Response contained only comments or was empty",
+            ),
+          );
+        }
+
+        const lastLine = lines[lines.length - 1];
+        const parsed = JSON.parse(lastLine);
 
         // Check if the request succeeded
         if (!response.ok) {

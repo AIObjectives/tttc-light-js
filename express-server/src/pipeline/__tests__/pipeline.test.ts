@@ -27,11 +27,11 @@ type TestSchemaType = z.infer<typeof testSchema>;
 
 describe("handlePipelineStep", () => {
   it("should successfully parse valid response data", async () => {
-    // Mock a successful response with valid data
+    // Mock a successful response with valid data (NDJSON format)
     const mockCall = () =>
       Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ status: true }),
+        text: () => Promise.resolve(JSON.stringify({ status: true })),
       } as Response);
 
     const result = await handlePipelineStep(testSchema, mockCall);
@@ -70,7 +70,7 @@ describe("handlePipelineStep", () => {
     const mockCall = () =>
       Promise.resolve({
         ok: false,
-        json: () => Promise.resolve(errorData),
+        text: () => Promise.resolve(JSON.stringify(errorData)),
       } as Response);
 
     const result = await handlePipelineStep(testSchema, mockCall);
@@ -90,11 +90,13 @@ describe("handlePipelineStep", () => {
     const mockCall = () =>
       Promise.resolve({
         ok: true,
-        json: () =>
-          Promise.resolve({
-            // Missing 'status' field or wrong type that won't match schema
-            wrongField: "not a boolean",
-          }),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              // Missing 'status' field or wrong type that won't match schema
+              wrongField: "not a boolean",
+            }),
+          ),
       } as Response);
 
     const result = await handlePipelineStep(testSchema, mockCall);
@@ -108,6 +110,101 @@ describe("handlePipelineStep", () => {
       // expect(result.error.validationError).toBeDefined();
     } else {
       expect.fail("Expected a failure result but got success");
+    }
+  });
+
+  it("should parse NDJSON with keep-alive comments", async () => {
+    // Mock a response with keep-alive comments followed by JSON
+    const mockCall = () =>
+      Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            "// keepalive 1698765432\n" +
+              "// keepalive 1698765552\n" +
+              JSON.stringify({ status: true }),
+          ),
+      } as Response);
+
+    const result = await handlePipelineStep(testSchema, mockCall);
+
+    expect(result.tag).toBe("success");
+
+    if (isSuccess<TestSchemaType, any>(result)) {
+      expect(result.value).toEqual({ status: true });
+    } else {
+      expect.fail("Expected a success result but got failure");
+    }
+  });
+
+  it("should handle response with only comments (no JSON)", async () => {
+    // Mock a response with only keep-alive comments and no final JSON
+    const mockCall = () =>
+      Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            "// keepalive 1698765432\n" + "// keepalive 1698765552\n",
+          ),
+      } as Response);
+
+    const result = await handlePipelineStep(testSchema, mockCall);
+
+    expect(result.tag).toBe("failure");
+
+    if (isFailure(result)) {
+      expect(result.error).toBeInstanceOf(InvalidResponseDataError);
+      expect(result.error.message).toContain(
+        "No valid JSON found in NDJSON response",
+      );
+    } else {
+      expect.fail("Expected a failure result but got success");
+    }
+  });
+
+  it("should handle empty response", async () => {
+    // Mock an empty response
+    const mockCall = () =>
+      Promise.resolve({
+        ok: true,
+        text: () => Promise.resolve(""),
+      } as Response);
+
+    const result = await handlePipelineStep(testSchema, mockCall);
+
+    expect(result.tag).toBe("failure");
+
+    if (isFailure(result)) {
+      expect(result.error).toBeInstanceOf(InvalidResponseDataError);
+      expect(result.error.message).toContain(
+        "No valid JSON found in NDJSON response",
+      );
+    } else {
+      expect.fail("Expected a failure result but got success");
+    }
+  });
+
+  it("should parse NDJSON with trailing newline", async () => {
+    // Mock a response with trailing newline (NDJSON spec compliant)
+    const mockCall = () =>
+      Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            "// keepalive 1698765432\n" +
+              JSON.stringify({ status: true }) +
+              "\n",
+          ),
+      } as Response);
+
+    const result = await handlePipelineStep(testSchema, mockCall);
+
+    expect(result.tag).toBe("success");
+
+    if (isSuccess<TestSchemaType, any>(result)) {
+      expect(result.value).toEqual({ status: true });
+    } else {
+      expect.fail("Expected a success result but got failure");
     }
   });
 });

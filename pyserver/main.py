@@ -31,6 +31,7 @@ import wandb
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from openai import OpenAI
 from pydantic import BaseModel
 from structured_schemas import create_claims_schema_from_taxonomy, create_taxonomy_prompt_with_constraints
@@ -855,6 +856,55 @@ async def comment_to_claims_async(processing_context: dict, llm: dict, comment: 
 @app.post("/claims")
 async def all_comments_to_claims(
     req: CommentTopicTree, x_openai_api_key: str = Header(..., alias="X-OpenAI-API-Key"), x_report_id: str = Header(None, alias="X-Report-ID"), x_user_id: str = Header(None, alias="X-User-ID"), log_to_wandb: str = config.WANDB_GROUP_LOG_NAME, dry_run = False
+):
+    """Streaming wrapper to prevent VPC idle timeout during long-running claims extraction."""
+    KEEPALIVE_INTERVAL_SECONDS = 120
+
+    async def generate_with_keepalive():
+        # Store result from the processing
+        result = None
+        error = None
+        done = False
+        last_keepalive = time.time()
+
+        async def do_processing():
+            nonlocal result, error, done
+            try:
+                result = await all_comments_to_claims_internal(req, x_openai_api_key, x_report_id, x_user_id, log_to_wandb, dry_run)
+            except Exception as e:
+                error = e
+            finally:
+                done = True
+
+        # Start processing in background
+        task = asyncio.create_task(do_processing())
+
+        # Yield keep-alive comments while processing (every 2 minutes)
+        while not done:
+            time_since_keepalive = time.time() - last_keepalive
+            sleep_time = min(KEEPALIVE_INTERVAL_SECONDS - time_since_keepalive, 1)
+            if sleep_time > 0:
+                await asyncio.sleep(sleep_time)
+
+            if not done and time.time() - last_keepalive >= KEEPALIVE_INTERVAL_SECONDS:
+                yield f"// keepalive {int(time.time())}\n".encode()
+                last_keepalive = time.time()
+
+        # Wait for task to complete
+        await task
+
+        # Raise error if processing failed
+        if error:
+            logger.error("Claims processing failed during keep-alive streaming", exc_info=error)
+            raise error
+
+        # Yield final result as JSON (last line, with trailing newline for NDJSON spec)
+        yield (json.dumps(result) + "\n").encode()
+
+    return StreamingResponse(generate_with_keepalive(), media_type="application/x-ndjson")
+
+async def all_comments_to_claims_internal(
+    req: CommentTopicTree, x_openai_api_key: str, x_report_id: str, x_user_id: str, log_to_wandb: str, dry_run: bool
 ) -> dict:
     """Given a comment and the taxonomy/topic tree for the report, extract one or more claims from the comment.
     Place each claim under the correct subtopic in the tree.
