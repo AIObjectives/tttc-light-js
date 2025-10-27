@@ -520,6 +520,10 @@ async function doPipelineSteps(job: PipelineJob) {
 
   // Get Redis connection for audit log
   // TODO: Improve dependency injection by adding redis to PipelineConfig
+  pipelineLogger.info(
+    { reportId, redisUrl: config.env.REDIS_URL },
+    "Creating Redis connection for audit log",
+  );
   const redis = new Redis(config.env.REDIS_URL, {
     connectionName: "Pipeline-AuditLog",
     maxRetriesPerRequest: 3,
@@ -533,18 +537,40 @@ async function doPipelineSteps(job: PipelineJob) {
     },
   });
 
+  // Log Redis connection events
+  redis.on("connect", () => {
+    pipelineLogger.info({ reportId }, "Redis connected");
+  });
+  redis.on("ready", () => {
+    pipelineLogger.info({ reportId }, "Redis ready");
+  });
+  redis.on("error", (error) => {
+    pipelineLogger.error({ reportId, error }, "Redis error");
+  });
+  redis.on("close", () => {
+    pipelineLogger.warn({ reportId }, "Redis connection closed");
+  });
+  redis.on("reconnecting", () => {
+    pipelineLogger.warn({ reportId }, "Redis reconnecting");
+  });
+
+  pipelineLogger.info(
+    { reportId, redisStatus: redis.status },
+    "Redis connection created",
+  );
+
   // Initialize audit log in Redis before pipeline starts
   const commentCount = data.length;
   if (reportId) {
     try {
       await initializeAuditLog(redis, reportId, commentCount);
       pipelineLogger.info(
-        { reportId, commentCount },
+        { reportId, commentCount, redisStatus: redis.status },
         "Initialized audit log in Redis",
       );
     } catch (error) {
       pipelineLogger.error(
-        { reportId, error },
+        { reportId, error, redisStatus: redis.status },
         "Failed to initialize audit log in Redis",
       );
     }
@@ -619,18 +645,43 @@ async function doPipelineSteps(job: PipelineJob) {
   );
 
   // do claims step
+  pipelineLogger.debug(
+    { reportId: config.firebaseDetails.reportId },
+    "About to call flatMapResultAsync for claims step",
+  );
   const claimsStep: PyserverResult<
     SortClaimsProps,
     PipelineErrors | MissingInterviewAttributionsError
   > = await flatMapResultAsync(topicTreeStep, (val) => doClaimsStep(val.data));
 
+  pipelineLogger.info(
+    {
+      reportId: config.firebaseDetails.reportId,
+      claimsStepTag: claimsStep.tag,
+      redisStatus: redis.status,
+    },
+    "Claims step flatMapResultAsync returned",
+  );
+
   // update job progress
-  pipelineLogger.info("Step 3: cleaning and sorting the taxonomy");
+  pipelineLogger.info(
+    { reportId: config.firebaseDetails.reportId },
+    "Step 3: cleaning and sorting the taxonomy",
+  );
+
+  pipelineLogger.debug(
+    { reportId: config.firebaseDetails.reportId },
+    "About to update pipeline status to sorting",
+  );
   // Update reportRef to keep status in sync with correct sub-state
   await updatePipelineStatus(
     config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
     "processing",
     "sorting",
+  );
+  pipelineLogger.debug(
+    { reportId: config.firebaseDetails.reportId },
+    "Pipeline status updated to sorting",
   );
 
   // do sort step

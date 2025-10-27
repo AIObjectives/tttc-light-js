@@ -83,8 +83,18 @@ export async function claimsPipelineStep(
         },
         "Claims extraction completed successfully",
       );
+    } else {
+      claimsLogger.warn(
+        {
+          reportId,
+          durationMs: duration,
+          responseTag: response.tag,
+        },
+        "Claims extraction returned with failure tag",
+      );
     }
 
+    claimsLogger.debug({ reportId }, "Returning from claimsPipelineStep");
     return response;
   } catch (error) {
     const duration = Date.now() - startTime;
