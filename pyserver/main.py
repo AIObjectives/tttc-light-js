@@ -30,6 +30,7 @@ import psutil
 import wandb
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel
@@ -1186,6 +1187,8 @@ async def all_comments_to_claims(
         pre_sanitize_mb = round(pre_sanitize_size / 1024 / 1024, 2)
         report_logger.info(f"About to sanitize response: {len(comms_to_claims)} claims, {len(node_counts)} topics, tokens: {TK_2_IN}/{TK_2_OUT}, cost: ${s2_total_cost:.4f}, size: {pre_sanitize_mb}MB, memory: {round(pre_sanitize_memory, 1)}MB")
 
+        # Convert to JSON-serializable format (handles sets, dates, etc.) using FastAPI's encoder
+        response_data = jsonable_encoder(response_data)
         # Filter PII from final output for user privacy
         sanitized_response = sanitize_for_output(response_data)
 
