@@ -74,7 +74,8 @@
     "eval:clustering": "npx tsx evaluations/pipeline-evaluate.ts clustering",
     "eval:extraction": "npx tsx evaluations/pipeline-evaluate.ts extraction",
     "eval:deduplication": "npx tsx evaluations/pipeline-evaluate.ts deduplication",
-    "eval:summaries": "npx tsx evaluations/pipeline-evaluate.ts summaries"
+    "eval:summaries": "npx tsx evaluations/pipeline-evaluate.ts summaries",
+    "eval:crux": "npx tsx evaluations/pipeline-evaluate.ts crux"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",

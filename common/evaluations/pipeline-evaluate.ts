@@ -36,10 +36,21 @@ import {
   deduplicationTestCases,
 } from "./scorers/deduplication-scorers.js";
 import {
+  cruxJsonStructureScorer,
+  participantCoverageScorer,
+  cruxClaimQualityScorer,
+  controversyBalanceScorer,
+  explanationQualityScorer,
+  cruxAlignmentScorer,
+  createCruxModel,
+  cruxTestCases,
+} from "./scorers/crux-scorers.js";
+import {
   defaultClusteringPrompt,
   defaultExtractionPrompt,
   defaultDedupPrompt,
   defaultSummariesPrompt,
+  defaultCruxPrompt,
   defaultSystemPrompt,
   hydratePromptLiterals,
 } from "../prompts/index.js";
@@ -84,6 +95,14 @@ const summariesModel = createSummariesModel(
   openaiClient,
   hydratePromptLiterals,
   defaultSummariesPrompt,
+  defaultSystemPrompt,
+);
+
+// Create crux model with system prompt
+const cruxModel = createCruxModel(
+  openaiClient,
+  hydratePromptLiterals,
+  defaultCruxPrompt,
   defaultSystemPrompt,
 );
 
@@ -194,6 +213,32 @@ async function runSummariesEvaluation() {
   return summariesResults;
 }
 
+async function runCruxEvaluation() {
+  const cruxDataset = new weave.Dataset({
+    name: "T3C Crux Dataset",
+    rows: cruxTestCases,
+  });
+
+  const cruxEvaluation = new weave.Evaluation({
+    dataset: cruxDataset,
+    scorers: [
+      cruxJsonStructureScorer,
+      participantCoverageScorer,
+      cruxClaimQualityScorer,
+      controversyBalanceScorer,
+      explanationQualityScorer,
+      cruxAlignmentScorer,
+    ],
+  });
+
+  console.log("Running T3C crux evaluation...");
+  const cruxResults = await cruxEvaluation.evaluate({
+    model: cruxModel,
+  });
+  console.log("Crux Results:", JSON.stringify(cruxResults, null, 2));
+  return cruxResults;
+}
+
 async function main() {
   await weave.init("t3c-pipeline-evaluation");
 
@@ -216,14 +261,19 @@ async function main() {
       console.log("Running summaries evaluation...\n");
       await runSummariesEvaluation();
       break;
+    case "crux":
+      console.log("Running crux evaluation...\n");
+      await runCruxEvaluation();
+      break;
     default:
       console.log(
-        "Running full T3C pipeline evaluation (clustering + extraction + deduplication + summaries)...\n",
+        "Running full T3C pipeline evaluation (clustering + extraction + deduplication + summaries + crux)...\n",
       );
       await runClusteringEvaluation();
       await runExtractionEvaluation();
       await runDeduplicationEvaluation();
       await runSummariesEvaluation();
+      await runCruxEvaluation();
       break;
   }
 }
