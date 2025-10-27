@@ -1128,6 +1128,9 @@ async def all_comments_to_claims(
                     report_logger.error(f"High failure rate detected: {failed_count}/{processed_count} failed. This may indicate an API or system issue.")
             else:
                 report_logger.info(f"Concurrent processing completed successfully for all {processed_count} comments - Final memory: {end_memory:.1f}MB")
+
+            # Log chunk processing completion before post-processing
+            report_logger.info(f"Chunk processing completed - starting post-processing: {len(comms_to_claims)} claims, {processed_count} processed, {failed_count} failed, cache hits: {cache_hits}, cache misses: {cache_misses}, memory: {end_memory:.1f}MB")
         else:
             # Process comments sequentially (original behavior)
             report_logger.info(f"Processing {len(meaningful_comments)} comments sequentially (concurrent processing disabled)")
@@ -1194,11 +1197,34 @@ async def all_comments_to_claims(
         # {'commentId':'c2','claim': 'Dogs are superior pets.', 'quote': 'dogs are great', 'speaker' : 'Bob', 'topicName': 'Pets', 'subtopicName': 'Dogs'},
         # {'commentId':'c3', 'claim': 'Birds are not suitable pets for everyone.', 'quote': "I'm not sure about birds.", 'speaker' : 'Alice', 'topicName': 'Pets', 'subtopicName': 'Birds'}]
 
+        # Log before tree building
+        tree_build_start = time.time()
+
+        # Validate comms_to_claims before tree building
+        if len(comms_to_claims) == 0:
+            report_logger.warning("No claims to build tree from - comms_to_claims is empty")
+        else:
+            # Log sample claim for structure validation
+            sample_claim = comms_to_claims[0] if comms_to_claims else None
+            sample_keys = list(sample_claim.keys()) if sample_claim else []
+            has_topic = "topicName" in sample_claim if sample_claim else False
+            has_subtopic = "subtopicName" in sample_claim if sample_claim else False
+            report_logger.info(f"Claims structure validation: {len(comms_to_claims)} claims, sample keys: {sample_keys}, has_topic: {has_topic}, has_subtopic: {has_subtopic}")
+
+        report_logger.info(f"Building tree structure from {len(comms_to_claims)} claims across {len(req.tree['taxonomy'])} topics")
+
         # count the claims in each subtopic
-        for claim in comms_to_claims:
+        tree_build_progress_interval = 500  # Log every 500 claims
+        for idx, claim in enumerate(comms_to_claims):
             if "topicName" not in claim:
-                print("claim unassigned to topic: ", claim)
+                report_logger.warning(f"Claim unassigned to topic: {claim.get('claim', 'unknown')[:50]}...")
                 continue
+
+            # Progress logging every 500 claims
+            if idx > 0 and idx % tree_build_progress_interval == 0:
+                current_memory = process.memory_info().rss / 1024 / 1024
+                progress_pct = round((idx / len(comms_to_claims)) * 100, 1)
+                report_logger.info(f"Tree building progress: {idx}/{len(comms_to_claims)} ({progress_pct}%), topics: {len(node_counts)}, memory: {round(current_memory, 1)}MB")
             if claim["topicName"] in node_counts:
                 node_counts[claim["topicName"]]["total"] += 1
                 node_counts[claim["topicName"]]["speakers"].add(claim["speaker"])
@@ -1247,13 +1273,13 @@ async def all_comments_to_claims(
                             not in node_counts[topic["topicName"]]["subtopics"]
                         ):
                             # this is an empty subtopic!
-                            print("EMPTY SUBTOPIC: ", subtopic["subtopicName"])
+                            report_logger.info(f"Detected empty subtopic: {topic['topicName']} / {subtopic['subtopicName']}")
                             node_counts[topic["topicName"]]["subtopics"][
                                 subtopic["subtopicName"]
                             ] = {"total": 0, "claims": [], "speakers": set()}
                     else:
                         # could we have an empty topic? certainly
-                        print("EMPTY TOPIC: ", topic["topicName"])
+                        report_logger.info(f"Detected empty topic: {topic['topicName']}")
                         node_counts[topic["topicName"]] = {
                             "total": 0,
                             "speakers": set(),
@@ -1261,6 +1287,12 @@ async def all_comments_to_claims(
                                 "None": {"total": 0, "claims": [], "speakers": set()},
                             },
                         }
+
+        # Log tree building completion
+        tree_build_duration = time.time() - tree_build_start
+        tree_memory = process.memory_info().rss / 1024 / 1024
+        report_logger.info(f"Tree structure building completed: {round(tree_build_duration, 2)}s, {len(node_counts)} topics, memory: {round(tree_memory, 1)}MB")
+
         # compute LLM costs for this step's tokens
         s2_total_cost = token_cost(req.llm.model_name, TK_2_IN, TK_2_OUT)
 
@@ -1325,11 +1357,41 @@ async def all_comments_to_claims(
                 "total_processed": total_comments_processed
             }
         }
+
+        # Log before sanitization
+        import json as json_module
+        pre_sanitize_size = len(json_module.dumps(response_data, default=str))
+        pre_sanitize_memory = process.memory_info().rss / 1024 / 1024
+
+        pre_sanitize_mb = round(pre_sanitize_size / 1024 / 1024, 2)
+        report_logger.info(f"About to sanitize response: {len(comms_to_claims)} claims, {len(node_counts)} topics, tokens: {TK_2_IN}/{TK_2_OUT}, cost: ${s2_total_cost:.4f}, size: {pre_sanitize_mb}MB, memory: {round(pre_sanitize_memory, 1)}MB")
+
         # Filter PII from final output for user privacy
-        return sanitize_for_output(response_data)
+        sanitized_response = sanitize_for_output(response_data)
+
+        # Log after sanitization
+        post_sanitize_size = len(json_module.dumps(sanitized_response, default=str))
+        post_sanitize_memory = process.memory_info().rss / 1024 / 1024
+        size_reduction = pre_sanitize_size - post_sanitize_size
+        post_sanitize_mb = round(post_sanitize_size / 1024 / 1024, 2)
+        reduction_pct = round((size_reduction / pre_sanitize_size) * 100, 1) if pre_sanitize_size > 0 else 0
+        report_logger.info(f"Sanitization completed: {post_sanitize_mb}MB (reduced {reduction_pct}%), memory: {round(post_sanitize_memory, 1)}MB")
+
+        report_logger.info("Response sent successfully")
+        return sanitized_response
     finally:
+        # Log final memory state
+        final_memory = process.memory_info().rss / 1024 / 1024
+        memory_delta = round(final_memory - start_memory, 1)
+        report_logger.info(f"Request processing ending - final memory: {round(final_memory, 1)}MB (delta: {memory_delta}MB)")
+
         # Ensure request tracking is always cleaned up to prevent memory leaks
-        processing_tracker.end_request(request_id)
+        try:
+            processing_tracker.end_request(request_id)
+            report_logger.info(f"Request tracking cleaned up: {request_id}, active requests: {processing_tracker.active_requests}")
+        except Exception as cleanup_error:
+            report_logger.error(f"Failed to cleanup request tracking for {request_id}: {str(cleanup_error)}")
+
         # Clear audit logger
         clear_audit_logger()
 

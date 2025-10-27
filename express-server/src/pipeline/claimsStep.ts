@@ -58,15 +58,32 @@ export async function claimsPipelineStep(
     );
 
     const duration = Date.now() - startTime;
-    claimsLogger.info(
-      {
-        reportId,
-        durationMs: duration,
-        durationMin: (duration / 60000).toFixed(1),
-        commentCount,
-      },
-      "Claims extraction completed successfully",
-    );
+
+    // Log detailed response information
+    if (response.tag === "success") {
+      const responseString = JSON.stringify(response.value);
+      const responseSize = responseString.length;
+      const claimsCount = Array.isArray(response.value.data)
+        ? response.value.data.length
+        : Object.keys(response.value.data || {}).length;
+
+      claimsLogger.info(
+        {
+          reportId,
+          durationMs: duration,
+          durationMin: (duration / 60000).toFixed(1),
+          commentCount,
+          claimsReturned: claimsCount,
+          responseSizeMB: (responseSize / 1024 / 1024).toFixed(2),
+          responseSizeBytes: responseSize,
+          hasData: !!response.value.data,
+          dataKeys: response.value.data
+            ? Object.keys(response.value.data).slice(0, 5)
+            : [],
+        },
+        "Claims extraction completed successfully",
+      );
+    }
 
     return response;
   } catch (error) {
