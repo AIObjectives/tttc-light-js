@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils/shadcn";
 
 const Drawer = ({
   shouldScaleBackground = true,
+  noBodyStyles = true,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
   <DrawerPrimitive.Root
     shouldScaleBackground={shouldScaleBackground}
+    noBodyStyles={noBodyStyles}
     {...props}
   />
 );
