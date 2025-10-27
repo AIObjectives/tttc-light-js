@@ -20,9 +20,10 @@ Performance Impact:
 import json
 import hashlib
 import os
-import threading
+import time
+import asyncio
 from typing import Optional, Dict, Any, Tuple
-import redis
+from redis import asyncio as aioredis
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,16 +39,16 @@ REDIS_MAX_CONNECTIONS = 50  # Based on Cloud Run max concurrent requests
 REDIS_SOCKET_TIMEOUT = 5.0  # Seconds
 CACHE_KEY_HASH_LENGTH = 16  # 64-bit keyspace (acceptable collision rate for 24h TTL)
 
-# Global Redis client with thread-safe initialization
-_redis_client = None
-_redis_lock = threading.Lock()
+# Global async Redis client with async lock
+_redis_client: Optional[aioredis.Redis] = None
+_redis_lock = asyncio.Lock()
 
 
-def get_redis_client() -> redis.Redis:
+async def get_redis_client() -> Optional[aioredis.Redis]:
     """
-    Get Redis client from environment with connection pooling.
+    Get async Redis client from environment with connection pooling.
 
-    Thread-safe singleton pattern with double-check locking.
+    Async singleton pattern with double-check locking.
     """
     global _redis_client
 
@@ -55,13 +56,13 @@ def get_redis_client() -> redis.Redis:
     if _redis_client is not None:
         return _redis_client
 
-    # Slow path: need to create client (thread-safe)
-    with _redis_lock:
-        # Double-check: another thread may have created it
+    # Slow path: need to create client (async-safe)
+    async with _redis_lock:
+        # Double-check: another coroutine may have created it
         if _redis_client is None:
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
             try:
-                _redis_client = redis.from_url(
+                _redis_client = await aioredis.from_url(
                     redis_url,
                     decode_responses=True,
                     max_connections=REDIS_MAX_CONNECTIONS,
@@ -70,9 +71,9 @@ def get_redis_client() -> redis.Redis:
                     socket_connect_timeout=REDIS_SOCKET_TIMEOUT
                 )
                 # Test connection
-                _redis_client.ping()
-                logger.info(f"Redis connection established successfully")
-            except redis.ConnectionError as e:
+                await _redis_client.ping()
+                logger.info(f"Async Redis connection established successfully")
+            except aioredis.ConnectionError as e:
                 logger.warning(f"Redis connection test failed: {e}, caching will be disabled")
                 _redis_client = None
             except Exception as e:
@@ -82,14 +83,14 @@ def get_redis_client() -> redis.Redis:
         return _redis_client
 
 
-def close_redis_client():
+async def close_redis_client():
     """Close Redis connection gracefully (call on shutdown)"""
     global _redis_client
-    with _redis_lock:
+    async with _redis_lock:
         if _redis_client is not None:
             try:
-                _redis_client.close()
-                logger.info("Redis connection closed")
+                await _redis_client.close()
+                logger.info("Async Redis connection closed")
             except Exception as e:
                 logger.warning(f"Error closing Redis connection: {e}")
             finally:
@@ -141,9 +142,9 @@ def generate_cache_key(
     return f"{LLM_CACHE_KEY_PREFIX}{operation}:{hash_digest}"
 
 
-def get_cached_response(cache_key: str) -> Optional[Dict[str, Any]]:
+async def get_cached_response(cache_key: str) -> Optional[Dict[str, Any]]:
     """
-    Get cached LLM response from Redis.
+    Get cached LLM response from Redis (async).
 
     Returns:
         Cached response dict or None if cache miss
@@ -151,26 +152,33 @@ def get_cached_response(cache_key: str) -> Optional[Dict[str, Any]]:
     if not ENABLE_LLM_CACHE:
         return None
 
+    start_time = time.time()
+
     try:
-        client = get_redis_client()
-        data = client.get(cache_key)
+        client = await get_redis_client()
+        if client is None:
+            return None
+
+        data = await client.get(cache_key)
+        duration_ms = (time.time() - start_time) * 1000
 
         if not data:
-            logger.debug(f"Cache miss: {cache_key}")
+            logger.debug(f"Cache miss: {cache_key} ({duration_ms:.1f}ms)")
             return None
 
         response = json.loads(data)
-        logger.debug(f"Cache hit: {cache_key}")
+        logger.debug(f"Cache hit: {cache_key} ({duration_ms:.1f}ms)")
         return response
 
     except Exception as e:
-        logger.warning(f"Redis cache read error: {e}")
+        duration_ms = (time.time() - start_time) * 1000
+        logger.warning(f"Redis cache read error after {duration_ms:.1f}ms: {e}")
         return None
 
 
-def cache_response(cache_key: str, response: Dict[str, Any]) -> bool:
+async def cache_response(cache_key: str, response: Dict[str, Any]) -> bool:
     """
-    Cache LLM response in Redis.
+    Cache LLM response in Redis (async).
 
     Args:
         cache_key: Cache key from generate_cache_key()
@@ -182,32 +190,47 @@ def cache_response(cache_key: str, response: Dict[str, Any]) -> bool:
     if not ENABLE_LLM_CACHE:
         return False
 
-    try:
-        client = get_redis_client()
-        data = json.dumps(response)
-        client.setex(cache_key, LLM_CACHE_TTL, data)
+    start_time = time.time()
 
-        logger.debug(f"Cached response: {cache_key}")
+    try:
+        client = await get_redis_client()
+        if client is None:
+            return False
+
+        data = json.dumps(response)
+        await client.setex(cache_key, LLM_CACHE_TTL, data)
+        duration_ms = (time.time() - start_time) * 1000
+
+        logger.debug(f"Cached response: {cache_key} ({duration_ms:.1f}ms, {len(data)} bytes)")
         return True
 
     except Exception as e:
-        logger.warning(f"Redis cache write error: {e}")
+        duration_ms = (time.time() - start_time) * 1000
+        logger.warning(f"Redis cache write error after {duration_ms:.1f}ms: {e}")
         return False
 
 
-def get_cache_stats() -> Dict[str, Any]:
+async def get_cache_stats() -> Dict[str, Any]:
     """
-    Get cache statistics for monitoring.
+    Get cache statistics for monitoring (async).
 
     Returns:
         Dict with cache size, hit rate estimates, etc.
     """
     try:
-        client = get_redis_client()
+        client = await get_redis_client()
+        if client is None:
+            return {
+                "enabled": True,
+                "error": "Redis unavailable",
+                "cached_entries": 0
+            }
 
         # Count keys matching our prefix
         pattern = f"{LLM_CACHE_KEY_PREFIX}*"
-        keys = list(client.scan_iter(match=pattern, count=100))
+        keys = []
+        async for key in client.scan_iter(match=pattern, count=100):
+            keys.append(key)
 
         return {
             "enabled": True,
@@ -225,9 +248,9 @@ def get_cache_stats() -> Dict[str, Any]:
         }
 
 
-def clear_cache(pattern: Optional[str] = None) -> int:
+async def clear_cache(pattern: Optional[str] = None) -> int:
     """
-    Clear cache entries matching pattern.
+    Clear cache entries matching pattern (async).
 
     Args:
         pattern: Optional pattern to match keys (default: all LLM cache keys)
@@ -236,17 +259,21 @@ def clear_cache(pattern: Optional[str] = None) -> int:
         Number of keys deleted
     """
     try:
-        client = get_redis_client()
+        client = await get_redis_client()
+        if client is None:
+            return 0
 
         if pattern:
             full_pattern = f"{LLM_CACHE_KEY_PREFIX}{pattern}"
         else:
             full_pattern = f"{LLM_CACHE_KEY_PREFIX}*"
 
-        keys = list(client.scan_iter(match=full_pattern, count=1000))
+        keys = []
+        async for key in client.scan_iter(match=full_pattern, count=1000):
+            keys.append(key)
 
         if keys:
-            deleted = client.delete(*keys)
+            deleted = await client.delete(*keys)
             logger.info(f"Cleared {deleted} cache entries matching {full_pattern}")
             return deleted
 

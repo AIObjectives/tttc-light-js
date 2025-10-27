@@ -13,7 +13,8 @@ Tests cover:
 
 import json
 import hashlib
-from unittest.mock import Mock, patch, MagicMock
+import asyncio
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 # Import the module under test
 from llm_cache_redis import (
@@ -26,6 +27,28 @@ from llm_cache_redis import (
     LLM_CACHE_TTL,
     ENABLE_LLM_CACHE
 )
+
+
+def run_async(coro):
+    """Helper to run async functions in tests."""
+    return asyncio.run(coro)
+
+
+class AsyncIterator:
+    """Helper for mocking async iterators in tests."""
+    def __init__(self, items):
+        self.items = items
+        self.index = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.index >= len(self.items):
+            raise StopAsyncIteration
+        item = self.items[self.index]
+        self.index += 1
+        return item
 
 
 class TestCacheKeyGeneration:
@@ -132,11 +155,11 @@ class TestCacheOperations:
     @patch('llm_cache_redis.get_redis_client')
     def test_cache_miss(self, mock_get_client):
         """Test cache miss returns None."""
-        mock_redis = Mock()
+        mock_redis = AsyncMock()
         mock_redis.get.return_value = None
         mock_get_client.return_value = mock_redis
 
-        result = get_cached_response("test_key")
+        result = run_async(get_cached_response("test_key"))
 
         assert result is None, "Cache miss should return None"
         mock_redis.get.assert_called_once_with("test_key")
@@ -145,12 +168,12 @@ class TestCacheOperations:
     @patch('llm_cache_redis.get_redis_client')
     def test_cache_hit(self, mock_get_client):
         """Test cache hit returns cached data."""
-        mock_redis = Mock()
+        mock_redis = AsyncMock()
         cached_data = {"claims": {"claims": []}, "usage": {"total_tokens": 100}}
         mock_redis.get.return_value = json.dumps(cached_data)
         mock_get_client.return_value = mock_redis
 
-        result = get_cached_response("test_key")
+        result = run_async(get_cached_response("test_key"))
 
         assert result is not None, "Cache hit should return data"
         assert result["claims"] == cached_data["claims"]
@@ -160,11 +183,11 @@ class TestCacheOperations:
     @patch('llm_cache_redis.get_redis_client')
     def test_cache_write(self, mock_get_client):
         """Test cache write operation."""
-        mock_redis = Mock()
+        mock_redis = AsyncMock()
         mock_get_client.return_value = mock_redis
 
         response_data = {"claims": {"claims": []}, "usage": {"total_tokens": 100}}
-        success = cache_response("test_key", response_data)
+        success = run_async(cache_response("test_key", response_data))
 
         assert success is True, "Cache write should succeed"
         mock_redis.setex.assert_called_once()
@@ -177,18 +200,18 @@ class TestCacheOperations:
     def test_cache_disabled_returns_none(self, mock_get_client):
         """Test that disabled cache returns None gracefully."""
         with patch('llm_cache_redis.ENABLE_LLM_CACHE', False):
-            result = get_cached_response("test_key")
+            result = run_async(get_cached_response("test_key"))
             assert result is None, "Disabled cache should return None"
             print(f"✅ Disabled cache returns None")
 
     @patch('llm_cache_redis.get_redis_client')
     def test_redis_failure_graceful_degradation(self, mock_get_client):
         """Test graceful degradation when Redis fails."""
-        mock_redis = Mock()
+        mock_redis = AsyncMock()
         mock_redis.get.side_effect = Exception("Redis connection failed")
         mock_get_client.return_value = mock_redis
 
-        result = get_cached_response("test_key")
+        result = run_async(get_cached_response("test_key"))
 
         assert result is None, "Redis failure should return None gracefully"
         print(f"✅ Redis failure handled gracefully (cache miss)")
@@ -196,12 +219,12 @@ class TestCacheOperations:
     @patch('llm_cache_redis.get_redis_client')
     def test_cache_write_failure_graceful(self, mock_get_client):
         """Test graceful handling of cache write failures."""
-        mock_redis = Mock()
+        mock_redis = AsyncMock()
         mock_redis.setex.side_effect = Exception("Redis write failed")
         mock_get_client.return_value = mock_redis
 
         response_data = {"claims": {"claims": []}}
-        success = cache_response("test_key", response_data)
+        success = run_async(cache_response("test_key", response_data))
 
         assert success is False, "Failed cache write should return False"
         print(f"✅ Cache write failure handled gracefully")
@@ -213,15 +236,16 @@ class TestCacheStatistics:
     @patch('llm_cache_redis.get_redis_client')
     def test_get_cache_stats_success(self, mock_get_client):
         """Test getting cache statistics."""
-        mock_redis = Mock()
-        mock_redis.scan_iter.return_value = iter([
+        mock_redis = AsyncMock()
+        # scan_iter is not async itself, but returns an async iterator
+        mock_redis.scan_iter = Mock(return_value=AsyncIterator([
             "llm_cache:v1:claims:abc123",
             "llm_cache:v1:claims:def456",
             "llm_cache:v1:claims:ghi789"
-        ])
+        ]))
         mock_get_client.return_value = mock_redis
 
-        stats = get_cache_stats()
+        stats = run_async(get_cache_stats())
 
         assert stats["enabled"] is True
         assert stats["cached_entries"] == 3
@@ -231,11 +255,11 @@ class TestCacheStatistics:
     @patch('llm_cache_redis.get_redis_client')
     def test_get_cache_stats_redis_failure(self, mock_get_client):
         """Test cache stats when Redis is unavailable."""
-        mock_redis = Mock()
+        mock_redis = AsyncMock()
         mock_redis.scan_iter.side_effect = Exception("Redis unavailable")
         mock_get_client.return_value = mock_redis
 
-        stats = get_cache_stats()
+        stats = run_async(get_cache_stats())
 
         assert stats["enabled"] is True
         assert "error" in stats
@@ -249,15 +273,15 @@ class TestCacheClearing:
     @patch('llm_cache_redis.get_redis_client')
     def test_clear_all_cache(self, mock_get_client):
         """Test clearing all cache entries."""
-        mock_redis = Mock()
-        mock_redis.scan_iter.return_value = iter([
+        mock_redis = AsyncMock()
+        mock_redis.scan_iter = Mock(return_value=AsyncIterator([
             "llm_cache:v1:claims:abc123",
             "llm_cache:v1:claims:def456"
-        ])
+        ]))
         mock_redis.delete.return_value = 2
         mock_get_client.return_value = mock_redis
 
-        deleted = clear_cache()
+        deleted = run_async(clear_cache())
 
         assert deleted == 2, "Should report 2 entries deleted"
         mock_redis.delete.assert_called_once()
@@ -266,14 +290,14 @@ class TestCacheClearing:
     @patch('llm_cache_redis.get_redis_client')
     def test_clear_cache_by_pattern(self, mock_get_client):
         """Test clearing cache by pattern."""
-        mock_redis = Mock()
-        mock_redis.scan_iter.return_value = iter([
+        mock_redis = AsyncMock()
+        mock_redis.scan_iter = Mock(return_value=AsyncIterator([
             "llm_cache:v1:claims:abc123"
-        ])
+        ]))
         mock_redis.delete.return_value = 1
         mock_get_client.return_value = mock_redis
 
-        deleted = clear_cache(pattern="claims:*")
+        deleted = run_async(clear_cache(pattern="claims:*"))
 
         assert deleted == 1, "Should delete matching entries"
         mock_redis.scan_iter.assert_called_once()
@@ -282,11 +306,11 @@ class TestCacheClearing:
     @patch('llm_cache_redis.get_redis_client')
     def test_clear_empty_cache(self, mock_get_client):
         """Test clearing when cache is empty."""
-        mock_redis = Mock()
-        mock_redis.scan_iter.return_value = iter([])
+        mock_redis = AsyncMock()
+        mock_redis.scan_iter = Mock(return_value=AsyncIterator([]))
         mock_get_client.return_value = mock_redis
 
-        deleted = clear_cache()
+        deleted = run_async(clear_cache())
 
         assert deleted == 0, "Should report 0 entries deleted"
         print(f"✅ Clear empty cache returns 0")

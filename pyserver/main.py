@@ -320,13 +320,13 @@ def read_root():
 async def get_llm_cache_stats():
     """Get LLM cache statistics for monitoring and debugging"""
     from llm_cache_redis import get_cache_stats
-    return get_cache_stats()
+    return await get_cache_stats()
 
 @app.post("/cache/clear")
 async def clear_llm_cache(pattern: str = None):
     """Clear LLM cache entries (use with caution)"""
     from llm_cache_redis import clear_cache
-    deleted = clear_cache(pattern)
+    deleted = await clear_cache(pattern)
     return {
         "success": True,
         "deleted_entries": deleted,
@@ -351,7 +351,7 @@ async def processing_health_check():
         health_status = "memory_warning"
 
     # Get cache statistics
-    cache_stats = get_cache_stats()
+    cache_stats = await get_cache_stats()
 
     return {
         "status": "processing" if summary["active_requests"] > 0 else "idle",
@@ -636,7 +636,7 @@ def extract_usage_tokens(usage) -> tuple[int, int, int]:
     return 0, 0, 0
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None, interview: str = None) -> dict:
+async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None, interview: str = None) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
 
     Args:
@@ -687,7 +687,7 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
         temperature=0.0  # Include temperature in cache key for correctness
     )
 
-    cached_response = get_cached_response(cache_key)
+    cached_response = await get_cached_response(cache_key)
     if cached_response is not None:
         report_logger.debug(f"Cache hit for comment {comment_index}")
         # Return cached response with usage dict (already in dict format from cache)
@@ -819,7 +819,7 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
     result = {"claims": claims_obj, "usage": usage_dict, "cached": False}
 
     # Cache the successful response for future use
-    cache_response(cache_key, result)
+    await cache_response(cache_key, result)
 
     # Return with original usage object for immediate processing
     return {"claims": claims_obj, "usage": response.usage, "cached": False}
@@ -833,17 +833,14 @@ async def comment_to_claims_async(processing_context: dict, llm: dict, comment: 
             if API_RATE_LIMIT_DELAY > 0:
                 await asyncio.sleep(API_RATE_LIMIT_DELAY)
 
-            # Run the synchronous function in a thread pool to avoid blocking
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                comment_to_claims,
+            # Call the async function directly (no longer needs thread pool)
+            result = await comment_to_claims(
                 llm, comment, tree, api_key, comment_index, processing_context.get("report_id"), interview
             )
-            
+
             # Update progress stats
             processing_tracker.update_progress(processing_context["request_id"])
-            
+
             return result
         except Exception as e:
             # Still update progress on error to avoid appearing stalled
@@ -1162,10 +1159,11 @@ async def all_comments_to_claims_internal(
 
                     processed_count += 1
 
-                # Log progress periodically (every chunk)
+                # Log progress after each chunk with cache stats for visibility
                 current_memory = process.memory_info().rss / 1024 / 1024  # MB
                 progress_pct = (chunk_end / total_comments) * 100
-                report_logger.info(f"Progress: {chunk_end}/{total_comments} ({progress_pct:.1f}%) - Memory: {current_memory:.1f}MB (delta: {current_memory - start_memory:+.1f}MB)")
+                cache_hit_rate = (cache_hits / processed_count * 100) if processed_count > 0 else 0
+                report_logger.info(f"Progress: {chunk_end}/{total_comments} ({progress_pct:.1f}%) - Cache: {cache_hits}h/{cache_misses}m ({cache_hit_rate:.1f}% hit rate) - Memory: {current_memory:.1f}MB (delta: {current_memory - start_memory:+.1f}MB)")
 
             # Final logging
             end_memory = process.memory_info().rss / 1024 / 1024  # MB
@@ -1184,11 +1182,16 @@ async def all_comments_to_claims_internal(
             report_logger.info(f"Chunk processing completed - starting post-processing: {len(comms_to_claims)} claims, {processed_count} processed, {failed_count} failed, cache hits: {cache_hits}, cache misses: {cache_misses}, memory: {end_memory:.1f}MB")
         else:
             # Process comments sequentially (original behavior)
-            report_logger.info(f"Processing {len(meaningful_comments)} comments sequentially (concurrent processing disabled)")
+            total_comments = len(meaningful_comments)
+            report_logger.info(f"Processing {total_comments} comments sequentially (concurrent processing disabled)")
 
-            for i_c, comment in meaningful_comments:
+            for idx, (i_c, comment) in enumerate(meaningful_comments):
+                # Log progress every comment for better visibility
+                progress_pct = ((idx + 1) / total_comments) * 100
+                report_logger.info(f"Claims extraction progress: {idx + 1}/{total_comments} ({progress_pct:.1f}%) - processing comment {comment.id}")
+
                 try:
-                    response = comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=comment.id, report_id=x_report_id, interview=comment.speaker)
+                    response = await comment_to_claims(req.llm, comment.text, req.tree, x_openai_api_key, comment_index=comment.id, report_id=x_report_id, interview=comment.speaker)
                     processing_tracker.update_progress(request_id)
 
                     # Process response immediately instead of accumulating
