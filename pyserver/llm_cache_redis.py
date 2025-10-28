@@ -35,8 +35,8 @@ CACHE_SCHEMA_VERSION = "v1"  # Bump when ClaimsSchema structure changes
 ENABLE_LLM_CACHE = True  # Always enabled (gracefully degrades if Redis unavailable)
 
 # Redis connection configuration
-REDIS_MAX_CONNECTIONS = 50  # Based on Cloud Run max concurrent requests
-REDIS_SOCKET_TIMEOUT = 5.0  # Seconds
+REDIS_MAX_CONNECTIONS = 10  # Reduced to prevent connection pool saturation with async concurrency
+REDIS_SOCKET_TIMEOUT = 30.0  # Increased timeout for async operations under load
 CACHE_KEY_HASH_LENGTH = 16  # 64-bit keyspace (acceptable collision rate for 24h TTL)
 
 # Global async Redis client with async lock
