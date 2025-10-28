@@ -51,8 +51,8 @@ export async function claimsPipelineStep(
           method: "POST",
           body: JSON.stringify(input),
           headers,
-          // 40-minute timeout for large datasets (matches OPERATION_TIMEOUT)
-          signal: AbortSignal.timeout(2400000),
+          // 90-minute timeout for large datasets with cold cache (increased from 40min to allow ~2,500 comments @ 2sec/comment)
+          signal: AbortSignal.timeout(5400000),
         }),
       env.PYSERVER_URL, // Enable health checks for retry logic
     );

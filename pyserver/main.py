@@ -670,6 +670,11 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
         report_logger.error(f"Empty taxonomy in tree object")
         raise ValueError("Empty taxonomy - cannot create structured output schema")
 
+    # Log taxonomy sample for cache debugging (first topic only to avoid spam)
+    if taxonomy_list and comment_index == 0:
+        first_topic = taxonomy_list[0] if taxonomy_list else {}
+        report_logger.info(f"Taxonomy structure (first topic): {json.dumps(first_topic, sort_keys=True)[:200]}...")
+
     # Build taxonomy constraints that will be injected into system message
     taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
 
@@ -686,6 +691,9 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
         operation="claims",
         temperature=0.0  # Include temperature in cache key for correctness
     )
+
+    # Log cache key details for debugging cache misses
+    report_logger.info(f"Cache key generated: {cache_key} (comment_idx={comment_index}, taxonomy_topics={len(taxonomy_list)})")
 
     cached_response = await get_cached_response(cache_key)
     if cached_response is not None:

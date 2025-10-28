@@ -163,11 +163,11 @@ async def get_cached_response(cache_key: str) -> Optional[Dict[str, Any]]:
         duration_ms = (time.time() - start_time) * 1000
 
         if not data:
-            logger.debug(f"Cache miss: {cache_key} ({duration_ms:.1f}ms)")
+            logger.info(f"Cache miss: {cache_key} ({duration_ms:.1f}ms)")
             return None
 
         response = json.loads(data)
-        logger.debug(f"Cache hit: {cache_key} ({duration_ms:.1f}ms)")
+        logger.info(f"Cache hit: {cache_key} ({duration_ms:.1f}ms)")
         return response
 
     except Exception as e:
