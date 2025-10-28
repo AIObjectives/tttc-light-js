@@ -675,14 +675,16 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
     # Build taxonomy constraints that will be injected into system message
     taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
 
-    # For cache key: use base system prompt WITHOUT taxonomy descriptions
-    # This makes cache keys stable across runs where only descriptions vary
-    # The taxonomy structure (topic/subtopic names) is already in the normalized taxonomy
+    # CACHE KEY DESIGN:
+    # - Uses BASE system prompt (llm.system_prompt) WITHOUT taxonomy constraints
+    # - Taxonomy structure (topic/subtopic names) captured via normalized taxonomy list
+    # - This makes cache resilient to DESCRIPTION changes but correctly misses on STRUCTURE changes
+    # - Trade-off: Better cache hit rate vs. not capturing exact prompt in cache key
     cache_key = generate_cache_key(
         comment_text=sanitized_comment,
         taxonomy=taxonomy_list,  # Will be normalized inside generate_cache_key
         model_name=llm.model_name,
-        system_prompt=llm.system_prompt,  # Use base prompt without taxonomy constraints
+        system_prompt=llm.system_prompt,  # Base prompt WITHOUT taxonomy constraints (intentional)
         user_prompt_template=llm.user_prompt,
         operation="claims",
         temperature=0.0  # Include temperature in cache key for correctness
@@ -1067,6 +1069,13 @@ async def all_comments_to_claims_internal(
         taxonomy_json = json.dumps(taxonomy_list, sort_keys=True)
         taxonomy_hash = hashlib.sha256(taxonomy_json.encode()).hexdigest()[:16]
         report_logger.info(f"Taxonomy hash: {taxonomy_hash}, topics: {len(taxonomy_list)}, json_size: {len(taxonomy_json)} bytes")
+
+        # Log first topic structure for debugging taxonomy variations
+        if taxonomy_list:
+            first_topic = taxonomy_list[0]
+            first_topic_str = json.dumps(first_topic, sort_keys=True)[:200]
+            report_logger.info(f"First topic structure: {first_topic_str}...")
+            report_logger.info(f"First topic keys: {list(first_topic.keys())}")
 
     # Check if concurrent processing is enabled
     comment_count = len(req.comments)

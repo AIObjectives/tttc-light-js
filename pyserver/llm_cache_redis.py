@@ -22,7 +22,7 @@ import hashlib
 import os
 import time
 import asyncio
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 from redis import asyncio as aioredis
 import logging
 
@@ -97,7 +97,7 @@ async def close_redis_client():
                 _redis_client = None
 
 
-def normalize_taxonomy_for_cache(taxonomy: list) -> list:
+def normalize_taxonomy_for_cache(taxonomy: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Normalize taxonomy to only include stable fields for cache key generation.
 
@@ -116,17 +116,61 @@ def normalize_taxonomy_for_cache(taxonomy: list) -> list:
 
     Returns:
         Normalized taxonomy with only stable fields
+
+    Note:
+        This normalization makes cache keys resilient to description changes,
+        but if taxonomy STRUCTURE changes (different topics/subtopics),
+        the cache will correctly miss.
     """
+    if not taxonomy:
+        logger.warning("Empty taxonomy provided for normalization")
+        return []
+
+    if not isinstance(taxonomy, list):
+        logger.error(f"Taxonomy is not a list: {type(taxonomy)}")
+        return []
+
     normalized = []
-    for topic in taxonomy:
+    for i, topic in enumerate(taxonomy):
+        # Validate topic is a dict
+        if not isinstance(topic, dict):
+            logger.error(f"Topic {i} is not a dict: {type(topic)}, skipping")
+            continue
+
+        # Get topicName with validation
+        topic_name = topic.get("topicName", "")
+        if not topic_name:
+            logger.warning(f"Topic {i} has empty topicName, skipping")
+            continue
+
+        # Get subtopics with defensive handling
+        subtopics_raw = topic.get("subtopics")
+        if subtopics_raw is None:
+            subtopics_raw = []
+        elif not isinstance(subtopics_raw, list):
+            logger.warning(f"Topic '{topic_name}' has non-list subtopics: {type(subtopics_raw)}, treating as empty")
+            subtopics_raw = []
+
+        # Normalize subtopics
+        normalized_subtopics = []
+        for j, sub in enumerate(subtopics_raw):
+            if not isinstance(sub, dict):
+                logger.warning(f"Topic '{topic_name}' subtopic {j} is not a dict: {type(sub)}, skipping")
+                continue
+
+            subtopic_name = sub.get("subtopicName", "")
+            if not subtopic_name:
+                logger.warning(f"Topic '{topic_name}' subtopic {j} has empty subtopicName, skipping")
+                continue
+
+            normalized_subtopics.append({"subtopicName": subtopic_name})
+
         normalized_topic = {
-            "topicName": topic.get("topicName", ""),
-            "subtopics": [
-                {"subtopicName": sub.get("subtopicName", "")}
-                for sub in topic.get("subtopics", [])
-            ]
+            "topicName": topic_name,
+            "subtopics": normalized_subtopics
         }
         normalized.append(normalized_topic)
+
     return normalized
 
 
@@ -143,21 +187,30 @@ def generate_cache_key(
     """
     Generate a deterministic cache key for LLM API calls.
 
+    IMPORTANT CACHE KEY DESIGN:
+    - system_prompt parameter should be the BASE prompt WITHOUT taxonomy constraints
+    - This is intentional - we want cache hits even if taxonomy DESCRIPTIONS vary
+    - Taxonomy STRUCTURE (topic/subtopic names) is captured in normalized taxonomy
+    - If taxonomy structure changes (different topics/subtopics), cache correctly misses
+    - This design trades off prompt accuracy in cache key for better cache hit rates
+
     Args:
         comment_text: The comment being processed
-        taxonomy: The taxonomy tree (topics/subtopics)
+        taxonomy: The taxonomy tree (topics/subtopics) - will be normalized
         model_name: OpenAI model name (e.g., "gpt-4o-mini")
-        system_prompt: The complete system prompt (including taxonomy constraints)
+        system_prompt: The BASE system prompt (WITHOUT taxonomy constraints)
         user_prompt_template: The user prompt template (without variable content)
         operation: The operation type (claims, dedup, cruxes, etc.)
         schema_version: Schema version (invalidates cache when schema changes)
         temperature: LLM temperature parameter
 
     Returns:
-        Redis key string
+        Redis key string in format: llm_cache:v1:{operation}:{hash}
     """
     # Normalize taxonomy to only include stable fields (topicName, subtopicName)
     # Exclude LLM-generated descriptions that vary between runs
+    # This makes cache resilient to description changes while still invalidating
+    # when taxonomy structure (different topics/subtopics) changes
     normalized_taxonomy = normalize_taxonomy_for_cache(taxonomy)
 
     # Create deterministic representation of inputs
