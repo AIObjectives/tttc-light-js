@@ -18,7 +18,7 @@ spec:
         run.googleapis.com/vpc-access-egress: all-traffic
     spec:
       containerConcurrency: 1000
-      timeoutSeconds: 3600
+      timeoutSeconds: 10800 # 3 hours to match OPERATION_TIMEOUT for cold cache processing
       containers:
         - image: gcr.io/tttc-light-js/dev-pyserver:TAG
           ports:
