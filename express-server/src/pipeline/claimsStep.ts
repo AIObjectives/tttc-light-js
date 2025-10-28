@@ -8,7 +8,7 @@ const claimsLogger = logger.child({ module: "claims-step" });
 
 /**
  * Sends an http request to the pyserver for the claims step
- * Uses standard fetch with 40-minute timeout for large datasets
+ * Uses standard fetch with 3-hour timeout for large datasets with cold cache
  */
 export async function claimsPipelineStep(
   env: Env,
@@ -51,8 +51,8 @@ export async function claimsPipelineStep(
           method: "POST",
           body: JSON.stringify(input),
           headers,
-          // 90-minute timeout for large datasets with cold cache (increased from 40min to allow ~2,500 comments @ 2sec/comment)
-          signal: AbortSignal.timeout(5400000),
+          // 3-hour timeout for large datasets with cold cache (allows ~3,600 comments @ 3sec/comment)
+          signal: AbortSignal.timeout(10800000),
         }),
       env.PYSERVER_URL, // Enable health checks for retry logic
     );
@@ -115,8 +115,8 @@ export async function claimsPipelineStep(
         commentCount,
         payloadSizeMB: (payloadSize / 1024 / 1024).toFixed(2),
         url: env.PYSERVER_URL,
-        timeoutMs: 2400000,
-        wasTimeout: duration >= 2400000,
+        timeoutMs: 10800000,
+        wasTimeout: duration >= 10800000,
       },
       "Claims extraction failed - fetch to pyserver failed",
     );

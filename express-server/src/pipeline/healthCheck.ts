@@ -30,7 +30,7 @@ type PyserverHealth = z.infer<typeof PyserverHealthSchema>;
 
 /**
  * Health check timeout - Fast fail to detect unresponsive pyserver
- * 10 seconds vs 40-minute request timeout allows quick retry decisions
+ * 10 seconds vs 3-hour request timeout allows quick retry decisions
  */
 const HEALTH_CHECK_TIMEOUT = 10000;
 
@@ -39,7 +39,7 @@ const HEALTH_CHECK_TIMEOUT = 10000;
  * Detects when a request has been active for the full timeout window,
  * indicating it's stuck and will never complete even with retries
  */
-const HUNG_REQUEST_THRESHOLD = OPERATION_TIMEOUT; // 40 minutes
+const HUNG_REQUEST_THRESHOLD = OPERATION_TIMEOUT; // 3 hours
 
 /**
  * Memory usage threshold for bailing on retries
