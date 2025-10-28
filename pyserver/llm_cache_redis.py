@@ -97,6 +97,39 @@ async def close_redis_client():
                 _redis_client = None
 
 
+def normalize_taxonomy_for_cache(taxonomy: list) -> list:
+    """
+    Normalize taxonomy to only include stable fields for cache key generation.
+
+    Excludes LLM-generated descriptions and metadata that may vary between runs:
+    - topicShortDescription (LLM-generated, non-deterministic)
+    - subtopicShortDescription (LLM-generated, non-deterministic)
+    - topicId (random UUID added post-processing)
+    - claimsCount (metadata added post-processing)
+
+    Only includes stable identifiers:
+    - topicName (stable)
+    - subtopics.subtopicName (stable)
+
+    Args:
+        taxonomy: Full taxonomy list with all fields
+
+    Returns:
+        Normalized taxonomy with only stable fields
+    """
+    normalized = []
+    for topic in taxonomy:
+        normalized_topic = {
+            "topicName": topic.get("topicName", ""),
+            "subtopics": [
+                {"subtopicName": sub.get("subtopicName", "")}
+                for sub in topic.get("subtopics", [])
+            ]
+        }
+        normalized.append(normalized_topic)
+    return normalized
+
+
 def generate_cache_key(
     comment_text: str,
     taxonomy: Dict[str, Any],
@@ -123,10 +156,14 @@ def generate_cache_key(
     Returns:
         Redis key string
     """
+    # Normalize taxonomy to only include stable fields (topicName, subtopicName)
+    # Exclude LLM-generated descriptions that vary between runs
+    normalized_taxonomy = normalize_taxonomy_for_cache(taxonomy)
+
     # Create deterministic representation of inputs
     cache_input = {
         "comment": comment_text.strip(),
-        "taxonomy": json.dumps(taxonomy, sort_keys=True),
+        "taxonomy": json.dumps(normalized_taxonomy, sort_keys=True),
         "model": model_name,
         "system_prompt": system_prompt,
         "user_prompt_template": user_prompt_template,

@@ -13,6 +13,7 @@ Currently only supports OpenAI (Anthropic soon!!!)
 For local testing, load these from a config.py file
 """
 
+import hashlib
 import json
 from json import JSONDecodeError
 import logging
@@ -670,23 +671,18 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
         report_logger.error(f"Empty taxonomy in tree object")
         raise ValueError("Empty taxonomy - cannot create structured output schema")
 
-    # Log taxonomy sample for cache debugging (first topic only to avoid spam)
-    if taxonomy_list and comment_index == 0:
-        first_topic = taxonomy_list[0] if taxonomy_list else {}
-        report_logger.info(f"Taxonomy structure (first topic): {json.dumps(first_topic, sort_keys=True)[:200]}...")
 
     # Build taxonomy constraints that will be injected into system message
     taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
 
-    # Generate cache key from comment + ACTUAL prompts (including taxonomy constraints)
-    # IMPORTANT: System prompt in cache key must match what's actually sent to OpenAI
-    system_message_for_cache = llm.system_prompt + "\n\n" + taxonomy_constraints
-
+    # For cache key: use base system prompt WITHOUT taxonomy descriptions
+    # This makes cache keys stable across runs where only descriptions vary
+    # The taxonomy structure (topic/subtopic names) is already in the normalized taxonomy
     cache_key = generate_cache_key(
         comment_text=sanitized_comment,
-        taxonomy=taxonomy_list,
+        taxonomy=taxonomy_list,  # Will be normalized inside generate_cache_key
         model_name=llm.model_name,
-        system_prompt=system_message_for_cache,  # Use actual system message with taxonomy
+        system_prompt=llm.system_prompt,  # Use base prompt without taxonomy constraints
         user_prompt_template=llm.user_prompt,
         operation="claims",
         temperature=0.0  # Include temperature in cache key for correctness
@@ -714,7 +710,9 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
     # KEY OPTIMIZATION: Put static taxonomy in system message (cached prefix)
     # Put dynamic comment in user message (unique per call)
     # This allows OpenAI to cache the system message + taxonomy across all 2000 comments
-    # NOTE: system_message_for_cache already includes taxonomy constraints from above
+
+    # System message: includes base prompt + taxonomy constraints (WITH descriptions for quality)
+    system_message = llm.system_prompt + "\n\n" + taxonomy_constraints
 
     # User message: dynamic content that changes per comment
     user_message = llm.user_prompt + "\n\nComment:\n" + sanitized_comment
@@ -737,7 +735,7 @@ async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, c
     response = client.beta.chat.completions.parse(
         model=llm.model_name,
         messages=[
-            {"role": "system", "content": system_message_for_cache},
+            {"role": "system", "content": system_message},
             {"role": "user", "content": user_message},
         ],
         temperature=0.0,
@@ -1062,6 +1060,13 @@ async def all_comments_to_claims_internal(
 
     # Log processing start
     report_logger.info(f"Starting claims extraction for {len(req.comments)} comments")
+
+    # Log taxonomy hash for cache debugging (helps identify non-deterministic taxonomy)
+    if req.tree and req.tree.get("taxonomy"):
+        taxonomy_list = req.tree.get("taxonomy", [])
+        taxonomy_json = json.dumps(taxonomy_list, sort_keys=True)
+        taxonomy_hash = hashlib.sha256(taxonomy_json.encode()).hexdigest()[:16]
+        report_logger.info(f"Taxonomy hash: {taxonomy_hash}, topics: {len(taxonomy_list)}, json_size: {len(taxonomy_json)} bytes")
 
     # Check if concurrent processing is enabled
     comment_count = len(req.comments)
