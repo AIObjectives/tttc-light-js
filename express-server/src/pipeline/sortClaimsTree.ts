@@ -29,6 +29,8 @@ export async function sortClaimsTreePipelineStep(
         method: "PUT",
         body: JSON.stringify(input),
         headers,
+        // 1-hour timeout to match Cloud Run service limit
+        signal: AbortSignal.timeout(3600000),
       }),
     env.PYSERVER_URL,
   );

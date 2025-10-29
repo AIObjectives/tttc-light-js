@@ -31,9 +31,9 @@ export const TEST_RETRY_OPTIONS = {
 
 /**
  * Operation timeout configuration for retry logic
- * Increased to handle large datasets with cold cache (e.g., 2000+ comments)
+ * Set to 1 hour to match Cloud Run service maximum request timeout
  */
-export const OPERATION_TIMEOUT = 10800000; // 3 hours
+export const OPERATION_TIMEOUT = 3600000; // 1 hour (Cloud Run maximum)
 
 /**
  * Creates a retry logger with context
