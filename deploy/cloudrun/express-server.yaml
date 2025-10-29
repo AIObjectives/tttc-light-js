@@ -22,7 +22,7 @@ spec:
         run.googleapis.com/vpc-access-egress: all-traffic
     spec:
       containerConcurrency: 80
-      timeoutSeconds: 10800 # 3 hours to match OPERATION_TIMEOUT for cold cache processing
+      timeoutSeconds: 3600
       serviceAccountName: 384505539696-compute@developer.gserviceaccount.com
       containers:
         - name: dev-t3c-express-server
