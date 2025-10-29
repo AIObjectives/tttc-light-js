@@ -30,8 +30,9 @@ export const TEST_RETRY_OPTIONS = {
 
 /**
  * Operation timeout configuration for retry logic
+ * Set to 1 hour to match Cloud Run service maximum request timeout
  */
-export const OPERATION_TIMEOUT = 600000; // 10 minutes
+export const OPERATION_TIMEOUT = 3600000; // 1 hour (Cloud Run maximum)
 
 /**
  * Creates a retry logger with context

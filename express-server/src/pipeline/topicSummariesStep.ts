@@ -29,6 +29,8 @@ export async function topicSummariesPipelineStep(
         method: "POST",
         body: JSON.stringify(input),
         headers,
+        // 1-hour timeout to match Cloud Run service limit
+        signal: AbortSignal.timeout(3600000),
       }),
   );
 }

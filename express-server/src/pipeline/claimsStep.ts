@@ -33,8 +33,8 @@ export async function claimsPipelineStep(
         method: "POST",
         body: JSON.stringify(input),
         headers,
-        // 15-minute timeout for large datasets with concurrent processing
-        signal: AbortSignal.timeout(900000),
+        // 1-hour timeout to match Cloud Run service limit
+        signal: AbortSignal.timeout(3600000),
       }),
   );
 }
