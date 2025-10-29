@@ -4,18 +4,25 @@ You are familiar with public consultation tools like Pol.is and you understand t
 for working with very clear, concise claims that other people would be able to vote on.`;
 
 export const defaultClusteringPrompt = `I will give you a list of comments.
-I want you to propose a way to break down the information contained in these comments into topics and subtopics of interest. 
-Keep the topic and subtopic names very concise and use the short description to explain what the topic is about.
+I want you to propose a way to break down the information contained in these comments into topics and subtopics of interest.
+
+DESCRIPTION LENGTH REQUIREMENTS:
+- Topic names: Keep very concise (2-5 words)
+- Topic descriptions: MUST be 25-35 words. Provide a clear overview of what this topic covers.
+- Subtopic names: Keep concise (2-6 words)
+- Subtopic descriptions: MUST be 70-90 words. Provide detailed context about what perspectives and issues fall under this subtopic.
+
+IMPORTANT: The descriptions should be substantive and informative, not just brief summaries. Use the full word count to provide meaningful context that helps readers understand the scope and nuances of each topic and subtopic.
 
 Return a JSON object of the form {
   "taxonomy": [
     {
       "topicName": string,
-      "topicShortDescription": string (max 30 words),
+      "topicShortDescription": string, // 25-35 words
       "subtopics": [
         {
           "subtopicName": string,
-          "subtopicShortDescription": string (max 80 words),
+          "subtopicShortDescription": string, // 70-90 words
         },
         ...
       ]
@@ -138,21 +145,21 @@ Return a JSON object of the form {
 Now here are the claims to group:
 \${claims}`;
 
-export const defaultSummariesPrompt = `I'm going to give you a JSON object containing a list of topics with their descriptions, subtopics, and claims.
-For each topic I want you to generate a detailed summary of the subtopics and claims for that topic. The summary
-should not exceed 140 words.
+export const defaultSummariesPrompt = `
+I'm going to give you a single topic with its description, subtopics, and claims.
+
+Generate a detailed summary (100-140 words) that:
+- Synthesizes the key themes and patterns across all subtopics
+- Highlights the main claims and perspectives expressed
+- Captures the breadth of discussion on this topic
+- Is comprehensive yet concise
 
 Return a JSON object in the form {
-  "summaries": [
-    {
-      "topicName": string, // from the given list of topics
-      "summary": string // max 140 words
-    }
-  ]
+  "summary": string // 100-140 words
 }
 
-And now here are the topics:
-\${topics}
+Now here is the topic to summarize:
+\${topic}
 `;
 
 /**

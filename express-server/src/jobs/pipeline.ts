@@ -973,21 +973,126 @@ const makePyserverFuncs = (
 
   /**
    * Calls the topic summaries step on the pyserver
+   * Processes each topic individually to guarantee we get a summary for every topic
    */
-  const doTopicSummariesStep = async (tree: OutputProps) =>
-    await Pyserver.topicSummariesPipelineStep(
-      env,
-      {
-        tree,
-        llm: summariesLLMConfig,
-      },
-      userId,
-      reportId,
-    ).then((val) =>
-      mapResult(val, (reply) =>
-        PipelineOutputToProps.makeSummariesProps(reply),
-      ),
+
+  const doTopicSummariesStep = async (tree: OutputProps) => {
+    pipelineLogger.debug(
+      { numTopics: tree.length },
+      "Starting individual topic summaries",
     );
+
+    // Process each topic individually to guarantee we get all summaries
+    const summaryPromises = tree.map(async ([topicName, topicData]) => {
+      const singleTopicTree = [[topicName, topicData]] as OutputProps;
+
+      pipelineLogger.debug({ topicName }, "Processing summary for topic");
+
+      const result = await Pyserver.topicSummariesPipelineStep(
+        env,
+        {
+          tree: singleTopicTree,
+          llm: summariesLLMConfig,
+        },
+        userId,
+        reportId,
+      );
+
+      return mapResult(result, (reply) => ({
+        topicName,
+        summary: reply.data,
+        usage: reply.usage,
+        cost: reply.cost,
+      }));
+    });
+
+    // Wait for all summaries to complete
+    const results = await Promise.all(summaryPromises);
+
+    // Combine all results
+    const firstFailure = results.find((r) => r.tag === "failure");
+    if (firstFailure && firstFailure.tag === "failure") {
+      return firstFailure;
+    }
+
+    // All succeeded, combine into single response
+    const successResults = results as Array<
+      Result<
+        {
+          topicName: string;
+          summary: apiPyserver.TopicSummariesResponse["data"];
+          usage: apiPyserver.Usage;
+          cost: number;
+        },
+        never
+      >
+    >;
+
+    const combinedData = successResults.map((r) => {
+      const data = (r as { tag: "success"; value: any }).value;
+
+      // Log the structure to help debug
+      pipelineLogger.debug(
+        {
+          topicName: data.topicName,
+          summaryType: typeof data.summary,
+          summaryIsArray: Array.isArray(data.summary),
+          summaryValue: data.summary,
+        },
+        "Processing summary data structure",
+      );
+
+      // data.summary is an array from the API response: [{ topicName, summary }]
+      // Extract the summary string from the first element
+      let summaryText: string;
+      if (Array.isArray(data.summary) && data.summary.length > 0) {
+        summaryText = data.summary[0].summary;
+      } else if (typeof data.summary === "string") {
+        summaryText = data.summary;
+      } else {
+        pipelineLogger.error({ data }, "Unexpected summary structure");
+        summaryText = "";
+      }
+
+      return {
+        topicName: data.topicName,
+        summary: summaryText,
+      };
+    });
+
+    const combinedUsage = successResults.reduce(
+      (acc, r) => {
+        const val = (r as { tag: "success"; value: any }).value;
+        return {
+          prompt_tokens: acc.prompt_tokens + val.usage.prompt_tokens,
+          completion_tokens:
+            acc.completion_tokens + val.usage.completion_tokens,
+          total_tokens: acc.total_tokens + val.usage.total_tokens,
+        };
+      },
+      { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+    );
+
+    const combinedCost = successResults.reduce((acc, r) => {
+      const val = (r as { tag: "success"; value: any }).value;
+      return acc + val.cost;
+    }, 0);
+
+    pipelineLogger.info(
+      {
+        summariesGenerated: combinedData.length,
+        topicsProcessed: tree.length,
+      },
+      "Completed all topic summaries",
+    );
+
+    return success({
+      stepName: "Summaries Step",
+      data: combinedData,
+      usage: combinedUsage,
+      cost: combinedCost,
+    });
+  };
 
   return {
     doTopicTreeStep,
