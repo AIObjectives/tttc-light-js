@@ -22,11 +22,16 @@ export async function cruxesPipelineStep(
     headers[apiPyserver.USER_ID_HEADER] = userId;
   }
 
-  return await handlePipelineStep(apiPyserver.cruxesResponse, () =>
-    fetch(`${env.PYSERVER_URL}/cruxes`, {
-      method: "post",
-      body: JSON.stringify(input),
-      headers,
-    }),
+  return await handlePipelineStep(
+    apiPyserver.cruxesResponse,
+    () =>
+      fetch(`${env.PYSERVER_URL}/cruxes`, {
+        method: "post",
+        body: JSON.stringify(input),
+        headers,
+        // 1-hour timeout to match Cloud Run service limit
+        signal: AbortSignal.timeout(3600000),
+      }),
+    env.PYSERVER_URL,
   );
 }

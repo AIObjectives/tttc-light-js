@@ -13,7 +13,7 @@ import {
 } from "tttc-common/functional-utils";
 import { CustomError } from "../error";
 import * as Pyserver from "../pipeline/";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 import * as Firebase from "../Firebase";
 import { getAnalytics } from "tttc-common/analytics";
@@ -164,7 +164,10 @@ type PipelineComment = apiPyserver.PipelineComment;
 type PipelineErrors =
   | Pyserver.FetchError
   | Pyserver.InvalidResponseDataError
-  | Pyserver.TimeoutError;
+  | Pyserver.TimeoutError
+  | Pyserver.PyserverOOMError
+  | Pyserver.PyserverUnresponsiveError
+  | Pyserver.PyserverHungError;
 
 export async function pipelineJob(job: PipelineJob) {
   const { data, config, reportDetails } = job;
@@ -517,6 +520,10 @@ async function doPipelineSteps(job: PipelineJob) {
 
   // Get Redis connection for audit log
   // TODO: Improve dependency injection by adding redis to PipelineConfig
+  pipelineLogger.info(
+    { reportId, redisUrl: config.env.REDIS_URL },
+    "Creating Redis connection for audit log",
+  );
   const redis = new Redis(config.env.REDIS_URL, {
     connectionName: "Pipeline-AuditLog",
     maxRetriesPerRequest: 3,
@@ -530,18 +537,40 @@ async function doPipelineSteps(job: PipelineJob) {
     },
   });
 
+  // Log Redis connection events
+  redis.on("connect", () => {
+    pipelineLogger.info({ reportId }, "Redis connected");
+  });
+  redis.on("ready", () => {
+    pipelineLogger.info({ reportId }, "Redis ready");
+  });
+  redis.on("error", (error) => {
+    pipelineLogger.error({ reportId, error }, "Redis error");
+  });
+  redis.on("close", () => {
+    pipelineLogger.warn({ reportId }, "Redis connection closed");
+  });
+  redis.on("reconnecting", () => {
+    pipelineLogger.warn({ reportId }, "Redis reconnecting");
+  });
+
+  pipelineLogger.info(
+    { reportId, redisStatus: redis.status },
+    "Redis connection created",
+  );
+
   // Initialize audit log in Redis before pipeline starts
   const commentCount = data.length;
   if (reportId) {
     try {
       await initializeAuditLog(redis, reportId, commentCount);
       pipelineLogger.info(
-        { reportId, commentCount },
+        { reportId, commentCount, redisStatus: redis.status },
         "Initialized audit log in Redis",
       );
     } catch (error) {
       pipelineLogger.error(
-        { reportId, error },
+        { reportId, error, redisStatus: redis.status },
         "Failed to initialize audit log in Redis",
       );
     }
@@ -553,7 +582,7 @@ async function doPipelineSteps(job: PipelineJob) {
     doTopicTreeStep,
     doTopicSummariesStep,
     doAddons,
-  } = makePyserverFuncs(config, userId, reportId);
+  } = makePyserverFuncs(config, redis, userId, reportId);
 
   const pipelineComments: Result<
     PipelineComment[],
@@ -616,18 +645,43 @@ async function doPipelineSteps(job: PipelineJob) {
   );
 
   // do claims step
+  pipelineLogger.debug(
+    { reportId: config.firebaseDetails.reportId },
+    "About to call flatMapResultAsync for claims step",
+  );
   const claimsStep: PyserverResult<
     SortClaimsProps,
     PipelineErrors | MissingInterviewAttributionsError
   > = await flatMapResultAsync(topicTreeStep, (val) => doClaimsStep(val.data));
 
+  pipelineLogger.info(
+    {
+      reportId: config.firebaseDetails.reportId,
+      claimsStepTag: claimsStep.tag,
+      redisStatus: redis.status,
+    },
+    "Claims step flatMapResultAsync returned",
+  );
+
   // update job progress
-  pipelineLogger.info("Step 3: cleaning and sorting the taxonomy");
+  pipelineLogger.info(
+    { reportId: config.firebaseDetails.reportId },
+    "Step 3: cleaning and sorting the taxonomy",
+  );
+
+  pipelineLogger.debug(
+    { reportId: config.firebaseDetails.reportId },
+    "About to update pipeline status to sorting",
+  );
   // Update reportRef to keep status in sync with correct sub-state
   await updatePipelineStatus(
     config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
     "processing",
     "sorting",
+  );
+  pipelineLogger.debug(
+    { reportId: config.firebaseDetails.reportId },
+    "Pipeline status updated to sorting",
   );
 
   // do sort step
@@ -865,6 +919,7 @@ const PipelineOutputToProps = {
  */
 const makePyserverFuncs = (
   config: PipelineConfig,
+  redis: Redis,
   userId?: string,
   reportId?: string,
 ) => {
@@ -890,9 +945,80 @@ const makePyserverFuncs = (
 
   /**
    * Calls the topic tree step on the pyserver, and then reshapes the response to the next step's props
+   * Uses Redis cache to reuse taxonomy for identical comment sets (based on SHA256 hash)
    */
-  const doTopicTreeStep = async (comments: apiPyserver.PipelineComment[]) =>
-    await Pyserver.topicTreePipelineStep(
+  const doTopicTreeStep = async (comments: apiPyserver.PipelineComment[]) => {
+    // Generate cache key from comments content
+    // Use JSON.stringify to avoid edge cases with newlines or other separators
+    // This ensures deterministic serialization regardless of comment content
+    const commentsText = JSON.stringify(comments.map((c) => c.text));
+    const commentsHash = createHash("sha256")
+      .update(commentsText)
+      .digest("hex");
+    const cacheKey = `taxonomy:v1:${commentsHash}`;
+
+    pipelineLogger.info(
+      {
+        reportId,
+        cacheKey,
+        commentsHash: commentsHash.substring(0, 16),
+        commentCount: comments.length,
+        textLength: commentsText.length,
+      },
+      "Checking taxonomy cache",
+    );
+
+    try {
+      // Check cache first
+      const cachedTaxonomy = await redis.get(cacheKey);
+
+      if (cachedTaxonomy) {
+        pipelineLogger.info(
+          {
+            reportId,
+            cacheKey,
+            commentsHash: commentsHash.substring(0, 16),
+          },
+          "Taxonomy cache HIT - reusing cached taxonomy",
+        );
+
+        // Parse cached taxonomy and construct the expected response format
+        const taxonomy: apiPyserver.PartialTopic[] = JSON.parse(cachedTaxonomy);
+
+        // Return in the same format as the pyserver would return
+        const cachedResponse: apiPyserver.TopicTreeResponse = {
+          data: taxonomy,
+          usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+          cost: 0,
+        };
+
+        return success(
+          PipelineOutputToProps.makeClaimsProps(cachedResponse, comments),
+        );
+      }
+
+      pipelineLogger.info(
+        {
+          reportId,
+          cacheKey,
+          commentsHash: commentsHash.substring(0, 16),
+        },
+        "Taxonomy cache MISS - generating new taxonomy via LLM",
+      );
+    } catch (error) {
+      // Cache read failed - log but continue to LLM generation
+      pipelineLogger.warn(
+        {
+          reportId,
+          cacheKey,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "Failed to check taxonomy cache - continuing with LLM generation",
+      );
+    }
+
+    // Cache miss or error - call LLM to generate taxonomy
+    const result = await Pyserver.topicTreePipelineStep(
       env,
       {
         comments,
@@ -900,11 +1026,46 @@ const makePyserverFuncs = (
       },
       userId,
       reportId,
-    ).then((val) =>
-      mapResult(val, (arg) =>
-        PipelineOutputToProps.makeClaimsProps(arg, comments),
-      ),
     );
+
+    // Cache the result if successful
+    if (result.tag === "success") {
+      try {
+        const taxonomyToCache = result.value.data;
+        await redis.set(
+          cacheKey,
+          JSON.stringify(taxonomyToCache),
+          "EX",
+          7 * 24 * 60 * 60, // 7 days TTL
+        );
+
+        pipelineLogger.info(
+          {
+            reportId,
+            cacheKey,
+            commentsHash: commentsHash.substring(0, 16),
+            topicCount: taxonomyToCache.length,
+            ttlDays: 7,
+          },
+          "Cached taxonomy for future use",
+        );
+      } catch (error) {
+        // Cache write failed - log but don't fail the pipeline
+        pipelineLogger.warn(
+          {
+            reportId,
+            cacheKey,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "Failed to cache taxonomy - continuing without caching",
+        );
+      }
+    }
+
+    return mapResult(result, (arg) =>
+      PipelineOutputToProps.makeClaimsProps(arg, comments),
+    );
+  };
 
   /**
    * Calls the claims step on the pyserver, and then reshapes the response to the next step's props
