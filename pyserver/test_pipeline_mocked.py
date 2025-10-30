@@ -76,30 +76,7 @@ mock_openai_usage = {
 }
 
 mock_topic_summaries_response = {
-    "summaries": [
-        {
-            "topicName": "Pets",
-            "topicShortDescription": "General opinions about common household pets.",
-            "topicSummary": "People share positive feelings about cats and dogs, with some uncertainty about birds as pets.",
-            "subtopics": [
-                {
-                    "subtopicName": "Cats",
-                    "subtopicShortDescription": "Positive sentiments towards cats.",
-                    "topicSummary": "Cat lovers express strong affection for feline companions."
-                },
-                {
-                    "subtopicName": "Dogs",
-                    "subtopicShortDescription": "Positive sentiments towards dogs.",
-                    "topicSummary": "Dog enthusiasts praise canine loyalty and companionship."
-                },
-                {
-                    "subtopicName": "Birds",
-                    "subtopicShortDescription": "Uncertainty or mixed feelings about birds.",
-                    "topicSummary": "Mixed opinions on birds reflect uncertainty about avian pets."
-                }
-            ]
-        }
-    ]
+    "summary": "People share positive feelings about cats and dogs, with some uncertainty about birds as pets."
 }
 
 def create_mock_openai_response(content):
@@ -191,15 +168,27 @@ class TestPipelineEndpoints:
         mock_openai_class.return_value = mock_client
         mock_client.chat.completions.create.return_value = create_mock_openai_response(mock_topic_summaries_response)
 
-        # Test data
+        # Test data - tree should be in sorted claims tree format [[topicName, topicData], ...]
+        # Simulating a single topic for individual processing
         request_data = {
             "llm": {
                 "model_name": "gpt-4o-mini",
                 "system_prompt": config.SYSTEM_PROMPT,
                 "user_prompt": config.TOPIC_SUMMARY_PROMPT
             },
-            "tree": {"taxonomy": mock_topic_tree_response["taxonomy"]},
-            "claims": mock_claims_response
+            "tree": [
+                [
+                    "Pets",
+                    {
+                        "total": 5,
+                        "topics": [
+                            ["Cats", {"total": 2, "claims": []}],
+                            ["Dogs", {"total": 1, "claims": []}],
+                            ["Birds", {"total": 2, "claims": []}]
+                        ]
+                    }
+                ]
+            ]
         }
 
         # Make request
@@ -215,7 +204,12 @@ class TestPipelineEndpoints:
         assert "data" in response_json
         assert "usage" in response_json
         assert "cost" in response_json
-        assert response_json["data"] == mock_topic_summaries_response["summaries"]
+        # Verify response is an array with topicName and summary
+        assert isinstance(response_json["data"], list)
+        assert len(response_json["data"]) == 1
+        assert "topicName" in response_json["data"][0]
+        assert "summary" in response_json["data"][0]
+        assert response_json["data"][0]["summary"] == mock_topic_summaries_response["summary"]
 
     @patch('main.OpenAI')
     def test_full_pipeline_mocked(self, mock_openai_class):
@@ -265,7 +259,20 @@ class TestPipelineEndpoints:
         assert len(claims_data) > 0
 
         # Step 3: Topic Summaries
+        # In the real pipeline, this would receive sorted claims tree format from sort_claims_tree step
+        # Format: [[topicName, {topics: [[subtopic, {claims: [...]}], ...]}], ...]
         mock_client.chat.completions.create.return_value = create_mock_openai_response(mock_topic_summaries_response)
+
+        # Create a single-topic tree in the correct sorted claims format
+        sorted_tree = [
+            [
+                tree_data[0]["topicName"],  # Get first topic name
+                {
+                    "total": 3,
+                    "topics": []  # Simplified for test
+                }
+            ]
+        ]
 
         request_data = {
             "llm": {
@@ -273,8 +280,7 @@ class TestPipelineEndpoints:
                 "system_prompt": config.SYSTEM_PROMPT,
                 "user_prompt": config.TOPIC_SUMMARY_PROMPT
             },
-            "tree": {"taxonomy": tree_data},
-            "claims": claims_data
+            "tree": sorted_tree
         }
 
         response = client.post(
@@ -289,7 +295,8 @@ class TestPipelineEndpoints:
         # Verify topic summaries structure
         assert isinstance(summaries_data, list)
         assert len(summaries_data) > 0
-        assert "topicSummary" in summaries_data[0]
+        assert "topicName" in summaries_data[0]
+        assert "summary" in summaries_data[0]
 
     def test_endpoint_requires_api_key(self):
         """Test that endpoints require API key header"""
