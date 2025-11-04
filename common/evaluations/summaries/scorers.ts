@@ -1,45 +1,10 @@
 import * as weave from "weave";
+import type { OpenAI } from "openai";
 import { TopicSummary } from "../../apiPyserver";
+import { logger } from "../../logger/index.js";
+import { EVAL_MODEL } from "../constants";
 
-// Sample taxonomy and claims for summaries evaluation
-export const sampleTopicsData = [
-  {
-    topicName: "Pets",
-    topicShortDescription: "General attitudes and preferences about pets",
-    subtopics: [
-      {
-        subtopicName: "Cats",
-        subtopicShortDescription: "Opinions and experiences with cats as pets",
-        claims: [
-          { claimText: "Cats are independent and low-maintenance pets" },
-          { claimText: "Cats provide emotional support and companionship" },
-        ],
-      },
-      {
-        subtopicName: "Dogs",
-        subtopicShortDescription: "Opinions and experiences with dogs as pets",
-        claims: [
-          { claimText: "Dogs require significant time and attention" },
-          { claimText: "Dogs are loyal and protective companions" },
-        ],
-      },
-    ],
-  },
-];
-
-// Test cases for summaries evaluation
-export const summariesTestCases = [
-  {
-    topics: sampleTopicsData,
-    expectedSummaries: [
-      {
-        topicName: "Pets",
-        summary:
-          "Participants expressed diverse views on pet ownership. Regarding cats, people appreciated their independence and low-maintenance nature, while also valuing the emotional support they provide. Dog owners highlighted the significant time commitment required but emphasized the loyalty and protective nature of dogs as companions.",
-      },
-    ],
-  },
-];
+const evaluationLogger = logger.child({ module: "evaluations" });
 
 /**
  * Scorer that validates JSON structure of summaries output
@@ -236,10 +201,102 @@ export const summariesTopicCoverageScorer = weave.op(
 );
 
 /**
+ * Creates an LLM-as-a-judge scorer for evaluating summary quality
+ */
+export function createLLMJudgeScorer(openaiClient: OpenAI) {
+  return weave.op(async function llmSummariesJudgeScorer({
+    modelOutput,
+    datasetRow,
+  }: {
+    modelOutput: { summaries: Array<{ topicName: string; summary: string }> };
+    datasetRow: {
+      topics: Array<any>;
+    };
+  }) {
+    if (!modelOutput?.summaries) {
+      return {
+        llm_judge_score: 0,
+        error: "Missing summaries data",
+      };
+    }
+
+    const prompt = `You are evaluating the quality of an LLM in generating topic summaries from structured claims and subtopics.
+
+Input Topics with Claims:
+${JSON.stringify(datasetRow.topics, null, 2)}
+
+Generated Summaries:
+${JSON.stringify(modelOutput.summaries, null, 2)}
+
+Evaluate the quality of the generated summaries. Consider:
+1. Comprehensiveness: Do the summaries cover all key subtopics and important claims?
+2. Synthesis Quality: Are the summaries well-synthesized narratives or just lists of points?
+3. Accuracy: Do the summaries accurately represent the claims without adding information?
+4. Conciseness: Are the summaries concise while being comprehensive (ideally under 140 words)?
+
+Provide your evaluation as a JSON object with:
+- comprehensiveness_score: 0-1 score for how well all subtopics and claims are covered
+- synthesis_quality_score: 0-1 score for narrative quality and coherence
+- accuracy_score: 0-1 score for how accurately claims are represented
+- conciseness_score: 0-1 score for being concise while comprehensive
+- overall_score: 0-1 overall quality score
+- reasoning: brief explanation of the scores
+`;
+
+    try {
+      const response = await openaiClient.chat.completions.create({
+        model: EVAL_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert evaluator of summary quality. You understand how to assess whether summaries comprehensively and accurately synthesize source material.",
+          },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0].message.content;
+      if (!content) {
+        return {
+          llm_judge_score: 0,
+          error: "No response from LLM judge",
+        };
+      }
+
+      const evaluation = JSON.parse(content);
+      evaluationLogger.debug({ evaluation }, "LLM judge evaluation result");
+
+      return {
+        llm_judge_score: evaluation.overall_score || 0,
+        comprehensiveness_score: evaluation.comprehensiveness_score || 0,
+        synthesis_quality_score: evaluation.synthesis_quality_score || 0,
+        accuracy_score: evaluation.accuracy_score || 0,
+        conciseness_score: evaluation.conciseness_score || 0,
+        reasoning: evaluation.reasoning || "",
+      };
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return {
+          llm_judge_score: 0,
+          error: error.message,
+        };
+      } else {
+        return {
+          llm_judge_score: 0,
+          error: String(error),
+        };
+      }
+    }
+  });
+}
+
+/**
  * Creates a model function for summaries evaluation
  */
 export function createSummariesModel(
-  openaiClient: any,
+  openaiClient: OpenAI,
   hydratePromptLiterals: Function,
   defaultSummariesPrompt: string,
   systemPrompt: string,
@@ -248,11 +305,11 @@ export function createSummariesModel(
     const { topics } = input.datasetRow;
 
     const prompt = hydratePromptLiterals(defaultSummariesPrompt, {
-      topics: JSON.stringify(topics, null, 2),
+      topic: JSON.stringify(topics, null, 2),
     });
 
     const response = await openaiClient.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: EVAL_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
