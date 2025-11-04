@@ -178,6 +178,7 @@ const sortedSubtopic = z.object({
 
 const sortedTopic = z.tuple([z.string(), sortedSubtopic]);
 
+export type SortedTopic = z.infer<typeof sortedTopic>;
 //  ********************************
 //  * topic_tree
 //  ********************************/

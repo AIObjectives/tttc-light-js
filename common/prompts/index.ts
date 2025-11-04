@@ -155,6 +155,7 @@ Generate a detailed summary (100-140 words) that:
 - Is comprehensive yet concise
 
 Return a JSON object in the form {
+  "topicName": string, // The name of the topic being summarized
   "summary": string // 100-140 words
 }
 
@@ -192,7 +193,10 @@ return a JSON object of the form
     "no_clear_position" : list of strings // list of the given participants who mentioned the topic but took no clear stance
     "explanation" : string // reasoning for why you synthesized this cruxClaim from the participants' perspective
   }
-}`;
+}
+
+Now here is the topic and participant claims:
+\${topic}`;
 
 /**
  * Takes a prompt and data, and then inserts those values into the prompt.

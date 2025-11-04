@@ -1,272 +1,41 @@
-import { OpenAI } from "openai";
 import * as weave from "weave";
-import {
-  jsonStructureScorer,
-  topicCoverageScorer,
-  contentQualityScorer,
-  semanticSimilarityScorer,
-  createClusteringModel,
-  sampleComments,
-  sampleClusteringData,
-} from "./scorers/clustering-scorers.js";
-import {
-  extractionJsonStructureScorer,
-  claimQualityScorer,
-  taxonomyAlignmentScorer,
-  quoteRelevanceScorer,
-  extractionCompletenessScorer,
-  createExtractionModel,
-  extractionTestCases,
-} from "./scorers/extraction-scorers.js";
-import {
-  summariesJsonStructureScorer,
-  summaryLengthScorer,
-  summaryContentQualityScorer,
-  summariesTopicCoverageScorer,
-  createSummariesModel,
-  summariesTestCases,
-} from "./scorers/summaries-scorers.js";
-import {
-  deduplicationJsonStructureScorer,
-  claimCoverageScorer,
-  groupingQualityScorer,
-  consolidationScorer,
-  groupClaimQualityScorer,
-  createDeduplicationModel,
-  deduplicationTestCases,
-} from "./scorers/deduplication-scorers.js";
-import {
-  cruxJsonStructureScorer,
-  participantCoverageScorer,
-  cruxClaimQualityScorer,
-  controversyBalanceScorer,
-  explanationQualityScorer,
-  cruxAlignmentScorer,
-  createCruxModel,
-  cruxTestCases,
-} from "./scorers/crux-scorers.js";
-import {
-  defaultClusteringPrompt,
-  defaultExtractionPrompt,
-  defaultDedupPrompt,
-  defaultSummariesPrompt,
-  defaultCruxPrompt,
-  defaultSystemPrompt,
-  hydratePromptLiterals,
-} from "../prompts/index.js";
+import { runClusteringEvaluation } from "./clustering/model";
+import { runExtractionEvaluation } from "./extraction/model";
+import { runDeduplicationEvaluation } from "./deduplication/model";
+import { runSummariesEvaluation } from "./summaries/model";
+import { runCruxEvaluation } from "./crux/model";
+import { logger } from "../logger";
 
-// Clustering examples using imported sample data with expected taxonomy
-const clusteringExamples = [
-  {
-    id: "clustering-1",
-    comments: sampleComments,
-    expectedTaxonomy: sampleClusteringData.expectedOutput,
-  },
-];
+const evaluationLogger = logger.child({ module: "evaluations" });
 
-const openaiClient = weave.wrapOpenAI(new OpenAI());
-
-// Create clustering model with system prompt
-const clusteringModel = createClusteringModel(
-  openaiClient,
-  hydratePromptLiterals,
-  defaultClusteringPrompt,
-  defaultSystemPrompt,
-);
-
-// Create extraction model with system prompt
-const extractionModel = createExtractionModel(
-  openaiClient,
-  hydratePromptLiterals,
-  defaultExtractionPrompt,
-  defaultSystemPrompt,
-);
-
-// Create deduplication model with system prompt
-const deduplicationModel = createDeduplicationModel(
-  openaiClient,
-  hydratePromptLiterals,
-  defaultDedupPrompt,
-  defaultSystemPrompt,
-);
-
-// Create summaries model with system prompt
-const summariesModel = createSummariesModel(
-  openaiClient,
-  hydratePromptLiterals,
-  defaultSummariesPrompt,
-  defaultSystemPrompt,
-);
-
-// Create crux model with system prompt
-const cruxModel = createCruxModel(
-  openaiClient,
-  hydratePromptLiterals,
-  defaultCruxPrompt,
-  defaultSystemPrompt,
-);
-
-async function runClusteringEvaluation() {
-  const clusteringDataset = new weave.Dataset({
-    name: "T3C Clustering Dataset",
-    rows: clusteringExamples,
-  });
-
-  const clusteringEvaluation = new weave.Evaluation({
-    dataset: clusteringDataset,
-    scorers: [
-      jsonStructureScorer,
-      topicCoverageScorer,
-      contentQualityScorer,
-      semanticSimilarityScorer,
-    ],
-  });
-
-  console.log("Running T3C clustering evaluation...");
-  const clusteringResults = await clusteringEvaluation.evaluate({
-    model: clusteringModel,
-  });
-  console.log(
-    "Clustering Results:",
-    JSON.stringify(clusteringResults, null, 2),
-  );
-  return clusteringResults;
-}
-
-async function runExtractionEvaluation() {
-  const extractionDataset = new weave.Dataset({
-    name: "T3C Extraction Dataset",
-    rows: extractionTestCases,
-  });
-
-  const extractionEvaluation = new weave.Evaluation({
-    dataset: extractionDataset,
-    scorers: [
-      extractionJsonStructureScorer,
-      claimQualityScorer,
-      taxonomyAlignmentScorer,
-      quoteRelevanceScorer,
-      extractionCompletenessScorer,
-    ],
-  });
-
-  console.log("Running T3C extraction evaluation...");
-  const extractionResults = await extractionEvaluation.evaluate({
-    model: extractionModel,
-  });
-  console.log(
-    "Extraction Results:",
-    JSON.stringify(extractionResults, null, 2),
-  );
-  return extractionResults;
-}
-
-async function runDeduplicationEvaluation() {
-  const deduplicationDataset = new weave.Dataset({
-    name: "T3C Deduplication Dataset",
-    rows: deduplicationTestCases,
-  });
-
-  const deduplicationEvaluation = new weave.Evaluation({
-    dataset: deduplicationDataset,
-    scorers: [
-      deduplicationJsonStructureScorer,
-      claimCoverageScorer,
-      groupingQualityScorer,
-      consolidationScorer,
-      groupClaimQualityScorer,
-    ],
-  });
-
-  console.log("Running T3C deduplication evaluation...");
-  const deduplicationResults = await deduplicationEvaluation.evaluate({
-    model: deduplicationModel,
-  });
-  console.log(
-    "Deduplication Results:",
-    JSON.stringify(deduplicationResults, null, 2),
-  );
-  return deduplicationResults;
-}
-
-async function runSummariesEvaluation() {
-  const summariesDataset = new weave.Dataset({
-    name: "T3C Summaries Dataset",
-    rows: summariesTestCases,
-  });
-
-  const summariesEvaluation = new weave.Evaluation({
-    dataset: summariesDataset,
-    scorers: [
-      summariesJsonStructureScorer,
-      summaryLengthScorer,
-      summaryContentQualityScorer,
-      summariesTopicCoverageScorer,
-    ],
-  });
-
-  console.log("Running T3C summaries evaluation...");
-  const summariesResults = await summariesEvaluation.evaluate({
-    model: summariesModel,
-  });
-  console.log("Summaries Results:", JSON.stringify(summariesResults, null, 2));
-  return summariesResults;
-}
-
-async function runCruxEvaluation() {
-  const cruxDataset = new weave.Dataset({
-    name: "T3C Crux Dataset",
-    rows: cruxTestCases,
-  });
-
-  const cruxEvaluation = new weave.Evaluation({
-    dataset: cruxDataset,
-    scorers: [
-      cruxJsonStructureScorer,
-      participantCoverageScorer,
-      cruxClaimQualityScorer,
-      controversyBalanceScorer,
-      explanationQualityScorer,
-      cruxAlignmentScorer,
-    ],
-  });
-
-  console.log("Running T3C crux evaluation...");
-  const cruxResults = await cruxEvaluation.evaluate({
-    model: cruxModel,
-  });
-  console.log("Crux Results:", JSON.stringify(cruxResults, null, 2));
-  return cruxResults;
-}
-
-async function main() {
+async function main(): Promise<void> {
   await weave.init("t3c-pipeline-evaluation");
 
   const evaluationType = process.argv[2];
 
   switch (evaluationType) {
     case "clustering":
-      console.log("Running clustering evaluation...\n");
+      evaluationLogger.info("Running clustering evaluation...\n");
       await runClusteringEvaluation();
       break;
     case "extraction":
-      console.log("Running extraction evaluation...\n");
+      evaluationLogger.info("Running extraction evaluation...\n");
       await runExtractionEvaluation();
       break;
     case "deduplication":
-      console.log("Running deduplication evaluation...\n");
+      evaluationLogger.info("Running deduplication evaluation...\n");
       await runDeduplicationEvaluation();
       break;
     case "summaries":
-      console.log("Running summaries evaluation...\n");
+      evaluationLogger.info("Running summaries evaluation...\n");
       await runSummariesEvaluation();
       break;
     case "crux":
-      console.log("Running crux evaluation...\n");
+      evaluationLogger.info("Running crux evaluation...\n");
       await runCruxEvaluation();
       break;
     default:
-      console.log(
+      evaluationLogger.info(
         "Running full T3C pipeline evaluation (clustering + extraction + deduplication + summaries + crux)...\n",
       );
       await runClusteringEvaluation();

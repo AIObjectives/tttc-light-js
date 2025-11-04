@@ -1,12 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
+import type { OpenAI } from "openai";
 import {
   deduplicationJsonStructureScorer,
   claimCoverageScorer,
-  groupingQualityScorer,
   consolidationScorer,
   groupClaimQualityScorer,
-  deduplicationTestCases,
-} from "./deduplication-scorers.js";
+  createLLMJudgeScorer,
+} from "../scorers";
+import type {
+  DeduplicationModelOutput,
+  DeduplicationDatasetRow,
+} from "../types.js";
+import { deduplicationTestCases } from "../datasets";
+import { EVAL_MODEL } from "../../constants";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({
@@ -18,6 +24,11 @@ vi.mock("weave", () => ({
 }));
 
 describe("Deduplication Scorers", () => {
+  // dummyData is used to fill type requirements for the scorers, but is not used for any comparisons
+  const dummyData = {
+    id: "test-data-1",
+    claims: "this is a list of claims",
+  };
   describe("deduplicationJsonStructureScorer", () => {
     it("should return valid structure for correct groupedClaims format", () => {
       const validModelOutput = {
@@ -31,6 +42,7 @@ describe("Deduplication Scorers", () => {
 
       const result = deduplicationJsonStructureScorer({
         modelOutput: validModelOutput,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(true);
@@ -45,6 +57,7 @@ describe("Deduplication Scorers", () => {
 
       const result = deduplicationJsonStructureScorer({
         modelOutput: validModelOutput,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(true);
@@ -55,11 +68,12 @@ describe("Deduplication Scorers", () => {
       const invalidModelOutput = {};
 
       const result = deduplicationJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(false);
-      expect(result.error).toBe("Missing or invalid groupedClaims array");
+      expect(result.reason).toBe("Missing or invalid groupedClaims array");
     });
 
     it("should reject group with missing required fields", () => {
@@ -73,11 +87,12 @@ describe("Deduplication Scorers", () => {
       };
 
       const result = deduplicationJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(false);
-      expect(result.error).toBe(
+      expect(result.reason).toBe(
         "Invalid group structure - missing required fields",
       );
     });
@@ -94,10 +109,11 @@ describe("Deduplication Scorers", () => {
 
       const result = deduplicationJsonStructureScorer({
         modelOutput: invalidModelOutput,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(false);
-      expect(result.error).toBe("Empty claimText");
+      expect(result.reason).toBe("Empty claimText");
     });
 
     it("should reject empty originalClaimIds array", () => {
@@ -112,10 +128,11 @@ describe("Deduplication Scorers", () => {
 
       const result = deduplicationJsonStructureScorer({
         modelOutput: invalidModelOutput,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(false);
-      expect(result.error).toBe("Empty originalClaimIds array");
+      expect(result.reason).toBe("Empty originalClaimIds array");
     });
 
     it("should reject non-array originalClaimIds", () => {
@@ -129,17 +146,18 @@ describe("Deduplication Scorers", () => {
       };
 
       const result = deduplicationJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
+        datasetRow: { id: "test", claims: "" },
       });
 
       expect(result.valid_json_structure).toBe(false);
-      expect(result.error).toBe("originalClaimIds must be an array");
+      expect(result.reason).toBe("originalClaimIds must be an array");
     });
   });
 
   describe("claimCoverageScorer", () => {
     it("should score perfect coverage as 1.0", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Parking needs improvement",
@@ -152,12 +170,19 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const datasetRow = {
-        claims: [
-          { claimId: "claim1", claimText: "Parking is expensive" },
-          { claimId: "claim2", claimText: "Parking is confusing" },
-          { claimId: "claim3", claimText: "Need better transit" },
-        ],
+      const datasetRow: DeduplicationDatasetRow = {
+        id: "test-1",
+        claims: `ID: claim1
+Claim: Parking is expensive
+Quote: Too expensive
+
+ID: claim2
+Claim: Parking is confusing
+Quote: Hard to navigate
+
+ID: claim3
+Claim: Need better transit
+Quote: More buses needed`,
       };
 
       const result = claimCoverageScorer({ modelOutput, datasetRow });
@@ -168,7 +193,7 @@ describe("Deduplication Scorers", () => {
     });
 
     it("should detect missing claims", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Parking needs improvement",
@@ -177,11 +202,15 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const datasetRow = {
-        claims: [
-          { claimId: "claim1", claimText: "Parking is expensive" },
-          { claimId: "claim2", claimText: "Parking is confusing" },
-        ],
+      const datasetRow: DeduplicationDatasetRow = {
+        id: "test-2",
+        claims: `ID: claim1
+Claim: Parking is expensive
+Quote: Too expensive
+
+ID: claim2
+Claim: Parking is confusing
+Quote: Hard to navigate`,
       };
 
       const result = claimCoverageScorer({ modelOutput, datasetRow });
@@ -192,7 +221,7 @@ describe("Deduplication Scorers", () => {
     });
 
     it("should detect extra claims", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Parking needs improvement",
@@ -201,11 +230,15 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const datasetRow = {
-        claims: [
-          { claimId: "claim1", claimText: "Parking is expensive" },
-          { claimId: "claim2", claimText: "Parking is confusing" },
-        ],
+      const datasetRow: DeduplicationDatasetRow = {
+        id: "test-3",
+        claims: `ID: claim1
+Claim: Parking is expensive
+Quote: Too expensive
+
+ID: claim2
+Claim: Parking is confusing
+Quote: Hard to navigate`,
       };
 
       const result = claimCoverageScorer({ modelOutput, datasetRow });
@@ -216,7 +249,7 @@ describe("Deduplication Scorers", () => {
     });
 
     it("should handle missing input claims", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Some claim",
@@ -225,88 +258,19 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const result = claimCoverageScorer({ modelOutput, datasetRow: {} });
+      const result = claimCoverageScorer({
+        modelOutput,
+        datasetRow: { id: "test-4", claims: "" },
+      });
 
       expect(result.claim_coverage_score).toBe(0);
       expect(result.reason).toBe("No input claims provided");
     });
   });
 
-  describe("groupingQualityScorer", () => {
-    it("should score perfect grouping as 1.0", () => {
-      const modelOutput = {
-        groupedClaims: [
-          {
-            claimText: "Parking needs improvement",
-            originalClaimIds: ["claim1", "claim2"],
-          },
-        ],
-      };
-
-      const datasetRow = {
-        expectedGroups: [
-          {
-            claimText: "Expected parking claim",
-            originalClaimIds: ["claim1", "claim2"],
-          },
-        ],
-      };
-
-      const result = groupingQualityScorer({ modelOutput, datasetRow });
-
-      expect(result.grouping_quality_score).toBe(1);
-      expect(result.correct_groupings).toBe(1);
-    });
-
-    it("should detect incorrect groupings", () => {
-      const modelOutput = {
-        groupedClaims: [
-          {
-            claimText: "Parking expensive",
-            originalClaimIds: ["claim1"],
-          },
-          {
-            claimText: "Parking confusing",
-            originalClaimIds: ["claim2"],
-          },
-        ],
-      };
-
-      const datasetRow = {
-        expectedGroups: [
-          {
-            claimText: "Parking needs improvement",
-            originalClaimIds: ["claim1", "claim2"],
-          },
-        ],
-      };
-
-      const result = groupingQualityScorer({ modelOutput, datasetRow });
-
-      expect(result.grouping_quality_score).toBe(0);
-      expect(result.correct_groupings).toBe(0);
-    });
-
-    it("should handle missing expected groups", () => {
-      const modelOutput = {
-        groupedClaims: [
-          {
-            claimText: "Some claim",
-            originalClaimIds: ["claim1"],
-          },
-        ],
-      };
-
-      const result = groupingQualityScorer({ modelOutput, datasetRow: {} });
-
-      expect(result.grouping_quality_score).toBe(1);
-      expect(result.reason).toBe("No expected groups to compare against");
-    });
-  });
-
   describe("consolidationScorer", () => {
     it("should score appropriate consolidation as 1.0", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Parking needs improvement",
@@ -319,13 +283,23 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const datasetRow = {
-        claims: [
-          { claimId: "claim1" },
-          { claimId: "claim2" },
-          { claimId: "claim3" },
-          { claimId: "claim4" },
-        ],
+      const datasetRow: DeduplicationDatasetRow = {
+        id: "test-5",
+        claims: `ID: claim1
+Claim: Claim 1
+Quote: Quote 1
+
+ID: claim2
+Claim: Claim 2
+Quote: Quote 2
+
+ID: claim3
+Claim: Claim 3
+Quote: Quote 3
+
+ID: claim4
+Claim: Claim 4
+Quote: Quote 4`,
       };
 
       const result = consolidationScorer({ modelOutput, datasetRow });
@@ -335,7 +309,7 @@ describe("Deduplication Scorers", () => {
     });
 
     it("should detect over-consolidation", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Everything needs improvement",
@@ -350,14 +324,27 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const datasetRow = {
-        claims: [
-          { claimId: "claim1" },
-          { claimId: "claim2" },
-          { claimId: "claim3" },
-          { claimId: "claim4" },
-          { claimId: "claim5" },
-        ],
+      const datasetRow: DeduplicationDatasetRow = {
+        id: "test-6",
+        claims: `ID: claim1
+Claim: Claim 1
+Quote: Quote 1
+
+ID: claim2
+Claim: Claim 2
+Quote: Quote 2
+
+ID: claim3
+Claim: Claim 3
+Quote: Quote 3
+
+ID: claim4
+Claim: Claim 4
+Quote: Quote 4
+
+ID: claim5
+Claim: Claim 5
+Quote: Quote 5`,
       };
 
       const result = consolidationScorer({ modelOutput, datasetRow });
@@ -369,7 +356,7 @@ describe("Deduplication Scorers", () => {
     });
 
     it("should detect under-consolidation", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Claim 1",
@@ -390,13 +377,23 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const datasetRow = {
-        claims: [
-          { claimId: "claim1" },
-          { claimId: "claim2" },
-          { claimId: "claim3" },
-          { claimId: "claim4" },
-        ],
+      const datasetRow: DeduplicationDatasetRow = {
+        id: "test-7",
+        claims: `ID: claim1
+Claim: Claim 1
+Quote: Quote 1
+
+ID: claim2
+Claim: Claim 2
+Quote: Quote 2
+
+ID: claim3
+Claim: Claim 3
+Quote: Quote 3
+
+ID: claim4
+Claim: Claim 4
+Quote: Quote 4`,
       };
 
       const result = consolidationScorer({ modelOutput, datasetRow });
@@ -410,7 +407,7 @@ describe("Deduplication Scorers", () => {
 
   describe("groupClaimQualityScorer", () => {
     it("should score high-quality group claims as 1.0", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText:
@@ -420,14 +417,17 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = groupClaimQualityScorer({
+        modelOutput,
+        datasetRow: { id: "test", claims: "" },
+      });
 
       expect(result.group_claim_quality_score).toBe(1);
       expect(result.quality_issues).toEqual([]);
     });
 
     it("should detect platitudes", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Parking should be improved",
@@ -436,14 +436,17 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = groupClaimQualityScorer({
+        modelOutput,
+        datasetRow: { id: "test", claims: "" },
+      });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues[0]).toContain("Potential platitude");
+      expect(result.quality_issues![0]).toContain("Potential platitude");
     });
 
     it("should detect generic language", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Parking issues need to be addressed",
@@ -452,18 +455,21 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = groupClaimQualityScorer({
+        modelOutput,
+        datasetRow: dummyData,
+      });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
       expect(
-        result.quality_issues.some((issue) =>
+        result.quality_issues!.some((issue: string) =>
           issue.includes("Generic language"),
         ),
       ).toBe(true);
     });
 
     it("should detect claims that are too short", () => {
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: "Parking bad",
@@ -472,15 +478,18 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = groupClaimQualityScorer({
+        modelOutput,
+        datasetRow: dummyData,
+      });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues[0]).toContain("Claim too short");
+      expect(result.quality_issues![0]).toContain("Claim too short");
     });
 
     it("should detect claims that are too long", () => {
       const longClaim = "A".repeat(200);
-      const modelOutput = {
+      const modelOutput: DeduplicationModelOutput = {
         groupedClaims: [
           {
             claimText: longClaim,
@@ -489,10 +498,13 @@ describe("Deduplication Scorers", () => {
         ],
       };
 
-      const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = groupClaimQualityScorer({
+        modelOutput,
+        datasetRow: dummyData,
+      });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues[0]).toContain("Claim too long");
+      expect(result.quality_issues![0]).toContain("Claim too long");
     });
   });
 
@@ -504,22 +516,173 @@ describe("Deduplication Scorers", () => {
       for (const testCase of deduplicationTestCases) {
         expect(testCase).toHaveProperty("id");
         expect(testCase).toHaveProperty("claims");
-        expect(testCase).toHaveProperty("expectedGroups");
-        expect(Array.isArray(testCase.claims)).toBe(true);
-        expect(Array.isArray(testCase.expectedGroups)).toBe(true);
-
-        for (const claim of testCase.claims) {
-          expect(claim).toHaveProperty("claimId");
-          expect(claim).toHaveProperty("claimText");
-          expect(claim).toHaveProperty("quoteText");
-        }
-
-        for (const group of testCase.expectedGroups) {
-          expect(group).toHaveProperty("claimText");
-          expect(group).toHaveProperty("originalClaimIds");
-          expect(Array.isArray(group.originalClaimIds)).toBe(true);
-        }
+        expect(typeof testCase.claims).toBe("string");
       }
+    });
+  });
+
+  describe("createLLMJudgeScorer", () => {
+    it("should return 0 when groupedClaims data is missing", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn(),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {} as any,
+        datasetRow: {
+          id: "test",
+          claims: `ID: 1
+Claim: Test claim
+Quote: Test quote`,
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("Missing grouped claims data");
+      expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
+    });
+
+    it("should call OpenAI with correct prompt and return parsed evaluation", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                grouping_accuracy_score: 0.92,
+                separation_quality_score: 0.88,
+                consolidated_claim_quality_score: 0.95,
+                completeness_score: 0.91,
+                overall_score: 0.91,
+                reasoning:
+                  "Claims are well grouped with appropriate consolidation",
+              }),
+            },
+          },
+        ],
+      };
+
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const modelOutput: DeduplicationModelOutput = {
+        groupedClaims: [
+          {
+            claimText: "Parking access needs improvement",
+            originalClaimIds: ["1", "2"],
+          },
+        ],
+      };
+
+      const datasetRow: DeduplicationDatasetRow = {
+        id: "test",
+        claims: `ID: 1
+Claim: Parking fees are too expensive
+Quote: I can't afford parking
+
+ID: 2
+Claim: We need more parking spaces
+Quote: There's never enough parking`,
+      };
+
+      const result = await llmJudgeScorer({ modelOutput, datasetRow });
+
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
+        model: EVAL_MODEL,
+        messages: expect.arrayContaining([
+          expect.objectContaining({ role: "system" }),
+          expect.objectContaining({ role: "user" }),
+        ]),
+        response_format: { type: "json_object" },
+      });
+
+      expect(result.llm_judge_score).toBe(0.91);
+      expect(result.grouping_accuracy_score).toBe(0.92);
+      expect(result.separation_quality_score).toBe(0.88);
+      expect(result.consolidated_claim_quality_score).toBe(0.95);
+      expect(result.completeness_score).toBe(0.91);
+      expect(result.reasoning).toBe(
+        "Claims are well grouped with appropriate consolidation",
+      );
+    });
+
+    it("should handle OpenAI API errors gracefully", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi
+              .fn()
+              .mockRejectedValue(new Error("Service temporarily unavailable")),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          groupedClaims: [
+            {
+              claimText: "Test",
+              originalClaimIds: ["1"],
+            },
+          ],
+        },
+        datasetRow: dummyData,
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("Service temporarily unavailable");
+    });
+
+    it("should handle empty response content", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: null,
+            },
+          },
+        ],
+      };
+
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          groupedClaims: [
+            {
+              claimText: "Test",
+              originalClaimIds: ["1"],
+            },
+          ],
+        },
+        datasetRow: dummyData,
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("No response from LLM judge");
     });
   });
 });
