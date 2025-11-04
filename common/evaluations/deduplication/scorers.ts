@@ -1,137 +1,5 @@
 import * as weave from "weave";
 
-// Sample claims for deduplication evaluation
-export const sampleDeduplicationData = {
-  input: {
-    claims: [
-      {
-        claimId: "claim1",
-        claimText: "Parking fees are too expensive for downtown workers",
-        quoteText: "I can't afford to pay $20 a day for parking",
-      },
-      {
-        claimId: "claim2",
-        claimText: "The parking pass system is confusing and hard to navigate",
-        quoteText:
-          "I spent an hour trying to figure out how to buy a monthly pass",
-      },
-      {
-        claimId: "claim3",
-        claimText: "We need more parking spaces in the downtown area",
-        quoteText:
-          "I drive around for 30 minutes every morning looking for a spot",
-      },
-      {
-        claimId: "claim4",
-        claimText: "Public transit should be expanded to reduce car dependency",
-        quoteText:
-          "If we had better bus routes, people wouldn't need to drive downtown",
-      },
-    ],
-  },
-  expectedOutput: {
-    groupedClaims: [
-      {
-        claimText: "Parking access and affordability need improvement",
-        originalClaimIds: ["claim1", "claim2", "claim3"],
-      },
-      {
-        claimText: "Public transit should be expanded to reduce car dependency",
-        originalClaimIds: ["claim4"],
-      },
-    ],
-  },
-};
-
-// Test cases for deduplication evaluation
-export const deduplicationTestCases = [
-  {
-    id: "dedup-1",
-    claims: [
-      {
-        claimId: "claim1",
-        claimText: "Parking fees are too expensive for downtown workers",
-        quoteText: "I can't afford to pay $20 a day for parking",
-      },
-      {
-        claimId: "claim2",
-        claimText: "The parking pass system is confusing and hard to navigate",
-        quoteText:
-          "I spent an hour trying to figure out how to buy a monthly pass",
-      },
-      {
-        claimId: "claim3",
-        claimText: "We need more parking spaces in the downtown area",
-        quoteText:
-          "I drive around for 30 minutes every morning looking for a spot",
-      },
-    ],
-    expectedGroups: [
-      {
-        claimText: "Parking access and affordability need improvement",
-        originalClaimIds: ["claim1", "claim2", "claim3"],
-      },
-    ],
-  },
-  {
-    id: "dedup-2",
-    claims: [
-      {
-        claimId: "claim1",
-        claimText: "We should prioritize renewable energy investments",
-        quoteText: "Solar and wind power are the future",
-      },
-      {
-        claimId: "claim2",
-        claimText: "The city should ban single-use plastic bags",
-        quoteText: "Plastic bags are harming our environment",
-      },
-    ],
-    expectedGroups: [
-      {
-        claimText: "We should prioritize renewable energy investments",
-        originalClaimIds: ["claim1"],
-      },
-      {
-        claimText: "The city should ban single-use plastic bags",
-        originalClaimIds: ["claim2"],
-      },
-    ],
-  },
-  {
-    id: "dedup-3",
-    claims: [
-      {
-        claimId: "claim1",
-        claimText: "The library should have longer hours on weekends",
-        quoteText: "I work weekdays and can only visit on Saturday",
-      },
-      {
-        claimId: "claim2",
-        claimText: "Library hours should be extended in the evening",
-        quoteText: "The library closes too early for working parents",
-      },
-      {
-        claimId: "claim3",
-        claimText: "We need more library staff to help with research",
-        quoteText:
-          "There's never anyone available when I need help finding books",
-      },
-    ],
-    expectedGroups: [
-      {
-        claimText:
-          "Library hours should be extended to better serve working people",
-        originalClaimIds: ["claim1", "claim2"],
-      },
-      {
-        claimText: "We need more library staff to help with research",
-        originalClaimIds: ["claim3"],
-      },
-    ],
-  },
-];
-
 type GroupedClaim = {
   claimText: string;
   originalClaimIds: Array<string>;
@@ -451,6 +319,110 @@ export const groupClaimQualityScorer = weave.op(
     };
   },
 );
+
+/**
+ * Creates an LLM-as-a-judge scorer for evaluating deduplication quality
+ */
+export function createLLMJudgeScorer(openaiClient: any) {
+  return weave.op(async function llmDeduplicationJudgeScorer({
+    modelOutput,
+    datasetRow,
+  }: {
+    modelOutput: DeduplicationOutput;
+    datasetRow: {
+      claims: Array<{
+        claimId: string;
+        claimText: string;
+        quoteText: string;
+      }>;
+    };
+  }) {
+    if (!modelOutput?.groupedClaims) {
+      return {
+        llm_judge_score: 0,
+        reason: "Missing grouped claims data",
+      };
+    }
+
+    const inputClaimsString = datasetRow.claims
+      .map(
+        (claim) =>
+          `ID: ${claim.claimId}\nClaim: ${claim.claimText}\nQuote: ${claim.quoteText}`,
+      )
+      .join("\n\n");
+
+    const prompt = `You are evaluating the quality of an LLM in deduplicating and grouping similar claims together.
+
+Input Claims:
+${inputClaimsString}
+
+Grouped Output:
+${JSON.stringify(modelOutput.groupedClaims, null, 2)}
+
+Evaluate the quality of the deduplication and grouping. Consider:
+1. Grouping Accuracy: Are semantically similar claims correctly grouped together?
+2. Separation Quality: Are distinct/unrelated claims kept in separate groups?
+3. Consolidated Claim Quality: Are the group claim texts well-written, specific, and representative of the grouped claims?
+4. Completeness: Are all input claims properly accounted for in the output?
+
+Provide your evaluation as a JSON object with:
+- grouping_accuracy_score: 0-1 score for how well similar claims are grouped together
+- separation_quality_score: 0-1 score for keeping distinct claims separate
+- consolidated_claim_quality_score: 0-1 score for quality of the consolidated claim texts
+- completeness_score: 0-1 score for whether all claims are properly referenced
+- overall_score: 0-1 overall quality score
+- reasoning: brief explanation of the scores
+`;
+
+    try {
+      const response = await openaiClient.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert evaluator of claim deduplication and grouping quality. You understand semantic similarity and can identify when claims express the same underlying idea.",
+          },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0].message.content;
+      if (!content) {
+        return {
+          llm_judge_score: 0,
+          error: "No response from LLM judge",
+        };
+      }
+
+      const evaluation = JSON.parse(content);
+      console.log(evaluation);
+
+      return {
+        llm_judge_score: evaluation.overall_score || 0,
+        grouping_accuracy_score: evaluation.grouping_accuracy_score || 0,
+        separation_quality_score: evaluation.separation_quality_score || 0,
+        consolidated_claim_quality_score:
+          evaluation.consolidated_claim_quality_score || 0,
+        completeness_score: evaluation.completeness_score || 0,
+        reasoning: evaluation.reasoning || "",
+      };
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return {
+          llm_judge_score: 0,
+          error: error.message,
+        };
+      } else {
+        return {
+          llm_judge_score: 0,
+          error: String(error),
+        };
+      }
+    }
+  });
+}
 
 // Helper function to create a deduplication model
 export function createDeduplicationModel(
