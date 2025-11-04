@@ -177,7 +177,7 @@ describe("User Account Handling", () => {
         email,
         displayName,
         isValid: true,
-        isWaitlistApproved: false,
+        isWaitlistApproved: true, // TEMPORARY: Changed to true while waitlist is disabled
         roles: ["user"],
         createdAt: expect.any(Object), // FieldValue.serverTimestamp()
         lastLoginAt: expect.any(Object), // FieldValue.serverTimestamp()
@@ -320,7 +320,7 @@ describe("User Account Handling", () => {
         email: null,
         displayName: null,
         isValid: true,
-        isWaitlistApproved: false,
+        isWaitlistApproved: true, // TEMPORARY: Changed to true while waitlist is disabled
         roles: ["user"],
         createdAt: expect.any(Object),
         lastLoginAt: expect.any(Object),

@@ -26,6 +26,9 @@ import { useState, useEffect } from "react";
 const loginLogger = logger.child({ module: "login-button" });
 import { Col } from "@/components/layout";
 
+// TEMPORARY: Disable waitlist modal (revert on 2025-11-06)
+const SHOW_WAITLIST_MODAL = false;
+
 const getInitials = (name: string) =>
   name
     .split(" ")
@@ -113,28 +116,30 @@ export default function LoginButton() {
       {!user ? (
         <>
           <Button onClick={handleSignIn}>Sign in</Button>
-          <Dialog
-            open={showAccessLimitedModal}
-            onOpenChange={setShowAccessLimitedModal}
-          >
-            <DialogClose />
-            <DialogContent
-              className="gap-y-8"
-              overlayProps={{ className: "opacity-40" }}
+          {SHOW_WAITLIST_MODAL && (
+            <Dialog
+              open={showAccessLimitedModal}
+              onOpenChange={setShowAccessLimitedModal}
             >
-              <Col gap={2}>
-                <DialogTitle>Access is currently limited.</DialogTitle>
-                <DialogDescription>
-                  We'll let you know as soon as you can start using the tool.
-                </DialogDescription>
-              </Col>
-              <DialogFooter className="justify-self-start">
-                <DialogClose asChild>
-                  <Button variant={"secondary"}>Close</Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              <DialogClose />
+              <DialogContent
+                className="gap-y-8"
+                overlayProps={{ className: "opacity-40" }}
+              >
+                <Col gap={2}>
+                  <DialogTitle>Access is currently limited.</DialogTitle>
+                  <DialogDescription>
+                    We'll let you know as soon as you can start using the tool.
+                  </DialogDescription>
+                </Col>
+                <DialogFooter className="justify-self-start">
+                  <DialogClose asChild>
+                    <Button variant={"secondary"}>Close</Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </>
       ) : (
         <DropdownMenu>
