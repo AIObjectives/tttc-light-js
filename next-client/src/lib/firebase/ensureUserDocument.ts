@@ -6,6 +6,9 @@ import { APIError, isAPIError } from "../types/api";
 
 const ensureUserLogger = logger.child({ module: "ensure-user-client" });
 
+// TEMPORARY: Waitlist disabled (revert on 2025-11-06)
+const WAITLIST_ENABLED = false;
+
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_REQUEST_TIMEOUT = 408;
 const HTTP_TOO_MANY_REQUESTS = 429;
@@ -182,7 +185,7 @@ export async function ensureUserDocumentOnClient(
       "Checking waitlist status for user",
     );
 
-    if (!userDoc.isWaitlistApproved) {
+    if (WAITLIST_ENABLED && !userDoc.isWaitlistApproved) {
       ensureUserLogger.info("User is not waitlist approved, signing out");
       await signOut();
       return { tag: "waitlisted", uid: result.uid };
