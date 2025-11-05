@@ -31,9 +31,6 @@ const reportStatsSchema = z.object({
 
 const firebaseLogger = logger.child({ module: "firebase" });
 
-// TEMPORARY: Auto-approve all new users (revert on 2025-11-06)
-const AUTO_APPROVE_USERS = true;
-
 const env: Env = validateEnv();
 
 firebaseLogger.info("Environment validation successful, initializing Firebase");
@@ -664,7 +661,7 @@ export async function ensureUserDocument(
         email,
         displayName,
         isValid: true, // This user is allowed to login, set to false to ban/disable.
-        isWaitlistApproved: AUTO_APPROVE_USERS, // User is waiting to be approved on the waitlist.
+        isWaitlistApproved: false, // User is waiting to be approved on the waitlist.
         roles: ["user"],
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
