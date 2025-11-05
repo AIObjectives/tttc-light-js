@@ -136,9 +136,10 @@ const defaultRateLimiter = rateLimit({
 });
 
 // Rate limiter for report endpoints - allows for polling during report generation
+// High limit to support 25+ concurrent users from same IP (corporate networks/NAT)
 const reportRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 300, // Limit each IP to 300 report requests per windowMs (1 per second average)
+  max: 1000, // Limit each IP to 1000 requests per windowMs (~40 requests per user for 25 users)
   message: {
     error: {
       message: "Too many requests, please try again later.",
@@ -149,6 +150,24 @@ const reportRateLimiter = rateLimit({
     sendCommand: (command: string, ...args: string[]) =>
       redisConnection.call(command, ...args) as Promise<RedisReply>,
     prefix: `${rateLimitPrefix}-rate-limit-report`,
+  }),
+});
+
+// High rate limiter for lightweight auth endpoints
+// These share a separate bucket to prevent login issues
+const authRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 2000, // Very high limit - these are lightweight operations
+  message: {
+    error: {
+      message: "Too many requests, please try again later.",
+      code: "RateLimitExceeded",
+    },
+  },
+  store: new RedisStore({
+    sendCommand: (command: string, ...args: string[]) =>
+      redisConnection.call(command, ...args) as Promise<RedisReply>,
+    prefix: `${rateLimitPrefix}-rate-limit-auth`,
   }),
 });
 
@@ -163,25 +182,34 @@ const reportLimiter =
     ? reportRateLimiter
     : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
 
+const authLimiter =
+  process.env.NODE_ENV === "production"
+    ? authRateLimiter
+    : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
+
 /**
  * Creates report
+ * Uses reportLimiter (1000 req/5min) to handle multiple users from same IP
  */
-app.post("/create", rateLimiter, create);
+app.post("/create", reportLimiter, create);
 
 /**
  * Ensures user document exists in Firestore
+ * Uses authLimiter (2000 req/5min) - separate bucket from report operations
  */
-app.post("/ensure-user", rateLimiter, ensureUser);
+app.post("/ensure-user", authLimiter, ensureUser);
 
 /**
  * Submits user feedback
+ * Uses authLimiter (2000 req/5min) - separate bucket from report operations
  */
-app.post("/feedback", rateLimiter, feedback);
+app.post("/feedback", authLimiter, feedback);
 
 /**
  * Logs authentication events (signin/signout)
+ * Uses authLimiter (2000 req/5min) - separate bucket from report operations
  */
-app.post("/auth-events", rateLimiter, authEvents);
+app.post("/auth-events", authLimiter, authEvents);
 
 /**
  * Migrates legacy report URL to new ID-based URL
@@ -190,8 +218,9 @@ app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
 
 /**
  * Get the current user's capabilities and limits
+ * Uses authLimiter (2000 req/5min) - separate bucket from report operations
  */
-app.get("/api/user/limits", rateLimiter, getUserLimits);
+app.get("/api/user/limits", authLimiter, getUserLimits);
 
 /**
  * Unified report endpoint - handles both Firebase IDs and legacy bucket URLs
