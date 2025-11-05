@@ -268,6 +268,8 @@ export const cruxesResponse = z.object({
   cost: z.number(),
 });
 
+export type CruxesResponse = z.infer<typeof cruxesResponse>;
+
 export const cruxesRequest = z.object({
   topics: partialTopic.array(),
   crux_tree: claimsTree,

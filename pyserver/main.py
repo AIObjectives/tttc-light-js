@@ -1769,8 +1769,18 @@ def generate_topic_summaries(
         "completion_tokens": usage.completion_tokens,
     }
 
+    # Handle new single-topic format: { "summary": "..." }
+    # Convert to array format expected by the pipeline
+    summaries_data = []
+    if "summary" in summaries_result:
+        # Single topic format - extract topic name from tree data
+        topic_name = tree_data[0][0] if tree_data and len(tree_data) > 0 else "Unknown"
+        summaries_data = [{"topicName": topic_name, "summary": summaries_result["summary"]}]
+    else:
+        print("Step 4: unexpected response format, expected 'summary' key: ", summaries_result)
+
     response_data = {
-        "data": summaries_result.get("summaries", []),
+        "data": summaries_data,
         "usage": net_usage,
         "cost": s4_total_cost,
     }
