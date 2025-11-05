@@ -119,8 +119,54 @@ initializeAnalyticsClient(env);
 
 const rateLimitPrefix = env.RATE_LIMIT_PREFIX;
 
+// Rate limit monitoring logger
+const rateLimitLogger = logger.child({ module: "rate-limiter" });
+
+// Rate limit configuration constants
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const REPORT_LIMIT_MAX = 2000; // requests per window
+const AUTH_LIMIT_MAX = 5000; // requests per window
+
+// Helper function to create rate limit handler
+const createRateLimitHandler = (
+  limitType: "auth" | "report",
+  limit: number,
+  windowMs: number,
+) => {
+  return (req: RequestWithLogger, res: Response) => {
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    const endpoint = req.path;
+
+    const logFn =
+      limitType === "auth" ? rateLimitLogger.error : rateLimitLogger.warn;
+    const message =
+      limitType === "auth"
+        ? "Auth rate limit exceeded - critical path blocked"
+        : "Report rate limit exceeded";
+
+    logFn(
+      {
+        ip,
+        endpoint,
+        limitType,
+        limit,
+        window: `${windowMs / 60000}min`,
+      },
+      message,
+    );
+
+    res.status(429).json({
+      error: {
+        message: "Too many requests, please try again later.",
+        code: "RateLimitExceeded",
+        retryAfter: Math.ceil(windowMs / 1000),
+      },
+    });
+  };
+};
+
 const defaultRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: RATE_LIMIT_WINDOW_MS,
   max: 100, // Limit each IP to 100 requests per windowMs
   message: {
     error: {
@@ -135,11 +181,12 @@ const defaultRateLimiter = rateLimit({
   }),
 });
 
-// Rate limiter for report endpoints - allows for polling during report generation
-// High limit to support 25+ concurrent users from same IP (corporate networks/NAT)
+// Rate limiter for report endpoints
+// Supports report creation, retrieval, and polling during generation
+// Handles multiple concurrent users from same IP (corporate networks/NAT)
 const reportRateLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs (~40 requests per user for 25 users)
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: REPORT_LIMIT_MAX,
   message: {
     error: {
       message: "Too many requests, please try again later.",
@@ -151,13 +198,20 @@ const reportRateLimiter = rateLimit({
       redisConnection.call(command, ...args) as Promise<RedisReply>,
     prefix: `${rateLimitPrefix}-rate-limit-report`,
   }),
+  handler: createRateLimitHandler(
+    "report",
+    REPORT_LIMIT_MAX,
+    RATE_LIMIT_WINDOW_MS,
+  ),
 });
 
-// High rate limiter for lightweight auth endpoints
-// These share a separate bucket to prevent login issues
+// Rate limiter for auth endpoints
+// Critical path - must remain accessible for users to log in and use the app
+// Lightweight operations: Firestore writes, no LLM calls
+// High limit to handle multiple concurrent users from same IP
 const authRateLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 2000, // Very high limit - these are lightweight operations
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: AUTH_LIMIT_MAX,
   message: {
     error: {
       message: "Too many requests, please try again later.",
@@ -169,6 +223,7 @@ const authRateLimiter = rateLimit({
       redisConnection.call(command, ...args) as Promise<RedisReply>,
     prefix: `${rateLimitPrefix}-rate-limit-auth`,
   }),
+  handler: createRateLimitHandler("auth", AUTH_LIMIT_MAX, RATE_LIMIT_WINDOW_MS),
 });
 
 // Skip rate limiting in development
@@ -189,25 +244,25 @@ const authLimiter =
 
 /**
  * Creates report
- * Uses reportLimiter (1000 req/5min) to handle multiple users from same IP
+ * Uses reportLimiter (2000 req/15min per IP)
  */
 app.post("/create", reportLimiter, create);
 
 /**
  * Ensures user document exists in Firestore
- * Uses authLimiter (2000 req/5min) - separate bucket from report operations
+ * Uses authLimiter (5000 req/15min per IP) - critical path for user authentication
  */
 app.post("/ensure-user", authLimiter, ensureUser);
 
 /**
  * Submits user feedback
- * Uses authLimiter (2000 req/5min) - separate bucket from report operations
+ * Uses authLimiter (5000 req/15min per IP)
  */
 app.post("/feedback", authLimiter, feedback);
 
 /**
  * Logs authentication events (signin/signout)
- * Uses authLimiter (2000 req/5min) - separate bucket from report operations
+ * Uses authLimiter (5000 req/15min per IP)
  */
 app.post("/auth-events", authLimiter, authEvents);
 
@@ -218,7 +273,7 @@ app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
 
 /**
  * Get the current user's capabilities and limits
- * Uses authLimiter (2000 req/5min) - separate bucket from report operations
+ * Uses authLimiter (5000 req/15min per IP)
  */
 app.get("/api/user/limits", authLimiter, getUserLimits);
 
