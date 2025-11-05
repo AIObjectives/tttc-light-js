@@ -13,9 +13,6 @@ import {
 import LoginButton from "./components/LoginButton";
 import { Button } from "../elements";
 
-// TEMPORARY: Hide waitlist button (revert on 2025-11-06)
-const SHOW_WAITLIST_BUTTON = false;
-
 function Navbar() {
   return (
     <Row
@@ -40,16 +37,14 @@ function Navbar() {
 
         <About />
         <CreateReport />
-        {SHOW_WAITLIST_BUTTON && (
-          <Button variant={"secondary"} asChild>
-            <a
-              target="_blank"
-              href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
-            >
-              Join the waitlist
-            </a>
-          </Button>
-        )}
+        <Button variant={"secondary"} asChild>
+          <a
+            target="_blank"
+            href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
+          >
+            Join the waitlist
+          </a>
+        </Button>
         <LoginButton />
       </Row>
     </Row>
