@@ -864,6 +864,10 @@ async def all_comments_to_claims(
     else:
         report_logger.warning(f"No audit log found in Redis for report {x_report_id}")
 
+    # Track memory usage for performance monitoring
+    process = psutil.Process()
+    start_memory = process.memory_info().rss / 1024 / 1024  # MB
+
     comms_to_claims = []
     comms_to_claims_html = []
     TK_2_IN = 0
