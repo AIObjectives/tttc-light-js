@@ -132,7 +132,7 @@ class APICallTracker:
 api_tracker = APICallTracker()
 
 # Concurrency configuration for rate limiting
-MAX_CONCURRENCY = int(os.getenv("PYSERVER_MAX_CONCURRENCY", "6"))  # Default to 6 concurrent requests
+MAX_CONCURRENCY = int(os.getenv("PYSERVER_MAX_CONCURRENCY", "10"))  # Reduced to match Redis connection pool size
 ENABLE_CONCURRENT_PROCESSING = os.getenv("ENABLE_CONCURRENT_PROCESSING", "true").lower() == "true"  # Enabled by default
 concurrency_semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
