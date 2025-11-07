@@ -190,7 +190,7 @@ describe("checkPyserverHealth", () => {
   describe("Hung request detection", () => {
     it("should throw PyserverHungError when request exceeds threshold", async () => {
       const now = Date.now();
-      const requestStartTime = now - 2500000; // 41 minutes ago (exceeds 40min threshold)
+      const requestStartTime = now - 3700000; // 61.67 minutes ago (exceeds 1-hour threshold)
 
       const processingResponse = {
         status: "processing",
@@ -228,7 +228,7 @@ describe("checkPyserverHealth", () => {
           pyserverUrl: testPyserverUrl,
           requestStartTime,
         }),
-      ).rejects.toThrow(/1 active request.*stuck for.*2500s/);
+      ).rejects.toThrow(/1 active request.*stuck for.*3700s/);
     });
 
     it("should not throw PyserverHungError if no active requests", async () => {
@@ -269,7 +269,7 @@ describe("checkPyserverHealth", () => {
 
     it("should not throw PyserverHungError if request under threshold", async () => {
       const now = Date.now();
-      const requestStartTime = now - 1200000; // 20 minutes ago (under 40min threshold)
+      const requestStartTime = now - 1200000; // 20 minutes ago (under 1-hour threshold)
 
       const processingResponse = {
         status: "processing",
