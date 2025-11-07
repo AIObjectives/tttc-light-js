@@ -13,6 +13,7 @@ Currently only supports OpenAI (Anthropic soon!!!)
 For local testing, load these from a config.py file
 """
 
+import hashlib
 import json
 from json import JSONDecodeError
 import logging
@@ -32,6 +33,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Header, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from openai import OpenAI
 from pydantic import BaseModel
 from structured_schemas import create_claims_schema_from_taxonomy, create_taxonomy_prompt_with_constraints
@@ -45,6 +47,12 @@ import config
 from utils import cute_print, full_speaker_map, token_cost, topic_desc_map, comment_is_meaningful
 from simple_sanitizer import basic_sanitize, sanitize_prompt_length, sanitize_for_output
 from audit_logger import ProcessingAuditLogger, set_audit_logger, get_audit_logger, clear_audit_logger
+from llm_cache_redis import (
+    generate_cache_key,
+    get_cached_response,
+    cache_response,
+    get_cache_stats
+)
 
 load_dotenv()
 
@@ -309,23 +317,43 @@ def read_root():
     # TODO: setup/relevant defaults?
     return {"Hello": "World"}
 
+@app.get("/cache/stats")
+async def get_llm_cache_stats():
+    """Get LLM cache statistics for monitoring and debugging"""
+    from llm_cache_redis import get_cache_stats
+    return await get_cache_stats()
+
+@app.post("/cache/clear")
+async def clear_llm_cache(pattern: str = None):
+    """Clear LLM cache entries (use with caution)"""
+    from llm_cache_redis import clear_cache
+    deleted = await clear_cache(pattern)
+    return {
+        "success": True,
+        "deleted_entries": deleted,
+        "message": f"Cleared {deleted} cache entries"
+    }
+
 @app.get("/health/processing")
 async def processing_health_check():
-    """Health check endpoint to monitor concurrent processing progress"""
+    """Health check endpoint to monitor concurrent processing progress and cache performance"""
     summary = processing_tracker.get_summary()
-    
+
     # Get memory usage
     process = psutil.Process()
     memory_info = process.memory_info()
     memory_percent = process.memory_percent()
     memory_mb = round(memory_info.rss / 1024 / 1024, 1)
-    
+
     # Check memory limits (fail health check if > 80% memory or > 1.6GB)
     MAX_MEMORY_MB = 1600  # 1.6GB limit (80% of 2GB Cloud Run limit)
     health_status = "healthy"
     if memory_percent > 80 or memory_mb > MAX_MEMORY_MB:
         health_status = "memory_warning"
-    
+
+    # Get cache statistics
+    cache_stats = await get_cache_stats()
+
     return {
         "status": "processing" if summary["active_requests"] > 0 else "idle",
         "health": health_status,
@@ -341,7 +369,8 @@ async def processing_health_check():
             "memory_usage_mb": memory_mb,
             "memory_percent": round(memory_percent, 1),
             "memory_limit_mb": MAX_MEMORY_MB
-        }
+        },
+        "cache": cache_stats
     }
 
 ###################################
@@ -574,7 +603,7 @@ def comments_to_tree(
     return sanitize_for_output(response_data)
 
 
-def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None, interview: str = None) -> dict:
+async def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, report_id: str = None, interview: str = None) -> dict:
     """Given a comment and the full taxonomy/topic tree for the report, extract one or more claims from the comment.
 
     Args:
@@ -601,21 +630,60 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             audit_logger.log_sanitization_filter(comment_id, "Failed sanitization in comment_to_claims", text=comment)
         return {"claims": {"claims": []}, "usage": None}
 
-    # Create structured output schema from taxonomy
-    # This physically constrains the LLM to only generate valid topic/subtopic names
-    # TypeScript always sends: tree: { taxonomy: [...] }
+    # Get taxonomy before caching to ensure cache key includes actual prompts sent
     taxonomy_list = tree.get("taxonomy", [])
 
     if not taxonomy_list:
         report_logger.error(f"Empty taxonomy in tree object")
         raise ValueError("Empty taxonomy - cannot create structured output schema")
 
+
+    # Build taxonomy constraints that will be injected into system message
+    taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
+
+    # CACHE KEY DESIGN:
+    # - Uses BASE system prompt (llm.system_prompt) WITHOUT taxonomy constraints
+    # - Taxonomy structure (topic/subtopic names) captured via normalized taxonomy list
+    # - This makes cache resilient to DESCRIPTION changes but correctly misses on STRUCTURE changes
+    # - Trade-off: Better cache hit rate vs. not capturing exact prompt in cache key
+    cache_key = generate_cache_key(
+        comment_text=sanitized_comment,
+        taxonomy=taxonomy_list,  # Will be normalized inside generate_cache_key
+        model_name=llm.model_name,
+        system_prompt=llm.system_prompt,  # Base prompt WITHOUT taxonomy constraints (intentional)
+        user_prompt_template=llm.user_prompt,
+        operation="claims",
+        temperature=0.0  # Include temperature in cache key for correctness
+    )
+
+    # Log cache key details for debugging cache misses
+    report_logger.info(f"Cache key generated: {cache_key} (comment_idx={comment_index}, taxonomy_topics={len(taxonomy_list)})")
+
+    cached_response = await get_cached_response(cache_key)
+    if cached_response is not None:
+        report_logger.debug(f"Cache hit for comment {comment_index}")
+        # Return cached response with usage dict (already in dict format from cache)
+        # usage is stored as dict in cache for JSON serialization
+        return {
+            "claims": cached_response["claims"],
+            "usage": cached_response.get("usage"),  # Already a dict from cache
+            "cached": True
+        }
+
+    # Create structured output schema from taxonomy
+    # This physically constrains the LLM to only generate valid topic/subtopic names
     ClaimsSchema = create_claims_schema_from_taxonomy(taxonomy_list)
 
-    # Build prompt with explicit taxonomy constraints
-    # This is "belt and suspenders" with structured outputs
-    taxonomy_constraints = create_taxonomy_prompt_with_constraints(taxonomy_list)
-    full_prompt = llm.user_prompt + "\n\n" + taxonomy_constraints + "\n\nComment:\n" + sanitized_comment
+    # Build prompts optimized for OpenAI automatic caching
+    # KEY OPTIMIZATION: Put static taxonomy in system message (cached prefix)
+    # Put dynamic comment in user message (unique per call)
+    # This allows OpenAI to cache the system message + taxonomy across all 2000 comments
+
+    # System message: includes base prompt + taxonomy constraints (WITH descriptions for quality)
+    system_message = llm.system_prompt + "\n\n" + taxonomy_constraints
+
+    # User message: dynamic content that changes per comment
+    user_message = llm.user_prompt + "\n\nComment:\n" + sanitized_comment
 
     # Track API call
     api_tracker.track_call('comment_to_claims', {
@@ -629,11 +697,14 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
         report_logger.info(f"API Call #{api_tracker.total_calls}: comment_to_claims (comment {comment_index})")
 
     # Make the API call with structured outputs (required)
+    # Using optimized prompt structure for automatic caching:
+    # - System message contains static taxonomy (gets cached by OpenAI)
+    # - User message contains dynamic comment (unique per call)
     response = client.beta.chat.completions.parse(
         model=llm.model_name,
         messages=[
-            {"role": "system", "content": llm.system_prompt},
-            {"role": "user", "content": full_prompt},
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message},
         ],
         temperature=0.0,
         response_format=ClaimsSchema,
@@ -642,6 +713,15 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
     # Extract parsed object - model_dump(mode='json') properly serializes enums to strings
     parsed_claims = response.choices[0].message.parsed
     claims_list = [claim.model_dump(mode='json') for claim in parsed_claims.claims]
+
+    # Log OpenAI cache performance if available (for monitoring automatic caching)
+    if hasattr(response.usage, 'prompt_tokens_details') and response.usage.prompt_tokens_details:
+        cached_tokens = getattr(response.usage.prompt_tokens_details, 'cached_tokens', 0)
+        if cached_tokens > 0:
+            cache_percentage = (cached_tokens / response.usage.prompt_tokens * 100) if response.usage.prompt_tokens > 0 else 0
+            report_logger.debug(
+                f"OpenAI cache hit: {cached_tokens}/{response.usage.prompt_tokens} tokens cached ({cache_percentage:.1f}%)"
+            )
 
     # Log if no claims extracted (for debugging empty reports)
     audit_logger = get_audit_logger()
@@ -702,7 +782,21 @@ def comment_to_claims(llm: dict, comment: str, tree: dict, api_key: str, comment
             )
 
     claims_obj = {"claims": claims_list}
-    return {"claims": claims_obj, "usage": response.usage}
+
+    # Convert usage object to dict for JSON serialization
+    usage_dict = {
+        "prompt_tokens": response.usage.prompt_tokens,
+        "completion_tokens": response.usage.completion_tokens,
+        "total_tokens": response.usage.total_tokens
+    } if response.usage else None
+
+    result = {"claims": claims_obj, "usage": usage_dict, "cached": False}
+
+    # Cache the successful response for future use
+    await cache_response(cache_key, result)
+
+    # Return with original usage object for immediate processing
+    return {"claims": claims_obj, "usage": response.usage, "cached": False}
 
 
 async def comment_to_claims_async(processing_context: dict, llm: dict, comment: str, tree: dict, api_key: str, comment_index: int = -1, interview: str = None) -> dict:
@@ -713,17 +807,14 @@ async def comment_to_claims_async(processing_context: dict, llm: dict, comment: 
             if API_RATE_LIMIT_DELAY > 0:
                 await asyncio.sleep(API_RATE_LIMIT_DELAY)
 
-            # Run the synchronous function in a thread pool to avoid blocking
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                comment_to_claims,
+            # Call the async function directly (no longer needs thread pool)
+            result = await comment_to_claims(
                 llm, comment, tree, api_key, comment_index, processing_context.get("report_id"), interview
             )
-            
+
             # Update progress stats
             processing_tracker.update_progress(processing_context["request_id"])
-            
+
             return result
         except Exception as e:
             # Still update progress on error to avoid appearing stalled

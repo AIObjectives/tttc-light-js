@@ -13,7 +13,7 @@ import {
 } from "tttc-common/functional-utils";
 import { CustomError } from "../error";
 import * as Pyserver from "../pipeline/";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
 import * as Firebase from "../Firebase";
 import { getAnalytics } from "tttc-common/analytics";
@@ -579,7 +579,7 @@ async function doPipelineSteps(job: PipelineJob) {
     doTopicTreeStep,
     doTopicSummariesStep,
     doAddons,
-  } = makePyserverFuncs(config, userId, reportId);
+  } = makePyserverFuncs(config, redis, userId, reportId);
 
   const pipelineComments: Result<
     PipelineComment[],
@@ -916,6 +916,7 @@ const PipelineOutputToProps = {
  */
 const makePyserverFuncs = (
   config: PipelineConfig,
+  redis: Redis,
   userId?: string,
   reportId?: string,
 ) => {
@@ -941,9 +942,80 @@ const makePyserverFuncs = (
 
   /**
    * Calls the topic tree step on the pyserver, and then reshapes the response to the next step's props
+   * Uses Redis cache to reuse taxonomy for identical comment sets (based on SHA256 hash)
    */
-  const doTopicTreeStep = async (comments: apiPyserver.PipelineComment[]) =>
-    await Pyserver.topicTreePipelineStep(
+  const doTopicTreeStep = async (comments: apiPyserver.PipelineComment[]) => {
+    // Generate cache key from comments content
+    // Use JSON.stringify to avoid edge cases with newlines or other separators
+    // This ensures deterministic serialization regardless of comment content
+    const commentsText = JSON.stringify(comments.map((c) => c.text));
+    const commentsHash = createHash("sha256")
+      .update(commentsText)
+      .digest("hex");
+    const cacheKey = `taxonomy:v1:${commentsHash}`;
+
+    pipelineLogger.info(
+      {
+        reportId,
+        cacheKey,
+        commentsHash: commentsHash.substring(0, 16),
+        commentCount: comments.length,
+        textLength: commentsText.length,
+      },
+      "Checking taxonomy cache",
+    );
+
+    try {
+      // Check cache first
+      const cachedTaxonomy = await redis.get(cacheKey);
+
+      if (cachedTaxonomy) {
+        pipelineLogger.info(
+          {
+            reportId,
+            cacheKey,
+            commentsHash: commentsHash.substring(0, 16),
+          },
+          "Taxonomy cache HIT - reusing cached taxonomy",
+        );
+
+        // Parse cached taxonomy and construct the expected response format
+        const taxonomy: apiPyserver.PartialTopic[] = JSON.parse(cachedTaxonomy);
+
+        // Return in the same format as the pyserver would return
+        const cachedResponse: apiPyserver.TopicTreeResponse = {
+          data: taxonomy,
+          usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+          cost: 0,
+        };
+
+        return success(
+          PipelineOutputToProps.makeClaimsProps(cachedResponse, comments),
+        );
+      }
+
+      pipelineLogger.info(
+        {
+          reportId,
+          cacheKey,
+          commentsHash: commentsHash.substring(0, 16),
+        },
+        "Taxonomy cache MISS - generating new taxonomy via LLM",
+      );
+    } catch (error) {
+      // Cache read failed - log but continue to LLM generation
+      pipelineLogger.warn(
+        {
+          reportId,
+          cacheKey,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "Failed to check taxonomy cache - continuing with LLM generation",
+      );
+    }
+
+    // Cache miss or error - call LLM to generate taxonomy
+    const result = await Pyserver.topicTreePipelineStep(
       env,
       {
         comments,
@@ -951,11 +1023,46 @@ const makePyserverFuncs = (
       },
       userId,
       reportId,
-    ).then((val) =>
-      mapResult(val, (arg) =>
-        PipelineOutputToProps.makeClaimsProps(arg, comments),
-      ),
     );
+
+    // Cache the result if successful
+    if (result.tag === "success") {
+      try {
+        const taxonomyToCache = result.value.data;
+        await redis.set(
+          cacheKey,
+          JSON.stringify(taxonomyToCache),
+          "EX",
+          7 * 24 * 60 * 60, // 7 days TTL
+        );
+
+        pipelineLogger.info(
+          {
+            reportId,
+            cacheKey,
+            commentsHash: commentsHash.substring(0, 16),
+            topicCount: taxonomyToCache.length,
+            ttlDays: 7,
+          },
+          "Cached taxonomy for future use",
+        );
+      } catch (error) {
+        // Cache write failed - log but don't fail the pipeline
+        pipelineLogger.warn(
+          {
+            reportId,
+            cacheKey,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "Failed to cache taxonomy - continuing without caching",
+        );
+      }
+    }
+
+    return mapResult(result, (arg) =>
+      PipelineOutputToProps.makeClaimsProps(arg, comments),
+    );
+  };
 
   /**
    * Calls the claims step on the pyserver, and then reshapes the response to the next step's props
