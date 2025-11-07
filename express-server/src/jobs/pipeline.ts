@@ -164,7 +164,10 @@ type PipelineComment = apiPyserver.PipelineComment;
 type PipelineErrors =
   | Pyserver.FetchError
   | Pyserver.InvalidResponseDataError
-  | Pyserver.TimeoutError;
+  | Pyserver.TimeoutError
+  | Pyserver.PyserverOOMError
+  | Pyserver.PyserverUnresponsiveError
+  | Pyserver.PyserverHungError;
 
 export async function pipelineJob(job: PipelineJob) {
   const { data, config, reportDetails } = job;

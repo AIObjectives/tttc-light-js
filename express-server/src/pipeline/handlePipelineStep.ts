@@ -1,9 +1,16 @@
 import { z } from "zod";
 import { performance } from "perf_hooks";
 import { Result } from "tttc-common/functional-utils";
-import { FetchError, InvalidResponseDataError } from "./errors";
+import {
+  FetchError,
+  InvalidResponseDataError,
+  PyserverOOMError,
+  PyserverUnresponsiveError,
+  PyserverHungError,
+} from "./errors";
 import { withRetry } from "./retryConfig";
 import { logger } from "tttc-common/logger";
+import { checkPyserverHealth } from "./healthCheck";
 
 const pipelineStepLogger = logger.child({ module: "pipeline-step" });
 
@@ -15,8 +22,20 @@ const pipelineStepLogger = logger.child({ module: "pipeline-step" });
 export async function handlePipelineStep<T extends z.ZodTypeAny>(
   parser: T, // Zod parser
   call: () => Promise<Response>, // some fetch function.
-): Promise<Result<z.infer<T>, FetchError | InvalidResponseDataError>> {
+  pyserverUrl?: string, // Optional: if provided, health checks will be performed before retries
+): Promise<
+  Result<
+    z.infer<T>,
+    | FetchError
+    | InvalidResponseDataError
+    | PyserverOOMError
+    | PyserverUnresponsiveError
+    | PyserverHungError
+  >
+> {
   const stepStart = performance.now();
+  const requestStartTime = Date.now();
+
   try {
     pipelineStepLogger.debug("Starting pipeline step");
     const result = await withRetry(
@@ -75,11 +94,49 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
         return {
           tag: "success",
           value: schemaResult.data,
-        } as Result<z.infer<T>, FetchError | InvalidResponseDataError>;
+        } as Result<
+          z.infer<T>,
+          | FetchError
+          | InvalidResponseDataError
+          | PyserverOOMError
+          | PyserverUnresponsiveError
+          | PyserverHungError
+        >;
       },
       "Pipeline step",
-      // Don't retry schema validation errors
-      (error) => error instanceof InvalidResponseDataError,
+      // Don't retry schema validation errors or health-related errors
+      (error) =>
+        error instanceof InvalidResponseDataError ||
+        error instanceof PyserverOOMError ||
+        error instanceof PyserverUnresponsiveError ||
+        error instanceof PyserverHungError,
+      undefined, // Use default retry options
+      // Health check before retries (if pyserverUrl provided)
+      pyserverUrl
+        ? async (attemptNumber) => {
+            pipelineStepLogger.info(
+              { attemptNumber },
+              "Running health check before retry",
+            );
+            const health = await checkPyserverHealth({
+              pyserverUrl,
+              requestStartTime,
+            });
+            pipelineStepLogger.info(
+              {
+                attemptNumber,
+                health: {
+                  status: health.status,
+                  health: health.health,
+                  active_requests: health.active_requests,
+                  memory_percent: health.performance.memory_percent,
+                  memory_mb: health.performance.memory_usage_mb,
+                },
+              },
+              "Health check passed",
+            );
+          }
+        : undefined,
     );
 
     const totalDuration = Math.round(performance.now() - stepStart);
@@ -98,6 +155,17 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
     }
     // Handle FetchError directly
     if (error instanceof FetchError) {
+      return {
+        tag: "failure",
+        error: error,
+      };
+    }
+    // Handle health-related errors directly
+    if (
+      error instanceof PyserverOOMError ||
+      error instanceof PyserverUnresponsiveError ||
+      error instanceof PyserverHungError
+    ) {
       return {
         tag: "failure",
         error: error,

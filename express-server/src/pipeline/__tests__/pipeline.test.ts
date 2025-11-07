@@ -57,7 +57,7 @@ describe("handlePipelineStep", () => {
     expect(result.tag).toBe("failure");
 
     // Type narrowing
-    if (isFailure<any, FetchError | InvalidResponseDataError>(result)) {
+    if (isFailure(result)) {
       expect(result.error).toBeInstanceOf(FetchError);
     } else {
       expect.fail("Expected a failure result but got success");
@@ -78,7 +78,7 @@ describe("handlePipelineStep", () => {
     expect(result.tag).toBe("failure");
 
     // Type narrowing
-    if (isFailure<any, FetchError | InvalidResponseDataError>(result)) {
+    if (isFailure(result)) {
       expect(result.error).toBeInstanceOf(FetchError);
     } else {
       expect.fail("Expected a failure result but got success");
@@ -102,7 +102,7 @@ describe("handlePipelineStep", () => {
     expect(result.tag).toBe("failure");
 
     // Type narrowing
-    if (isFailure<any, InvalidResponseDataError | FetchError>(result)) {
+    if (isFailure(result)) {
       expect(result.error).toBeInstanceOf(InvalidResponseDataError);
       // Optionally check the validation error details if exposed
       // expect(result.error.validationError).toBeDefined();
