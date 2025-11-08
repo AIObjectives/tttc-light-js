@@ -3,8 +3,8 @@ import {
   PyserverOOMError,
   PyserverUnresponsiveError,
   PyserverHungError,
-} from "./errors.js";
-import { OPERATION_TIMEOUT } from "./retryConfig.js";
+} from "./errors";
+import { OPERATION_TIMEOUT } from "./retryConfig";
 
 // Pyserver health check response schema
 const PyserverHealthSchema = z.object({
@@ -23,16 +23,26 @@ const PyserverHealthSchema = z.object({
     memory_percent: z.number(),
     memory_limit_mb: z.number(),
   }),
-  cache: z.any(), // Cache stats structure varies
+  cache: z.object({
+    enabled: z.boolean(),
+    note: z.string().optional(),
+  }),
 });
 
 type PyserverHealth = z.infer<typeof PyserverHealthSchema>;
 
 /**
- * Health check timeout - Fast fail to detect unresponsive pyserver
- * 10 seconds vs 40-minute request timeout allows quick retry decisions
+ * Health check timeout - Accounts for thread pool exhaustion
+ *
+ * Pyserver uses synchronous endpoints that run in a 40-thread pool.
+ * Under load, the event loop can be starved even though the health
+ * check itself is fast. 60s provides generous buffer for scheduling
+ * while still being much faster than the 40-minute operation timeout.
+ *
+ * This will be replaced when pyserver is rewritten in TypeScript with
+ * proper async/worker architecture.
  */
-const HEALTH_CHECK_TIMEOUT = 10000;
+const HEALTH_CHECK_TIMEOUT = 60000;
 
 /**
  * Hung request detection threshold - Matches the operation timeout
