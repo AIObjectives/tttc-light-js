@@ -75,6 +75,37 @@ def get_report_logger(user_id: str = None, report_id: str = None):
         return logger.getChild(".".join(context_parts))
     return logger
 
+def extract_token_usage(usage) -> tuple[int, int, int]:
+    """
+    Extract prompt, completion, and total tokens from usage object or dict.
+
+    Handles both dict format (from cache) and object format (from OpenAI API).
+    Returns (0, 0, 0) if usage is None or missing required fields.
+
+    Args:
+        usage: Either a dict with token counts or an OpenAI usage object
+
+    Returns:
+        Tuple of (prompt_tokens, completion_tokens, total_tokens)
+    """
+    if usage is None:
+        return (0, 0, 0)
+
+    if isinstance(usage, dict):
+        # Dict format from cache - use .get() with defaults for safety
+        return (
+            usage.get("prompt_tokens", 0),
+            usage.get("completion_tokens", 0),
+            usage.get("total_tokens", 0)
+        )
+
+    # Object format from OpenAI - use getattr with defaults
+    return (
+        getattr(usage, "prompt_tokens", 0),
+        getattr(usage, "completion_tokens", 0),
+        getattr(usage, "total_tokens", 0)
+    )
+
 # Global API call tracker with thread safety
 class APICallTracker:
     def __init__(self):
@@ -266,12 +297,31 @@ app.add_middleware(
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    
+
     # Add HSTS header in production
     if os.getenv('NODE_ENV') == 'production':
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
-    
+
     return response
+
+@app.on_event("startup")
+async def configure_thread_pool():
+    """
+    Increase thread pool to reduce event loop starvation under load.
+
+    Pyserver uses synchronous endpoints (def) that block threads in the
+    default 40-thread pool. Under load, this can starve the event loop
+    and prevent even async endpoints (like health checks) from responding.
+
+    Increasing to 100 threads provides more headroom for concurrent reports
+    while still maintaining reasonable memory usage (~1-2MB per thread).
+
+    This will be removed when pyserver is rewritten in TypeScript.
+    """
+    import anyio
+    limiter = anyio.to_thread.current_default_thread_limiter()
+    limiter.total_tokens = 100  # Up from default 40
+    logger.info(f"Thread pool configured: {limiter.total_tokens} workers")
 
 class Comment(BaseModel):
     id: str
@@ -336,10 +386,16 @@ async def clear_llm_cache(pattern: str = None):
 
 @app.get("/health/processing")
 async def processing_health_check():
-    """Health check endpoint to monitor concurrent processing progress and cache performance"""
+    """
+    Fast health check endpoint for retry logic validation.
+
+    Optimized to respond in <1 second even under heavy load by avoiding
+    any Redis calls or expensive operations. Express retry logic polls
+    this frequently and needs fast responses to make retry decisions.
+    """
     summary = processing_tracker.get_summary()
 
-    # Get memory usage
+    # Get memory usage (fast - just reads /proc)
     process = psutil.Process()
     memory_info = process.memory_info()
     memory_percent = process.memory_percent()
@@ -351,8 +407,9 @@ async def processing_health_check():
     if memory_percent > 80 or memory_mb > MAX_MEMORY_MB:
         health_status = "memory_warning"
 
-    # Get cache statistics
-    cache_stats = await get_cache_stats()
+    # Omit cache stats from health check - they're not needed for retry decisions
+    # and calling Redis here adds 5-10 seconds under load, causing health check timeouts
+    # Cache stats are still available via GET /cache/stats if needed for monitoring
 
     return {
         "status": "processing" if summary["active_requests"] > 0 else "idle",
@@ -370,7 +427,10 @@ async def processing_health_check():
             "memory_percent": round(memory_percent, 1),
             "memory_limit_mb": MAX_MEMORY_MB
         },
-        "cache": cache_stats
+        "cache": {
+            "enabled": True,
+            "note": "Cache stats omitted from health check for performance. See GET /cache/stats"
+        }
     }
 
 ###################################
@@ -1046,13 +1106,14 @@ async def all_comments_to_claims(
                     if claims and len(claims["claims"]) > 0:
                         comms_to_claims.extend([c for c in claims["claims"]])
 
-                    # Handle cases where usage is None (e.g., when content is rejected by sanitization)
-                    if usage is not None:
-                        TK_2_IN += usage.prompt_tokens
-                        TK_2_OUT += usage.completion_tokens
-                        TK_2_TOT += usage.total_tokens
+                    # Extract token usage with defensive handling (supports both dict and object formats)
+                    prompt_tokens, completion_tokens, total_tokens = extract_token_usage(usage)
+                    if prompt_tokens > 0:
+                        TK_2_IN += prompt_tokens
+                        TK_2_OUT += completion_tokens
+                        TK_2_TOT += total_tokens
                     else:
-                        print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
+                        print(f"Warning: No usage data available for comment {comment.id}")
 
                     # format for logging to W&B
                     if log_to_wandb and claims:
@@ -1100,13 +1161,14 @@ async def all_comments_to_claims(
                     if claims and len(claims["claims"]) > 0:
                         comms_to_claims.extend([c for c in claims["claims"]])
 
-                    # Handle cases where usage is None (e.g., when content is rejected by sanitization)
-                    if usage is not None:
-                        TK_2_IN += usage.prompt_tokens
-                        TK_2_OUT += usage.completion_tokens
-                        TK_2_TOT += usage.total_tokens
+                    # Extract token usage with defensive handling (supports both dict and object formats)
+                    prompt_tokens, completion_tokens, total_tokens = extract_token_usage(usage)
+                    if prompt_tokens > 0:
+                        TK_2_IN += prompt_tokens
+                        TK_2_OUT += completion_tokens
+                        TK_2_TOT += total_tokens
                     else:
-                        print(f"Warning: Sanitization rejected content for comment {comment.id}, usage data unavailable")
+                        print(f"Warning: No usage data available for comment {comment.id}")
 
                     # format for logging to W&B
                     if log_to_wandb and claims:

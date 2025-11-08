@@ -306,6 +306,11 @@ async def get_cache_stats() -> Dict[str, Any]:
 
     Returns:
         Dict with cache size, hit rate estimates, etc.
+
+    Note:
+        Uses DBSIZE instead of SCAN for performance. This returns the total
+        number of keys in the database, not just LLM cache keys, but it's
+        much faster and doesn't block Redis under load.
     """
     try:
         client = await get_redis_client()
@@ -313,20 +318,19 @@ async def get_cache_stats() -> Dict[str, Any]:
             return {
                 "enabled": True,
                 "error": "Redis unavailable",
-                "cached_entries": 0
+                "total_redis_keys": 0
             }
 
-        # Count keys matching our prefix
-        pattern = f"{LLM_CACHE_KEY_PREFIX}*"
-        keys = []
-        async for key in client.scan_iter(match=pattern, count=100):
-            keys.append(key)
+        # Use DBSIZE instead of SCAN for performance
+        # This is O(1) and won't block Redis under load
+        # Note: Returns total keys in DB, not just cache keys
+        total_keys = await client.dbsize()
 
         return {
             "enabled": True,
             "ttl_hours": LLM_CACHE_TTL / 3600,
-            "cached_entries": len(keys),
-            "key_prefix": LLM_CACHE_KEY_PREFIX
+            "total_redis_keys": total_keys,
+            "note": "total_redis_keys includes all Redis keys, not just LLM cache"
         }
 
     except Exception as e:
@@ -334,7 +338,7 @@ async def get_cache_stats() -> Dict[str, Any]:
         return {
             "enabled": True,
             "error": "Redis unavailable",
-            "cached_entries": 0
+            "total_redis_keys": 0
         }
 
 

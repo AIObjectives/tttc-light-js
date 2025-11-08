@@ -237,33 +237,29 @@ class TestCacheStatistics:
     def test_get_cache_stats_success(self, mock_get_client):
         """Test getting cache statistics."""
         mock_redis = AsyncMock()
-        # scan_iter is not async itself, but returns an async iterator
-        mock_redis.scan_iter = Mock(return_value=AsyncIterator([
-            "llm_cache:v1:claims:abc123",
-            "llm_cache:v1:claims:def456",
-            "llm_cache:v1:claims:ghi789"
-        ]))
+        # dbsize returns total number of keys in database
+        mock_redis.dbsize = AsyncMock(return_value=3)
         mock_get_client.return_value = mock_redis
 
         stats = run_async(get_cache_stats())
 
         assert stats["enabled"] is True
-        assert stats["cached_entries"] == 3
+        assert stats["total_redis_keys"] == 3
         assert stats["ttl_hours"] == 24
-        print(f"✅ Cache stats returned correctly: {stats['cached_entries']} entries")
+        print(f"✅ Cache stats returned correctly: {stats['total_redis_keys']} total Redis keys")
 
     @patch('llm_cache_redis.get_redis_client')
     def test_get_cache_stats_redis_failure(self, mock_get_client):
         """Test cache stats when Redis is unavailable."""
         mock_redis = AsyncMock()
-        mock_redis.scan_iter.side_effect = Exception("Redis unavailable")
+        mock_redis.dbsize.side_effect = Exception("Redis unavailable")
         mock_get_client.return_value = mock_redis
 
         stats = run_async(get_cache_stats())
 
         assert stats["enabled"] is True
         assert "error" in stats
-        assert stats["cached_entries"] == 0
+        assert stats["total_redis_keys"] == 0
         print(f"✅ Cache stats handle Redis failure: {stats}")
 
 

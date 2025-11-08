@@ -35,7 +35,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 50,
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -73,7 +73,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 75,
           memory_limit_mb: 1600,
         },
-        cache: { hit_rate: 0.85 },
+        cache: { enabled: true, note: "Cache stats omitted" },
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -105,7 +105,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 85, // Above pyserver warning (80%) but below bail threshold (90%)
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -139,7 +139,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 95,
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValue({
@@ -173,7 +173,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 90,
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -208,7 +208,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 50,
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValue({
@@ -251,7 +251,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 30,
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -287,7 +287,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 55,
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -332,7 +332,7 @@ describe("checkPyserverHealth", () => {
 
       await expect(
         checkPyserverHealth({ pyserverUrl: testPyserverUrl }),
-      ).rejects.toThrow(/Health check timed out after 10000ms/);
+      ).rejects.toThrow(/Health check timed out after 60000ms/);
     });
 
     it("should throw PyserverUnresponsiveError on network error", async () => {
@@ -396,7 +396,7 @@ describe("checkPyserverHealth", () => {
           memory_percent: 50,
           memory_limit_mb: 1600,
         },
-        cache: {},
+        cache: { enabled: true },
       };
 
       mockFetch.mockResolvedValueOnce({
