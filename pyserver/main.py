@@ -2253,17 +2253,20 @@ def build_speaker_crux_matrix(subtopic_cruxes: list, all_speakers: list) -> dict
         for _ in all_speakers
     ]
 
-    # Fill in positions based on agree/disagree lists
+    # Fill in positions based on agree/disagree/no_clear_position lists
     for crux_idx, crux in enumerate(subtopic_cruxes):
         agree_set = set(crux["agree"])
         disagree_set = set(crux["disagree"])
+        no_clear_position_set = set(crux.get("no_clear_position", []))
 
         for speaker_idx, speaker in enumerate(all_speakers):
             if speaker in agree_set:
                 matrix[speaker_idx][crux_idx] = "agree"
             elif speaker in disagree_set:
                 matrix[speaker_idx][crux_idx] = "disagree"
-            # else remains "no_position"
+            elif speaker in no_clear_position_set:
+                matrix[speaker_idx][crux_idx] = "no_position"
+            # else remains "no_position" (speaker never mentioned this subtopic)
 
     return {
         "speakers": all_speakers,
@@ -2343,6 +2346,7 @@ def cruxes_from_tree(
             crux_claim = crux["cruxClaim"]
             agree = crux["agree"]
             disagree = crux["disagree"]
+            no_clear_position = crux.get("no_clear_position", [])
             explanation = crux.get("explanation", "N/A")
 
             # Extract speaker IDs and deduplicate
@@ -2350,10 +2354,12 @@ def cruxes_from_tree(
             # We need just the speaker ID part before the first colon
             agree_ids = list(set([str(a).split(":")[0] for a in agree]))
             disagree_ids = list(set([str(d).split(":")[0] for d in disagree]))
+            no_clear_position_ids = list(set([str(n).split(":")[0] for n in no_clear_position]))
 
             # Convert speaker IDs to "id:name" format for output
             named_agree = [speaker_id + ":" + ids_to_speakers[speaker_id] for speaker_id in agree_ids]
             named_disagree = [speaker_id + ":" + ids_to_speakers[speaker_id] for speaker_id in disagree_ids]
+            named_no_clear_position = [speaker_id + ":" + ids_to_speakers[speaker_id] for speaker_id in no_clear_position_ids]
 
             # Calculate participation metadata
             speakers_involved = len(set(named_agree + named_disagree))
@@ -2365,7 +2371,7 @@ def cruxes_from_tree(
             total_speakers_in_subtopic = len(subtopic_speakers)
 
             # Calculate controversy scores for this subtopic
-            scores = calculate_controversy_scores(named_agree, named_disagree, total_speakers)
+            scores = calculate_controversy_scores(named_agree, named_disagree, total_speakers_in_subtopic)
 
             # Build subtopic crux object
             subtopic_crux = {
@@ -2374,6 +2380,7 @@ def cruxes_from_tree(
                 "cruxClaim": crux_claim,
                 "agree": named_agree,
                 "disagree": named_disagree,
+                "no_clear_position": named_no_clear_position,
                 "explanation": explanation,
                 "agreementScore": scores["agreementScore"],
                 "disagreementScore": scores["disagreementScore"],

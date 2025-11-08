@@ -208,25 +208,61 @@ export type Taxonomy = z.infer<typeof taxonomy>;
  *   cruxClaim: "Government should guarantee healthcare for all citizens",
  *   agree: ["1:Alice", "3:Charlie"],
  *   disagree: ["2:Bob"],
+ *   no_clear_position: ["4:Diana"],  // Diana mentioned healthcare but didn't take a clear stance
  *   explanation: "Alice and Charlie emphasize access while Bob questions feasibility...",
  *   agreementScore: 0.67,      // 2 out of 3 speakers agree
  *   disagreementScore: 0.33,   // 1 out of 3 speakers disagree
  *   controversyScore: 0.66     // min(0.67, 0.33) * 2 = reasonably controversial
  * }
  */
-export const subtopicCrux = z.object({
-  topic: z.string(), // Parent topic name
-  subtopic: z.string(), // Subtopic name
-  cruxClaim: z.string(), // The synthesized controversial statement
-  agree: z.array(z.string()), // Speaker IDs who would agree (format: "id:name")
-  disagree: z.array(z.string()), // Speaker IDs who would disagree (format: "id:name")
-  explanation: z.string(), // LLM's reasoning for why this divides participants
-  agreementScore: z.number(), // 0-1: ratio of speakers who agree
-  disagreementScore: z.number(), // 0-1: ratio of speakers who disagree
-  controversyScore: z.number(), // 0-1: how evenly split (1.0 = perfect 50/50 split)
-  speakersInvolved: z.number(), // Total speakers who took a position (agree + disagree)
-  totalSpeakersInSubtopic: z.number(), // Total speakers with claims in this subtopic
-});
+
+/**
+ * Helper function to validate that speakers don't appear in multiple position lists
+ * Extracted for better testability and reusability
+ */
+function validateNoSpeakerOverlap(data: {
+  agree: string[];
+  disagree: string[];
+  no_clear_position: string[];
+}): boolean {
+  // Extract speaker IDs from "id:name" format
+  const agreeIds = new Set(data.agree.map((s) => s.split(":")[0]));
+  const disagreeIds = new Set(data.disagree.map((s) => s.split(":")[0]));
+  const noClearIds = new Set(
+    data.no_clear_position.map((s) => s.split(":")[0]),
+  );
+
+  // Check for overlaps between the three sets
+  const agreeDisagreeOverlap = [...agreeIds].some((id) => disagreeIds.has(id));
+  const agreeNoClearOverlap = [...agreeIds].some((id) => noClearIds.has(id));
+  const disagreeNoClearOverlap = [...disagreeIds].some((id) =>
+    noClearIds.has(id),
+  );
+
+  return (
+    !agreeDisagreeOverlap && !agreeNoClearOverlap && !disagreeNoClearOverlap
+  );
+}
+
+export const subtopicCrux = z
+  .object({
+    topic: z.string(), // Parent topic name
+    subtopic: z.string(), // Subtopic name
+    cruxClaim: z.string(), // The synthesized controversial statement
+    agree: z.array(z.string()), // Speaker IDs who would agree (format: "id:name")
+    disagree: z.array(z.string()), // Speaker IDs who would disagree (format: "id:name")
+    no_clear_position: z.array(z.string()).default([]), // Speaker IDs who mentioned topic but took no clear stance
+    explanation: z.string(), // LLM's reasoning for why this divides participants
+    agreementScore: z.number(), // 0-1: ratio of speakers who agree
+    disagreementScore: z.number(), // 0-1: ratio of speakers who disagree
+    controversyScore: z.number(), // 0-1: how evenly split (1.0 = perfect 50/50 split)
+    speakersInvolved: z.number(), // Total speakers who took a position (agree + disagree)
+    totalSpeakersInSubtopic: z.number(), // Total speakers with claims in this subtopic
+  })
+  .refine(validateNoSpeakerOverlap, {
+    message:
+      "Speakers cannot appear in multiple position lists (agree, disagree, no_clear_position)",
+  });
 
 export type SubtopicCrux = z.infer<typeof subtopicCrux>;
 
@@ -257,6 +293,12 @@ export type TopicScore = z.infer<typeof topicScore>;
  * SpeakerCruxPosition: A speaker's position on a single crux.
  *
  * Simple enum for matrix visualization.
+ *
+ * Note: The field name "no_clear_position" (in SubtopicCrux) becomes "no_position"
+ * (in this matrix enum). This terminology difference is intentional:
+ * - "no_clear_position": Speakers who mentioned the subtopic but didn't take a clear stance
+ * - "no_position": Generic matrix value for visualization (includes both no clear position
+ *   and speakers who never mentioned the subtopic)
  */
 export const speakerCruxPosition = z.enum(["agree", "disagree", "no_position"]);
 

@@ -75,16 +75,16 @@ class TestCalculateControversyScores:
         assert result["controversyScore"] == 0.0
 
     def test_partial_participation(self):
-        """Not all speakers have positions"""
+        """Tests scoring when not all speakers in subtopic took clear positions"""
         agree = ["1:Alice"]
         disagree = ["2:Bob"]
-        total = 5  # 3 speakers have no position
+        total = 3  # Total speakers in subtopic (e.g., 1 agree + 1 disagree + 1 no_clear_position)
 
         result = calculate_controversy_scores(agree, disagree, total)
 
-        assert result["agreementScore"] == 0.2  # 1/5
-        assert result["disagreementScore"] == 0.2  # 1/5
-        assert result["controversyScore"] == 0.4  # min(0.2, 0.2) * 2
+        assert abs(result["agreementScore"] - 0.33) < 0.01  # 1/3
+        assert abs(result["disagreementScore"] - 0.33) < 0.01  # 1/3
+        assert abs(result["controversyScore"] - 0.66) < 0.01  # min(0.33, 0.33) * 2
 
 
 class TestBuildSpeakerCruxMatrix:
@@ -176,6 +176,27 @@ class TestBuildSpeakerCruxMatrix:
         assert result["matrix"] == [
             ["no_position"],  # Alice
             ["no_position"],  # Bob
+        ]
+
+    def test_no_clear_position_field(self):
+        """Speakers in no_clear_position list should be marked as 'no_position'"""
+        subtopic_cruxes = [
+            {
+                "topic": "Topic",
+                "subtopic": "Subtopic",
+                "agree": ["1:Alice"],
+                "disagree": ["3:Charlie"],
+                "no_clear_position": ["2:Bob"],  # Bob mentioned topic but no clear stance
+            }
+        ]
+        speakers = ["1:Alice", "2:Bob", "3:Charlie"]
+
+        result = build_speaker_crux_matrix(subtopic_cruxes, speakers)
+
+        assert result["matrix"] == [
+            ["agree"],  # Alice
+            ["no_position"],  # Bob explicitly has no clear position
+            ["disagree"],  # Charlie
         ]
 
 

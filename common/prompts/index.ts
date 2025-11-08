@@ -170,16 +170,26 @@ Now here is the topic to summarize:
  * topic name and only includes claims from that specific subtopic.
  */
 export const defaultCruxPrompt = `I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
-identified by pseudonyms like "Person 1" or "A". I want you to formulate a new, specific statement called a "cruxClaim"
-which would best split the participants into two groups, based on all their
-statements on this topic: one group which would agree with the statement, and one which would disagree.
-Please explain your reasoning and assign participants into "agree" and "disagree" groups.
+identified by pseudonyms like "Person 1" or "A". Please synthesize these claims into one new, specific, maximally controversial
+statement called a "cruxClaim". This cruxClaim should divide the participants into "agree" and "disagree" groups or sides,
+based on all their statements on this topic: one group which would agree with the statement, and one which would disagree.
+
+For each participant who made claims in this subtopic, categorize them as:
+- "agree": Would agree with the cruxClaim based on their statements
+- "disagree": Would disagree with the cruxClaim based on their statements
+- "no_clear_position": Mentioned the topic but didn't take a clear stance on this specific crux
+
+Please explain your reasoning and assign participants into the three groups.
+Make the cruxClaim as precise and unique as possible to the given topic and comments, and pick a cruxClaim that best balances the
+"agree" and "disagree" sides, with close to the same number of participants on each side.
+
 return a JSON object of the form
 {
   "crux" : {
     "cruxClaim" : string // the new extracted claim
     "agree" : list of strings // list of the given participants who would agree with the cruxClaim
     "disagree" : list strings // list of the given participants who would disagree with the cruxClaim
+    "no_clear_position" : list of strings // list of the given participants who mentioned the topic but took no clear stance
     "explanation" : string // reasoning for why you synthesized this cruxClaim from the participants' perspective
   }
 }`;
