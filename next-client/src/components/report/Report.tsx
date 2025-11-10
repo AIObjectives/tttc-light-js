@@ -21,6 +21,10 @@ import {
   SheetTitle,
   TextIcon,
   ToggleText,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from "../elements";
 import Icons from "@/assets/icons";
 import { getNPeople } from "tttc-common/morphisms";
@@ -28,9 +32,22 @@ import { useReportState, ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
 import { cn } from "@/lib/utils/shadcn";
 import Outline from "../outline/Outline";
+import {
+  getTopicControversy,
+  getControversyColors,
+  formatControversyScore,
+  getSortedCruxes,
+  findSubtopicId,
+} from "@/lib/crux/utils";
 import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
+
+/**
+ * Delay in milliseconds to wait for tab switch and topic/subtopic expansion
+ * before scrolling to the target element
+ */
+const TAB_SWITCH_DELAY_MS = 150;
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
 import { useHashChange } from "@/lib/hooks/useHashChange";
@@ -146,12 +163,25 @@ export const ReportContext = createContext<{
   useReportEffect: ReportActionEffect;
   // Tracks which node is being "focused"
   useFocusedNode: (id: string, ignore?: boolean) => Ref<HTMLDivElement>;
+  // Add-ons data from pipeline (including cruxes and controversy scores)
+  addOns?: schema.AddOns;
+  // Whether to sort topics by controversy score
+  sortByControversy: boolean;
+  setSortByControversy: Dispatch<SetStateAction<boolean>>;
+  // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
+  expandedCruxId: string | null;
+  setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
 }>({
   dispatch: () => null,
   useScrollTo: () => ({}) as Ref<HTMLDivElement>,
   setScrollTo: () => null,
   useReportEffect: () => {},
   useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
+  addOns: undefined,
+  sortByControversy: false,
+  setSortByControversy: () => null,
+  expandedCruxId: null,
+  setExpandedCruxId: () => null,
 });
 
 /**
@@ -240,6 +270,32 @@ function Report({
     outlineDispatch(outlineAction);
   });
 
+  // Sort by controversy state
+  const [sortByControversy, setSortByControversy] = useState<boolean>(false);
+
+  // State for tracking which crux should be auto-expanded
+  const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
+
+  // Extract addOns to avoid rawPipelineOutput object reference changes breaking memoization
+  const addOns = React.useMemo(
+    () => rawPipelineOutput.data[1]?.addOns,
+    [rawPipelineOutput.data],
+  );
+
+  // Sort topics if sortByControversy is enabled
+  const sortedTopics = React.useMemo(() => {
+    if (!sortByControversy) {
+      return state.children;
+    }
+
+    return [...state.children].sort((a, b) => {
+      const scoreA = getTopicControversy(addOns, a.data?.title) ?? -1;
+      const scoreB = getTopicControversy(addOns, b.data?.title) ?? -1;
+      // Sort descending (highest controversy first)
+      return scoreB - scoreA;
+    });
+  }, [sortByControversy, state.children, addOns]);
+
   return (
     <ReportContext.Provider
       value={{
@@ -248,6 +304,11 @@ function Report({
         setScrollTo,
         useReportEffect,
         useFocusedNode,
+        addOns,
+        sortByControversy,
+        setSortByControversy,
+        expandedCruxId,
+        setExpandedCruxId,
       }}
     >
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
@@ -265,7 +326,7 @@ function Report({
                 description={reportData.description}
                 questionAnswers={reportData.questionAnswers}
               />
-              {state.children.map((themeNode) => (
+              {sortedTopics.map((themeNode) => (
                 <Theme key={themeNode.data.id} node={themeNode} />
               ))}
               <Appendix
@@ -303,7 +364,13 @@ export function ReportToolbar({
   setIsMobileOutlineOpen: (val: boolean) => void;
   isMobileOutlineOpen: boolean;
 }) {
-  const { dispatch } = useContext(ReportContext);
+  const { dispatch, sortByControversy, setSortByControversy, addOns } =
+    useContext(ReportContext);
+
+  // Only show sort button if there's controversy data
+  const hasControversyData =
+    addOns?.topicScores && addOns.topicScores.length > 0;
+
   return (
     // Sticky keeps it at top of screen when scrolling down.
 
@@ -325,11 +392,17 @@ export function ReportToolbar({
             )}
           </Button>
         </div>
-        {/* <div>
-          <Button variant={"outline"}>Edit</Button>
-        </div> */}
       </Row>
       <Row gap={2}>
+        {/* Sort by controversy button */}
+        {hasControversyData && (
+          <Button
+            onClick={() => setSortByControversy(!sortByControversy)}
+            variant={sortByControversy ? "secondary" : "outline"}
+          >
+            {sortByControversy ? "Default order" : "Sort by controversy"}
+          </Button>
+        )}
         {/* Close all button */}
         <Button
           onClick={() => dispatch({ type: "closeAll" })}
@@ -370,6 +443,12 @@ export function ReportHeader({
   const claims = topics.flatMap((topic) => topic.claims);
   const nPeople = getNPeople(claims);
   const dateStr = date;
+  const { addOns } = useContext(ReportContext);
+
+  // Check if we have controversy data to show the cruxes tab
+  const hasControversyData =
+    addOns?.subtopicCruxes && addOns.subtopicCruxes.length > 0;
+
   return (
     <CardContent>
       <Col gap={8}>
@@ -387,8 +466,12 @@ export function ReportHeader({
           description={description}
           questionAnswers={questionAnswers}
         />
-        {/* Overview */}
-        <ReportOverview topics={themes} />
+        {/* Overview with optional Cruxes tab */}
+        {hasControversyData ? (
+          <ReportWithCruxes addOns={addOns} topics={themes} />
+        ) : (
+          <ReportOverview topics={themes} />
+        )}
       </Col>
     </CardContent>
   );
@@ -556,6 +639,208 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
       <h4>Overview</h4>
       <BarChart entries={getBarChartEntries(topics)} />
     </Col>
+  );
+}
+
+type Tab = "overview" | "cruxes";
+
+function ReportWithCruxes({
+  addOns,
+  topics,
+}: {
+  addOns?: schema.AddOns;
+  topics: schema.Topic[];
+}) {
+  const [activeTab, setActiveTab] = React.useState<Tab>("overview");
+  const { dispatch } = useContext(ReportContext);
+
+  const handleNavigateToSubtopic = (subtopicId: string) => {
+    // Switch to overview tab
+    setActiveTab("overview");
+
+    // Expand the topic and subtopic
+    dispatch({ type: "open", payload: { id: subtopicId } });
+  };
+
+  return (
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value as Tab)}
+    >
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="cruxes">Cruxes</TabsTrigger>
+      </TabsList>
+      <TabsContent value="overview">
+        <ReportOverview topics={topics} />
+      </TabsContent>
+      <TabsContent value="cruxes">
+        <CruxesOverview
+          addOns={addOns}
+          topics={topics}
+          onNavigateToSubtopic={handleNavigateToSubtopic}
+        />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+/**
+ * Displays a list of all cruxes (controversial points) in the report,
+ * sorted by controversy score (highest first).
+ *
+ * @param addOns - Optional pipeline add-ons containing crux data
+ * @param topics - List of topics for navigation lookup
+ * @param onNavigateToSubtopic - Optional callback to navigate to a specific subtopic when crux is clicked
+ * @returns null if no cruxes are available, otherwise renders sorted list of clickable crux cards
+ */
+export function CruxesOverview({
+  addOns,
+  topics,
+  onNavigateToSubtopic,
+}: {
+  addOns?: schema.AddOns;
+  topics: schema.Topic[];
+  onNavigateToSubtopic?: (subtopicId: string) => void;
+}) {
+  const sortedCruxes = getSortedCruxes(addOns);
+
+  // Build lookup map once to avoid O(N×M×P) nested loops in render
+  // Critical for performance when reports have many cruxes
+  const subtopicIdMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    topics.forEach((topic) => {
+      topic.subtopics.forEach((subtopic) => {
+        const key = `${topic.title}::${subtopic.title}`;
+        map.set(key, subtopic.id);
+      });
+    });
+    return map;
+  }, [topics]);
+
+  const getSubtopicId = React.useCallback(
+    (topicTitle: string, subtopicTitle: string): string | null => {
+      return subtopicIdMap.get(`${topicTitle}::${subtopicTitle}`) ?? null;
+    },
+    [subtopicIdMap],
+  );
+
+  if (sortedCruxes.length === 0) return null;
+
+  return (
+    <Col gap={3}>
+      <h4>Cruxes</h4>
+      <Col gap={2}>
+        {sortedCruxes.map((crux, index) => (
+          <CruxCard
+            key={getSubtopicId(crux.topic, crux.subtopic) || `crux-${index}`}
+            crux={crux}
+            getSubtopicId={getSubtopicId}
+            onNavigateToSubtopic={onNavigateToSubtopic}
+          />
+        ))}
+      </Col>
+    </Col>
+  );
+}
+
+function CruxCard({
+  crux,
+  getSubtopicId,
+  onNavigateToSubtopic,
+}: {
+  crux: schema.SubtopicCrux;
+  getSubtopicId: (topicTitle: string, subtopicTitle: string) => string | null;
+  onNavigateToSubtopic?: (subtopicId: string) => void;
+}) {
+  const { setScrollTo, setExpandedCruxId } = useContext(ReportContext);
+  const colors = getControversyColors(crux.controversyScore);
+  const subtopicId = getSubtopicId(crux.topic, crux.subtopic);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleClick = () => {
+    // Ensure both subtopicId and navigation callback exist
+    if (!subtopicId) {
+      console.warn(
+        `[CruxCard] Cannot navigate: subtopic not found for topic="${crux.topic}", subtopic="${crux.subtopic}"`,
+      );
+      return;
+    }
+    if (!onNavigateToSubtopic) {
+      console.warn(
+        `[CruxCard] Cannot navigate: onNavigateToSubtopic callback not provided`,
+      );
+      return;
+    }
+
+    // Set which crux should be auto-expanded (using topic:subtopic as unique ID)
+    setExpandedCruxId(`${crux.topic}:${crux.subtopic}`);
+
+    // Switch to overview tab and expand topic/subtopic
+    onNavigateToSubtopic(subtopicId);
+
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Delay to ensure tab switch and expansion complete before scrolling
+    timeoutRef.current = setTimeout(() => {
+      setScrollTo([subtopicId, Date.now()]);
+      timeoutRef.current = null;
+    }, TAB_SWITCH_DELAY_MS);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
+  const ariaLabel = `Navigate to ${crux.topic}, ${crux.subtopic}: ${crux.cruxClaim}. Controversy score ${formatControversyScore(crux.controversyScore)}`;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={ariaLabel}
+      className={`p-3 rounded-md border-l-4 ${colors.border} ${colors.bg} cursor-pointer hover:opacity-75 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      <Col gap={2}>
+        <Row gap={2} className="justify-between items-start">
+          <div className="flex-grow">
+            <p className="font-medium text-sm">
+              {crux.topic} → {crux.subtopic}
+            </p>
+            <p className="text-sm text-gray-700 mt-1">{crux.cruxClaim}</p>
+          </div>
+          <span
+            className={`text-xs ${colors.bg} ${colors.text} px-2 py-0.5 rounded-full whitespace-nowrap`}
+          >
+            {formatControversyScore(crux.controversyScore)}
+          </span>
+        </Row>
+        <Row gap={3} className="text-xs text-muted-foreground">
+          <span className="text-green-700">{crux.agree.length} agree</span>
+          <span className="text-red-700">{crux.disagree.length} disagree</span>
+          <span className="text-gray-600">
+            {crux.no_clear_position?.length || 0} unclear
+          </span>
+        </Row>
+      </Col>
+    </div>
   );
 }
 
