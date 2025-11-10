@@ -1,23 +1,36 @@
-import React from "react";
+import React, { useContext, useMemo } from "react";
 import * as schema from "tttc-common/schema";
 import { Col, Row } from "../layout";
 import { ScrollArea } from "../elements";
 import { getQuotes } from "tttc-common/morphisms";
 import { Quote } from "../quote/Quote";
+import { ReportContext } from "../report/Report";
+import { sortQuotesByBridging } from "@/lib/bridging/utils";
 
 export function QuoteCard({ claim }: { claim: schema.Claim }) {
+  const { addOns, sortByBridging } = useContext(ReportContext);
+
+  // Get quotes and optionally sort by bridging score
+  const quotes = useMemo(() => {
+    const allQuotes = getQuotes(claim);
+    if (sortByBridging) {
+      return sortQuotesByBridging(allQuotes, addOns);
+    }
+    return allQuotes;
+  }, [claim, addOns, sortByBridging]);
+
   return (
     <Col gap={4} data-testid={"quotecard"}>
       <QuoteHeader title={claim.title} number={claim.number} />
       <Col className="max-h-[80vh]">
         <ScrollArea className="h-full overflow-auto">
           <Col gap={2}>
-            {getQuotes(claim).map((quote, i) => (
+            {quotes.map((quote, i) => (
               <Quote
                 key={quote.id}
                 quote={quote}
                 gap={2}
-                withSeperation={getQuotes(claim).length - 1 !== i}
+                withSeperation={quotes.length - 1 !== i}
               />
             ))}
           </Col>

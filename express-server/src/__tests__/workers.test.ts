@@ -61,7 +61,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -99,7 +99,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -141,7 +141,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -186,7 +186,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -231,7 +231,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -276,7 +276,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -315,7 +315,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -358,7 +358,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -403,7 +403,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {
@@ -468,7 +468,7 @@ describe("Workers", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [{ id: "testId", comment: "test data" }],
         reportDetails: {

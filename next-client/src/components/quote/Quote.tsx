@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import React, { useContext } from "react";
 import { Card, CardContent, Separator } from "../elements";
 import { Col, Row } from "../layout";
 import Icons from "@/assets/icons";
 import * as schema from "tttc-common/schema";
 import { cn } from "@/lib/utils/shadcn";
+import { ReportContext } from "../report/Report";
+import {
+  getQuoteBridgingScore,
+  BRIDGING_THRESHOLDS,
+} from "@/lib/bridging/utils";
 
 /**
  * Single quote - not wrapped in card.
@@ -52,6 +57,9 @@ export function Quote({
   withSeperation?: boolean;
   gap?: number;
 }) {
+  const { addOns, sortByBridging } = useContext(ReportContext);
+  const bridgingScore = getQuoteBridgingScore(addOns, quote.id);
+
   return (
     <Col gap={gap}>
       {quote.reference.data[0] === "video" ? (
@@ -62,9 +70,64 @@ export function Quote({
           />
         </Col>
       ) : null}
-      <QuoteText text={quote.text} interview={quote.reference.interview} />
+      <Row className="items-start gap-2">
+        <div className="flex-1">
+          <QuoteText text={quote.text} interview={quote.reference.interview} />
+        </div>
+        {bridgingScore !== null && (
+          <QuoteBridgingIndicator
+            score={bridgingScore}
+            forceShow={sortByBridging}
+          />
+        )}
+      </Row>
       {withSeperation ? <Separator /> : null}
     </Col>
+  );
+}
+
+/**
+ * Compact bridging indicator for quotes.
+ * Shows a small colored dot for bridging (green) or divisive (red) quotes.
+ * In default mode: hide all labels
+ * In sort by bridging mode: show all labels (bridging, divisive, and neutral)
+ */
+function QuoteBridgingIndicator({
+  score,
+  forceShow = false,
+}: {
+  score: number;
+  forceShow?: boolean;
+}) {
+  const isHighBridging = score >= BRIDGING_THRESHOLDS.MIN_DISPLAY;
+  const isDivisive = score < BRIDGING_THRESHOLDS.NEUTRAL;
+
+  // Default mode: hide all bridging indicators
+  if (!forceShow) {
+    return null;
+  }
+
+  // Sort by bridging mode: show all labels (bridging, divisive, neutral)
+
+  let colorClass: string;
+  let label: string;
+  if (isHighBridging) {
+    colorClass = "bg-green-500";
+    label = "Bridging";
+  } else if (isDivisive) {
+    colorClass = "bg-red-500";
+    label = "Divisive";
+  } else {
+    colorClass = "bg-gray-400";
+    label = "Neutral";
+  }
+
+  return (
+    <div
+      className={`w-2 h-2 rounded-full ${colorClass} flex-shrink-0 mt-2`}
+      title={label}
+      aria-label={label}
+    />
   );
 }
 

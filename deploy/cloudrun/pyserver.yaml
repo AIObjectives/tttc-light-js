@@ -18,7 +18,7 @@ spec:
         run.googleapis.com/vpc-access-egress: all-traffic
     spec:
       containerConcurrency: 1000
-      timeoutSeconds: 300
+      timeoutSeconds: 3600
       containers:
         - image: gcr.io/tttc-light-js/dev-pyserver:TAG
           ports:
