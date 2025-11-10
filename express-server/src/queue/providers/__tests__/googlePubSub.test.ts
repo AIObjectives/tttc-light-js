@@ -94,7 +94,7 @@ vi.mock("firebase-admin", () => ({
 }));
 
 import { GooglePubSubQueue } from "../googlePubSub";
-import { PipelineJob, pipelineJob } from "../../../jobs/pipeline";
+import { PipelineJob } from "../../../jobs/pipeline";
 
 // Mock the Google Cloud PubSub module
 vi.mock("@google-cloud/pubsub", () => ({

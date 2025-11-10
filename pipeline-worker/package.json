@@ -9,6 +9,8 @@
     "build": "npx tsc && npx prettier ./dist --write",
     "dev": "ts-node src/index.ts",
     "test": "vitest",
+    "test:unit": "vitest --exclude **/*.integration.test.*",
+    "test:integration": "./scripts/test-integration.sh",
     "start": "node dist/index.js"
   },
   "author": "",
@@ -22,6 +24,7 @@
     "zod": "^3.23.8"
   },
   "dependencies": {
+    "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.17.2",
     "dotenv": "^16.4.5",
     "effect": "^3.18.4",
