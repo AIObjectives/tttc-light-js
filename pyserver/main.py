@@ -2352,9 +2352,33 @@ def cruxes_from_tree(
             # Extract speaker IDs and deduplicate
             # LLM may return just IDs ("7") or "ID:claim text" format
             # We need just the speaker ID part before the first colon
-            agree_ids = list(set([str(a).split(":")[0] for a in agree]))
-            disagree_ids = list(set([str(d).split(":")[0] for d in disagree]))
-            no_clear_position_ids = list(set([str(n).split(":")[0] for n in no_clear_position]))
+            agree_ids = set([str(a).split(":")[0] for a in agree])
+            disagree_ids = set([str(d).split(":")[0] for d in disagree])
+            no_clear_position_ids = set([str(n).split(":")[0] for n in no_clear_position])
+
+            # Detect and resolve conflicts where speakers appear in multiple position lists
+            # This can happen due to LLM classification errors or genuinely ambiguous positions
+            agree_disagree_overlap = agree_ids & disagree_ids
+            agree_noclear_overlap = agree_ids & no_clear_position_ids
+            disagree_noclear_overlap = disagree_ids & no_clear_position_ids
+            conflict_speakers = agree_disagree_overlap | agree_noclear_overlap | disagree_noclear_overlap
+
+            if conflict_speakers:
+                # Resolution strategy: Move all conflicted speakers to no_clear_position
+                # Rationale: If LLM can't decide (puts speaker in multiple lists),
+                # their position is genuinely unclear
+                for speaker_id in conflict_speakers:
+                    agree_ids.discard(speaker_id)
+                    disagree_ids.discard(speaker_id)
+                    no_clear_position_ids.add(speaker_id)
+
+                # Log the conflict resolution
+                conflict_names = [ids_to_speakers.get(sid, sid) for sid in conflict_speakers]
+                report_logger.warning(
+                    f"Crux conflict resolved for {topic_title}: "
+                    f"{len(conflict_speakers)} speaker(s) appeared in multiple position lists "
+                    f"and were moved to no_clear_position: {conflict_names}"
+                )
 
             # Convert speaker IDs to "id:name" format for output
             named_agree = [speaker_id + ":" + ids_to_speakers[speaker_id] for speaker_id in agree_ids]

@@ -278,12 +278,32 @@ export function SubtopicClaims({
   pagination: number;
   onExpandSubtopic: () => void;
 }) {
+  const { sortByBridging, addOns } = useContext(ReportContext);
+
+  // Sort claims by bridging score if enabled
+  const sortedClaims = React.useMemo(() => {
+    if (!sortByBridging || !addOns?.claimBridgingScores) {
+      return claimNodes;
+    }
+
+    return [...claimNodes].sort((a, b) => {
+      const scoreA =
+        addOns.claimBridgingScores?.find((s) => s.claimId === a.id)
+          ?.bridgingScore ?? -1;
+      const scoreB =
+        addOns.claimBridgingScores?.find((s) => s.claimId === b.id)
+          ?.bridgingScore ?? -1;
+      // Sort descending (highest bridging score first)
+      return scoreB - scoreA;
+    });
+  }, [sortByBridging, claimNodes, addOns]);
+
   return (
     <Col>
       <p className="leading-6 pl-4 md:pl-8 text-base font-medium">Claims</p>
       <Col gap={4}>
         <Col>
-          {claimNodes.map((claimNode, i) => {
+          {sortedClaims.map((claimNode, i) => {
             return (
               <ClaimItem
                 key={claimNode.id}
@@ -296,7 +316,7 @@ export function SubtopicClaims({
           })}
         </Col>
         <ClaimLoader
-          remaining={claimNodes.length - pagination - 1}
+          remaining={sortedClaims.length - pagination - 1}
           onExpandSubtopic={onExpandSubtopic}
         />
       </Col>

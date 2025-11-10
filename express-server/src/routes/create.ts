@@ -294,6 +294,7 @@ const buildPipelineJob = (
       api_key: "", // ! Change when we transition away from using the AOI key,
       options: {
         cruxes: updatedConfig.cruxesEnabled,
+        bridging: updatedConfig.bridgingEnabled,
       },
       llm: {
         model: "gpt-4o-mini", // ! Change when we allow different models
@@ -473,11 +474,21 @@ async function createNewReport(
   // add id to comment data if not included.
   const updatedConfig = {
     ...config,
+    cruxesEnabled: userConfig.cruxesEnabled,
+    bridgingEnabled: userConfig.bridgingEnabled,
     data: config.data.map((data, i) => ({
       ...data,
       id: data.id ? data.id : `cm${i}`,
     })),
-  };
+  } as typeof config & { cruxesEnabled: boolean; bridgingEnabled: boolean };
+
+  createLogger.debug(
+    {
+      cruxesEnabled: updatedConfig.cruxesEnabled,
+      bridgingEnabled: updatedConfig.bridgingEnabled,
+    },
+    "Building pipeline job with config",
+  );
 
   const pipelineJob = buildPipelineJob(
     env,

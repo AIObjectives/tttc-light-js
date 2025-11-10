@@ -23,6 +23,7 @@ import {
   deleteAuditLog,
 } from "../utils/auditLogRedis";
 import Redis from "ioredis";
+import { scoreClaims } from "../lib/perspective-api";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
 
@@ -114,6 +115,90 @@ function mapSubtopicWithClaims(
   };
 }
 
+/**
+ * Normalize text for matching by removing extra whitespace and lowercasing.
+ */
+function normalizeText(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/**
+ * Match bridging scores to claims by text and update claimIds.
+ *
+ * The bridging scoring happens before claim IDs are assigned, so we need to
+ * match scores to claims by comparing the claim text.
+ *
+ * @param bridgingScores - Array of bridging scores with empty claimIds
+ * @param reportData - The final report data with claims that have IDs
+ * @returns Updated bridging scores with correct claimIds
+ */
+function matchBridgingScoresToClaims(
+  bridgingScores: schema.ClaimBridgingScore[],
+  reportData: schema.UIReportData,
+): schema.ClaimBridgingScore[] {
+  // Build a map of normalized (topicTitle, subtopicTitle, claimText) -> claimId
+  const claimTextToId = new Map<string, string>();
+
+  for (const topic of reportData.topics || []) {
+    for (const subtopic of topic.subtopics || []) {
+      for (const claim of subtopic.claims || []) {
+        const key = `${normalizeText(topic.title)}|${normalizeText(subtopic.title)}|${normalizeText(claim.title)}`;
+        claimTextToId.set(key, claim.id);
+      }
+    }
+  }
+
+  // Update bridging scores with matched claim IDs
+  let matchedCount = 0;
+  let unmatchedCount = 0;
+
+  const updatedScores = bridgingScores.map((score) => {
+    const key = `${normalizeText(score.topicName)}|${normalizeText(score.subtopicName)}|${normalizeText(score.claimId)}`;
+    const matchedClaimId = claimTextToId.get(key);
+
+    if (matchedClaimId) {
+      matchedCount++;
+      return { ...score, claimId: matchedClaimId };
+    } else {
+      unmatchedCount++;
+      // Log warning if no match found
+      pipelineLogger.warn(
+        {
+          topicName: score.topicName,
+          subtopicName: score.subtopicName,
+          claimText: score.claimId.substring(0, 50),
+        },
+        "Could not match bridging score to claim ID",
+      );
+      return score;
+    }
+  });
+
+  // Log summary statistics
+  pipelineLogger.info(
+    {
+      matched: matchedCount,
+      unmatched: unmatchedCount,
+      matchRate: `${((matchedCount / (matchedCount + unmatchedCount)) * 100).toFixed(1)}%`,
+    },
+    "Bridging score matching complete",
+  );
+
+  // Warn if match rate is too low
+  if (unmatchedCount > matchedCount * 0.1) {
+    pipelineLogger.warn(
+      {
+        unmatchedCount,
+        totalScores: bridgingScores.length,
+        unmatchedPercentage: `${((unmatchedCount / bridgingScores.length) * 100).toFixed(1)}%`,
+      },
+      "High bridging score mismatch rate - check text normalization",
+    );
+  }
+
+  return updatedScores;
+}
+
 type FirebaseDetails = {
   reportDataUri: string;
   userId: string;
@@ -143,6 +228,7 @@ interface PipelineConfig {
   api_key: string;
   options: {
     cruxes: boolean;
+    bridging: boolean;
   };
 }
 
@@ -203,6 +289,7 @@ export async function pipelineJob(job: PipelineJob) {
     num_rows: numRows,
     model: config.llm.model,
     has_cruxes: config.options.cruxes,
+    has_bridging: config.options.bridging,
     started_at: Date.now(),
   };
 
@@ -219,6 +306,7 @@ export async function pipelineJob(job: PipelineJob) {
     sortedStep,
     summariesStep,
     addonsStep,
+    bridgingScores,
     auditLog,
   } = await doPipelineSteps(job);
   const pipelineEnd = Date.now();
@@ -340,6 +428,8 @@ export async function pipelineJob(job: PipelineJob) {
         subtopicCruxes: addonsStep?.subtopicCruxes,
         topicScores: addonsStep?.topicScores,
         speakerCruxMatrix: addonsStep?.speakerCruxMatrix,
+        claimBridgingScores:
+          bridgingScores.length > 0 ? bridgingScores : undefined,
       },
       question: question,
       title: title,
@@ -351,6 +441,21 @@ export async function pipelineJob(job: PipelineJob) {
   // Take the pipeline object and translate it into our updated schema
   const finalResult = mapResult(outputResult, (pipelineOutput) => {
     const result = llmPipelineToSchema(pipelineOutput);
+
+    // Match bridging scores to claims by text and update claimIds
+    if (bridgingScores.length > 0 && result.data?.[1]) {
+      // Initialize addOns if it doesn't exist
+      if (!result.data[1].addOns) {
+        result.data[1].addOns = {};
+      }
+
+      const updatedScores = matchBridgingScoresToClaims(
+        bridgingScores,
+        result.data[1],
+      );
+      result.data[1].addOns.claimBridgingScores = updatedScores;
+    }
+
     // Add audit log if available
     if (auditLog) {
       return { ...result, auditLog };
@@ -778,6 +883,50 @@ async function doPipelineSteps(job: PipelineJob) {
   } else {
     pipelineLogger.debug("Cruxes step skipped (not enabled)");
   }
+
+  // Bridging scoring step (Perspective API)
+  let bridgingScores: schema.ClaimBridgingScore[] = [];
+  if (config.options.bridging === true) {
+    pipelineLogger.info("Scoring claims for bridging potential");
+    try {
+      // Get the sorted claims tree from sortedStep
+      // sortedStep.value.data is an array of tuples: [topicName, subtopicData]
+      if (sortedStep.tag === "success" && sortedStep.value?.data) {
+        // Create a taxonomy structure for scoreClaims
+        const claimsTree = { taxonomy: sortedStep.value.data };
+
+        bridgingScores = await scoreClaims(
+          claimsTree,
+          redis,
+          undefined,
+          config.env.RATE_LIMIT_PREFIX,
+        );
+        pipelineLogger.info(
+          { scoresGenerated: bridgingScores.length },
+          "Bridging scoring completed successfully",
+        );
+      } else {
+        pipelineLogger.warn("No claims tree available for bridging scoring");
+      }
+    } catch (error) {
+      pipelineLogger.error(
+        {
+          error: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+          errorType: error?.constructor?.name,
+        },
+        "Bridging scoring failed",
+      );
+    }
+  } else if (config.options.bridging === false) {
+    pipelineLogger.debug("Bridging scoring skipped (not enabled)");
+  } else {
+    pipelineLogger.warn(
+      { bridgingValue: config.options.bridging },
+      "Invalid bridging option, expected boolean, skipping bridging scoring",
+    );
+  }
+
   // update job progress
   pipelineLogger.info("Step 5: wrapping up");
   // Update reportRef to keep status in sync with correct sub-state
@@ -823,6 +972,7 @@ async function doPipelineSteps(job: PipelineJob) {
     sortedStep,
     summariesStep,
     addonsStep,
+    bridgingScores,
     auditLog: finalAuditLog,
   };
 }
