@@ -53,6 +53,7 @@ export default async function submitAction(
     cruxInstructions: formData.get("cruxInstructions"),
     // Checkbox inputs use 'on' | undefined, not true | false
     cruxesEnabled: formData.get("cruxesEnabled") === "on",
+    bridgingEnabled: formData.get("bridgingEnabled") === "on",
   });
   const dataPayload: DataPayload = ["csv", data];
   submitActionLogger.debug(

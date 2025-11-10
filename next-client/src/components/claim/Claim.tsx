@@ -1,14 +1,24 @@
-import React from "react";
+import React, { useContext } from "react";
 import Icons from "@/assets/icons";
 import { Row, Col } from "../layout";
 import * as schema from "tttc-common/schema";
 import { getQuotes } from "tttc-common/morphisms";
 import { InteractiveQuoteCard } from "./HoverQuoteCard";
 import { CopyLinkButton } from "../copyButton/CopyButton";
-import { getThemeColor } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
-import config from "tailwind.config";
 import { Quote } from "../quote/Quote";
+import { ReportContext } from "../report/Report";
+import {
+  getClaimBridgingScore,
+  BRIDGING_THRESHOLDS,
+} from "@/lib/bridging/utils";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardPortal,
+  HoverCardTrigger,
+} from "../elements";
+import { HeartHandshake } from "lucide-react";
 
 /**
  * Claim component that includes the claim text, quote icon, and link button
@@ -53,10 +63,18 @@ export function Claim({ claim }: { claim: schema.Claim }) {
  * Ex: #1 AI design should consider the primary needs of providers. (Quote Icon)
  */
 function ClaimHeader({ claim }: { claim: schema.Claim }) {
-  const { title, number } = claim;
+  const { title, number, id } = claim;
   const quoteNum = getQuotes(claim).length;
+  const { addOns } = useContext(ReportContext);
+
+  // Get bridging score for this claim
+  const bridgingScore = getClaimBridgingScore(id, addOns);
+  const showBridgingBadge =
+    bridgingScore !== undefined &&
+    bridgingScore >= BRIDGING_THRESHOLDS.MIN_DISPLAY;
+
   return (
-    <Row gap={2} className={`items-center`}>
+    <Row gap={1} className="items-center">
       <p className="p2">
         #{number}
         &ensp;
@@ -68,7 +86,36 @@ function ClaimHeader({ claim }: { claim: schema.Claim }) {
           QuoteIcon={<QuoteIcon num={quoteNum} />}
         />
       </div>
+      {showBridgingBadge && <BridgingBadge />}
     </Row>
+  );
+}
+
+/**
+ * Bridging indicator badge with tooltip.
+ * Shows for claims with high bridging scores to indicate bridge-building content.
+ */
+function BridgingBadge() {
+  const strokeColor = useThemeContextColor("text");
+  const hoverBackground = useThemeContextColor("bgAccentHover");
+
+  return (
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <div
+          className={`flex w-7 h-7 shrink-0 border rounded-sm items-center justify-center cursor-default ${hoverBackground}`}
+        >
+          <HeartHandshake
+            className={`w-4 h-4 shrink-0 ${strokeColor} fill-none`}
+          />
+        </div>
+      </HoverCardTrigger>
+      <HoverCardPortal>
+        <HoverCardContent side="top" className="w-auto px-3 py-1.5">
+          <p className="text-sm">Bridging statement</p>
+        </HoverCardContent>
+      </HoverCardPortal>
+    </HoverCard>
   );
 }
 
@@ -79,7 +126,7 @@ export function QuoteIcon({ num }: { num: number }) {
   return (
     <Row
       gap={1}
-      className={`px-2 py-[2px] border rounded-sm min-w-fit items-center ${hoverBackground}`}
+      className={`h-7 px-2 border rounded-sm min-w-fit items-center ${hoverBackground}`}
     >
       <Icons.QuoteBubble className={`${fillColor}`} />
       <p className={`p2 ${fontColor}`}>{num}</p>

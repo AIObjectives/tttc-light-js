@@ -73,6 +73,7 @@ export const llmUserConfig = z.object({
   summariesInstructions: z.string().min(1),
   cruxInstructions: z.string(),
   cruxesEnabled: z.boolean(),
+  bridgingEnabled: z.boolean().default(false),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
@@ -624,8 +625,8 @@ export const subtopicCrux = z
       .number()
       .min(0, "Controversy score must be between 0 and 1")
       .max(1, "Controversy score must be between 0 and 1"), // 0-1: how evenly split (1.0 = perfect 50/50 split)
-    speakersInvolved: z.number().int().nonnegative(), // Total speakers who took a position (agree + disagree)
-    totalSpeakersInSubtopic: z.number().int().nonnegative(), // Total speakers with claims in this subtopic
+    speakersInvolved: z.number().int().nonnegative().optional(), // Total speakers who took a position (agree + disagree)
+    totalSpeakersInSubtopic: z.number().int().nonnegative().optional(), // Total speakers with claims in this subtopic
   })
   .transform(reconcileCruxSpeakers)
   // Sanity check: Validate no speaker overlap after reconciliation
@@ -707,6 +708,57 @@ export const speakerCruxMatrix = z.object({
 export type SpeakerCruxMatrix = z.infer<typeof speakerCruxMatrix>;
 
 /**
+ * ClaimBridgingScore: Perspective API bridging attributes for a single claim.
+ *
+ * Scores claims on bridge-building qualities using Perspective API experimental attributes:
+ * - personalStory: Contains personal experiences/anecdotes (builds empathy)
+ * - reasoning: Contains logical argumentation (fosters understanding)
+ * - curiosity: Expresses curiosity/questions (encourages dialogue)
+ * - toxicity: Rude/divisive content (penalty multiplier)
+ *
+ * All scores are probabilities (0-1 range) from Perspective API.
+ * Higher bridgingScore = more constructive, bridge-building content.
+ *
+ * bridgingScore formula: (personalStory + reasoning + curiosity) * (1 - toxicity)
+ * Range: 0 to 3.0 (max when all positive attributes = 1.0 and toxicity = 0;
+ *                  min/zero when toxicity = 1.0, completely disqualifying the content)
+ */
+export const claimBridgingScore = z.object({
+  claimId: z.string(), // Claim ID from LLM extraction
+  topicName: z.string(), // Parent topic
+  subtopicName: z.string(), // Parent subtopic
+  personalStory: z.number().min(0).max(1).finite(), // PERSONAL_STORY_EXPERIMENTAL score (0-1)
+  reasoning: z.number().min(0).max(1).finite(), // REASONING_EXPERIMENTAL score (0-1)
+  curiosity: z.number().min(0).max(1).finite(), // CURIOSITY_EXPERIMENTAL score (0-1)
+  toxicity: z.number().min(0).max(1).finite(), // TOXICITY score (0-1)
+  bridgingScore: z.number().min(0).max(3).finite(), // Composite score (0 to 3.0)
+});
+
+export type ClaimBridgingScore = z.infer<typeof claimBridgingScore>;
+
+/**
+ * QuoteBridgingScore: Perspective API bridging scores for individual quotes.
+ *
+ * Similar to ClaimBridgingScore but includes quote-specific context
+ * for tracking individual participant communication styles.
+ */
+export const quoteBridgingScore = z.object({
+  quoteId: z.string(), // Quote ID
+  claimId: z.string(), // Parent claim ID for navigation/grouping
+  topicName: z.string(), // Parent topic
+  subtopicName: z.string(), // Parent subtopic
+  speakerId: z.string(), // Source ID for per-speaker analysis
+  interview: z.string(), // Speaker name for display
+  personalStory: z.number().min(0).max(1).finite(), // PERSONAL_STORY_EXPERIMENTAL score (0-1)
+  reasoning: z.number().min(0).max(1).finite(), // REASONING_EXPERIMENTAL score (0-1)
+  curiosity: z.number().min(0).max(1).finite(), // CURIOSITY_EXPERIMENTAL score (0-1)
+  toxicity: z.number().min(0).max(1).finite(), // TOXICITY score (0-1)
+  bridgingScore: z.number().min(0).max(3).finite(), // Composite score (0 to 3.0)
+});
+
+export type QuoteBridgingScore = z.infer<typeof quoteBridgingScore>;
+
+/**
  * AddOns: Container for optional research features.
  *
  * All fields optional - populated only when features are enabled in user config.
@@ -720,6 +772,8 @@ export const addOns = z.object({
   subtopicCruxes: subtopicCrux.array().optional(), // One crux per qualifying subtopic with controversy scores
   topicScores: topicScore.array().optional(), // Topic-level rollups for sorting entire topics
   speakerCruxMatrix: speakerCruxMatrix.optional(), // Speaker × Crux voting pattern matrix
+  claimBridgingScores: claimBridgingScore.array().optional(), // Perspective API bridging scores per claim
+  quoteBridgingScores: quoteBridgingScore.array().optional(), // Perspective API bridging scores per quote
 });
 
 export type AddOns = z.infer<typeof addOns>;

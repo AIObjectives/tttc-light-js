@@ -95,6 +95,11 @@ spec:
                   name: analytics-api-key
             - name: RATE_LIMIT_PREFIX
               value: dev-PR_NUMBER
+            - name: PERSPECTIVE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: perspective-api-key
 
           resources:
             limits:

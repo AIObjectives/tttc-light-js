@@ -98,6 +98,8 @@ const statusToProgress = (status: api.ReportJobStatus) => {
       return 70;
     case "wrappingup":
       return 80;
+    case "scoring_bridging":
+      return 90;
     case "finished":
       return 100;
     case "failed":
@@ -128,6 +130,8 @@ const statusMessage = (status: api.ReportJobStatus) => {
       return "Generating topic summaries...";
     case "wrappingup":
       return "Wrapping up...";
+    case "scoring_bridging":
+      return "Scoring content for bridging potential...";
     case "finished":
       return "Report complete!";
     case "failed":

@@ -23,6 +23,11 @@ import {
   deleteAuditLog,
 } from "../utils/auditLogRedis";
 import Redis from "ioredis";
+import {
+  scoreClaims,
+  scoreClaimsFromHydratedTree,
+  scoreQuotes,
+} from "../lib/perspective-api";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
 
@@ -143,6 +148,7 @@ interface PipelineConfig {
   api_key: string;
   options: {
     cruxes: boolean;
+    bridging: boolean;
   };
 }
 
@@ -203,11 +209,66 @@ export async function pipelineJob(job: PipelineJob) {
     num_rows: numRows,
     model: config.llm.model,
     has_cruxes: config.options.cruxes,
+    has_bridging: config.options.bridging,
     started_at: Date.now(),
   };
 
   // Create our storage object for storing the pipeline's output json
   const storage = createStorage(env);
+
+  // Create Redis connection for pipeline (audit log, caching, rate limiting)
+  pipelineLogger.info(
+    { reportId, redisUrl: env.REDIS_URL },
+    "Creating Redis connection for pipeline",
+  );
+
+  let redis: Redis | undefined = undefined;
+  try {
+    redis = new Redis(env.REDIS_URL, {
+      connectionName: "Pipeline-AuditLog",
+      maxRetriesPerRequest: 3,
+      connectTimeout: 10000, // 10 seconds
+      commandTimeout: 5000, // 5 seconds per command
+      enableReadyCheck: true,
+      lazyConnect: false,
+      retryStrategy: (times) => {
+        if (times > 3) return null; // Stop retrying after 3 attempts
+        return Math.min(times * 100, 3000); // Exponential backoff up to 3s
+      },
+    });
+
+    // Log Redis connection events
+    redis.on("connect", () => {
+      pipelineLogger.info({ reportId }, "Redis connected");
+    });
+    redis.on("ready", () => {
+      pipelineLogger.info({ reportId }, "Redis ready");
+    });
+    redis.on("error", (error) => {
+      pipelineLogger.error({ reportId, error }, "Redis error");
+    });
+    redis.on("close", () => {
+      pipelineLogger.warn({ reportId }, "Redis connection closed");
+    });
+    redis.on("reconnecting", () => {
+      pipelineLogger.warn({ reportId }, "Redis reconnecting");
+    });
+  } catch (error) {
+    pipelineLogger.warn(
+      {
+        reportId,
+        error: error instanceof Error ? error.message : "Unknown error",
+        redisUrl: env.REDIS_URL,
+      },
+      "Failed to connect to Redis for pipeline - continuing without cache",
+    );
+    redis = undefined;
+  }
+
+  pipelineLogger.info(
+    { reportId, redisStatus: redis?.status || "disconnected" },
+    "Redis connection created",
+  );
 
   // Do each of the steps in the pipeline
   // This returns the results of each of the steps.
@@ -220,348 +281,425 @@ export async function pipelineJob(job: PipelineJob) {
     summariesStep,
     addonsStep,
     auditLog,
-  } = await doPipelineSteps(job);
-  const pipelineEnd = Date.now();
-  const pipelineDuration = pipelineEnd - pipelineStart;
-  const processingRate = Math.round((numRows / pipelineDuration) * 1000);
-  const dataEfficiency = Math.round(actualDataSize / numRows);
+  } = await doPipelineSteps(job, redis);
 
-  pipelineLogger.info(
-    {
-      reportId: reportId,
-      duration: pipelineDuration,
-      stepsCompleted: {
-        topicTree: topicTreeStep.tag === "success",
-        claims: claimsStep.tag === "success",
-        sorted: sortedStep.tag === "success",
-        addons: addonsStep.tag === "success",
-      },
-      analytics: {
-        processingRateRowsPerSecond: processingRate,
-        dataEfficiency: dataEfficiency, // bytes per row
-      },
-    },
-    "Pipeline steps completed",
-  );
-
-  // Add pipeline performance data to analytics batch
-  analyticsData.pipeline_duration_ms = pipelineDuration;
-  analyticsData.processing_rate_rows_per_sec = processingRate;
-  analyticsData.data_efficiency_bytes_per_row = dataEfficiency;
-  analyticsData.steps_success = {
-    topic_tree: topicTreeStep.tag === "success",
-    claims: claimsStep.tag === "success",
-    sorted: sortedStep.tag === "success",
-    addons: addonsStep.tag === "success",
-  };
-
-  // Summarizes all of the Usage objects into a single tracker object.
-  // As of right now, it will skip over the failed steps and summarize only the success
-  const tracker = summarizeUsage([
-    topicTreeStep,
-    claimsStep,
-    sortedStep,
-    summariesStep,
-  ]);
-  logTokensInTracker(tracker, "Total output");
-
-  // Unpack the data from each of the steps
-  const topicData = mapResult(topicTreeStep, (t) => t.data);
-  const claimsData = mapResult(claimsStep, (c) => c.data);
-  const sortData = mapResult(sortedStep, (s) => s.data);
-  const summariesData = mapResult(summariesStep, (s) => s.data);
-
-  // Goes from Result<Step, Errors>[] -> Result<Step[], Errors>
-  const outputData = sequenceResult([
-    topicData,
-    claimsData,
-    sortData,
-    summariesData,
-  ] as const);
-
-  // We need to take the data we made from the pipeline steps and format it into
-  // the Taxonomy object
-  const newTaxonomyResult = mapResult(
-    outputData,
-    ([topicData, _, sortData, summariesData]) => {
-      // Create a map of topic names to summaries for quick lookup
-      const summariesMap = new Map<string, string>();
-      summariesData.forEach(
-        (summary: { topicName: string; summary: string }) => {
-          summariesMap.set(summary.topicName, summary.summary);
-        },
-      );
-
-      const newTax: schema.Taxonomy = topicData.tree.taxonomy.map(
-        (t: apiPyserver.PartialTopic) => ({
-          ...t,
-          topicId: randomUUID(),
-          topicSummary: summariesMap.get(t.topicName), // Add the topic summary
-          subtopics: t.subtopics.map((sub) =>
-            mapSubtopicWithClaims(sub, t.topicName, sortData),
-          ),
-        }),
-      );
-      return newTax;
-    },
-  );
-
-  const end = Date.now();
-  const secs = (end - tracker.start) / 1000;
-  const finalTracker: schema.Tracker = {
-    ...tracker,
-    end,
-    duration:
-      secs > 60
-        ? `${Math.floor(secs / 60)} minutes ${secs % 60} seconds`
-        : `${secs} seconds`,
-  };
-
-  pipelineLogger.info(
-    { duration: finalTracker.duration },
-    "Pipeline completed",
-  );
-
-  // The pipeline is set to output this schema.LLMPipelineOutput function, so
-  // take our data and form the output object
-  const outputResult = mapResult(
-    sequenceResult([
-      newTaxonomyResult,
-      success(data),
-      success(finalTracker),
-      addonsStep,
-    ] as const),
-    ([tree, data, tracker, addonsStep]): schema.LLMPipelineOutput => ({
-      ...tracker,
-      ...config.instructions,
-      tree,
-      data,
-      addOns: {
-        subtopicCruxes: addonsStep?.subtopicCruxes,
-        topicScores: addonsStep?.topicScores,
-        speakerCruxMatrix: addonsStep?.speakerCruxMatrix,
-      },
-      question: question,
-      title: title,
-      description: description,
-      batchSize: 0, // I think this is deprecated? Leaving at 0 for now.
-    }),
-  );
-
-  // Take the pipeline object and translate it into our updated schema
-  const finalResult = mapResult(outputResult, (pipelineOutput) => {
-    const result = llmPipelineToSchema(pipelineOutput);
-    // Add audit log if available
-    if (auditLog) {
-      return { ...result, auditLog };
-    }
-    return result;
-  });
-
-  if (finalResult.tag === "success") {
-    // add the json data to storage
-    const resultValue = finalResult.value;
-    const resultValueJson = JSON.stringify(resultValue); // Calculate once
-    const reportJsonSize = resultValueJson.length;
-    pipelineLogger.info(
-      {
-        reportJsonSize,
-        filename,
-      },
-      "Saving final report to storage",
-    );
-
-    const saveResult = await storage.save(
-      filename,
-      resultValueJson, // Reuse the already stringified JSON
-    );
-
-    if (saveResult.tag === "failure") {
-      pipelineLogger.error(
-        {
-          error: saveResult.error,
-          filename,
-          reportJsonSize,
-        },
-        "Failed to save final report",
-      );
-      throw new Error(
-        `Failed to save final report: ${saveResult.error.message}`,
-      );
-    }
-
-    const outputExpansionFactor =
-      Math.round((reportJsonSize / actualDataSize) * 100) / 100;
-    const sizeEfficiencyBytesPerRow = Math.round(reportJsonSize / numRows);
+  // Wrap all Redis usage in try/finally to guarantee cleanup
+  try {
+    const pipelineEnd = Date.now();
+    const pipelineDuration = pipelineEnd - pipelineStart;
+    const processingRate = Math.round((numRows / pipelineDuration) * 1000);
+    const dataEfficiency = Math.round(actualDataSize / numRows);
 
     pipelineLogger.info(
       {
-        savedUrl: saveResult.value,
-        reportJsonSize,
+        reportId: reportId,
+        duration: pipelineDuration,
+        stepsCompleted: {
+          topicTree: topicTreeStep.tag === "success",
+          claims: claimsStep.tag === "success",
+          sorted: sortedStep.tag === "success",
+          addons: addonsStep.tag === "success",
+        },
         analytics: {
-          outputExpansionFactor,
-          sizeEfficiencyBytesPerRow,
+          processingRateRowsPerSecond: processingRate,
+          dataEfficiency: dataEfficiency, // bytes per row
         },
       },
-      "Final report saved successfully",
+      "Pipeline steps completed",
     );
 
-    // Add completion data to analytics batch and send once
-    analyticsData.status = "completed";
-    analyticsData.total_duration_ms = Date.now() - analyticsData.started_at;
-    analyticsData.output_size_bytes = reportJsonSize;
-    analyticsData.output_expansion_factor = outputExpansionFactor;
-    analyticsData.size_efficiency_bytes_per_row = sizeEfficiencyBytesPerRow;
-    analyticsData.total_prompt_tokens = finalTracker.prompt_tokens;
-    analyticsData.total_completion_tokens = finalTracker.completion_tokens;
-    analyticsData.total_tokens = finalTracker.total_tokens;
-    analyticsData.total_cost = finalTracker.costs;
+    // Add pipeline performance data to analytics batch
+    analyticsData.pipeline_duration_ms = pipelineDuration;
+    analyticsData.processing_rate_rows_per_sec = processingRate;
+    analyticsData.data_efficiency_bytes_per_row = dataEfficiency;
+    analyticsData.steps_success = {
+      topic_tree: topicTreeStep.tag === "success",
+      claims: claimsStep.tag === "success",
+      sorted: sortedStep.tag === "success",
+      addons: addonsStep.tag === "success",
+    };
 
-    // Send consolidated analytics in single deferred call
-    setImmediate(() => {
-      analytics?.track({
-        name: "report_completed",
-        properties: analyticsData,
-      });
+    // Summarizes all of the Usage objects into a single tracker object.
+    // As of right now, it will skip over the failed steps and summarize only the success
+    const tracker = summarizeUsage([
+      topicTreeStep,
+      claimsStep,
+      sortedStep,
+      summariesStep,
+    ]);
+    logTokensInTracker(tracker, "Total output");
+
+    // Unpack the data from each of the steps
+    const topicData = mapResult(topicTreeStep, (t) => t.data);
+    const claimsData = mapResult(claimsStep, (c) => c.data);
+    const sortData = mapResult(sortedStep, (s) => s.data);
+    const summariesData = mapResult(summariesStep, (s) => s.data);
+
+    // Goes from Result<Step, Errors>[] -> Result<Step[], Errors>
+    const outputData = sequenceResult([
+      topicData,
+      claimsData,
+      sortData,
+      summariesData,
+    ] as const);
+
+    // We need to take the data we made from the pipeline steps and format it into
+    // the Taxonomy object
+    const newTaxonomyResult = mapResult(
+      outputData,
+      ([topicData, _, sortData, summariesData]) => {
+        // Create a map of topic names to summaries for quick lookup
+        const summariesMap = new Map<string, string>();
+        summariesData.forEach(
+          (summary: { topicName: string; summary: string }) => {
+            summariesMap.set(summary.topicName, summary.summary);
+          },
+        );
+
+        const newTax: schema.Taxonomy = topicData.tree.taxonomy.map(
+          (t: apiPyserver.PartialTopic) => ({
+            ...t,
+            topicId: randomUUID(),
+            topicSummary: summariesMap.get(t.topicName), // Add the topic summary
+            subtopics: t.subtopics.map((sub) =>
+              mapSubtopicWithClaims(sub, t.topicName, sortData),
+            ),
+          }),
+        );
+        return newTax;
+      },
+    );
+
+    const end = Date.now();
+    const secs = (end - tracker.start) / 1000;
+    const finalTracker: schema.Tracker = {
+      ...tracker,
+      end,
+      duration:
+        secs > 60
+          ? `${Math.floor(secs / 60)} minutes ${secs % 60} seconds`
+          : `${secs} seconds`,
+    };
+
+    pipelineLogger.info(
+      { duration: finalTracker.duration },
+      "Pipeline completed",
+    );
+
+    // The pipeline is set to output this schema.LLMPipelineOutput function, so
+    // take our data and form the output object
+    const outputResult = mapResult(
+      sequenceResult([
+        newTaxonomyResult,
+        success(data),
+        success(finalTracker),
+        addonsStep,
+      ] as const),
+      ([tree, data, tracker, addonsStep]): schema.LLMPipelineOutput => ({
+        ...tracker,
+        ...config.instructions,
+        tree,
+        data,
+        addOns: {
+          subtopicCruxes: addonsStep?.subtopicCruxes,
+          topicScores: addonsStep?.topicScores,
+          speakerCruxMatrix: addonsStep?.speakerCruxMatrix,
+          // Claim bridging scores added after hydration
+        },
+        question: question,
+        title: title,
+        description: description,
+        batchSize: 0, // I think this is deprecated? Leaving at 0 for now.
+      }),
+    );
+
+    // Take the pipeline object and translate it into our updated schema
+    const finalResult = mapResult(outputResult, (pipelineOutput) => {
+      const result = llmPipelineToSchema(pipelineOutput);
+
+      // Claim scoring happens after this, once IDs are assigned
+      // Add audit log if available
+      if (auditLog) {
+        return { ...result, auditLog };
+      }
+      return result;
     });
 
-    // Add the job ref to Firebase using stable report ID
-    const resultData = resultValue.data;
+    if (finalResult.tag === "success") {
+      const resultValue = finalResult.value;
 
-    // Validate result data structure before destructuring
-    if (
-      !resultData?.[1]?.topics ||
-      !resultData[1].sources ||
-      !resultData[1].date
-    ) {
+      // Score claims with Perspective API after hydration
+      // Now claims have UUIDs, so scores can reference them directly (no text matching needed)
+      if (config.options.bridging === true && resultValue.data?.[1]?.topics) {
+        pipelineLogger.info("Scoring claims for bridging potential");
+
+        // Update status to show bridging scoring in progress
+        await updatePipelineStatus(
+          config.firebaseDetails.reportId ||
+            config.firebaseDetails.firebaseJobId,
+          "processing",
+          "scoring_bridging",
+        );
+
+        try {
+          const claimBridgingScores = await scoreClaimsFromHydratedTree(
+            resultValue.data[1].topics,
+            redis,
+            undefined,
+            config.env.RATE_LIMIT_PREFIX,
+          );
+
+          if (claimBridgingScores.length > 0) {
+            // Initialize addOns if it doesn't exist
+            if (!resultValue.data[1].addOns) {
+              resultValue.data[1].addOns = {};
+            }
+            resultValue.data[1].addOns.claimBridgingScores =
+              claimBridgingScores;
+            pipelineLogger.info(
+              { scoresGenerated: claimBridgingScores.length },
+              "Claim bridging scoring completed successfully",
+            );
+          }
+        } catch (error) {
+          // Soft failure: Claim scoring is an optional enhancement.
+          // We log the error but allow the report to complete without claim scores.
+          pipelineLogger.error(
+            {
+              error: error instanceof Error ? error.message : "Unknown error",
+              stack: error instanceof Error ? error.stack : undefined,
+            },
+            "Claim bridging scoring failed - report will complete without claim scores",
+          );
+        }
+      }
+
+      // Score quotes with Perspective API after hydration
+      // This must happen after llmPipelineToSchema since we need the hydrated tree with quote IDs
+      if (config.options.bridging === true && resultValue.data?.[1]?.topics) {
+        pipelineLogger.info("Scoring quotes for bridging potential");
+
+        // Status already updated by claim scoring above
+        // Reuse Redis connection for quote scoring
+        try {
+          const quoteBridgingScores = await scoreQuotes(
+            resultValue.data[1].topics,
+            redis,
+            undefined,
+            config.env.RATE_LIMIT_PREFIX,
+          );
+
+          if (quoteBridgingScores.length > 0) {
+            // Initialize addOns if it doesn't exist
+            if (!resultValue.data[1].addOns) {
+              resultValue.data[1].addOns = {};
+            }
+            resultValue.data[1].addOns.quoteBridgingScores =
+              quoteBridgingScores;
+            pipelineLogger.info(
+              { scoresGenerated: quoteBridgingScores.length },
+              "Quote bridging scoring completed successfully",
+            );
+          }
+        } catch (error) {
+          // Soft failure: Quote scoring is an optional enhancement.
+          // We log the error but allow the report to complete without quote scores.
+          // This ensures users still get their report even if Perspective API fails.
+          pipelineLogger.error(
+            {
+              error: error instanceof Error ? error.message : "Unknown error",
+              stack: error instanceof Error ? error.stack : undefined,
+            },
+            "Quote bridging scoring failed - report will complete without quote scores",
+          );
+        }
+      }
+
+      // add the json data to storage
+      const resultValueJson = JSON.stringify(resultValue); // Calculate once
+      const reportJsonSize = resultValueJson.length;
+      pipelineLogger.info(
+        {
+          reportJsonSize,
+          filename,
+        },
+        "Saving final report to storage",
+      );
+
+      const saveResult = await storage.save(
+        filename,
+        resultValueJson, // Reuse the already stringified JSON
+      );
+
+      if (saveResult.tag === "failure") {
+        pipelineLogger.error(
+          {
+            error: saveResult.error,
+            filename,
+            reportJsonSize,
+          },
+          "Failed to save final report",
+        );
+        throw new Error(
+          `Failed to save final report: ${saveResult.error.message}`,
+        );
+      }
+
+      const outputExpansionFactor =
+        Math.round((reportJsonSize / actualDataSize) * 100) / 100;
+      const sizeEfficiencyBytesPerRow = Math.round(reportJsonSize / numRows);
+
+      pipelineLogger.info(
+        {
+          savedUrl: saveResult.value,
+          reportJsonSize,
+          analytics: {
+            outputExpansionFactor,
+            sizeEfficiencyBytesPerRow,
+          },
+        },
+        "Final report saved successfully",
+      );
+
+      // Add completion data to analytics batch and send once
+      analyticsData.status = "completed";
+      analyticsData.total_duration_ms = Date.now() - analyticsData.started_at;
+      analyticsData.output_size_bytes = reportJsonSize;
+      analyticsData.output_expansion_factor = outputExpansionFactor;
+      analyticsData.size_efficiency_bytes_per_row = sizeEfficiencyBytesPerRow;
+      analyticsData.total_prompt_tokens = finalTracker.prompt_tokens;
+      analyticsData.total_completion_tokens = finalTracker.completion_tokens;
+      analyticsData.total_tokens = finalTracker.total_tokens;
+      analyticsData.total_cost = finalTracker.costs;
+
+      // Send consolidated analytics in single deferred call
+      setImmediate(() => {
+        analytics?.track({
+          name: "report_completed",
+          properties: analyticsData,
+        });
+      });
+
+      // Add the job ref to Firebase using stable report ID
+      const resultData = resultValue.data;
+
+      // Validate result data structure before destructuring
+      if (
+        !resultData?.[1]?.topics ||
+        !resultData[1].sources ||
+        !resultData[1].date
+      ) {
+        pipelineLogger.error(
+          {
+            hasResultData: !!resultData,
+            hasResultData1: !!resultData?.[1],
+            hasTopics: !!resultData?.[1]?.topics,
+            hasSources: !!resultData?.[1]?.sources,
+            hasDate: !!resultData?.[1]?.date,
+          },
+          "Pipeline result missing required fields",
+        );
+        throw new Error(
+          "Pipeline result missing required fields: topics, sources, or date",
+        );
+      }
+
+      const { topics, sources, date } = resultData[1];
+      const { firebaseDetails } = config;
+
+      // Update existing ReportRef document with final statistics
+      const reportId =
+        firebaseDetails.reportId || firebaseDetails.firebaseJobId;
+
+      // Update reportDataUri to point to the final report file
+      const finalReportUri = saveResult.value;
+      await Firebase.updateReportRefDataUri(reportId, finalReportUri);
+
+      await Firebase.updateReportRefWithStats(
+        reportId,
+        firebaseDetails.firebaseJobId,
+        {
+          title,
+          description: description,
+          numTopics: topics.length,
+          numSubtopics: topics.flatMap((t) => t.subtopics ?? []).length,
+          numClaims: topics.flatMap((t) =>
+            (t.subtopics ?? []).flatMap((s) => s.claims ?? []),
+          ).length,
+          numPeople: new Set(sources.map((s) => s.interview).filter(Boolean))
+            .size,
+          createdDate: new Date(date),
+        },
+      );
+
+      // Set ReportRef status to completed
+      await updatePipelineStatus(reportId, "completed");
+    } else {
+      const err = finalResult.error as Error;
+
       pipelineLogger.error(
         {
-          hasResultData: !!resultData,
-          hasResultData1: !!resultData?.[1],
-          hasTopics: !!resultData?.[1]?.topics,
-          hasSources: !!resultData?.[1]?.sources,
-          hasDate: !!resultData?.[1]?.date,
+          error: err,
+          errorName: err.name,
+          errorMessage: err.message,
         },
-        "Pipeline result missing required fields",
+        "Pipeline error occurred",
       );
-      throw new Error(
-        "Pipeline result missing required fields: topics, sources, or date",
-      );
-    }
 
-    const { topics, sources, date } = resultData[1];
-    const { firebaseDetails } = config;
+      // Add failure data to analytics batch and send once
+      analyticsData.status = "failed";
+      analyticsData.error_name = err.name;
+      analyticsData.error_message = err.message;
+      analyticsData.failed_at_stage = "final_processing";
+      analyticsData.total_duration_ms = Date.now() - analyticsData.started_at;
 
-    // Update existing ReportRef document with final statistics
-    const reportId = firebaseDetails.reportId || firebaseDetails.firebaseJobId;
-
-    // Update reportDataUri to point to the final report file
-    const finalReportUri = saveResult.value;
-    await Firebase.updateReportRefDataUri(reportId, finalReportUri);
-
-    await Firebase.updateReportRefWithStats(
-      reportId,
-      firebaseDetails.firebaseJobId,
-      {
-        title,
-        description: description,
-        numTopics: topics.length,
-        numSubtopics: topics.flatMap((t) => t.subtopics ?? []).length,
-        numClaims: topics.flatMap((t) =>
-          (t.subtopics ?? []).flatMap((s) => s.claims ?? []),
-        ).length,
-        numPeople: new Set(sources.map((s) => s.interview).filter(Boolean))
-          .size,
-        createdDate: new Date(date),
-      },
-    );
-
-    // Set ReportRef status to completed
-    await updatePipelineStatus(reportId, "completed");
-  } else {
-    const err = finalResult.error as Error;
-
-    pipelineLogger.error(
-      {
-        error: err,
-        errorName: err.name,
-        errorMessage: err.message,
-      },
-      "Pipeline error occurred",
-    );
-
-    // Add failure data to analytics batch and send once
-    analyticsData.status = "failed";
-    analyticsData.error_name = err.name;
-    analyticsData.error_message = err.message;
-    analyticsData.failed_at_stage = "final_processing";
-    analyticsData.total_duration_ms = Date.now() - analyticsData.started_at;
-
-    // Send consolidated failure analytics in single deferred call
-    setImmediate(() => {
-      analytics?.track({
-        name: "report_failed",
-        properties: analyticsData,
+      // Send consolidated failure analytics in single deferred call
+      setImmediate(() => {
+        analytics?.track({
+          name: "report_failed",
+          properties: analyticsData,
+        });
       });
-    });
 
-    // We can handle specific errors here if we want.
-    throw err;
+      // We can handle specific errors here if we want.
+      throw err;
+    }
+  } finally {
+    // Cleanup Redis connection to prevent leaks
+    // This runs whether the pipeline succeeds or fails
+    if (redis) {
+      try {
+        redis.disconnect();
+        pipelineLogger.info(
+          { reportId },
+          "Redis connection closed successfully",
+        );
+      } catch (error) {
+        pipelineLogger.warn(
+          {
+            reportId,
+            error: error instanceof Error ? error.message : "Unknown error",
+          },
+          "Failed to disconnect Redis - connection may leak",
+        );
+      }
+    }
   }
 }
 
 /**
  * Does each of the steps in the pyserver pipeline
+ * @param job - Pipeline job configuration
+ * @param redis - Redis connection for audit log and caching (owned by caller)
  */
-async function doPipelineSteps(job: PipelineJob) {
+async function doPipelineSteps(job: PipelineJob, redis: Redis | undefined) {
   const { config, data } = job;
   const reportId = config.firebaseDetails?.reportId;
   const userId = config.firebaseDetails?.userId;
 
-  // Get Redis connection for audit log
-  // TODO: Improve dependency injection by adding redis to PipelineConfig
-  pipelineLogger.info(
-    { reportId, redisUrl: config.env.REDIS_URL },
-    "Creating Redis connection for audit log",
-  );
-  const redis = new Redis(config.env.REDIS_URL, {
-    connectionName: "Pipeline-AuditLog",
-    maxRetriesPerRequest: 3,
-    connectTimeout: 10000, // 10 seconds
-    commandTimeout: 5000, // 5 seconds per command
-    enableReadyCheck: true,
-    lazyConnect: false,
-    retryStrategy: (times) => {
-      if (times > 3) return null; // Stop retrying after 3 attempts
-      return Math.min(times * 100, 3000); // Exponential backoff up to 3s
-    },
-  });
-
-  // Log Redis connection events
-  redis.on("connect", () => {
-    pipelineLogger.info({ reportId }, "Redis connected");
-  });
-  redis.on("ready", () => {
-    pipelineLogger.info({ reportId }, "Redis ready");
-  });
-  redis.on("error", (error) => {
-    pipelineLogger.error({ reportId, error }, "Redis error");
-  });
-  redis.on("close", () => {
-    pipelineLogger.warn({ reportId }, "Redis connection closed");
-  });
-  redis.on("reconnecting", () => {
-    pipelineLogger.warn({ reportId }, "Redis reconnecting");
-  });
-
-  pipelineLogger.info(
-    { reportId, redisStatus: redis.status },
-    "Redis connection created",
-  );
-
   // Initialize audit log in Redis before pipeline starts
   const commentCount = data.length;
-  if (reportId) {
+  if (reportId && redis) {
     try {
       await initializeAuditLog(redis, reportId, commentCount);
       pipelineLogger.info(
@@ -658,7 +796,7 @@ async function doPipelineSteps(job: PipelineJob) {
     {
       reportId: config.firebaseDetails.reportId,
       claimsStepTag: claimsStep.tag,
-      redisStatus: redis.status,
+      redisStatus: redis?.status || "disconnected",
     },
     "Claims step flatMapResultAsync returned",
   );
@@ -778,6 +916,10 @@ async function doPipelineSteps(job: PipelineJob) {
   } else {
     pipelineLogger.debug("Cruxes step skipped (not enabled)");
   }
+
+  // Claim scoring moved to after hydration in pipelineJob()
+  // This eliminates text matching complexity and guarantees all claims get scored
+
   // update job progress
   pipelineLogger.info("Step 5: wrapping up");
   // Update reportRef to keep status in sync with correct sub-state
@@ -789,7 +931,7 @@ async function doPipelineSteps(job: PipelineJob) {
 
   // Retrieve final audit log from Redis
   let finalAuditLog: schema.ProcessingAuditLog | undefined;
-  if (reportId) {
+  if (reportId && redis) {
     try {
       const auditLog = await getAuditLog(redis, reportId);
       if (auditLog) {
@@ -814,9 +956,8 @@ async function doPipelineSteps(job: PipelineJob) {
     }
   }
 
-  // Close Redis connection
-  redis.disconnect();
-
+  // Redis connection is owned by caller (pipelineJob)
+  // Bridging scores are generated after hydration in pipelineJob
   return {
     topicTreeStep,
     claimsStep,
@@ -919,7 +1060,7 @@ const PipelineOutputToProps = {
  */
 const makePyserverFuncs = (
   config: PipelineConfig,
-  redis: Redis,
+  redis: Redis | undefined,
   userId?: string,
   reportId?: string,
 ) => {
@@ -968,53 +1109,56 @@ const makePyserverFuncs = (
       "Checking taxonomy cache",
     );
 
-    try {
-      // Check cache first
-      const cachedTaxonomy = await redis.get(cacheKey);
+    if (redis) {
+      try {
+        // Check cache first
+        const cachedTaxonomy = await redis.get(cacheKey);
 
-      if (cachedTaxonomy) {
+        if (cachedTaxonomy) {
+          pipelineLogger.info(
+            {
+              reportId,
+              cacheKey,
+              commentsHash: commentsHash.substring(0, 16),
+            },
+            "Taxonomy cache HIT - reusing cached taxonomy",
+          );
+
+          // Parse cached taxonomy and construct the expected response format
+          const taxonomy: apiPyserver.PartialTopic[] =
+            JSON.parse(cachedTaxonomy);
+
+          // Return in the same format as the pyserver would return
+          const cachedResponse: apiPyserver.TopicTreeResponse = {
+            data: taxonomy,
+            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+            cost: 0,
+          };
+
+          return success(
+            PipelineOutputToProps.makeClaimsProps(cachedResponse, comments),
+          );
+        }
+
         pipelineLogger.info(
           {
             reportId,
             cacheKey,
             commentsHash: commentsHash.substring(0, 16),
           },
-          "Taxonomy cache HIT - reusing cached taxonomy",
+          "Taxonomy cache MISS - generating new taxonomy via LLM",
         );
-
-        // Parse cached taxonomy and construct the expected response format
-        const taxonomy: apiPyserver.PartialTopic[] = JSON.parse(cachedTaxonomy);
-
-        // Return in the same format as the pyserver would return
-        const cachedResponse: apiPyserver.TopicTreeResponse = {
-          data: taxonomy,
-          usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-          cost: 0,
-        };
-
-        return success(
-          PipelineOutputToProps.makeClaimsProps(cachedResponse, comments),
+      } catch (error) {
+        // Cache read failed - log but continue to LLM generation
+        pipelineLogger.warn(
+          {
+            reportId,
+            cacheKey,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "Failed to check taxonomy cache - continuing with LLM generation",
         );
       }
-
-      pipelineLogger.info(
-        {
-          reportId,
-          cacheKey,
-          commentsHash: commentsHash.substring(0, 16),
-        },
-        "Taxonomy cache MISS - generating new taxonomy via LLM",
-      );
-    } catch (error) {
-      // Cache read failed - log but continue to LLM generation
-      pipelineLogger.warn(
-        {
-          reportId,
-          cacheKey,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        "Failed to check taxonomy cache - continuing with LLM generation",
-      );
     }
 
     // Cache miss or error - call LLM to generate taxonomy
@@ -1029,7 +1173,7 @@ const makePyserverFuncs = (
     );
 
     // Cache the result if successful
-    if (result.tag === "success") {
+    if (result.tag === "success" && redis) {
       try {
         const taxonomyToCache = result.value.data;
         await redis.set(

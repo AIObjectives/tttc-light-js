@@ -160,7 +160,7 @@ describe("GooglePubSubQueue", () => {
             summariesInstructions: "test",
           },
           api_key: "test-key",
-          options: { cruxes: false },
+          options: { cruxes: false, bridging: false },
         },
         data: [],
         reportDetails: {

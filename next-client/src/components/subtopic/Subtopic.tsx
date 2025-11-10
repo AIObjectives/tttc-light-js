@@ -247,6 +247,9 @@ function CruxDisplay({
   const textColorClass = topicColor
     ? getThemeColor(topicColor, "text")
     : "text-muted-foreground";
+  const hoverBgClass = topicColor
+    ? getThemeColor(topicColor, "bgAccentHover")
+    : "hover:bg-accent";
 
   // Handle click: Navigate to Cruxes tab and scroll to this crux
   const handleClick = () => {
@@ -325,7 +328,7 @@ function CruxDisplay({
               {crux.cruxClaim}
             </p>
             <div
-              className={`flex items-center gap-1 border border-border rounded-md px-2 py-1 shrink-0 hover:bg-accent transition-colors ${textColorClass}`}
+              className={`flex items-center gap-1 border border-border rounded-md px-2 py-1 shrink-0 ${hoverBgClass} transition-colors ${textColorClass}`}
             >
               <ControversyIcon
                 level={category.level}
@@ -421,6 +424,29 @@ export function SubtopicClaims({
   pagination: number;
   onExpandSubtopic: () => void;
 }) {
+  const { sortByBridging, addOns } = useContext(ReportContext);
+
+  // Sort claims by bridging score if enabled
+  // Claims without bridging scores default to -1, placing them at the bottom
+  // when sorted. This treats unscored content as "less bridging" than scored content.
+  const sortedClaims = React.useMemo(() => {
+    if (!sortByBridging || !addOns?.claimBridgingScores) {
+      return claimNodes;
+    }
+
+    // Build lookup map once: O(n) instead of O(n²) with repeated find() calls
+    const scoreMap = new Map(
+      addOns.claimBridgingScores.map((s) => [s.claimId, s.bridgingScore]),
+    );
+
+    return [...claimNodes].sort((a, b) => {
+      const scoreA = scoreMap.get(a.id) ?? -1;
+      const scoreB = scoreMap.get(b.id) ?? -1;
+      // Sort descending (highest bridging score first)
+      return scoreB - scoreA;
+    });
+  }, [sortByBridging, claimNodes, addOns]);
+
   return (
     <Col>
       <p className="leading-6 pl-4 md:pl-8 print:pl-0 text-base font-medium">
@@ -428,7 +454,7 @@ export function SubtopicClaims({
       </p>
       <Col gap={4}>
         <Col>
-          {claimNodes.map((claimNode, i) => {
+          {sortedClaims.map((claimNode, i) => {
             return (
               <ClaimItem
                 key={claimNode.id}
@@ -441,7 +467,7 @@ export function SubtopicClaims({
           })}
         </Col>
         <ClaimLoader
-          remaining={claimNodes.length - pagination - 1}
+          remaining={sortedClaims.length - pagination - 1}
           onExpandSubtopic={onExpandSubtopic}
         />
       </Col>

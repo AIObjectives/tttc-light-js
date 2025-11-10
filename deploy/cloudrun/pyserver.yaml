@@ -18,7 +18,12 @@ spec:
         run.googleapis.com/vpc-access-egress: all-traffic
     spec:
       containerConcurrency: 1000
-      timeoutSeconds: 300
+      # Increased from 300s to 3600s (1 hour) to accommodate:
+      # - Large reports with hundreds of claims/quotes
+      # - Perspective API rate limiting (requires request spacing)
+      # - Multiple LLM calls for cruxes + bridging scoring
+      # Note: Most reports complete in <10 minutes; 1-hour timeout is for worst-case scenarios
+      timeoutSeconds: 3600
       containers:
         - image: gcr.io/tttc-light-js/dev-pyserver:TAG
           ports:
