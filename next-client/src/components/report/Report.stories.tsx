@@ -8,6 +8,8 @@ import Report, {
   ReportTitle,
 } from "./Report";
 import { getNPeople } from "tttc-common/morphisms";
+import * as schema from "tttc-common/schema";
+import jsonData from "../../../stories/data/healMichigan.json";
 
 const meta = {
   title: "Report",
@@ -30,10 +32,20 @@ type Story = StoryObj<typeof meta>;
 
 const baseProps = reportData;
 
+// Parse the raw pipeline output for the Report component
+const parsedPipeline = schema.pipelineOutput.safeParse(jsonData);
+const rawPipelineOutput: schema.PipelineOutput = parsedPipeline.success
+  ? parsedPipeline.data
+  : {
+      success: true,
+      data: [{ step: "csv" as const }, baseProps],
+    };
+
 export const Main: Story = {
   args: {
     reportData: baseProps,
     reportUri: "",
+    rawPipelineOutput,
   },
 };
 

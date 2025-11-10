@@ -25,6 +25,12 @@ import { ReportContext } from "../report/Report";
 import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
 import { getThemeColor } from "@/lib/color";
+import {
+  getTopicControversy,
+  formatControversyScore,
+  getControversyColors,
+  isSignificantControversy,
+} from "@/lib/crux/utils";
 
 type TopicContextType = {
   topicNode: TopicNode;
@@ -84,8 +90,17 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
 
 export function TopicHeader({ button }: { button?: React.ReactNode }) {
   const { topicNode } = useContext(TopicContext);
+  const { addOns } = useContext(ReportContext);
   const { title } = topicNode.data;
   const subtopics = topicNode.children.map((sub) => sub.data);
+  const controversyScore = getTopicControversy(addOns, title);
+  const shouldShowControversy =
+    controversyScore !== undefined &&
+    isSignificantControversy(controversyScore);
+  const colors = shouldShowControversy
+    ? getControversyColors(controversyScore)
+    : null;
+
   return (
     <Row gap={2}>
       <CardTitle className="self-center flex-grow" data-testid="topic-title">
@@ -97,6 +112,13 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
         </div>
         <p className="p2 text-muted-foreground flex gap-2 items-center ">
           {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
+          {shouldShowControversy && colors && (
+            <span
+              className={`text-xs ${colors.bg} ${colors.text} px-2 py-0.5 rounded-full`}
+            >
+              Controversy: {formatControversyScore(controversyScore)}
+            </span>
+          )}
         </p>
       </div>
       {button}
@@ -311,15 +333,19 @@ function SubtopicItem({
   show: boolean;
 }) {
   const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
+  const { topicNode } = useContext(TopicContext);
 
   const scrollRef = useScrollTo(subtopicNode.data.id);
   const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
+
   if (!show) {
     return <></>;
   }
+
   return (
     <Subtopic
       subtopicNode={subtopicNode}
+      topicTitle={topicNode.data.title}
       ref={mergeRefs([scrollRef, focusedRef])}
       onExpandSubtopic={() =>
         dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })

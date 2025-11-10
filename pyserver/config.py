@@ -204,6 +204,12 @@ Please explain your reasoning and assign participants into the three groups.
 Make the cruxClaim as precise and unique as possible to the given topic and comments, and pick a cruxClaim that best balances the
 "agree" and "disagree" sides, with close to the same number of participants on each side.
 
+IMPORTANT: In your explanation field, write in natural, reader-friendly language:
+- Always refer to participants by their given names (like "Alice" or "Person 1"), NEVER by their internal IDs
+- Use natural phrases like "this claim" or "the statement" instead of technical terms like "cruxClaim"
+- Avoid programming conventions like "no_clear_position" - use natural language like "didn't take a clear stance"
+- Write as if explaining to a general audience, not developers
+
 return a JSON object of the form
 {
   "crux" : {
@@ -211,7 +217,7 @@ return a JSON object of the form
     "agree" : list of strings // list of the given participants who would agree with the cruxClaim
     "disagree" : list strings // list of the given participants who would disagree with the cruxClaim
     "no_clear_position" : list of strings // list of the given participants who mentioned the topic but took no clear stance
-    "explanation" : string // reasoning for why you synthesized this cruxClaim from the participants' perspective
+    "explanation" : string // natural language explanation of why this is a point of controversy, written for general readers (use participant names, not IDs)
   }
 }
 """
