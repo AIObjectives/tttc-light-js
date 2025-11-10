@@ -396,10 +396,12 @@ export const EnableResearchFeatures = ({
   show,
   cruxesEnabled,
   cruxInstructions,
+  bridgingEnabled,
 }: {
   show: boolean;
   cruxesEnabled: FormItemState<boolean>;
   cruxInstructions: FormItemState<string>;
+  bridgingEnabled: FormItemState<boolean>;
 }) => {
   return (
     <Col gap={4} className={`${show ? "" : "hidden"}`}>
@@ -430,6 +432,25 @@ export const EnableResearchFeatures = ({
         show={cruxesEnabled.state}
         formState={cruxInstructions}
       />
+
+      <Col gap={2}>
+        <Row gap={2}>
+          <Switch
+            id="bridgingEnabled"
+            name="bridgingEnabled"
+            checked={bridgingEnabled.state}
+            onCheckedChange={(val) => bridgingEnabled.setState(val)}
+          />
+          <label className="font-medium" htmlFor="bridgingEnabled">
+            Score claims and quotes using Perspective API bridging attributes
+          </label>
+        </Row>
+        <p className="p2 text-muted-foreground">
+          Analyze claims and quotes for bridge-building qualities (personal
+          stories, reasoning, curiosity) vs divisive content (toxicity). Enables
+          sorting by bridging potential to surface constructive dialogue.
+        </p>
+      </Col>
     </Col>
   );
 };
@@ -445,6 +466,7 @@ export function AdvancedSettings({
   summariesInstructions,
   cruxInstructions,
   cruxesEnabled,
+  bridgingEnabled,
 }: {
   systemInstructions: FormItemState<string>;
   clusteringInstructions: FormItemState<string>;
@@ -453,6 +475,7 @@ export function AdvancedSettings({
   summariesInstructions: FormItemState<string>;
   cruxInstructions: FormItemState<string>;
   cruxesEnabled: FormItemState<boolean>;
+  bridgingEnabled: FormItemState<boolean>;
 }) {
   const [show, setShow] = useState<boolean>(false);
 
@@ -480,6 +503,7 @@ export function AdvancedSettings({
         show={show}
         cruxesEnabled={cruxesEnabled}
         cruxInstructions={cruxInstructions}
+        bridgingEnabled={bridgingEnabled}
       />
       <div className={show ? "block" : "hidden"}>
         <Button

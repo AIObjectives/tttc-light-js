@@ -90,6 +90,9 @@ export const ReportContext = createContext<{
   // Whether to sort topics by controversy score
   sortByControversy: boolean;
   setSortByControversy: Dispatch<SetStateAction<boolean>>;
+  // Whether to sort claims by bridging potential
+  sortByBridging: boolean;
+  setSortByBridging: Dispatch<SetStateAction<boolean>>;
   // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
   expandedCruxId: string | null;
   setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
@@ -112,6 +115,8 @@ export const ReportContext = createContext<{
   addOns: undefined,
   sortByControversy: false,
   setSortByControversy: () => null,
+  sortByBridging: false,
+  setSortByBridging: () => null,
   expandedCruxId: null,
   setExpandedCruxId: () => null,
   activeContentTab: "report",
@@ -215,6 +220,9 @@ function Report({
   // Sort by controversy state
   const [sortByControversy, setSortByControversy] = useState<boolean>(false);
 
+  // Sort by bridging potential state
+  const [sortByBridging, setSortByBridging] = useState<boolean>(false);
+
   // State for tracking which crux should be auto-expanded
   const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
 
@@ -297,6 +305,8 @@ function Report({
         addOns,
         sortByControversy,
         setSortByControversy,
+        sortByBridging,
+        setSortByBridging,
         expandedCruxId,
         setExpandedCruxId,
         activeContentTab,

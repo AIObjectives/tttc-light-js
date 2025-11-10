@@ -26,6 +26,7 @@ export const reportJobStatus = z.enum([
   "dedup",
   "summarizing",
   "wrappingup",
+  "scoring_bridging",
   "finished",
   "failed",
   "notFound",

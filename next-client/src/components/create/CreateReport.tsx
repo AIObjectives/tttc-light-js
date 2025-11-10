@@ -148,6 +148,7 @@ function CreateReportComponent({
     summariesInstructions,
     cruxInstructions,
     cruxesEnabled,
+    bridgingEnabled,
     isFormInvalid,
   } = useFormState();
 
@@ -184,6 +185,7 @@ function CreateReportComponent({
               summariesInstructions={summariesInstructions}
               cruxInstructions={cruxInstructions}
               cruxesEnabled={cruxesEnabled}
+              bridgingEnabled={bridgingEnabled}
             />
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
