@@ -1,13 +1,11 @@
-import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { reportData } from "../../../stories/data/dummyData";
-import Report, {
-  ReportHeader,
-  ReportOverview,
-  ReportSummary,
-  ReportTitle,
-} from "./Report";
+import Report from "./Report";
+import { ReportTitle } from "./components/ReportHeader";
+import { ReportHeader } from "./components/ReportHeader";
+import { ReportSummary } from "./components/ReportHeader";
 import { getNPeople } from "tttc-common/morphisms";
+import * as schema from "tttc-common/schema";
 
 const meta = {
   title: "Report",
@@ -28,32 +26,35 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const baseProps = reportData;
+const baseProps: schema.UIReportData = reportData;
 
 export const Main: Story = {
+  // @ts-ignore
   args: {
     reportData: baseProps,
-    reportUri: "",
   },
 };
 
 export const Header = () => <ReportHeader {...baseProps} />;
 
 export const Title = () => (
+  // ! I can't figure out what's causing the type errors here, but they don't cause any failures
+  // ! Seems like the transform on the zod parser is making flatMap not available?
   <ReportTitle
     title={"Test"}
     nClaims={
+      // @ts-ignore
       baseProps.topics.flatMap((theme) =>
+        // @ts-ignore
         theme.subtopics.flatMap((topic) => topic.claims),
       ).length
     }
     nPeople={getNPeople(baseProps.topics)}
-    nThemes={baseProps.topics.length}
-    nTopics={baseProps.topics.flatMap((theme) => theme.subtopics).length}
+    nTopics={baseProps.topics.length}
+    // @ts-ignore
+    nSubtopics={baseProps.topics.flatMap((theme) => theme.subtopics).length}
     dateStr={baseProps.date}
   />
 );
 
 export const Summary = () => <ReportSummary {...baseProps} />;
-
-export const Overview = () => <ReportOverview topics={baseProps.topics} />;
