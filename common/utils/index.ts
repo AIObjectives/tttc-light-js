@@ -133,3 +133,54 @@ export function getLegacyReportUri(gcsUrl: string): string {
     return gcsUrl;
   }
 }
+
+/**
+ * Formats an error into a useful string message.
+ * Handles Error objects, plain objects, and other types.
+ * @param error - The error to format (can be any type)
+ * @returns A formatted error message string
+ */
+export function formatError(error: unknown): string {
+  // Handle Error instances
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  // Handle null or undefined
+  if (error == null) {
+    return "Unknown error";
+  }
+
+  // Handle objects with useful properties
+  if (typeof error === "object") {
+    // Try to extract common error properties
+    const errorObj = error as Record<string, unknown>;
+
+    // Check for common error properties in order of preference
+    if (errorObj.message) {
+      return String(errorObj.message);
+    }
+    if (errorObj.error) {
+      return String(errorObj.error);
+    }
+    if (errorObj.code) {
+      const code = String(errorObj.code);
+      const msg = errorObj.msg || errorObj.description;
+      return msg ? `${code}: ${String(msg)}` : code;
+    }
+
+    // Try to stringify the object for better debugging
+    try {
+      const jsonStr = JSON.stringify(error);
+      if (jsonStr) {
+        return jsonStr;
+      }
+    } catch {
+      // JSON.stringify can fail on circular references
+      return "Error object with circular reference";
+    }
+  }
+
+  // Fallback to string conversion for primitives
+  return String(error);
+}

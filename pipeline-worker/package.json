@@ -28,6 +28,7 @@
     "zod": "^3.23.8"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.17.2",
     "dotenv": "^16.4.5",
     "effect": "^3.18.4",
     "firebase-admin": "^13.0.2",
