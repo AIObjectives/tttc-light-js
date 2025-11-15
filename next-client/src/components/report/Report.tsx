@@ -168,6 +168,9 @@ export const ReportContext = createContext<{
   // Whether to sort topics by controversy score
   sortByControversy: boolean;
   setSortByControversy: Dispatch<SetStateAction<boolean>>;
+  // Whether to sort claims by bridging potential
+  sortByBridging: boolean;
+  setSortByBridging: Dispatch<SetStateAction<boolean>>;
   // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
   expandedCruxId: string | null;
   setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
@@ -180,6 +183,8 @@ export const ReportContext = createContext<{
   addOns: undefined,
   sortByControversy: false,
   setSortByControversy: () => null,
+  sortByBridging: false,
+  setSortByBridging: () => null,
   expandedCruxId: null,
   setExpandedCruxId: () => null,
 });
@@ -273,6 +278,9 @@ function Report({
   // Sort by controversy state
   const [sortByControversy, setSortByControversy] = useState<boolean>(false);
 
+  // Sort by bridging potential state
+  const [sortByBridging, setSortByBridging] = useState<boolean>(false);
+
   // State for tracking which crux should be auto-expanded
   const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
 
@@ -307,6 +315,8 @@ function Report({
         addOns,
         sortByControversy,
         setSortByControversy,
+        sortByBridging,
+        setSortByBridging,
         expandedCruxId,
         setExpandedCruxId,
       }}
@@ -364,12 +374,22 @@ export function ReportToolbar({
   setIsMobileOutlineOpen: (val: boolean) => void;
   isMobileOutlineOpen: boolean;
 }) {
-  const { dispatch, sortByControversy, setSortByControversy, addOns } =
-    useContext(ReportContext);
+  const {
+    dispatch,
+    sortByControversy,
+    setSortByControversy,
+    sortByBridging,
+    setSortByBridging,
+    addOns,
+  } = useContext(ReportContext);
 
   // Only show sort button if there's controversy data
   const hasControversyData =
     addOns?.topicScores && addOns.topicScores.length > 0;
+
+  // Only show bridging sort button if there's bridging score data
+  const hasBridgingData =
+    addOns?.claimBridgingScores && addOns.claimBridgingScores.length > 0;
 
   return (
     // Sticky keeps it at top of screen when scrolling down.
@@ -401,6 +421,15 @@ export function ReportToolbar({
             variant={sortByControversy ? "secondary" : "outline"}
           >
             {sortByControversy ? "Default order" : "Sort by controversy"}
+          </Button>
+        )}
+        {/* Sort by bridging button */}
+        {hasBridgingData && (
+          <Button
+            onClick={() => setSortByBridging(!sortByBridging)}
+            variant={sortByBridging ? "secondary" : "outline"}
+          >
+            {sortByBridging ? "Default order" : "Sort by bridging"}
           </Button>
         )}
         {/* Close all button */}
