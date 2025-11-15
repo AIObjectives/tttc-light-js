@@ -5,9 +5,9 @@ import {
   taxonomyAlignmentScorer,
   quoteRelevanceScorer,
   extractionCompletenessScorer,
-  sampleTaxonomy,
-  extractionTestCases,
-} from "./extraction-scorers.js";
+  createLLMJudgeScorer,
+} from "./scorers.js";
+import { sampleTaxonomy, extractionTestCases } from "./datasets.js";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({
@@ -435,6 +435,173 @@ describe("Extraction Scorers", () => {
         expect(testCase).toHaveProperty("expectedClaims");
         expect(Array.isArray(testCase.expectedClaims)).toBe(true);
       }
+    });
+  });
+
+  describe("createLLMJudgeScorer", () => {
+    it("should return 0 when claims data is missing", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn(),
+          },
+        },
+      };
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {},
+        datasetRow: {
+          comment: "Test comment",
+          taxonomy: sampleTaxonomy,
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.reason).toBe("Missing claims data");
+      expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
+    });
+
+    it("should call OpenAI with correct prompt and return parsed evaluation", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                claim_quality_score: 0.9,
+                quote_accuracy_score: 0.85,
+                taxonomy_mapping_score: 0.95,
+                completeness_score: 0.88,
+                overall_score: 0.89,
+                reasoning: "Claims are well extracted and appropriately mapped",
+              }),
+            },
+          },
+        ],
+      };
+
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      };
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const modelOutput = {
+        claims: [
+          {
+            claim: "Cats are independent animals",
+            quote: "I love cats because they are independent",
+            topicName: "Pets",
+            subtopicName: "Cats",
+          },
+        ],
+      };
+
+      const datasetRow = {
+        comment:
+          "I love cats because they are independent and easy to care for",
+        taxonomy: sampleTaxonomy,
+      };
+
+      const result = await llmJudgeScorer({ modelOutput, datasetRow });
+
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
+        model: "gpt-4o-mini",
+        messages: expect.arrayContaining([
+          expect.objectContaining({ role: "system" }),
+          expect.objectContaining({ role: "user" }),
+        ]),
+        response_format: { type: "json_object" },
+      });
+
+      expect(result.llm_judge_score).toBe(0.89);
+      expect(result.claim_quality_score).toBe(0.9);
+      expect(result.quote_accuracy_score).toBe(0.85);
+      expect(result.taxonomy_mapping_score).toBe(0.95);
+      expect(result.completeness_score).toBe(0.88);
+      expect(result.reasoning).toBe(
+        "Claims are well extracted and appropriately mapped",
+      );
+    });
+
+    it("should handle OpenAI API errors gracefully", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockRejectedValue(new Error("Network timeout")),
+          },
+        },
+      };
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          claims: [
+            {
+              claim: "Test",
+              quote: "Test",
+              topicName: "Test",
+              subtopicName: "Test",
+            },
+          ],
+        },
+        datasetRow: {
+          comment: "Test",
+          taxonomy: sampleTaxonomy,
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("Network timeout");
+    });
+
+    it("should handle empty response content", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: null,
+            },
+          },
+        ],
+      };
+
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      };
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          claims: [
+            {
+              claim: "Test",
+              quote: "Test",
+              topicName: "Test",
+              subtopicName: "Test",
+            },
+          ],
+        },
+        datasetRow: {
+          comment: "Test",
+          taxonomy: sampleTaxonomy,
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("No response from LLM judge");
     });
   });
 });
