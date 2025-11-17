@@ -21,7 +21,7 @@ export function Headline() {
   return (
     <Link href={"/"} className="h-10 items-center leading-10">
       <Icons.Logo className="inline-block align-middle mr-2" />
-      <Icons.TTTC className="hidden sm:inline-block" />
+      <Icons.TTTC className="inline-block" />
     </Link>
   );
 }
@@ -92,7 +92,7 @@ export function MobileHamburgerMenu() {
   // Render a placeholder button during SSR to maintain layout
   if (!isMounted) {
     return (
-      <Button variant={"ghost"} className="p-1 visible sm:hidden" disabled>
+      <Button variant={"ghost"} className="p-1 visible md:hidden" disabled>
         <Icons.Menu />
       </Button>
     );
@@ -101,7 +101,7 @@ export function MobileHamburgerMenu() {
   return (
     <Sheet modal={false} open={isOpen} onOpenChange={(val) => setIsOpen(val)}>
       <SheetTrigger
-        className="visible sm:hidden"
+        className="visible md:hidden"
         onClick={() => setIsOpen((val) => !val)}
         asChild
       >
@@ -134,11 +134,21 @@ export function MobileHamburgerMenu() {
               <p>Github</p>
             </Link>
           </Col>
-          <Col>
+          <Col gap={2}>
             <Button asChild variant={"secondary"}>
               <Link onClick={() => setIsOpen(false)} href={"/create"}>
                 Create a report
               </Link>
+            </Button>
+            <Button asChild variant={"secondary"}>
+              <a
+                onClick={() => setIsOpen(false)}
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
+              >
+                Join the waitlist
+              </a>
             </Button>
           </Col>
         </Col>
