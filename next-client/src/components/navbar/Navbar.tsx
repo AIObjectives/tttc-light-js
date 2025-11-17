@@ -26,25 +26,25 @@ function Navbar() {
       </Row>
       <Row
         gap={2}
-        className="items-center content-center md:justify-self-end sm:flex"
+        className="items-center content-center md:justify-self-end md:flex"
       >
         <Row
           gap={2}
-          className="items-center content-center md:justify-self-end hidden sm:flex"
+          className="items-center content-center md:justify-self-end hidden md:flex"
         >
           <RepoGithub />
+          <About />
+          <CreateReport />
+          <Button variant={"secondary"} asChild>
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
+            >
+              Join the waitlist
+            </a>
+          </Button>
         </Row>
-
-        <About />
-        <CreateReport />
-        <Button variant={"secondary"} asChild>
-          <a
-            target="_blank"
-            href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
-          >
-            Join the waitlist
-          </a>
-        </Button>
         <LoginButton />
       </Row>
     </Row>
