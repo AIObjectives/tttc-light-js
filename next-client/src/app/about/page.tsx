@@ -1,14 +1,7 @@
 import Icons from "@/assets/icons";
-import { Card, CardContent } from "@/components/elements";
 import { Col, Row } from "@/components/layout";
-import { QuoteText } from "@/components/quote/Quote";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
 import React from "react";
-import {
-  createAnalyticsConfig,
-  getAnalytics,
-  initializeAnalytics,
-} from "tttc-common/analytics";
 const ContentGroup = ({ children }: React.PropsWithChildren) => (
   <Col gap={3}>{children}</Col>
 );
@@ -100,10 +93,6 @@ export default async function AboutPage() {
             </a>
             .
           </p>
-
-          <Testimonial text={audreyQuote} />
-
-          <Testimonial text={rizinaQuote} />
         </ContentGroup>
         <ContentGroup>
           <h3 id="how-it-works">How it works</h3>
@@ -131,19 +120,29 @@ export default async function AboutPage() {
             using these features while they're under development.
           </p>
           <p>
-            For this alpha launch, all reports are{" "}
-            <strong>temporarily public</strong> to anyone who has the exact URL;
-            we're adding password protection to reports soon.
+            For this alpha launch, all reports are temporarily public to anyone
+            who has the exact URL; we're adding password protection to reports
+            soon.
+          </p>
+          <p>
+            For more information see our{" "}
+            <a
+              className="underline"
+              href="https://www.youtube.com/watch?v=DmkhGD_pK94"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              demonstration video
+            </a>
+            .
           </p>
         </ContentGroup>
 
         <ContentGroup>
           <h3 id="case-studies">Case studies</h3>
 
-          <h5>AI Assemblies</h5>
           <ul className="list-disc list-inside pl-2">
-            <li className="marker:pr-2">
-              Case study article:{" "}
+            <li>
               <a
                 className="underline"
                 href="https://ai.objectives.institute/blog/amplifying-voices-talk-to-the-city-in-taiwan"
@@ -152,19 +151,6 @@ export default async function AboutPage() {
               </a>
             </li>
             <li>
-              Report:{" "}
-              <a
-                className="underline"
-                href="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_assembly_2023_t3c.json"
-              >
-                AI Assembly 2023 Workshops
-              </a>
-            </li>
-          </ul>
-          <h5>Heal Michigan</h5>
-          <ul className="list-disc list-inside pl-2">
-            <li className="marker:pr-2">
-              Case study article:{" "}
               <a
                 className="underline"
                 href="https://ai.objectives.institute/blog/using-ai-to-give-people-a-voice-a-case-study-in-michigan"
@@ -173,12 +159,12 @@ export default async function AboutPage() {
               </a>
             </li>
             <li>
-              Report:{" "}
               <a
                 className="underline"
-                href="/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fheal_michigan_t3c.json"
+                href="https://ai.objectives.institute/blog/talk-to-the-city-case-study-amplifying-youth-voices-in-australia"
               >
-                Heal Michigan
+                Talk to the City Case Study: Amplifying Youth Voices in
+                Australia
               </a>
             </li>
           </ul>
@@ -496,48 +482,3 @@ export default async function AboutPage() {
     </Col>
   );
 }
-
-function Testimonial({ text }: { text: string | JSX.Element }) {
-  return (
-    <Card>
-      <CardContent>
-        <QuoteText
-          text={text}
-          interview=""
-          className="text-muted-foreground"
-          iconClassName="fill-muted-foreground"
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-const audreyQuote = (
-  <>
-    “Ten years ago, the vTaiwan scope was limited, because stakeholder groups
-    needed to adapt to the technology at the time. Today, this is being bridged
-    with the advent of language models that can adapt to their needs. Back in
-    2014, it was impossible with the capacity of g0v contributors to interview a
-    mini public of people and aggregate their ideas while preserving the full
-    nuance. But now, with Talk to the City's help, that cost has been reduced to
-    essentially zero. It's broad-listening and it can change the nature of this
-    recursive public.”
-    <br />– Audrey Tang, Taiwan's 1st Digital Minister and co-author of{" "}
-    <a className="underline" href="https://www.plurality.net/">
-      Plurality.net
-    </a>
-  </>
-);
-
-const rizinaQuote = (
-  <>
-    “Given the vast amount of qualitative data we collected, Talk to the City's
-    analysis was crucial in identifying gender-specific challenges in the lives
-    of young Australian women and men. This analysis helped us craft our policy
-    recommendations, focusing on the experiences of marginalised demographics.
-    Having the data organised under specific themes, then being able to go
-    through the interviewees actual statements, was powerful.”
-    <br />– Rizina Yadav on behalf of Young Women's Alliance, a social
-    initiative for improving the life outcomes of Australian women
-  </>
-);
