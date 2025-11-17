@@ -178,7 +178,7 @@
     @apply text-2xl font-semibold tracking-tight;
   }
   h4 {
-    @apply text-xl font-semibold leading-5 tracking-tight;
+    @apply text-xl font-semibold leading-7 tracking-tight;
   }
   h5 {
     @apply text-base font-semibold leading-6;

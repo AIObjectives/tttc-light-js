@@ -23,7 +23,7 @@ import Link from "next/link";
 
 export const FormHeader = () => (
   <Col gap={3}>
-    <h3>Report details</h3>
+    <h3>Survey tool</h3>
     <Row
       gap={2}
       className="p-4 border self-stretch items-center justify-center rounded-[2px]"
@@ -32,8 +32,8 @@ export const FormHeader = () => (
         <Icons.WhatsApp />
       </div>
       <p className="p2 text-muted-foreground flex-grow">
-        Gather report responses using our survey bot directly from participants'
-        devices.
+        Gather report responses using our survey tool directly from
+        participants' devices.
       </p>
       <Link
         target="_blank"
@@ -51,7 +51,7 @@ export const FormHeader = () => (
 
 export const FormAbout = () => (
   <Col gap={3}>
-    <h3>About</h3>
+    <h3>Overview</h3>
     <div className="text-muted-foreground">
       <p>
         We send the contents of the data uploaded below through OpenAI’s API to

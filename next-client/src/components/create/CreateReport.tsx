@@ -150,6 +150,7 @@ function CreateReportComponent({ token }: { token: string | null }) {
       <Form action={formAction}>
         <SubmitFormControl response={state}>
           <Col gap={8} className="mb-20">
+            <h3>Create a report</h3>
             <FormHeader />
             <FormAbout />
             <FormDescription title={title} description={description} />
