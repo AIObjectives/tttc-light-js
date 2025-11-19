@@ -13,7 +13,7 @@ __pycache__
 /utils/**/output/*
 /utils/**/input/*
 !**/*/.keep
-*/tsconfig.tsbuildinfo
+*.tsbuildinfo
 playwright-report
 test-results
 CLAUDE.md
