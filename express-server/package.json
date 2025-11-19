@@ -6,7 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "npx babel src --out-dir dist --extensions \".tsx,.ts\" && npx prettier ./dist --write",
+    "build": "npx tsc && npx prettier ./dist --write",
     "dev": "nodemon src/server.ts",
     "test": "vitest",
     "start": "node dist/server.js"
@@ -14,16 +14,10 @@
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@babel/cli": "^7.23.9",
-    "@babel/core": "^7.24.0",
-    "@babel/plugin-transform-modules-commonjs": "^7.23.3",
-    "@babel/preset-env": "^7.24.0",
-    "@babel/preset-typescript": "^7.23.3",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.24",
     "@types/supertest": "^6.0.3",
-    "babel-plugin-module-resolver": "^5.0.0",
     "nodemon": "^3.1.0",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
@@ -32,7 +26,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.4",
-    "@babel/runtime": "^7.24.0",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.7.0",
     "@types/async-retry": "^1.4.9",
