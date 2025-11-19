@@ -500,10 +500,12 @@ export function TermsAndConditions() {
     <Col gap={3}>
       <h4>Terms</h4>
       <a
-        href="https://docs.google.com/document/d/1Q8h7vKrEeH1Ynh4a5iz5C85wbz7iyG0p/edit"
+        href="/T3C-Terms-and-Conditions.pdf"
         className="p2 text-muted-foreground underline"
+        target="_blank"
+        rel="noopener noreferrer"
       >
-        T3C Terms of Use
+        T3C Terms and Conditions and Brand Guidelines
       </a>
     </Col>
   );
