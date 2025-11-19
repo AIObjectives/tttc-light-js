@@ -272,6 +272,20 @@ export default async function AboutPage() {
             </p>
           </ul>
 
+          <h5 id="language-limitations">
+            Are there any language limitations we should be aware of?
+          </h5>
+          <p>
+            T3C can process text responses in 50+ languages, and audio messages
+            are transcribed using OpenAI Whisper. Whisper generally performs
+            well across major languages, but accuracy can vary for certain
+            accents, regional dialects, or low-resource languages, as well as in
+            noisy recording environments. This means some transcriptions may
+            contain errors. For projects where language accuracy is critical, we
+            recommend reviewing a small sample of transcripts to ensure the
+            model meets your needs.
+          </p>
+
           <h5>How do I customize the analysis prompts?</h5>
           <p>You can modify prompts to:</p>
           <ul className="list-disc list-inside pl-2">
