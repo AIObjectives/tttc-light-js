@@ -241,32 +241,15 @@ export function FormDataInput({
           </p>
           <br />
           <p className="p2 text-muted-foreground">
-            You can reference a{" "}
+            Download our{" "}
             <a
               className="underline"
-              target="_blank"
-              href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit"
+              href="/Talk-to-the-City-Sample.csv"
+              download
             >
-              sample CSV template
+              sample CSV
             </a>{" "}
-            here to get started.
-          </p>
-          <br />
-          <p className="p2 text-muted-foreground">
-            <label htmlFor="description" className="font-medium">
-              Don't want to make your own CSV file?
-            </label>
-            <br />
-            Browse the tabs and select one of our{" "}
-            <a
-              className="underline"
-              target="_blank"
-              href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=862995911#gid=862995911"
-            >
-              pre-made synthetic datasets
-            </a>{" "}
-            to get a feel for how T3C extracts quotes and organizes topics from
-            general text.
+            to see the required format, or upload it directly to try the tool.
           </p>
         </div>
 
