@@ -1,6 +1,7 @@
 import Icons from "@/assets/icons";
 import { Col, Row } from "@/components/layout";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
+import Link from "next/link";
 import React from "react";
 const ContentGroup = ({ children }: React.PropsWithChildren) => (
   <Col gap={3}>{children}</Col>
@@ -101,6 +102,12 @@ export default async function AboutPage() {
             large datasets of free-text responses, summarize specific claims,
             and link those claims back to exact quotes. We use LLMs from OpenAI
             (default: gpt-4o-mini), and are adding more options later this year.
+            For detailed information on AI risks and our safety measures, see
+            our{" "}
+            <Link href="/safety" className="underline">
+              LLM Safety guide
+            </Link>
+            .
           </p>
           <p>
             We create an interactive report from the results, combining all
