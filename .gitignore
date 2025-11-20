@@ -1,22 +1,44 @@
+# Dependencies
 node_modules/
-**/.cache/*
-.DS_Store
-google-credentials.json
-.env*
-.vscode/
-.next
+
+# Build outputs
 dist
-*storybook.log
+.next
+storybook-static/
+*.tsbuildinfo
+
+# IDE/Editor
+.vscode/
+.DS_Store
+
+# Environment and credentials
+.env*
+google-credentials.json
+**/*/credentials/*
+
+# Cache
+**/.cache/*
+
+# Python
 __pycache__
 .venv/
-**/*/credentials/*
+
+# Testing
+playwright-report
+test-results
+.playwright-mcp/
+
+# Storybook
+*storybook.log
+
+# Utils workspace
 /utils/**/output/*
 /utils/**/input/*
 !**/*/.keep
-*.tsbuildinfo
-playwright-report
-test-results
+
+# AI agent files
 CLAUDE.md
 AGENT.md
 AGENTS.md
 GEMINI.md
+PROJECT_INDEX.json
