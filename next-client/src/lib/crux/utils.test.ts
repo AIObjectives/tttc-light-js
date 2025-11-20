@@ -6,12 +6,13 @@ import * as schema from "tttc-common/schema";
 import {
   getTopicControversy,
   getSubtopicCrux,
+  getControversyCategory,
   formatControversyScore,
   getControversyColors,
-  isSignificantControversy,
   getSortedCruxes,
   parseSpeaker,
   findSubtopicId,
+  filterValidSpeakers,
 } from "./utils";
 
 describe("getTopicControversy", () => {
@@ -128,39 +129,25 @@ describe("formatControversyScore", () => {
 });
 
 describe("getControversyColors", () => {
-  it("returns red colors for high controversy (>=0.7)", () => {
-    const colors = getControversyColors(0.7);
-    expect(colors.bg).toBe("bg-red-100");
-    expect(colors.text).toBe("text-red-800");
-    expect(colors.border).toBe("border-red-300");
-  });
-
-  it("returns orange colors for medium controversy (>=0.4 and <0.7)", () => {
-    const colors = getControversyColors(0.5);
+  it("returns orange colors for high controversy (>=0.50)", () => {
+    const colors = getControversyColors(0.8);
     expect(colors.bg).toBe("bg-orange-100");
     expect(colors.text).toBe("text-orange-800");
     expect(colors.border).toBe("border-orange-300");
   });
 
-  it("returns green colors for low controversy (<0.4)", () => {
-    const colors = getControversyColors(0.2);
+  it("returns yellow colors for moderate controversy (>=0.20 and <0.50)", () => {
+    const colors = getControversyColors(0.35);
+    expect(colors.bg).toBe("bg-yellow-100");
+    expect(colors.text).toBe("text-yellow-800");
+    expect(colors.border).toBe("border-yellow-300");
+  });
+
+  it("returns green colors for low controversy (<0.20)", () => {
+    const colors = getControversyColors(0.1);
     expect(colors.bg).toBe("bg-green-100");
     expect(colors.text).toBe("text-green-800");
     expect(colors.border).toBe("border-green-300");
-  });
-});
-
-describe("isSignificantControversy", () => {
-  it("returns true for scores >= 0.3 (3.0/10)", () => {
-    expect(isSignificantControversy(0.3)).toBe(true);
-    expect(isSignificantControversy(0.5)).toBe(true);
-    expect(isSignificantControversy(1.0)).toBe(true);
-  });
-
-  it("returns false for scores < 0.3", () => {
-    expect(isSignificantControversy(0.29)).toBe(false);
-    expect(isSignificantControversy(0.1)).toBe(false);
-    expect(isSignificantControversy(0.0)).toBe(false);
   });
 });
 
@@ -260,14 +247,76 @@ describe("parseSpeaker", () => {
   it("handles malformed input with defaults", () => {
     const result = parseSpeaker("malformed");
     expect(result.id).toBe("malformed");
-    expect(result.name).toBe("Unknown");
+    expect(result.name).toBe("Unknown Speaker");
     expect(result.strength).toBeUndefined();
   });
 
   it("handles empty string", () => {
     const result = parseSpeaker("");
     expect(result.id).toBe("");
-    expect(result.name).toBe("Unknown");
+    expect(result.name).toBe("Unknown Speaker");
+    expect(result.strength).toBeUndefined();
+  });
+
+  it("handles null and undefined inputs", () => {
+    // @ts-expect-error - Testing runtime handling of invalid input
+    const nullResult = parseSpeaker(null);
+    expect(nullResult.id).toBe("");
+    expect(nullResult.name).toBe("Unknown Speaker");
+    expect(nullResult.strength).toBeUndefined();
+
+    // @ts-expect-error - Testing runtime handling of invalid input
+    const undefinedResult = parseSpeaker(undefined);
+    expect(undefinedResult.id).toBe("");
+    expect(undefinedResult.name).toBe("Unknown Speaker");
+    expect(undefinedResult.strength).toBeUndefined();
+  });
+
+  it("handles strength values at boundaries", () => {
+    // Zero strength
+    const zeroResult = parseSpeaker("5:Dave | 0");
+    expect(zeroResult.strength).toBe(0);
+
+    // Negative strength (still valid number)
+    const negativeResult = parseSpeaker("6:Eve | -0.5");
+    expect(negativeResult.strength).toBe(-0.5);
+
+    // Very large strength
+    const largeResult = parseSpeaker("7:Frank | 999.999");
+    expect(largeResult.strength).toBe(999.999);
+  });
+
+  it("handles edge cases in strength parsing", () => {
+    // Infinity
+    const infinityResult = parseSpeaker("8:Grace | Infinity");
+    expect(infinityResult.strength).toBeUndefined();
+
+    // NaN
+    const nanResult = parseSpeaker("9:Henry | NaN");
+    expect(nanResult.strength).toBeUndefined();
+
+    // Empty strength part
+    const emptyResult = parseSpeaker("10:Ivy | ");
+    expect(emptyResult.strength).toBeUndefined();
+  });
+
+  it("handles whitespace variations", () => {
+    // Extra spaces around pipe
+    const spacedResult = parseSpeaker("11:Jack   |   0.9");
+    expect(spacedResult.id).toBe("11");
+    expect(spacedResult.name).toBe("Jack");
+    expect(spacedResult.strength).toBe(0.9);
+
+    // Leading/trailing spaces in name
+    const nameSpaceResult = parseSpeaker("12:  Kate  ");
+    expect(nameSpaceResult.id).toBe("12");
+    expect(nameSpaceResult.name).toBe("Kate");
+  });
+
+  it("handles empty name after colon", () => {
+    const result = parseSpeaker("13:");
+    expect(result.id).toBe("13");
+    expect(result.name).toBe("Unknown Speaker");
     expect(result.strength).toBeUndefined();
   });
 });
@@ -326,5 +375,115 @@ describe("findSubtopicId", () => {
 
   it("returns null for empty topics array", () => {
     expect(findSubtopicId([], "AI Safety", "Regulation")).toBeNull();
+  });
+});
+
+describe("getControversyCategory", () => {
+  it("categorizes scores correctly at boundaries", () => {
+    // High: >= 0.50
+    expect(getControversyCategory(0.5).level).toBe("high");
+    expect(getControversyCategory(1.0).level).toBe("high");
+    expect(getControversyCategory(0.85).level).toBe("high");
+
+    // Moderate: >= 0.20 and < 0.50
+    expect(getControversyCategory(0.2).level).toBe("moderate");
+    expect(getControversyCategory(0.49).level).toBe("moderate");
+    expect(getControversyCategory(0.35).level).toBe("moderate");
+
+    // Low: < 0.20
+    expect(getControversyCategory(0.19).level).toBe("low");
+    expect(getControversyCategory(0.1).level).toBe("low");
+    expect(getControversyCategory(0.0).level).toBe("low");
+  });
+
+  it("includes correct labels and descriptions", () => {
+    const high = getControversyCategory(0.8);
+    expect(high.label).toBe("High");
+    expect(high.description).toBe(
+      "Significant disagreement among participants",
+    );
+
+    const moderate = getControversyCategory(0.35);
+    expect(moderate.label).toBe("Moderate");
+    expect(moderate.description).toBe("Some disagreement among participants");
+
+    const low = getControversyCategory(0.1);
+    expect(low.label).toBe("Low");
+    expect(low.description).toBe("General consensus among participants");
+  });
+
+  it("throws error for scores below 0", () => {
+    expect(() => getControversyCategory(-0.1)).toThrow(
+      "Controversy score must be between 0 and 1, got: -0.1",
+    );
+    expect(() => getControversyCategory(-1.0)).toThrow(
+      "Controversy score must be between 0 and 1, got: -1",
+    );
+  });
+
+  it("throws error for scores above 1", () => {
+    expect(() => getControversyCategory(1.1)).toThrow(
+      "Controversy score must be between 0 and 1, got: 1.1",
+    );
+    expect(() => getControversyCategory(2.0)).toThrow(
+      "Controversy score must be between 0 and 1, got: 2",
+    );
+  });
+
+  it("throws error for non-finite values", () => {
+    expect(() => getControversyCategory(Infinity)).toThrow(
+      "Controversy score must be between 0 and 1, got: Infinity",
+    );
+    expect(() => getControversyCategory(-Infinity)).toThrow(
+      "Controversy score must be between 0 and 1, got: -Infinity",
+    );
+    expect(() => getControversyCategory(NaN)).toThrow(
+      "Controversy score must be between 0 and 1, got: NaN",
+    );
+  });
+
+  it("handles exact threshold boundary values correctly", () => {
+    // Test exact boundary values don't cause category errors
+    expect(getControversyCategory(0.0).level).toBe("low");
+    expect(getControversyCategory(0.34).level).toBe("moderate");
+    expect(getControversyCategory(0.67).level).toBe("high");
+    expect(getControversyCategory(1.0).level).toBe("high");
+  });
+});
+
+describe("filterValidSpeakers", () => {
+  it("filters out empty strings", () => {
+    const input = ["1:Alice", "", "2:Bob"];
+    const result = filterValidSpeakers(input);
+    expect(result).toEqual(["1:Alice", "2:Bob"]);
+  });
+
+  it("filters out whitespace-only strings", () => {
+    const input = ["1:Alice", "  ", "\t", "\n", "2:Bob"];
+    const result = filterValidSpeakers(input);
+    expect(result).toEqual(["1:Alice", "2:Bob"]);
+  });
+
+  it("keeps strings with content and whitespace", () => {
+    const input = ["  1:Alice  ", "2:Bob\n"];
+    const result = filterValidSpeakers(input);
+    expect(result).toEqual(["  1:Alice  ", "2:Bob\n"]);
+  });
+
+  it("returns empty array for all-invalid input", () => {
+    const input = ["", "  ", "\t", "\n"];
+    const result = filterValidSpeakers(input);
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array for empty input", () => {
+    const result = filterValidSpeakers([]);
+    expect(result).toEqual([]);
+  });
+
+  it("preserves order of valid speakers", () => {
+    const input = ["3:Charlie", "", "1:Alice", "  ", "2:Bob"];
+    const result = filterValidSpeakers(input);
+    expect(result).toEqual(["3:Charlie", "1:Alice", "2:Bob"]);
   });
 });

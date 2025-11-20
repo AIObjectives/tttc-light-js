@@ -36,7 +36,7 @@ const env: Env = validateEnv();
 firebaseLogger.info("Environment validation successful, initializing Firebase");
 
 const FIREBASE_CREDENTIALS = JSON.parse(
-  Buffer.from(env.FIREBASE_CREDENTIALS_ENCODED!, "base64").toString("utf-8"),
+  Buffer.from(env.FIREBASE_CREDENTIALS_ENCODED, "base64").toString("utf-8"),
 );
 
 firebaseLogger.info("Firebase credentials parsed, creating admin app");

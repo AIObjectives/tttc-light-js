@@ -1,7 +1,92 @@
 /**
  * Utility functions for working with controversy/crux data
+ *
+ * ## Controversy Score Calculation
+ *
+ * Controversy scores (0-1) measure how evenly split opinions are on a topic.
+ * The score is calculated server-side using the formula:
+ *
+ * ```
+ * controversyScore = min(agreementScore, disagreementScore) * 2
+ * ```
+ *
+ * Where:
+ * - agreementScore = ratio of speakers who agree / total speakers
+ * - disagreementScore = ratio of speakers who disagree / total speakers
+ *
+ * Examples:
+ * - **Unanimous** (100% agree): min(1.0, 0.0) * 2 = 0.0 (no controversy)
+ * - **Perfect split** (50/50): min(0.5, 0.5) * 2 = 1.0 (maximum controversy)
+ * - **Mostly agree** (67/33): min(0.67, 0.33) * 2 = 0.66 (moderate controversy)
+ *
+ * This formula ensures scores are highest when opinions are evenly divided
+ * and lowest when there's strong consensus in either direction.
  */
 import * as schema from "tttc-common/schema";
+import type { ControversyLevel, ControversyCategory } from "./types";
+import { logger } from "tttc-common/logger/browser";
+
+// Create logger for speaker parsing
+const speakerLogger = logger.child({ module: "speaker-parsing" });
+
+/**
+ * Controversy percentage thresholds (0-100 scale)
+ *
+ * NOTE: The function `getControversyCategory` accepts scores in 0-1 range and
+ * converts them to percentages internally (score * 100) before comparing.
+ *
+ * These thresholds create 3 buckets matching our icon system:
+ *
+ * - HIGH (50-100%): Significant disagreement - participants are clearly divided
+ * - MODERATE (20-49%): Some disagreement - mixed opinions among engaged participants
+ * - LOW (0-19%): General consensus - most participants agree or few took a stance
+ *
+ * The formula (2 * min(agree, disagree) / total) dilutes controversy when many
+ * speakers have "no_clear_position". These lower thresholds ensure that evenly
+ * split opinions (e.g., 5 agree / 5 disagree / 20 no_clear = 25%) are categorized
+ * as MODERATE rather than LOW.
+ *
+ * A score of 50%+ indicates the minority position holds at least 25% of total speakers.
+ * A score of 20%+ indicates meaningful disagreement exists (minority >= 10% of total).
+ */
+const CONTROVERSY_PERCENT_HIGH = 50;
+const CONTROVERSY_PERCENT_MODERATE = 20;
+
+/**
+ * Get controversy category based on score (0-1 range)
+ * Maps to 3 tiers matching the icon system
+ *
+ * @throws {Error} If score is outside the valid 0-1 range
+ */
+export function getControversyCategory(score: number): ControversyCategory {
+  // Validate score is in valid range
+  if (score < 0 || score > 1 || !isFinite(score)) {
+    throw new Error(`Controversy score must be between 0 and 1, got: ${score}`);
+  }
+
+  // Convert to percentage for easier thresholds
+  const percentage = score * 100;
+
+  if (percentage >= CONTROVERSY_PERCENT_HIGH) {
+    return {
+      level: "high",
+      label: "High",
+      description: "Significant disagreement among participants",
+    };
+  }
+  if (percentage >= CONTROVERSY_PERCENT_MODERATE) {
+    return {
+      level: "moderate",
+      label: "Moderate",
+      description: "Some disagreement among participants",
+    };
+  }
+  return {
+    level: "low",
+    label: "Low",
+    description: "General consensus among participants",
+  };
+}
 
 /**
  * Get controversy score for a topic (from topicScores)
@@ -50,30 +135,22 @@ export function getControversyColors(score: number): {
   text: string;
   border: string;
 } {
-  // Score is 0-1, convert to 0-10 for easier thresholds
-  const scoreOutOf10 = score * 10;
+  const category = getControversyCategory(score);
 
-  // Determine controversy level
-  const level = (() => {
-    if (scoreOutOf10 >= 7.0) return "high";
-    if (scoreOutOf10 >= 4.0) return "medium";
-    return "low";
-  })();
-
-  switch (level) {
+  switch (category.level) {
     case "high":
-      // High controversy: red
-      return {
-        bg: "bg-red-100",
-        text: "text-red-800",
-        border: "border-red-300",
-      };
-    case "medium":
-      // Medium controversy: orange
+      // High controversy: orange
       return {
         bg: "bg-orange-100",
         text: "text-orange-800",
         border: "border-orange-300",
+      };
+    case "moderate":
+      // Moderate controversy: yellow
+      return {
+        bg: "bg-yellow-100",
+        text: "text-yellow-800",
+        border: "border-yellow-300",
       };
     case "low":
     default:
@@ -84,20 +161,6 @@ export function getControversyColors(score: number): {
         border: "border-green-300",
       };
   }
-}
-
-/**
- * Minimum controversy score (0-10 scale) required to display crux information
- * Scores below this threshold indicate general consensus and are not shown
- */
-export const MIN_SIGNIFICANT_CONTROVERSY_SCORE = 3.0;
-
-/**
- * Check if controversy score is significant enough to display
- * Returns true if score >= 3.0/10 (threshold for showing badge)
- */
-export function isSignificantControversy(score: number): boolean {
-  return score * 10 >= MIN_SIGNIFICANT_CONTROVERSY_SCORE;
 }
 
 /**
@@ -114,27 +177,116 @@ export function getSortedCruxes(
 }
 
 /**
- * Parse speaker string (format: "id:name | strength") into components
- * Validates format and returns safe defaults for malformed input
+ * Validate if a speaker ID is valid (non-empty, non-whitespace)
+ * Centralized validation logic for consistency across all speaker handling
+ *
+ * @param id - Speaker ID to validate
+ * @returns true if ID is valid (non-empty, non-whitespace)
+ *
+ * @example
+ * isValidSpeakerId("123") // true
+ * isValidSpeakerId("") // false
+ * isValidSpeakerId("  ") // false
+ */
+export function isValidSpeakerId(id: string | null | undefined): boolean {
+  return Boolean(id && id.trim() !== "");
+}
+
+/**
+ * Validate if a speaker object has a valid ID
+ * Works with both string speaker formats and Speaker objects
+ *
+ * @param speaker - Speaker object to validate
+ * @returns true if speaker has a valid (non-empty, non-whitespace) ID
+ *
+ * @example
+ * isValidSpeaker({ id: "123", name: "Alice" }) // true
+ * isValidSpeaker({ id: "", name: "Alice" }) // false
+ * isValidSpeaker({ id: "  ", name: "Alice" }) // false
+ */
+export function isValidSpeaker(speaker: { id: string; name: string }): boolean {
+  return isValidSpeakerId(speaker.id);
+}
+
+/**
+ * Filter out invalid speaker strings (empty or whitespace-only)
+ * Centralized to ensure consistent validation across all speaker handling
+ *
+ * @param speakers - Array of speaker strings to filter
+ * @returns Array with only valid (non-empty, non-whitespace) speakers
+ *
+ * @example
+ * filterValidSpeakers(["1:Alice", "", "2:Bob", "  "]) // ["1:Alice", "2:Bob"]
+ */
+export function filterValidSpeakers(speakers: string[]): string[] {
+  return speakers.filter((s) => isValidSpeakerId(s));
+}
+
+/**
+ * Parse speaker string into components. Returns safe defaults for malformed input.
+ *
+ * @example
+ * parseSpeaker("42:John Doe") // { id: "42", name: "John Doe" }
+ * parseSpeaker("42:John Doe | 0.8") // { id: "42", name: "John Doe", strength: 0.8 }
+ * parseSpeaker("invalid") // { id: "", name: "Unknown Speaker" }
  */
 export function parseSpeaker(speakerStr: string): {
   id: string;
   name: string;
   strength?: number;
 } {
+  // Validate input
+  if (!speakerStr || typeof speakerStr !== "string") {
+    if (process.env.NODE_ENV === "development") {
+      speakerLogger.warn(
+        {
+          speakerStr,
+          speakerType: typeof speakerStr,
+          validationRule: "non-empty string required",
+        },
+        "Invalid speaker string: empty or non-string",
+      );
+    }
+    return { id: "", name: "Unknown Speaker" };
+  }
+
   // Format is either "id:name" or "id:name | strength"
   const parts = speakerStr.split(" | ");
-  const idNamePart = parts[0] || "";
-  const strengthStr = parts[1];
+  const idNamePart = parts[0]?.trim() || "";
+  const strengthStr = parts[1]?.trim();
 
-  const idNameSplit = idNamePart.split(":");
-  const id = idNameSplit[0] || "";
-  const name = idNameSplit.slice(1).join(":") || "Unknown"; // Handle names with colons
+  // Parse id:name format
+  const colonIndex = idNamePart.indexOf(":");
+  if (colonIndex === -1) {
+    // Missing colon separator - treat entire string as ID with unknown name
+    if (process.env.NODE_ENV === "development") {
+      speakerLogger.warn(
+        {
+          speakerStr,
+          idNamePart,
+          validationRule: "id:name format required",
+          parseError: "missing colon separator",
+        },
+        "Malformed speaker string: missing colon separator",
+      );
+    }
+    return {
+      id: idNamePart || "",
+      name: "Unknown Speaker",
+    };
+  }
 
-  // Validate strength if provided
-  const strength = strengthStr ? parseFloat(strengthStr) : undefined;
-  const validStrength =
-    strength !== undefined && !isNaN(strength) ? strength : undefined;
+  const id = idNamePart.substring(0, colonIndex).trim();
+  const name = idNamePart.substring(colonIndex + 1).trim() || "Unknown Speaker";
+
+  // Validate and parse strength if provided
+  let validStrength: number | undefined;
+  if (strengthStr) {
+    const strength = parseFloat(strengthStr);
+    if (!isNaN(strength) && isFinite(strength)) {
+      validStrength = strength;
+    }
+  }
 
   return {
     id,

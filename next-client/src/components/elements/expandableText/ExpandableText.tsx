@@ -28,12 +28,14 @@ export function ExpandableText(
         {props.children}{" "}
       </p>
       {showButton ? (
-        <span
+        <button
+          type="button"
           onClick={() => setIsOpen((state) => !state)}
           className={cn(props.className, "underline cursor-pointer")}
+          aria-expanded={isOpen}
         >
           {isOpen ? "Show less" : "Read more"}
-        </span>
+        </button>
       ) : null}
     </div>
   );

@@ -31,10 +31,22 @@ export function ToggleText({ children }: React.PropsWithChildren<{}>) {
 
 function Title({ children }: React.PropsWithChildren<{}>) {
   const { setIsOpen, isOpen } = useContext(ToggleContext);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setIsOpen((state) => !state);
+    }
+  };
+
   return (
     <Row
       onClick={() => setIsOpen((state) => !state)}
+      onKeyDown={handleKeyDown}
       className="cursor-pointer select-none"
+      role="button"
+      tabIndex={0}
+      aria-expanded={isOpen}
     >
       <div className="h-4 w-5 self-center justify-items-start">
         {isOpen ? (

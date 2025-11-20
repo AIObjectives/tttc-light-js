@@ -55,18 +55,33 @@ const getNodeDistances = (
   nodeRefs: NodeRef[],
   boundary: number,
 ): NodeDistance[] =>
-  nodeRefs.map((nodeRef) => {
-    const ref = nodeRef[1];
-    const boundedRect = ref.current?.getBoundingClientRect();
-    if (boundedRect === undefined)
-      throw new Error("Bounded Rect should not be null in useFocusedNode");
-    const pos: Position = {
-      top: boundedRect.top,
-      bottom: boundedRect.bottom,
-    };
-    const dis = distanceFromBoundary(pos, boundary);
-    return [nodeRef[0], dis];
-  });
+  nodeRefs
+    .map((nodeRef) => {
+      const ref = nodeRef[1];
+      const boundedRect = ref.current?.getBoundingClientRect();
+      // Skip refs that aren't attached to DOM elements (e.g., hidden tabs)
+      if (!boundedRect) {
+        // Log in development to help debug missing refs
+        if (process.env.NODE_ENV === "development") {
+          console.debug(
+            "[focus-tracking] Skipping node with no bounding rect",
+            {
+              nodeId: nodeRef[0],
+              refAttached: !!ref.current,
+              reason: "no bounding rect - likely hidden tab or unmounted",
+            },
+          );
+        }
+        return null;
+      }
+      const pos: Position = {
+        top: boundedRect.top,
+        bottom: boundedRect.bottom,
+      };
+      const dis = distanceFromBoundary(pos, boundary);
+      return [nodeRef[0], dis] as NodeDistance;
+    })
+    .filter((distance): distance is NodeDistance => distance !== null);
 
 //  ********************************
 //  * useFocusNode *

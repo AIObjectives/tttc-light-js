@@ -13,6 +13,12 @@ import {
   OutlineState,
 } from "./hooks/useOutlineState";
 import { ReportStateAction } from "../report/hooks/useReportState";
+import {
+  getSortedCruxes,
+  getControversyCategory,
+  getControversyColors,
+} from "@/lib/crux/utils";
+import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
 
 type OutlineContextType = {
   dispatch: Dispatch<OutlineStateAction>;
@@ -24,6 +30,12 @@ const OutlineContext = createContext<OutlineContextType>({
 
 const outlineSpacing = 2;
 
+/**
+ * Tailwind padding class for subtopic indentation.
+ * Currently supports 2-level hierarchy only (Topic → Subtopic).
+ */
+const SUBTOPIC_INDENT = "pl-4";
+
 function Outline({
   outlineState,
   outlineDispatch,
@@ -33,7 +45,16 @@ function Outline({
   outlineDispatch: Dispatch<OutlineStateAction>;
   reportDispatch: Dispatch<ReportStateAction>;
 }) {
-  const { setScrollTo } = useContext(ReportContext);
+  const {
+    setScrollTo,
+    activeContentTab,
+    setActiveContentTab,
+    addOns,
+    focusedCruxId,
+    getSubtopicId,
+  } = useContext(ReportContext);
+  const sortedCruxes = getSortedCruxes(addOns);
+  const scrollToAfterRender = useDelayedScroll(setScrollTo);
 
   return (
     <OutlineContext.Provider value={{ dispatch: outlineDispatch }}>
@@ -44,44 +65,98 @@ function Outline({
         </TextIcon>
         {/* Scrolly part */}
         <Col gap={outlineSpacing} className="overflow-y-scroll no-scrollbar">
-          {outlineState.tree.map((node) => (
-            <OutlineItem
-              key={node.id}
-              node={node}
-              title={node.title}
-              onBodyClick={() => setScrollTo([node.id, Date.now()])}
-              onIconClick={() =>
-                reportDispatch({
-                  type: "toggleTopic",
-                  payload: { id: node.id },
-                })
-              }
-            >
-              {/* Since we're only going two levels deep, directly call the render for the subnodes here. */}
-              {node?.children?.map((subnode) => (
+          {activeContentTab === "cruxes" ? (
+            <>
+              {sortedCruxes.map((crux) => {
+                const cruxId = `${crux.topic}:${crux.subtopic}`;
+                const category = getControversyCategory(crux.controversyScore);
+                const colors = getControversyColors(crux.controversyScore);
+                const isHighlighted = focusedCruxId === cruxId;
+                const subtopicId = getSubtopicId(crux.topic, crux.subtopic);
+                return (
+                  <CruxOutlineItem
+                    key={cruxId}
+                    cruxClaim={crux.cruxClaim}
+                    subtopic={crux.subtopic}
+                    category={category}
+                    colors={colors}
+                    isHighlighted={isHighlighted}
+                    onClick={() => {
+                      if (!subtopicId) {
+                        console.warn(
+                          `[Outline] Cannot navigate: subtopic "${crux.subtopic}" not found in topic "${crux.topic}"`,
+                        );
+                        return;
+                      }
+                      // Switch to report tab and expand the subtopic
+                      setActiveContentTab("report");
+                      reportDispatch({
+                        type: "open",
+                        payload: { id: subtopicId },
+                      });
+                      // Scroll after state updates (with cleanup on unmount)
+                      scrollToAfterRender(subtopicId);
+                    }}
+                  />
+                );
+              })}
+            </>
+          ) : (
+            <>
+              {outlineState.tree.map((node) => (
                 <OutlineItem
-                  key={subnode.id}
-                  node={subnode}
-                  title={subnode.title}
-                  heirarchyDepth={1}
-                  isLeafNode={true}
-                  parentId={node.id}
-                  onBodyClick={() =>
+                  key={node.id}
+                  node={node}
+                  title={node.title}
+                  onBodyClick={() => setScrollTo([node.id, Date.now()])}
+                  onIconClick={() =>
                     reportDispatch({
-                      type: "open",
-                      payload: { id: subnode.id },
+                      type: "toggleTopic",
+                      payload: { id: node.id },
                     })
                   }
-                />
+                >
+                  {/* Since we're only going two levels deep, directly call the render for the subnodes here. */}
+                  {node?.children?.map((subnode) => (
+                    <OutlineItem
+                      key={subnode.id}
+                      node={subnode}
+                      title={subnode.title}
+                      heirarchyDepth={1}
+                      isLeafNode={true}
+                      parentId={node.id}
+                      onBodyClick={() =>
+                        reportDispatch({
+                          type: "open",
+                          payload: { id: subnode.id },
+                        })
+                      }
+                    />
+                  ))}
+                </OutlineItem>
               ))}
-            </OutlineItem>
-          ))}
+            </>
+          )}
         </Col>
       </Col>
     </OutlineContext.Provider>
   );
 }
 
+/**
+ * Renders an outline item with indentation based on hierarchy depth.
+ *
+ * **Depth Levels:**
+ * - `0`: Topic level (no indent)
+ * - `1`: Subtopic level (pl-4 indent via SUBTOPIC_INDENT constant)
+ *
+ * **Note:** Hierarchy is currently limited to 2 levels (Topic → Subtopic)
+ * because the report structure only has claims under subtopics, and claims
+ * are not shown in the outline. If claim-level outline items are added in
+ * the future, this would need to support depth=2 with additional padding.
+ *
+ * @param heirarchyDepth - Nesting level: 0 for topics, 1 for subtopics (default: 0)
+ */
 function OutlineItem({
   node,
   title,
@@ -94,6 +169,7 @@ function OutlineItem({
   node: OutlineTopicNode | OutlineSubtopicNode;
   title: string;
   isLeafNode?: boolean;
+  /** Nesting level: 0 for topics, 1 for subtopics */
   heirarchyDepth?: number;
   onBodyClick: () => void;
   onIconClick?: () => void;
@@ -120,7 +196,7 @@ function OutlineItem({
         {/* Nested items should be further to the right */}
 
         <p
-          className={`pl-${heirarchyDepth * 4} p2 select-none text-ellipsis w-[230px] items-center`}
+          className={`${heirarchyDepth === 0 ? "" : SUBTOPIC_INDENT} p2 select-none text-ellipsis w-[230px] items-center`}
           onClick={onBodyClick}
           data-testid={"outline-item-clickable"}
         >
@@ -177,6 +253,35 @@ function OutlineCarrot({
       </div>
     );
   }
+}
+
+function CruxOutlineItem({
+  cruxClaim,
+  subtopic,
+  category,
+  colors,
+  isHighlighted,
+  onClick,
+}: {
+  cruxClaim: string;
+  subtopic: string;
+  category: ReturnType<typeof getControversyCategory>;
+  colors: ReturnType<typeof getControversyColors>;
+  isHighlighted: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Row
+      gap={2}
+      className="cursor-pointer hover:bg-accent/50 transition-colors pl-2 max-w-[279px] items-start"
+      onClick={onClick}
+    >
+      <div className={`w-3 -mt-0.5 ${isHighlighted ? "visible" : "invisible"}`}>
+        <Icons.Minus width={16} />
+      </div>
+      <p className="p2 select-none w-[230px]">{cruxClaim}</p>
+    </Row>
+  );
 }
 
 export default Outline;

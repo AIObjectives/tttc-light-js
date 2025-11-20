@@ -33,6 +33,12 @@ import LogoSvg from "./LogoSvg";
 import TTTC_SVG from "./TTTC";
 import MobileOutlineSvg from "./MobileOutlineSvg";
 import WhatsAppSvg from "./WhatsappSvg";
+import {
+  ControversyIcon,
+  ControversyLowIcon,
+  ControversyModerateIcon,
+  ControversyHighIcon,
+} from "./ControversyIcons";
 
 const Icons = () => <></>;
 
@@ -107,5 +113,10 @@ Icons.MobileOutline = (props: { className?: string }) => (
 );
 
 Icons.WhatsApp = (props: { className?: string }) => <WhatsAppSvg {...props} />;
+
+Icons.Controversy = ControversyIcon;
+Icons.ControversyLow = ControversyLowIcon;
+Icons.ControversyModerate = ControversyModerateIcon;
+Icons.ControversyHigh = ControversyHighIcon;
 
 export default Icons;

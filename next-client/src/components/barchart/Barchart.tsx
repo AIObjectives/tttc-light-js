@@ -15,14 +15,19 @@ export type BarChartItemType = {
 };
 
 export function BarChart({ entries }: { entries: BarChartItemType[] }) {
-  const { setScrollTo } = useContext(ReportContext);
+  const { setScrollTo, setActiveContentTab } = useContext(ReportContext);
   return (
     <Col>
       {entries.map((entry) => (
         <BarItem
           entry={entry}
           key={entry.title}
-          onClick={() => setScrollTo([entry.id, Date.now()])}
+          onClick={() => {
+            // Switch to report tab first (in case we're on cruxes tab)
+            setActiveContentTab("report");
+            // Then scroll to the topic
+            setScrollTo([entry.id, Date.now()]);
+          }}
         />
       ))}
     </Col>
