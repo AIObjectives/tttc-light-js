@@ -25,6 +25,14 @@ const meta = {
         useScrollTo() {
           return {} as React.Ref<HTMLDivElement>;
         },
+        addOns: reportData.addons,
+        sortByControversy: false,
+        setSortByControversy: () => null,
+        expandedCruxId: null,
+        setExpandedCruxId: () => null,
+        activeContentTab: "report",
+        setActiveContentTab: () => null,
+        getTopicColor: () => undefined,
       }}
     >
       <Story />

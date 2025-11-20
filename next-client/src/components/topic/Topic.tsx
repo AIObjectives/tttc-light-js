@@ -25,12 +25,8 @@ import { ReportContext } from "../report/Report";
 import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { mergeRefs } from "react-merge-refs";
 import { getThemeColor } from "@/lib/color";
-import {
-  getTopicControversy,
-  formatControversyScore,
-  getControversyColors,
-  isSignificantControversy,
-} from "@/lib/crux/utils";
+import { getTopicControversy } from "@/lib/crux/utils";
+import { ControversyIndicator } from "@/components/controversy";
 
 type TopicContextType = {
   topicNode: TopicNode;
@@ -94,12 +90,7 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
   const { title } = topicNode.data;
   const subtopics = topicNode.children.map((sub) => sub.data);
   const controversyScore = getTopicControversy(addOns, title);
-  const shouldShowControversy =
-    controversyScore !== undefined &&
-    isSignificantControversy(controversyScore);
-  const colors = shouldShowControversy
-    ? getControversyColors(controversyScore)
-    : null;
+  const shouldShowControversy = controversyScore !== undefined;
 
   return (
     <Row gap={2}>
@@ -112,14 +103,10 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
         </div>
         <p className="p2 text-muted-foreground flex gap-2 items-center ">
           {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
-          {shouldShowControversy && colors && (
-            <span
-              className={`text-xs ${colors.bg} ${colors.text} px-2 py-0.5 rounded-full`}
-            >
-              Controversy: {formatControversyScore(controversyScore)}
-            </span>
-          )}
         </p>
+        {shouldShowControversy && controversyScore !== undefined && (
+          <ControversyIndicator score={controversyScore} showLabel={true} />
+        )}
       </div>
       {button}
     </Row>
@@ -346,6 +333,7 @@ function SubtopicItem({
     <Subtopic
       subtopicNode={subtopicNode}
       topicTitle={topicNode.data.title}
+      topicColor={topicNode.data.topicColor}
       ref={mergeRefs([scrollRef, focusedRef])}
       onExpandSubtopic={() =>
         dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
