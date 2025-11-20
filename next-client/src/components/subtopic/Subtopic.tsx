@@ -1,7 +1,18 @@
 import React, { forwardRef, useContext, useState } from "react";
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
-import { ExpandableText, TextIcon } from "../elements";
+
+// Scroll offset to account for fixed navbar height
+const NAVBAR_SCROLL_OFFSET = -80;
+import {
+  ExpandableText,
+  TextIcon,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+  HoverCardPortal,
+  HoverCardOverlay,
+} from "../elements";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import { Claim } from "../claim";
 import { Col, Row } from "../layout";
@@ -14,10 +25,14 @@ import { ReportContext } from "../report/Report";
 import {
   getSubtopicCrux,
   parseSpeaker,
+  getControversyCategory,
   getControversyColors,
-  isSignificantControversy,
-  formatControversyScore,
 } from "@/lib/crux/utils";
+import {
+  ControversyIndicator,
+  AgreeDisagreeSpectrum,
+} from "@/components/controversy";
+import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 
 /**
  * UI for subtopic
@@ -109,35 +124,33 @@ function CruxDisplay({
   topicTitle: string;
   subtopicTitle: string;
 }) {
-  const { addOns, expandedCruxId, setExpandedCruxId } =
-    useContext(ReportContext);
+  const {
+    addOns,
+    activeContentTab,
+    setActiveContentTab,
+    setScrollTo,
+    getTopicColor,
+  } = useContext(ReportContext);
   const crux = getSubtopicCrux(addOns, topicTitle, subtopicTitle);
+  const [isExplanationExpanded, setIsExplanationExpanded] = useState(false);
+  const topicColor = getTopicColor(topicTitle);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Create unique ID for this crux
   const cruxId = `${topicTitle}:${subtopicTitle}`;
 
-  // Auto-expand if this crux was navigated to from the Cruxes tab
-  const [isExpanded, setIsExpanded] = useState(false);
-  const isMountedRef = React.useRef(true);
-
+  // Cleanup on unmount - abort any pending RAF callbacks
   React.useEffect(() => {
     return () => {
-      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
     };
   }, []);
 
-  React.useEffect(() => {
-    if (expandedCruxId === cruxId && isMountedRef.current) {
-      setIsExpanded(true);
-      // Clear the expandedCruxId after expanding
-      setExpandedCruxId(null);
-    }
-  }, [expandedCruxId, cruxId, setExpandedCruxId]);
-
-  // Don't show if no crux data or controversy is too low to be significant
-  if (!crux || !isSignificantControversy(crux.controversyScore)) return null;
-
-  const colors = getControversyColors(crux.controversyScore);
+  // Don't show if no crux data
+  if (!crux) return null;
 
   // Build speaker ID -> name map with useMemo to avoid re-creating on every render
   const speakerIdToName = React.useMemo(() => {
@@ -185,87 +198,211 @@ function CruxDisplay({
     [speakerIdToName],
   );
 
-  const formatSpeakerList = React.useCallback((speakers: string[]) => {
-    return speakers.map((s) => {
-      const { name, strength } = parseSpeaker(s);
-      return (
-        <span key={s} className="text-sm">
-          {name}
-          {strength !== undefined && (
-            <span className="text-muted-foreground"> ({strength})</span>
-          )}
-        </span>
-      );
+  const category = getControversyCategory(crux.controversyScore);
+  const colors = getControversyColors(crux.controversyScore);
+
+  // Handle click: Navigate to Cruxes tab and scroll to this crux
+  const handleClick = () => {
+    setActiveContentTab("cruxes");
+
+    // Abort any existing pending RAF callbacks
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this click
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
+    // Use double RAF to ensure tab switch and expansion complete before scrolling
+    requestAnimationFrame(() => {
+      // Check if aborted between outer and inner RAF
+      if (signal.aborted) return;
+
+      requestAnimationFrame(() => {
+        // Only update state if not aborted (component still mounted)
+        if (!signal.aborted) {
+          setScrollTo([cruxId, Date.now()]);
+        }
+      });
     });
-  }, []);
+  };
+
+  // Handle subtopic click: Navigate to Report tab and scroll to subtopic
+  const handleSubtopicClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const needsTabSwitch = activeContentTab !== "report";
+
+    if (needsTabSwitch) {
+      // Abort any existing pending RAF callbacks
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create new AbortController for this click
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      const { signal } = controller;
+
+      // Switch to report tab first, then scroll after render completes
+      setActiveContentTab("report");
+      // Double requestAnimationFrame ensures React has flushed updates and browser has painted
+      requestAnimationFrame(() => {
+        if (signal.aborted) return;
+
+        requestAnimationFrame(() => {
+          // Only update state if not aborted (component still mounted)
+          if (!signal.aborted) {
+            setScrollTo([subtopicTitle, Date.now()]);
+          }
+        });
+      });
+    } else {
+      // Already on report tab, scroll immediately
+      const element = document.getElementById(subtopicTitle);
+
+      // Scroll to the subtopic
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Use requestAnimationFrame for scroll offset to ensure smooth scroll completes
+        requestAnimationFrame(() => {
+          window.scrollBy({ top: NAVBAR_SCROLL_OFFSET, behavior: "auto" });
+        });
+      }
+    }
+  };
+
+  // Calculate total people count
+  const totalPeople =
+    crux.agree.length +
+    crux.disagree.length +
+    (crux.no_clear_position?.length || 0);
+
+  // Memoize parsed speakers to avoid re-parsing on every render
+  const parsedAgree = React.useMemo(
+    () =>
+      crux.agree.map((s) => {
+        const parsed = parseSpeaker(s);
+        return { id: parsed.id, name: parsed.name };
+      }),
+    [crux.agree],
+  );
+
+  const parsedDisagree = React.useMemo(
+    () =>
+      crux.disagree.map((s) => {
+        const parsed = parseSpeaker(s);
+        return { id: parsed.id, name: parsed.name };
+      }),
+    [crux.disagree],
+  );
+
+  const parsedNoClear = React.useMemo(
+    () =>
+      crux.no_clear_position?.map((s) => {
+        const parsed = parseSpeaker(s);
+        return { id: parsed.id, name: parsed.name };
+      }),
+    [crux.no_clear_position],
+  );
 
   return (
-    <div
-      className={`border-l-4 ${colors.border} pl-4 ${colors.bg} rounded p-3`}
-    >
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex justify-between items-center cursor-pointer hover:opacity-75"
-      >
-        <div className="flex gap-2 items-center">
-          <span className={`font-medium text-sm ${colors.text}`}>
-            Crux (Controversy: {formatControversyScore(crux.controversyScore)})
-          </span>
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <div onClick={handleClick} className="py-3 cursor-pointer">
+          <Row gap={2} className="justify-between">
+            <div className="flex-1 min-w-0">
+              <p className="leading-6 pl-0 text-base font-medium">Crux</p>
+              <p className="text-base text-muted-foreground-subtle line-clamp-1">
+                {crux.cruxClaim}
+              </p>
+            </div>
+            <div
+              className={`flex items-center gap-1 border border-border rounded-md px-2 py-1 self-end ${colors.text}`}
+            >
+              <ControversyIcon
+                level={category.level}
+                size={16}
+                className={colors.text}
+              />
+              <span className="text-xs font-medium">
+                {category.label} controversy
+              </span>
+            </div>
+          </Row>
         </div>
-        <Icons.ChevronRight16
-          className={`transition-transform ${isExpanded ? "rotate-90" : ""}`}
-        />
-      </button>
+      </HoverCardTrigger>
+      <HoverCardPortal>
+        <>
+          <HoverCardOverlay />
+          <HoverCardContent side="top" className="w-[40rem]">
+            <Col gap={3} className="text-sm">
+              {/* Header row - matches CruxCard format */}
+              <Row
+                gap={4}
+                className="justify-between items-center flex-wrap pb-2"
+              >
+                <Row gap={3} className="items-center">
+                  <ControversyIndicator
+                    score={crux.controversyScore}
+                    showLabel={true}
+                  />
+                  <Row
+                    gap={1}
+                    className="items-center text-sm text-muted-foreground"
+                  >
+                    <Icons.People className="w-4 h-4" />
+                    <span>{totalPeople} people</span>
+                  </Row>
+                </Row>
+                <button
+                  type="button"
+                  onClick={handleSubtopicClick}
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:underline"
+                >
+                  <Icons.Theme className="w-4 h-4" />
+                  <span>{subtopicTitle}</span>
+                  <Icons.ChevronRight className="w-4 h-4" />
+                </button>
+              </Row>
 
-      {isExpanded && (
-        <Col gap={3} className="mt-3 text-sm">
-          <div>
-            <p className="font-medium text-gray-900">{crux.cruxClaim}</p>
-          </div>
+              <Col gap={2}>
+                <p className="font-medium">{crux.cruxClaim}</p>
+                <div>
+                  <p
+                    className={`text-sm text-muted-foreground ${
+                      isExplanationExpanded ? "" : "line-clamp-3"
+                    }`}
+                  >
+                    {cleanExplanation(crux.explanation)}
+                  </p>
+                  {!isExplanationExpanded && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsExplanationExpanded(true);
+                      }}
+                      className="text-xs underline mt-1"
+                    >
+                      Read more
+                    </button>
+                  )}
+                </div>
+              </Col>
 
-          <div>
-            <p className="text-muted-foreground text-xs mb-1">Explanation:</p>
-            <p className="text-gray-700">
-              {cleanExplanation(crux.explanation)}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <p className="text-xs font-medium text-green-700 mb-1">
-                Agree ({crux.agree.length})
-              </p>
-              <div className="flex flex-col gap-1">
-                {formatSpeakerList(crux.agree)}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-red-700 mb-1">
-                Disagree ({crux.disagree.length})
-              </p>
-              <div className="flex flex-col gap-1">
-                {formatSpeakerList(crux.disagree)}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-gray-600 mb-1">
-                No Clear Position ({crux.no_clear_position?.length || 0})
-              </p>
-              <div className="flex flex-col gap-1">
-                {formatSpeakerList(crux.no_clear_position || [])}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-xs text-muted-foreground">
-            {crux.speakersInvolved} of {crux.totalSpeakersInSubtopic} speakers
-            took a position
-          </div>
-        </Col>
-      )}
-    </div>
+              <AgreeDisagreeSpectrum
+                agree={parsedAgree}
+                disagree={parsedDisagree}
+                noClearPosition={parsedNoClear}
+                topicColor={topicColor}
+              />
+            </Col>
+          </HoverCardContent>
+        </>
+      </HoverCardPortal>
+    </HoverCard>
   );
 }
 
