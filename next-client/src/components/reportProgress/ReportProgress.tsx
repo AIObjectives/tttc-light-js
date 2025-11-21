@@ -75,7 +75,7 @@ function ReportProcessing({ status }: { status: api.ReportJobStatus }) {
   return (
     <>
       <Progress value={statusToProgress(status)} className="w-[60%]" />
-      {statusMessage(status)}
+      <p>{statusMessage(status)}</p>
     </>
   );
 }

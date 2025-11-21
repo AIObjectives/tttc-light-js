@@ -2,23 +2,24 @@
 
 import CreateReport from "@/components/create/CreateReport";
 import { useUser } from "@/lib/hooks/getUser";
+import { Center } from "@/components/layout";
 
 export default function ReportCreationPage() {
   const { user, loading } = useUser();
 
   if (loading) {
     return (
-      <div className="w-full h-full content-center justify-items-center">
+      <Center>
         <p>Loading...</p>
-      </div>
+      </Center>
     );
   }
 
   if (user === null) {
     return (
-      <div className="w-full h-full content-center justify-items-center">
+      <Center>
         <p>Please login to create a report</p>
-      </div>
+      </Center>
     );
   }
 
