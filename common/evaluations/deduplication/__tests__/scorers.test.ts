@@ -1,12 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
+import type { OpenAI } from "openai";
 import {
   deduplicationJsonStructureScorer,
   claimCoverageScorer,
   groupingQualityScorer,
   consolidationScorer,
   groupClaimQualityScorer,
-  deduplicationTestCases,
-} from "./deduplication-scorers.js";
+  createLLMJudgeScorer,
+} from "../scorers.js";
+import { deduplicationTestCases } from "../datasets.js";
+import { EVAL_MODEL } from "../../constants";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({
@@ -55,7 +58,7 @@ describe("Deduplication Scorers", () => {
       const invalidModelOutput = {};
 
       const result = deduplicationJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -73,7 +76,7 @@ describe("Deduplication Scorers", () => {
       };
 
       const result = deduplicationJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -129,7 +132,7 @@ describe("Deduplication Scorers", () => {
       };
 
       const result = deduplicationJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -228,7 +231,7 @@ describe("Deduplication Scorers", () => {
       const result = claimCoverageScorer({ modelOutput, datasetRow: {} });
 
       expect(result.claim_coverage_score).toBe(0);
-      expect(result.reason).toBe("No input claims provided");
+      expect(result.error).toBe("No input claims provided");
     });
   });
 
@@ -300,7 +303,7 @@ describe("Deduplication Scorers", () => {
       const result = groupingQualityScorer({ modelOutput, datasetRow: {} });
 
       expect(result.grouping_quality_score).toBe(1);
-      expect(result.reason).toBe("No expected groups to compare against");
+      expect(result.error).toBe("No expected groups to compare against");
     });
   });
 
@@ -439,7 +442,7 @@ describe("Deduplication Scorers", () => {
       const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues[0]).toContain("Potential platitude");
+      expect(result.quality_issues![0]).toContain("Potential platitude");
     });
 
     it("should detect generic language", () => {
@@ -456,7 +459,7 @@ describe("Deduplication Scorers", () => {
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
       expect(
-        result.quality_issues.some((issue) =>
+        result.quality_issues!.some((issue: string) =>
           issue.includes("Generic language"),
         ),
       ).toBe(true);
@@ -475,7 +478,7 @@ describe("Deduplication Scorers", () => {
       const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues[0]).toContain("Claim too short");
+      expect(result.quality_issues![0]).toContain("Claim too short");
     });
 
     it("should detect claims that are too long", () => {
@@ -492,7 +495,7 @@ describe("Deduplication Scorers", () => {
       const result = groupClaimQualityScorer({ modelOutput, datasetRow: {} });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues[0]).toContain("Claim too long");
+      expect(result.quality_issues![0]).toContain("Claim too long");
     });
   });
 
@@ -520,6 +523,194 @@ describe("Deduplication Scorers", () => {
           expect(Array.isArray(group.originalClaimIds)).toBe(true);
         }
       }
+    });
+  });
+
+  describe("createLLMJudgeScorer", () => {
+    it("should return 0 when groupedClaims data is missing", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn(),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {} as any,
+        datasetRow: {
+          claims: [
+            {
+              claimId: "1",
+              claimText: "Test claim",
+              quoteText: "Test quote",
+            },
+          ],
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("Missing grouped claims data");
+      expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
+    });
+
+    it("should call OpenAI with correct prompt and return parsed evaluation", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                grouping_accuracy_score: 0.92,
+                separation_quality_score: 0.88,
+                consolidated_claim_quality_score: 0.95,
+                completeness_score: 0.91,
+                overall_score: 0.91,
+                reasoning:
+                  "Claims are well grouped with appropriate consolidation",
+              }),
+            },
+          },
+        ],
+      };
+
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const modelOutput = {
+        groupedClaims: [
+          {
+            claimText: "Parking access needs improvement",
+            originalClaimIds: ["1", "2"],
+          },
+        ],
+      };
+
+      const datasetRow = {
+        claims: [
+          {
+            claimId: "1",
+            claimText: "Parking fees are too expensive",
+            quoteText: "I can't afford parking",
+          },
+          {
+            claimId: "2",
+            claimText: "We need more parking spaces",
+            quoteText: "There's never enough parking",
+          },
+        ],
+      };
+
+      const result = await llmJudgeScorer({ modelOutput, datasetRow });
+
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
+        model: EVAL_MODEL,
+        messages: expect.arrayContaining([
+          expect.objectContaining({ role: "system" }),
+          expect.objectContaining({ role: "user" }),
+        ]),
+        response_format: { type: "json_object" },
+      });
+
+      expect(result.llm_judge_score).toBe(0.91);
+      expect(result.grouping_accuracy_score).toBe(0.92);
+      expect(result.separation_quality_score).toBe(0.88);
+      expect(result.consolidated_claim_quality_score).toBe(0.95);
+      expect(result.completeness_score).toBe(0.91);
+      expect(result.reasoning).toBe(
+        "Claims are well grouped with appropriate consolidation",
+      );
+    });
+
+    it("should handle OpenAI API errors gracefully", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi
+              .fn()
+              .mockRejectedValue(new Error("Service temporarily unavailable")),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          groupedClaims: [
+            {
+              claimText: "Test",
+              originalClaimIds: ["1"],
+            },
+          ],
+        },
+        datasetRow: {
+          claims: [
+            {
+              claimId: "1",
+              claimText: "Test",
+              quoteText: "Test",
+            },
+          ],
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("Service temporarily unavailable");
+    });
+
+    it("should handle empty response content", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: null,
+            },
+          },
+        ],
+      };
+
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          groupedClaims: [
+            {
+              claimText: "Test",
+              originalClaimIds: ["1"],
+            },
+          ],
+        },
+        datasetRow: {
+          claims: [
+            {
+              claimId: "1",
+              claimText: "Test",
+              quoteText: "Test",
+            },
+          ],
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("No response from LLM judge");
     });
   });
 });
