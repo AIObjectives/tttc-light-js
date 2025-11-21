@@ -54,6 +54,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
+        <link rel="stylesheet" href="/print.css" media="print" />
       </head>
       <body className={nextTypography}>
         <div className="h-screen w-screen">

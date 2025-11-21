@@ -56,20 +56,20 @@ export function Subtopic({
   const scrollRef = useScrollTo(subtopicNode.data.id);
   const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
 
-  if (!show) {
-    return <></>;
-  }
-
+  // Always render but hide with CSS for print compatibility
+  // Using CSS visibility ensures content is in DOM for print media queries
   return (
-    <SubtopicCard
-      subtopicNode={subtopicNode}
-      topicTitle={topicTitle}
-      topicColor={topicColor}
-      ref={mergeRefs([scrollRef, focusedRef])}
-      onExpandSubtopic={() =>
-        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
-      }
-    />
+    <div className={!show ? "hidden print:block" : ""}>
+      <SubtopicCard
+        subtopicNode={subtopicNode}
+        topicTitle={topicTitle}
+        topicColor={topicColor}
+        ref={mergeRefs([scrollRef, focusedRef])}
+        onExpandSubtopic={() =>
+          dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
+        }
+      />
+    </div>
   );
 }
 
@@ -124,9 +124,14 @@ export function SubtopicHeader({
           <a id={`${title}`}>{title}</a>
         </h5>
       </div>
-      <TextIcon icon={<Icons.Claim />}>
-        {numClaims} claims by {numPeople} people
-      </TextIcon>
+      <div className="flex items-center gap-2">
+        <div className="print:hidden">
+          <Icons.Claim className="h-4 w-4" />
+        </div>
+        <p className="p2 text-muted-foreground">
+          {numClaims} claims by {numPeople} people
+        </p>
+      </div>
       <CopyLinkButton anchor={title} />
     </Row>
   );
@@ -156,7 +161,9 @@ export function SubtopicSummary({
         numClaims={claims.length}
         numPeople={getNPeople(claims)}
       />
-      <PointGraphic claims={claims} />
+      <div className="print:hidden">
+        <PointGraphic claims={claims} />
+      </div>
       <SubtopicDescription description={description!} />
       <CruxDisplay
         topicTitle={topicTitle}
@@ -416,7 +423,9 @@ export function SubtopicClaims({
 }) {
   return (
     <Col>
-      <p className="leading-6 pl-4 md:pl-8 text-base font-medium">Claims</p>
+      <p className="leading-6 pl-4 md:pl-8 print:pl-0 text-base font-medium">
+        Claims
+      </p>
       <Col gap={4}>
         <Col>
           {claimNodes.map((claimNode, i) => {

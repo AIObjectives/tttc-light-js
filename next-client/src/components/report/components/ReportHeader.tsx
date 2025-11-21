@@ -43,8 +43,8 @@ export function ReportHeader({
   const nPeople = getNPeople(claims);
   const dateStr = date;
   return (
-    <CardContent>
-      <Col gap={8}>
+    <CardContent className="print:pb-0" data-report-header>
+      <Col gap={8} className="print:gap-2">
         {/* Contains title and basic overview stats */}
         <ReportIntro
           title={title}
@@ -59,8 +59,10 @@ export function ReportHeader({
           description={description}
           questionAnswers={questionAnswers}
         />
-        {/* Overview - always visible */}
-        <ReportOverview topics={themes} />
+        {/* Overview - hide from print */}
+        <div className="print:hidden">
+          <ReportOverview topics={themes} />
+        </div>
       </Col>
     </CardContent>
   );
@@ -81,7 +83,7 @@ export function ReportTitle({
     <Col gap={2} className="pb-1">
       {/* Title and copy button */}
       <Row gap={2} className="justify-between">
-        <h3>
+        <h3 className="print-report-title">
           <a id={`${title}`}>{title}</a>
         </h3>
         <CopyLinkButton anchor={title} />
@@ -194,7 +196,7 @@ export function ReportSummary({
         </Row>
       </Col>
       {/* Summary Description */}
-      <div>{description}</div>
+      <div className="print:text-xs">{description}</div>
 
       {/* Summary Meta Questions */}
       {questionAnswers?.map((qa, index) => (
@@ -229,7 +231,28 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
   return (
     <Col gap={3}>
       <h4>Overview</h4>
-      <BarChart entries={getBarChartEntries(topics)} />
+      <div className="print:hidden">
+        <BarChart entries={getBarChartEntries(topics)} />
+      </div>
+      <div className="hidden print:block" data-print-overview="true">
+        <Col gap={3}>
+          {topics.map((topic) => (
+            <div key={topic.id} className="mb-2">
+              <p className="font-semibold print-overview-topic">
+                {topic.title}
+              </p>
+              <p className="text-muted-foreground ml-4 mt-1 print-overview-subtopic">
+                {topic.subtopics.map((sub, idx) => (
+                  <span key={sub.id}>
+                    {sub.title}
+                    {idx < topic.subtopics.length - 1 ? ", " : ""}
+                  </span>
+                ))}
+              </p>
+            </div>
+          ))}
+        </Col>
+      </div>
     </Col>
   );
 }
