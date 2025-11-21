@@ -11,7 +11,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
   Separator,
-  TextIcon,
 } from "../elements";
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
@@ -48,14 +47,11 @@ function Topic({ node }: { node: TopicNode }) {
     </TopicContext.Provider>
   );
 }
-interface TopicCardProps {}
+
 /**
  * UI for Topic
  */
-const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
-  {}: TopicCardProps,
-  ref,
-) {
+const TopicCard = forwardRef<HTMLDivElement>(function TopicCard({}: {}, ref) {
   const { topicNode } = useContext(TopicContext);
   const { title, description, summary } = topicNode.data;
   return (
@@ -82,6 +78,9 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
   );
 });
 
+/**
+ * Top part of the topic card
+ */
 export function TopicHeader({ button }: { button?: React.ReactNode }) {
   const { topicNode } = useContext(TopicContext);
   const { title } = topicNode.data;
@@ -283,7 +282,7 @@ function ExpandTopic() {
       )}
       <Col className="px-3 sm:px-8 gap-y-4">
         {subtopicNodes.map((node, i) => (
-          <SubtopicItem
+          <Subtopic
             subtopicNode={node}
             show={isOpen && i <= pagination}
             key={node.id}
@@ -300,31 +299,6 @@ function ExpandTopic() {
         </>
       )}
     </Col>
-  );
-}
-
-function SubtopicItem({
-  subtopicNode,
-  show,
-}: {
-  subtopicNode: SubtopicNode;
-  show: boolean;
-}) {
-  const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
-
-  const scrollRef = useScrollTo(subtopicNode.data.id);
-  const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
-  if (!show) {
-    return <></>;
-  }
-  return (
-    <Subtopic
-      subtopicNode={subtopicNode}
-      ref={mergeRefs([scrollRef, focusedRef])}
-      onExpandSubtopic={() =>
-        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
-      }
-    />
   );
 }
 

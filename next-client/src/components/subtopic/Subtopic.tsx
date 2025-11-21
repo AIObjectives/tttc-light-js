@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useContext } from "react";
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { ExpandableText, TextIcon } from "../elements";
@@ -10,11 +10,41 @@ import ClaimLoader from "./components/ClaimLoader";
 import { getNPeople } from "tttc-common/morphisms";
 import { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
 import { ClaimItem } from "../claim/ClaimItem";
+import { ReportContext } from "../report/Report";
+import { mergeRefs } from "react-merge-refs";
+
+/**
+ * Second highest level node in a Report. Expands to show claims.
+ */
+export function Subtopic({
+  subtopicNode,
+  show,
+}: {
+  subtopicNode: SubtopicNode;
+  show: boolean;
+}) {
+  const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
+
+  const scrollRef = useScrollTo(subtopicNode.data.id);
+  const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
+  if (!show) {
+    return <></>;
+  }
+  return (
+    <SubtopicCard
+      subtopicNode={subtopicNode}
+      ref={mergeRefs([scrollRef, focusedRef])}
+      onExpandSubtopic={() =>
+        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
+      }
+    />
+  );
+}
 
 /**
  * UI for subtopic
  */
-export const Subtopic = forwardRef<
+export const SubtopicCard = forwardRef<
   HTMLDivElement,
   { subtopicNode: SubtopicNode; onExpandSubtopic: () => void }
 >(function TopicComponent({ subtopicNode, onExpandSubtopic }, ref) {

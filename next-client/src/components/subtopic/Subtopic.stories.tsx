@@ -1,6 +1,6 @@
 import React, { Ref } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import Subtopic from "./Subtopic";
+import { SubtopicCard } from "./Subtopic";
 import { reportData } from "../../../stories/data/dummyData";
 import { stateBuilder } from "../report/hooks/useReportState/utils";
 import { ReportContext } from "../report/Report";
@@ -12,7 +12,7 @@ const subtopicNode = topicNode.children[0];
 
 const meta = {
   title: "Subtopic",
-  component: Subtopic,
+  component: SubtopicCard,
   parameters: {},
   tags: ["autodocs"],
   decorators: [
@@ -38,7 +38,7 @@ const meta = {
       </ReportContext.Provider>
     ),
   ],
-} satisfies Meta<typeof Subtopic>;
+} satisfies Meta<typeof SubtopicCard>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

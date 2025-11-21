@@ -5,9 +5,7 @@ import * as schema from "tttc-common/schema";
 import { getQuotes } from "tttc-common/morphisms";
 import { InteractiveQuoteCard } from "./HoverQuoteCard";
 import { CopyLinkButton } from "../copyButton/CopyButton";
-import { getThemeColor } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
-import config from "tailwind.config";
 
 /**
  * Claim component that includes the claim text, quote icon, and link button

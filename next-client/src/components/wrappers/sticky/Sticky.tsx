@@ -27,14 +27,11 @@ export function Sticky({ children, className, stickyClass }: StickyProps) {
   }, []);
 
   return (
-    // <div >
-
     <div
       ref={stickyRef}
       className={`${className} ${isSticky ? `sticky top-0 ${stickyClass}` : `static`}`}
     >
       {children}
     </div>
-    // </div>
   );
 }
