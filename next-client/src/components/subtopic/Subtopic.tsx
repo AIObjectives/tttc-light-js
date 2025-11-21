@@ -65,9 +65,14 @@ export function SubtopicHeader({
           <a id={`${title}`}>{title}</a>
         </h5>
       </div>
-      <TextIcon icon={<Icons.Claim />}>
-        {numClaims} claims by {numPeople} people
-      </TextIcon>
+      <div className="flex items-center gap-2">
+        <div className="print:hidden">
+          <Icons.Claim className="h-4 w-4" />
+        </div>
+        <p className="p2 text-muted-foreground">
+          {numClaims} claims by {numPeople} people
+        </p>
+      </div>
       <CopyLinkButton anchor={title} />
     </Row>
   );
@@ -95,7 +100,9 @@ export function SubtopicSummary({
         numClaims={claims.length}
         numPeople={getNPeople(claims)}
       />
-      <PointGraphic claims={claims} />
+      <div className="print:hidden">
+        <PointGraphic claims={claims} />
+      </div>
       <SubtopicDescription description={description!} />
       <CruxDisplay topicTitle={topicTitle} subtopicTitle={title} />
     </Col>
