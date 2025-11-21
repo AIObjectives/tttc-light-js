@@ -202,12 +202,13 @@ const configureNodeDevelopmentTransport = (config: any): void => {
       return;
     }
 
-    // Dynamic import to avoid bundling issues
-    const prettierModule = "pino-pretty";
-    require.resolve(prettierModule);
+    // Direct require is safe here because webpack IgnorePlugin will skip this module
+    // See next.config.js webpack configuration
+    // If IgnorePlugin is removed, this will gracefully fall back via try/catch
+    require.resolve("pino-pretty");
 
     config.transport = {
-      target: prettierModule,
+      target: "pino-pretty",
       options: {
         colorize: true,
         translateTime: "HH:MM:ss Z",
@@ -215,8 +216,8 @@ const configureNodeDevelopmentTransport = (config: any): void => {
       },
     };
   } catch (prettierError) {
-    // Silently fallback - don't log warnings in production bundles
-    // This prevents console spam in browser environments
+    // Silently fallback if pino-pretty is not available
+    // This is expected in browser/webpack environments
   }
 };
 
