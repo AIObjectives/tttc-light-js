@@ -31,7 +31,21 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const baseProps = reportData;
+// Limit data for Storybook to avoid 30-second timeout with massive hidden DOM.
+// Report component is more complex than Topic, needs even smaller dataset.
+// Large report testing is done manually outside CI - see test-csv-examples/
+const limitedReportData = {
+  ...reportData,
+  topics: reportData.topics.slice(0, 1).map((topic) => ({
+    ...topic,
+    subtopics: topic.subtopics.slice(0, 1).map((subtopic) => ({
+      ...subtopic,
+      claims: subtopic.claims.slice(0, 2),
+    })),
+  })),
+};
+
+const baseProps = limitedReportData;
 
 // Parse the raw pipeline output for the Report component
 const parsedPipeline = schema.pipelineOutput.safeParse(jsonData);

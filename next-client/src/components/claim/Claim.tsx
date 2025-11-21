@@ -1,6 +1,6 @@
 import React from "react";
 import Icons from "@/assets/icons";
-import { Row } from "../layout";
+import { Row, Col } from "../layout";
 import * as schema from "tttc-common/schema";
 import { getQuotes } from "tttc-common/morphisms";
 import { InteractiveQuoteCard } from "./HoverQuoteCard";
@@ -8,22 +8,42 @@ import { CopyLinkButton } from "../copyButton/CopyButton";
 import { getThemeColor } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
 import config from "tailwind.config";
+import { Quote } from "../quote/Quote";
 
 /**
  * Claim component that includes the claim text, quote icon, and link button
  */
 export function Claim({ claim }: { claim: schema.Claim }) {
+  const quotes = getQuotes(claim);
+
   return (
-    <Row
-      gap={3}
-      className="justify-between px-4 sm:px-8 py-1 items-center"
-      data-testid={"claim-item"}
-    >
-      <ClaimHeader claim={claim} />
-      <div>
-        <CopyLinkButton anchor={claim.title} />
-      </div>
-    </Row>
+    <>
+      <Row
+        gap={3}
+        className="justify-between px-4 sm:px-8 py-1 print:py-0 items-center"
+        data-testid={"claim-item"}
+      >
+        <ClaimHeader claim={claim} />
+        <div>
+          <CopyLinkButton anchor={claim.title} />
+        </div>
+      </Row>
+      {/* Print-only quotes section */}
+      {quotes.length > 0 && (
+        <div className="hidden print:block px-4 sm:px-8" data-print-quotes>
+          <Col gap={0}>
+            {quotes.map((quote) => (
+              <Quote
+                key={quote.id}
+                quote={quote}
+                gap={1}
+                withSeperation={false}
+              />
+            ))}
+          </Col>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -42,10 +62,12 @@ function ClaimHeader({ claim }: { claim: schema.Claim }) {
         &ensp;
         <a id={`${title}`}>{title}</a>
       </p>
-      <InteractiveQuoteCard
-        claim={claim}
-        QuoteIcon={<QuoteIcon num={quoteNum} />}
-      />
+      <div className="print:hidden">
+        <InteractiveQuoteCard
+          claim={claim}
+          QuoteIcon={<QuoteIcon num={quoteNum} />}
+        />
+      </div>
     </Row>
   );
 }

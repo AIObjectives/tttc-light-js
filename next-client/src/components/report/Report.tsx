@@ -664,7 +664,7 @@ function Appendix({
   };
 
   return (
-    <Col className="p-8" gap={1}>
+    <Col className="p-8 appendix-section" gap={1}>
       <p className="p-medium">Appendix</p>
       <p
         className="text-muted-foreground underline cursor-pointer"
