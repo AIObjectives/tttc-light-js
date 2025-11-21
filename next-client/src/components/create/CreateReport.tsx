@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState, useActionState } from "react";
 import * as api from "tttc-common/api";
-import { Col } from "../layout";
-import { Button, Spinner } from "../elements";
+import { Center, Col } from "@/components/layout";
+import { Button, Spinner } from "@/components/elements";
 import Form from "next/form";
 import submitAction from "@/features/submission/actions/SubmitAction";
 import { useUser } from "@/lib/hooks/getUser";
@@ -58,17 +58,6 @@ const bindTokenToAction = <Input, Output>(
 };
 
 const initialState: api.GenerateApiResponse | null = null;
-
-/**
- * Simple component for rendering stuff in the center of the page
- */
-function Center({ children }: React.PropsWithChildren) {
-  return (
-    <div className="w-full h-full content-center justify-items-center">
-      {children}
-    </div>
-  );
-}
 
 /**
  * Root component, fetches user's token and then renders the report

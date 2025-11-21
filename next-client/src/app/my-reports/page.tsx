@@ -7,14 +7,7 @@ import MyReports from "@/components/myReports/MyReports";
 import { Spinner } from "@/components/elements";
 import { getUsersReports } from "@/lib/firebase/firestoreClient";
 import { getFirebaseDb } from "@/lib/firebase/clientApp";
-
-function Center({ children }: React.PropsWithChildren) {
-  return (
-    <div className="w-full h-full content-center justify-items-center">
-      {children}
-    </div>
-  );
-}
+import { Center } from "@/components/layout";
 
 export default function MyReportsPage() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
