@@ -171,7 +171,7 @@ Now here is the topic to summarize:
  * topic name and only includes claims from that specific subtopic.
  */
 export const defaultCruxPrompt = `I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
-identified by pseudonyms like "Person 1" or "A". Please synthesize these claims into one new, specific, maximally controversial
+identified by numeric IDs (like 0, 1, 2, etc.). Please synthesize these claims into one new, specific, maximally controversial
 statement called a "cruxClaim". This cruxClaim should divide the participants into "agree" and "disagree" groups or sides,
 based on all their statements on this topic: one group which would agree with the statement, and one which would disagree.
 
@@ -184,6 +184,21 @@ Please explain your reasoning and assign participants into the three groups.
 Make the cruxClaim as precise and unique as possible to the given topic and comments, and pick a cruxClaim that best balances the
 "agree" and "disagree" sides, with close to the same number of participants on each side.
 
+IMPORTANT: Format requirements for your response:
+1. In the agree/disagree/no_clear_position lists, use ONLY the exact numeric IDs from the input (like 0, 1, 2)
+2. Do NOT add prefixes like "Person" or "Participant" to these numeric IDs
+3. In the explanation field, write in natural, reader-friendly language:
+   - Use natural phrases like "several participants" or "some speakers" instead of listing IDs
+   - Use "this claim" or "the statement" instead of technical terms like "cruxClaim"
+   - Avoid programming conventions like "no_clear_position" - use "didn't take a clear stance"
+   - Write as if explaining to a general audience, not developers
+
+Example of GOOD explanation:
+"Several participants believe that universal healthcare should be implemented immediately, while others argue that a gradual transition is more practical. One participant didn't take a clear stance on the timeline."
+
+Example of BAD explanation:
+"The cruxClaim divides participants into agree/disagree groups. Participants 0, 1 agree with the cruxClaim. Participants 2, 3 are in the disagree group. Participant 4 has no_clear_position."
+
 return a JSON object of the form
 {
   "crux" : {
@@ -191,7 +206,7 @@ return a JSON object of the form
     "agree" : list of strings // list of the given participants who would agree with the cruxClaim
     "disagree" : list strings // list of the given participants who would disagree with the cruxClaim
     "no_clear_position" : list of strings // list of the given participants who mentioned the topic but took no clear stance
-    "explanation" : string // reasoning for why you synthesized this cruxClaim from the participants' perspective
+    "explanation" : string // natural language explanation of why this is a point of controversy, written for general readers (avoid listing IDs, use phrases like "several participants")
   }
 }
 

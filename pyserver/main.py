@@ -47,6 +47,7 @@ import config
 from utils import cute_print, full_speaker_map, token_cost, topic_desc_map, comment_is_meaningful
 from simple_sanitizer import basic_sanitize, sanitize_prompt_length, sanitize_for_output
 from audit_logger import ProcessingAuditLogger, set_audit_logger, get_audit_logger, clear_audit_logger
+from audit_log_redis import get_audit_log_from_redis, save_audit_log_to_redis
 from llm_cache_redis import (
     generate_cache_key,
     get_cached_response,
@@ -536,7 +537,6 @@ def comments_to_tree(
     report_logger.info(f"Starting topic_tree processing with {len(req.comments)} comments")
 
     # Get or create audit logger from Redis
-    from audit_log_redis import get_audit_log_from_redis, save_audit_log_to_redis
 
     audit_logger = get_audit_log_from_redis(x_report_id or "unknown")
     if not audit_logger:
@@ -1008,8 +1008,6 @@ async def all_comments_to_claims(
     report_logger = get_report_logger(x_user_id, x_report_id)
 
     # Get audit logger from Redis
-    from audit_log_redis import get_audit_log_from_redis, save_audit_log_to_redis
-
     audit_logger = get_audit_log_from_redis(x_report_id or "unknown")
     if audit_logger:
         set_audit_logger(audit_logger)
@@ -1659,8 +1657,6 @@ def sort_claims_tree(
     report_logger = get_report_logger(x_user_id, x_report_id)
 
     # Get audit logger from Redis
-    from audit_log_redis import get_audit_log_from_redis, save_audit_log_to_redis
-
     audit_logger = get_audit_log_from_redis(x_report_id or "unknown")
     if audit_logger:
         set_audit_logger(audit_logger)
@@ -2290,6 +2286,9 @@ def cruxes_from_tree(
     # Get report-specific logger
     report_logger = get_report_logger(x_user_id, x_report_id)
 
+    # Audit logger created lazily only when validation issues occur
+    crux_audit_logger = None
+
     subtopic_cruxes = []
     subtopic_cruxes_by_topic = {}  # For topic-level rollups
     TK_IN = 0
@@ -2323,21 +2322,21 @@ def cruxes_from_tree(
                 report_logger.debug(f"No description for subtopic: {subtopic}")
                 subtopic_desc = "No further details"
 
-            topic_title = topic + ", " + subtopic
+            crux_identifier = topic + ", " + subtopic
             subtopic_counter += 1
             llm_response = cruxes_for_topic(
-                req.llm, topic_title, subtopic_desc, claims, speaker_map, x_openai_api_key,
+                req.llm, crux_identifier, subtopic_desc, claims, speaker_map, x_openai_api_key,
                 subtopic_index=subtopic_counter, report_id=x_report_id
             )
             if not llm_response:
-                report_logger.warning(f"No crux response from LLM for {topic_title}")
+                report_logger.warning(f"No crux response from LLM for {crux_identifier}")
                 continue
 
             try:
                 crux = llm_response["crux"]["crux"]
                 usage = llm_response["usage"]
             except Exception as e:
-                report_logger.error(f"Failed to parse crux response for {topic_title}: {e}")
+                report_logger.error(f"Failed to parse crux response for {crux_identifier}: {e}")
                 continue
 
             # Map speaker IDs back to names
@@ -2355,6 +2354,62 @@ def cruxes_from_tree(
             agree_ids = list(set([str(a).split(":")[0] for a in agree]))
             disagree_ids = list(set([str(d).split(":")[0] for d in disagree]))
             no_clear_position_ids = list(set([str(n).split(":")[0] for n in no_clear_position]))
+
+            # Validate all IDs exist in mapping before conversion
+            valid_ids = set(ids_to_speakers.keys())
+            invalid_agree = [sid for sid in agree_ids if sid not in valid_ids]
+            invalid_disagree = [sid for sid in disagree_ids if sid not in valid_ids]
+            invalid_no_clear = [sid for sid in no_clear_position_ids if sid not in valid_ids]
+
+            if invalid_agree or invalid_disagree or invalid_no_clear:
+                total_invalid = len(invalid_agree) + len(invalid_disagree) + len(invalid_no_clear)
+                total_speakers_from_llm = len(agree_ids) + len(disagree_ids) + len(no_clear_position_ids)
+
+                report_logger.warning(
+                    f"LLM returned invalid speaker IDs for {crux_identifier}: "
+                    f"agree={invalid_agree}, disagree={invalid_disagree}, no_clear={invalid_no_clear}. "
+                    f"Valid IDs are: {sorted(valid_ids)}"
+                )
+                # Filter out invalid IDs
+                agree_ids = [sid for sid in agree_ids if sid in valid_ids]
+                disagree_ids = [sid for sid in disagree_ids if sid in valid_ids]
+                no_clear_position_ids = [sid for sid in no_clear_position_ids if sid in valid_ids]
+
+                # Determine if we recovered (have some valid IDs)
+                recovered = bool(agree_ids or disagree_ids)
+
+                # Lazily initialize audit logger on first validation issue
+                if crux_audit_logger is None:
+                    crux_audit_logger = ProcessingAuditLogger(
+                        report_id=x_report_id or "unknown",
+                        input_comment_count=total_subtopics  # Use subtopic count for crux validation context
+                    )
+
+                # Log metrics in audit log
+                crux_audit_logger.log_crux_speaker_validation(
+                    subtopic=crux_identifier,
+                    total_speakers_from_llm=total_speakers_from_llm,
+                    invalid_speakers=total_invalid,
+                    recovered=recovered
+                )
+
+                # Log partial data retention if continuing with some valid IDs
+                if recovered:
+                    total_agree = len(agree_ids) + len(invalid_agree)
+                    total_disagree = len(disagree_ids) + len(invalid_disagree)
+                    total_no_clear = len(no_clear_position_ids) + len(invalid_no_clear)
+
+                    report_logger.warning(
+                        f"Continuing with partial speaker data for {crux_identifier}: "
+                        f"{len(agree_ids)}/{total_agree} agree, "
+                        f"{len(disagree_ids)}/{total_disagree} disagree, "
+                        f"{len(no_clear_position_ids)}/{total_no_clear} no_clear_position"
+                    )
+
+                # If no valid IDs remain in agree/disagree, skip this crux
+                if not recovered:
+                    report_logger.error(f"No valid speaker IDs in crux response, skipping {crux_identifier}")
+                    continue
 
             # Convert speaker IDs to "id:name" format for output
             named_agree = [speaker_id + ":" + ids_to_speakers[speaker_id] for speaker_id in agree_ids]
@@ -2501,6 +2556,10 @@ def cruxes_from_tree(
         "cost": s4_total_cost,
         "api_call_summary": api_summary
     }
+
+    # Save audit logger if any validation issues were logged
+    if crux_audit_logger is not None:
+        save_audit_log_to_redis(crux_audit_logger)
 
     # Filter PII from final output for user privacy
     return sanitize_for_output(crux_response)

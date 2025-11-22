@@ -1150,7 +1150,10 @@ const reportMetadata = v0_2_ReportMetadata; // make union when we have more vers
  ********************************/
 
 export const auditLogEntry = z.object({
-  commentId: z.string(),
+  // Entry identification
+  entryId: z.string(), // Primary identifier for any entry type
+  entryType: z.string().default("comment"), // "comment" | "crux_validation" | etc.
+  commentId: z.string().optional(), // Only for comment-related entries
   commentText: z.string().optional(), // Excluded from stored artifact for privacy
   textPreview: z.string().optional(), // First 200 chars of comment for human readability
   interview: z.string().optional(), // Speaker/interview name from CSV
@@ -1160,6 +1163,7 @@ export const auditLogEntry = z.object({
     "meaningfulness_filter",
     "claims_extraction",
     "deduplication",
+    "crux_generation_validation",
   ]),
   action: z.enum([
     "received",
@@ -1197,6 +1201,9 @@ export const processingAuditLog = z.object({
     rejectedByClaimsExtraction: z.number(),
     deduplicated: z.number(),
     accepted: z.number(),
+    // Crux generation validation metrics
+    cruxValidationFailures: z.number().optional(), // Subtopics with complete validation failure
+    cruxValidationRecovered: z.number().optional(), // Subtopics with partial failures but recovered
   }),
 });
 

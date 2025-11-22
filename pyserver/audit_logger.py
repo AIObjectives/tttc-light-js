@@ -21,11 +21,11 @@ StepType = Literal[
     "sanitization_filter",
     "meaningfulness_filter",
     "claims_extraction",
-    "deduplication"
+    "deduplication",
+    "crux_generation_validation"
 ]
 
 ActionType = Literal["received", "accepted", "rejected", "modified", "deduplicated"]
-
 
 @dataclass
 class LLMMetadata:
@@ -38,10 +38,22 @@ class LLMMetadata:
 
 @dataclass
 class AuditLogEntry:
-    """Single entry in the audit log"""
-    comment_id: str
+    """Single entry in the audit log.
+
+    Supports both comment-level entries (claims extraction, deduplication) and
+    non-comment entries (crux validation, etc.) via the entry_id and entry_type fields.
+
+    entry_id is the primary identifier for all entries. For comment entries,
+    entry_id equals comment_id. For non-comment entries (e.g., crux validation),
+    comment_id is None.
+    """
+    # Primary identification (required)
+    entry_id: str  # Unique identifier for any entry type
     step: StepType
     action: ActionType
+    entry_type: str = "comment"  # "comment" | "crux_validation" | etc.
+    # Comment-specific fields (optional - only for comment entries)
+    comment_id: Optional[str] = None  # Only set for comment-related entries
     reason: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
@@ -68,6 +80,9 @@ class AuditLogSummary:
     rejected_by_claims_extraction: int = 0
     deduplicated: int = 0
     accepted: int = 0
+    # Crux generation validation metrics
+    crux_validation_failures: int = 0  # Subtopics with complete validation failure (no valid speakers)
+    crux_validation_recovered: int = 0  # Subtopics with partial validation failures but recovered
 
 
 class ProcessingAuditLogger:
@@ -131,10 +146,17 @@ class ProcessingAuditLogger:
 
         # Restore entries - camelCase format from Redis
         for entry_dict in artifact.get("entries", []):
+            # Backward compat: old entries have commentId but not entryId
+            comment_id = entry_dict.get("commentId")
+            entry_id = entry_dict.get("entryId") or comment_id  # Fall back to commentId for old entries
+            entry_type = entry_dict.get("entryType", "comment")
+
             logger.entries.append(AuditLogEntry(
-                comment_id=entry_dict["commentId"],
+                entry_id=entry_id,
                 step=entry_dict["step"],
                 action=entry_dict["action"],
+                entry_type=entry_type,
+                comment_id=comment_id if entry_type == "comment" else None,
                 reason=entry_dict.get("reason"),
                 details=entry_dict.get("details"),
                 timestamp=entry_dict.get("timestamp", datetime.utcnow().isoformat()),
@@ -158,7 +180,9 @@ class ProcessingAuditLogger:
             rejected_by_meaningfulness=summary_dict.get("rejectedByMeaningfulness", 0),
             rejected_by_claims_extraction=summary_dict.get("rejectedByClaimsExtraction", 0),
             deduplicated=summary_dict.get("deduplicated", 0),
-            accepted=summary_dict.get("accepted", 0)
+            accepted=summary_dict.get("accepted", 0),
+            crux_validation_failures=summary_dict.get("cruxValidationFailures", 0),  # Backward compat
+            crux_validation_recovered=summary_dict.get("cruxValidationRecovered", 0)  # Backward compat
         )
 
         return logger
@@ -170,9 +194,10 @@ class ProcessingAuditLogger:
     def log_input(self, comment_id: str, interview: Optional[str] = None, comment_length: Optional[int] = None, text: Optional[str] = None):
         """Log that a comment was received as input"""
         self._add_entry(AuditLogEntry(
-            comment_id=comment_id,
+            entry_id=comment_id,
             step="input",
             action="received",
+            comment_id=comment_id,
             interview=interview,
             text_preview=self._create_text_preview(text),
             comment_length=comment_length
@@ -185,9 +210,10 @@ class ProcessingAuditLogger:
         potentially harmful content that was filtered out.
         """
         self._add_entry(AuditLogEntry(
-            comment_id=comment_id,
+            entry_id=comment_id,
             step="sanitization_filter",
             action="rejected",
+            comment_id=comment_id,
             reason=reason
             # Intentionally omitting text_preview for security
         ))
@@ -196,9 +222,10 @@ class ProcessingAuditLogger:
     def log_sanitization_modified(self, comment_id: str, details: Optional[Dict] = None, text: Optional[str] = None):
         """Log that a comment was sanitized/modified"""
         self._add_entry(AuditLogEntry(
-            comment_id=comment_id,
+            entry_id=comment_id,
             step="sanitization_filter",
             action="modified",
+            comment_id=comment_id,
             reason="Content sanitized",
             details=details,
             text_preview=self._create_text_preview(text)
@@ -207,9 +234,10 @@ class ProcessingAuditLogger:
     def log_meaningfulness_filter(self, comment_id: str, reason: str, text: Optional[str] = None):
         """Log that a comment was rejected as not meaningful"""
         self._add_entry(AuditLogEntry(
-            comment_id=comment_id,
+            entry_id=comment_id,
             step="meaningfulness_filter",
             action="rejected",
+            comment_id=comment_id,
             reason=reason,
             text_preview=self._create_text_preview(text)
         ))
@@ -224,9 +252,10 @@ class ProcessingAuditLogger:
     ):
         """Log that no claims were extracted from a comment"""
         self._add_entry(AuditLogEntry(
-            comment_id=comment_id,
+            entry_id=comment_id,
             step="claims_extraction",
             action="rejected",
+            comment_id=comment_id,
             reason="No claims extracted",
             claims_extracted=0,
             llm_metadata=llm_metadata,
@@ -248,9 +277,10 @@ class ProcessingAuditLogger:
     ):
         """Log successful claims extraction with claim IDs for traceability"""
         self._add_entry(AuditLogEntry(
-            comment_id=comment_id,
+            entry_id=comment_id,
             step="claims_extraction",
             action="accepted",
+            comment_id=comment_id,
             reason=f"Extracted {num_claims} claim(s)",
             details=details,
             claims_extracted=num_claims,
@@ -278,13 +308,14 @@ class ProcessingAuditLogger:
             details: Additional context about the merge decision
             text: The claim text for the primary claim (for text preview)
         """
-        # Use the first merged claim's ID as the comment_id for the entry
+        # Use the first merged claim's ID as the entry_id/comment_id for the entry
         comment_id = merged_claim_ids[0] if merged_claim_ids else primary_claim_id
 
         self._add_entry(AuditLogEntry(
-            comment_id=comment_id,
+            entry_id=comment_id,
             step="deduplication",
             action="deduplicated",
+            comment_id=comment_id,
             reason=f"Merged {len(merged_claim_ids)} claim(s) into primary claim",
             primary_claim_id=primary_claim_id,
             merged_claim_ids=merged_claim_ids,
@@ -292,6 +323,43 @@ class ProcessingAuditLogger:
             text_preview=self._create_text_preview(text)
         ))
         self.summary.deduplicated += len(merged_claim_ids)
+
+    def log_crux_speaker_validation(
+        self,
+        subtopic: str,
+        total_speakers_from_llm: int,
+        invalid_speakers: int,
+        recovered: bool
+    ):
+        """
+        Log speaker ID validation during crux generation.
+
+        Args:
+            subtopic: The subtopic being processed (used as identifier)
+            total_speakers_from_llm: Total number of speaker IDs returned by LLM (may include invalid IDs)
+            invalid_speakers: Number of invalid speaker IDs detected
+            recovered: Whether processing continued with partial valid data
+        """
+        self._add_entry(AuditLogEntry(
+            entry_id=f"crux_validation:{subtopic}",
+            step="crux_generation_validation",
+            action="modified" if recovered else "rejected",
+            entry_type="crux_validation",
+            # comment_id intentionally omitted - this is not a comment entry
+            reason=f"Invalid speaker IDs detected: {invalid_speakers}/{total_speakers_from_llm}",
+            details={
+                "subtopic": subtopic,
+                "total_speakers_from_llm": total_speakers_from_llm,
+                "invalid_speakers": invalid_speakers,
+                "valid_speakers": total_speakers_from_llm - invalid_speakers,
+                "recovered": recovered
+            }
+        ))
+        # Increment summary counters
+        if recovered:
+            self.summary.crux_validation_recovered += 1
+        else:
+            self.summary.crux_validation_failures += 1
 
     def get_final_quote_count(self) -> int:
         """Calculate final quote count from audit log"""
@@ -316,14 +384,16 @@ class ProcessingAuditLogger:
             "meaningfulness_filter": 3,
             "claims_extraction": 4,
             "deduplication": 5,
+            "crux_generation_validation": 6,
         }
 
-        # Sort entries by step order, then comment_id, then timestamp
+        # Sort entries by step order, then entry_id, then timestamp
+        # Use entry_id (which defaults to comment_id) for proper sorting of all entry types
         sorted_entries = sorted(
             self.entries,
             key=lambda e: (
                 step_order.get(e.step, 999),  # Unknown steps go to end
-                int(e.comment_id) if e.comment_id.isdigit() else float('inf'),
+                int(e.entry_id) if e.entry_id and e.entry_id.isdigit() else float('inf'),
                 e.timestamp
             )
         )
@@ -351,6 +421,8 @@ class ProcessingAuditLogger:
                     k: v
                     for k, v in {
                         "commentId": e.comment_id,
+                        "entryId": e.entry_id,
+                        "entryType": e.entry_type,
                         "step": e.step,
                         "action": e.action,
                         "reason": e.reason,
@@ -376,12 +448,15 @@ class ProcessingAuditLogger:
                 "rejectedByClaimsExtraction": self.summary.rejected_by_claims_extraction,
                 "deduplicated": self.summary.deduplicated,
                 "accepted": self.summary.accepted,
+                "cruxValidationFailures": self.summary.crux_validation_failures,
+                "cruxValidationRecovered": self.summary.crux_validation_recovered,
                 "humanReadable": {
                     "inputComments": self.input_comment_count,
                     "acceptedComments": f"{self.summary.accepted} of {self.input_comment_count} ({acceptance_rate:.1f}%)",
                     "rejectedComments": f"{total_rejected} of {self.input_comment_count} ({rejection_rate:.1f}%)",
                     "deduplication": f"{self.summary.deduplicated} claims merged ({dedup_rate:.1f}% reduction)",
-                    "finalQuotes": claims_after_dedup
+                    "finalQuotes": claims_after_dedup,
+                    "cruxValidation": f"{self.summary.crux_validation_failures} failed, {self.summary.crux_validation_recovered} recovered with partial data" if (self.summary.crux_validation_failures + self.summary.crux_validation_recovered) > 0 else None
                 }
             }
         }

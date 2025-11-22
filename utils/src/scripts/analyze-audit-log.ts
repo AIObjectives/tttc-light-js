@@ -4,7 +4,9 @@ import * as fs from "fs-extra";
 import * as path from "path";
 
 interface AuditLogEntry {
-  commentId: string;
+  entryId: string;
+  entryType?: string;
+  commentId?: string; // Optional - only for comment entries
   textPreview?: string;
   interview?: string;
   step: string;
@@ -157,25 +159,34 @@ function processReport(filePath: string): {
       (entry) => entry.step === "input" && entry.commentLength !== undefined,
     )
     .forEach((entry) => {
-      commentLengthMap.set(entry.commentId, entry.commentLength!);
+      // Use entryId (always present) or fall back to commentId for backward compat
+      const id = entry.entryId || entry.commentId;
+      if (id) {
+        commentLengthMap.set(id, entry.commentLength!);
+      }
     });
 
-  // Filter rejected entries
+  // Filter rejected comment entries (skip non-comment entries like crux validation)
   const rejectedEntries = auditLog.entries.filter(
-    (entry) => entry.action === "rejected",
+    (entry) =>
+      entry.action === "rejected" &&
+      (!entry.entryType || entry.entryType === "comment"),
   );
 
   // Convert to CSV rows
-  const rows: CSVRow[] = rejectedEntries.map((entry) => ({
-    reportTitle,
-    commentId: entry.commentId,
-    speaker: entry.interview || "",
-    commentText: entry.textPreview || "",
-    commentLength: commentLengthMap.get(entry.commentId) || 0,
-    rejectionStep: formatStepName(entry.step),
-    rejectionReason: entry.reason || "",
-    timestamp: entry.timestamp,
-  }));
+  const rows: CSVRow[] = rejectedEntries.map((entry) => {
+    const id = entry.entryId || entry.commentId || "unknown";
+    return {
+      reportTitle,
+      commentId: id,
+      speaker: entry.interview || "",
+      commentText: entry.textPreview || "",
+      commentLength: commentLengthMap.get(id) || 0,
+      rejectionStep: formatStepName(entry.step),
+      rejectionReason: entry.reason || "",
+      timestamp: entry.timestamp,
+    };
+  });
 
   const stats = {
     inputComments: auditLog.inputCommentCount,
