@@ -244,6 +244,462 @@ function validateNoSpeakerOverlap(data: {
   );
 }
 
+/**
+ * Extract speaker ID from formatted speaker string.
+ *
+ * Expected format: "id:name" or "id:name | strength"
+ * Returns empty string if format is invalid or ID is missing.
+ *
+ * This function is used internally by the deduplication algorithm to identify
+ * unique speakers across agree/disagree/no_clear_position lists.
+ *
+ * @param speaker - Speaker string to parse
+ * @returns Speaker ID (everything before first colon) or empty string if invalid
+ *
+ * @example
+ * ```typescript
+ * extractSpeakerId("123:Alice")           // "123"
+ * extractSpeakerId("123:Alice | 0.8")     // "123"
+ * extractSpeakerId("123:Name:With:Colons")// "123"
+ * extractSpeakerId(":NoID")               // ""
+ * extractSpeakerId("NoColon")             // ""
+ * extractSpeakerId("")                    // ""
+ * extractSpeakerId("  ")                  // ""
+ * ```
+ *
+ * @validation
+ * - null/undefined/non-string → ""
+ * - empty string or whitespace only → ""
+ * - no colon separator → "" (invalid format)
+ * - empty ID before colon (":NoID") → ""
+ * - whitespace around ID is trimmed
+ *
+ * @private Internal helper for deduplication logic
+ */
+function extractSpeakerId(speaker: string): string {
+  // Validate input type and check for empty/whitespace
+  if (!speaker || typeof speaker !== "string" || !speaker.trim()) {
+    return "";
+  }
+
+  // Check for colon separator (required format)
+  const colonIndex = speaker.indexOf(":");
+  if (colonIndex === -1) {
+    // No colon found - invalid format
+    return "";
+  }
+
+  // Extract ID (everything before first colon)
+  const id = speaker.substring(0, colonIndex).trim();
+
+  // Validate ID is not empty after trimming
+  return id || "";
+}
+
+/**
+ * Count valid speakers in each list (excluding empty strings)
+ */
+function countValidSpeakers(lists: {
+  agree: string[];
+  disagree: string[];
+  no_clear_position: string[];
+}): { agree: number; disagree: number; no_clear: number } {
+  return {
+    agree: lists.agree.filter((s) => extractSpeakerId(s) !== "").length,
+    disagree: lists.disagree.filter((s) => extractSpeakerId(s) !== "").length,
+    no_clear: lists.no_clear_position.filter((s) => extractSpeakerId(s) !== "")
+      .length,
+  };
+}
+
+/**
+ * Find speakers who appear in BOTH agree AND disagree lists (truly ambiguous)
+ */
+function findAmbiguousSpeakers(
+  agreeList: string[],
+  disagreeList: string[],
+): Set<string> {
+  const agreeIds = new Set(
+    agreeList.map(extractSpeakerId).filter((id) => id !== ""),
+  );
+  const disagreeIds = new Set(
+    disagreeList.map(extractSpeakerId).filter((id) => id !== ""),
+  );
+
+  return new Set([...agreeIds].filter((id) => disagreeIds.has(id)));
+}
+
+/**
+ * Find speakers in no_clear who have a clear stance (appear in agree or disagree)
+ */
+function findSpeakersWithClearStance(
+  noClearList: string[],
+  agreeList: string[],
+  disagreeList: string[],
+): string[] {
+  const agreeIds = new Set(
+    agreeList.map(extractSpeakerId).filter((id) => id !== ""),
+  );
+  const disagreeIds = new Set(
+    disagreeList.map(extractSpeakerId).filter((id) => id !== ""),
+  );
+  const noClearIds = new Set(
+    noClearList.map(extractSpeakerId).filter((id) => id !== ""),
+  );
+
+  return [...noClearIds].filter(
+    (id) => agreeIds.has(id) || disagreeIds.has(id),
+  );
+}
+
+/**
+ * Process a speaker list to remove duplicates and ambiguous speakers
+ * Returns deduplicated list and count of duplicates removed
+ */
+function processSpeakerList(
+  speakers: string[],
+  ambiguousIds: Set<string>,
+  seenIds: Set<string>,
+): { deduplicated: string[]; duplicatesRemoved: number } {
+  const result: string[] = [];
+  let duplicatesRemoved = 0;
+
+  for (const speaker of speakers) {
+    const id = extractSpeakerId(speaker);
+    if (id && !ambiguousIds.has(id)) {
+      if (seenIds.has(id)) {
+        duplicatesRemoved++;
+      } else {
+        seenIds.add(id);
+        result.push(speaker);
+      }
+    }
+  }
+
+  return { deduplicated: result, duplicatesRemoved };
+}
+
+/**
+ * Log deduplication metrics for monitoring LLM output quality
+ */
+function logDeduplicationMetrics(metrics: {
+  inputCounts: { agree: number; disagree: number; no_clear: number };
+  outputCounts: { agree: number; disagree: number; no_clear: number };
+  ambiguousIds: Set<string>;
+  removedFromNoClear: string[];
+  duplicatesRemoved: { agree: number; disagree: number; no_clear: number };
+}): void {
+  const {
+    inputCounts,
+    outputCounts,
+    ambiguousIds,
+    removedFromNoClear,
+    duplicatesRemoved,
+  } = metrics;
+
+  const totalInput =
+    inputCounts.agree + inputCounts.disagree + inputCounts.no_clear;
+  const totalOutput =
+    outputCounts.agree + outputCounts.disagree + outputCounts.no_clear;
+  const totalDropped = totalInput - totalOutput;
+  const totalDuplicates =
+    duplicatesRemoved.agree +
+    duplicatesRemoved.disagree +
+    duplicatesRemoved.no_clear;
+
+  // Only log if deduplication occurred
+  if (
+    ambiguousIds.size > 0 ||
+    removedFromNoClear.length > 0 ||
+    totalDropped > 0
+  ) {
+    console.info("[crux-deduplication] Crux speaker deduplication applied", {
+      input: inputCounts,
+      output: outputCounts,
+      ambiguousSpeakers: {
+        count: ambiguousIds.size,
+        speakerIds: Array.from(ambiguousIds),
+      },
+      removedFromNoClear: {
+        count: removedFromNoClear.length,
+        speakerIds: removedFromNoClear,
+      },
+      duplicatesRemoved: {
+        agree: duplicatesRemoved.agree,
+        disagree: duplicatesRemoved.disagree,
+        no_clear: duplicatesRemoved.no_clear,
+        total: totalDuplicates,
+      },
+      totalSpeakers: {
+        input: totalInput,
+        output: totalOutput,
+        dropped: totalDropped,
+      },
+    });
+  }
+}
+
+/**
+ * Reconcile speaker positions across agree/disagree/no_clear_position lists
+ *
+ * **Problem**: LLM-generated crux data may contain speakers in multiple position lists,
+ * which creates ambiguity about their true stance. This function resolves that ambiguity
+ * using a priority-based system.
+ *
+ * **Reconciliation Rules** (in priority order):
+ *
+ * 1. **Ambiguous speakers** (appears in BOTH agree AND disagree):
+ *    - Interpretation: Speaker has contradictory positions → truly ambiguous
+ *    - Action: Move to `no_clear_position` (uses agree version of speaker data)
+ *    - Example: Speaker says "I support X but also oppose X"
+ *
+ * 2. **Agree/disagree takes precedence** over no_clear_position:
+ *    - If speaker is in agree AND no_clear → keep in agree (clear stance expressed)
+ *    - If speaker is in disagree AND no_clear → keep in disagree (clear stance expressed)
+ *    - Rationale: A clear position always overrides "unclear" classification
+ *
+ * 3. **Within-list deduplication**:
+ *    - Remove duplicates within each individual list
+ *    - First occurrence is kept, subsequent duplicates are dropped
+ *
+ * **Why use "agree version" for ambiguous speakers?**
+ * When moving an ambiguous speaker to no_clear_position, we use their data from the
+ * agree list. This is arbitrary but consistent - we need to pick one source for
+ * speaker metadata (name, strength annotations, etc.), and agree is checked first.
+ *
+ * **Examples**:
+ *
+ * ```typescript
+ * // Example 1: Ambiguous speaker
+ * Input:  { agree: ["1:Alice"], disagree: ["1:Alice"], no_clear_position: [] }
+ * Output: { agree: [], disagree: [], no_clear_position: ["1:Alice"] }
+ *
+ * // Example 2: Clear stance overrides unclear
+ * Input:  { agree: ["1:Alice"], disagree: [], no_clear_position: ["1:Alice"] }
+ * Output: { agree: ["1:Alice"], disagree: [], no_clear_position: [] }
+ *
+ * // Example 3: Multiple rules applied
+ * Input:  { agree: ["1:Alice", "2:Bob", "2:Bob"], disagree: ["1:Alice"], no_clear_position: ["2:Bob"] }
+ * Output: { agree: ["2:Bob"], disagree: [], no_clear_position: ["1:Alice"] }
+ * // Alice: ambiguous → no_clear | Bob: duplicates removed, clear stance (agree) kept
+ * ```
+ *
+ * @param data Raw crux data with potentially duplicate speakers
+ * @returns Reconciled crux data with each speaker appearing in exactly one list
+ * @public Exported for direct testing and reuse
+ */
+export function reconcileCruxSpeakers<
+  T extends {
+    agree: string[];
+    disagree: string[];
+    no_clear_position: string[];
+  },
+>(data: T): T {
+  // Track speaker metadata in single map (2-pass algorithm for optimal performance)
+  type SpeakerInfo = {
+    fullString: string; // Full speaker string (id:name or id:name | strength)
+    appearsIn: Set<"agree" | "disagree" | "no_clear">; // Which lists contain this speaker
+    countByList: { agree: number; disagree: number; no_clear: number }; // Appearances per list
+  };
+
+  const speakerMap = new Map<string, SpeakerInfo>();
+  let inputCount = 0;
+
+  // PASS 1: Build speaker map from all three lists
+  const processList = (
+    list: string[],
+    listType: "agree" | "disagree" | "no_clear",
+  ) => {
+    for (const speaker of list) {
+      const id = extractSpeakerId(speaker);
+      if (!id) continue; // Skip invalid/empty speakers
+
+      inputCount++;
+      const existing = speakerMap.get(id);
+      if (existing) {
+        existing.appearsIn.add(listType);
+        existing.countByList[listType]++;
+        // Preserve the richest speaker data (prefer longer strings or those with metadata like strength scores)
+        // Examples: "1:Alice | 0.9" is richer than "1:Alice", "1:Alice Smith" is richer than "1:Alice"
+        if (
+          speaker.length > existing.fullString.length ||
+          (speaker.includes("|") && !existing.fullString.includes("|"))
+        ) {
+          existing.fullString = speaker;
+        }
+      } else {
+        speakerMap.set(id, {
+          fullString: speaker,
+          appearsIn: new Set([listType]),
+          countByList: { agree: 0, disagree: 0, no_clear: 0 },
+        });
+        speakerMap.get(id)!.countByList[listType] = 1;
+      }
+    }
+  };
+
+  processList(data.agree, "agree");
+  processList(data.disagree, "disagree");
+  processList(data.no_clear_position, "no_clear");
+
+  // PASS 2: Categorize speakers and build output lists (preserve original order)
+  const outputAgree: string[] = [];
+  const outputDisagree: string[] = [];
+  const outputNoClear: string[] = [];
+  const processedIds = new Set<string>();
+
+  // Metrics tracking
+  const ambiguousIds: string[] = [];
+  const removedFromNoClear: string[] = [];
+
+  // Helper to process a speaker from any list, maintaining order
+  const processSpeaker = (
+    speaker: string,
+    isProcessingList: "agree" | "disagree" | "no_clear",
+  ) => {
+    const id = extractSpeakerId(speaker);
+    if (!id || processedIds.has(id)) return; // Skip if already processed
+
+    const info = speakerMap.get(id);
+    if (!info) return; // Skip if not in map (invalid speaker)
+
+    const { fullString, appearsIn } = info;
+    processedIds.add(id);
+
+    // Rule 1: Ambiguous speakers (in BOTH agree AND disagree) → no_clear_position
+    if (appearsIn.has("agree") && appearsIn.has("disagree")) {
+      ambiguousIds.push(id);
+      outputNoClear.push(fullString);
+      return;
+    }
+
+    // Rule 2: Clear stance (agree or disagree) takes precedence over no_clear
+    if (appearsIn.has("agree")) {
+      outputAgree.push(fullString);
+      if (appearsIn.has("no_clear")) {
+        removedFromNoClear.push(id);
+      }
+      return;
+    }
+
+    if (appearsIn.has("disagree")) {
+      outputDisagree.push(fullString);
+      if (appearsIn.has("no_clear")) {
+        removedFromNoClear.push(id);
+      }
+      return;
+    }
+
+    // Rule 3: Only in no_clear → stays in no_clear
+    if (appearsIn.has("no_clear")) {
+      outputNoClear.push(fullString);
+    }
+  };
+
+  // Track ambiguous speakers to append AFTER no_clear processing
+  const ambiguousSpeakersToAppend: string[] = [];
+
+  // Helper to process non-ambiguous speakers
+  const processNonAmbiguousSpeaker = (
+    speaker: string,
+    listType: "agree" | "disagree" | "no_clear",
+  ) => {
+    const id = extractSpeakerId(speaker);
+    if (!id || processedIds.has(id)) return;
+
+    const info = speakerMap.get(id);
+    if (!info) return;
+
+    // Skip ambiguous speakers - they'll be added later
+    if (info.appearsIn.has("agree") && info.appearsIn.has("disagree")) {
+      // Only track once (from first list it appears in)
+      if (!ambiguousSpeakersToAppend.some((s) => extractSpeakerId(s) === id)) {
+        ambiguousSpeakersToAppend.push(info.fullString);
+      }
+      return;
+    }
+
+    processSpeaker(speaker, listType);
+  };
+
+  // Process agree, disagree, then no_clear (preserving order within each list)
+  // Ambiguous speakers are collected but not added yet
+  data.agree.forEach((s) => processNonAmbiguousSpeaker(s, "agree"));
+  data.disagree.forEach((s) => processNonAmbiguousSpeaker(s, "disagree"));
+  data.no_clear_position.forEach((s) =>
+    processNonAmbiguousSpeaker(s, "no_clear"),
+  );
+
+  // Now append ambiguous speakers to no_clear (they go AFTER original no_clear speakers)
+  ambiguousSpeakersToAppend.forEach((s) => processSpeaker(s, "no_clear"));
+
+  // Log metrics only if significant reconciliation occurred
+  const outputCount =
+    outputAgree.length + outputDisagree.length + outputNoClear.length;
+  // Simpler calculation: total duplicates removed = input - output
+  const totalDuplicatesRemoved = inputCount - outputCount;
+
+  // Calculate significance to reduce log spam
+  const totalAffected =
+    ambiguousIds.length + removedFromNoClear.length + totalDuplicatesRemoved;
+  const percentageAffected =
+    inputCount > 0 ? (totalAffected / inputCount) * 100 : 0;
+
+  // Only log if reconciliation is "significant":
+  // - Affects 3+ speakers (absolute threshold), OR
+  // - Affects 15%+ of total speakers (relative threshold)
+  // This filters out minor issues (1-2 speakers in large datasets) while
+  // highlighting systematic data quality problems
+  const isSignificant = totalAffected >= 3 || percentageAffected >= 15;
+
+  if (
+    isSignificant &&
+    (ambiguousIds.length > 0 ||
+      removedFromNoClear.length > 0 ||
+      totalDuplicatesRemoved > 0)
+  ) {
+    console.info("[crux-reconciliation] Crux speaker reconciliation applied", {
+      input: {
+        agree: data.agree.filter((s) => extractSpeakerId(s) !== "").length,
+        disagree: data.disagree.filter((s) => extractSpeakerId(s) !== "")
+          .length,
+        no_clear: data.no_clear_position.filter(
+          (s) => extractSpeakerId(s) !== "",
+        ).length,
+      },
+      output: {
+        agree: outputAgree.length,
+        disagree: outputDisagree.length,
+        no_clear: outputNoClear.length,
+      },
+      ambiguousSpeakers: {
+        count: ambiguousIds.length,
+        speakerIds: ambiguousIds,
+      },
+      removedFromNoClear: {
+        count: removedFromNoClear.length,
+        speakerIds: removedFromNoClear,
+      },
+      totalSpeakers: {
+        input: inputCount,
+        output: outputCount,
+        duplicatesRemoved: totalDuplicatesRemoved,
+      },
+      significance: {
+        totalAffected,
+        percentageAffected: Math.round(percentageAffected * 10) / 10,
+      },
+    });
+  }
+
+  return {
+    ...data,
+    agree: outputAgree,
+    disagree: outputDisagree,
+    no_clear_position: outputNoClear,
+  };
+}
+
 export const subtopicCrux = z
   .object({
     topic: z.string(), // Parent topic name
@@ -253,12 +709,28 @@ export const subtopicCrux = z
     disagree: z.array(z.string()), // Speaker IDs who would disagree (format: "id:name")
     no_clear_position: z.array(z.string()).default([]), // Speaker IDs who mentioned topic but took no clear stance
     explanation: z.string(), // LLM's reasoning for why this divides participants
-    agreementScore: z.number(), // 0-1: ratio of speakers who agree
-    disagreementScore: z.number(), // 0-1: ratio of speakers who disagree
-    controversyScore: z.number(), // 0-1: how evenly split (1.0 = perfect 50/50 split)
-    speakersInvolved: z.number(), // Total speakers who took a position (agree + disagree)
-    totalSpeakersInSubtopic: z.number(), // Total speakers with claims in this subtopic
+    agreementScore: z
+      .number()
+      .min(0, "Agreement score must be between 0 and 1")
+      .max(1, "Agreement score must be between 0 and 1"), // 0-1: ratio of speakers who agree
+    disagreementScore: z
+      .number()
+      .min(0, "Disagreement score must be between 0 and 1")
+      .max(1, "Disagreement score must be between 0 and 1"), // 0-1: ratio of speakers who disagree
+    controversyScore: z
+      .number()
+      .min(0, "Controversy score must be between 0 and 1")
+      .max(1, "Controversy score must be between 0 and 1"), // 0-1: how evenly split (1.0 = perfect 50/50 split)
+    speakersInvolved: z.number().int().nonnegative(), // Total speakers who took a position (agree + disagree)
+    totalSpeakersInSubtopic: z.number().int().nonnegative(), // Total speakers with claims in this subtopic
   })
+  .transform(reconcileCruxSpeakers)
+  // Sanity check: Validate no speaker overlap after reconciliation
+  // This refinement should always pass because reconcileCruxSpeakers guarantees
+  // each speaker appears in exactly one list. However, we keep this validation as:
+  // 1. Defense in depth - catches bugs in reconciliation logic
+  // 2. Clear schema contract - documents the invariant
+  // 3. Runtime assertion - helpful for debugging if reconciliation fails
   .refine(validateNoSpeakerOverlap, {
     message:
       "Speakers cannot appear in multiple position lists (agree, disagree, no_clear_position)",
@@ -539,7 +1011,7 @@ export const topic = z.object({
   summary: z.string().optional(),
   context: z.string().optional(),
   subtopics: z.array(subtopic),
-  topicColor: z.string(),
+  topicColor: topicColors,
 });
 
 export type Topic = z.infer<typeof topic>;

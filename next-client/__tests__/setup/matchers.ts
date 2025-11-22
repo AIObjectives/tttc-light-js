@@ -1,5 +1,10 @@
 import { expect } from "vitest";
 import { ReportState } from "@/components/report/hooks/useReportState";
+import * as matchers from "@testing-library/jest-dom/matchers";
+import type { TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
+
+// Extend expect with jest-dom matchers
+expect.extend(matchers);
 
 // Helper to get specific differences between objects
 function getDifferences(
@@ -78,9 +83,10 @@ expect.extend({
   },
 });
 
-// Add type support for the custom matcher
+// Add type support for custom matchers
 declare module "vitest" {
-  interface Assertion<T = any> {
+  interface Assertion<T = any>
+    extends TestingLibraryMatchers<typeof expect.stringContaining, T> {
     toMatchReportState(expected: ReportState): void;
   }
 }

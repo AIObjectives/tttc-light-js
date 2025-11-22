@@ -24,6 +24,14 @@ const meta = {
           setScrollTo: () => null,
           useReportEffect: () => {},
           useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
+          addOns: reportData.addons,
+          sortByControversy: false,
+          setSortByControversy: () => null,
+          expandedCruxId: null,
+          setExpandedCruxId: () => null,
+          activeContentTab: "report",
+          setActiveContentTab: () => null,
+          getTopicColor: () => undefined,
         }}
       >
         <TopicContext.Provider

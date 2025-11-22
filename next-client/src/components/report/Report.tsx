@@ -7,8 +7,11 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useMemo,
+  useRef,
   useState,
 } from "react";
+import { mergeRefs } from "react-merge-refs";
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { Col, Row } from "../layout";
@@ -25,29 +28,37 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  ErrorBoundary,
 } from "../elements";
 import Icons from "@/assets/icons";
+import { ChevronsUpDown, ChevronDown } from "lucide-react";
 import { getNPeople } from "tttc-common/morphisms";
-import { useReportState, ReportStateAction } from "./hooks/useReportState";
+import {
+  useReportState,
+  ReportStateAction,
+  TopicNode,
+} from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
 import { cn } from "@/lib/utils/shadcn";
 import Outline from "../outline/Outline";
 import {
   getTopicControversy,
-  getControversyColors,
-  formatControversyScore,
   getSortedCruxes,
-  findSubtopicId,
+  getControversyCategory,
+  parseSpeaker,
 } from "@/lib/crux/utils";
+import {
+  ControversyIndicator,
+  AgreeDisagreeSpectrum,
+} from "@/components/controversy";
 import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
-
-/**
- * Delay in milliseconds to wait for tab switch and topic/subtopic expansion
- * before scrolling to the target element
- */
-const TAB_SWITCH_DELAY_MS = 150;
+import { CruxCard } from "./CruxCard";
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
 import { useHashChange } from "@/lib/hooks/useHashChange";
@@ -163,6 +174,11 @@ export const ReportContext = createContext<{
   useReportEffect: ReportActionEffect;
   // Tracks which node is being "focused"
   useFocusedNode: (id: string, ignore?: boolean) => Ref<HTMLDivElement>;
+  // Tracks which crux is being "focused" (separate from node tracking)
+  useFocusedNodeForCruxes: (
+    id: string,
+    ignore?: boolean,
+  ) => Ref<HTMLDivElement>;
   // Add-ons data from pipeline (including cruxes and controversy scores)
   addOns?: schema.AddOns;
   // Whether to sort topics by controversy score
@@ -171,17 +187,29 @@ export const ReportContext = createContext<{
   // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
   expandedCruxId: string | null;
   setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
+  // Active content tab ("report" or "cruxes")
+  activeContentTab: "report" | "cruxes";
+  setActiveContentTab: Dispatch<SetStateAction<"report" | "cruxes">>;
+  // Get topic color by topic title
+  getTopicColor: (topicTitle: string) => string | undefined;
+  // ID of currently focused/highlighted crux (for outline highlighting)
+  focusedCruxId: string | null;
 }>({
   dispatch: () => null,
   useScrollTo: () => ({}) as Ref<HTMLDivElement>,
   setScrollTo: () => null,
   useReportEffect: () => {},
   useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
+  useFocusedNodeForCruxes: () => ({}) as Ref<HTMLDivElement>,
   addOns: undefined,
   sortByControversy: false,
   setSortByControversy: () => null,
   expandedCruxId: null,
   setExpandedCruxId: () => null,
+  activeContentTab: "report",
+  setActiveContentTab: () => null,
+  getTopicColor: () => undefined,
+  focusedCruxId: null,
 });
 
 /**
@@ -207,6 +235,11 @@ function Report({
   // Allows us to keep track of what node is in the middle of the screen. Needs to pass hook to nodes.
   const useFocusedNode = _useFocusedNode((id: string) =>
     dispatch({ type: "focus", payload: { id } }),
+  );
+  // Track focused crux for outline highlighting
+  const [focusedCruxId, setFocusedCruxId] = useState<string | null>(null);
+  const useFocusedNodeForCruxes = _useFocusedNode((id: string) =>
+    setFocusedCruxId(id),
   );
   // Track navbar visibility for sheet positioning
   const navbarState = useNavbarVisibility();
@@ -276,6 +309,11 @@ function Report({
   // State for tracking which crux should be auto-expanded
   const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
 
+  // Active content tab ("report" or "cruxes")
+  const [activeContentTab, setActiveContentTab] = useState<"report" | "cruxes">(
+    "report",
+  );
+
   // Extract addOns to avoid rawPipelineOutput object reference changes breaking memoization
   const addOns = React.useMemo(
     () => rawPipelineOutput.data[1]?.addOns,
@@ -296,6 +334,24 @@ function Report({
     });
   }, [sortByControversy, state.children, addOns]);
 
+  // Build topic color map for AgreeDisagreeSpectrum
+  const topicColorMap = React.useMemo(() => {
+    const colorMap = new Map<string, string>();
+    state.children.forEach((topic) => {
+      if (topic.data?.topicColor) {
+        colorMap.set(topic.data.title, topic.data.topicColor);
+      }
+    });
+    return colorMap;
+  }, [state.children]);
+
+  const getTopicColor = React.useCallback(
+    (topicTitle: string): string | undefined => {
+      return topicColorMap.get(topicTitle);
+    },
+    [topicColorMap],
+  );
+
   return (
     <ReportContext.Provider
       value={{
@@ -304,11 +360,16 @@ function Report({
         setScrollTo,
         useReportEffect,
         useFocusedNode,
+        useFocusedNodeForCruxes,
         addOns,
         sortByControversy,
         setSortByControversy,
         expandedCruxId,
         setExpandedCruxId,
+        activeContentTab,
+        setActiveContentTab,
+        getTopicColor,
+        focusedCruxId,
       }}
     >
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
@@ -326,12 +387,12 @@ function Report({
                 description={reportData.description}
                 questionAnswers={reportData.questionAnswers}
               />
-              {sortedTopics.map((themeNode) => (
-                <Theme key={themeNode.data.id} node={themeNode} />
-              ))}
-              <Appendix
-                filename={reportData.title}
+              <ReportContentTabs
+                sortedTopics={sortedTopics}
+                topics={reportData.topics}
+                addOns={addOns}
                 rawPipelineOutput={rawPipelineOutput}
+                filename={reportData.title}
               />
             </Col>
           }
@@ -364,12 +425,7 @@ export function ReportToolbar({
   setIsMobileOutlineOpen: (val: boolean) => void;
   isMobileOutlineOpen: boolean;
 }) {
-  const { dispatch, sortByControversy, setSortByControversy, addOns } =
-    useContext(ReportContext);
-
-  // Only show sort button if there's controversy data
-  const hasControversyData =
-    addOns?.topicScores && addOns.topicScores.length > 0;
+  const { dispatch } = useContext(ReportContext);
 
   return (
     // Sticky keeps it at top of screen when scrolling down.
@@ -394,15 +450,6 @@ export function ReportToolbar({
         </div>
       </Row>
       <Row gap={2}>
-        {/* Sort by controversy button */}
-        {hasControversyData && (
-          <Button
-            onClick={() => setSortByControversy(!sortByControversy)}
-            variant={sortByControversy ? "secondary" : "outline"}
-          >
-            {sortByControversy ? "Default order" : "Sort by controversy"}
-          </Button>
-        )}
         {/* Close all button */}
         <Button
           onClick={() => dispatch({ type: "closeAll" })}
@@ -443,12 +490,6 @@ export function ReportHeader({
   const claims = topics.flatMap((topic) => topic.claims);
   const nPeople = getNPeople(claims);
   const dateStr = date;
-  const { addOns } = useContext(ReportContext);
-
-  // Check if we have controversy data to show the cruxes tab
-  const hasControversyData =
-    addOns?.subtopicCruxes && addOns.subtopicCruxes.length > 0;
-
   return (
     <CardContent>
       <Col gap={8}>
@@ -466,12 +507,8 @@ export function ReportHeader({
           description={description}
           questionAnswers={questionAnswers}
         />
-        {/* Overview with optional Cruxes tab */}
-        {hasControversyData ? (
-          <ReportWithCruxes addOns={addOns} topics={themes} />
-        ) : (
-          <ReportOverview topics={themes} />
-        )}
+        {/* Overview - always visible */}
+        <ReportOverview topics={themes} />
       </Col>
     </CardContent>
   );
@@ -642,46 +679,216 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
   );
 }
 
-type Tab = "overview" | "cruxes";
+type ContentTab = "report" | "cruxes";
 
-function ReportWithCruxes({
-  addOns,
+/**
+ * Tabbed content section below the overview.
+ * Shows "Report" (topics/claims) or "Cruxes" tabs with sort dropdown.
+ */
+function ReportContentTabs({
+  sortedTopics,
   topics,
+  addOns,
+  rawPipelineOutput,
+  filename,
 }: {
-  addOns?: schema.AddOns;
+  sortedTopics: TopicNode[];
   topics: schema.Topic[];
+  addOns?: schema.AddOns;
+  rawPipelineOutput: schema.PipelineOutput;
+  filename: string;
 }) {
-  const [activeTab, setActiveTab] = React.useState<Tab>("overview");
-  const { dispatch } = useContext(ReportContext);
+  const {
+    dispatch,
+    sortByControversy,
+    setSortByControversy,
+    activeContentTab,
+    setActiveContentTab,
+  } = useContext(ReportContext);
+
+  // Check if we have controversy data
+  const hasControversyData =
+    addOns?.subtopicCruxes && addOns.subtopicCruxes.length > 0;
 
   const handleNavigateToSubtopic = (subtopicId: string) => {
-    // Switch to overview tab
-    setActiveTab("overview");
+    // Switch to report tab
+    setActiveContentTab("report");
 
     // Expand the topic and subtopic
     dispatch({ type: "open", payload: { id: subtopicId } });
   };
 
+  // Track the source of tab changes to prevent circular updates between URL and state
+  const tabChangeSource = useRef<"user" | "hash">("user");
+
+  // URL hash synchronization constants
+  const HASH_SYNC_DEBOUNCE_MS = 50; // Debounce browser back/forward spam
+
+  // Effect 1: Sync tab from URL hash (URL → State)
+  // This handles initial load and browser back/forward navigation
+  useEffect(() => {
+    let debounceTimeout: number | null = null;
+
+    const syncFromHash = () => {
+      // Clear any pending debounce
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+
+      debounceTimeout = setTimeout(() => {
+        try {
+          const hash = window.location.hash.slice(1);
+          const expectedTab: ContentTab =
+            hash === "cruxes" && hasControversyData ? "cruxes" : "report";
+
+          // Mark this update as coming from hash to prevent circular updates
+          tabChangeSource.current = "hash";
+
+          // Only update if tab needs to change
+          setActiveContentTab((current) => {
+            // Force report tab if controversy data disappeared
+            if (!hasControversyData && current === "cruxes") {
+              return "report";
+            }
+            // Update tab to match hash
+            return expectedTab !== current ? expectedTab : current;
+          });
+        } catch (error) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("Error syncing tab from hash:", error);
+          }
+        }
+        debounceTimeout = null;
+      }, HASH_SYNC_DEBOUNCE_MS) as unknown as number;
+    };
+
+    // Sync from URL on mount
+    syncFromHash();
+
+    // Listen for hash changes (browser back/forward)
+    window.addEventListener("hashchange", syncFromHash);
+
+    return () => {
+      window.removeEventListener("hashchange", syncFromHash);
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+    };
+  }, [hasControversyData, setActiveContentTab]);
+
+  // Effect 2: Update URL when tab changes (State → URL)
+  // This handles user clicking on tab switches
+  useEffect(() => {
+    // Skip URL update if change came from hash sync (prevents circular updates)
+    if (tabChangeSource.current === "hash") {
+      tabChangeSource.current = "user"; // Reset for next update
+      return;
+    }
+
+    const currentHash = window.location.hash.slice(1);
+    const expectedHash = activeContentTab === "cruxes" ? "cruxes" : "";
+
+    // Only update URL if it doesn't match current state
+    if (currentHash !== expectedHash) {
+      if (expectedHash) {
+        window.history.pushState(null, "", `#${expectedHash}`);
+      } else {
+        // Remove hash when on report tab
+        window.history.pushState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
+      }
+    }
+  }, [activeContentTab]);
+
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(value) => setActiveTab(value as Tab)}
-    >
-      <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="cruxes">Cruxes</TabsTrigger>
-      </TabsList>
-      <TabsContent value="overview">
-        <ReportOverview topics={topics} />
-      </TabsContent>
-      <TabsContent value="cruxes">
-        <CruxesOverview
-          addOns={addOns}
-          topics={topics}
-          onNavigateToSubtopic={handleNavigateToSubtopic}
-        />
-      </TabsContent>
-    </Tabs>
+    <CardContent className="px-0 -mt-6">
+      <Tabs
+        value={activeContentTab}
+        onValueChange={(value) => setActiveContentTab(value as ContentTab)}
+      >
+        {/* Tabs row with sort dropdown */}
+        <Row className="justify-between items-center mb-4">
+          {/* Only show tab toggle if there are cruxes to switch between */}
+          {hasControversyData && (
+            <TabsList>
+              <TabsTrigger value="report">Report</TabsTrigger>
+              <TabsTrigger value="cruxes">Cruxes</TabsTrigger>
+            </TabsList>
+          )}
+
+          {/* Sort dropdown - only show when on Report tab and has controversy data */}
+          {activeContentTab === "report" && hasControversyData && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  {sortByControversy ? "Controversy" : "Default order"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setSortByControversy(false)}
+                  className={cn(
+                    "cursor-pointer",
+                    !sortByControversy && "bg-accent",
+                  )}
+                >
+                  Default order
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSortByControversy(true)}
+                  className={cn(
+                    "cursor-pointer",
+                    sortByControversy && "bg-accent",
+                  )}
+                >
+                  Controversy
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </Row>
+
+        {/* Tab content */}
+        <TabsContent value="report" className="mt-0">
+          <Col gap={4}>
+            {sortedTopics.map((themeNode) => (
+              <Theme key={themeNode.data.id} node={themeNode} />
+            ))}
+            <Appendix
+              filename={filename}
+              rawPipelineOutput={rawPipelineOutput}
+            />
+          </Col>
+        </TabsContent>
+        <TabsContent value="cruxes" className="mt-0">
+          <ErrorBoundary
+            fallback={(reset) => (
+              <Col gap={4} className="p-8">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Unable to display controversy data
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    There was a problem loading the controversy visualization.
+                  </p>
+                </div>
+                <div>
+                  <Button onClick={reset} variant="outline" size="sm">
+                    Try Again
+                  </Button>
+                </div>
+              </Col>
+            )}
+          >
+            <CruxesOverview
+              addOns={addOns}
+              topics={topics}
+              onNavigateToSubtopic={handleNavigateToSubtopic}
+            />
+          </ErrorBoundary>
+        </TabsContent>
+      </Tabs>
+    </CardContent>
   );
 }
 
@@ -705,17 +912,22 @@ export function CruxesOverview({
 }) {
   const sortedCruxes = getSortedCruxes(addOns);
 
-  // Build lookup map once to avoid O(N×M×P) nested loops in render
+  // Build lookup maps once to avoid O(N×M×P) nested loops in render
   // Critical for performance when reports have many cruxes
-  const subtopicIdMap = React.useMemo(() => {
-    const map = new Map<string, string>();
+  const { subtopicIdMap, topicColorMap } = React.useMemo(() => {
+    const idMap = new Map<string, string>();
+    const colorMap = new Map<string, string>();
     topics.forEach((topic) => {
+      // Store topic color
+      if (topic.topicColor) {
+        colorMap.set(topic.title, topic.topicColor);
+      }
       topic.subtopics.forEach((subtopic) => {
         const key = `${topic.title}::${subtopic.title}`;
-        map.set(key, subtopic.id);
+        idMap.set(key, subtopic.id);
       });
     });
-    return map;
+    return { subtopicIdMap: idMap, topicColorMap: colorMap };
   }, [topics]);
 
   const getSubtopicId = React.useCallback(
@@ -725,122 +937,29 @@ export function CruxesOverview({
     [subtopicIdMap],
   );
 
+  const getTopicColor = React.useCallback(
+    (topicTitle: string): string | undefined => {
+      return topicColorMap.get(topicTitle);
+    },
+    [topicColorMap],
+  );
+
   if (sortedCruxes.length === 0) return null;
 
   return (
     <Col gap={3}>
-      <h4>Cruxes</h4>
       <Col gap={2}>
         {sortedCruxes.map((crux, index) => (
           <CruxCard
             key={getSubtopicId(crux.topic, crux.subtopic) || `crux-${index}`}
             crux={crux}
             getSubtopicId={getSubtopicId}
+            getTopicColor={getTopicColor}
             onNavigateToSubtopic={onNavigateToSubtopic}
           />
         ))}
       </Col>
     </Col>
-  );
-}
-
-function CruxCard({
-  crux,
-  getSubtopicId,
-  onNavigateToSubtopic,
-}: {
-  crux: schema.SubtopicCrux;
-  getSubtopicId: (topicTitle: string, subtopicTitle: string) => string | null;
-  onNavigateToSubtopic?: (subtopicId: string) => void;
-}) {
-  const { setScrollTo, setExpandedCruxId } = useContext(ReportContext);
-  const colors = getControversyColors(crux.controversyScore);
-  const subtopicId = getSubtopicId(crux.topic, crux.subtopic);
-  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup timeout on unmount
-  React.useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleClick = () => {
-    // Ensure both subtopicId and navigation callback exist
-    if (!subtopicId) {
-      console.warn(
-        `[CruxCard] Cannot navigate: subtopic not found for topic="${crux.topic}", subtopic="${crux.subtopic}"`,
-      );
-      return;
-    }
-    if (!onNavigateToSubtopic) {
-      console.warn(
-        `[CruxCard] Cannot navigate: onNavigateToSubtopic callback not provided`,
-      );
-      return;
-    }
-
-    // Set which crux should be auto-expanded (using topic:subtopic as unique ID)
-    setExpandedCruxId(`${crux.topic}:${crux.subtopic}`);
-
-    // Switch to overview tab and expand topic/subtopic
-    onNavigateToSubtopic(subtopicId);
-
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Delay to ensure tab switch and expansion complete before scrolling
-    timeoutRef.current = setTimeout(() => {
-      setScrollTo([subtopicId, Date.now()]);
-      timeoutRef.current = null;
-    }, TAB_SWITCH_DELAY_MS);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
-    }
-  };
-
-  const ariaLabel = `Navigate to ${crux.topic}, ${crux.subtopic}: ${crux.cruxClaim}. Controversy score ${formatControversyScore(crux.controversyScore)}`;
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-label={ariaLabel}
-      className={`p-3 rounded-md border-l-4 ${colors.border} ${colors.bg} cursor-pointer hover:opacity-75 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-    >
-      <Col gap={2}>
-        <Row gap={2} className="justify-between items-start">
-          <div className="flex-grow">
-            <p className="font-medium text-sm">
-              {crux.topic} → {crux.subtopic}
-            </p>
-            <p className="text-sm text-gray-700 mt-1">{crux.cruxClaim}</p>
-          </div>
-          <span
-            className={`text-xs ${colors.bg} ${colors.text} px-2 py-0.5 rounded-full whitespace-nowrap`}
-          >
-            {formatControversyScore(crux.controversyScore)}
-          </span>
-        </Row>
-        <Row gap={3} className="text-xs text-muted-foreground">
-          <span className="text-green-700">{crux.agree.length} agree</span>
-          <span className="text-red-700">{crux.disagree.length} disagree</span>
-          <span className="text-gray-600">
-            {crux.no_clear_position?.length || 0} unclear
-          </span>
-        </Row>
-      </Col>
-    </div>
   );
 }
 
