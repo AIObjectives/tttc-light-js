@@ -450,8 +450,8 @@ export function ReportHeader({
     addOns?.subtopicCruxes && addOns.subtopicCruxes.length > 0;
 
   return (
-    <CardContent>
-      <Col gap={8}>
+    <CardContent className="print:pb-0" data-report-header>
+      <Col gap={8} className="print:gap-2">
         {/* Contains title and basic overview stats */}
         <ReportIntro
           title={title}
@@ -467,11 +467,13 @@ export function ReportHeader({
           questionAnswers={questionAnswers}
         />
         {/* Overview with optional Cruxes tab */}
-        {hasControversyData ? (
-          <ReportWithCruxes addOns={addOns} topics={themes} />
-        ) : (
-          <ReportOverview topics={themes} />
-        )}
+        <div className="print:hidden">
+          {hasControversyData ? (
+            <ReportWithCruxes addOns={addOns} topics={themes} />
+          ) : (
+            <ReportOverview topics={themes} />
+          )}
+        </div>
       </Col>
     </CardContent>
   );
@@ -501,7 +503,7 @@ export function ReportTitle({
     <Col gap={2} className="pb-1">
       {/* Title and copy button */}
       <Row gap={2} className="justify-between">
-        <h3>
+        <h3 className="print-report-title">
           <a id={`${title}`}>{title}</a>
         </h3>
         <CopyLinkButton anchor={title} />
@@ -604,7 +606,7 @@ export function ReportSummary({
         </Row>
       </Col>
       {/* Summary Description */}
-      <div>{description}</div>
+      <div className="print:text-xs">{description}</div>
 
       {/* Summary Meta Questions */}
 
@@ -637,7 +639,28 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
   return (
     <Col gap={3}>
       <h4>Overview</h4>
-      <BarChart entries={getBarChartEntries(topics)} />
+      <div className="print:hidden">
+        <BarChart entries={getBarChartEntries(topics)} />
+      </div>
+      <div className="hidden print:block" data-print-overview="true">
+        <Col gap={3}>
+          {topics.map((topic) => (
+            <div key={topic.id} className="mb-2">
+              <p className="font-semibold text-4xl print-overview-topic">
+                {topic.title}
+              </p>
+              <p className="text-3xl text-muted-foreground ml-4 mt-1 print-overview-subtopic">
+                {topic.subtopics.map((sub, idx) => (
+                  <span key={sub.id}>
+                    {sub.title}
+                    {idx < topic.subtopics.length - 1 ? ", " : ""}
+                  </span>
+                ))}
+              </p>
+            </div>
+          ))}
+        </Col>
+      </div>
     </Col>
   );
 }
@@ -862,7 +885,7 @@ function Appendix({
   };
 
   return (
-    <Col className="p-8" gap={1}>
+    <Col className="p-8 appendix-section" gap={1}>
       <p className="p-medium">Appendix</p>
       <p
         className="text-muted-foreground underline cursor-pointer"

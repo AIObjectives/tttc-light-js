@@ -107,7 +107,7 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
         <a id={`${title}`}>{title}</a>
       </CardTitle>
       <div className="flex flex-row items-center text-muted-foreground fill-muted-foreground gap-[6px]">
-        <div>
+        <div className="print:hidden">
           <Icons.Claim className="h-4 w-4" />
         </div>
         <p className="p2 text-muted-foreground flex gap-2 items-center ">
@@ -144,9 +144,9 @@ export function TopicContextDescription({
 
 export function TopicSummary({ summary }: { summary: string }) {
   return (
-    <Col gap={2} className="px-4 sm:px-8 pb-6">
-      <h5>Summary</h5>
-      <p>{summary}</p>
+    <Col gap={2} className="px-4 sm:px-8 pb-6 print:px-12 print:py-4">
+      <h5 className="print:ml-6">Summary</h5>
+      <p className="print:ml-8">{summary}</p>
     </Col>
   );
 }
@@ -169,7 +169,7 @@ export function TopicInteractiveGraphic({
   return (
     <Col gap={3}>
       {/* Point graphic component */}
-      <Row className="gap-x-[3px] gap-y-[3px] flex-wrap">
+      <Row className="gap-x-[3px] gap-y-[3px] flex-wrap print:hidden">
         {topicsHoverState.map(({ group: topic, isHovered }) => (
           <PointGraphicGroup
             key={topic.id}
@@ -183,7 +183,7 @@ export function TopicInteractiveGraphic({
       {children}
 
       {/* Subtopic links */}
-      <Row gap={3} className="space-between">
+      <Row gap={3} className="space-between print:hidden">
         <SubtopicList
           subtopics={topicsHoverState.map(({ group: topic }) => topic)}
           onMouseOver={onMouseOver}

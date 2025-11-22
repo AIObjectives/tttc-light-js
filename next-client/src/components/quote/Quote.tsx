@@ -28,7 +28,7 @@ export function QuoteText({
   iconClassName?: string;
 }) {
   return (
-    <Row gap={3} className="w-full">
+    <Row gap={3} className="w-full quote-row">
       {/* Quote Icon */}
       <div className="self-start flex-shrink-0 py-[5px]">
         <Icons.Quote className={cn("h-4 w-4 fill-black", iconClassName)} />
