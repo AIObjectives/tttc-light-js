@@ -25,8 +25,13 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from "../elements";
 import Icons from "@/assets/icons";
+import { ChevronsUpDown } from "lucide-react";
 import { getNPeople } from "tttc-common/morphisms";
 import { useReportState, ReportStateAction } from "./hooks/useReportState";
 import { Sticky } from "../wrappers";
@@ -168,6 +173,9 @@ export const ReportContext = createContext<{
   // Whether to sort topics by controversy score
   sortByControversy: boolean;
   setSortByControversy: Dispatch<SetStateAction<boolean>>;
+  // Whether to sort claims by bridging potential
+  sortByBridging: boolean;
+  setSortByBridging: Dispatch<SetStateAction<boolean>>;
   // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
   expandedCruxId: string | null;
   setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
@@ -180,6 +188,8 @@ export const ReportContext = createContext<{
   addOns: undefined,
   sortByControversy: false,
   setSortByControversy: () => null,
+  sortByBridging: false,
+  setSortByBridging: () => null,
   expandedCruxId: null,
   setExpandedCruxId: () => null,
 });
@@ -273,6 +283,9 @@ function Report({
   // Sort by controversy state
   const [sortByControversy, setSortByControversy] = useState<boolean>(false);
 
+  // Sort by bridging potential state
+  const [sortByBridging, setSortByBridging] = useState<boolean>(false);
+
   // State for tracking which crux should be auto-expanded
   const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
 
@@ -307,6 +320,8 @@ function Report({
         addOns,
         sortByControversy,
         setSortByControversy,
+        sortByBridging,
+        setSortByBridging,
         expandedCruxId,
         setExpandedCruxId,
       }}
@@ -364,12 +379,22 @@ export function ReportToolbar({
   setIsMobileOutlineOpen: (val: boolean) => void;
   isMobileOutlineOpen: boolean;
 }) {
-  const { dispatch, sortByControversy, setSortByControversy, addOns } =
-    useContext(ReportContext);
+  const {
+    dispatch,
+    sortByControversy,
+    setSortByControversy,
+    sortByBridging,
+    setSortByBridging,
+    addOns,
+  } = useContext(ReportContext);
 
   // Only show sort button if there's controversy data
   const hasControversyData =
     addOns?.topicScores && addOns.topicScores.length > 0;
+
+  // Only show bridging sort button if there's bridging score data
+  const hasBridgingData =
+    addOns?.claimBridgingScores && addOns.claimBridgingScores.length > 0;
 
   return (
     // Sticky keeps it at top of screen when scrolling down.
@@ -398,7 +423,7 @@ export function ReportToolbar({
         {hasControversyData && (
           <Button
             onClick={() => setSortByControversy(!sortByControversy)}
-            variant={sortByControversy ? "secondary" : "outline"}
+            variant="outline"
           >
             {sortByControversy ? "Default order" : "Sort by controversy"}
           </Button>
@@ -466,6 +491,8 @@ export function ReportHeader({
           description={description}
           questionAnswers={questionAnswers}
         />
+        {/* Sort by bridging dropdown */}
+        <BridgingSortDropdown />
         {/* Overview with optional Cruxes tab */}
         {hasControversyData ? (
           <ReportWithCruxes addOns={addOns} topics={themes} />
@@ -615,6 +642,49 @@ export function ReportSummary({
         </ToggleText>
       ))}
     </Col>
+  );
+}
+
+/**
+ * Dropdown for sorting claims by bridging potential
+ */
+function BridgingSortDropdown() {
+  const { sortByBridging, setSortByBridging, addOns } =
+    useContext(ReportContext);
+
+  // Only show if there's bridging score data
+  const hasBridgingData =
+    addOns?.claimBridgingScores && addOns.claimBridgingScores.length > 0;
+
+  if (!hasBridgingData) {
+    return null;
+  }
+
+  return (
+    <Row className="justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            {sortByBridging ? "Bridging" : "Default order"}
+            <ChevronsUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => setSortByBridging(false)}
+            className={cn("cursor-pointer", !sortByBridging && "bg-accent")}
+          >
+            Default order
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setSortByBridging(true)}
+            className={cn("cursor-pointer", sortByBridging && "bg-accent")}
+          >
+            Bridging
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Row>
   );
 }
 

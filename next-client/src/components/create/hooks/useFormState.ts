@@ -142,6 +142,13 @@ export function useFormState() {
     },
   });
 
+  const bridgingEnabled = useFormItem({
+    initialValue: false,
+    statusEval: (val) => {
+      return success(val);
+    },
+  });
+
   const hasValidationErrors = (fields: FormItemState<string>[]) =>
     fields.some((field) => field.status.tag === "failure");
 
@@ -182,6 +189,7 @@ export function useFormState() {
     summariesInstructions,
     cruxInstructions,
     cruxesEnabled,
+    bridgingEnabled,
     isFormInvalid,
   };
 }

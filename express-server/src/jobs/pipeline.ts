@@ -23,6 +23,7 @@ import {
   deleteAuditLog,
 } from "../utils/auditLogRedis";
 import Redis from "ioredis";
+import { scoreClaims, scoreQuotes } from "../lib/perspective-api";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
 
@@ -114,6 +115,117 @@ function mapSubtopicWithClaims(
   };
 }
 
+/**
+ * Normalize text for matching by:
+ * - Unicode normalization (NFD) to decompose accented characters
+ * - Removing diacritical marks (accents)
+ * - Normalizing different quote styles to standard quotes
+ * - Converting to lowercase
+ * - Removing punctuation
+ * - Collapsing whitespace
+ *
+ * This helps match claims even when they have minor formatting differences.
+ */
+function normalizeText(text: string): string {
+  return (
+    text
+      .trim()
+      .toLowerCase()
+      // Unicode normalization: decompose characters (é -> e + ´)
+      .normalize("NFD")
+      // Remove diacritical marks
+      .replace(/[\u0300-\u036f]/g, "")
+      // Normalize curly quotes to straight quotes
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      // Remove all punctuation except apostrophes in contractions
+      .replace(/[^\w\s']/g, "")
+      // Collapse multiple spaces into single space
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
+/**
+ * Match bridging scores to claims by text and update claimIds.
+ *
+ * The bridging scoring happens before claim IDs are assigned, so we need to
+ * match scores to claims by comparing the claim text.
+ *
+ * @param bridgingScores - Array of bridging scores with empty claimIds
+ * @param reportData - The final report data with claims that have IDs
+ * @returns Updated bridging scores with correct claimIds
+ */
+function matchBridgingScoresToClaims(
+  bridgingScores: schema.ClaimBridgingScore[],
+  reportData: schema.UIReportData,
+): schema.ClaimBridgingScore[] {
+  // Build a map of normalized (topicTitle, subtopicTitle, claimText) -> claimId
+  const claimTextToId = new Map<string, string>();
+
+  for (const topic of reportData.topics || []) {
+    for (const subtopic of topic.subtopics || []) {
+      for (const claim of subtopic.claims || []) {
+        const key = `${normalizeText(topic.title)}|${normalizeText(subtopic.title)}|${normalizeText(claim.title)}`;
+        claimTextToId.set(key, claim.id);
+      }
+    }
+  }
+
+  // Update bridging scores with matched claim IDs
+  // Filter out unmatched scores to avoid invalid claimId references in frontend
+  let matchedCount = 0;
+  let unmatchedCount = 0;
+
+  const updatedScores = bridgingScores
+    .map((score) => {
+      const key = `${normalizeText(score.topicName)}|${normalizeText(score.subtopicName)}|${normalizeText(score.claimId)}`;
+      const matchedClaimId = claimTextToId.get(key);
+
+      if (matchedClaimId) {
+        matchedCount++;
+        return { ...score, claimId: matchedClaimId };
+      } else {
+        unmatchedCount++;
+        // Log warning if no match found
+        pipelineLogger.warn(
+          {
+            topicName: score.topicName,
+            subtopicName: score.subtopicName,
+            claimText: score.claimId.substring(0, 50),
+          },
+          "Could not match bridging score to claim ID - excluding from results",
+        );
+        return null; // Filter out unmatched scores
+      }
+    })
+    .filter((score): score is schema.ClaimBridgingScore => score !== null);
+
+  // Log summary statistics
+  pipelineLogger.info(
+    {
+      matched: matchedCount,
+      unmatched: unmatchedCount,
+      matchRate: `${((matchedCount / (matchedCount + unmatchedCount)) * 100).toFixed(1)}%`,
+    },
+    "Bridging score matching complete",
+  );
+
+  // Warn if match rate is too low
+  if (unmatchedCount > matchedCount * 0.1) {
+    pipelineLogger.warn(
+      {
+        unmatchedCount,
+        totalScores: bridgingScores.length,
+        unmatchedPercentage: `${((unmatchedCount / bridgingScores.length) * 100).toFixed(1)}%`,
+      },
+      "High bridging score mismatch rate - check text normalization",
+    );
+  }
+
+  return updatedScores;
+}
+
 type FirebaseDetails = {
   reportDataUri: string;
   userId: string;
@@ -143,6 +255,7 @@ interface PipelineConfig {
   api_key: string;
   options: {
     cruxes: boolean;
+    bridging: boolean;
   };
 }
 
@@ -203,6 +316,7 @@ export async function pipelineJob(job: PipelineJob) {
     num_rows: numRows,
     model: config.llm.model,
     has_cruxes: config.options.cruxes,
+    has_bridging: config.options.bridging,
     started_at: Date.now(),
   };
 
@@ -219,7 +333,9 @@ export async function pipelineJob(job: PipelineJob) {
     sortedStep,
     summariesStep,
     addonsStep,
+    bridgingScores,
     auditLog,
+    redis,
   } = await doPipelineSteps(job);
   const pipelineEnd = Date.now();
   const pipelineDuration = pipelineEnd - pipelineStart;
@@ -340,6 +456,8 @@ export async function pipelineJob(job: PipelineJob) {
         subtopicCruxes: addonsStep?.subtopicCruxes,
         topicScores: addonsStep?.topicScores,
         speakerCruxMatrix: addonsStep?.speakerCruxMatrix,
+        claimBridgingScores:
+          bridgingScores.length > 0 ? bridgingScores : undefined,
       },
       question: question,
       title: title,
@@ -351,6 +469,21 @@ export async function pipelineJob(job: PipelineJob) {
   // Take the pipeline object and translate it into our updated schema
   const finalResult = mapResult(outputResult, (pipelineOutput) => {
     const result = llmPipelineToSchema(pipelineOutput);
+
+    // Match bridging scores to claims by text and update claimIds
+    if (bridgingScores.length > 0 && result.data?.[1]) {
+      // Initialize addOns if it doesn't exist
+      if (!result.data[1].addOns) {
+        result.data[1].addOns = {};
+      }
+
+      const updatedScores = matchBridgingScoresToClaims(
+        bridgingScores,
+        result.data[1],
+      );
+      result.data[1].addOns.claimBridgingScores = updatedScores;
+    }
+
     // Add audit log if available
     if (auditLog) {
       return { ...result, auditLog };
@@ -359,8 +492,83 @@ export async function pipelineJob(job: PipelineJob) {
   });
 
   if (finalResult.tag === "success") {
-    // add the json data to storage
     const resultValue = finalResult.value;
+
+    // Score quotes with Perspective API after hydration
+    // This must happen after llmPipelineToSchema since we need the hydrated tree with quote IDs
+    if (config.options.bridging === true && resultValue.data?.[1]?.topics) {
+      pipelineLogger.info("Scoring content for bridging potential");
+
+      // Update status to show bridging scoring in progress
+      await updatePipelineStatus(
+        config.firebaseDetails.reportId || config.firebaseDetails.firebaseJobId,
+        "processing",
+        "scoring_bridging",
+      );
+
+      // Reuse Redis connection from pipeline steps for quote scoring
+      try {
+        const quoteBridgingScores = await scoreQuotes(
+          resultValue.data[1].topics,
+          redis,
+          undefined,
+          config.env.RATE_LIMIT_PREFIX,
+        );
+
+        if (quoteBridgingScores.length > 0) {
+          // Initialize addOns if it doesn't exist
+          if (!resultValue.data[1].addOns) {
+            resultValue.data[1].addOns = {};
+          }
+          resultValue.data[1].addOns.quoteBridgingScores = quoteBridgingScores;
+          pipelineLogger.info(
+            { scoresGenerated: quoteBridgingScores.length },
+            "Quote bridging scoring completed successfully",
+          );
+        }
+      } catch (error) {
+        // Soft failure: Quote scoring is an optional enhancement.
+        // We log the error but allow the report to complete without quote scores.
+        // This ensures users still get their report even if Perspective API fails.
+        pipelineLogger.error(
+          {
+            error: error instanceof Error ? error.message : "Unknown error",
+            stack: error instanceof Error ? error.stack : undefined,
+          },
+          "Quote bridging scoring failed - report will complete without quote scores",
+        );
+      } finally {
+        // Disconnect Redis connection reused from pipeline steps
+        if (redis) {
+          try {
+            redis.disconnect();
+          } catch (error) {
+            pipelineLogger.warn(
+              {
+                error: error instanceof Error ? error.message : "Unknown error",
+              },
+              "Failed to disconnect Redis after quote scoring - connection may leak",
+            );
+          }
+        }
+      }
+    } else {
+      // Disconnect Redis if bridging is disabled or no topics to score
+      if (redis) {
+        try {
+          redis.disconnect();
+        } catch (error) {
+          pipelineLogger.warn(
+            {
+              error: error instanceof Error ? error.message : "Unknown error",
+            },
+            "Failed to disconnect Redis when bridging disabled - connection may leak",
+          );
+        }
+      }
+    }
+
+    // add the json data to storage
     const resultValueJson = JSON.stringify(resultValue); // Calculate once
     const reportJsonSize = resultValueJson.length;
     pipelineLogger.info(
@@ -524,44 +732,58 @@ async function doPipelineSteps(job: PipelineJob) {
     { reportId, redisUrl: config.env.REDIS_URL },
     "Creating Redis connection for audit log",
   );
-  const redis = new Redis(config.env.REDIS_URL, {
-    connectionName: "Pipeline-AuditLog",
-    maxRetriesPerRequest: 3,
-    connectTimeout: 10000, // 10 seconds
-    commandTimeout: 5000, // 5 seconds per command
-    enableReadyCheck: true,
-    lazyConnect: false,
-    retryStrategy: (times) => {
-      if (times > 3) return null; // Stop retrying after 3 attempts
-      return Math.min(times * 100, 3000); // Exponential backoff up to 3s
-    },
-  });
 
-  // Log Redis connection events
-  redis.on("connect", () => {
-    pipelineLogger.info({ reportId }, "Redis connected");
-  });
-  redis.on("ready", () => {
-    pipelineLogger.info({ reportId }, "Redis ready");
-  });
-  redis.on("error", (error) => {
-    pipelineLogger.error({ reportId, error }, "Redis error");
-  });
-  redis.on("close", () => {
-    pipelineLogger.warn({ reportId }, "Redis connection closed");
-  });
-  redis.on("reconnecting", () => {
-    pipelineLogger.warn({ reportId }, "Redis reconnecting");
-  });
+  let redis: Redis | undefined = undefined;
+  try {
+    redis = new Redis(config.env.REDIS_URL, {
+      connectionName: "Pipeline-AuditLog",
+      maxRetriesPerRequest: 3,
+      connectTimeout: 10000, // 10 seconds
+      commandTimeout: 5000, // 5 seconds per command
+      enableReadyCheck: true,
+      lazyConnect: false,
+      retryStrategy: (times) => {
+        if (times > 3) return null; // Stop retrying after 3 attempts
+        return Math.min(times * 100, 3000); // Exponential backoff up to 3s
+      },
+    });
+
+    // Log Redis connection events
+    redis.on("connect", () => {
+      pipelineLogger.info({ reportId }, "Redis connected");
+    });
+    redis.on("ready", () => {
+      pipelineLogger.info({ reportId }, "Redis ready");
+    });
+    redis.on("error", (error) => {
+      pipelineLogger.error({ reportId, error }, "Redis error");
+    });
+    redis.on("close", () => {
+      pipelineLogger.warn({ reportId }, "Redis connection closed");
+    });
+    redis.on("reconnecting", () => {
+      pipelineLogger.warn({ reportId }, "Redis reconnecting");
+    });
+  } catch (error) {
+    pipelineLogger.warn(
+      {
+        reportId,
+        error: error instanceof Error ? error.message : "Unknown error",
+        redisUrl: config.env.REDIS_URL,
+      },
+      "Failed to connect to Redis for audit log - continuing without cache",
+    );
+    redis = undefined;
+  }
 
   pipelineLogger.info(
-    { reportId, redisStatus: redis.status },
+    { reportId, redisStatus: redis?.status || "disconnected" },
     "Redis connection created",
   );
 
   // Initialize audit log in Redis before pipeline starts
   const commentCount = data.length;
-  if (reportId) {
+  if (reportId && redis) {
     try {
       await initializeAuditLog(redis, reportId, commentCount);
       pipelineLogger.info(
@@ -658,7 +880,7 @@ async function doPipelineSteps(job: PipelineJob) {
     {
       reportId: config.firebaseDetails.reportId,
       claimsStepTag: claimsStep.tag,
-      redisStatus: redis.status,
+      redisStatus: redis?.status || "disconnected",
     },
     "Claims step flatMapResultAsync returned",
   );
@@ -778,6 +1000,50 @@ async function doPipelineSteps(job: PipelineJob) {
   } else {
     pipelineLogger.debug("Cruxes step skipped (not enabled)");
   }
+
+  // Bridging scoring step (Perspective API)
+  let bridgingScores: schema.ClaimBridgingScore[] = [];
+  if (config.options.bridging === true) {
+    pipelineLogger.info("Scoring claims for bridging potential");
+    try {
+      // Get the sorted claims tree from sortedStep
+      // sortedStep.value.data is an array of tuples: [topicName, subtopicData]
+      if (sortedStep.tag === "success" && sortedStep.value?.data) {
+        // Create a taxonomy structure for scoreClaims
+        const claimsTree = { taxonomy: sortedStep.value.data };
+
+        bridgingScores = await scoreClaims(
+          claimsTree,
+          redis,
+          undefined,
+          config.env.RATE_LIMIT_PREFIX,
+        );
+        pipelineLogger.info(
+          { scoresGenerated: bridgingScores.length },
+          "Bridging scoring completed successfully",
+        );
+      } else {
+        pipelineLogger.warn("No claims tree available for bridging scoring");
+      }
+    } catch (error) {
+      pipelineLogger.error(
+        {
+          error: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+          errorType: error?.constructor?.name,
+        },
+        "Bridging scoring failed",
+      );
+    }
+  } else if (config.options.bridging === false) {
+    pipelineLogger.debug("Bridging scoring skipped (not enabled)");
+  } else {
+    pipelineLogger.warn(
+      { bridgingValue: config.options.bridging },
+      "Invalid bridging option, expected boolean, skipping bridging scoring",
+    );
+  }
+
   // update job progress
   pipelineLogger.info("Step 5: wrapping up");
   // Update reportRef to keep status in sync with correct sub-state
@@ -789,7 +1055,7 @@ async function doPipelineSteps(job: PipelineJob) {
 
   // Retrieve final audit log from Redis
   let finalAuditLog: schema.ProcessingAuditLog | undefined;
-  if (reportId) {
+  if (reportId && redis) {
     try {
       const auditLog = await getAuditLog(redis, reportId);
       if (auditLog) {
@@ -814,16 +1080,17 @@ async function doPipelineSteps(job: PipelineJob) {
     }
   }
 
-  // Close Redis connection
-  redis.disconnect();
-
+  // Return Redis connection for reuse in quote scoring
+  // It will be disconnected in the caller after all processing is complete
   return {
     topicTreeStep,
     claimsStep,
     sortedStep,
     summariesStep,
     addonsStep,
+    bridgingScores,
     auditLog: finalAuditLog,
+    redis, // Return for reuse
   };
 }
 
@@ -919,7 +1186,7 @@ const PipelineOutputToProps = {
  */
 const makePyserverFuncs = (
   config: PipelineConfig,
-  redis: Redis,
+  redis: Redis | undefined,
   userId?: string,
   reportId?: string,
 ) => {
@@ -968,53 +1235,56 @@ const makePyserverFuncs = (
       "Checking taxonomy cache",
     );
 
-    try {
-      // Check cache first
-      const cachedTaxonomy = await redis.get(cacheKey);
+    if (redis) {
+      try {
+        // Check cache first
+        const cachedTaxonomy = await redis.get(cacheKey);
 
-      if (cachedTaxonomy) {
+        if (cachedTaxonomy) {
+          pipelineLogger.info(
+            {
+              reportId,
+              cacheKey,
+              commentsHash: commentsHash.substring(0, 16),
+            },
+            "Taxonomy cache HIT - reusing cached taxonomy",
+          );
+
+          // Parse cached taxonomy and construct the expected response format
+          const taxonomy: apiPyserver.PartialTopic[] =
+            JSON.parse(cachedTaxonomy);
+
+          // Return in the same format as the pyserver would return
+          const cachedResponse: apiPyserver.TopicTreeResponse = {
+            data: taxonomy,
+            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+            cost: 0,
+          };
+
+          return success(
+            PipelineOutputToProps.makeClaimsProps(cachedResponse, comments),
+          );
+        }
+
         pipelineLogger.info(
           {
             reportId,
             cacheKey,
             commentsHash: commentsHash.substring(0, 16),
           },
-          "Taxonomy cache HIT - reusing cached taxonomy",
+          "Taxonomy cache MISS - generating new taxonomy via LLM",
         );
-
-        // Parse cached taxonomy and construct the expected response format
-        const taxonomy: apiPyserver.PartialTopic[] = JSON.parse(cachedTaxonomy);
-
-        // Return in the same format as the pyserver would return
-        const cachedResponse: apiPyserver.TopicTreeResponse = {
-          data: taxonomy,
-          usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-          cost: 0,
-        };
-
-        return success(
-          PipelineOutputToProps.makeClaimsProps(cachedResponse, comments),
+      } catch (error) {
+        // Cache read failed - log but continue to LLM generation
+        pipelineLogger.warn(
+          {
+            reportId,
+            cacheKey,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "Failed to check taxonomy cache - continuing with LLM generation",
         );
       }
-
-      pipelineLogger.info(
-        {
-          reportId,
-          cacheKey,
-          commentsHash: commentsHash.substring(0, 16),
-        },
-        "Taxonomy cache MISS - generating new taxonomy via LLM",
-      );
-    } catch (error) {
-      // Cache read failed - log but continue to LLM generation
-      pipelineLogger.warn(
-        {
-          reportId,
-          cacheKey,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        "Failed to check taxonomy cache - continuing with LLM generation",
-      );
     }
 
     // Cache miss or error - call LLM to generate taxonomy
@@ -1029,7 +1299,7 @@ const makePyserverFuncs = (
     );
 
     // Cache the result if successful
-    if (result.tag === "success") {
+    if (result.tag === "success" && redis) {
       try {
         const taxonomyToCache = result.value.data;
         await redis.set(

@@ -8,7 +8,7 @@ const claimsLogger = logger.child({ module: "claims-step" });
 
 /**
  * Sends an http request to the pyserver for the claims step
- * Uses standard fetch with 40-minute timeout for large datasets
+ * Uses standard fetch with 1-hour timeout to match Cloud Run service limit
  */
 export async function claimsPipelineStep(
   env: Env,
