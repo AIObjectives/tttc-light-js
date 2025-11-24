@@ -2,7 +2,7 @@
 
 /**
  * useParseCSV
- * We use PapaParse to parse the raw file data into an array of objects, and then Zod to ensure correct type-safety
+ * We use PapaParse to parse the raw file data into an array of objects, and then validate using the csv-validation module
  * Right now intended only for the CreateReport component during the data upload section. Can be extended to be more generalizable in the future if necessary.
  * There's some somewhat questionable FP standins that would be better if we actually used a full FP library. Go back and redo this in the future if we do.
  */
@@ -14,19 +14,13 @@ import * as schema from "tttc-common/schema";
 import { z } from "zod";
 import { failure, success, Result } from "tttc-common/functional-utils";
 import { DEFAULT_LIMITS } from "tttc-common/permissions";
+import { validateCSVFormat, ColumnMappings } from "tttc-common/csv-validation";
 
 /**
  * Shape of error that can be returned by useParseCSV. Use this to build specific errors
  */
 const csvError = <T extends string>(tag: T) =>
   z.object({ tag: z.literal(tag), message: z.string().optional() });
-
-/**
- * Zod error - row does not match intended shape.
- */
-const badFormatCsv = csvError("Poorly formatted CSV" as const);
-
-type BadFormatCSV = z.infer<typeof badFormatCsv>;
 
 /**
  * PapaParse threw an error trying to parse the file.
@@ -43,9 +37,38 @@ const sizeError = csvError("Size Error");
 type SizeError = z.infer<typeof sizeError>;
 
 /**
+ * Invalid CSV - missing required columns, cannot proceed
+ */
+const invalidCsv = z.object({
+  tag: z.literal("Invalid CSV"),
+  missingColumns: z.array(z.string()),
+  suggestions: z.array(z.string()),
+  detectedHeaders: z.array(z.string()),
+});
+
+type InvalidCSV = z.infer<typeof invalidCsv>;
+
+/**
+ * Non-standard format - can proceed but shows warning with mappings
+ */
+const nonStandardFormat = z.object({
+  tag: z.literal("Non-standard format"),
+  mappings: z.custom<ColumnMappings>(),
+  warnings: z.array(z.string()),
+  data: z.custom<schema.SourceRow[]>(),
+});
+
+type NonStandardFormat = z.infer<typeof nonStandardFormat>;
+
+/**
  * Union of possible errors
  */
-const CsvErrors = z.union([badFormatCsv, brokenFile, sizeError]);
+const CsvErrors = z.union([
+  invalidCsv,
+  nonStandardFormat,
+  brokenFile,
+  sizeError,
+]);
 
 type CSVErrors = z.infer<typeof CsvErrors>;
 
@@ -64,15 +87,10 @@ const sizeCheck = (
 };
 
 /**
- * Helper function concating all the PapaParse errors
+ * Helper function concatenating all the PapaParse errors
  */
 const formatPapaParseErrors = (errors: Papa.ParseError[]) =>
-  errors
-    .map((error) => `${error.message}: ${error.row}\n`)
-    .reduce((result, errStr) => {
-      result.concat(errStr);
-      return result;
-    });
+  errors.map((error) => `${error.message}: ${error.row}\n`).join("");
 
 /**
  * Takes a CSV buffer and returns it parsed. Can return data or error.
@@ -94,18 +112,54 @@ const papaParse = (buffer: ArrayBuffer): Result<unknown, BrokenFileError> => {
 };
 
 /**
- * Checks to make sure that the CSV is in the format we want
+ * Validates CSV structure using the new validation module
+ * Returns success, warning (non-standard but mappable), or error (invalid)
  */
-const correctlyFormattedCsv = (
+const validateCsvStructure = (
   data: unknown,
-): Result<schema.SourceRow[], BadFormatCSV> => {
-  const r = schema.sourceRow
-    .array()
-    .nonempty({ message: "Could not parse CSV" })
-    .safeParse(data);
-  if (r.success) return success(r.data);
-  else
-    return failure({ tag: "Poorly formatted CSV", message: r.error.message });
+): Result<schema.SourceRow[], InvalidCSV | NonStandardFormat> => {
+  // Validate that data is an array of records
+  if (!Array.isArray(data)) {
+    return failure({
+      tag: "Invalid CSV",
+      missingColumns: ["all"],
+      suggestions: ["CSV must contain data rows"],
+      detectedHeaders: [],
+    });
+  }
+
+  // Validate that array contains objects (not primitives or null)
+  // Note: typeof null === "object" in JavaScript, so we check for null explicitly
+  if (data.length > 0 && (data[0] === null || typeof data[0] !== "object")) {
+    return failure({
+      tag: "Invalid CSV",
+      missingColumns: ["all"],
+      suggestions: ["CSV rows must be objects with named columns"],
+      detectedHeaders: [],
+    });
+  }
+  const result = validateCSVFormat(data as Record<string, unknown>[]);
+
+  if (result.status === "error") {
+    return failure({
+      tag: "Invalid CSV",
+      missingColumns: result.missingColumns,
+      suggestions: result.suggestions,
+      detectedHeaders: result.detectedHeaders,
+    });
+  }
+
+  if (result.status === "warning") {
+    return failure({
+      tag: "Non-standard format",
+      mappings: result.mappings,
+      warnings: result.warnings,
+      data: result.data,
+    });
+  }
+
+  // Success - standard format
+  return success(result.data);
 };
 
 /**
@@ -130,9 +184,9 @@ const parseCsv = async (
     return csv;
   }
 
-  // Schema validation
-  const correctFormat = correctlyFormattedCsv(csv.value);
-  return correctFormat;
+  // CSV structure validation with column mapping detection
+  const validationResult = validateCsvStructure(csv.value);
+  return validationResult;
 };
 
 /**

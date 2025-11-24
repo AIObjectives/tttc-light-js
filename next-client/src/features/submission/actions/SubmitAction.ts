@@ -9,7 +9,7 @@ import Papa from "papaparse";
 import { GenerateApiResponse, GenerateApiRequest } from "tttc-common/api";
 import { validatedServerEnv } from "@/server-env";
 import { logger } from "tttc-common/logger/browser";
-import { formatData } from "tttc-common/utils";
+import { formatData } from "tttc-common/csv-validation";
 
 const submitActionLogger = logger.child({ module: "submit-action" });
 

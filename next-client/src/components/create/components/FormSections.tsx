@@ -3,23 +3,28 @@ import React, {
   useEffect,
   useState,
   useRef,
+  useCallback,
   ChangeEvent,
   RefObject,
 } from "react";
 import { CustomizePromptSection } from "./FormHelpers";
-import { PoorlyFormattedModal } from "./Modals";
+import {
+  ColumnMappingWarningModal,
+  InvalidCSVErrorModal,
+} from "./ValidationModals";
 import { FormItemState } from "../hooks/useFormState";
+import type { ColumnMappings } from "tttc-common/csv-validation";
 import { Col, Row } from "@/components/layout";
 import { Button, Input, Separator, Switch } from "@/components/elements";
 import { useCostEstimate } from "../hooks/useCostEstimate";
 import { cn } from "@/lib/utils/shadcn";
 import { useParseCsv } from "../hooks/useParseCSV";
 import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
-import { toast } from "sonner";
 import { formatBytes } from "@/lib/api/userLimits";
 import { useUserCapabilities } from "../hooks/useUserCapabilities";
 import Icons from "@/assets/icons";
 import Link from "next/link";
+import { AlertCircle } from "lucide-react";
 
 export const FormHeader = () => (
   <Col gap={3}>
@@ -173,13 +178,44 @@ export function FormDataInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fileName = useReactiveValue(() => files?.item(0)?.name || "", [files]);
-  const [modelOpen, setModalOpen] = useState<boolean>(false);
+
+  // Inline error state for broken/empty files
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  // State for validation modals
+  const [warningModalState, setWarningModalState] = useState<{
+    isOpen: boolean;
+    mappings: ColumnMappings | null;
+  }>({
+    isOpen: false,
+    mappings: null,
+  });
+
+  const [errorModalState, setErrorModalState] = useState<{
+    isOpen: boolean;
+    suggestions: string[];
+    detectedHeaders: string[];
+  }>({
+    isOpen: false,
+    suggestions: [],
+    detectedHeaders: [],
+  });
+
   const { userSizeLimit, capabilitiesLoaded } = useUserCapabilities();
 
   // Only parse CSV after capabilities are loaded to avoid race conditions
   const { result } = useParseCsv(
     capabilitiesLoaded ? files : undefined,
     userSizeLimit,
+  );
+
+  const handleReset = useCallback(
+    (ref: RefObject<HTMLInputElement>) => {
+      if (!ref.current || !ref.current.files) return;
+      ref.current.value = "";
+      setFiles(undefined);
+    },
+    [setFiles],
   );
 
   useEffect(() => {
@@ -189,44 +225,75 @@ export function FormDataInput({
         result.error.tag === "Broken file" ||
         result.error.tag === "Size Error"
       ) {
-        const description =
+        // Hard errors - show inline error and reset file
+        const errorMessage =
           result.error.tag === "Broken file"
             ? "File is broken or has no data"
             : `File is too large - ${formatBytes(userSizeLimit)} limit`;
-        toast.error("Error", {
-          description: description,
-          position: "top-center",
+        setInlineError(errorMessage);
+        handleReset(inputRef);
+      } else if (result.error.tag === "Invalid CSV") {
+        // Invalid CSV - show error modal and reset file
+        setErrorModalState({
+          isOpen: true,
+          suggestions: result.error.suggestions,
+          detectedHeaders: result.error.detectedHeaders,
         });
         handleReset(inputRef);
-      } else if (result.error.tag === "Poorly formatted CSV") {
-        setModalOpen(true);
+      } else if (result.error.tag === "Non-standard format") {
+        // Non-standard format - show warning modal, allow proceed
+        setWarningModalState({
+          isOpen: true,
+          mappings: result.error.mappings,
+        });
       }
     }
-  }, [result, userSizeLimit]);
+  }, [result, userSizeLimit, handleReset]);
 
   const handleCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const maybeFiles = event.target.files;
     if (!maybeFiles) return;
+    setInlineError(null); // Clear any previous error
     setFiles(maybeFiles);
   };
 
   const handleButtonClick = () => inputRef.current?.click();
 
-  const handleReset = (ref: RefObject<HTMLInputElement>) => {
-    if (!ref.current || !ref.current.files) return;
-    ref.current.value = "";
-    setFiles(undefined);
-  };
-
   return (
     <>
-      <PoorlyFormattedModal
-        isOpen={modelOpen}
-        cancelFunc={() => {
-          handleReset(inputRef);
-          setModalOpen(false);
+      {/* Warning modal for non-standard but mappable CSV formats */}
+      {warningModalState.isOpen && warningModalState.mappings && (
+        <ColumnMappingWarningModal
+          isOpen={warningModalState.isOpen}
+          mappings={warningModalState.mappings}
+          onCancel={() => {
+            handleReset(inputRef);
+            setWarningModalState({
+              isOpen: false,
+              mappings: null,
+            });
+          }}
+          onProceed={() => {
+            setWarningModalState({
+              isOpen: false,
+              mappings: null,
+            });
+          }}
+        />
+      )}
+
+      {/* Error modal for invalid CSV (missing required columns) */}
+      <InvalidCSVErrorModal
+        isOpen={errorModalState.isOpen}
+        suggestions={errorModalState.suggestions}
+        detectedHeaders={errorModalState.detectedHeaders}
+        onClose={() => {
+          setErrorModalState({
+            isOpen: false,
+            suggestions: [],
+            detectedHeaders: [],
+          });
         }}
-        proceedFunc={() => setModalOpen(false)}
       />
       <Col gap={4}>
         <h4>Input data (as CSV file)</h4>
@@ -288,6 +355,19 @@ export function FormDataInput({
             ref={inputRef}
           />
         </div>
+
+        {/* Inline error banner for broken/empty files */}
+        {inlineError && (
+          <div className="flex items-start gap-2 p-4 rounded-lg border border-destructive bg-background">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive mt-0.5" />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-destructive">
+                Error
+              </span>
+              <span className="text-sm text-destructive">{inlineError}</span>
+            </div>
+          </div>
+        )}
       </Col>
     </>
   );
