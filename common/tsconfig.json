@@ -24,6 +24,7 @@
     "./api/*",
     "./apiPyserver/*",
     "./csv-security/*",
+    "./csv-validation/*",
     "./evaluations/**/*",
     "./firebase/*",
     "./functional-utils/*",

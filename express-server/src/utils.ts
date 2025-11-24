@@ -20,6 +20,3 @@ export function uniqueSlug(str: string): string {
   const sha256Final = sha256(final);
   return sha256Final;
 }
-
-// Re-export formatData from common for backward compatibility
-export { formatData } from "tttc-common/utils";

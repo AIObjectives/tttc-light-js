@@ -1,14 +1,4 @@
 import React, { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/elements";
 import { Button } from "@/components/elements";
 import { signInWithGoogle } from "@/lib/firebase/auth";
 import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
@@ -17,40 +7,6 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/elements";
 import { logger } from "tttc-common/logger/browser";
 
 const signinModalLogger = logger.child({ module: "signin-modal" });
-
-export function PoorlyFormattedModal({
-  isOpen,
-  cancelFunc,
-  proceedFunc,
-}: {
-  isOpen: boolean;
-  cancelFunc: () => void;
-  proceedFunc: () => void;
-}) {
-  return (
-    <AlertDialog open={isOpen}>
-      <AlertDialogContent className="w-[329px] gap-6">
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            We detected a poorly formatted csv. Do you want to proceed?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Please make sure the CSV contains at least two columns named "id"
-            and "comment"
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={cancelFunc} asChild>
-            <Button variant={"outline"}>Cancel</Button>
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={proceedFunc} className="bg-destructive">
-            Proceed
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
 
 export const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(

@@ -51,6 +51,10 @@
       "types": "./dist/csv-security/index.d.ts",
       "default": "./dist/csv-security/index.js"
     },
+    "./csv-validation": {
+      "types": "./dist/csv-validation/index.d.ts",
+      "default": "./dist/csv-validation/index.js"
+    },
     "./permissions": {
       "types": "./dist/permissions/index.d.ts",
       "default": "./dist/permissions/index.js"
