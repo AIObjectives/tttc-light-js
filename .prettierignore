@@ -1,8 +1,47 @@
-# Ignore artifacts:
-build
-coverage
-dist
-fixtures
-node_modules
-__pycache__
-.venv
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+dist/
+.next/
+storybook-static/
+*.tsbuildinfo
+
+# IDE/Editor
+.vscode/
+
+# Cache
+**/.cache/*
+
+# Python
+__pycache__/
+.venv/
+
+# Testing
+coverage/
+fixtures/
+playwright-report/
+test-results/
+.playwright-mcp/
+
+# Lock files (auto-generated)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Generated/Minified files
+*.min.js
+*.min.css
+*.map
+
+# Logs
+*.log
+
+# Utils workspace
+/utils/**/output/*
+/utils/**/input/*
+
+# Data files
+*.csv
+PROJECT_INDEX.json
