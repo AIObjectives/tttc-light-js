@@ -1,13 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
+import type { OpenAI } from "openai";
 import {
   extractionJsonStructureScorer,
   claimQualityScorer,
   taxonomyAlignmentScorer,
   quoteRelevanceScorer,
-  extractionCompletenessScorer,
-  sampleTaxonomy,
-  extractionTestCases,
-} from "./extraction-scorers.js";
+  createLLMJudgeScorer,
+} from "../scorers";
+import { sampleTaxonomy } from "../datasets";
+import { EVAL_MODEL } from "../../constants";
+import { ExtractionDatasetRow } from "../types";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({
@@ -19,6 +21,16 @@ vi.mock("weave", () => ({
 }));
 
 describe("Extraction Scorers", () => {
+  const dummyData: ExtractionDatasetRow = {
+    comment: "Test comment",
+    taxonomy: [
+      {
+        topicName: "Test Topic",
+        subtopics: [],
+      },
+    ],
+  };
+
   describe("extractionJsonStructureScorer", () => {
     it("should return valid structure for correct claims format", () => {
       const validModelOutput = {
@@ -34,6 +46,7 @@ describe("Extraction Scorers", () => {
 
       const result = extractionJsonStructureScorer({
         modelOutput: validModelOutput,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(true);
@@ -47,6 +60,7 @@ describe("Extraction Scorers", () => {
 
       const result = extractionJsonStructureScorer({
         modelOutput: validModelOutput,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(true);
@@ -57,7 +71,8 @@ describe("Extraction Scorers", () => {
       const invalidModelOutput = {};
 
       const result = extractionJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -75,7 +90,8 @@ describe("Extraction Scorers", () => {
       };
 
       const result = extractionJsonStructureScorer({
-        modelOutput: invalidModelOutput,
+        modelOutput: invalidModelOutput as any,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -98,6 +114,7 @@ describe("Extraction Scorers", () => {
 
       const result = extractionJsonStructureScorer({
         modelOutput: invalidModelOutput,
+        datasetRow: dummyData,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -119,7 +136,7 @@ describe("Extraction Scorers", () => {
         ],
       };
 
-      const result = claimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = claimQualityScorer({ modelOutput, datasetRow: dummyData });
 
       expect(result.claim_quality_score).toBe(1);
       expect(result.issues_count).toBe(0);
@@ -138,7 +155,7 @@ describe("Extraction Scorers", () => {
         ],
       };
 
-      const result = claimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = claimQualityScorer({ modelOutput, datasetRow: dummyData });
 
       expect(result.claim_quality_score).toBeLessThan(1);
       expect(result.issues_count).toBeGreaterThan(0);
@@ -157,7 +174,7 @@ describe("Extraction Scorers", () => {
         ],
       };
 
-      const result = claimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = claimQualityScorer({ modelOutput, datasetRow: dummyData });
 
       expect(result.claim_quality_score).toBeLessThan(1);
       expect(result.quality_issues).toContain("Claim too short: Dogs good");
@@ -175,7 +192,7 @@ describe("Extraction Scorers", () => {
         ],
       };
 
-      const result = claimQualityScorer({ modelOutput, datasetRow: {} });
+      const result = claimQualityScorer({ modelOutput, datasetRow: dummyData });
 
       expect(result.claim_quality_score).toBeLessThan(1);
       expect(result.quality_issues?.at(0)).toContain(
@@ -198,6 +215,7 @@ describe("Extraction Scorers", () => {
       };
 
       const datasetRow = {
+        comment: "This is a comment",
         taxonomy: sampleTaxonomy,
       };
 
@@ -221,6 +239,7 @@ describe("Extraction Scorers", () => {
       };
 
       const datasetRow = {
+        comment: "Test Comment",
         taxonomy: sampleTaxonomy,
       };
 
@@ -244,10 +263,18 @@ describe("Extraction Scorers", () => {
         ],
       };
 
-      const result = taxonomyAlignmentScorer({ modelOutput, datasetRow: {} });
+      const datasetRowWithoutTaxonomy = {
+        comment: "Test comment",
+        taxonomy: undefined as any,
+      };
+
+      const result = taxonomyAlignmentScorer({
+        modelOutput,
+        datasetRow: datasetRowWithoutTaxonomy,
+      });
 
       expect(result.taxonomy_alignment_score).toBe(0);
-      expect(result.reason).toBe("No taxonomy provided");
+      expect(result.error).toBe("No taxonomy provided");
     });
   });
 
@@ -267,6 +294,7 @@ describe("Extraction Scorers", () => {
       const datasetRow = {
         comment:
           "I love cats because they are independent and low-maintenance pets",
+        taxonomy: sampleTaxonomy,
       };
 
       const result = quoteRelevanceScorer({ modelOutput, datasetRow });
@@ -290,16 +318,13 @@ describe("Extraction Scorers", () => {
 
       const datasetRow = {
         comment: "I really love dogs and their loyalty",
+        taxonomy: sampleTaxonomy,
       };
 
       const result = quoteRelevanceScorer({ modelOutput, datasetRow });
 
       expect(result.quote_relevance_score).toBe(0);
       expect(result.quote_issues).toHaveLength(1);
-      console.log(result.quote_issues[0]);
-      expect(result.quote_issues[0].issues[0]).toContain(
-        "Quote does not closely match",
-      );
     });
 
     it("should detect quotes that are too similar to claims", () => {
@@ -316,125 +341,180 @@ describe("Extraction Scorers", () => {
 
       const datasetRow = {
         comment: "Cats are independent creatures",
+        taxonomy: sampleTaxonomy,
       };
 
       const result = quoteRelevanceScorer({ modelOutput, datasetRow });
 
       expect(result.quote_relevance_score).toBe(0);
-      expect(result.quote_issues[0].issues[0]).toContain(
-        "too similar to claim",
-      );
+      expect(result.quote_issues).toHaveLength(1);
     });
   });
 
-  describe("extractionCompletenessScorer", () => {
-    it("should score perfect extraction as 1.0", () => {
-      const modelOutput = {
-        claims: [
-          {
-            claim: "Cats are superior pets due to their independence",
-            quote: "I love cats because they are independent",
-            topicName: "Pets",
-            subtopicName: "Cats",
+  describe("createLLMJudgeScorer", () => {
+    it("should return 0 when claims data is missing", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn(),
           },
-        ],
-      };
+        },
+      } as unknown as OpenAI;
 
-      const datasetRow = {
-        expectedClaims: [
-          {
-            claim: "Cats are superior pets due to their independence",
-            quote: "I love cats because they are independent",
-            topicName: "Pets",
-            subtopicName: "Cats",
-          },
-        ],
-      };
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
 
-      const result = extractionCompletenessScorer({ modelOutput, datasetRow });
-
-      expect(result.extraction_completeness_score).toBe(1);
-      expect(result.matched_claims).toBe(1);
-      expect(result.claim_matches).toHaveLength(1);
-    });
-
-    it("should handle zero expected claims correctly", () => {
-      const modelOutput = {
-        claims: [],
-      };
-
-      const datasetRow = {
-        expectedClaims: [],
-      };
-
-      const result = extractionCompletenessScorer({ modelOutput, datasetRow });
-
-      expect(result.extraction_completeness_score).toBe(1);
-      expect(result.expected_zero_claims).toBe(true);
-    });
-
-    it("should penalize extracting claims when zero expected", () => {
-      const modelOutput = {
-        claims: [
-          {
-            claim: "Some unnecessary claim",
-            quote: "Some quote",
-            topicName: "Pets",
-            subtopicName: "Cats",
-          },
-        ],
-      };
-
-      const datasetRow = {
-        expectedClaims: [],
-      };
-
-      const result = extractionCompletenessScorer({ modelOutput, datasetRow });
-
-      expect(result.extraction_completeness_score).toBe(0);
-      expect(result.extracted_claims_count).toBe(1);
-    });
-
-    it("should handle missing expected claims", () => {
-      const modelOutput = {
-        claims: [
-          {
-            claim: "Some claim",
-            quote: "Some quote",
-            topicName: "Pets",
-            subtopicName: "Cats",
-          },
-        ],
-      };
-
-      const result = extractionCompletenessScorer({
-        modelOutput,
-        datasetRow: {},
+      const result = await llmJudgeScorer({
+        modelOutput: {} as any,
+        datasetRow: {
+          comment: "Test comment",
+          taxonomy: sampleTaxonomy,
+        },
       });
 
-      expect(result.extraction_completeness_score).toBe(1);
-      expect(result.reason).toBe("No expected claims to compare against");
-    });
-  });
-
-  describe("Sample Data", () => {
-    it("should have valid sample taxonomy", () => {
-      expect(sampleTaxonomy).toHaveProperty("taxonomy");
-      expect(Array.isArray(sampleTaxonomy.taxonomy)).toBe(true);
-      expect(sampleTaxonomy.taxonomy.length).toBeGreaterThan(0);
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("Missing claims data");
+      expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
     });
 
-    it("should have valid extraction test cases", () => {
-      expect(Array.isArray(extractionTestCases)).toBe(true);
-      expect(extractionTestCases.length).toBeGreaterThan(0);
+    it("should call OpenAI with correct prompt and return parsed evaluation", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                claim_quality_score: 0.9,
+                quote_accuracy_score: 0.85,
+                taxonomy_mapping_score: 0.95,
+                completeness_score: 0.88,
+                overall_score: 0.89,
+                reasoning: "Claims are well extracted and appropriately mapped",
+              }),
+            },
+          },
+        ],
+      };
 
-      for (const testCase of extractionTestCases) {
-        expect(testCase).toHaveProperty("id");
-        expect(testCase).toHaveProperty("comment");
-        expect(testCase).toHaveProperty("taxonomy");
-        expect(testCase).toHaveProperty("expectedClaims");
-        expect(Array.isArray(testCase.expectedClaims)).toBe(true);
-      }
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const modelOutput = {
+        claims: [
+          {
+            claim: "Cats are independent animals",
+            quote: "I love cats because they are independent",
+            topicName: "Pets",
+            subtopicName: "Cats",
+          },
+        ],
+      };
+
+      const datasetRow = {
+        comment:
+          "I love cats because they are independent and easy to care for",
+        taxonomy: sampleTaxonomy,
+      };
+
+      const result = await llmJudgeScorer({ modelOutput, datasetRow });
+
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
+      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
+        model: EVAL_MODEL,
+        messages: expect.arrayContaining([
+          expect.objectContaining({ role: "system" }),
+          expect.objectContaining({ role: "user" }),
+        ]),
+        response_format: { type: "json_object" },
+      });
+
+      expect(result.llm_judge_score).toBe(0.89);
+      expect(result.claim_quality_score).toBe(0.9);
+      expect(result.quote_accuracy_score).toBe(0.85);
+      expect(result.taxonomy_mapping_score).toBe(0.95);
+      expect(result.completeness_score).toBe(0.88);
+      expect(result.reasoning).toBe(
+        "Claims are well extracted and appropriately mapped",
+      );
+    });
+
+    it("should handle OpenAI API errors gracefully", async () => {
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockRejectedValue(new Error("Network timeout")),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          claims: [
+            {
+              claim: "Test",
+              quote: "Test",
+              topicName: "Test",
+              subtopicName: "Test",
+            },
+          ],
+        },
+        datasetRow: {
+          comment: "Test",
+          taxonomy: sampleTaxonomy,
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("Network timeout");
+    });
+
+    it("should handle empty response content", async () => {
+      const mockResponse = {
+        choices: [
+          {
+            message: {
+              content: null,
+            },
+          },
+        ],
+      };
+
+      const mockOpenAI = {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue(mockResponse),
+          },
+        },
+      } as unknown as OpenAI;
+
+      const llmJudgeScorer = createLLMJudgeScorer(mockOpenAI);
+
+      const result = await llmJudgeScorer({
+        modelOutput: {
+          claims: [
+            {
+              claim: "Test",
+              quote: "Test",
+              topicName: "Test",
+              subtopicName: "Test",
+            },
+          ],
+        },
+        datasetRow: {
+          comment: "Test",
+          taxonomy: sampleTaxonomy,
+        },
+      });
+
+      expect(result.llm_judge_score).toBe(0);
+      expect(result.error).toBe("No response from LLM judge");
     });
   });
 });

@@ -1,115 +1,30 @@
 import * as weave from "weave";
-import { LLMClaim } from "../../schema";
+import type { OpenAI } from "openai";
+import { logger } from "../../logger";
+import { EVAL_MODEL } from "../constants";
+import type {
+  ExtractionModelOutput,
+  ExtractionScorerInput,
+  ExtractionJsonStructureScorerOutput,
+  ClaimQualityScorerOutput,
+  TaxonomyAlignmentScorerOutput,
+  QuoteRelevanceScorerOutput,
+  ExtractionLLMJudgeOutput,
+  ExtractionDatasetRow,
+} from "./types";
 
-// Sample taxonomy for extraction evaluation
-export const sampleTaxonomy = {
-  taxonomy: [
-    {
-      topicName: "Pets",
-      topicShortDescription: "Views on various pets",
-      subtopics: [
-        {
-          subtopicName: "Cats",
-          subtopicShortDescription:
-            "Positive feelings and appreciation for cats",
-        },
-        {
-          subtopicName: "Dogs",
-          subtopicShortDescription:
-            "Strong affection for dogs, indicated by enthusiastic comments",
-        },
-        {
-          subtopicName: "Birds",
-          subtopicShortDescription:
-            "Uncertainty or mixed feelings regarding keeping birds as pets",
-        },
-      ],
-    },
-  ],
-};
+const evaluationLogger = logger.child({ module: "evaluations" });
 
-// Sample comments and expected extractions
-export const sampleExtractionData = {
-  input: {
-    comment:
-      "I love cats because they are independent and low-maintenance pets",
-    taxonomy: sampleTaxonomy,
-  },
-  expectedOutput: {
-    claims: [
-      {
-        claim: "Cats are superior pets due to their independence",
-        quote:
-          "I love cats because they are independent and low-maintenance pets",
-        topicName: "Pets",
-        subtopicName: "Cats",
-      },
-    ],
-  },
-};
-
-// Additional test cases
-export const extractionTestCases = [
-  {
-    id: "extraction-1",
-    comment:
-      "I love cats because they are independent and low-maintenance pets",
-    taxonomy: sampleTaxonomy,
-    expectedClaims: [
-      {
-        claim: "Cats are superior pets due to their independence",
-        quote:
-          "I love cats because they are independent and low-maintenance pets",
-        topicName: "Pets",
-        subtopicName: "Cats",
-      },
-    ],
-  },
-  {
-    id: "extraction-2",
-    comment: "Dogs are amazing companions and I really really love them",
-    taxonomy: sampleTaxonomy,
-    expectedClaims: [
-      {
-        claim: "Dogs make excellent companions",
-        quote: "Dogs are amazing companions and I really really love them",
-        topicName: "Pets",
-        subtopicName: "Dogs",
-      },
-    ],
-  },
-  {
-    id: "extraction-3",
-    comment: "I am not sure about birds, they seem difficult to care for",
-    taxonomy: sampleTaxonomy,
-    expectedClaims: [
-      {
-        claim: "Birds are challenging pets to maintain",
-        quote: "I am not sure about birds, they seem difficult to care for",
-        topicName: "Pets",
-        subtopicName: "Birds",
-      },
-    ],
-  },
-  {
-    id: "extraction-4",
-    comment: "Today I had a nice walk in the park and saw some flowers",
-    taxonomy: sampleTaxonomy,
-    expectedClaims: [], // Should extract zero claims - just a description, no debatable position
-  },
-];
-
-type ExtractionOutput = {
-  claims: LLMClaim[];
-};
-
-// Scorer for valid JSON structure of extraction output
+/**
+ * Scorer for valid JSON structure of extraction output
+ * Validates that the model output conforms to the expected schema with required fields
+ * @param input - The scorer input containing model output
+ * @returns Validation results with structure validity and counts
+ */
 export const extractionJsonStructureScorer = weave.op(
   function extractionJsonStructureScorer({
     modelOutput,
-  }: {
-    modelOutput: ExtractionOutput;
-  }) {
+  }: ExtractionScorerInput): ExtractionJsonStructureScorerOutput {
     try {
       const hasValidStructure =
         modelOutput && modelOutput.claims && Array.isArray(modelOutput.claims);
@@ -160,19 +75,23 @@ export const extractionJsonStructureScorer = weave.op(
       if (error instanceof Error) {
         return { valid_json_structure: false, error: error.message };
       } else {
-        return { valid_json_structure: false, error: error };
+        return { valid_json_structure: false, error: String(error) };
       }
     }
   },
 );
 
-// Scorer for claim quality (checks if claims are debatable, not platitudes)
+/**
+ * Scorer for claim quality (checks if claims are debatable, not platitudes)
+ * Evaluates whether claims are meaningful, debatable positions
+ * @param input - The scorer input containing model output
+ * @returns Quality metrics and identified issues
+ */
 export const claimQualityScorer = weave.op(function claimQualityScorer({
   modelOutput,
-  datasetRow,
-}) {
+}: ExtractionScorerInput): ClaimQualityScorerOutput {
   if (!modelOutput?.claims) {
-    return { claim_quality_score: 0, reason: "No claims found" };
+    return { claim_quality_score: 0, error: "No claims found" };
   }
 
   const claims = modelOutput.claims;
@@ -237,19 +156,27 @@ export const claimQualityScorer = weave.op(function claimQualityScorer({
   };
 });
 
-// Scorer for taxonomy alignment (checks if claims map to valid topics/subtopics)
+/**
+ * Scorer for taxonomy alignment (checks if claims map to valid topics/subtopics)
+ * Validates that claims are correctly mapped to existing taxonomy entries
+ * @param input - The scorer input containing model output and dataset row
+ * @returns Alignment metrics and invalid mapping details
+ */
 export const taxonomyAlignmentScorer = weave.op(
-  function taxonomyAlignmentScorer({ modelOutput, datasetRow }) {
+  function taxonomyAlignmentScorer({
+    modelOutput,
+    datasetRow,
+  }: ExtractionScorerInput): TaxonomyAlignmentScorerOutput {
     if (!modelOutput?.claims) {
-      return { taxonomy_alignment_score: 0, reason: "No claims found" };
+      return { taxonomy_alignment_score: 0, error: "No claims found" };
     }
 
     if (!datasetRow?.taxonomy) {
-      return { taxonomy_alignment_score: 0, reason: "No taxonomy provided" };
+      return { taxonomy_alignment_score: 0, error: "No taxonomy provided" };
     }
 
     const claims = modelOutput.claims;
-    const taxonomy = datasetRow.taxonomy.taxonomy;
+    const taxonomy = datasetRow.taxonomy;
 
     let validMappings = 0;
     let invalidMappings = [];
@@ -294,13 +221,18 @@ export const taxonomyAlignmentScorer = weave.op(
   },
 );
 
-// Scorer for quote relevance (checks if quotes support the claims)
+/**
+ * Scorer for quote relevance (checks if quotes support the claims)
+ * Evaluates whether quotes properly support claims and match the original comment
+ * @param input - The scorer input containing model output and dataset row
+ * @returns Relevance metrics and quote issues
+ */
 export const quoteRelevanceScorer = weave.op(function quoteRelevanceScorer({
   modelOutput,
   datasetRow,
-}) {
+}: ExtractionScorerInput): QuoteRelevanceScorerOutput {
   if (!modelOutput?.claims) {
-    return { quote_relevance_score: 0, reason: "No claims found" };
+    return { quote_relevance_score: 0, error: "No claims found" };
   }
 
   const claims = modelOutput.claims;
@@ -371,100 +303,145 @@ export const quoteRelevanceScorer = weave.op(function quoteRelevanceScorer({
   };
 });
 
-// Scorer for extraction completeness (compares against expected claims)
-export const extractionCompletenessScorer = weave.op(
-  function extractionCompletenessScorer({ modelOutput, datasetRow }) {
-    if (!datasetRow?.expectedClaims) {
+/**
+ * Function signature for LLM judge scorer
+ */
+type LLMJudgeScorerFunction = (
+  args: ExtractionScorerInput,
+) => Promise<ExtractionLLMJudgeOutput>;
+
+/**
+ * Creates an LLM-as-a-judge scorer for evaluating extraction quality
+ * Uses an LLM to evaluate claim quality, quote accuracy, taxonomy mapping, and completeness
+ * @param openaiClient - The OpenAI client instance to use for LLM evaluation
+ * @returns A weave operation that performs LLM-based evaluation
+ */
+export function createLLMJudgeScorer(
+  openaiClient: OpenAI,
+): weave.Op<LLMJudgeScorerFunction> {
+  return weave.op(async function llmExtractionJudgeScorer({
+    modelOutput,
+    datasetRow,
+  }: ExtractionScorerInput): Promise<ExtractionLLMJudgeOutput> {
+    if (!modelOutput?.claims) {
       return {
-        extraction_completeness_score: 1,
-        reason: "No expected claims to compare against",
+        llm_judge_score: 0,
+        error: "Missing claims data",
       };
     }
 
-    const extractedClaims = modelOutput?.claims || [];
-    const expectedClaims = datasetRow.expectedClaims;
+    const prompt = `You are evaluating the quality of an LLM in extracting debatable claims from a user comment and mapping them to a taxonomy.
 
-    if (expectedClaims.length === 0) {
-      // If we expect zero claims, score based on whether model extracted zero
+Input Comment:
+${datasetRow.comment}
+
+Available Taxonomy:
+${JSON.stringify(datasetRow.taxonomy, null, 2)}
+
+Extracted Claims:
+${JSON.stringify(modelOutput.claims, null, 2)}
+
+Evaluate the quality of the extracted claims. Consider:
+1. Claim Quality: Are the claims debatable, meaningful positions (not platitudes or personal preferences)?
+2. Quote Accuracy: Do the quotes accurately support the claims and come from the original comment?
+3. Taxonomy Mapping: Are claims correctly mapped to appropriate topics and subtopics?
+4. Completeness: Were all important debatable claims extracted from the comment?
+
+Provide your evaluation as a JSON object with:
+- claim_quality_score: 0-1 score for how debatable and meaningful the claims are
+- quote_accuracy_score: 0-1 score for how well quotes support claims and match the original comment
+- taxonomy_mapping_score: 0-1 score for correctness of topic/subtopic assignments
+- completeness_score: 0-1 score for whether all important claims were extracted
+- overall_score: 0-1 overall quality score
+- reasoning: brief explanation of the scores
+`;
+
+    try {
+      const response = await openaiClient.chat.completions.create({
+        model: EVAL_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert evaluator of claim extraction quality. You understand what makes a claim debatable versus a platitude or personal preference.",
+          },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0].message.content;
+      if (!content) {
+        return {
+          llm_judge_score: 0,
+          error: "No response from LLM judge",
+        };
+      }
+
+      const evaluation = JSON.parse(content);
+      evaluationLogger.debug({ evaluation }, "LLM judge evaluation result");
+
       return {
-        extraction_completeness_score: extractedClaims.length === 0 ? 1 : 0,
-        expected_zero_claims: true,
-        extracted_claims_count: extractedClaims.length,
+        llm_judge_score: evaluation.overall_score || 0,
+        claim_quality_score: evaluation.claim_quality_score || 0,
+        quote_accuracy_score: evaluation.quote_accuracy_score || 0,
+        taxonomy_mapping_score: evaluation.taxonomy_mapping_score || 0,
+        completeness_score: evaluation.completeness_score || 0,
+        reasoning: evaluation.reasoning || "",
       };
-    }
-
-    let matchedClaims = 0;
-    let claimMatches = [];
-
-    // Simple semantic matching - check for key concept overlap
-    for (const expected of expectedClaims) {
-      let bestMatch = null;
-      let bestScore = 0;
-
-      for (const extracted of extractedClaims) {
-        // Check topic/subtopic match
-        const topicMatch = extracted.topicName === expected.topicName;
-        const subtopicMatch = extracted.subtopicName === expected.subtopicName;
-
-        // Check semantic similarity of claim text
-        const expectedWords = expected.claim.toLowerCase().split(/\s+/);
-        const extractedWords = extracted.claim.toLowerCase().split(/\s+/);
-        const commonWords = expectedWords.filter((word: string) =>
-          extractedWords.includes(word),
-        );
-        const semanticScore =
-          commonWords.length /
-          Math.max(expectedWords.length, extractedWords.length);
-
-        const overallScore =
-          (topicMatch ? 0.4 : 0) +
-          (subtopicMatch ? 0.3 : 0) +
-          semanticScore * 0.3;
-
-        if (overallScore > bestScore && overallScore > 0.5) {
-          bestScore = overallScore;
-          bestMatch = extracted;
-        }
-      }
-
-      if (bestMatch) {
-        matchedClaims++;
-        claimMatches.push({
-          expected: expected.claim,
-          matched: bestMatch.claim,
-          score: bestScore,
-        });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return {
+          llm_judge_score: 0,
+          error: error.message,
+        };
+      } else {
+        return {
+          llm_judge_score: 0,
+          error: String(error),
+        };
       }
     }
+  });
+}
 
-    const completenessScore =
-      expectedClaims.length > 0 ? matchedClaims / expectedClaims.length : 1;
+/**
+ * Function signature for extraction model
+ */
+type ExtractionModelFunction = (args: {
+  datasetRow: ExtractionDatasetRow;
+}) => Promise<ExtractionModelOutput>;
 
-    return {
-      extraction_completeness_score: completenessScore,
-      matched_claims: matchedClaims,
-      expected_claims: expectedClaims.length,
-      extracted_claims: extractedClaims.length,
-      claim_matches: claimMatches,
-    };
-  },
-);
-
-// Helper function to create an extraction model
+/**
+ * Helper function to create an extraction model
+ * Creates a weave operation that extracts claims from comments using an LLM
+ * @param openaiClient - The OpenAI client instance
+ * @param hydratePromptLiterals - Function to hydrate prompt templates
+ * @param defaultExtractionPrompt - The prompt template for extraction
+ * @param systemPrompt - The system prompt for the LLM
+ * @returns A weave operation that performs claim extraction
+ */
 export function createExtractionModel(
-  openaiClient: any,
-  hydratePromptLiterals: Function,
+  openaiClient: OpenAI,
+  hydratePromptLiterals: (
+    prompt: string,
+    dataObj: Record<string, string>,
+  ) => string,
   defaultExtractionPrompt: string,
   systemPrompt: string,
-) {
-  return weave.op(async function extractionModel(input) {
+): weave.Op<ExtractionModelFunction> {
+  return weave.op(async function extractionModel({
+    datasetRow,
+  }: {
+    datasetRow: ExtractionDatasetRow;
+  }): Promise<ExtractionModelOutput> {
     const hydratedPrompt = hydratePromptLiterals(defaultExtractionPrompt, {
-      comment: input.datasetRow.comment,
-      taxonomy: JSON.stringify(input.datasetRow.taxonomy, null, 2),
+      comment: datasetRow.comment,
+      taxonomy: JSON.stringify(datasetRow.taxonomy, null, 2),
     });
 
     const response = await openaiClient.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: EVAL_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: hydratedPrompt },
@@ -480,7 +457,10 @@ export function createExtractionModel(
     try {
       return JSON.parse(result);
     } catch (e) {
-      throw new Error(`Failed to parse JSON response: ${result}`);
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Failed to parse JSON response: ${errorMsg}. Raw response: ${result}`,
+      );
     }
   });
 }
