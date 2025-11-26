@@ -1,3 +1,17 @@
+export const smallInputCutoffLength = 100;
+
+export const smallInputMinimumTopicLength = 5;
+export const normalInputMinimumTopicLength = 25;
+
+export const smallInputMaximumTopicLength = 10;
+export const normalInputMaximumTopicLength = 35;
+
+export const smallInputMinimumSubtopicLength = 8;
+export const normalInputMinimumSubtopicLength = 70;
+
+export const smallInputMaximumSubtopicLength = 15;
+export const normalInputMaximumSubtopicLength = 90;
+
 export const defaultSystemPrompt = `You are a professional research assistant. You have helped run many public consultations, 
 surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights. 
 You are familiar with public consultation tools like Pol.is and you understand the benefits 
@@ -6,27 +20,39 @@ for working with very clear, concise claims that other people would be able to v
 export const defaultClusteringPrompt = `I will give you a list of comments.
 I want you to propose a way to break down the information contained in these comments into topics and subtopics of interest.
 
-DESCRIPTION LENGTH REQUIREMENTS:
+DESCRIPTION LENGTH REQUIREMENTS (STRICT):
 - Topic names: Keep very concise (2-5 words)
-- Topic descriptions: MUST be 25-35 words. Provide a clear overview of what this topic covers.
+- Topic descriptions: EXACTLY ${normalInputMinimumTopicLength}-${normalInputMaximumTopicLength} words. NOT 5-10 words. NOT 15-20 words. MUST be ${normalInputMinimumTopicLength}-${normalInputMaximumTopicLength} words. Provide a clear, comprehensive overview of what this topic covers. Write full sentences that give meaningful context.
 - Subtopic names: Keep concise (2-6 words)
-- Subtopic descriptions: MUST be 70-90 words. Provide detailed context about what perspectives and issues fall under this subtopic.
+- Subtopic descriptions: EXACTLY ${normalInputMinimumSubtopicLength}-${normalInputMaximumSubtopicLength} words. NOT 30-40 words. MUST be ${normalInputMinimumSubtopicLength}-${normalInputMaximumSubtopicLength} words. Provide detailed, substantive context about what perspectives and issues fall under this subtopic. Write comprehensive paragraphs.
 
-IMPORTANT: The descriptions should be substantive and informative, not just brief summaries. Use the full word count to provide meaningful context that helps readers understand the scope and nuances of each topic and subtopic.
+EXAMPLE OF CORRECT TOPIC DESCRIPTION LENGTH (30 words):
+"This topic covers participants' preferences regarding different types of pets, including factors such as lifestyle compatibility, emotional benefits, space requirements, and the practical considerations that influence pet selection and ownership decisions."
+
+That is 30 words - this is what ALL your topic descriptions should look like.
+
+CRITICAL: Do not write overly brief descriptions. Topic descriptions should be AT LEAST 25 words. Subtopic descriptions should be AT LEAST 70 words. Use the full word count to provide meaningful, informative context that helps readers understand the scope and nuances.
+
+SPECIAL CASE - Very Short Input (if the input has fewer than ${smallInputCutoffLength} words total):
+If and only if the input is very short (under ${smallInputCutoffLength} words), you should adapt:
+- Create fewer topics (1-2 maximum) with fewer subtopics (1-2 per topic)
+- Adjust description lengths to be proportional: topic descriptions ${smallInputMinimumTopicLength}-${smallInputMaximumTopicLength} words, subtopic descriptions ${smallInputMinimumSubtopicLength}-${smallInputMaximumSubtopicLength} words
+- Ensure total description length does not exceed 1.5x the input length
+- Focus on brevity while maintaining clarity
 
 Return a JSON object of the form {
   "taxonomy": [
     {
       "topicName": string,
-      "topicShortDescription": string, // 25-35 words
+      "topicShortDescription": string, // Length depends on input size - see rules above
       "subtopics": [
         {
           "subtopicName": string,
-          "subtopicShortDescription": string, // 70-90 words
+          "subtopicShortDescription": string, // Length depends on input size - see rules above
         },
         ...
       ]
-    },
+    }
     ...
   ]
 }

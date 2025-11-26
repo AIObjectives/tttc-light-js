@@ -117,10 +117,19 @@ export const productReviewDataset = {
   comments: productReviewComments,
 };
 
+// Dataset 5: Very few comments - Testing description length proportionality
+export const fewCommentsDataset = {
+  id: "few-comments-test",
+  comments: `I really like the new design
+The colors are too bright
+Navigation could be better`,
+};
+
 // Export all datasets as an array for easy iteration
 export const clusteringDatasets = [
   petPreferencesDataset,
   socialMediaDataset,
   employeeFeedbackDataset,
   productReviewDataset,
+  fewCommentsDataset,
 ];

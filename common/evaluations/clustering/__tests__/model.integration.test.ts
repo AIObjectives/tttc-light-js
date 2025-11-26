@@ -20,14 +20,11 @@ import { EVAL_MODEL } from "../../constants";
  * They run actual evaluations with a small test dataset to ensure all components integrate correctly.
  */
 
-// Small test dataset for integration testing
+// Test dataset for integration testing (100+ words for standard input validation)
 const testDataset = [
   {
     id: "test-clustering-1",
-    comments: `I love dogs because they're loyal
-Dogs need daily walks which is great exercise
-Cats are independent and low maintenance
-I prefer cats for apartment living`,
+    comments: `I love dogs because they're loyal and protective of their families. Dogs need daily walks which is great exercise for both the dog and owner. The training commitment for puppies is significant but rewarding. Cats are independent and low maintenance which is perfect for busy professionals. I prefer cats for apartment living because they don't need much space. Cats are clean animals and groom themselves regularly. The emotional support from pets is invaluable during stressful times. Vet bills can be expensive but pet insurance helps manage the costs. Adopting from shelters is important to give animals a second chance. Small pets like rabbits and guinea pigs are great for families with children. The lifespan of small pets is shorter which can be heartbreaking. Working long hours makes it difficult to care for high maintenance pets.`,
   },
 ];
 

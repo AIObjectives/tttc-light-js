@@ -11,6 +11,18 @@ import type {
   LLMJudgeScorerFunction,
 } from "./types";
 
+import {
+  smallInputCutoffLength,
+  smallInputMinimumTopicLength,
+  smallInputMaximumTopicLength,
+  smallInputMinimumSubtopicLength,
+  smallInputMaximumSubtopicLength,
+  normalInputMinimumTopicLength,
+  normalInputMaximumTopicLength,
+  normalInputMinimumSubtopicLength,
+  normalInputMaximumSubtopicLength,
+} from "../../prompts";
+
 const evaluationLogger = logger.child({ module: "evaluations" });
 
 /**
@@ -21,6 +33,7 @@ const evaluationLogger = logger.child({ module: "evaluations" });
  */
 export const jsonStructureScorer = weave.op(function jsonStructureScorer({
   modelOutput,
+  datasetRow,
 }: ClusteringScorerInput): JsonStructureScorerOutput {
   try {
     const hasValidStructure =
@@ -36,6 +49,8 @@ export const jsonStructureScorer = weave.op(function jsonStructureScorer({
       };
     }
 
+    const totalCommentWords = datasetRow.comments.trim().split(/\s+/).length;
+
     // Check each topic has required fields
     for (const topic of modelOutput.taxonomy) {
       if (
@@ -49,14 +64,33 @@ export const jsonStructureScorer = weave.op(function jsonStructureScorer({
         };
       }
 
-      // Check topic description word count (25-35 words)
+      // Determine expected word counts based on input size
+      const isSmallInput = totalCommentWords < smallInputCutoffLength;
+
+      const expectedTopicMin = isSmallInput
+        ? smallInputMinimumTopicLength
+        : normalInputMinimumTopicLength;
+      const expectedTopicMax = isSmallInput
+        ? smallInputMaximumTopicLength
+        : normalInputMaximumTopicLength;
+      const expectedSubtopicMin = isSmallInput
+        ? smallInputMinimumSubtopicLength
+        : normalInputMinimumSubtopicLength;
+      const expectedSubtopicMax = isSmallInput
+        ? smallInputMaximumSubtopicLength
+        : normalInputMaximumSubtopicLength;
+
+      // Check topic description word count
       const topicWordCount = topic.topicShortDescription
         .trim()
         .split(/\s+/).length;
-      if (topicWordCount < 25 || topicWordCount > 35) {
+      if (
+        topicWordCount < expectedTopicMin ||
+        topicWordCount > expectedTopicMax
+      ) {
         return {
           valid_json_structure: false,
-          reason: `Topic description must be 25-35 words: got ${topicWordCount} words`,
+          reason: `Topic description must be ${expectedTopicMin}-${expectedTopicMax} words (input size: ${totalCommentWords} words): got ${topicWordCount} words`,
         };
       }
 
@@ -68,17 +102,50 @@ export const jsonStructureScorer = weave.op(function jsonStructureScorer({
             reason: "Invalid subtopic structure",
           };
         }
-        // Check subtopic description word count (70-80 words)
+        // Check subtopic description word count
         const subtopicWordCount = subtopic.subtopicShortDescription
           .trim()
           .split(/\s+/).length;
-        if (subtopicWordCount < 70 || subtopicWordCount > 90) {
+        if (
+          subtopicWordCount < expectedSubtopicMin ||
+          subtopicWordCount > expectedSubtopicMax
+        ) {
           return {
             valid_json_structure: false,
-            reason: `Subtopic description must be 70-90 words: got ${subtopicWordCount} words`,
+            reason: `Subtopic description must be ${expectedSubtopicMin}-${expectedSubtopicMax} words (input size: ${totalCommentWords} words): got ${subtopicWordCount} words`,
           };
         }
       }
+    }
+
+    const totalTopicDescriptionWords = modelOutput.taxonomy.reduce(
+      (sum: number, topic: LLMTopic) => {
+        const topicWords =
+          topic.topicShortDescription?.trim().split(/\s+/).length || 0;
+        const subtopicWords = topic.subtopics.reduce(
+          (subSum: number, subtopic) =>
+            subSum +
+            (subtopic.subtopicShortDescription?.trim().split(/\s+/).length ||
+              0),
+          0,
+        );
+        return sum + topicWords + subtopicWords;
+      },
+      0,
+    );
+
+    // For small comment sets, descriptions should not greatly exceed the total comment length
+    // Allow up to 1.5x the input length to account for necessary structure and clarity
+    // This prevents verbose descriptions for topics with very few related comments
+    const maxAllowedDescriptionWords = Math.floor(totalCommentWords * 1.5);
+    if (
+      totalCommentWords < smallInputCutoffLength &&
+      totalTopicDescriptionWords > maxAllowedDescriptionWords
+    ) {
+      return {
+        valid_json_structure: false,
+        reason: `Total description length (${totalTopicDescriptionWords} words) exceeds allowed maximum (${maxAllowedDescriptionWords} words, 1.5x input of ${totalCommentWords} words). For small comment sets, descriptions should be proportional to content.`,
+      };
     }
 
     return {

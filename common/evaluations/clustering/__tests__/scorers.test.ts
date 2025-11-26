@@ -18,10 +18,13 @@ vi.mock("weave", () => ({
 
 describe("Clustering Scorers", () => {
   describe("jsonStructureScorer", () => {
-    // dummyDataset is not used for comparison, only to meet the type requirements for the scorers
-    const dummyDataset = { comments: "Something about pets" };
+    // Standard dataset with sufficient content (100+ words)
+    const standardDataset = {
+      comments:
+        "I love cats because they're so independent and clean themselves. Cats are perfect for apartment living they don't need much space. My cat provides amazing emotional support when I'm stressed. Dogs are incredibly loyal and protective of their families. I love taking my dog for long walks every morning it keeps us both healthy. Dogs require a lot of training but it's so worth it for the bond you build. Training a puppy is exhausting but rewarding. The cost of vet bills for pets is really adding up. Pet insurance has saved me thousands on emergency vet visits. Rabbits are underrated pets they're smart and can be litter trained. Hamsters are nocturnal so they keep me up at night. I work long hours so I can't commit to a high maintenance pet.",
+    };
 
-    it("should return valid structure for correct taxonomy format", () => {
+    it("should return valid structure for correct taxonomy format with standard input", () => {
       const validModelOutput = {
         taxonomy: [
           {
@@ -41,7 +44,7 @@ describe("Clustering Scorers", () => {
 
       const result = jsonStructureScorer({
         modelOutput: validModelOutput,
-        datasetRow: dummyDataset,
+        datasetRow: standardDataset,
       });
 
       expect(result.valid_json_structure).toBe(true);
@@ -56,7 +59,7 @@ describe("Clustering Scorers", () => {
 
       const result = jsonStructureScorer({
         modelOutput: invalidModelOutput,
-        datasetRow: dummyDataset,
+        datasetRow: standardDataset,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -68,7 +71,7 @@ describe("Clustering Scorers", () => {
 
       const result = jsonStructureScorer({
         modelOutput: invalidModelOutput as any,
-        datasetRow: dummyDataset,
+        datasetRow: standardDataset,
       });
 
       expect(result.valid_json_structure).toBe(false);
@@ -87,34 +90,40 @@ describe("Clustering Scorers", () => {
 
       const result = jsonStructureScorer({
         modelOutput: invalidModelOutput as any,
-        datasetRow: dummyDataset,
+        datasetRow: standardDataset,
       });
 
       expect(result.valid_json_structure).toBe(false);
       expect(result.reason).toBe("Invalid topic structure");
     });
 
-    it("should reject topic description that is too short or too long", () => {
+    it("should reject topic description that is too short for standard input", () => {
       const invalidModelOutput = {
         taxonomy: [
           {
             topicName: "Pets",
-            topicShortDescription: "This description is way too short",
-            subtopics: [],
+            topicShortDescription: "This description is way too short", // 6 words, needs 25-35
+            subtopics: [
+              {
+                subtopicName: "Dogs",
+                subtopicShortDescription:
+                  "Strong appreciation for dogs focusing on their loyalty protective nature and the health benefits of regular exercise through daily walks in parks and neighborhoods. Comments acknowledge the significant training commitment required especially for puppies but emphasize the rewarding bond that develops over time through consistent effort. Space constraints and daily exercise needs are noted as challenges for potential owners with limited living space and busy schedules throughout the day and week requiring careful planning and dedication to proper care",
+              },
+            ],
           },
         ],
       };
 
       const result = jsonStructureScorer({
         modelOutput: invalidModelOutput,
-        datasetRow: dummyDataset,
+        datasetRow: standardDataset,
       });
 
       expect(result.valid_json_structure).toBe(false);
       expect(result.reason).toContain("Topic description must be 25-35 words");
     });
 
-    it("should reject subtopic description that is too short or too long", () => {
+    it("should reject subtopic description that is too short for standard input", () => {
       const invalidModelOutput = {
         taxonomy: [
           {
@@ -134,13 +143,77 @@ describe("Clustering Scorers", () => {
 
       const result = jsonStructureScorer({
         modelOutput: invalidModelOutput,
-        datasetRow: dummyDataset,
+        datasetRow: standardDataset,
       });
 
       expect(result.valid_json_structure).toBe(false);
       expect(result.reason).toContain(
         "Subtopic description must be 70-90 words",
       );
+    });
+
+    it("should accept shorter descriptions for small inputs (<100 words)", () => {
+      const smallDataset = {
+        comments:
+          "I like the design. Colors are bright. Navigation is good. The layout works. Very clean interface. Easy to use. Good choices.", // 20 words
+      };
+
+      const validSmallOutput = {
+        taxonomy: [
+          {
+            topicName: "Design",
+            topicShortDescription: "Feedback on design and user interface", // 6 words (within 5-10 for small input)
+            subtopics: [
+              {
+                subtopicName: "Visual Elements",
+                subtopicShortDescription:
+                  "Comments about colors and overall design aesthetics and layout choices", // 11 words (within 8-15 for small input)
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = jsonStructureScorer({
+        modelOutput: validSmallOutput,
+        datasetRow: smallDataset,
+      });
+
+      expect(result.valid_json_structure).toBe(true);
+    });
+
+    it("should reject descriptions that exceed input length for small inputs", () => {
+      const smallDataset = {
+        comments:
+          "I like cats. Dogs are nice. Birds sing. Fish swim. Rabbits hop. Pigs squeal.", // 14 words, allows up to 21 total description words (1.5x)
+      };
+
+      const invalidOutput = {
+        taxonomy: [
+          {
+            topicName: "Pets",
+            topicShortDescription:
+              "Detailed perspectives and opinions about various animals and wildlife species", // 10 words (max allowed for small input)
+            subtopics: [
+              {
+                subtopicName: "Animals",
+                subtopicShortDescription:
+                  "Various comments about different types of household pets and their unique characteristics and behaviors patterns", // 15 words (max allowed for small input)
+              },
+            ],
+          },
+        ],
+      };
+      // Total: 10 + 15 = 25 words, which exceeds 22 (floor(15 * 1.5))
+
+      const result = jsonStructureScorer({
+        modelOutput: invalidOutput,
+        datasetRow: smallDataset,
+      });
+
+      expect(result.valid_json_structure).toBe(false);
+      expect(result.reason).toContain("Total description length");
+      expect(result.reason).toContain("exceeds allowed maximum");
     });
   });
 
