@@ -2,10 +2,12 @@
 
 import React from "react";
 import * as api from "tttc-common/api";
-import { logger } from "tttc-common/logger";
+import { logger } from "tttc-common/logger/browser";
 import { Col } from "../layout";
 import { Progress } from "../elements";
 import { useUnifiedReport } from "@/hooks/useUnifiedReport";
+
+const reportProgressLogger = logger.child({ module: "report-progress" });
 
 export default function ReportProgress({
   status,
@@ -104,7 +106,7 @@ const statusToProgress = (status: api.ReportJobStatus) => {
       return -100;
     default: {
       // Log unexpected status instead of crashing
-      logger.warn({ status }, "[ReportProgress] Unexpected status");
+      reportProgressLogger.warn({ status }, "Unexpected status");
       return 5; // Default progress for unknown statuses
     }
   }
@@ -133,7 +135,7 @@ const statusMessage = (status: api.ReportJobStatus) => {
     case "notFound":
       return "Not found :/";
     default: {
-      logger.warn({ status }, "[ReportProgress] Unexpected status message");
+      reportProgressLogger.warn({ status }, "Unexpected status message");
       return "Processing...";
     }
   }
