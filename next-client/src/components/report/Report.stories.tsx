@@ -1,12 +1,13 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { reportData } from "../../../stories/data/dummyData";
-import Report, {
+import Report from "./Report";
+import {
   ReportHeader,
   ReportOverview,
   ReportSummary,
   ReportTitle,
-} from "./Report";
+} from "./components/ReportHeader";
 import { getNPeople } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 import jsonData from "../../../stories/data/healMichigan.json";

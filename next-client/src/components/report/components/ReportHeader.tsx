@@ -1,0 +1,235 @@
+import React, { useState } from "react";
+import * as schema from "tttc-common/schema";
+import { Col, Row } from "@/components/layout";
+import {
+  Button,
+  CardContent,
+  Separator,
+  TextIcon,
+  ToggleText,
+} from "@/components/elements";
+import Icons from "@/assets/icons";
+import { getNPeople } from "tttc-common/morphisms";
+import { BarChart, BarChartItemType } from "@/components/barchart/Barchart";
+import { CopyLinkButton } from "@/components/copyButton/CopyButton";
+
+interface IReportTitle {
+  title: string;
+  nClaims: number;
+  nTopics: number;
+  nThemes: number;
+  nPeople: number;
+  dateStr: string;
+}
+
+/**
+ * Header for Report that has some summary details.
+ */
+export function ReportHeader({
+  topics: themes,
+  date,
+  title,
+  description,
+  questionAnswers,
+}: {
+  topics: schema.Topic[];
+  date: string;
+  title: string;
+  description: string;
+  questionAnswers?: schema.QuestionAnswer[];
+}) {
+  const topics = themes.flatMap((theme) => theme.subtopics);
+  const claims = topics.flatMap((topic) => topic.claims);
+  const nPeople = getNPeople(claims);
+  const dateStr = date;
+  return (
+    <CardContent>
+      <Col gap={8}>
+        {/* Contains title and basic overview stats */}
+        <ReportIntro
+          title={title}
+          nThemes={themes.length}
+          nTopics={topics.length}
+          nClaims={claims.length}
+          nPeople={nPeople}
+          dateStr={dateStr}
+        />
+        {/* Summary */}
+        <ReportSummary
+          description={description}
+          questionAnswers={questionAnswers}
+        />
+        {/* Overview - always visible */}
+        <ReportOverview topics={themes} />
+      </Col>
+    </CardContent>
+  );
+}
+
+/**
+ * Inside header - has summary stats and title
+ */
+export function ReportTitle({
+  title,
+  nClaims,
+  nPeople,
+  nThemes,
+  nTopics,
+  dateStr,
+}: IReportTitle) {
+  return (
+    <Col gap={2} className="pb-1">
+      {/* Title and copy button */}
+      <Row gap={2} className="justify-between">
+        <h3>
+          <a id={`${title}`}>{title}</a>
+        </h3>
+        <CopyLinkButton anchor={title} />
+      </Row>
+
+      {/* Stat details. Split into two parts for easy wrapping */}
+      <Row gap={4} className="flex-wrap gap-y-1">
+        {/* Number of topics */}
+        <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
+          {nThemes} topics
+        </TextIcon>
+        {/* Number of subtopics */}
+        <TextIcon icon={<Icons.Topic />}>{nTopics} subtopics</TextIcon>
+        {/* Number of claims */}
+        <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
+        {/* Separator */}
+        <Separator
+          orientation="vertical"
+          className="hidden sm:block h-4 self-center"
+        />
+        {/* Number of people */}
+        <TextIcon icon={<Icons.People size={16} className="self-center" />}>
+          {nPeople} people
+        </TextIcon>
+        {/* Date */}
+        <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
+          {Intl.DateTimeFormat("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }).format(new Date(dateStr))}
+        </TextIcon>
+      </Row>
+    </Col>
+  );
+}
+
+/**
+ * Title and info banner combined
+ */
+export function ReportIntro(props: IReportTitle) {
+  return (
+    <Col gap={1}>
+      <ReportTitle {...props} />
+      <ReportInfo />
+    </Col>
+  );
+}
+
+/**
+ * A dismissable component telling the user about T3C
+ */
+export function ReportInfo() {
+  const [show, setShow] = useState<boolean>(true);
+
+  return (
+    <Row
+      gap={2}
+      className={`p-4 border rounded items-center ${show ? "" : "hidden"}`}
+    >
+      <div>
+        <Icons.Lightbulb />
+      </div>
+      <p className="p2 text-muted-foreground">
+        Talk to the City takes the text from large group discussions and turns
+        it into a summary report using AI prompting. Learn more on the About
+        page.
+      </p>
+      <Button
+        variant={"ghost"}
+        size={"icon"}
+        onClick={() => setShow(false)}
+        className="h-10 w-10"
+      >
+        <div>
+          <Icons.X />
+        </div>
+      </Button>
+    </Row>
+  );
+}
+
+/**
+ * Summary section of the report.
+ * Contains a summary written by the report creators, along with a Q&A section if present.
+ */
+export function ReportSummary({
+  description,
+  questionAnswers,
+}: {
+  description: string;
+  questionAnswers?: schema.QuestionAnswer[];
+}) {
+  return (
+    <Col gap={3}>
+      {/* Summary Title */}
+      <Col gap={1}>
+        <h4>Summary</h4>
+        <Row
+          gap={2}
+          className="items-center text-muted-foreground fill-muted-foreground"
+        >
+          <div>
+            <Icons.Info className="h-4 w-4" />
+          </div>
+          <p className="p2 text-muted-foreground flex gap-2 items-center ">
+            The summary is written by the report creators, while the rest is
+            AI-generated, excluding quotes.
+          </p>
+        </Row>
+      </Col>
+      {/* Summary Description */}
+      <div>{description}</div>
+
+      {/* Summary Meta Questions */}
+      {questionAnswers?.map((qa, index) => (
+        <ToggleText key={index}>
+          <ToggleText.Title>{qa.question}</ToggleText.Title>
+          <ToggleText.Content>{qa.answer}</ToggleText.Content>
+        </ToggleText>
+      ))}
+    </Col>
+  );
+}
+
+/**
+ * Overview bar chart showing topic distribution
+ */
+export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
+  const getBarChartEntries = (topics: schema.Topic[]): BarChartItemType[] => {
+    const largestN = topics.reduce((accum, curr) => {
+      const nClaims = getNPeople(curr.subtopics);
+      return Math.max(nClaims, accum);
+    }, 0);
+
+    return topics.map((topic) => ({
+      id: topic.id,
+      title: topic.title,
+      percentFill: getNPeople(topic.subtopics) / largestN,
+      subtitle: `${getNPeople(topic.subtopics)} people`,
+      color: topic.topicColor,
+    }));
+  };
+
+  return (
+    <Col gap={3}>
+      <h4>Overview</h4>
+      <BarChart entries={getBarChartEntries(topics)} />
+    </Col>
+  );
+}

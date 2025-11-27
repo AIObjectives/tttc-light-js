@@ -24,6 +24,7 @@ const meta = {
           setScrollTo: () => null,
           useReportEffect: () => {},
           useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
+          useFocusedNodeForCruxes: () => ({}) as Ref<HTMLDivElement>,
           addOns: reportData.addons,
           sortByControversy: false,
           setSortByControversy: () => null,
@@ -32,6 +33,8 @@ const meta = {
           activeContentTab: "report",
           setActiveContentTab: () => null,
           getTopicColor: () => undefined,
+          getSubtopicId: () => null,
+          focusedCruxId: null,
         }}
       >
         <TopicContext.Provider
@@ -52,5 +55,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Main: Story = {
-  args: { subtopicNode: subtopicNode, onExpandSubtopic: () => null },
+  args: {
+    subtopicNode: subtopicNode,
+    topicTitle: topicNode.data.title,
+    topicColor: topicNode.data.topicColor,
+    show: true,
+  },
 };

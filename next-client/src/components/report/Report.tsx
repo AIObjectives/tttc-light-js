@@ -7,23 +7,14 @@ import React, {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import { mergeRefs } from "react-merge-refs";
 import * as schema from "tttc-common/schema";
-import { CopyLinkButton } from "../copyButton/CopyButton";
 import { Col, Row } from "../layout";
 import {
   Button,
   CardContent,
-  Separator,
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  TextIcon,
-  ToggleText,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -34,27 +25,15 @@ import {
   DropdownMenuItem,
   ErrorBoundary,
 } from "../elements";
-import Icons from "@/assets/icons";
-import { ChevronsUpDown, ChevronDown } from "lucide-react";
-import { getNPeople } from "tttc-common/morphisms";
+import { ChevronsUpDown } from "lucide-react";
 import {
   useReportState,
   ReportStateAction,
   TopicNode,
 } from "./hooks/useReportState";
-import { Sticky } from "../wrappers";
 import { cn } from "@/lib/utils/shadcn";
 import Outline from "../outline/Outline";
-import {
-  getTopicControversy,
-  getSortedCruxes,
-  getControversyCategory,
-  parseSpeaker,
-} from "@/lib/crux/utils";
-import {
-  ControversyIndicator,
-  AgreeDisagreeSpectrum,
-} from "@/components/controversy";
+import { getTopicControversy, getSortedCruxes } from "@/lib/crux/utils";
 import Theme from "../topic/Topic";
 import useScrollListener from "./hooks/useScrollListener";
 import useReportSubscribe from "./hooks/useReportSubscribe";
@@ -62,7 +41,6 @@ import { CruxCard } from "./CruxCard";
 import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
 import { useHashChange } from "@/lib/hooks/useHashChange";
-import { BarChart, BarChartItemType } from "../barchart/Barchart";
 import { toast } from "sonner";
 import {
   OutlineStateAction,
@@ -70,95 +48,10 @@ import {
 } from "../outline/hooks/useOutlineState";
 import { downloadReportData } from "@/lib/report/downloadUtils";
 
-const ToolBarFrame = ({
-  children,
-  className,
-  stickyClass,
-}: React.PropsWithChildren<{ className?: string; stickyClass?: string }>) => (
-  <Sticky
-    className={cn(
-      `z-40 w-full dark:bg-background bg-white pointer-events-auto`,
-      className,
-    )}
-    stickyClass={cn("border-b shadow-sm pointer-events-auto", stickyClass)}
-  >
-    {children}
-  </Sticky>
-);
-
-function ReportLayout({
-  Outline,
-  Report,
-  ToolBar,
-  isMobileOutlineOpen,
-  setIsMobileOutlineOpen,
-  navbarState,
-  activeContentTab,
-}: {
-  Outline: React.ReactNode;
-  Report: React.ReactNode;
-  ToolBar: React.ReactNode;
-  isMobileOutlineOpen: boolean;
-  setIsMobileOutlineOpen: (val: boolean) => void;
-  navbarState: { isVisible: boolean; height: number };
-  activeContentTab: "report" | "cruxes";
-}) {
-  const showOutline = activeContentTab === "report";
-
-  return (
-    <Row className="flex w-full min-h-screen">
-      {/* Outline section - keep column for layout but hide content on cruxes tab */}
-      <Col className="hidden md:block min-w-[279px] basis-0 flex-grow">
-        <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
-          <div className="w-full h-14" />
-        </ToolBarFrame>
-        <div
-          className={cn(
-            "sticky top-20",
-            !showOutline && "opacity-0 pointer-events-none",
-          )}
-        >
-          {Outline}
-        </div>
-      </Col>
-
-      {showOutline && (
-        <Sheet open={isMobileOutlineOpen} onOpenChange={setIsMobileOutlineOpen}>
-          <SheetContent side={"left"} className="px-0 pt-0 top-0 max-w-[280px]">
-            <div
-              className="border-t border-l border-slate-200 h-[calc(100vh-theme(spacing.14))] transition-all duration-200 pt-4 pr-2"
-              style={{
-                marginTop: navbarState.isVisible
-                  ? `${navbarState.height + 56}px`
-                  : "56px", // 56px is toolbar height (h-14)
-                height: navbarState.isVisible
-                  ? `calc(100vh - ${navbarState.height + 56}px)`
-                  : "calc(100vh - 56px)",
-              }}
-            >
-              {/* Sheet title here is a requirement for visually impaired users. Won't show up visually. */}
-              <SheetTitle className="sr-only">Outline</SheetTitle>
-              {Outline}
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
-
-      {/* Body section */}
-      <Col className="flex-grow max-w-[896px] mx-auto w-full">
-        <ToolBarFrame>{ToolBar}</ToolBarFrame>
-        {Report}
-      </Col>
-
-      {/* Right section */}
-      <Col className="min-w-[279px] basis-0 flex-grow hidden sm:block">
-        <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
-          <div className="w-full h-14" />
-        </ToolBarFrame>
-      </Col>
-    </Row>
-  );
-}
+// Extracted components
+import { ReportLayout } from "./components/ReportLayout";
+import { ReportHeader } from "./components/ReportHeader";
+import { ReportToolbar } from "./components/ReportToolbar";
 
 /**
  * Report Component
@@ -457,271 +350,6 @@ function Report({
   );
 }
 
-/**
- * Bar that follows down screen. Lets user do certain actions.
- */
-export function ReportToolbar({
-  setIsMobileOutlineOpen,
-  isMobileOutlineOpen,
-}: {
-  setIsMobileOutlineOpen: (val: boolean) => void;
-  isMobileOutlineOpen: boolean;
-}) {
-  const { dispatch, activeContentTab } = useContext(ReportContext);
-
-  return (
-    // Sticky keeps it at top of screen when scrolling down.
-
-    <Row
-      // ! make sure this is the same width as the theme cards.
-      // h-14 ensures consistent height with side column spacers when buttons are hidden
-      className={`p-2 h-14 justify-between w-full mx-auto`}
-    >
-      <Row gap={2} className={cn(activeContentTab !== "report" && "hidden")}>
-        <div>
-          <Button
-            onClick={() => setIsMobileOutlineOpen(!isMobileOutlineOpen)}
-            className="sm:hidden p-3"
-            variant={"outline"}
-          >
-            {isMobileOutlineOpen ? (
-              <Icons.X2 className="fill-muted-foreground" />
-            ) : (
-              <Icons.MobileOutline className="size-4 fill-muted-foreground" />
-            )}
-          </Button>
-        </div>
-      </Row>
-      <Row gap={2} className={cn(activeContentTab !== "report" && "hidden")}>
-        {/* Close all button */}
-        <Button
-          onClick={() => dispatch({ type: "closeAll" })}
-          variant={"outline"}
-        >
-          Collapse all
-        </Button>
-        {/* Open all button  */}
-        <Button
-          onClick={() => dispatch({ type: "openAll" })}
-          variant={"secondary"}
-          data-testid={"open-all-button"}
-        >
-          Expand all
-        </Button>
-      </Row>
-    </Row>
-  );
-}
-
-/**
- * Header for Report that has some summary details.
- */
-export function ReportHeader({
-  topics: themes,
-  date,
-  title,
-  description,
-  questionAnswers,
-}: {
-  topics: schema.Topic[];
-  date: string;
-  title: string;
-  description: string;
-  questionAnswers?: schema.QuestionAnswer[];
-}) {
-  const topics = themes.flatMap((theme) => theme.subtopics);
-  const claims = topics.flatMap((topic) => topic.claims);
-  const nPeople = getNPeople(claims);
-  const dateStr = date;
-  return (
-    <CardContent>
-      <Col gap={8}>
-        {/* Contains title and basic overview stats */}
-        <ReportIntro
-          title={title}
-          nThemes={themes.length}
-          nTopics={topics.length}
-          nClaims={claims.length}
-          nPeople={nPeople}
-          dateStr={dateStr}
-        />
-        {/* Summary */}
-        <ReportSummary
-          description={description}
-          questionAnswers={questionAnswers}
-        />
-        {/* Overview - always visible */}
-        <ReportOverview topics={themes} />
-      </Col>
-    </CardContent>
-  );
-}
-
-interface IReportTitle {
-  title: string;
-  nClaims: number;
-  nTopics: number;
-  nThemes: number;
-  nPeople: number;
-  dateStr: string;
-}
-
-/**
- * Inside header - has summary stats and title
- */
-export function ReportTitle({
-  title,
-  nClaims,
-  nPeople,
-  nThemes,
-  nTopics,
-  dateStr,
-}: IReportTitle) {
-  return (
-    <Col gap={2} className="pb-1">
-      {/* Title and copy button */}
-      <Row gap={2} className="justify-between">
-        <h3>
-          <a id={`${title}`}>{title}</a>
-        </h3>
-        <CopyLinkButton anchor={title} />
-      </Row>
-
-      {/* Stat details. Split into two parts for easy wrapping */}
-      <Row gap={4} className="flex-wrap gap-y-1">
-        {/* Number of topics */}
-        <TextIcon icon={<Icons.Theme size={16} className="self-center" />}>
-          {nThemes} topics
-        </TextIcon>
-        {/* Number of subtopics */}
-        <TextIcon icon={<Icons.Topic />}>{nTopics} subtopics</TextIcon>
-        {/* Number of claims */}
-        <TextIcon icon={<Icons.Claim />}>{nClaims} claims</TextIcon>
-        {/* Separator */}
-        <Separator
-          orientation="vertical"
-          className="hidden sm:block h-4 self-center"
-        />
-        {/* Number of people */}
-        <TextIcon icon={<Icons.People size={16} className="self-center" />}>
-          {nPeople} people
-        </TextIcon>
-        {/* Date */}
-        <TextIcon icon={<Icons.Date size={16} className="self-center" />}>
-          {Intl.DateTimeFormat("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          }).format(new Date(dateStr))}
-        </TextIcon>
-      </Row>
-    </Col>
-  );
-}
-
-export function ReportIntro(props: IReportTitle) {
-  return (
-    <Col gap={1}>
-      <ReportTitle {...props} />
-      <ReportInfo />
-    </Col>
-  );
-}
-
-export function ReportInfo() {
-  const [show, setShow] = useState<boolean>(true);
-
-  return (
-    <Row
-      gap={2}
-      className={`p-4 border rounded items-center ${show ? "" : "hidden"}`}
-    >
-      <div>
-        <Icons.Lightbulb />
-      </div>
-      <p className="p2 text-muted-foreground">
-        Talk to the City takes the text from large group discussions and turns
-        it into a summary report using AI prompting. Learn more on the About
-        page.
-      </p>
-      <Button
-        variant={"ghost"}
-        size={"icon"}
-        onClick={() => setShow(false)}
-        className="h-10 w-10"
-      >
-        <div>
-          <Icons.X />
-        </div>
-      </Button>
-    </Row>
-  );
-}
-
-export function ReportSummary({
-  description,
-  questionAnswers,
-}: {
-  description: string;
-  questionAnswers?: schema.QuestionAnswer[];
-}) {
-  return (
-    <Col gap={3}>
-      {/* Summary Title */}
-      <Col gap={1}>
-        <h4>Summary</h4>
-        <Row
-          gap={2}
-          className="items-center text-muted-foreground fill-muted-foreground"
-        >
-          <div>
-            <Icons.Info className="h-4 w-4" />
-          </div>
-          <p className="p2 text-muted-foreground flex gap-2 items-center ">
-            The summary is written by the report creators, while the rest is
-            AI-generated, excluding quotes.
-          </p>
-        </Row>
-      </Col>
-      {/* Summary Description */}
-      <div>{description}</div>
-
-      {/* Summary Meta Questions */}
-
-      {questionAnswers?.map((qa) => (
-        <ToggleText>
-          <ToggleText.Title>{qa.question}</ToggleText.Title>
-          <ToggleText.Content>{qa.answer}</ToggleText.Content>
-        </ToggleText>
-      ))}
-    </Col>
-  );
-}
-
-export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
-  const getBarChartEntries = (topics: schema.Topic[]): BarChartItemType[] => {
-    const largestN = topics.reduce((accum, curr) => {
-      const nClaims = getNPeople(curr.subtopics);
-      return Math.max(nClaims, accum);
-    }, 0);
-
-    return topics.map((topic) => ({
-      id: topic.id,
-      title: topic.title,
-      percentFill: getNPeople(topic.subtopics) / largestN,
-      subtitle: `${getNPeople(topic.subtopics)} people`,
-      color: topic.topicColor,
-    }));
-  };
-
-  return (
-    <Col gap={3}>
-      <h4>Overview</h4>
-      <BarChart entries={getBarChartEntries(topics)} />
-    </Col>
-  );
-}
-
 type ContentTab = "report" | "cruxes";
 
 /**
@@ -940,11 +568,6 @@ function ReportContentTabs({
 /**
  * Displays a list of all cruxes (controversial points) in the report,
  * sorted by controversy score (highest first).
- *
- * @param addOns - Optional pipeline add-ons containing crux data
- * @param topics - List of topics for navigation lookup
- * @param onNavigateToSubtopic - Optional callback to navigate to a specific subtopic when crux is clicked
- * @returns null if no cruxes are available, otherwise renders sorted list of clickable crux cards
  */
 export function CruxesOverview({
   addOns,
@@ -958,22 +581,18 @@ export function CruxesOverview({
   const sortedCruxes = getSortedCruxes(addOns);
 
   // Build lookup maps once to avoid O(N×M×P) nested loops in render
-  // Critical for performance when reports have many cruxes
   const { subtopicIdMap, subtopicOnlyMap, topicColorMap } =
     React.useMemo(() => {
       const idMap = new Map<string, string>();
       const subtopicOnly = new Map<string, string>();
       const colorMap = new Map<string, string>();
       topics.forEach((topic) => {
-        // Store topic color
         if (topic.topicColor) {
           colorMap.set(topic.title, topic.topicColor);
         }
         topic.subtopics.forEach((subtopic) => {
           const key = `${topic.title}::${subtopic.title}`;
           idMap.set(key, subtopic.id);
-          // Also store by subtopic name only as fallback
-          // (crux data may have mismatched topic assignments)
           subtopicOnly.set(subtopic.title, subtopic.id);
         });
       });
@@ -986,10 +605,8 @@ export function CruxesOverview({
 
   const getSubtopicId = React.useCallback(
     (topicTitle: string, subtopicTitle: string): string | null => {
-      // Try exact match first (topic::subtopic)
       const exactMatch = subtopicIdMap.get(`${topicTitle}::${subtopicTitle}`);
       if (exactMatch) return exactMatch;
-      // Fallback: search by subtopic name only (handles mismatched topic assignments in crux data)
       return subtopicOnlyMap.get(subtopicTitle) ?? null;
     },
     [subtopicIdMap, subtopicOnlyMap],

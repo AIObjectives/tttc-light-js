@@ -18,7 +18,7 @@ import { CopyLinkButton } from "../copyButton/CopyButton";
 import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
 import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
-import Subtopic, { SubtopicHeader } from "../subtopic/Subtopic";
+import { Subtopic, SubtopicHeader } from "../subtopic/Subtopic";
 import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { ReportContext } from "../report/Report";
@@ -292,8 +292,10 @@ function ExpandTopic() {
       )}
       <Col className="px-3 sm:px-8 gap-y-4">
         {subtopicNodes.map((node, i) => (
-          <SubtopicItem
+          <Subtopic
             subtopicNode={node}
+            topicTitle={data.title}
+            topicColor={data.topicColor}
             show={isOpen && i <= pagination}
             key={node.id}
           />
@@ -309,36 +311,6 @@ function ExpandTopic() {
         </>
       )}
     </Col>
-  );
-}
-
-function SubtopicItem({
-  subtopicNode,
-  show,
-}: {
-  subtopicNode: SubtopicNode;
-  show: boolean;
-}) {
-  const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
-  const { topicNode } = useContext(TopicContext);
-
-  const scrollRef = useScrollTo(subtopicNode.data.id);
-  const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
-
-  if (!show) {
-    return <></>;
-  }
-
-  return (
-    <Subtopic
-      subtopicNode={subtopicNode}
-      topicTitle={topicNode.data.title}
-      topicColor={topicNode.data.topicColor}
-      ref={mergeRefs([scrollRef, focusedRef])}
-      onExpandSubtopic={() =>
-        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
-      }
-    />
   );
 }
 
