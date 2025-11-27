@@ -34,11 +34,49 @@ import {
   AgreeDisagreeSpectrum,
 } from "@/components/controversy";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
+import { mergeRefs } from "react-merge-refs";
 
 /**
- * UI for subtopic
+ * Second highest level node in a Report. Expands to show claims.
+ * This wrapper handles scroll/focus refs and visibility.
  */
-export const Subtopic = forwardRef<
+export function Subtopic({
+  subtopicNode,
+  topicTitle,
+  topicColor,
+  show,
+}: {
+  subtopicNode: SubtopicNode;
+  topicTitle: string;
+  topicColor?: string;
+  show: boolean;
+}) {
+  const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
+
+  const scrollRef = useScrollTo(subtopicNode.data.id);
+  const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
+
+  if (!show) {
+    return <></>;
+  }
+
+  return (
+    <SubtopicCard
+      subtopicNode={subtopicNode}
+      topicTitle={topicTitle}
+      topicColor={topicColor}
+      ref={mergeRefs([scrollRef, focusedRef])}
+      onExpandSubtopic={() =>
+        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
+      }
+    />
+  );
+}
+
+/**
+ * UI for subtopic card
+ */
+export const SubtopicCard = forwardRef<
   HTMLDivElement,
   {
     subtopicNode: SubtopicNode;
