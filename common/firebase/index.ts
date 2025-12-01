@@ -28,6 +28,7 @@ const processingSubState = z
     "dedup",
     "wrappingup",
     "summarizing",
+    "scoring_bridging",
   ])
   .nullish();
 
