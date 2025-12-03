@@ -26,6 +26,7 @@
     "./csv-security/*",
     "./csv-validation/*",
     "./evaluations/**/*",
+    "./feature-flags/**/*",
     "./firebase/*",
     "./functional-utils/*",
     "./logger/*",
