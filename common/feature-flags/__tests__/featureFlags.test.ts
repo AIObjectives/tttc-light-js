@@ -11,8 +11,8 @@ import {
   initializeFeatureFlags,
   isFeatureEnabled,
   getFeatureFlag,
-  getAllFeatureFlags,
   shutdownFeatureFlags,
+  FeatureFlagConfig,
 } from "../index";
 import { LocalFeatureFlagProvider } from "../providers/localProvider";
 import { PostHogFeatureFlagProvider } from "../providers/posthogProvider";
@@ -21,7 +21,6 @@ import { PostHogFeatureFlagProvider } from "../providers/posthogProvider";
 const mockPostHogInstance = {
   isFeatureEnabled: vi.fn(),
   getFeatureFlag: vi.fn(),
-  getAllFlags: vi.fn(),
   shutdown: vi.fn(),
 };
 
@@ -40,7 +39,7 @@ const { mockChildLogger } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("tttc-common/logger", () => ({
+vi.mock("../../logger", () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -50,19 +49,18 @@ vi.mock("tttc-common/logger", () => ({
 }));
 
 describe("Feature Flags", () => {
-  // Mock environment for tests
-  const createMockEnv = (
-    provider = "local",
+  // Helper to create mock config
+  const createMockConfig = (
+    provider: "local" | "posthog" = "local",
     apiKey?: string,
-    localFlags?: Record<string, boolean | string>,
+    localFlags?: Record<string, boolean | string | number>,
     host?: string,
-  ) =>
-    ({
-      FEATURE_FLAG_PROVIDER: provider as "local" | "posthog",
-      FEATURE_FLAG_API_KEY: apiKey,
-      FEATURE_FLAG_HOST: host || "https://test.posthog.com",
-      LOCAL_FLAGS: localFlags,
-    }) as any;
+  ): FeatureFlagConfig => ({
+    provider,
+    apiKey,
+    host: host || "https://test.posthog.com",
+    localFlags,
+  });
 
   beforeAll(async () => {
     await shutdownFeatureFlags();
@@ -75,7 +73,7 @@ describe("Feature Flags", () => {
   describe("Local Provider", () => {
     it("should initialize with local provider", () => {
       const provider = initializeFeatureFlags(
-        createMockEnv("local", undefined, {
+        createMockConfig("local", undefined, {
           testFlag: true,
           stringFlag: "variant-a",
           disabledFlag: false,
@@ -87,7 +85,7 @@ describe("Feature Flags", () => {
 
     it("should check if feature is enabled", async () => {
       initializeFeatureFlags(
-        createMockEnv("local", undefined, {
+        createMockConfig("local", undefined, {
           enabledFlag: true,
           disabledFlag: false,
         }),
@@ -104,7 +102,7 @@ describe("Feature Flags", () => {
 
     it("should get feature flag value", async () => {
       initializeFeatureFlags(
-        createMockEnv("local", undefined, {
+        createMockConfig("local", undefined, {
           booleanFlag: true,
           stringFlag: "variant-b",
           disabledFlag: false,
@@ -122,22 +120,9 @@ describe("Feature Flags", () => {
       expect(nonExistentValue).toBe(null);
     });
 
-    it("should get all feature flags", async () => {
-      const flags = {
-        flag1: true,
-        flag2: "test-value",
-        flag3: false,
-      };
-
-      initializeFeatureFlags(createMockEnv("local", undefined, flags));
-
-      const allFlags = await getAllFeatureFlags();
-      expect(allFlags).toEqual(flags);
-    });
-
     it("should handle context parameters (ignored by local provider)", async () => {
       initializeFeatureFlags(
-        createMockEnv("local", undefined, {
+        createMockConfig("local", undefined, {
           testFlag: true,
         }),
       );
@@ -163,14 +148,9 @@ describe("Feature Flags", () => {
       expect(result).toBe(null);
     });
 
-    it("should return empty object when getting all flags without initialization", async () => {
-      const result = await getAllFeatureFlags();
-      expect(result).toEqual({});
-    });
-
     it("should throw error for unknown provider", () => {
       expect(() => {
-        initializeFeatureFlags(createMockEnv("unknown" as any));
+        initializeFeatureFlags(createMockConfig("unknown" as any));
       }).toThrow("Unknown feature flag provider: unknown");
     });
   });
@@ -182,13 +162,13 @@ describe("Feature Flags", () => {
 
     it("should throw error when PostHog provider lacks API key", () => {
       expect(() => {
-        initializeFeatureFlags(createMockEnv("posthog"));
+        initializeFeatureFlags(createMockConfig("posthog"));
       }).toThrow("PostHog API key is required for PostHog provider");
     });
 
     it("should initialize with PostHog provider", () => {
       const provider = initializeFeatureFlags(
-        createMockEnv(
+        createMockConfig(
           "posthog",
           "test-api-key",
           undefined,
@@ -204,7 +184,7 @@ describe("Feature Flags", () => {
         .mockResolvedValueOnce(true)
         .mockResolvedValueOnce(false);
 
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
+      initializeFeatureFlags(createMockConfig("posthog", "test-api-key"));
 
       const enabledResult = await isFeatureEnabled("test-flag", {
         userId: "user123",
@@ -239,7 +219,7 @@ describe("Feature Flags", () => {
         .mockResolvedValueOnce(false)
         .mockResolvedValueOnce(null);
 
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
+      initializeFeatureFlags(createMockConfig("posthog", "test-api-key"));
 
       const booleanValue = await getFeatureFlag("boolean-flag");
       const stringValue = await getFeatureFlag("string-flag");
@@ -252,28 +232,6 @@ describe("Feature Flags", () => {
       expect(nullValue).toBe(null);
     });
 
-    it("should get all feature flags via PostHog", async () => {
-      const mockFlags = {
-        flag1: true,
-        flag2: "variant-b",
-        flag3: false,
-      };
-      mockPostHogInstance.getAllFlags.mockResolvedValue(mockFlags);
-
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
-
-      const allFlags = await getAllFeatureFlags({
-        userId: "user456",
-        properties: { plan: "premium" },
-      });
-
-      expect(allFlags).toEqual(mockFlags);
-      expect(mockPostHogInstance.getAllFlags).toHaveBeenCalledWith("user456", {
-        groups: undefined,
-        personProperties: { plan: "premium" },
-      });
-    });
-
     it("should handle PostHog errors gracefully", async () => {
       mockPostHogInstance.isFeatureEnabled.mockRejectedValue(
         new Error("PostHog API error"),
@@ -281,33 +239,28 @@ describe("Feature Flags", () => {
       mockPostHogInstance.getFeatureFlag.mockRejectedValue(
         new Error("PostHog API error"),
       );
-      mockPostHogInstance.getAllFlags.mockRejectedValue(
-        new Error("PostHog API error"),
-      );
 
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
+      initializeFeatureFlags(createMockConfig("posthog", "test-api-key"));
 
       const enabledResult = await isFeatureEnabled("error-flag");
       const flagValue = await getFeatureFlag("error-flag");
-      const allFlags = await getAllFeatureFlags();
 
       expect(enabledResult).toBe(false);
       expect(flagValue).toBe(null);
-      expect(allFlags).toEqual({});
     });
 
     it("should handle invalid return types from PostHog", async () => {
       // Test invalid return type (number)
       mockPostHogInstance.getFeatureFlag.mockResolvedValue(123);
 
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
+      initializeFeatureFlags(createMockConfig("posthog", "test-api-key"));
 
       const result = await getFeatureFlag("invalid-type-flag");
       expect(result).toBe(null);
     });
 
     it("should properly shutdown PostHog connection", async () => {
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
+      initializeFeatureFlags(createMockConfig("posthog", "test-api-key"));
 
       await shutdownFeatureFlags();
       expect(mockPostHogInstance.shutdown).toHaveBeenCalled();
@@ -316,7 +269,7 @@ describe("Feature Flags", () => {
     it("should use anonymous user when no userId provided", async () => {
       mockPostHogInstance.isFeatureEnabled.mockResolvedValue(true);
 
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
+      initializeFeatureFlags(createMockConfig("posthog", "test-api-key"));
 
       await isFeatureEnabled("test-flag", {});
 
@@ -333,7 +286,7 @@ describe("Feature Flags", () => {
     it("should pass groups and properties to PostHog", async () => {
       mockPostHogInstance.isFeatureEnabled.mockResolvedValue(true);
 
-      initializeFeatureFlags(createMockEnv("posthog", "test-api-key"));
+      initializeFeatureFlags(createMockConfig("posthog", "test-api-key"));
 
       await isFeatureEnabled("test-flag", {
         userId: "user123",

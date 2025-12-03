@@ -6,7 +6,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "tttc-common": path.resolve(__dirname, "../common/dist"),
+      // Point to source files for better mocking support in tests
+      "tttc-common": path.resolve(__dirname, "../common"),
     },
   },
 });

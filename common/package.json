@@ -62,6 +62,10 @@
     "./analytics": {
       "types": "./dist/analytics/index.d.ts",
       "default": "./dist/analytics/index.js"
+    },
+    "./feature-flags": {
+      "types": "./dist/feature-flags/index.d.ts",
+      "default": "./dist/feature-flags/index.js"
     }
   },
   "engines": {
