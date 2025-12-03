@@ -29,6 +29,7 @@
     "dotenv": "^16.4.5",
     "effect": "^3.18.4",
     "firebase-admin": "^13.0.2",
+    "ioredis": "^5.4.1",
     "prettier": "^3.2.5",
     "tttc-common": "file:../common"
   }
