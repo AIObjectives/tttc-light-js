@@ -1,5 +1,4 @@
 import { Response } from "express";
-import { Logger } from "pino";
 import { RequestWithLogger } from "../types/request";
 import {
   verifyUser,
@@ -9,7 +8,8 @@ import {
   getCollectionName,
 } from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
-import { sendError } from "./sendError";
+import { sendErrorByCode } from "./sendError";
+import { ERROR_CODES } from "tttc-common/errors";
 import { z } from "zod";
 
 const feedbackRequest = z.object({
@@ -24,7 +24,7 @@ export default async function feedback(req: RequestWithLogger, res: Response) {
 
     if (!parsed.success) {
       req.log.warn("Invalid request format");
-      return sendError(res, 400, "Invalid request format", "ValidationError");
+      return sendErrorByCode(res, ERROR_CODES.VALIDATION_ERROR, req.log);
     }
 
     const { text, firebaseAuthToken } = parsed.data;
@@ -63,8 +63,6 @@ export default async function feedback(req: RequestWithLogger, res: Response) {
     });
   } catch (error) {
     req.log.error({ error }, "Error submitting feedback");
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
-    sendError(res, 500, message, "FeedbackError");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, req.log);
   }
 }

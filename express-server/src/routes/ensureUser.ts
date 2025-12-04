@@ -1,9 +1,9 @@
 import { Response } from "express";
-import { Logger } from "pino";
 import { RequestWithLogger } from "../types/request";
 import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
-import { sendError } from "./sendError";
+import { sendErrorByCode } from "./sendError";
+import { ERROR_CODES } from "tttc-common/errors";
 
 export default async function ensureUser(
   req: RequestWithLogger,
@@ -15,7 +15,7 @@ export default async function ensureUser(
 
     if (!firebaseAuthToken) {
       req.log.warn("No firebaseAuthToken provided");
-      return sendError(res, 400, "Missing firebaseAuthToken", "AuthError");
+      return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_MISSING, req.log);
     }
 
     let decodedUser: DecodedIdToken;
@@ -24,7 +24,7 @@ export default async function ensureUser(
       req.log.info({ uid: decodedUser.uid }, "Token verified");
     } catch (tokenError) {
       req.log.error({ error: tokenError }, "Token verification failed");
-      return sendError(res, 401, "Invalid or expired token", "TokenError");
+      return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, req.log);
     }
 
     const userDocument = await firebase.ensureUserDocument(
@@ -42,8 +42,6 @@ export default async function ensureUser(
     });
   } catch (error) {
     req.log.error({ error }, "Error ensuring user");
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
-    sendError(res, 500, message, "EnsureUserError");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, req.log);
   }
 }

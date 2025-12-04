@@ -2,7 +2,8 @@ import { Response } from "express";
 import { RequestWithLogger } from "src/types/request";
 import { verifyUser } from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
-import { sendError } from "./sendError";
+import { sendErrorByCode } from "./sendError";
+import { ERROR_CODES } from "tttc-common/errors";
 import { z } from "zod";
 import { getAnalytics, CommonEvents } from "tttc-common/analytics";
 
@@ -22,7 +23,7 @@ export default async function authEvents(
 
     if (!parsed.success) {
       req.log.warn("Invalid request format");
-      return sendError(res, 400, "Invalid request format", "ValidationError");
+      return sendErrorByCode(res, ERROR_CODES.VALIDATION_ERROR, req.log);
     }
 
     const { event, firebaseAuthToken, clientTimestamp } = parsed.data;
@@ -56,18 +57,20 @@ export default async function authEvents(
         message: "Sign out event logged",
       });
     } else {
-      return sendError(
-        res,
-        400,
-        "Invalid event or missing token",
-        "ValidationError",
-      );
+      return sendErrorByCode(res, ERROR_CODES.VALIDATION_ERROR, req.log);
     }
   } catch (error) {
     req.log.error(error, "Error logging auth event");
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
-    sendError(res, 500, message, "AuthEventError");
+    // Token verification errors should return auth error, not internal error
+    const isAuthError =
+      error instanceof Error &&
+      (error.message.toLowerCase().includes("token") ||
+        error.message.toLowerCase().includes("auth"));
+    sendErrorByCode(
+      res,
+      isAuthError ? ERROR_CODES.AUTH_TOKEN_INVALID : ERROR_CODES.INTERNAL_ERROR,
+      req.log,
+    );
   }
 }
 

@@ -48,6 +48,7 @@ vi.mock("tttc-common/logger", () => ({
   logger: {
     child: vi.fn(() => ({
       info: vi.fn(),
+      warn: vi.fn(),
       error: vi.fn(),
     })),
   },
@@ -143,7 +144,8 @@ describe("getUserLimits", () => {
     expect(mockRes.status).toHaveBeenCalledWith(401);
     expect(mockRes.json).toHaveBeenCalledWith({
       error: {
-        message: "No authorization token provided",
+        message: "Please sign in to continue.",
+        code: "AUTH_TOKEN_MISSING",
       },
     });
   });
@@ -156,7 +158,8 @@ describe("getUserLimits", () => {
     expect(mockRes.status).toHaveBeenCalledWith(401);
     expect(mockRes.json).toHaveBeenCalledWith({
       error: {
-        message: "Invalid authorization token",
+        message: "Your session is invalid. Please sign in again.",
+        code: "AUTH_TOKEN_INVALID",
       },
     });
   });
@@ -181,7 +184,8 @@ describe("getUserLimits", () => {
     expect(mockRes.status).toHaveBeenCalledWith(500);
     expect(mockRes.json).toHaveBeenCalledWith({
       error: {
-        message: "Failed to retrieve user limits",
+        message: "Something went wrong on our end. Please try again.",
+        code: "INTERNAL_ERROR",
       },
     });
   });

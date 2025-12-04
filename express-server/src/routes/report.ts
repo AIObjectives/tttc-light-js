@@ -2,7 +2,8 @@ import { Response } from "express";
 import { RequestWithLogger } from "../types/request";
 import * as api from "tttc-common/api";
 import { Bucket } from "../storage";
-import { sendError } from "./sendError";
+import { sendErrorByCode } from "./sendError";
+import { ERROR_CODES } from "tttc-common/errors";
 import { Result } from "tttc-common/functional-utils";
 import {
   findReportRefByUri,
@@ -419,7 +420,7 @@ export async function migrateReportUrlHandler(
       { errorType: parsed.error.name },
       "Migration attempt with invalid URI",
     );
-    return sendError(res, 400, "Invalid report URI", "InvalidReportUri");
+    return sendErrorByCode(res, ERROR_CODES.INVALID_REPORT_URI, reportLogger);
   }
 
   const { bucket, fileName } = parsed.value;
@@ -456,12 +457,7 @@ export async function migrateReportUrlHandler(
   } catch (error) {
     // Exception means Firebase system error (unexpected)
     reportLogger.error({ error }, "Firebase system error during URL migration");
-    sendError(
-      res,
-      500,
-      "Migration service temporarily unavailable",
-      "MigrationError",
-    );
+    sendErrorByCode(res, ERROR_CODES.SERVICE_UNAVAILABLE, reportLogger);
     return;
   }
 }
@@ -546,7 +542,7 @@ async function handleIdBasedReport(
   try {
     const reportRef = await getReportRefById(reportId);
     if (!reportRef) {
-      return sendError(res, 404, "Report not found", "ReportNotFound");
+      return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
     }
 
     // ROBUST STATUS DETERMINATION - Single Source of Truth
@@ -608,7 +604,7 @@ async function handleIdBasedReport(
       // Report is complete - include data URL
       const parsed = parseGcsUri(reportRef.reportDataUri);
       if (!parsed) {
-        return sendError(res, 500, "Invalid report data URI", "InvalidDataUri");
+        return sendErrorByCode(res, ERROR_CODES.STORAGE_ERROR, reportLogger);
       }
 
       const env = req.context.env;
@@ -625,12 +621,7 @@ async function handleIdBasedReport(
           },
           "Bucket not in allowed list for finished report",
         );
-        return sendError(
-          res,
-          500,
-          "Report storage bucket not authorized",
-          "UnauthorizedBucket",
-        );
+        return sendErrorByCode(res, ERROR_CODES.STORAGE_ERROR, reportLogger);
       }
 
       const storage = new Bucket(env.GOOGLE_CREDENTIALS_ENCODED, parsed.bucket);
@@ -647,12 +638,7 @@ async function handleIdBasedReport(
           },
           "Failed to get signed URL for finished report",
         );
-        return sendError(
-          res,
-          500,
-          "Failed to generate report URL",
-          "GetUrlError",
-        );
+        return sendErrorByCode(res, ERROR_CODES.STORAGE_ERROR, reportLogger);
       }
 
       res.set("Cache-Control", "private, max-age=60");
@@ -671,12 +657,7 @@ async function handleIdBasedReport(
     }
   } catch (error) {
     reportLogger.error({ error, reportId }, "Error getting ID-based report");
-    return sendError(
-      res,
-      500,
-      "Report service temporarily unavailable",
-      "ReportServiceError",
-    );
+    return sendErrorByCode(res, ERROR_CODES.SERVICE_UNAVAILABLE, reportLogger);
   }
 }
 
@@ -687,7 +668,7 @@ async function handleLegacyReport(req: RequestWithLogger, res: Response) {
   // Use existing legacy parsing logic
   const parsed = getBucketAndFileName(req);
   if (parsed.tag === "failure") {
-    return sendError(res, 404, "Report not found", "ReportNotFound");
+    return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
   }
 
   try {
@@ -701,12 +682,7 @@ async function handleLegacyReport(req: RequestWithLogger, res: Response) {
         { error: urlResult.error },
         "Failed to get signed URL for legacy report",
       );
-      return sendError(
-        res,
-        500,
-        "Failed to generate report URL",
-        "GetUrlError",
-      );
+      return sendErrorByCode(res, ERROR_CODES.STORAGE_ERROR, reportLogger);
     }
 
     res.set("Cache-Control", "private, max-age=300"); // Legacy reports are stable
@@ -717,6 +693,6 @@ async function handleLegacyReport(req: RequestWithLogger, res: Response) {
     });
   } catch (error) {
     reportLogger.error({ error }, "Error getting legacy report");
-    return sendError(res, 500, "Failed to generate report URL", "GetUrlError");
+    return sendErrorByCode(res, ERROR_CODES.STORAGE_ERROR, reportLogger);
   }
 }

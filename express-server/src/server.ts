@@ -31,6 +31,11 @@ import {
   initializeAnalyticsClient,
   shutdownAnalyticsClient,
 } from "./analytics";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  getErrorStatusCode,
+} from "tttc-common/errors";
 
 const serverLogger = logger.child({ module: "server" });
 
@@ -155,10 +160,10 @@ const createRateLimitHandler = (
       message,
     );
 
-    res.status(429).json({
+    res.status(getErrorStatusCode(ERROR_CODES.RATE_LIMIT_EXCEEDED)).json({
       error: {
-        message: "Too many requests, please try again later.",
-        code: "RateLimitExceeded",
+        message: ERROR_MESSAGES[ERROR_CODES.RATE_LIMIT_EXCEEDED],
+        code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
         retryAfter: Math.ceil(windowMs / 1000),
       },
     });
@@ -170,8 +175,8 @@ const defaultRateLimiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   message: {
     error: {
-      message: "Too many requests, please try again later.",
-      code: "RateLimitExceeded",
+      message: ERROR_MESSAGES[ERROR_CODES.RATE_LIMIT_EXCEEDED],
+      code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
     },
   },
   store: new RedisStore({
@@ -189,8 +194,8 @@ const reportRateLimiter = rateLimit({
   max: REPORT_LIMIT_MAX,
   message: {
     error: {
-      message: "Too many requests, please try again later.",
-      code: "RateLimitExceeded",
+      message: ERROR_MESSAGES[ERROR_CODES.RATE_LIMIT_EXCEEDED],
+      code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
     },
   },
   store: new RedisStore({
@@ -214,8 +219,8 @@ const authRateLimiter = rateLimit({
   max: AUTH_LIMIT_MAX,
   message: {
     error: {
-      message: "Too many requests, please try again later.",
-      code: "RateLimitExceeded",
+      message: ERROR_MESSAGES[ERROR_CODES.RATE_LIMIT_EXCEEDED],
+      code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
     },
   },
   store: new RedisStore({

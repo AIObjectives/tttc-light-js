@@ -70,6 +70,10 @@
     "./evaluations/*/scorers": {
       "types": "./dist/evaluations/*/scorers.d.ts",
       "default": "./dist/evaluations/*/scorers.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "default": "./dist/errors/index.js"
     }
   },
   "engines": {

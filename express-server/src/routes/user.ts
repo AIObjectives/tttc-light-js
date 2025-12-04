@@ -3,7 +3,8 @@ import { RequestWithLogger } from "../types/request";
 import * as firebase from "../Firebase";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities } from "tttc-common/permissions";
-import { sendError } from "./sendError";
+import { sendErrorByCode } from "./sendError";
+import { ERROR_CODES } from "tttc-common/errors";
 import * as api from "tttc-common/api";
 
 const userLogger = logger.child({ module: "user" });
@@ -21,7 +22,7 @@ export async function getUserLimits(
     const authToken = req.headers.authorization?.replace("Bearer ", "");
 
     if (!authToken) {
-      sendError(res, 401, "No authorization token provided");
+      sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_MISSING, userLogger);
       return;
     }
 
@@ -29,7 +30,7 @@ export async function getUserLimits(
     const decodedUser = await firebase.verifyUser(authToken);
 
     if (!decodedUser) {
-      sendError(res, 401, "Invalid authorization token");
+      sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, userLogger);
       return;
     }
 
@@ -59,6 +60,6 @@ export async function getUserLimits(
     res.json(validatedResponse);
   } catch (error) {
     userLogger.error({ error }, "Failed to get user limits");
-    sendError(res, 500, "Failed to retrieve user limits");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, userLogger);
   }
 }

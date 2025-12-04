@@ -6,7 +6,7 @@ import * as Firebase from "../../Firebase";
 import { ReportRef } from "tttc-common/firebase";
 import { Bucket } from "../../storage";
 import { pipelineQueue } from "../../server";
-import { sendError } from "../sendError";
+import { sendError, sendErrorByCode } from "../sendError";
 import { createMinimalTestEnv } from "../../__tests__/helpers";
 
 const testReportId = "A1B2C3D4E5F6G7H8I9J0";
@@ -143,9 +143,10 @@ vi.mock("tttc-common/utils", () => ({
   FIRESTORE_ID_REGEX: /^[A-Za-z0-9]{20}$/,
 }));
 
-// Mock sendError function
+// Mock sendError functions
 vi.mock("../sendError", () => ({
   sendError: vi.fn(),
+  sendErrorByCode: vi.fn(),
 }));
 
 // Test data factories to reduce duplication
@@ -216,6 +217,32 @@ describe("Report Routes", () => {
         });
       },
     );
+
+    // Setup sendErrorByCode mock to behave like the real function
+    vi.mocked(sendErrorByCode).mockImplementation((res, code) => {
+      const statusCodes: Record<string, number> = {
+        REPORT_NOT_FOUND: 404,
+        INVALID_REPORT_URI: 400,
+        STORAGE_ERROR: 500,
+        SERVICE_UNAVAILABLE: 503,
+        INTERNAL_ERROR: 500,
+      };
+      const messages: Record<string, string> = {
+        REPORT_NOT_FOUND:
+          "We couldn't find that report. It may have been deleted or moved.",
+        INVALID_REPORT_URI: "The report address is invalid.",
+        STORAGE_ERROR: "Unable to access the report. Please try again.",
+        SERVICE_UNAVAILABLE:
+          "Our service is temporarily unavailable. Please try again in a few minutes.",
+        INTERNAL_ERROR: "Something went wrong on our end. Please try again.",
+      };
+      res.status(statusCodes[code] || 500).json({
+        error: {
+          message: messages[code] || "Unknown error",
+          code,
+        },
+      });
+    });
   });
 
   afterEach(() => {
@@ -290,8 +317,9 @@ describe("Report Routes", () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "ReportNotFound",
-          message: "Report not found",
+          code: "REPORT_NOT_FOUND",
+          message:
+            "We couldn't find that report. It may have been deleted or moved.",
         },
       });
     });
@@ -309,8 +337,8 @@ describe("Report Routes", () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "GetUrlError",
-          message: "Failed to generate report URL",
+          code: "STORAGE_ERROR",
+          message: "Unable to access the report. Please try again.",
         },
       });
     });
@@ -324,8 +352,9 @@ describe("Report Routes", () => {
       // Should be treated as legacy URL and fail parsing
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "ReportNotFound",
-          message: "Report not found",
+          code: "REPORT_NOT_FOUND",
+          message:
+            "We couldn't find that report. It may have been deleted or moved.",
         },
       });
     });
@@ -341,8 +370,8 @@ describe("Report Routes", () => {
       // This is acceptable as it doesn't expose system paths and fails securely
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "GetUrlError",
-          message: "Failed to generate report URL",
+          code: "STORAGE_ERROR",
+          message: "Unable to access the report. Please try again.",
         },
       });
 
@@ -359,8 +388,8 @@ describe("Report Routes", () => {
       // XSS attempt is treated as legacy URL and fails safely
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "GetUrlError",
-          message: "Failed to generate report URL",
+          code: "STORAGE_ERROR",
+          message: "Unable to access the report. Please try again.",
         },
       });
     });
@@ -381,8 +410,9 @@ describe("Report Routes", () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "ReportNotFound",
-          message: "Report not found",
+          code: "REPORT_NOT_FOUND",
+          message:
+            "We couldn't find that report. It may have been deleted or moved.",
         },
       });
     });
@@ -427,8 +457,9 @@ describe("Report Routes", () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "ReportServiceError",
-          message: "Report service temporarily unavailable",
+          code: "SERVICE_UNAVAILABLE",
+          message:
+            "Our service is temporarily unavailable. Please try again in a few minutes.",
         },
       });
 
@@ -446,8 +477,9 @@ describe("Report Routes", () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          code: "MigrationError",
-          message: "Migration service temporarily unavailable",
+          code: "SERVICE_UNAVAILABLE",
+          message:
+            "Our service is temporarily unavailable. Please try again in a few minutes.",
         },
       });
     });

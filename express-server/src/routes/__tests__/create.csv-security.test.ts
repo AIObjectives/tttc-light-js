@@ -173,11 +173,13 @@ describe("CSV Security in Create Route", () => {
     const response = await request(app)
       .post("/create")
       .send(createValidRequestBody(maliciousData))
-      .expect(500);
+      .expect(400);
 
-    expect(response.body.error.message).toContain(
-      "CSV security validation failed",
+    // CSV security violations return 400 with specific error code
+    expect(response.body.error.message).toBe(
+      "The file contains content that can't be processed. Please check the file and try again.",
     );
+    expect(response.body.error.code).toBe("CSV_SECURITY_VIOLATION");
     expect(validateParsedData).toHaveBeenCalledWith(maliciousData);
   });
 
@@ -191,11 +193,13 @@ describe("CSV Security in Create Route", () => {
     const response = await request(app)
       .post("/create")
       .send(createValidRequestBody(maliciousData))
-      .expect(500);
+      .expect(400);
 
-    expect(response.body.error.message).toContain(
-      "Potential injection detected in comment field",
+    // CSV security violations return 400 with specific error code
+    expect(response.body.error.message).toBe(
+      "The file contains content that can't be processed. Please check the file and try again.",
     );
+    expect(response.body.error.code).toBe("CSV_SECURITY_VIOLATION");
     expect(detectCSVInjection).toHaveBeenCalledWith("=SUM(A1:A10)");
   });
 
@@ -209,11 +213,13 @@ describe("CSV Security in Create Route", () => {
     const response = await request(app)
       .post("/create")
       .send(createValidRequestBody(maliciousData))
-      .expect(500);
+      .expect(400);
 
-    expect(response.body.error.message).toContain(
-      "Potential injection detected in interview field",
+    // CSV security violations return 400 with specific error code
+    expect(response.body.error.message).toBe(
+      "The file contains content that can't be processed. Please check the file and try again.",
     );
+    expect(response.body.error.code).toBe("CSV_SECURITY_VIOLATION");
     expect(detectCSVInjection).toHaveBeenCalledWith("javascript:alert(1)");
   });
 
@@ -270,12 +276,13 @@ describe("CSV Security in Create Route", () => {
     const response = await request(app)
       .post("/create")
       .send(createValidRequestBody(testData))
-      .expect(500);
+      .expect(400);
 
-    expect(response.body.error.message).toContain(
-      "CSV security validation failed",
+    // CSV security violations return 400 with specific error code
+    expect(response.body.error.message).toBe(
+      "The file contains content that can't be processed. Please check the file and try again.",
     );
-    expect(response.body.error.message).toContain("MALFORMED_STRUCTURE");
+    expect(response.body.error.code).toBe("CSV_SECURITY_VIOLATION");
   });
 
   it("should receive CSV data in SourceRow[] format from client", async () => {

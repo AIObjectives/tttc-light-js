@@ -60,3 +60,18 @@ export const userCapabilitiesResponse = z.object({
 });
 
 export type UserCapabilitiesResponse = z.infer<typeof userCapabilitiesResponse>;
+
+// Form action result types for Next.js server actions
+export const formActionError = z.object({
+  code: z.string(),
+  message: z.string(),
+  /** Unique request ID for correlating with server logs */
+  requestId: z.string().optional(),
+});
+
+export type FormActionError = z.infer<typeof formActionError>;
+
+export type CreateReportActionResult =
+  | { status: "idle" }
+  | { status: "success"; data: GenerateApiResponse }
+  | { status: "error"; error: FormActionError };
