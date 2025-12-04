@@ -3,7 +3,7 @@ import { Response } from "express";
 import { RequestWithLogger } from "../../types/request";
 import authEvents from "../authEvents";
 import { verifyUser } from "../../Firebase";
-import { sendError } from "../sendError.js";
+import { sendError, sendErrorByCode } from "../sendError.js";
 import { Logger } from "pino";
 
 // Mock Firebase functions
@@ -11,9 +11,10 @@ vi.mock("../../Firebase", () => ({
   verifyUser: vi.fn(),
 }));
 
-// Mock sendError utility
+// Mock sendError utilities
 vi.mock("../sendError.js", () => ({
   sendError: vi.fn(),
+  sendErrorByCode: vi.fn(),
 }));
 
 // Mock logger
@@ -134,12 +135,11 @@ describe("Auth Events Route", () => {
       // Act
       await authEvents(mockRequest, mockResponse as Response);
 
-      // Assert
-      expect(mockSendError).toHaveBeenCalledWith(
+      // Assert - now uses sendErrorByCode with standardized error codes
+      expect(vi.mocked(sendErrorByCode)).toHaveBeenCalledWith(
         mockResponse,
-        400,
-        "Invalid request format",
-        "ValidationError",
+        "VALIDATION_ERROR",
+        mockRequest.log,
       );
     });
 
@@ -154,12 +154,11 @@ describe("Auth Events Route", () => {
       // Act
       await authEvents(mockRequest, mockResponse as Response);
 
-      // Assert
-      expect(mockSendError).toHaveBeenCalledWith(
+      // Assert - now uses sendErrorByCode with standardized error codes
+      expect(vi.mocked(sendErrorByCode)).toHaveBeenCalledWith(
         mockResponse,
-        400,
-        "Invalid event or missing token",
-        "ValidationError",
+        "VALIDATION_ERROR",
+        mockRequest.log,
       );
     });
 
@@ -178,12 +177,11 @@ describe("Auth Events Route", () => {
       // Act
       await authEvents(mockRequest, mockResponse as Response);
 
-      // Assert
-      expect(mockSendError).toHaveBeenCalledWith(
+      // Assert - token errors return AUTH_TOKEN_INVALID, not INTERNAL_ERROR
+      expect(vi.mocked(sendErrorByCode)).toHaveBeenCalledWith(
         mockResponse,
-        500,
-        "Invalid token",
-        "AuthEventError",
+        "AUTH_TOKEN_INVALID",
+        mockRequest.log,
       );
     });
 
@@ -197,12 +195,11 @@ describe("Auth Events Route", () => {
       // Act
       await authEvents(mockRequest, mockResponse as Response);
 
-      // Assert
-      expect(mockSendError).toHaveBeenCalledWith(
+      // Assert - now uses sendErrorByCode with standardized error codes
+      expect(vi.mocked(sendErrorByCode)).toHaveBeenCalledWith(
         mockResponse,
-        400,
-        "Invalid request format",
-        "ValidationError",
+        "VALIDATION_ERROR",
+        mockRequest.log,
       );
     });
 

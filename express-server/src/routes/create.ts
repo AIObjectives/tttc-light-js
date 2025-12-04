@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { Response } from "express";
-import { RequestWithLogger } from "../types/request";
+import { RequestWithLogger, getRequestId } from "../types/request";
 import { fetchSpreadsheetData } from "../googlesheet";
 import { createStorage } from "../storage";
 import * as api from "tttc-common/api";
@@ -10,7 +10,8 @@ import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { PipelineJob } from "src/jobs/pipeline";
 import { Env } from "../types/context";
-import { sendError } from "./sendError";
+import { sendErrorByCode } from "./sendError";
+import { ERROR_CODES } from "tttc-common/errors";
 import { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities, DEFAULT_LIMITS } from "tttc-common/permissions";
@@ -531,10 +532,17 @@ async function createNewReport(
 }
 
 export default async function create(req: RequestWithLogger, res: Response) {
+  const requestId = getRequestId(req);
+
   try {
     const result = await createNewReport(req);
     if (result.tag === "failure") {
-      sendError(res, 400, result.error.message, "CreateReportError");
+      sendErrorByCode(
+        res,
+        ERROR_CODES.VALIDATION_ERROR,
+        createLogger,
+        requestId,
+      );
       return;
     }
     res.json(result.value.response);
@@ -566,10 +574,16 @@ export default async function create(req: RequestWithLogger, res: Response) {
       },
       "Create report error",
     );
-    res.status(500).send({
-      error: {
-        message: e instanceof Error ? e.message : "An unknown error occurred.",
-      },
-    });
+    // CSV security violations are client errors, not server errors
+    if (e instanceof CreateReportError) {
+      sendErrorByCode(
+        res,
+        ERROR_CODES.CSV_SECURITY_VIOLATION,
+        createLogger,
+        requestId,
+      );
+    } else {
+      sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, createLogger, requestId);
+    }
   }
 }

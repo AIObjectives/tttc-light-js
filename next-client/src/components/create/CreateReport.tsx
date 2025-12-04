@@ -14,6 +14,8 @@ import {} from "./components/FormHelpers";
 import { SigninModal } from "./components/Modals";
 import { useDeferredValue } from "./hooks/useDeferredValue";
 import { EmailVerificationPrompt } from "@/components/auth/EmailVerificationPrompt";
+import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
+import { toast } from "sonner";
 
 import { success } from "tttc-common/functional-utils";
 import { useFormState } from "./hooks/useFormState";
@@ -54,16 +56,22 @@ function getUserToken(): AsyncState<string | null, Error> & {
 /**
  * Binds the OAuth token to the form submission.
  */
-const bindTokenToAction = <Input, Output>(
+const bindTokenToAction = (
   token: string | null,
-  action: (token: string | null, input: Input) => Promise<Output>,
+  action: (
+    token: string | null,
+    input: FormData,
+  ) => Promise<api.CreateReportActionResult>,
 ) => {
-  return async (_: api.GenerateApiResponse | null, input: Input) => {
+  return async (
+    _: api.CreateReportActionResult,
+    input: FormData,
+  ): Promise<api.CreateReportActionResult> => {
     return action(token, input);
   };
 };
 
-const initialState: api.GenerateApiResponse | null = null;
+const initialState: api.CreateReportActionResult = { status: "idle" };
 
 /**
  * Root component, fetches user's token and then renders the report
@@ -161,11 +169,16 @@ function CreateReportComponent({
 
   const isDisabled = isFormInvalid(files, token) || needsEmailVerification;
 
+  // Handle auth errors by showing sign-in modal
+  const handleAuthError = () => {
+    setModalOpen(true);
+  };
+
   return (
     <>
       <SigninModal isOpen={modalOpen} />
       <Form action={formAction}>
-        <SubmitFormControl response={state}>
+        <SubmitFormControl response={state} onAuthError={handleAuthError}>
           <Col gap={8} className="mb-20">
             <h3>Create a report</h3>
             <FormHeader />
@@ -187,6 +200,11 @@ function CreateReportComponent({
               cruxesEnabled={cruxesEnabled}
               bridgingEnabled={bridgingEnabled}
             />
+            {/* Show inline error banner for non-auth errors */}
+            {state.status === "error" &&
+              !state.error.code.startsWith("AUTH_") && (
+                <SubmissionErrorBanner error={state.error} />
+              )}
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
                 Generate the report
@@ -213,21 +231,38 @@ function FormLoading() {
 }
 
 /**
- * Checks the url in the response object. If its present, redirect to that report
+ * Checks the url in the response object. If its present, redirect to that report.
+ * Handles auth errors by showing toast and triggering sign-in modal.
  */
 function SubmitFormControl({
   children,
   response,
-}: React.PropsWithChildren<{ response: api.GenerateApiResponse | null }>) {
+  onAuthError,
+}: React.PropsWithChildren<{
+  response: api.CreateReportActionResult;
+  onAuthError?: () => void;
+}>) {
   const { pending } = useFormStatus();
   const router = useRouter();
+
   useEffect(() => {
-    if (response !== null) {
+    // Handle success - redirect to report
+    if (response.status === "success") {
       const url =
-        response.reportUrl || `/report/${encodeURIComponent(response.jsonUrl)}`;
+        response.data.reportUrl ||
+        `/report/${encodeURIComponent(response.data.jsonUrl)}`;
       router.replace(url);
     }
-  }, [response]);
+
+    // Handle auth errors - show toast and trigger sign-in modal
+    if (
+      response.status === "error" &&
+      response.error.code.startsWith("AUTH_")
+    ) {
+      toast.error(response.error.message);
+      onAuthError?.();
+    }
+  }, [response, router, onAuthError]);
 
   if (pending) {
     return <FormLoading />;

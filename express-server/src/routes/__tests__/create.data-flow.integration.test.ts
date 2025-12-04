@@ -286,7 +286,7 @@ describe("End-to-End Data Flow Integration", () => {
           },
           data: ["csv", invalidData],
         })
-        .expect(500);
+        .expect(400); // CSV security violations are client errors (400), not server errors (500)
 
       // Verify data was validated but NOT stored
       expect(validateParsedData).toHaveBeenCalledWith(invalidData);

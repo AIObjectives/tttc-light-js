@@ -3,6 +3,7 @@ import * as schema from "tttc-common/schema";
 import * as api from "tttc-common/api";
 import * as utils from "tttc-common/utils";
 import ReportProgress from "@/components/reportProgress/ReportProgress";
+import { ReportErrorState } from "@/components/report/ReportErrorState";
 import Feedback from "@/components/feedback/Feedback";
 import pRetry from "p-retry";
 import { logger } from "tttc-common/logger/browser";
@@ -159,11 +160,11 @@ async function ReportPageContent({ encodedUri }: { encodedUri: string }) {
 
   switch (state.type) {
     case "notFound":
-      return <ReportProgress status="notFound" />;
+      return <ReportErrorState type="notFound" />;
     case "progress":
       return <ReportProgress status={state.status} identifier={encodedUri} />;
     case "error":
-      return <p>{state.message}</p>;
+      return <ReportErrorState type="loadError" message={state.message} />;
     case "reportData":
       return (
         <div>
@@ -176,7 +177,7 @@ async function ReportPageContent({ encodedUri }: { encodedUri: string }) {
         </div>
       );
     case "reportDataError":
-      return <p>{state.message}</p>;
+      return <ReportErrorState type="loadError" message={state.message} />;
     default:
       utils.assertNever(state);
   }

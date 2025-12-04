@@ -25,6 +25,7 @@
     "./apiPyserver/*",
     "./csv-security/*",
     "./csv-validation/*",
+    "./errors/*",
     "./evaluations/**/*",
     "./feature-flags/**/*",
     "./firebase/*",

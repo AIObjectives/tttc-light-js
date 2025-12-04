@@ -6,6 +6,7 @@ import { logger } from "tttc-common/logger/browser";
 import { Col } from "../layout";
 import { Progress } from "../elements";
 import { useUnifiedReport } from "@/hooks/useUnifiedReport";
+import { ReportErrorState } from "@/components/report/ReportErrorState";
 
 const reportProgressLogger = logger.child({ module: "report-progress" });
 
@@ -50,28 +51,16 @@ export default function ReportProgress({
 const StatusDisplay = ({ status }: { status: api.ReportJobStatus }) => {
   switch (status) {
     case "failed":
-      return <JobFailed />;
+      return <ReportErrorState type="failed" />;
     case "finished":
-      return <JobFinished />;
+      // Report finished but data not found - likely moved or deleted
+      return <ReportErrorState type="notFound" />;
     case "notFound":
-      return <JobNotFound />;
+      return <ReportErrorState type="notFound" />;
     default:
       return <ReportProcessing status={status} />;
   }
 };
-
-const JobFailed = (_: unknown) => <p>Your report failed</p>;
-
-const JobFinished = (_: unknown) => (
-  <p>
-    Report finished but data not found - likely that resource was moved or
-    deleted
-  </p>
-);
-
-const JobNotFound = (_: unknown) => (
-  <p>Could not find a valid report with that uri</p>
-);
 
 function ReportProcessing({ status }: { status: api.ReportJobStatus }) {
   return (
