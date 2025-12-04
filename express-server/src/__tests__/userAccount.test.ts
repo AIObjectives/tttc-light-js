@@ -98,7 +98,7 @@ describe("User Account Handling", () => {
     email: string | null;
     displayName: string | null;
     isValid: boolean;
-    isWaitlistApproved: boolean;
+    isWaitlistApproved?: boolean; // Legacy field, no longer set for new users
     roles: string[];
     createdAt: { toDate: () => Date };
     lastLoginAt: { toDate: () => Date };
@@ -112,7 +112,6 @@ describe("User Account Handling", () => {
       email: null,
       displayName: null,
       isValid: true,
-      isWaitlistApproved: false,
       roles: ["user"],
       createdAt: { toDate: () => FIXED_DATE },
       lastLoginAt: { toDate: () => FIXED_DATE },
@@ -177,7 +176,6 @@ describe("User Account Handling", () => {
         email,
         displayName,
         isValid: true,
-        isWaitlistApproved: false,
         roles: ["user"],
         createdAt: expect.any(Object), // FieldValue.serverTimestamp()
         lastLoginAt: expect.any(Object), // FieldValue.serverTimestamp()
@@ -188,6 +186,7 @@ describe("User Account Handling", () => {
           firebaseUid: uid,
           email,
           displayName,
+          hasProfileData: false,
         },
         "ensureUserDocument called",
       );
@@ -320,7 +319,6 @@ describe("User Account Handling", () => {
         email: null,
         displayName: null,
         isValid: true,
-        isWaitlistApproved: false,
         roles: ["user"],
         createdAt: expect.any(Object),
         lastLoginAt: expect.any(Object),

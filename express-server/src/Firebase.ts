@@ -159,7 +159,6 @@ export async function addReportJob({
 }: ReportJob) {
   const docRef = db.collection(getCollectionName("REPORT_JOB")).doc();
 
-  // There's no way to parse a return result?
   await docRef.set({
     ...jobDetails,
     createdAt: admin.firestore.Timestamp.fromDate(createdAt),
@@ -637,35 +636,74 @@ export async function verifyUser(token: string) {
   return await auth.verifyIdToken(token);
 }
 
+/**
+ * Profile data for progressive profiling (monday.com CRM integration)
+ */
+export interface ProfileUpdateData {
+  company?: string;
+  title?: string;
+  phone?: string;
+  useCase?: string;
+  newsletterOptIn?: boolean;
+}
+
+export interface EnsureUserResult {
+  user: UserDocument;
+  isNew: boolean;
+}
+
 export async function ensureUserDocument(
   firebaseUid: string,
   email: string | null = null,
   displayName: string | null = null,
-): Promise<UserDocument> {
+  profileData?: ProfileUpdateData,
+): Promise<EnsureUserResult> {
   firebaseLogger.debug(
     {
       firebaseUid,
       email,
       displayName,
+      hasProfileData: !!profileData,
     },
     "ensureUserDocument called",
   );
   try {
     const userRef = db.collection(getCollectionName("USERS")).doc(firebaseUid);
     const userDoc = await userRef.get();
+    const isNew = !userDoc.exists;
 
-    if (!userDoc.exists) {
+    if (isNew) {
       // Create new user document
-      const newUserData = {
+      const newUserData: Record<string, unknown> = {
         firebaseUid,
         email,
         displayName,
         isValid: true, // This user is allowed to login, set to false to ban/disable.
-        isWaitlistApproved: false, // User is waiting to be approved on the waitlist.
         roles: ["user"],
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
       };
+
+      // Add profile data if provided
+      if (profileData) {
+        if (profileData.company) newUserData.company = profileData.company;
+        if (profileData.title) newUserData.title = profileData.title;
+        if (profileData.phone) newUserData.phone = profileData.phone;
+        if (profileData.useCase) newUserData.useCase = profileData.useCase;
+        if (profileData.newsletterOptIn !== undefined) {
+          newUserData.newsletterOptIn = profileData.newsletterOptIn;
+        }
+        // Mark profile completion timestamp if any profile field is set
+        if (
+          profileData.company ||
+          profileData.title ||
+          profileData.phone ||
+          profileData.useCase
+        ) {
+          newUserData.profileCompletedAt =
+            admin.firestore.FieldValue.serverTimestamp();
+        }
+      }
 
       await userRef.set({
         ...newUserData,
@@ -673,9 +711,8 @@ export async function ensureUserDocument(
       });
     } else {
       // Update existing user document with latest login time and potentially changed info
-      const updateData: Partial<UserDocument> = {
-        lastLoginAt:
-          admin.firestore.FieldValue.serverTimestamp() as unknown as Date,
+      const updateData: Record<string, unknown> = {
+        lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
       // Update email and displayName if they've changed
@@ -687,18 +724,37 @@ export async function ensureUserDocument(
         updateData.displayName = displayName;
       }
 
-      // Only update if we have changes to fields other than lastLoginAt
-      const updateFields = Object.keys(updateData).filter(
-        (key) => key !== "lastLoginAt",
-      );
-      if (updateFields.length > 0) {
-        // There are fields other than lastLoginAt to update
-        await userRef.update(updateData);
-      } else {
-        await userRef.update({
-          lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+      // Update profile fields if provided
+      if (profileData) {
+        if (profileData.company !== undefined) {
+          updateData.company = profileData.company;
+        }
+        if (profileData.title !== undefined) {
+          updateData.title = profileData.title;
+        }
+        if (profileData.phone !== undefined) {
+          updateData.phone = profileData.phone;
+        }
+        if (profileData.useCase !== undefined) {
+          updateData.useCase = profileData.useCase;
+        }
+        if (profileData.newsletterOptIn !== undefined) {
+          updateData.newsletterOptIn = profileData.newsletterOptIn;
+        }
+        // Mark profile completion if this is the first time profile is completed
+        if (
+          !currentData?.profileCompletedAt &&
+          (profileData.company ||
+            profileData.title ||
+            profileData.phone ||
+            profileData.useCase)
+        ) {
+          updateData.profileCompletedAt =
+            admin.firestore.FieldValue.serverTimestamp();
+        }
       }
+
+      await userRef.update(updateData);
     }
 
     // Fetch and return the updated user document
@@ -712,11 +768,16 @@ export async function ensureUserDocument(
     }
 
     // Convert Firestore timestamps to dates for the return type
-    return {
+    // Using double assertion because userData is typed as DocumentData (Record<string, any>)
+    // but we know it conforms to UserDocument schema based on how we create/update it
+    const user = {
       ...userData,
       createdAt: userData.createdAt?.toDate() || new Date(),
       lastLoginAt: userData.lastLoginAt?.toDate() || new Date(),
-    } as UserDocument;
+      profileCompletedAt: userData.profileCompletedAt?.toDate(),
+    } as unknown as UserDocument;
+
+    return { user, isNew };
   } catch (error) {
     firebaseLogger.error({ error }, "Error ensuring user document");
     throw new Error(

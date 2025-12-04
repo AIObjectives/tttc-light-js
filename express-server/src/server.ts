@@ -12,6 +12,7 @@ import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
 import authEvents from "./routes/authEvents";
 import { getUserLimits } from "./routes/user";
+import { updateProfile } from "./routes/profile";
 
 import { validateEnv } from "./types/context";
 import { contextMiddleware } from "./middleware";
@@ -281,6 +282,12 @@ app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
  * Uses authLimiter (5000 req/15min per IP)
  */
 app.get("/api/user/limits", authLimiter, getUserLimits);
+
+/**
+ * Update user profile (progressive profiling for monday.com CRM)
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.post("/api/profile/update", authLimiter, updateProfile);
 
 /**
  * Unified report endpoint - handles both Firebase IDs and legacy bucket URLs

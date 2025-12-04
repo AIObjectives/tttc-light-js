@@ -115,7 +115,7 @@ export const userDocument = z.object({
   // DisplayName is nullable because users may not have set a display name
   displayName: z.string().nullable(),
   isValid: z.boolean(),
-  isWaitlistApproved: z.boolean(),
+  isWaitlistApproved: z.boolean().optional(), // Legacy field, no longer set for new users
   roles: z.array(z.string()),
   createdAt: z.preprocess(
     (arg) =>
@@ -131,6 +131,21 @@ export const userDocument = z.object({
         : arg,
     z.date(),
   ),
+  // Profile fields for progressive profiling (monday.com CRM integration)
+  company: z.string().optional(),
+  title: z.string().optional(),
+  phone: z.string().optional(),
+  useCase: z.string().optional(),
+  newsletterOptIn: z.boolean().optional(),
+  profileCompletedAt: z
+    .preprocess(
+      (arg) =>
+        firebaseTimestamp.safeParse(arg).success
+          ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+          : arg,
+      z.date(),
+    )
+    .optional(),
   // Schema version for future migrations
   schemaVersion: z.number().optional(),
 });
@@ -151,7 +166,7 @@ const COLLECTIONS = {
 export const SCHEMA_VERSIONS = {
   REPORT_REF: 1, // Current schema with placeholder URI security
   REPORT_JOB: 1, // Current schema with timestamps and optional fields
-  USER_DOCUMENT: 1, // Current schema with roles and waitlist support
+  USER_DOCUMENT: 1, // Current schema with roles and profile fields
 } as const;
 
 export const useGetCollectionName =

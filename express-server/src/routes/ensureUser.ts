@@ -4,6 +4,7 @@ import * as firebase from "../Firebase";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { sendErrorByCode } from "./sendError";
 import { ERROR_CODES } from "tttc-common/errors";
+import { createMondayItem } from "../services/monday";
 
 export default async function ensureUser(
   req: RequestWithLogger,
@@ -27,17 +28,37 @@ export default async function ensureUser(
       return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, req.log);
     }
 
-    const userDocument = await firebase.ensureUserDocument(
+    const { user: userDocument, isNew } = await firebase.ensureUserDocument(
       decodedUser.uid,
       decodedUser.email || null,
       decodedUser.name || null,
     );
 
-    req.log.info({ uid: decodedUser.uid }, "User document ensured");
+    // Sync new users to Monday.com CRM
+    if (isNew && decodedUser.email) {
+      req.log.info(
+        { uid: decodedUser.uid, email: decodedUser.email },
+        "New user - syncing to Monday.com",
+      );
+      createMondayItem({
+        displayName: decodedUser.name || decodedUser.email,
+        email: decodedUser.email,
+        // Newsletter opt-in is collected via ProfileSetupModal, not at signup
+      }).catch((error) => {
+        // monday.com sync failures are non-critical
+        req.log.warn(
+          { error, uid: decodedUser.uid },
+          "monday.com sync failed for new user (non-blocking)",
+        );
+      });
+    }
+
+    req.log.info({ uid: decodedUser.uid, isNew }, "User document ensured");
     res.json({
       success: true,
       uid: decodedUser.uid,
       user: userDocument,
+      isNew,
       message: "User document ensured successfully",
     });
   } catch (error) {

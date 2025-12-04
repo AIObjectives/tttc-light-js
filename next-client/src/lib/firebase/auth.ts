@@ -72,6 +72,9 @@ export async function signUpWithEmail(
   if (userCredential.user && displayName) {
     const { updateProfile } = await import("firebase/auth");
     await updateProfile(userCredential.user, { displayName });
+    // Force token refresh so the new token includes the displayName claim
+    // This ensures ensureUserDocument gets the displayName from the decoded token
+    await userCredential.user.getIdToken(true);
   }
 
   // Send verification email after successful signup

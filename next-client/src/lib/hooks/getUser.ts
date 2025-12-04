@@ -9,7 +9,6 @@ export function useUser() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isWaitlisted, setIsWaitlisted] = useState(false);
   // Use a Map to track ongoing ensure operations for each user
   const ensuredUsersRef = useRef<Set<string>>(new Set());
   const ensurePromisesRef = useRef<Map<string, Promise<void>>>(new Map());
@@ -33,7 +32,6 @@ export function useUser() {
           console.info("[user-hook-client] User logged out");
           // Clear ensured users when user logs out
           ensuredUsersRef.current = new Set();
-          setIsWaitlisted(false);
         }
 
         // Update the ref for next comparison
@@ -61,13 +59,6 @@ export function useUser() {
                       { uid },
                     );
                     ensuredUsersRef.current.add(uid);
-                    setIsWaitlisted(false);
-                  } else if (result.tag === "waitlisted") {
-                    console.info("[user-hook-client] User is waitlisted", {
-                      uid,
-                    });
-                    setIsWaitlisted(true);
-                    // Don't add to ensured users since they're waitlisted
                   } else {
                     console.error(
                       "[user-hook-client] Failed to ensure user document",
@@ -118,7 +109,6 @@ export function useUser() {
     user,
     loading,
     error,
-    isWaitlisted,
     emailVerified: user?.emailVerified ?? false,
   };
 }

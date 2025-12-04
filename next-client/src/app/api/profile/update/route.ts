@@ -2,19 +2,16 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { logger } from "tttc-common/logger/browser";
 
-const ensureUserApiLogger = logger.child({ module: "api-ensure-user" });
+const profileUpdateApiLogger = logger.child({ module: "api-profile-update" });
 
 export async function POST(request: Request) {
-  ensureUserApiLogger.info({}, "User ensure POST request received");
+  profileUpdateApiLogger.info({}, "Profile update POST request received");
   try {
     const headersList = await headers();
     const authorization = headersList.get("Authorization");
 
     if (!authorization?.startsWith("Bearer ")) {
-      ensureUserApiLogger.warn(
-        { req: request },
-        "No valid Authorization header found",
-      );
+      profileUpdateApiLogger.warn({}, "No valid Authorization header found");
       return NextResponse.json(
         { error: "Unauthorized - missing token" },
         { status: 401 },
@@ -22,45 +19,48 @@ export async function POST(request: Request) {
     }
 
     const token = authorization.split("Bearer ")[1];
+    const body = await request.json();
+
+    profileUpdateApiLogger.debug(
+      {},
+      "Got token, calling express server profile update endpoint",
+    );
 
     const expressUrl =
       process.env.PIPELINE_EXPRESS_URL || "http://localhost:8080";
-    ensureUserApiLogger.debug(
+    profileUpdateApiLogger.debug(
       { expressUrl },
-      "Calling express server ensure-user endpoint",
+      "Calling express server profile update endpoint",
     );
 
-    const expressResponse = await fetch(`${expressUrl}/ensure-user`, {
+    const expressResponse = await fetch(`${expressUrl}/api/profile/update`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        firebaseAuthToken: token,
-      }),
-      // Add timeout to prevent hanging requests
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
     });
 
-    ensureUserApiLogger.debug(
+    profileUpdateApiLogger.debug(
       { status: expressResponse.status },
       "Express server response received",
     );
 
     if (!expressResponse.ok) {
       const errorText = await expressResponse.text();
-      ensureUserApiLogger.error(
+      profileUpdateApiLogger.error(
         {
           expressUrl,
           status: expressResponse.status,
-          headers: Object.fromEntries(expressResponse.headers.entries()),
           body: errorText,
         },
         "Express server error",
       );
       return NextResponse.json(
         {
-          error: "Failed to ensure user document",
+          error: "Failed to update profile",
           details: errorText,
         },
         { status: expressResponse.status },
@@ -68,20 +68,12 @@ export async function POST(request: Request) {
     }
 
     const result = await expressResponse.json();
-    ensureUserApiLogger.info(
-      { uid: result.uid },
-      "User document ensured via express server",
-    );
-    return NextResponse.json({
-      success: true,
-      uid: result.uid,
-      user: result.user,
-      message: "User document ensured via express server",
-    });
+    profileUpdateApiLogger.info({}, "Profile updated successfully");
+    return NextResponse.json(result);
   } catch (error) {
-    ensureUserApiLogger.error({ error }, "Failed to ensure user");
+    profileUpdateApiLogger.error({ error }, "Failed to update profile");
     return NextResponse.json(
-      { error: "Failed to ensure user document" },
+      { error: "Failed to update profile" },
       { status: 500 },
     );
   }

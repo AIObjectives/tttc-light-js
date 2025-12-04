@@ -140,16 +140,6 @@ export function MobileHamburgerMenu() {
                 Create a report
               </Link>
             </Button>
-            <Button asChild variant={"secondary"}>
-              <a
-                onClick={() => setIsOpen(false)}
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
-              >
-                Join the waitlist
-              </a>
-            </Button>
           </Col>
         </Col>
       </SheetContent>

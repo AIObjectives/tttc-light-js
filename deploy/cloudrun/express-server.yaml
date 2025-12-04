@@ -100,6 +100,15 @@ spec:
                 secretKeyRef:
                   key: latest
                   name: perspective-api-key
+            - name: MONDAY_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: monday-api-token
+            - name: MONDAY_BOARD_ID
+              value: "18391158937"
+            - name: MONDAY_COLUMN_IDS
+              value: '{"email":"email_mkybfs1g","company":"text_mkybw2x9","title":"text_mkybgkc","phone":"phone_mkybtd4e","useCase":"text_mkyb33d4","newsletterOptIn":"boolean_mkybf27k"}'
 
           resources:
             limits:
