@@ -9,7 +9,6 @@ const ensureUserLogger = logger.child({ module: "ensure-user-client" });
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_REQUEST_TIMEOUT = 408;
 const HTTP_TOO_MANY_REQUESTS = 429;
-import { signOut } from "./auth";
 import { UserDocument } from "tttc-common/firebase";
 
 /**
@@ -19,8 +18,7 @@ import { UserDocument } from "tttc-common/firebase";
 
 export type EnsureUserDocumentResult =
   | { tag: "success"; uid: string }
-  | { tag: "failure"; error: unknown; retryable: boolean }
-  | { tag: "waitlisted"; uid: string };
+  | { tag: "failure"; error: unknown; retryable: boolean };
 
 function shouldAbortRetry(error: unknown): boolean {
   if (isAPIError(error)) {
@@ -47,6 +45,7 @@ async function callUserEnsureAPI(token: string): Promise<{
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
+    body: JSON.stringify({}),
   });
 
   if (!response.ok) {
@@ -139,7 +138,7 @@ export async function ensureUserDocumentOnClient(
   user: User,
 ): Promise<EnsureUserDocumentResult> {
   try {
-    const result = await pRetry(() => attemptEnsureUserDocument(user), {
+    const result = await pRetry(() => attemptEnsureUserDocument(user, false), {
       retries: 3,
       factor: 2,
       minTimeout: 1000,
@@ -161,7 +160,6 @@ export async function ensureUserDocumentOnClient(
       "User document ensured successfully",
     );
 
-    // Check waitlist status from the returned user document
     if (!result.user) {
       ensureUserLogger.error(
         {},
@@ -172,20 +170,6 @@ export async function ensureUserDocumentOnClient(
         error: "No user document returned",
         retryable: false,
       };
-    }
-
-    const userDoc = result.user;
-    ensureUserLogger.debug(
-      {
-        isWaitlistApproved: userDoc.isWaitlistApproved,
-      },
-      "Checking waitlist status for user",
-    );
-
-    if (!userDoc.isWaitlistApproved) {
-      ensureUserLogger.info("User is not waitlist approved, signing out");
-      await signOut();
-      return { tag: "waitlisted", uid: result.uid };
     }
 
     return { tag: "success", uid: result.uid };

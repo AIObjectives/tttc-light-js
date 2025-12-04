@@ -46,15 +46,6 @@ function Navbar() {
           <RepoGithub />
           <About />
           <CreateReport />
-          <Button variant={"secondary"} asChild>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://forms.monday.com/forms/8bf6010faeea207850d0d9c218b9331b?r=use1"
-            >
-              Join the waitlist
-            </a>
-          </Button>
         </Row>
         <LoginButton />
       </Row>
