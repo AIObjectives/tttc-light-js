@@ -344,7 +344,7 @@ function CruxDisplay({
       </HoverCardTrigger>
       <HoverCardPortal>
         <>
-          <HoverCardOverlay />
+          <HoverCardOverlay className="bg-black/[0.03]" />
           <HoverCardContent side="top" className="w-[40rem]">
             <Col gap={3} className="text-sm">
               {/* Header row - matches CruxCard format */}
