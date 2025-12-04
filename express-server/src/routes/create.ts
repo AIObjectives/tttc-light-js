@@ -318,7 +318,7 @@ const buildPipelineJob = (
         bridging: updatedConfig.bridgingEnabled ?? false,
       },
       llm: {
-        model: "gpt-4o-mini", // ! Change when we allow different models
+        model: "gpt-5-mini", // ! Change when we allow different models
       },
     },
     data: updatedConfig.data,
