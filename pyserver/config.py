@@ -35,16 +35,11 @@ MIN_CHAR_COUNT_FOR_MEANING = 10
 # ============================================================================
 
 SYSTEM_PROMPT = """
-You are a professional research assistant. You have helped run many public consultations,
-surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights.
-You are familiar with public consultation tools like Pol.is and you understand the benefits
-for working with very clear, concise claims that other people would be able to vote on.
+You are a professional research assistant. You have helped run many public consultations, surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights. You are familiar with public consultation tools like Pol.is and you understand the benefits for working with very clear, concise claims that other people would be able to vote on.
 """
 
 COMMENT_TO_TREE_PROMPT = """
-I will give you a list of comments.
-Please propose a way to organize the information contained in these comments into topics and subtopics of interest.
-Keep the topic and subtopic names very concise and use the short description to explain what the topic is about.
+I will give you a list of comments. Please propose a way to organize the information contained in these comments into topics and subtopics of interest. Keep the topic and subtopic names very concise and use the short description to explain what the topic is about.
 
 Return a JSON object of the form {
   "taxonomy": [
@@ -66,11 +61,7 @@ Now here is the list of comments:
 """
 
 COMMENT_TO_CLAIMS_PROMPT = """
-I'm going to give you a comment made by a participant and a list of topics and subtopics which have already been extracted.
-I want you to extract the most important concise claims that the participant may support.
-We are only interested in claims that can be mapped to one of the given topic and subtopic.
-The claim must be fairly general but not a platitude.
-It must be something that other people may potentially disagree with. Each claim must also be atomic.
+I'm going to give you a comment made by a participant and a list of topics and subtopics which have already been extracted. I want you to extract the most important concise claims that the participant may support. We are only interested in claims that can be mapped to one of the given topic and subtopic. The claim must be fairly general but not a platitude. It must be something that other people may potentially disagree with. Each claim must also be atomic.
 
 CRITICAL EXTRACTION RULES - STRICT ENFORCEMENT:
 1. Extract ZERO claims for comments that are vague, meandering, or lack a clear point
@@ -85,11 +76,7 @@ CRITICAL EXTRACTION RULES - STRICT ENFORCEMENT:
 
 QUALITY THRESHOLD: If you're unsure whether a comment contains a substantial claim worth extracting, err on the side of extracting NOTHING. It's better to miss marginal claims than to create noise.
 
-For each claim, please also provide a relevant quote from the transcript.
-The quote must be as concise as possible while still supporting the argument.
-The quote doesn't need to be a logical argument.
-It could also be a personal story or anecdote illustrating why the interviewee would make this claim.
-You may use "[...]" in the quote to skip the less interesting bits of the quote.
+For each claim, please also provide a relevant quote from the transcript. The quote must be as concise as possible while still supporting the argument. The quote doesn't need to be a logical argument. It could also be a personal story or anecdote illustrating why the interviewee would make this claim. You may use "[...]" in the quote to skip the less interesting bits of the quote.
 
 Return a JSON object of the form {
   "claims": [
@@ -190,19 +177,14 @@ Return a JSON object in the form {
 And now here are the topics:"""
 
 CRUX_PROMPT = """
-I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants,
-identified by numeric IDs (like 0, 1, 2, etc.). Please synthesize these claims into one new, specific, maximally controversial
-statement called a "cruxClaim". This cruxClaim should divide the participants into "agree" and "disagree" groups or sides,
-based on all their statements on this topic: one group which would agree with the statement, and one which would disagree.
+I'm going to give you a topic with a description and a list of high-level claims about this topic made by different participants, identified by numeric IDs (like 0, 1, 2, etc.). Please synthesize these claims into one new, specific, maximally controversial statement called a "cruxClaim". This cruxClaim should divide the participants into "agree" and "disagree" groups or sides, based on all their statements on this topic: one group which would agree with the statement, and one which would disagree.
 
 For each participant who made claims in this subtopic, categorize them as:
 - "agree": Would agree with the cruxClaim based on their statements
 - "disagree": Would disagree with the cruxClaim based on their statements
 - "no_clear_position": Mentioned the topic but didn't take a clear stance on this specific crux
 
-Please explain your reasoning and assign participants into the three groups.
-Make the cruxClaim as precise and unique as possible to the given topic and comments, and pick a cruxClaim that best balances the
-"agree" and "disagree" sides, with close to the same number of participants on each side.
+Please explain your reasoning and assign participants into the three groups. Make the cruxClaim as precise and unique as possible to the given topic and comments, and pick a cruxClaim that best balances the "agree" and "disagree" sides, with close to the same number of participants on each side.
 
 IMPORTANT: Format requirements for your response:
 1. In the agree/disagree/no_clear_position lists, use ONLY the exact numeric IDs from the input (like 0, 1, 2)
