@@ -29,7 +29,9 @@
     "dotenv": "^16.4.5",
     "effect": "^3.18.4",
     "firebase-admin": "^13.0.2",
+    "openai": "^6.10.0",
     "prettier": "^3.2.5",
-    "tttc-common": "file:../common"
+    "tttc-common": "file:../common",
+    "weave": "^0.11.0"
   }
 }
