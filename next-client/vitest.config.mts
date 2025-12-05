@@ -14,6 +14,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       stories: path.resolve(__dirname, "./stories"),
       __tests__: path.resolve(__dirname, "./__tests__"),
+      // Point to source files for better mocking support in tests
+      "tttc-common": path.resolve(__dirname, "../common"),
     },
   },
 });
