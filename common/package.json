@@ -66,6 +66,10 @@
     "./feature-flags": {
       "types": "./dist/feature-flags/index.d.ts",
       "default": "./dist/feature-flags/index.js"
+    },
+    "./evaluations/*/scorers": {
+      "types": "./dist/evaluations/*/scorers.d.ts",
+      "default": "./dist/evaluations/*/scorers.js"
     }
   },
   "engines": {
