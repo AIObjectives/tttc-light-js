@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   CardTitle,
-  ExpandableText,
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
@@ -74,7 +73,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             }
           />
           <TopicInteractiveGraphic subtopics={topicNode.children}>
-            <ExpandableText>{description}</ExpandableText>
+            <p>{description}</p>
           </TopicInteractiveGraphic>
         </Col>
       </CardContent>
