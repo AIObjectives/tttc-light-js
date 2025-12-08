@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React, {
+  useContext,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import { mergeRefs } from "react-merge-refs";
 import * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
@@ -13,6 +19,10 @@ import { getControversyCategory, parseSpeaker } from "@/lib/crux/utils";
 import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
 import { ReportContext } from "./Report";
 import { logger } from "tttc-common/logger/browser";
+
+// Suppress useLayoutEffect warning in SSR
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Create module-specific logger
 const cruxLogger = logger.child({ module: "crux-navigation" });
@@ -115,13 +125,23 @@ export function CruxCard({
   const explanationRef = useRef<HTMLParagraphElement>(null);
 
   // Check if explanation text is truncated
-  useEffect(() => {
-    if (explanationRef.current) {
-      const isTruncated =
-        explanationRef.current.scrollHeight >
-        explanationRef.current.clientHeight;
-      setShowReadMore(isTruncated);
-    }
+  useIsomorphicLayoutEffect(() => {
+    if (!explanationRef.current) return;
+
+    // Temporarily remove line-clamp to measure full height
+    const element = explanationRef.current;
+    const originalClass = element.className;
+    element.className = element.className.replace(/line-clamp-\d+/g, "");
+
+    const fullHeight = element.scrollHeight;
+
+    // Restore line-clamp
+    element.className = originalClass;
+
+    const clampedHeight = element.clientHeight;
+
+    // Show button if content would be taller than clamped height
+    setShowReadMore(fullHeight > clampedHeight);
   }, [crux.explanation]);
 
   // Memoize parsed speakers to avoid re-parsing on every render

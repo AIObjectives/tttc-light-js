@@ -1,11 +1,14 @@
-import React, { forwardRef, useContext, useState } from "react";
+import React, {
+  forwardRef,
+  useContext,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
-
-// Scroll offset to account for fixed navbar height
-const NAVBAR_SCROLL_OFFSET = -80;
 import {
-  ExpandableText,
   TextIcon,
   HoverCard,
   HoverCardContent,
@@ -35,6 +38,13 @@ import {
 } from "@/components/controversy";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 import { mergeRefs } from "react-merge-refs";
+
+// Suppress useLayoutEffect warning in SSR
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+// Scroll offset to account for fixed navbar height
+const NAVBAR_SCROLL_OFFSET = -80;
 
 /**
  * Second highest level node in a Report. Expands to show claims.
@@ -138,7 +148,7 @@ export function SubtopicHeader({
 }
 
 export function SubtopicDescription({ description }: { description: string }) {
-  return <ExpandableText>{description}</ExpandableText>;
+  return <p>{description}</p>;
 }
 
 export function SubtopicSummary({
@@ -187,12 +197,34 @@ function CruxDisplay({
     useContext(ReportContext);
   const crux = getSubtopicCrux(addOns, topicTitle, subtopicTitle);
   const [isExplanationExpanded, setIsExplanationExpanded] = useState(false);
+  const [showReadMore, setShowReadMore] = useState(false);
+  const explanationRef = useRef<HTMLParagraphElement>(null);
 
   // Use shared hook for delayed scroll with cleanup
   const scrollToAfterRender = useDelayedScroll(setScrollTo);
 
   // Create unique ID for this crux
   const cruxId = `${topicTitle}:${subtopicTitle}`;
+
+  // Check if explanation text is truncated
+  useIsomorphicLayoutEffect(() => {
+    if (!explanationRef.current || !crux) return;
+
+    // Temporarily remove line-clamp to measure full height
+    const element = explanationRef.current;
+    const originalClass = element.className;
+    element.className = element.className.replace(/line-clamp-\d+/g, "");
+
+    const fullHeight = element.scrollHeight;
+
+    // Restore line-clamp
+    element.className = originalClass;
+
+    const clampedHeight = element.clientHeight;
+
+    // Show button if content would be taller than clamped height
+    setShowReadMore(fullHeight > clampedHeight);
+  }, [crux?.explanation]);
 
   // Don't show if no crux data
   if (!crux) return null;
@@ -380,13 +412,14 @@ function CruxDisplay({
                 <p className="font-medium">{crux.cruxClaim}</p>
                 <div>
                   <p
+                    ref={explanationRef}
                     className={`text-sm text-muted-foreground ${
                       isExplanationExpanded ? "" : "line-clamp-3"
                     }`}
                   >
                     {cleanExplanation(crux.explanation)}
                   </p>
-                  {!isExplanationExpanded && (
+                  {showReadMore && !isExplanationExpanded && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
