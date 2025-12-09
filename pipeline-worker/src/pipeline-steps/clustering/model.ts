@@ -13,6 +13,7 @@ import { Result, success, failure } from "tttc-common/functional-utils";
 import { tokenCost } from "./utils.js";
 import type { ClusteringInput, ClusteringOutput } from "../types.js";
 import {
+  ClusteringError,
   ApiCallFailedError,
   EmptyResponseError,
   ParseFailedError,
@@ -43,7 +44,7 @@ export async function callClusteringModel(
     enableScoring?: boolean;
     weaveProjectName?: string;
   } = {},
-): Promise<Result<ClusteringOutput, Error>> {
+): Promise<Result<ClusteringOutput, ClusteringError>> {
   const { enableScoring = false, weaveProjectName = "production-clustering" } =
     options;
 

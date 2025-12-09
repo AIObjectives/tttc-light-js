@@ -80,10 +80,13 @@ describe("Clustering Pipeline Step", () => {
 
       const result = await commentsToTree(comments, llmConfig, "fake-api-key");
 
-      expect(result.usage.input_tokens).toBe(100);
-      expect(result.usage.output_tokens).toBe(50);
-      expect(result.usage.total_tokens).toBe(150);
-      expect(result.cost).toBe(0.0001);
+      expect(result.tag).toBe("success");
+      if (result.tag === "success") {
+        expect(result.value.usage.input_tokens).toBe(100);
+        expect(result.value.usage.output_tokens).toBe(50);
+        expect(result.value.usage.total_tokens).toBe(150);
+        expect(result.value.cost).toBe(0.0001);
+      }
     });
   });
 

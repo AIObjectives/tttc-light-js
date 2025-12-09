@@ -7,11 +7,13 @@
 
 import OpenAI from "openai";
 import { Logger } from "pino";
+import { Result, success, failure } from "tttc-common/functional-utils";
 import {
   Comment,
   LLMConfig,
   TopicTreeResult,
   ClusteringOptions,
+  ClusteringError,
 } from "./types.js";
 import {
   basicSanitize,
@@ -90,14 +92,14 @@ function sanitizeAndBuildPrompt(
  * @param llmConfig - LLM configuration (model, prompts)
  * @param apiKey - OpenAI API key
  * @param options - Optional configuration (reportId, userId, etc.)
- * @returns Topic tree with usage and cost information
+ * @returns Result containing topic tree with usage and cost information, or an error
  */
 export async function commentsToTree(
   comments: Comment[],
   llmConfig: LLMConfig,
   apiKey: string,
   options: ClusteringOptions = {},
-): Promise<TopicTreeResult> {
+): Promise<Result<TopicTreeResult, ClusteringError>> {
   const { reportId, userId } = options;
 
   // Get report-specific logger
@@ -139,11 +141,7 @@ export async function commentsToTree(
       "Failed to call clustering model",
     );
 
-    return {
-      data: [],
-      usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
-      cost: 0.0,
-    };
+    return failure(clusteringResult.error);
   }
 
   const result = clusteringResult.value;
@@ -160,7 +158,7 @@ export async function commentsToTree(
   };
 
   // Filter PII from final output for user privacy
-  return sanitizeForOutput(responseData);
+  return success(sanitizeForOutput(responseData));
 }
 
 /**
