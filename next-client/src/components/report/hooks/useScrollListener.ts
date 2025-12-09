@@ -48,8 +48,11 @@ function useScrollListener(
         return;
       }
 
-      // Don't scroll directly to node. Instead, make it go to middle of screen.
-      const y = element.getBoundingClientRect().top + window.scrollY - 50;
+      // Scroll to position the element's top near the top of the viewport.
+      // Use an offset to account for the fixed navbar (64px) plus some padding.
+      const NAVBAR_OFFSET = 80;
+      const y =
+        element.getBoundingClientRect().top + window.scrollY - NAVBAR_OFFSET;
       window.scroll({
         top: y,
         behavior: "smooth",
