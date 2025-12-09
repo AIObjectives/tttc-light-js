@@ -457,28 +457,43 @@ const DifferentiatorItem = ({
   );
 };
 
-const Media = () => (
-  <Col gap={4} className="p-8">
-    <h4>Media</h4>
-    <Col gap={4} className="md:flex-row gap-x-4 items-start">
-      {MEDIA_ITEMS.map((item) => (
-        <MediaCard key={item.title} {...item} />
-      ))}
+const Media = () => {
+  // Split media items into rows (3 in first row, rest in second)
+  const firstRow = MEDIA_ITEMS.slice(0, 3);
+  const secondRow = MEDIA_ITEMS.slice(3);
+
+  return (
+    <Col gap={4} className="p-8">
+      <h4>Media</h4>
+      <Col gap={6}>
+        <Col gap={4} className="md:flex-row gap-x-4 items-start">
+          {firstRow.map((item) => (
+            <MediaCard key={item.title} {...item} />
+          ))}
+        </Col>
+        {secondRow.length > 0 && (
+          <Col gap={4} className="md:flex-row gap-x-4 items-start">
+            {secondRow.map((item) => (
+              <MediaCard key={item.title} {...item} />
+            ))}
+          </Col>
+        )}
+      </Col>
+      <p className="text-muted-foreground mt-2">
+        See all our media assets in our{" "}
+        <a
+          href={EXTERNAL_LINKS.PRESS_KIT}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-muted-subtle underline hover:text-foreground"
+          aria-label="Download press kit PDF"
+        >
+          Press Kit
+        </a>
+      </p>
     </Col>
-    <p className="text-muted-foreground mt-2">
-      See all our media assets in our{" "}
-      <a
-        href={EXTERNAL_LINKS.PRESS_KIT}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-muted-subtle underline hover:text-foreground"
-        aria-label="Download press kit PDF"
-      >
-        Press Kit
-      </a>
-    </p>
-  </Col>
-);
+  );
+};
 
 const MediaCard = ({
   imageUri,
@@ -515,11 +530,11 @@ const MediaCard = ({
       <div className="pt-3 px-3">
         <p className="p2">{title}</p>
       </div>
-      {/* Logo section without left padding */}
-      <div className="pr-3 pb-3">
+      {/* Logo section with padding */}
+      <div className="pt-2 px-3 pb-3">
         <Row className="items-center">
-          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
-            <div className="w-9 h-9 relative">
+          <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 relative">
               <Image
                 src={sourceIcon}
                 alt={`${source} logo`}
@@ -529,7 +544,7 @@ const MediaCard = ({
               />
             </div>
           </div>
-          <p className="p-medium">{source}</p>
+          <p className="p-medium ml-2">{source}</p>
         </Row>
       </div>
     </Card>
