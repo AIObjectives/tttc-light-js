@@ -157,9 +157,9 @@ export function ReportInfo() {
         <Icons.Lightbulb />
       </div>
       <p className="p2 text-muted-foreground">
-        Talk to the City takes the text from large group discussions and turns
-        it into a summary report using AI prompting. Learn more on the About
-        page.
+        Talk to the City uses AI to turn the text from large group discussions
+        into summary reports. Most of the text is AI generated, except for the
+        summary from hosts and the quotes from participants.
       </p>
       <Button
         variant={"ghost"}
@@ -189,21 +189,7 @@ export function ReportSummary({
   return (
     <Col gap={3}>
       {/* Summary Title */}
-      <Col gap={1}>
-        <h4>Summary</h4>
-        <Row
-          gap={2}
-          className="items-center text-muted-foreground fill-muted-foreground"
-        >
-          <div>
-            <Icons.Info className="h-4 w-4" />
-          </div>
-          <p className="p2 text-muted-foreground flex gap-2 items-center ">
-            The summary is written by the report creators, while the rest is
-            AI-generated, excluding quotes.
-          </p>
-        </Row>
-      </Col>
+      <h4>Summary</h4>
       {/* Summary Description */}
       <div className="print:text-xs">{description}</div>
 
