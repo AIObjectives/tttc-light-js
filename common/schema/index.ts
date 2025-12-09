@@ -1151,7 +1151,7 @@ const reportMetadata = v0_2_ReportMetadata; // make union when we have more vers
 
 export const auditLogEntry = z.object({
   // Entry identification
-  entryId: z.string(), // Primary identifier for any entry type
+  entryId: z.string().optional(), // Primary identifier for any entry type (optional for backward compatibility with older reports)
   entryType: z.string().default("comment"), // "comment" | "crux_validation" | etc.
   commentId: z.string().optional(), // Only for comment-related entries
   commentText: z.string().optional(), // Excluded from stored artifact for privacy
