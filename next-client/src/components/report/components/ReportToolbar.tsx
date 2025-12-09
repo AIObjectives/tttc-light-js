@@ -21,7 +21,8 @@ export function ReportToolbar({
   return (
     <Row
       // h-14 ensures consistent height with side column spacers when buttons are hidden
-      className={`p-2 h-14 justify-between w-full mx-auto`}
+      // px-3 matches Report content wrapper, sm:px-[44px] adds CardContent sm:p-8 (32px) for alignment
+      className={`px-3 sm:px-[44px] py-2 h-14 justify-between w-full mx-auto`}
     >
       {/* Left side - mobile outline toggle */}
       <Row gap={2} className={cn(activeContentTab !== "report" && "hidden")}>
