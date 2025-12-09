@@ -156,11 +156,11 @@ function CreateReportComponent({
         <SubmitFormControl response={state} onAuthError={handleAuthError}>
           <Col gap={8} className="mb-20">
             <h3>Create a report</h3>
-            <FormHeader />
-            <FormAbout />
             {needsEmailVerification && (
               <EmailVerificationPrompt userEmail={user?.email ?? null} />
             )}
+            <FormHeader />
+            <FormAbout />
             <FormDescription
               title={title}
               description={description}
