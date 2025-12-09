@@ -74,6 +74,13 @@ export const MEDIA_ITEMS = [
     sourceIcon: "/images/icon-protocol-labs.png",
     url: "https://www.youtube.com/watch?v=SJ6d3Lbe79M",
   },
+  {
+    imageUri: "/images/media-4.jpg",
+    title: "Innovating for Peace",
+    source: "CMI Finland",
+    sourceIcon: "/images/icon-cmi.png",
+    url: "https://www.youtube.com/watch?v=2u6XH3BV5kE&t=319s",
+  },
 ] as const;
 
 // Partner Logos
