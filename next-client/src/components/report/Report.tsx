@@ -93,6 +93,8 @@ export const ReportContext = createContext<{
     id: string,
     ignore?: boolean,
   ) => Ref<HTMLDivElement>;
+  // Temporarily suppress scroll-based focus tracking (for programmatic navigation)
+  suppressFocusTracking: (durationMs?: number) => void;
   // Add-ons data from pipeline (including cruxes and controversy scores)
   addOns?: schema.AddOns;
   // Unified sort mode (frequent, controversy, or bridging)
@@ -120,6 +122,7 @@ export const ReportContext = createContext<{
   useReportEffect: () => {},
   useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
   useFocusedNodeForCruxes: () => ({}) as Ref<HTMLDivElement>,
+  suppressFocusTracking: () => {},
   addOns: undefined,
   sortMode: "frequent",
   setSortMode: () => null,
@@ -155,12 +158,13 @@ function Report({
   // Hook that sets up scrolling behavior.
   const [useScrollTo, setScrollTo] = useScrollListener(useReportEffect);
   // Allows us to keep track of what node is in the middle of the screen. Needs to pass hook to nodes.
-  const useFocusedNode = _useFocusedNode((id: string) =>
-    dispatch({ type: "focus", payload: { id } }),
+  // Also returns a suppress function to temporarily disable scroll-based tracking during programmatic navigation.
+  const [useFocusedNode, suppressFocusTracking] = _useFocusedNode(
+    (id: string) => dispatch({ type: "focus", payload: { id } }),
   );
   // Track focused crux for outline highlighting
   const [focusedCruxId, setFocusedCruxId] = useState<string | null>(null);
-  const useFocusedNodeForCruxes = _useFocusedNode((id: string) =>
+  const [useFocusedNodeForCruxes] = _useFocusedNode((id: string) =>
     setFocusedCruxId(id),
   );
   // Track navbar visibility for sheet positioning
@@ -311,6 +315,7 @@ function Report({
         useReportEffect,
         useFocusedNode,
         useFocusedNodeForCruxes,
+        suppressFocusTracking,
         addOns,
         sortMode,
         setSortMode,
@@ -361,6 +366,7 @@ function Report({
               outlineState={outlineState}
               outlineDispatch={outlineDispatch}
               reportDispatch={dispatch}
+              onNavigate={() => setIsMobileOutlineOpen(false)}
             />
           }
         />
