@@ -1,4 +1,7 @@
 // @ts-check
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -18,6 +21,23 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "10mb", // Increased from default 1MB to support larger CSV uploads
     },
+    // Tree-shake Radix UI and other large packages to only include used exports
+    optimizePackageImports: [
+      "@radix-ui/react-alert-dialog",
+      "@radix-ui/react-avatar",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-hover-card",
+      "@radix-ui/react-progress",
+      "@radix-ui/react-scroll-area",
+      "@radix-ui/react-select",
+      "@radix-ui/react-separator",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-switch",
+      "@radix-ui/react-tabs",
+      "lucide-react",
+      "date-fns",
+    ],
   },
   webpack: (config, { isServer, webpack }) => {
     // Prevent webpack from bundling Node.js-only logger dependencies
@@ -41,4 +61,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);
