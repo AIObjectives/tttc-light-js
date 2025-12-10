@@ -1,17 +1,10 @@
 import React from "react";
 import { Col, Row } from "../layout";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Card,
-  CardContent,
-  Button,
-} from "../elements";
+import { Avatar, AvatarFallback, Card, CardContent, Button } from "../elements";
 import Icons from "@/assets/icons";
 import { BackgroundAccentClass, BorderClass } from "@/lib/color";
 import LandingHero from "@/assets/hero/LandingHero";
-import Image from "next/legacy/image";
+import Image from "next/image";
 import {
   SAMPLE_REPORTS,
   MEDIA_ITEMS,
@@ -121,7 +114,14 @@ const TestimonialCard = ({
 }) => (
   <Col gap={4} className="md:flex-row gap-x-4">
     <Avatar className="h-20 w-20">
-      <AvatarImage src={avatarSrc} />
+      <div className="relative h-full w-full">
+        <Image
+          src={avatarSrc}
+          alt={`${name} portrait`}
+          fill
+          className="object-cover rounded-full"
+        />
+      </div>
       <AvatarFallback>{avatarFallback}</AvatarFallback>
     </Avatar>
     <Card>
@@ -188,9 +188,8 @@ const CaseStudy = ({
         <Image
           src={imageUri}
           alt={`${title} preview`}
-          layout="fill"
-          objectFit="cover"
-          className="rounded-t-sm"
+          fill
+          className="object-cover rounded-t-sm"
           loading="lazy"
         />
       </div>
@@ -422,16 +421,40 @@ const WhyT3CIsDifferent = () => (
 
 const DIFFERENTIATOR_ICONS: Record<IconName, React.ReactNode> = {
   [ICON_NAMES.NETWORK]: (
-    <Image src="/images/icon-network.png" alt="" width={20} height={20} />
+    <Image
+      src="/images/icon-network.png"
+      alt=""
+      width={20}
+      height={20}
+      unoptimized
+    />
   ),
   [ICON_NAMES.SHIELD]: (
-    <Image src="/images/icon-shield.png" alt="" width={20} height={20} />
+    <Image
+      src="/images/icon-shield.png"
+      alt=""
+      width={20}
+      height={20}
+      unoptimized
+    />
   ),
   [ICON_NAMES.OPEN]: (
-    <Image src="/images/icon-copyright.png" alt="" width={20} height={20} />
+    <Image
+      src="/images/icon-copyright.png"
+      alt=""
+      width={20}
+      height={20}
+      unoptimized
+    />
   ),
   [ICON_NAMES.PROVEN]: (
-    <Image src="/images/icon-gear.png" alt="" width={20} height={20} />
+    <Image
+      src="/images/icon-gear.png"
+      alt=""
+      width={20}
+      height={20}
+      unoptimized
+    />
   ),
 };
 
@@ -505,9 +528,8 @@ const MediaCard = ({
         <Image
           src={imageUri}
           alt={`${title} article cover`}
-          layout="fill"
-          objectFit="cover"
-          className="rounded-t-sm"
+          fill
+          className="object-cover rounded-t-sm"
           loading="lazy"
         />
       </div>
@@ -523,9 +545,8 @@ const MediaCard = ({
               <Image
                 src={sourceIcon}
                 alt={`${source} logo`}
-                layout="fill"
-                objectFit="contain"
-                className="rounded-full"
+                fill
+                className="object-contain rounded-full"
               />
             </div>
           </div>
@@ -566,9 +587,9 @@ const PartnerLogo = ({
     <Image
       src={logoUri}
       alt={`${name} logo`}
-      layout="fill"
-      objectFit="contain"
-      className="opacity-70 hover:opacity-100 transition-opacity"
+      fill
+      className="object-contain opacity-70 hover:opacity-100 transition-opacity"
+      loading="lazy"
     />
   </a>
 );
