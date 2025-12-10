@@ -38,6 +38,10 @@ import {
 } from "@/components/controversy";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 import { mergeRefs } from "react-merge-refs";
+import { VirtualizedClaimsList } from "./VirtualizedClaimsList";
+
+// Only virtualize if more than this many claims are visible
+const VIRTUALIZATION_THRESHOLD = 20;
 
 // Suppress useLayoutEffect warning in SSR
 const useIsomorphicLayoutEffect =
@@ -480,25 +484,36 @@ export function SubtopicClaims({
     });
   }, [sortByBridging, claimNodes, addOns]);
 
+  // Determine if we should use virtualization based on visible claim count
+  const visibleCount = Math.min(sortedClaims.length, pagination + 1);
+  const shouldVirtualize = visibleCount > VIRTUALIZATION_THRESHOLD;
+
   return (
     <Col>
       <p className="leading-6 pl-4 md:pl-8 print:pl-0 text-base font-medium">
         Claims
       </p>
       <Col gap={4}>
-        <Col>
-          {sortedClaims.map((claimNode, i) => {
-            return (
-              <ClaimItem
-                key={claimNode.id}
-                show={i <= pagination}
-                id={claimNode.id}
-              >
-                <Claim claim={claimNode.data} />
-              </ClaimItem>
-            );
-          })}
-        </Col>
+        {shouldVirtualize ? (
+          <VirtualizedClaimsList
+            claims={sortedClaims}
+            pagination={pagination}
+          />
+        ) : (
+          <Col>
+            {sortedClaims.map((claimNode, i) => {
+              return (
+                <ClaimItem
+                  key={claimNode.id}
+                  show={i <= pagination}
+                  id={claimNode.id}
+                >
+                  <Claim claim={claimNode.data} />
+                </ClaimItem>
+              );
+            })}
+          </Col>
+        )}
         <ClaimLoader
           remaining={sortedClaims.length - pagination - 1}
           onExpandSubtopic={onExpandSubtopic}
