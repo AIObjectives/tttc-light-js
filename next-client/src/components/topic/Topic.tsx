@@ -77,12 +77,8 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
           </TopicInteractiveGraphic>
         </Col>
       </CardContent>
-      {/* Topic summary - hidden by default, shown when expanded or when printing */}
-      {summary && (
-        <div className={!topicNode.isOpen ? "hidden print:block" : ""}>
-          <TopicSummary summary={summary} />
-        </div>
-      )}
+      {/* Topic summary - only render when topic is expanded */}
+      {summary && topicNode.isOpen && <TopicSummary summary={summary} />}
       <ExpandTopic />
     </Card>
   );
@@ -289,10 +285,10 @@ function ExpandTopic() {
 
   return (
     <Col>
-      {/* Topic context - hidden by default, shown when expanded or when printing */}
-      <div className={!isOpen ? "hidden print:block" : ""}>
-        {data.context && <TopicContextDescription context={data.context} />}
-      </div>
+      {/* Topic context - only render when topic is expanded */}
+      {isOpen && data.context && (
+        <TopicContextDescription context={data.context} />
+      )}
       <Col className="px-3 sm:px-8 gap-y-4">
         {subtopicNodes.map((node, i) => (
           <Subtopic

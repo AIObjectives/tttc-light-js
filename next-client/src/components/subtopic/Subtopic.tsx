@@ -66,20 +66,20 @@ export function Subtopic({
   const scrollRef = useScrollTo(subtopicNode.data.id);
   const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
 
-  // Always render but hide with CSS for print compatibility
-  // Using CSS visibility ensures content is in DOM for print media queries
+  // Conditional rendering: don't render hidden subtopics to reduce DOM nodes
+  // Users should click "Expand all" before printing to show all content
+  if (!show) return null;
+
   return (
-    <div className={!show ? "hidden print:block" : ""}>
-      <SubtopicCard
-        subtopicNode={subtopicNode}
-        topicTitle={topicTitle}
-        topicColor={topicColor}
-        ref={mergeRefs([scrollRef, focusedRef])}
-        onExpandSubtopic={() =>
-          dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
-        }
-      />
-    </div>
+    <SubtopicCard
+      subtopicNode={subtopicNode}
+      topicTitle={topicTitle}
+      topicColor={topicColor}
+      ref={mergeRefs([scrollRef, focusedRef])}
+      onExpandSubtopic={() =>
+        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
+      }
+    />
   );
 }
 

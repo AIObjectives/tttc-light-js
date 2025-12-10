@@ -9,7 +9,6 @@
 
 import { useCallback } from "react";
 import { AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
-import Papa from "papaparse";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
 import { failure, success, Result } from "tttc-common/functional-utils";
@@ -89,13 +88,20 @@ const sizeCheck = (
 /**
  * Helper function concatenating all the PapaParse errors
  */
-const formatPapaParseErrors = (errors: Papa.ParseError[]) =>
-  errors.map((error) => `${error.message}: ${error.row}\n`).join("");
+const formatPapaParseErrors = (
+  errors: Array<{ message: string; row?: number }>,
+) => errors.map((error) => `${error.message}: ${error.row}\n`).join("");
 
 /**
  * Takes a CSV buffer and returns it parsed. Can return data or error.
+ * Uses dynamic import to avoid bundling PapaParse on pages that don't need it.
  */
-const papaParse = (buffer: ArrayBuffer): Result<unknown, BrokenFileError> => {
+const papaParse = async (
+  buffer: ArrayBuffer,
+): Promise<Result<unknown, BrokenFileError>> => {
+  // Dynamic import - only loads when function is called
+  const Papa = (await import("papaparse")).default;
+
   const papares = Papa.parse(Buffer.from(buffer).toString(), {
     header: true,
     skipEmptyLines: true,
@@ -179,7 +185,7 @@ const parseCsv = async (
   }
 
   // Basic parsing
-  const csv = papaParse(buffer);
+  const csv = await papaParse(buffer);
   if (csv.tag === "failure") {
     return csv;
   }
