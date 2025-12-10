@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useContext, useCallback } from "react";
+import { mergeRefs } from "react-merge-refs";
 import { ReportContext } from "../report/Report";
 import { Claim } from "../claim";
 import { ClaimNode } from "../report/hooks/useReportState";
@@ -19,23 +20,20 @@ export function VirtualClaimItem({
   const { useScrollTo } = useContext(ReportContext);
   const scrollRef = useScrollTo(claim.id);
 
-  // Merge refs: one for scroll-to, one for size measurement
-  const setRefs = useCallback(
+  // Create a ref callback for measurement
+  const measureRef = useCallback(
     (el: HTMLDivElement | null) => {
-      // Register with virtualizer for dynamic sizing
       measureElement(el);
-
-      // Also set the scrollRef for scroll-to functionality
-      if (scrollRef && typeof scrollRef === "object") {
-        (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current =
-          el;
-      }
     },
-    [measureElement, scrollRef],
+    [measureElement],
   );
 
   return (
-    <div ref={setRefs} style={style} data-index={index}>
+    <div
+      ref={mergeRefs([scrollRef, measureRef])}
+      style={style}
+      data-index={index}
+    >
       <Claim claim={claim.data} />
     </div>
   );
