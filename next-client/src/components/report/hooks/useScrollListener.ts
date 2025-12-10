@@ -42,26 +42,33 @@ function useScrollListener(
     // When scrollState changes, see if new state is this node's id. If so, scroll to it.
     useEffect(() => {
       const [currId] = scrollToState;
+      const element = ref.current;
 
-      if (listenForId === currId && ref.current) {
-        // Don't scroll directly to node. Instead, make it go to middle of screen.
-        const y =
-          ref.current?.getBoundingClientRect().top + window.scrollY - 50;
-        window.scroll({
-          top: y,
-          behavior: "smooth",
-        });
-
-        // Add highlight pulse animation to indicate scroll target
-        ref.current.classList.add("scroll-target-highlight");
-        const element = ref.current;
-        const handleAnimationEnd = () => {
-          element.classList.remove("scroll-target-highlight");
-          element.removeEventListener("animationend", handleAnimationEnd);
-        };
-        element.addEventListener("animationend", handleAnimationEnd);
+      if (listenForId !== currId || !element) {
+        return;
       }
-    }, [scrollToState]);
+
+      // Don't scroll directly to node. Instead, make it go to middle of screen.
+      const y = element.getBoundingClientRect().top + window.scrollY - 50;
+      window.scroll({
+        top: y,
+        behavior: "smooth",
+      });
+
+      // Add highlight pulse animation to indicate scroll target
+      element.classList.add("scroll-target-highlight");
+      const handleAnimationEnd = () => {
+        element.classList.remove("scroll-target-highlight");
+        element.removeEventListener("animationend", handleAnimationEnd);
+      };
+      element.addEventListener("animationend", handleAnimationEnd);
+
+      // Cleanup: remove listener if component unmounts during animation
+      return () => {
+        element.removeEventListener("animationend", handleAnimationEnd);
+        element.classList.remove("scroll-target-highlight");
+      };
+    }, [scrollToState, listenForId]);
 
     return ref;
   };

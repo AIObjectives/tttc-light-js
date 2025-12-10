@@ -5,7 +5,14 @@ import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { ClaimNode } from "../report/hooks/useReportState";
 import { VirtualClaimItem } from "./VirtualClaimItem";
 
-const ESTIMATED_CLAIM_HEIGHT = 48; // px - adjust based on actual measurements
+// Suppress useLayoutEffect warning in SSR
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+// Estimated height based on typical claim with 2-3 lines of text plus quotes.
+// Claims vary significantly in height due to quote content, so the virtualizer
+// uses dynamic measurement (measureElement) to correct this estimate.
+const ESTIMATED_CLAIM_HEIGHT = 120;
 
 export function VirtualizedClaimsList({
   claims,
@@ -19,7 +26,7 @@ export function VirtualizedClaimsList({
 
   // Measure offset from top of document to this container
   // Recalculate when pagination changes (layout may have shifted)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const updateScrollMargin = () => {
       if (listRef.current) {
         const rect = listRef.current.getBoundingClientRect();
@@ -41,7 +48,9 @@ export function VirtualizedClaimsList({
   const virtualizer = useWindowVirtualizer({
     count: visibleClaims.length,
     estimateSize: () => ESTIMATED_CLAIM_HEIGHT,
-    overscan: 5, // Render 5 extra items above/below viewport
+    // Render extra items above/below viewport for smoother scrolling.
+    // Higher values reduce blank space during fast scrolling but increase DOM nodes.
+    overscan: 8,
     scrollMargin, // Account for container's offset from page top
   });
 

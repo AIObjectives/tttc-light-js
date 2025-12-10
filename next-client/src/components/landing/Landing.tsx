@@ -19,6 +19,7 @@ import {
   EXTERNAL_LINKS,
   CONTACT_EMAIL,
   SPACING,
+  IMAGE_SIZES,
   ICON_NAMES,
   type IconName,
 } from "./landing-config";
@@ -189,7 +190,7 @@ const CaseStudy = ({
           src={imageUri}
           alt={`${title} preview`}
           fill
-          sizes="(max-width: 768px) 100vw, 260px"
+          sizes={IMAGE_SIZES.CARD}
           className="object-cover rounded-t-sm"
           loading="lazy"
         />
@@ -530,7 +531,7 @@ const MediaCard = ({
           src={imageUri}
           alt={`${title} article cover`}
           fill
-          sizes="(max-width: 768px) 100vw, 260px"
+          sizes={IMAGE_SIZES.CARD}
           className="object-cover rounded-t-sm"
           loading="lazy"
         />
@@ -548,7 +549,7 @@ const MediaCard = ({
                 src={sourceIcon}
                 alt={`${source} logo`}
                 fill
-                sizes="36px"
+                sizes={IMAGE_SIZES.ICON_SMALL}
                 className="object-contain rounded-full"
               />
             </div>
@@ -591,7 +592,7 @@ const PartnerLogo = ({
       src={logoUri}
       alt={`${name} logo`}
       fill
-      sizes="128px"
+      sizes={IMAGE_SIZES.PARTNER_LOGO}
       className="object-contain opacity-70 hover:opacity-100 transition-opacity"
       loading="lazy"
     />
