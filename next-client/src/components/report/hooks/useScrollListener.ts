@@ -49,7 +49,17 @@ function useScrollListener(
           ref.current?.getBoundingClientRect().top + window.scrollY - 50;
         window.scroll({
           top: y,
+          behavior: "smooth",
         });
+
+        // Add highlight pulse animation to indicate scroll target
+        ref.current.classList.add("scroll-target-highlight");
+        const element = ref.current;
+        const handleAnimationEnd = () => {
+          element.classList.remove("scroll-target-highlight");
+          element.removeEventListener("animationend", handleAnimationEnd);
+        };
+        element.addEventListener("animationend", handleAnimationEnd);
       }
     }, [scrollToState]);
 

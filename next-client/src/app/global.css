@@ -136,6 +136,23 @@
   .leading-11 {
     line-height: 48px;
   }
+
+  /* Highlight pulse animation for scroll-to targets */
+  @keyframes highlight-pulse {
+    0% {
+      background-color: transparent;
+    }
+    30% {
+      background-color: hsl(var(--primary) / 0.08);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .scroll-target-highlight {
+    animation: highlight-pulse 1s ease-out;
+  }
 }
 
 @layer components {
