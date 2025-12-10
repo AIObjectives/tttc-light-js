@@ -40,7 +40,10 @@ import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 import { mergeRefs } from "react-merge-refs";
 import { VirtualizedClaimsList } from "./VirtualizedClaimsList";
 
-// Only virtualize if more than this many claims are visible
+// Threshold for enabling virtualization. Below this count, the DOM overhead of
+// virtualization (absolute positioning, dynamic measurement) isn't worth it.
+// At 20+ claims, virtualization significantly reduces DOM nodes and improves
+// scroll performance on large reports.
 const VIRTUALIZATION_THRESHOLD = 20;
 
 // Suppress useLayoutEffect warning in SSR

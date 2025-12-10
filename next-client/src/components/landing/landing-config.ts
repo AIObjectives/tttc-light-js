@@ -151,3 +151,10 @@ export const CONTACT_EMAIL = "hello@aiobjectives.org";
 export const SPACING = {
   BOTTOM_PADDING: "pb-72", // Equivalent to 18rem / 288px - using Tailwind's standard scale
 } as const;
+
+// Image sizes for responsive loading
+export const IMAGE_SIZES = {
+  CARD: "(max-width: 768px) 100vw, 260px", // Case studies, media cards
+  ICON_SMALL: "36px", // Source logos in media cards
+  PARTNER_LOGO: "128px", // Partner logos
+} as const;
