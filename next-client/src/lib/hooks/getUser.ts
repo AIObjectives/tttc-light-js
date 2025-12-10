@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { onAuthStateChanged } from "@/lib/firebase/auth";
+import {
+  onAuthStateChanged,
+  isGoogleRedirectPending,
+  clearGoogleRedirectPending,
+  getGoogleRedirectReturnUrl,
+} from "@/lib/firebase/auth";
 import { User } from "firebase/auth";
 import { ensureUserDocumentOnClient } from "@/lib/firebase/ensureUserDocument";
+import { logAuthEvent } from "@/lib/firebase/authEvents";
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
@@ -44,6 +50,39 @@ export function useUser() {
 
         // Ensure user document is created when user signs in, avoiding race conditions
         if (authUser) {
+          // Check if this is a Google redirect sign-in completion
+          if (isGoogleRedirectPending()) {
+            const returnUrl = getGoogleRedirectReturnUrl();
+            console.info(
+              "[user-hook-client] Google redirect sign-in completed",
+              {
+                uid: authUser.uid,
+                email: authUser.email,
+                returnUrl,
+              },
+            );
+            clearGoogleRedirectPending();
+            // Log the auth event for Google redirect sign-in
+            logAuthEvent("signin", authUser).catch((error) => {
+              console.error(
+                "[user-hook-client] Failed to log Google redirect sign-in event",
+                { error },
+              );
+            });
+            // Redirect to the original page if different from current location
+            if (
+              returnUrl &&
+              typeof window !== "undefined" &&
+              window.location.pathname !== returnUrl
+            ) {
+              console.info(
+                "[user-hook-client] Redirecting to original page after sign-in",
+                { returnUrl },
+              );
+              window.location.pathname = returnUrl;
+            }
+          }
+
           if (!ensuredUsersRef.current.has(authUser.uid)) {
             let ensurePromise = ensurePromisesRef.current.get(authUser.uid);
             if (!ensurePromise) {

@@ -8,6 +8,14 @@ import { User } from "firebase/auth";
 // Mock Firebase auth
 vi.mock("../lib/firebase/auth", () => ({
   onAuthStateChanged: vi.fn(),
+  isGoogleRedirectPending: vi.fn().mockReturnValue(false),
+  clearGoogleRedirectPending: vi.fn(),
+  getGoogleRedirectReturnUrl: vi.fn().mockReturnValue(null),
+}));
+
+// Mock auth events
+vi.mock("../lib/firebase/authEvents", () => ({
+  logAuthEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock user document creation

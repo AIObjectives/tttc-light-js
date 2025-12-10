@@ -67,8 +67,9 @@ export default function LoginButton() {
   const handleGoogleSignIn = async () => {
     try {
       loginLogger.debug({}, "Google sign in button clicked");
-      // Initiates redirect to Google sign-in page
-      // The redirect result will be handled by RedirectHandler component
+      // Initiates redirect to Google sign-in page.
+      // After user signs in, Google redirects back to the app.
+      // The useUser hook detects the sign-in via onAuthStateChanged.
       await signInWithGoogle();
       // Note: Code after this won't execute as browser redirects to Google
     } catch (error) {
