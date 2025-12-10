@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { Row } from "../layout";
 import {
   About,
@@ -10,8 +11,18 @@ import {
   MobileHamburgerMenu,
   RepoGithub,
 } from "./components/NavbarButtons";
-import LoginButton from "./components/LoginButton";
 import { Button } from "../elements";
+
+// Lazy-load LoginButton to defer Firebase SDK loading
+// This reduces initial bundle size for anonymous visitors (e.g., landing page)
+const LoginButton = dynamic(() => import("./components/LoginButton"), {
+  ssr: false,
+  loading: () => (
+    <Button disabled className="min-w-[80px]">
+      ...
+    </Button>
+  ),
+});
 
 function Navbar() {
   return (
