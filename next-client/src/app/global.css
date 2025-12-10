@@ -153,6 +153,13 @@
   .scroll-target-highlight {
     animation: highlight-pulse 1s ease-out;
   }
+
+  /* Respect user preference for reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-target-highlight {
+      animation: none;
+    }
+  }
 }
 
 @layer components {

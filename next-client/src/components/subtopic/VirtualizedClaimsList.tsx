@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useLayoutEffect, useState } from "react";
+import { useRef, useLayoutEffect, useState, useEffect } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { ClaimNode } from "../report/hooks/useReportState";
 import { VirtualClaimItem } from "./VirtualClaimItem";
@@ -18,13 +18,22 @@ export function VirtualizedClaimsList({
   const [scrollMargin, setScrollMargin] = useState(0);
 
   // Measure offset from top of document to this container
+  // Recalculate when pagination changes (layout may have shifted)
   useLayoutEffect(() => {
-    if (listRef.current) {
-      const rect = listRef.current.getBoundingClientRect();
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      setScrollMargin(rect.top + scrollTop);
-    }
-  }, []);
+    const updateScrollMargin = () => {
+      if (listRef.current) {
+        const rect = listRef.current.getBoundingClientRect();
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        setScrollMargin(rect.top + scrollTop);
+      }
+    };
+
+    updateScrollMargin();
+
+    // Also update after a short delay to catch layout shifts from other components
+    const timeoutId = setTimeout(updateScrollMargin, 100);
+    return () => clearTimeout(timeoutId);
+  }, [pagination]);
 
   // Only virtualize claims up to pagination index
   const visibleClaims = claims.slice(0, pagination + 1);
