@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import * as prompts from "tttc-common/prompts";
 import { Result, success, failure } from "tttc-common/functional-utils";
+import { User } from "firebase/auth";
 
 type FormStatus<T, E> = Result<T, E> | { tag: "initial"; value: T };
 
@@ -160,7 +161,7 @@ export function useFormState() {
     (cruxInstructions.status.tag === "failure" ||
       cruxInstructions.state.trim() === "");
 
-  const isFormInvalid = (files: FileList | undefined, token: string | null) => {
+  const isFormInvalid = (files: FileList | undefined, user: User | null) => {
     const requiredTextFields = [title, description];
     const allInstructionFields = [
       systemInstructions,
@@ -172,7 +173,7 @@ export function useFormState() {
 
     return (
       !files?.item(0) ||
-      !token ||
+      !user ||
       hasEmptyRequiredFields(requiredTextFields) ||
       hasValidationErrors([...requiredTextFields, ...allInstructionFields]) ||
       isCruxValidationInvalid()
