@@ -3,6 +3,7 @@
 import CreateReport from "@/components/create/CreateReport";
 import { useUser } from "@/lib/hooks/getUser";
 import { Center } from "@/components/layout";
+import { Spinner } from "@/components/elements";
 
 export default function ReportCreationPage() {
   const { user, loading } = useUser();
@@ -10,7 +11,7 @@ export default function ReportCreationPage() {
   if (loading) {
     return (
       <Center>
-        <p>Loading...</p>
+        <Spinner />
       </Center>
     );
   }

@@ -4,23 +4,12 @@ import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 import { applyActionCode, checkActionCode } from "firebase/auth";
-import { Button, Card } from "@/components/elements";
+import { Button, Card, Spinner } from "@/components/elements";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { AUTH_ACTIONS, ACTION_MODES } from "@/lib/constants/auth";
 
 type ActionMode = "resetPassword" | "verifyEmail" | "recoverEmail" | null;
 type ActionStatus = "loading" | "success" | "error";
-
-/**
- * Reusable loading spinner with accessible label
- */
-function LoadingSpinner({ label = "Loading..." }: { label?: string }) {
-  return (
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground">
-      <span className="sr-only">{label}</span>
-    </div>
-  );
-}
 
 /**
  * Status icon for success/error states
@@ -214,7 +203,7 @@ function AuthActionContent() {
           role="status"
           aria-live="polite"
         >
-          <LoadingSpinner label="Processing your request..." />
+          <Spinner className="size-12" />
           <p className="text-muted-foreground">Processing your request...</p>
         </div>
       );
@@ -294,7 +283,7 @@ export default function AuthActionPage() {
           aria-live="polite"
           aria-label="Loading authentication action"
         >
-          <LoadingSpinner />
+          <Spinner className="size-12" />
         </div>
       }
     >
