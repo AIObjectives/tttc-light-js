@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Input } from "@/components/elements";
+import { Button, Input, Spinner } from "@/components/elements";
 import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 import { MIN_PASSWORD_LENGTH } from "@/lib/constants/auth";
@@ -87,15 +87,8 @@ export function PasswordResetForm({
 
   if (!email) {
     return (
-      <div
-        className="flex justify-center"
-        role="status"
-        aria-live="polite"
-        aria-label="Verifying reset code"
-      >
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900">
-          <span className="sr-only">Verifying reset code...</span>
-        </div>
+      <div className="flex justify-center" aria-live="polite">
+        <Spinner className="size-8" label="Verifying reset code" />
       </div>
     );
   }

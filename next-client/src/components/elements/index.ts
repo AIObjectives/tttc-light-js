@@ -11,7 +11,7 @@ export * from "./input/Input";
 export * from "./textArea/TextArea";
 export * from "./progress/Progress";
 export * from "./avatar/Avatar";
-export * from "./spinner/Spinner";
+export * from "./spinner";
 export * from "./dropdown/Dropdown";
 export * from "./dialog/Dialog";
 export * from "./drawer/Drawer";
