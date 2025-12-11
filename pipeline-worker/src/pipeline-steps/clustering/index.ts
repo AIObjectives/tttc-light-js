@@ -14,14 +14,25 @@ import {
   TopicTreeResult,
   ClusteringOptions,
   ClusteringError,
-} from "./types.js";
+} from "./types";
 import {
   basicSanitize,
   sanitizePromptLength,
   sanitizeForOutput,
-} from "./sanitizer.js";
-import { commentIsMeaningful, getReportLogger } from "./utils.js";
-import { callClusteringModel } from "./model.js";
+} from "../sanitizer";
+import { getReportLogger } from "../utils";
+import { callClusteringModel } from "./model";
+
+/**
+ * Check if a comment has meaningful content
+ */
+function commentIsMeaningful(text: string): boolean {
+  const MIN_CHAR_COUNT = 10;
+  const MIN_WORD_COUNT = 3;
+  return (
+    text.length >= MIN_CHAR_COUNT || text.split(" ").length >= MIN_WORD_COUNT
+  );
+}
 
 /**
  * Sanitize and filter comments, building a prompt
@@ -103,7 +114,7 @@ export async function commentsToTree(
   const { reportId, userId } = options;
 
   // Get report-specific logger
-  const reportLogger = getReportLogger(userId, reportId);
+  const reportLogger = getReportLogger("clustering", userId, reportId);
 
   reportLogger.info(
     `Starting topic_tree processing with ${comments.length} comments`,

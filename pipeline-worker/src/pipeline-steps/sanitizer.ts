@@ -6,7 +6,7 @@
 
 import { logger } from "tttc-common/logger";
 
-const sanitizerLogger = logger.child({ module: "clustering-sanitizer" });
+const sanitizerLogger = logger.child({ module: "pipeline-sanitizer" });
 
 export interface SanitizeResult {
   sanitizedText: string;
@@ -39,6 +39,22 @@ const PII_PATTERNS: Array<[RegExp, string]> = [
   [/\b\d{3}-\d{2}-\d{4}\b/g, "[SSN]"], // SSN format
   [/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, "[CARD]"], // Credit card format
 ];
+
+/**
+ * Escape quotes in text to prevent prompt injection.
+ * Use this when interpolating user-provided content into prompts.
+ *
+ * IMPORTANT: Backslashes must be escaped first, then quotes.
+ * This prevents injection attacks where user input contains backslashes.
+ *
+ * @param text - Text that may contain quotes
+ * @returns Text with backslashes and quotes properly escaped
+ */
+export function escapeQuotes(text: string): string {
+  // First escape all backslashes, then escape all double quotes
+  // Order matters: backslashes first to avoid double-escaping
+  return text.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
 
 /**
  * Filter PII from text to protect user privacy in final reports.
@@ -136,7 +152,7 @@ export function sanitizeForOutput<T>(data: T): T {
     return data;
   }
 
-  function filterDictValues(obj: any): any {
+  function filterDictValues(obj: unknown): unknown {
     if (obj === null || obj === undefined) {
       return obj;
     }
@@ -150,7 +166,7 @@ export function sanitizeForOutput<T>(data: T): T {
     }
 
     if (typeof obj === "object") {
-      const result: any = {};
+      const result: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         result[key] = filterDictValues(value);
       }
@@ -160,5 +176,5 @@ export function sanitizeForOutput<T>(data: T): T {
     return obj;
   }
 
-  return filterDictValues(data);
+  return filterDictValues(data) as T;
 }

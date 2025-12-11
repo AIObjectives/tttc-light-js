@@ -88,7 +88,6 @@ Comments:`,
     userId: "example-user",
   });
 
-  // Display results
   if (result.tag === "failure") {
     console.error("Failed to generate taxonomy:", result.error.message);
     process.exit(1);

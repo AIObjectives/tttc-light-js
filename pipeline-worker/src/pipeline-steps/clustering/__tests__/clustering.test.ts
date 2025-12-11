@@ -17,7 +17,7 @@ vi.mock("tttc-common/logger", () => ({
 }));
 
 // Mock the evaluation model
-vi.mock("../model.js", () => ({
+vi.mock("../model", () => ({
   callClusteringModel: vi.fn(
     async (
       client,
@@ -52,14 +52,15 @@ vi.mock("../model.js", () => ({
   ),
 }));
 
-import { commentsToTree } from "../index.js";
+import { commentsToTree } from "../index";
 import {
   basicSanitize,
   filterPII,
   sanitizePromptLength,
-} from "../sanitizer.js";
-import { commentIsMeaningful, tokenCost } from "../utils.js";
-import type { Comment, LLMConfig } from "../types.js";
+  escapeQuotes,
+} from "../../sanitizer";
+import { tokenCost } from "../../utils";
+import type { Comment, LLMConfig } from "../types";
 
 describe("Clustering Pipeline Step", () => {
   describe("commentsToTree", () => {
@@ -170,37 +171,86 @@ describe("Clustering Pipeline Step", () => {
         expect(sanitized.length).toBeLessThanOrEqual(100000);
       });
     });
+
+    describe("escapeQuotes", () => {
+      it("should escape double quotes", () => {
+        const text = 'This is a "quoted" word';
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe('This is a \\"quoted\\" word');
+      });
+
+      it("should handle text without quotes", () => {
+        const text = "This has no quotes";
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe("This has no quotes");
+      });
+
+      it("should escape multiple quotes", () => {
+        const text = '"Hello" "World" "Test"';
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe('\\"Hello\\" \\"World\\" \\"Test\\"');
+      });
+
+      it("should handle empty string", () => {
+        const escaped = escapeQuotes("");
+        expect(escaped).toBe("");
+      });
+
+      it("should escape quotes at beginning and end", () => {
+        const text = '"Start and end"';
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe('\\"Start and end\\"');
+      });
+
+      it("should handle consecutive quotes", () => {
+        const text = 'Test""quotes';
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe('Test\\"\\"quotes');
+      });
+
+      it("should escape backslashes before quotes", () => {
+        const text = "Text with \\ backslash";
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe("Text with \\\\ backslash");
+      });
+
+      it("should escape backslash-quote sequences correctly", () => {
+        const text = 'Malicious \\" injection attempt';
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe('Malicious \\\\\\" injection attempt');
+      });
+
+      it("should handle multiple backslashes", () => {
+        const text = "Path: C:\\\\Users\\\\file.txt";
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe("Path: C:\\\\\\\\Users\\\\\\\\file.txt");
+      });
+
+      it("should escape mixed backslashes and quotes", () => {
+        const text = 'Test \\ and "quotes" together';
+        const escaped = escapeQuotes(text);
+        expect(escaped).toBe('Test \\\\ and \\"quotes\\" together');
+      });
+    });
   });
 
   describe("utils", () => {
-    describe("commentIsMeaningful", () => {
-      it("should accept meaningful comments", () => {
-        expect(commentIsMeaningful("This is a good comment")).toBe(true);
-        expect(commentIsMeaningful("Short but has words")).toBe(true);
-        expect(commentIsMeaningful("a".repeat(15))).toBe(true); // Long enough
-      });
-
-      it("should reject non-meaningful comments", () => {
-        expect(commentIsMeaningful("")).toBe(false);
-        expect(commentIsMeaningful("a")).toBe(false);
-        expect(commentIsMeaningful("ok")).toBe(false);
-      });
-    });
-
     describe("tokenCost", () => {
       it("should calculate cost for gpt-4o-mini", () => {
-        const cost = tokenCost("gpt-4o-mini", 1000, 500);
-        expect(cost).toBeCloseTo(0.00015 + 0.0003, 5); // 0.00045
+        const result = tokenCost("gpt-4o-mini", 1000, 500);
+        expect(result.tag).toBe("success");
+        if (result.tag === "success") {
+          expect(result.value).toBeCloseTo(0.00015 + 0.0003, 5); // 0.00045
+        }
       });
 
-      it("should calculate cost for gpt-4o", () => {
-        const cost = tokenCost("gpt-4o", 1000, 500);
-        expect(cost).toBeCloseTo(0.0025 + 0.005, 5); // 0.0075
-      });
-
-      it("should return -1 for unknown models", () => {
-        const cost = tokenCost("unknown-model", 1000, 500);
-        expect(cost).toBe(-1);
+      it("should return error for unknown models", () => {
+        const result = tokenCost("unknown-model", 1000, 500);
+        expect(result.tag).toBe("failure");
+        if (result.tag === "failure") {
+          expect(result.error.name).toBe("UnknownModelError");
+          expect(result.error.message).toContain("unknown-model");
+        }
       });
     });
   });

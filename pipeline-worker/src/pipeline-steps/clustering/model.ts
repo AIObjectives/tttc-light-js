@@ -10,15 +10,15 @@ import {
   createLLMJudgeScorer,
 } from "tttc-common/evaluations/clustering/scorers";
 import { Result, success, failure } from "tttc-common/functional-utils";
-import { tokenCost } from "./utils.js";
-import type { ClusteringInput, ClusteringOutput } from "../types.js";
+import { tokenCost, initializeWeaveIfEnabled } from "../utils";
+import type { ClusteringInput, ClusteringOutput } from "../types";
 import {
   ClusteringError,
   ApiCallFailedError,
   EmptyResponseError,
   ParseFailedError,
-} from "../types.js";
-import type { Topic } from "../types.js";
+} from "../types";
+import type { Topic } from "../types";
 import { logger } from "tttc-common/logger";
 
 const clusteringLogger = logger.child({ module: "clustering-model" });
@@ -48,22 +48,12 @@ export async function callClusteringModel(
   const { enableScoring = false, weaveProjectName = "production-clustering" } =
     options;
 
-  let responsesCreate = openaiClient.responses.create.bind(
-    openaiClient.responses,
-  );
-
   // If scoring is enabled, initialize Weave and wrap responses create in a WeaveOp
-  if (enableScoring) {
-    try {
-      await weave.init(weaveProjectName);
-      responsesCreate = weave.op(responsesCreate);
-    } catch (error) {
-      clusteringLogger.error(
-        { error, weaveProjectName },
-        "Failed to initialize Weave",
-      );
-    }
-  }
+  const responsesCreate = await initializeWeaveIfEnabled(
+    openaiClient,
+    enableScoring,
+    weaveProjectName,
+  );
 
   // Call OpenAI API directly to capture usage information
   let response;
@@ -111,7 +101,14 @@ export async function callClusteringModel(
   }
 
   // Calculate cost using the utility function
-  const cost = tokenCost(modelName, usage.input_tokens, usage.output_tokens);
+  const costResult = tokenCost(
+    modelName,
+    usage.input_tokens,
+    usage.output_tokens,
+  );
+  if (costResult.tag === "failure") {
+    return costResult;
+  }
 
   const result: ClusteringOutput = {
     taxonomy,
@@ -120,7 +117,7 @@ export async function callClusteringModel(
       output_tokens: usage.output_tokens,
       total_tokens: usage.total_tokens,
     },
-    cost: cost >= 0 ? cost : 0, // Return 0 if model is unknown
+    cost: costResult.value,
   };
 
   // If scoring is enabled, run scorers on the result asynchronously
