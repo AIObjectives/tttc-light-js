@@ -163,13 +163,15 @@ export interface ClusteringOutput {
 }
 
 /**
- * A single claim extracted from a comment
- * @property claim - The concise extracted claim text
- * @property quote - The exact quote from the comment supporting this claim
- * @property speaker - The speaker who made the comment
+ * A claim extracted from user comments
+ * @property claim - The normalized claim statement
+ * @property quote - Original quote from the comment
+ * @property speaker - Name or identifier of the person who made the comment
  * @property topicName - The topic this claim belongs to
  * @property subtopicName - The subtopic this claim belongs to
- * @property commentId - The ID of the source comment
+ * @property commentId - ID of the original comment
+ * @property duplicates - Array of duplicate claims (present after deduplication)
+ * @property duplicated - Flag indicating if this is a duplicate of another claim
  */
 export interface Claim {
   claim: string;
@@ -178,6 +180,8 @@ export interface Claim {
   topicName: string;
   subtopicName: string;
   commentId: string;
+  duplicates?: Claim[];
+  duplicated?: boolean;
 }
 
 /**
@@ -205,6 +209,111 @@ export interface TopicClaimNode {
  * Maps topic names to their claim nodes
  */
 export type ClaimsTree = Record<string, TopicClaimNode>;
+
+/**
+ * Grouped claim from LLM deduplication response
+ * @property claimText - The consolidated/grouped claim text
+ * @property originalClaimIds - Array of original claim IDs that were grouped (e.g., ["claimId0", "claimId1"])
+ */
+export interface GroupedClaim {
+  claimText: string;
+  originalClaimIds: (string | number)[];
+}
+
+/**
+ * Deduplication response from LLM
+ * @property groupedClaims - Array of grouped claims with their original IDs
+ */
+export interface DeduplicationResponse {
+  groupedClaims: GroupedClaim[];
+}
+
+/**
+ * Subtopic with deduped claims (output format)
+ * @property claims - Array of deduplicated and sorted claims
+ * @property speakers - Array of unique speakers in this subtopic
+ * @property counts - Counts of claims and speakers
+ */
+export interface ProcessedSubtopic {
+  claims: Claim[];
+  speakers: string[];
+  counts: {
+    claims: number;
+    speakers: number;
+  };
+}
+
+/**
+ * Topic with processed subtopics (output format)
+ * @property topics - Array of [subtopicName, subtopicData] tuples, sorted by frequency
+ * @property speakers - Array of unique speakers in this topic
+ * @property counts - Counts of claims and speakers
+ */
+export interface ProcessedTopic {
+  topics: [string, ProcessedSubtopic][];
+  speakers: string[];
+  counts: {
+    claims: number;
+    speakers: number;
+  };
+}
+
+/**
+ * Sorted tree structure (output format)
+ * Array of [topicName, topicData] tuples, sorted by frequency
+ */
+export type SortedTree = [string, ProcessedTopic][];
+
+/**
+ * Sorting strategy for topics, subtopics, and claims
+ */
+export type SortStrategy = "numPeople" | "numClaims";
+
+/**
+ * Input configuration for sort and deduplicate step
+ * @property tree - The claims tree to process
+ * @property llm - LLM configuration for deduplication
+ * @property sort - Sorting strategy (by number of people or number of claims)
+ */
+export interface SortAndDeduplicateInput {
+  tree: ClaimsTree;
+  llm: LLMConfig;
+  sort: SortStrategy;
+}
+
+/**
+ * Result from sort and deduplicate step
+ * @property data - The sorted and deduplicated tree
+ * @property usage - Token usage statistics
+ * @property cost - Estimated cost in USD
+ */
+export interface SortAndDeduplicateResult {
+  data: SortedTree;
+  usage: TokenUsage;
+  cost: number;
+}
+
+/**
+ * Output from deduplication model with usage tracking
+ * @property dedupClaims - Deduplication response with grouped claims
+ * @property usage - Token usage statistics from the API call
+ */
+export interface DeduplicationOutput {
+  dedupClaims: DeduplicationResponse;
+  usage: TokenUsage;
+}
+
+/**
+ * Return type for processSubtopic function
+ * @property claims - Processed and sorted claims
+ * @property speakers - Set of unique speakers in the subtopic
+ * @property usage - Token usage statistics
+ */
+export interface ProcessSubtopicResult {
+  claims: Claim[];
+  speakers: Set<string>;
+  usage: TokenUsage;
+}
 
 /**
  * Result from claims extraction
