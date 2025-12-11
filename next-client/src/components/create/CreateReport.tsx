@@ -6,19 +6,17 @@ import { Button, Spinner } from "@/components/elements";
 import Form from "next/form";
 import submitAction from "@/features/submission/actions/SubmitAction";
 import { useUser } from "@/lib/hooks/getUser";
-import { AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
-import { fetchToken } from "@/lib/firebase/getIdToken";
-import {} from "./components/FormHelpers";
 import { SigninModal } from "./components/Modals";
 import { useDeferredValue } from "./hooks/useDeferredValue";
 import { EmailVerificationPrompt } from "@/components/auth/EmailVerificationPrompt";
 import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
 import { toast } from "sonner";
 
-import { success } from "tttc-common/functional-utils";
 import { useFormState } from "./hooks/useFormState";
+import { User } from "firebase/auth";
+import { logger } from "tttc-common/logger/browser";
 import {
   AdvancedSettings,
   CostEstimate,
@@ -29,35 +27,27 @@ import {
   TermsAndConditions,
 } from "./components/FormSections";
 
+const createReportLogger = logger.child({ module: "create-report" });
+
 /**
- * Hook for fetching the user's OAuth token. Needed before report form is shown.
+ * Hook for getting the authenticated user state.
+ * Token is fetched fresh at submission time, not at component mount.
  */
-function getUserToken(): AsyncState<string | null, Error> & {
+function useAuthState(): {
   user: ReturnType<typeof useUser>["user"];
   emailVerified: boolean;
+  isLoading: boolean;
 } {
   const { user, loading, emailVerified } = useUser();
-
-  // Only run fetchToken when loading is false and user exists
-  const shouldFetch = !loading && !!user;
-  const userId = user?.uid ?? null;
-
-  const asyncState = useAsyncState(
-    async () => {
-      if (!shouldFetch) return success(null);
-      else return await fetchToken(user);
-    },
-    shouldFetch ? userId : null, // Only changes when userId changes
-  );
-
-  return { ...asyncState, user, emailVerified };
+  return { user, emailVerified, isLoading: loading };
 }
 
 /**
- * Binds the OAuth token to the form submission.
+ * Binds the user to the form submission, fetching a fresh token at submit time.
+ * This prevents stale token issues when users spend a long time editing the form.
  */
 const bindTokenToAction = (
-  token: string | null,
+  user: User | null,
   action: (
     token: string | null,
     input: FormData,
@@ -67,6 +57,16 @@ const bindTokenToAction = (
     _: api.CreateReportActionResult,
     input: FormData,
   ): Promise<api.CreateReportActionResult> => {
+    let token: string | null = null;
+    if (user) {
+      try {
+        // Fetch fresh token at submit time - Firebase automatically refreshes if expired
+        token = await user.getIdToken();
+      } catch (error) {
+        createReportLogger.error({ error }, "Failed to refresh auth token");
+        throw new Error("Authentication error. Please try signing in again.");
+      }
+    }
     return action(token, input);
   };
 };
@@ -74,77 +74,54 @@ const bindTokenToAction = (
 const initialState: api.CreateReportActionResult = { status: "idle" };
 
 /**
- * Root component, fetches user's token and then renders the report
+ * Root component, checks auth state before rendering the report form
  */
 export default function CreateReport() {
-  const { isLoading, result, user, emailVerified } = getUserToken();
+  const { isLoading, user, emailVerified } = useAuthState();
 
   /**
-   * If we haven't gotten the user's OAuth token, show the loading state
+   * Show loading state while checking auth
    */
-  if (isLoading || result === undefined)
+  if (isLoading)
     return (
       <Center>
         <Spinner />
       </Center>
     );
 
-  if (result.tag === "failure")
-    return (
-      <Center>
-        <p>Authentication error. Please try signing in again.</p>
-      </Center>
-    );
-
-  if (result.tag === "success") {
-    const token = result.value;
-    return (
-      <CreateReportComponent
-        token={token}
-        user={user}
-        emailVerified={emailVerified}
-      />
-    );
-  }
-
-  return (
-    <Center>
-      <p>Unable to load create report</p>
-    </Center>
-  );
+  return <CreateReportComponent user={user} emailVerified={emailVerified} />;
 }
 
 /**
  * Component for user to submit requests to create reports
  */
 function CreateReportComponent({
-  token,
   user,
   emailVerified,
 }: {
-  token: string | null;
   user: ReturnType<typeof useUser>["user"];
   emailVerified: boolean;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const submitActionWithToken = bindTokenToAction(token, submitAction);
+  const submitActionWithUser = bindTokenToAction(user, submitAction);
   const [state, formAction] = useActionState(
-    submitActionWithToken,
+    submitActionWithUser,
     initialState,
   );
   const [files, setFiles] = useState<FileList | undefined>(undefined);
 
-  const deferredToken = useDeferredValue(token);
+  // Use deferred value to avoid showing sign-in modal immediately on page load
+  const deferredUser = useDeferredValue(user);
 
   useEffect(() => {
-    if (deferredToken === "deferred") {
+    if (deferredUser === "deferred") {
       setModalOpen(false);
-    } else if (deferredToken === null) {
+    } else if (deferredUser === null) {
       setModalOpen(true);
     } else {
       setModalOpen(false);
     }
-  }, [deferredToken]);
+  }, [deferredUser]);
 
   const {
     title,
@@ -167,7 +144,7 @@ function CreateReportComponent({
     false;
   const needsEmailVerification = isEmailPasswordUser && !emailVerified;
 
-  const isDisabled = isFormInvalid(files, token) || needsEmailVerification;
+  const isDisabled = isFormInvalid(files, user) || needsEmailVerification;
 
   // Handle auth errors by showing sign-in modal
   const handleAuthError = () => {
