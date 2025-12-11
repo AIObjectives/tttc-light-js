@@ -1,24 +1,17 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import * as schema from "tttc-common/schema";
 import { Col, Row } from "@/components/layout";
 import {
   Button,
   CardContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   Separator,
   TextIcon,
   ToggleText,
 } from "@/components/elements";
-import { ChevronsUpDown } from "lucide-react";
 import Icons from "@/assets/icons";
 import { getNPeople } from "tttc-common/morphisms";
 import { BarChart, BarChartItemType } from "@/components/barchart/Barchart";
 import { CopyLinkButton } from "@/components/copyButton/CopyButton";
-import { ReportContext } from "../Report";
-import { cn } from "@/lib/utils/shadcn";
 
 interface IReportTitle {
   title: string;
@@ -66,8 +59,6 @@ export function ReportHeader({
           description={description}
           questionAnswers={questionAnswers}
         />
-        {/* Sort by bridging dropdown */}
-        <BridgingSortDropdown />
         {/* Overview - hide from print */}
         <div className="print:hidden">
           <ReportOverview topics={themes} />
@@ -249,49 +240,5 @@ export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
         </Col>
       </div>
     </Col>
-  );
-}
-
-/**
- * Dropdown for sorting claims by bridging potential
- */
-function BridgingSortDropdown() {
-  const { sortByBridging, setSortByBridging, addOns } =
-    useContext(ReportContext);
-
-  // Only show if there's bridging score data
-  const hasBridgingData =
-    addOns?.claimBridgingScores && addOns.claimBridgingScores.length > 0;
-
-  if (!hasBridgingData) {
-    return null;
-  }
-
-  return (
-    <Row gap={2} className="justify-end items-center">
-      <span className="text-sm text-muted-foreground">Sort by</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            {sortByBridging ? "Bridging statements" : "Frequent claims"}
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => setSortByBridging(false)}
-            className={cn("cursor-pointer", !sortByBridging && "bg-accent")}
-          >
-            Frequent claims
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => setSortByBridging(true)}
-            className={cn("cursor-pointer", sortByBridging && "bg-accent")}
-          >
-            Bridging statements
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </Row>
   );
 }
