@@ -67,6 +67,14 @@ type ReportActionEffectFunc = (action: ReportStateAction) => void;
 type ReportActionEffect = (func: ReportActionEffectFunc) => void;
 
 /**
+ * Sort mode for unified sort dropdown
+ * - "frequent": Default sort by claim frequency (no special sorting)
+ * - "controversy": Sort topics by controversy score
+ * - "bridging": Sort claims by bridging potential
+ */
+export type SortMode = "frequent" | "controversy" | "bridging";
+
+/**
  * Context thats passed through Report
  */
 export const ReportContext = createContext<{
@@ -87,12 +95,12 @@ export const ReportContext = createContext<{
   ) => Ref<HTMLDivElement>;
   // Add-ons data from pipeline (including cruxes and controversy scores)
   addOns?: schema.AddOns;
-  // Whether to sort topics by controversy score
+  // Unified sort mode (frequent, controversy, or bridging)
+  sortMode: SortMode;
+  setSortMode: Dispatch<SetStateAction<SortMode>>;
+  // Derived booleans for backward compatibility with sorting logic
   sortByControversy: boolean;
-  setSortByControversy: Dispatch<SetStateAction<boolean>>;
-  // Whether to sort claims by bridging potential
   sortByBridging: boolean;
-  setSortByBridging: Dispatch<SetStateAction<boolean>>;
   // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
   expandedCruxId: string | null;
   setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
@@ -113,10 +121,10 @@ export const ReportContext = createContext<{
   useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
   useFocusedNodeForCruxes: () => ({}) as Ref<HTMLDivElement>,
   addOns: undefined,
+  sortMode: "frequent",
+  setSortMode: () => null,
   sortByControversy: false,
-  setSortByControversy: () => null,
   sortByBridging: false,
-  setSortByBridging: () => null,
   expandedCruxId: null,
   setExpandedCruxId: () => null,
   activeContentTab: "report",
@@ -217,11 +225,12 @@ function Report({
     outlineDispatch(outlineAction);
   });
 
-  // Sort by controversy state
-  const [sortByControversy, setSortByControversy] = useState<boolean>(false);
+  // Unified sort mode state
+  const [sortMode, setSortMode] = useState<SortMode>("frequent");
 
-  // Sort by bridging potential state
-  const [sortByBridging, setSortByBridging] = useState<boolean>(false);
+  // Derive booleans for backward compatibility with sorting logic
+  const sortByControversy = sortMode === "controversy";
+  const sortByBridging = sortMode === "bridging";
 
   // State for tracking which crux should be auto-expanded
   const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
@@ -303,10 +312,10 @@ function Report({
         useFocusedNode,
         useFocusedNodeForCruxes,
         addOns,
+        sortMode,
+        setSortMode,
         sortByControversy,
-        setSortByControversy,
         sortByBridging,
-        setSortByBridging,
         expandedCruxId,
         setExpandedCruxId,
         activeContentTab,
@@ -381,8 +390,8 @@ function ReportContentTabs({
 }) {
   const {
     dispatch,
-    sortByControversy,
-    setSortByControversy,
+    sortMode,
+    setSortMode,
     activeContentTab,
     setActiveContentTab,
   } = useContext(ReportContext);
@@ -390,6 +399,22 @@ function ReportContentTabs({
   // Check if we have controversy data
   const hasControversyData =
     addOns?.subtopicCruxes && addOns.subtopicCruxes.length > 0;
+
+  // Check if we have bridging data
+  const hasBridgingData =
+    addOns?.claimBridgingScores && addOns.claimBridgingScores.length > 0;
+
+  // Helper to get sort label for button
+  const getSortLabel = (mode: SortMode): string => {
+    switch (mode) {
+      case "controversy":
+        return "Controversy";
+      case "bridging":
+        return "Bridging statements";
+      default:
+        return "Frequent claims";
+    }
+  };
 
   const handleNavigateToSubtopic = (subtopicId: string) => {
     // Switch to report tab
@@ -496,40 +521,54 @@ function ReportContentTabs({
             </TabsList>
           )}
 
-          {/* Sort dropdown - only show when on Report tab and has controversy data */}
-          {activeContentTab === "report" && hasControversyData && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort by</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    {sortByControversy ? "Controversy" : "Frequent claims"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => setSortByControversy(false)}
-                    className={cn(
-                      "cursor-pointer",
-                      !sortByControversy && "bg-accent",
+          {/* Sort dropdown - show when on Report tab and at least one sort feature is available */}
+          {activeContentTab === "report" &&
+            (hasControversyData || hasBridgingData) && (
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm text-muted-foreground">Sort by</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      {getSortLabel(sortMode)}
+                      <ChevronsUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setSortMode("frequent")}
+                      className={cn(
+                        "cursor-pointer",
+                        sortMode === "frequent" && "bg-accent",
+                      )}
+                    >
+                      Frequent claims
+                    </DropdownMenuItem>
+                    {hasControversyData && (
+                      <DropdownMenuItem
+                        onClick={() => setSortMode("controversy")}
+                        className={cn(
+                          "cursor-pointer",
+                          sortMode === "controversy" && "bg-accent",
+                        )}
+                      >
+                        Controversy
+                      </DropdownMenuItem>
                     )}
-                  >
-                    Frequent claims
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSortByControversy(true)}
-                    className={cn(
-                      "cursor-pointer",
-                      sortByControversy && "bg-accent",
+                    {hasBridgingData && (
+                      <DropdownMenuItem
+                        onClick={() => setSortMode("bridging")}
+                        className={cn(
+                          "cursor-pointer",
+                          sortMode === "bridging" && "bg-accent",
+                        )}
+                      >
+                        Bridging statements
+                      </DropdownMenuItem>
                     )}
-                  >
-                    Controversy
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
         </Row>
 
         {/* Tab content */}
