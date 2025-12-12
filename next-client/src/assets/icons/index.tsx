@@ -14,6 +14,7 @@ import {
   ChevronUp,
   MessageCircle,
   X,
+  PlaySquare,
 } from "lucide-react";
 
 import TopicSVG from "./TopicSvg";
@@ -118,5 +119,7 @@ Icons.Controversy = ControversyIcon;
 Icons.ControversyLow = ControversyLowIcon;
 Icons.ControversyModerate = ControversyModerateIcon;
 Icons.ControversyHigh = ControversyHighIcon;
+
+Icons.Play = PlaySquare;
 
 export default Icons;

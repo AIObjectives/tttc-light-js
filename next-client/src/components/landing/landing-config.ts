@@ -16,31 +16,31 @@ export type IconName = (typeof ICON_NAMES)[keyof typeof ICON_NAMES];
 export const SAMPLE_REPORTS = [
   {
     title: "AI Assemblies",
-    imageUri: "/images/sample-ai-assemblies.png",
+    imageUri: "/images/sample-ai-assemblies.jpg",
     resourceUrl: "/report/HAcEAQ3bTfXlWhtCXHa7",
     date: "February 21, 2024",
   },
   {
     title: "AI Manifestos",
-    imageUri: "/images/sample-ai-manifestos.png",
+    imageUri: "/images/sample-ai-manifestos.jpg",
     resourceUrl: "/report/u1jxGWkhZwU3F6cthVKk",
     date: "November 5, 2024",
   },
   {
     title: "Deliberative Technologies in Polarized Contexts",
-    imageUri: "/images/sample-deliberative.png",
+    imageUri: "/images/sample-deliberative.jpg",
     resourceUrl: "/report/iQ81mSpYfuGfZ4sy7r80",
     date: "June 26, 2024",
   },
   {
     title: "Recent views on DeepSeek",
-    imageUri: "/images/sample-deepseek.png",
+    imageUri: "/images/sample-deepseek.jpg",
     resourceUrl: "/report/fnsO4ctahpFjbBmYE5Kq",
     date: "February 8, 2025",
   },
   {
     title: "Heal Michigan",
-    imageUri: "/images/sample-heal-michigan.png",
+    imageUri: "/images/sample-heal-michigan.jpg",
     resourceUrl: "/report/678bPeGL1QdKJbveKiWY",
     date: "August 25, 2023",
   },
@@ -75,6 +75,14 @@ export const MEDIA_ITEMS = [
     source: "CMI Finland",
     sourceIcon: "/images/icon-cmi.png",
     url: "https://www.youtube.com/watch?v=2u6XH3BV5kE&t=319s",
+  },
+  {
+    imageUri: "/images/media-demo.png",
+    title: "Talk to the City Demo",
+    source: "AI Objectives Institute",
+    sourceIcon: "/images/icon-aoi.png",
+    url: "https://www.youtube.com/watch?v=DmkhGD_pK94",
+    imageBgColor: "#EFEDF1",
   },
 ] as const;
 

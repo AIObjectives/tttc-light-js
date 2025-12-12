@@ -526,12 +526,14 @@ const MediaCard = ({
   source,
   sourceIcon,
   url,
+  imageBgColor,
 }: {
   imageUri: string;
   title: string;
   source: string;
   sourceIcon: string;
   url: string;
+  imageBgColor?: string;
 }) => (
   <a
     href={url}
@@ -541,7 +543,7 @@ const MediaCard = ({
     aria-label={`Read article: ${title}`}
   >
     <Card className="w-full transition-transform duration-200 transform hover:opacity-90">
-      <div className="w-full aspect-[1.5] md:max-w-[260px] md:max-h-[171px] relative">
+      <div className="w-full aspect-[1.5] md:max-w-[260px] md:max-h-[171px] relative rounded-t-sm">
         <Image
           src={imageUri}
           alt={`${title} article cover`}
@@ -550,6 +552,12 @@ const MediaCard = ({
           className="object-cover rounded-t-sm"
           loading="lazy"
         />
+        {imageBgColor && (
+          <div
+            className="absolute inset-0 rounded-t-sm pointer-events-none"
+            style={{ backgroundColor: imageBgColor, opacity: 0.4 }}
+          />
+        )}
       </div>
       {/* Title section with padding */}
       <div className="pt-3 px-3">
