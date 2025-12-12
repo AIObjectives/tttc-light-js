@@ -10,15 +10,15 @@ import {
   createLLMJudgeScorer,
 } from "tttc-common/evaluations/clustering/scorers";
 import { Result, success, failure } from "tttc-common/functional-utils";
-import { tokenCost } from "./utils.js";
-import type { ClusteringInput, ClusteringOutput } from "../types.js";
+import { tokenCost, initializeWeaveIfEnabled } from "../utils";
+import type { ClusteringInput, ClusteringOutput } from "../types";
 import {
   ClusteringError,
   ApiCallFailedError,
   EmptyResponseError,
   ParseFailedError,
-} from "../types.js";
-import type { Topic } from "../types.js";
+} from "../types";
+import type { Topic } from "../types";
 import { logger } from "tttc-common/logger";
 
 const clusteringLogger = logger.child({ module: "clustering-model" });
@@ -48,20 +48,12 @@ export async function callClusteringModel(
   const { enableScoring = false, weaveProjectName = "production-clustering" } =
     options;
 
-  let chatCompletion = openaiClient.responses.create;
-
-  // If scoring is enabled, initialize Weave and wrap chat completion in a WeaveOp
-  if (enableScoring) {
-    try {
-      await weave.init(weaveProjectName);
-      chatCompletion = weave.op(chatCompletion);
-    } catch (error) {
-      clusteringLogger.error(
-        { error, weaveProjectName },
-        "Failed to initialize Weave",
-      );
-    }
-  }
+  // Initialize Weave for scoring if enabled
+  const chatCompletion = await initializeWeaveIfEnabled(
+    openaiClient,
+    enableScoring,
+    weaveProjectName,
+  );
 
   // Call OpenAI API directly to capture usage information
   let response;
@@ -157,5 +149,5 @@ export async function callClusteringModel(
       });
   }
 
-  return result;
+  return success(result);
 }

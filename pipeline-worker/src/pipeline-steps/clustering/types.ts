@@ -12,4 +12,7 @@ export type {
   TokenUsage,
   TopicTreeResult,
   ClusteringOptions,
+  ClusteringError,
+  ClusteringInput,
+  ClusteringOutput,
 } from "../types.js";

@@ -88,17 +88,22 @@ Comments:`,
     userId: "example-user",
   });
 
+  if (result.tag === "failure") {
+    console.error("Error:", result.error);
+    process.exit(1);
+  }
+
   // Display results
   console.log("\n=== RESULTS ===\n");
-  console.log("Topics generated:", result.data.length);
+  console.log("Topics generated:", result.value.data.length);
   console.log("\nTaxonomy:");
-  console.log(JSON.stringify(result.data, null, 2));
+  console.log(JSON.stringify(result.value.data, null, 2));
 
   console.log("\n=== USAGE STATS ===");
-  console.log("Prompt tokens:", result.usage.input_tokens);
-  console.log("Completion tokens:", result.usage.output_tokens);
-  console.log("Total tokens:", result.usage.total_tokens);
-  console.log("Estimated cost: $" + result.cost.toFixed(4));
+  console.log("Prompt tokens:", result.value.usage.input_tokens);
+  console.log("Completion tokens:", result.value.usage.output_tokens);
+  console.log("Total tokens:", result.value.usage.total_tokens);
+  console.log("Estimated cost: $" + result.value.cost.toFixed(4));
 }
 
 main().catch((error) => {
