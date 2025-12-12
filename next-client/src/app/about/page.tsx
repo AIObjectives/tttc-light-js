@@ -1,8 +1,70 @@
 import Icons from "@/assets/icons";
 import { Col, Row } from "@/components/layout";
+import { Card } from "@/components/elements";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
 import Link from "next/link";
+import Image from "next/image";
 import React from "react";
+
+// Case studies data
+const CASE_STUDIES = [
+  {
+    title: "Amplifying Youth Voices in Australia",
+    imageUri: "/images/case-studies/australia.jpg",
+    author: "AI Objectives Institute",
+    url: "https://ai.objectives.institute/blog/talk-to-the-city-case-study-amplifying-youth-voices-in-australia",
+  },
+  {
+    title: "Amplifying Voices: Talk to the City in Taiwan",
+    imageUri: "/images/case-studies/taiwan.jpg",
+    author: "AI Objectives Institute",
+    url: "https://ai.objectives.institute/blog/amplifying-voices-talk-to-the-city-in-taiwan",
+  },
+  {
+    title: "Using AI to Give People a Voice, a Case Study in Michigan",
+    imageUri: "/images/case-studies/michigan.jpg",
+    author: "AI Objectives Institute",
+    url: "https://ai.objectives.institute/blog/using-ai-to-give-people-a-voice-a-case-study-in-michigan",
+  },
+];
+
+// Case study card component (pattern from Landing.tsx)
+const CaseStudyCard = ({
+  title,
+  imageUri,
+  author,
+  url,
+}: {
+  title: string;
+  imageUri: string;
+  author: string;
+  url: string;
+}) => (
+  <Card className="w-full md:max-w-[260px] transition-transform duration-200 transform hover:opacity-90">
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Read case study: ${title}`}
+    >
+      <div className="w-full aspect-[1.5] md:max-w-[260px] md:max-h-[171px] relative">
+        <Image
+          src={imageUri}
+          alt={`${title} cover image`}
+          fill
+          sizes="(max-width: 768px) 100vw, 260px"
+          className="object-cover rounded-t-sm"
+          loading="lazy"
+        />
+      </div>
+      <Col gap={2} className="p-3">
+        <p className="text-sm line-clamp-2">{title}</p>
+        <p className="text-sm text-muted-foreground">{author}</p>
+      </Col>
+    </a>
+  </Card>
+);
+
 const ContentGroup = ({ children }: React.PropsWithChildren) => (
   <Col gap={3}>{children}</Col>
 );
@@ -15,42 +77,49 @@ const Outline = () => (
   <Col gap={2}>
     <Row gap={1} className="items-center">
       <Icons.Outline className="stroke-muted-foreground" size={16} />
-      <p className="text-muted-foreground">Outline</p>
+      <p className="text-muted-foreground text-sm tracking-wide">Outline</p>
     </Row>
-    <ul className="list-disc list-inside text-muted-foreground underline pl-2">
+    <ul className="text-muted-foreground text-sm leading-5 pl-2 space-y-2">
       <li>
-        <a href="#how-it-works">How it works</a>
+        – <a href="#overview">Overview</a>
       </li>
       <li>
-        <a href="#case-studies">Case studies</a>
+        – <a href="#how-it-works">How it works</a>
       </li>
       <li>
-        <a href="#faq">FAQ</a>
+        – <a href="#demo-video">Demonstration video</a>
       </li>
       <li>
-        <a href="#tutorial">Report creation FAQ</a>
+        – <a href="#case-studies">Case studies</a>
       </li>
       <li>
-        <a href="#privacy-security">Privacy & security</a>
+        – <a href="#faq">FAQ</a>
+      </li>
+      <li>
+        – <a href="#tutorial">Report creation FAQ</a>
+      </li>
+      <li>
+        – <a href="#privacy-security">Privacy & security</a>
       </li>
     </ul>
   </Col>
 );
 
-/**
- * About page for T3C
- * TODO: The spacing between the bullet point and its text is off from the designs. Find a way to control this.
- */
 export default async function AboutPage() {
   const analytics = await serverSideAnalyticsClient();
   await analytics.page("About");
   return (
-    <Col className="p-8 max-w-[832px] m-auto">
+    <Col className="p-4 sm:p-8 max-w-[896px] m-auto">
       <ContentGroupContainer>
+        {/* Header with title and outline */}
         <ContentGroup>
           <h2>About</h2>
-
           <Outline />
+        </ContentGroup>
+
+        {/* Overview section */}
+        <ContentGroup>
+          <h3 id="overview">Overview</h3>
           <p>
             Talk to the City (T3C) helps large groups of people coordinate by
             understanding each other better.
@@ -86,7 +155,7 @@ export default async function AboutPage() {
             </a>
             .
           </p>
-          <p className="text-muted-foreground">
+          <p>
             Have a question we didn't answer here, or interested in direct
             support in using Talk to the City? Reach out at{" "}
             <a className="underline" href="mailto:hello@aiobjectives.org">
@@ -95,19 +164,14 @@ export default async function AboutPage() {
             .
           </p>
         </ContentGroup>
+        {/* How it works section */}
         <ContentGroup>
-          <h3 id="how-it-works">How it works</h3>
+          <h3 id="how-it-works">How it works?</h3>
           <p>
             We use Large Language Models (LLMs) to analyze broad themes from
             large datasets of free-text responses, summarize specific claims,
             and link those claims back to exact quotes. We use LLMs from OpenAI
             (default: gpt-4o-mini), and are adding more options later this year.
-            For detailed information on AI risks and our safety measures, see
-            our{" "}
-            <Link href="/safety" className="underline">
-              LLM Safety guide
-            </Link>
-            .
           </p>
           <p>
             We create an interactive report from the results, combining all
@@ -132,74 +196,109 @@ export default async function AboutPage() {
             soon.
           </p>
           <p>
-            For more information see our{" "}
+            For detailed information on AI risks and our safety measures, see
+            our{" "}
+            <Link href="/safety" className="underline">
+              LLM Safety guide
+            </Link>
+            .
+          </p>
+        </ContentGroup>
+
+        {/* Demonstration video section */}
+        <ContentGroup>
+          <h3 id="demo-video">Demonstration video</h3>
+          <Row gap={2} className="items-center">
+            <Icons.Play
+              className="stroke-foreground flex-shrink-0 scale-x-[1.15]"
+              size={24}
+              aria-hidden="true"
+            />
             <a
               className="underline"
               href="https://www.youtube.com/watch?v=DmkhGD_pK94"
               target="_blank"
               rel="noopener noreferrer"
             >
-              demonstration video
+              Talk to the City Demo
             </a>
-            .
-          </p>
+          </Row>
         </ContentGroup>
 
+        {/* Case studies section */}
         <ContentGroup>
           <h3 id="case-studies">Case studies</h3>
-
-          <ul className="list-disc list-inside pl-2">
-            <li>
-              <a
-                className="underline"
-                href="https://ai.objectives.institute/blog/amplifying-voices-talk-to-the-city-in-taiwan"
-              >
-                Amplifying Voices: Talk to the City in Taiwan
-              </a>
-            </li>
-            <li>
-              <a
-                className="underline"
-                href="https://ai.objectives.institute/blog/using-ai-to-give-people-a-voice-a-case-study-in-michigan"
-              >
-                Using AI to Give People a Voice: a Case Study in Michigan
-              </a>
-            </li>
-            <li>
-              <a
-                className="underline"
-                href="https://ai.objectives.institute/blog/talk-to-the-city-case-study-amplifying-youth-voices-in-australia"
-              >
-                Talk to the City Case Study: Amplifying Youth Voices in
-                Australia
-              </a>
-            </li>
-          </ul>
+          <Col gap={4} className="md:flex-row flex-wrap gap-x-4">
+            {CASE_STUDIES.map((study) => (
+              <CaseStudyCard key={study.title} {...study} />
+            ))}
+          </Col>
         </ContentGroup>
 
         <ContentGroup>
           <h3 id="faq">FAQ</h3>
 
-          <h5>What inputs do I need to create a T3C report?</h5>
-          <ol className="list-decimal list-inside pl-2">
-            <li>A correctly formatted CSV file</li>
+          <h5>What data format does the CSV file need to follow?</h5>
+          <ul className="list-disc list-inside pl-2">
             <li>
-              A title and description for your report to help viewers understand
-              the context for the data analyzed
+              Required column: "comment" (contains the text of the responses to
+              analyze with T3C)
             </li>
-            {/*<li>An OpenAI API key</li>*/}
-          </ol>
+            <li>
+              Optional column: "interview" (respondent name, which can be a
+              pseudonym, or blank for anonymous speakers)
+            </li>
+            <li>
+              Optional column: "id" (for linking to any external data, will be
+              generated if blank)
+            </li>
+          </ul>
 
-          <h5>How do I sign into T3C?</h5>
-          <p>We currently allow signing in with accounts managed by Google:</p>
-          <ol className="list-decimal list-inside pl-2">
-            <li>Click the "Sign in" button in the top right corner</li>
-            <li>
-              Choose the Google account you want to sign in with and complete
-              authentication
-            </li>
-            <li>You'll then have access to your T3C dashboard</li>
-          </ol>
+          {/* CSV format table */}
+          <div className="overflow-x-auto">
+            <table
+              className="w-full text-sm"
+              aria-label="CSV column format reference"
+            >
+              <thead>
+                <tr className="border-b border-border bg-muted">
+                  <th scope="col" className="px-4 py-3 text-left font-normal">
+                    id
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-normal">
+                    interview
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-normal">
+                    comment
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="px-4 py-3 align-top">
+                    (optional) column contains links to any external data, will
+                    be generated if blank
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    (optional) column contains respondent name, which can be a
+                    pseudonym, or blank for anonymous speakers
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    (required) column contains the text of responses to analyze
+                    with T3C
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            A{" "}
+            <a className="underline" href="/Talk-to-the-City-Sample.csv">
+              sample CSV
+            </a>{" "}
+            is available to download.
+          </p>
 
           <h5>How secure is the data I send through T3C?</h5>
           <p>
@@ -218,66 +317,22 @@ export default async function AboutPage() {
             </a>{" "}
             with questions or feedback.
           </p>
+        </ContentGroup>
 
+        <ContentGroup>
           <h3 id="tutorial">Report creation FAQ</h3>
 
-          <h5>How do I create a new report?</h5>
-          <ol className="list-decimal list-inside pl-2">
-            <li>
-              Click the "Create a report" button in the upper right corner
-            </li>
-            <li>
-              Fill in required fields:
-              <ul className="list-disc list-inside pl-2">
-                <li>Report name (e.g. "Sentiment Analysis June 2025")</li>
-                <li>Report description (including context and purpose)</li>
-                <li>The dataset to analyze, as a CSV</li>
-                {/*<li>Your OpenAI API key</li>*/}
-              </ul>
-            </li>
-            <li>
-              Optionally, modify the prompts for any stage of the processing
-              pipeline to better fit your use case/data.
-            </li>
-          </ol>
-
-          <h5>What data format does the CSV file need to follow?</h5>
-          <ul className="list-disc list-inside pl-2">
-            <li>
-              Required column: "comment" (contains the text of the responses to
-              analyze with T3C)
-            </li>
-            <li>
-              Optional column: "interview" (respondent name, which can be a
-              pseudonym, or blank for anonymous speakers)
-            </li>
-            <li>
-              Optional column: “id” (for linking to any external data, will be
-              generated if blank)
-            </li>
-          </ul>
-          <p>
-            A{" "}
-            <a
-              className="underline"
-              target="_blank"
-              href="https://docs.google.com/spreadsheets/d/15cKedZ-AYPWMJoVFJY6ge9jUEnx1Hu9MHnhQ_E_Z4FA/edit?gid=0#gid=0"
-            >
-              sample CSV template
-            </a>{" "}
-            is available in Google Sheets.
-          </p>
-
           <h5>How can I make an audio transcription?</h5>
-          <ul className="list-disc list-inside pl-2">
-            <p>
-              We have a{" "}
-              <a className="underline" href="/help">
-                detailed guide here
-              </a>
-              .
-            </p>
-          </ul>
+          <p>
+            T3C can process transcripts from audio or video recordings. You can
+            use cloud-based services like Otter.ai, Rev, or Happy Scribe, or
+            desktop applications like Descript or OpenAI Whisper for local
+            transcription. We have a{" "}
+            <a className="underline" href="/help">
+              detailed transcription guide
+            </a>{" "}
+            covering these options and their trade-offs.
+          </p>
 
           <h5 id="language-limitations">
             Are there any language limitations we should be aware of?
@@ -294,43 +349,21 @@ export default async function AboutPage() {
           </p>
 
           <h5>How do I customize the analysis prompts?</h5>
-          <p>You can modify prompts to:</p>
+          <p>
+            On the{" "}
+            <Link href="/create" className="underline">
+              create report page
+            </Link>
+            , expand the "Advanced Settings" section to find "Customize AI
+            prompts". You can modify prompts to:
+          </p>
           <ul className="list-disc list-inside pl-2">
             <li>
               Specify the number of topics/subtopics, or suggest possible themes
               to include
             </li>
             <li>Adjust length of direct quotations from respondents</li>
-            <li>Focus on specific response types</li>
-          </ul>
-
-          {/*
-          <h5>What should I do if my OpenAI API key is invalid?</h5>
-          <ul className="list-disc list-inside pl-2">
-            <li>Double-check that the key hasn't expired</li>
-            <li>
-              Try generating a new API key by{" "}
-              <a
-                className="underline"
-                href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key"
-              >
-                following the OpenAI instructions
-              </a>
-              .
-            </li>
-          </ul>
-          <p>
-            Note: API keys are never stored on T3C servers, and data access into and
-            our of our app is SSL-encrypted.
-          </p>
-          <br />
-          */}
-
-          <h5>What are the common errors and how can I avoid them?</h5>
-          <ul className="list-disc list-inside pl-2">
-            <li>CSV formatting: Verify required columns are present</li>
-            <li>Empty prompts: Ensure default prompts remain in place</li>
-            <li>Refresh page and re-upload CSV if formatting issues occur</li>
+            <li>Focus on specific questions, topics, or perspectives</li>
           </ul>
         </ContentGroup>
 
@@ -375,7 +408,7 @@ export default async function AboutPage() {
             <li>
               Limited data retention by OpenAI: OpenAI does not use data
               submitted via API for long-term use for improving its models.
-              However,in accordance with{" "}
+              However, in accordance with{" "}
               <a
                 target="_blank"
                 href="https://platform.openai.com/docs/guides/your-data"
@@ -453,8 +486,8 @@ export default async function AboutPage() {
             </li>
             <li>
               All such requests can be made by contacting{" "}
-              <a className="underline" href="mailto:hello@objectives.org">
-                hello@objectives.org
+              <a className="underline" href="mailto:hello@aiobjectives.org">
+                hello@aiobjectives.org
               </a>
               .
             </li>
@@ -484,7 +517,7 @@ export default async function AboutPage() {
               confidential data through the service.
             </li>
             <li>
-              CCompliance: Ensure your use of the service complies with
+              Compliance: Ensure your use of the service complies with
               applicable laws and regulations.
             </li>
           </ul>
