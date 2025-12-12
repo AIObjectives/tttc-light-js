@@ -13,3 +13,10 @@ export type {
   TopicTreeResult,
   ClusteringOptions,
 } from "../types.js";
+
+export {
+  ClusteringError,
+  ApiCallFailedError,
+  EmptyResponseError,
+  ParseFailedError,
+} from "../types.js";

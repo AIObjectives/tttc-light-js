@@ -99,7 +99,7 @@ describe("RedisCache", () => {
         }),
       );
       // Verify retryStrategy is a function
-      const callArgs = (Redis as Mock).mock.calls[0][0];
+      const callArgs = (Redis as unknown as Mock).mock.calls[0][0];
       expect(typeof callArgs.retryStrategy).toBe("function");
     });
 
@@ -129,7 +129,7 @@ describe("RedisCache", () => {
         }),
       );
       // Verify retryStrategy is a function
-      const callArgs = (Redis as Mock).mock.calls[0][0];
+      const callArgs = (Redis as unknown as Mock).mock.calls[0][0];
       expect(typeof callArgs.retryStrategy).toBe("function");
     });
 

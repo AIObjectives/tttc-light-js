@@ -89,16 +89,22 @@ Comments:`,
   });
 
   // Display results
+  if (result.tag === "failure") {
+    console.error("Failed to generate taxonomy:", result.error.message);
+    process.exit(1);
+  }
+
+  const topicTree = result.value;
   console.log("\n=== RESULTS ===\n");
-  console.log("Topics generated:", result.data.length);
+  console.log("Topics generated:", topicTree.data.length);
   console.log("\nTaxonomy:");
-  console.log(JSON.stringify(result.data, null, 2));
+  console.log(JSON.stringify(topicTree.data, null, 2));
 
   console.log("\n=== USAGE STATS ===");
-  console.log("Prompt tokens:", result.usage.input_tokens);
-  console.log("Completion tokens:", result.usage.output_tokens);
-  console.log("Total tokens:", result.usage.total_tokens);
-  console.log("Estimated cost: $" + result.cost.toFixed(4));
+  console.log("Prompt tokens:", topicTree.usage.input_tokens);
+  console.log("Completion tokens:", topicTree.usage.output_tokens);
+  console.log("Total tokens:", topicTree.usage.total_tokens);
+  console.log("Estimated cost: $" + topicTree.cost.toFixed(4));
 }
 
 main().catch((error) => {

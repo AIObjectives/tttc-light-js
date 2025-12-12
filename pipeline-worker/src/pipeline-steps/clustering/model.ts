@@ -48,13 +48,15 @@ export async function callClusteringModel(
   const { enableScoring = false, weaveProjectName = "production-clustering" } =
     options;
 
-  let chatCompletion = openaiClient.responses.create;
+  let responsesCreate = openaiClient.responses.create.bind(
+    openaiClient.responses,
+  );
 
-  // If scoring is enabled, initialize Weave and wrap chat completion in a WeaveOp
+  // If scoring is enabled, initialize Weave and wrap responses create in a WeaveOp
   if (enableScoring) {
     try {
       await weave.init(weaveProjectName);
-      chatCompletion = weave.op(chatCompletion);
+      responsesCreate = weave.op(responsesCreate);
     } catch (error) {
       clusteringLogger.error(
         { error, weaveProjectName },
@@ -66,7 +68,7 @@ export async function callClusteringModel(
   // Call OpenAI API directly to capture usage information
   let response;
   try {
-    response = await chatCompletion({
+    response = await responsesCreate({
       model: modelName,
       instructions: systemPrompt,
       input: userPrompt,
@@ -123,7 +125,8 @@ export async function callClusteringModel(
 
   // If scoring is enabled, run scorers on the result asynchronously
   if (enableScoring) {
-    const llmJudgeScorer = createLLMJudgeScorer(openaiClient);
+    // Cast to any to handle OpenAI version mismatch between pipeline-worker (v6) and common (v4)
+    const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 
     // Run scorers on the result we already have (non-blocking)
     // Note: The LLM judge scorer will make its own LLM call for evaluation
@@ -157,5 +160,5 @@ export async function callClusteringModel(
       });
   }
 
-  return result;
+  return success(result);
 }

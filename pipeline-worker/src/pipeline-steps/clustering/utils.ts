@@ -3,7 +3,7 @@
  */
 
 import { logger } from "tttc-common/logger";
-import { Logger } from "pino";
+import type { Logger } from "pino";
 
 const utilsLogger = logger.child({ module: "clustering-utils" });
 
