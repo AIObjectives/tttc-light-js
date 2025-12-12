@@ -16,35 +16,35 @@ export type IconName = (typeof ICON_NAMES)[keyof typeof ICON_NAMES];
 export const SAMPLE_REPORTS = [
   {
     title: "AI Assemblies",
-    imageUri: "/images/sample-ai-assemblies.png",
+    imageUri: "/images/sample-ai-assemblies.jpg",
     resourceUrl:
       "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_assembly_2023_t3c.json",
     date: "February 21, 2024",
   },
   {
     title: "AI Manifestos",
-    imageUri: "/images/sample-ai-manifestos.png",
+    imageUri: "/images/sample-ai-manifestos.jpg",
     resourceUrl:
       "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_manifestos_10s_12K.json",
     date: "November 5, 2024",
   },
   {
     title: "Deliberative Technologies in Polarized Contexts",
-    imageUri: "/images/sample-deliberative.png",
+    imageUri: "/images/sample-deliberative.jpg",
     resourceUrl:
       "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fdeliberative_tech_polarized_context_t3c.json",
     date: "June 26, 2024",
   },
   {
     title: "Recent views on DeepSeek",
-    imageUri: "/images/sample-deepseek.png",
+    imageUri: "/images/sample-deepseek.jpg",
     resourceUrl:
       "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2F7b8053b6ccbc5f85d10770281696281a421309f6c6e0aecc461cb82ac65b4777",
     date: "February 8, 2025",
   },
   {
     title: "Heal Michigan",
-    imageUri: "/images/sample-heal-michigan.png",
+    imageUri: "/images/sample-heal-michigan.jpg",
     resourceUrl:
       "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fheal_michigan_t3c.json",
     date: "August 25, 2023",
@@ -80,6 +80,14 @@ export const MEDIA_ITEMS = [
     source: "CMI Finland",
     sourceIcon: "/images/icon-cmi.png",
     url: "https://www.youtube.com/watch?v=2u6XH3BV5kE&t=319s",
+  },
+  {
+    imageUri: "/images/media-demo.png",
+    title: "Talk to the City Demo",
+    source: "AI Objectives Institute",
+    sourceIcon: "/images/icon-aoi.png",
+    url: "https://www.youtube.com/watch?v=DmkhGD_pK94",
+    imageBgColor: "#EFEDF1",
   },
 ] as const;
 
