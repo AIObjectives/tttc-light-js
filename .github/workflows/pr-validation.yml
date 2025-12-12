@@ -35,6 +35,7 @@ jobs:
           cd common && npm ci
           cd ../express-server && npm ci
           cd ../next-client && npm ci
+          cd ../pipeline-worker && npm ci
           cd ..
 
       - name: Check formatting
@@ -76,6 +77,20 @@ jobs:
           PIPELINE_EXPRESS_URL: http://localhost:8080
         run: |
           cd next-client
+          npx tsc --noEmit
+          npm run build
+          npm test
+
+      - name: Build and test pipeline worker
+        env:
+          NODE_ENV: development
+          OPENAI_API_KEY: dummy-key-for-ci
+          GCLOUD_STORAGE_BUCKET: dummy-bucket
+          GOOGLE_CREDENTIALS_ENCODED: eyJ0ZXN0IjogInJhbmRvbSIsICJkYXRhIjogImZha2UifQ==
+          FIREBASE_CREDENTIALS_ENCODED: eyJmYWtlIjogImNyZWRlbnRpYWxzIiwgImZvciI6ICJjaXRlc3QifQ==
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd pipeline-worker
           npx tsc --noEmit
           npm run build
           npm test
