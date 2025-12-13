@@ -6,6 +6,8 @@ export * from "./textIcon/TextIcon";
 export * from "./select/select";
 export * from "./hoverCard/HoverCard";
 export * from "./sonner/Sonner";
+export * from "./expandableText/ExpandableText";
+export * from "./expandableText/WordLimitExpandableText";
 export * from "./toggleText/ToggleText";
 export * from "./input/Input";
 export * from "./textArea/TextArea";
