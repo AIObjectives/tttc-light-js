@@ -1,19 +1,17 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "module": "NodeNext",
-    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
       "common/*": ["../common/*"]
     },
-    "jsx": "react",
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "moduleResolution": "nodenext",
-    "typeRoots": ["./node_modules/@types"],
     "skipLibCheck": true
   },
   "include": ["./src"],

@@ -70,36 +70,25 @@ export function getEnvironmentInfo(): EnvironmentInfo {
 
 /**
  * Creates a session ID for tracking
+ * Uses globalThis.crypto.getRandomValues which works in both browser and Node.js 15+
  */
 export function generateSessionId(): string {
   const timestamp = Date.now().toString(36);
-
-  if (isBrowser()) {
-    const array = new Uint8Array(8);
-    crypto.getRandomValues(array);
-    const random = Array.from(array, (byte) => byte.toString(36)).join("");
-    return `${timestamp}-${random}`;
-  } else {
-    const crypto = require("crypto");
-    const random = crypto.randomBytes(8).toString("hex");
-    return `${timestamp}-${random}`;
-  }
+  const array = new Uint8Array(8);
+  globalThis.crypto.getRandomValues(array);
+  const random = Array.from(array, (byte) => byte.toString(36)).join("");
+  return `${timestamp}-${random}`;
 }
 
 /**
- * Creates a request ID for tracking (server-side)
+ * Creates a request ID for tracking
+ * Uses globalThis.crypto.getRandomValues which works in both browser and Node.js 15+
  */
 export function generateRequestId(): string {
   const timestamp = Date.now().toString(36);
-  let random: string;
-  if (isBrowser()) {
-    const array = new Uint8Array(8);
-    crypto.getRandomValues(array);
-    random = Array.from(array, (byte) => byte.toString(36)).join("");
-  } else {
-    const crypto = require("crypto");
-    random = crypto.randomBytes(8).toString("hex");
-  }
+  const array = new Uint8Array(8);
+  globalThis.crypto.getRandomValues(array);
+  const random = Array.from(array, (byte) => byte.toString(36)).join("");
   return `req-${timestamp}-${random}`;
 }
 

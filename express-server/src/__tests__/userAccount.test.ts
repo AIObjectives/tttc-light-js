@@ -12,13 +12,18 @@ vi.mock("firebase-admin", () => {
     serverTimestamp: vi.fn(() => ({ __type: "serverTimestamp" })),
   };
 
+  const firestoreWithFieldValue = Object.assign(
+    vi.fn(() => mockFirestore),
+    { FieldValue: mockFieldValue },
+  );
+
   return {
     default: {
       initializeApp: vi.fn(),
       credential: {
         cert: vi.fn(),
       },
-      firestore: vi.fn(() => mockFirestore),
+      firestore: firestoreWithFieldValue,
       auth: vi.fn(() => ({
         verifyIdToken: vi.fn(),
       })),
@@ -27,12 +32,7 @@ vi.mock("firebase-admin", () => {
     credential: {
       cert: vi.fn(),
     },
-    firestore: Object.assign(
-      vi.fn(() => mockFirestore),
-      {
-        FieldValue: mockFieldValue,
-      },
-    ),
+    firestore: firestoreWithFieldValue,
     auth: vi.fn(() => ({
       verifyIdToken: vi.fn(),
     })),

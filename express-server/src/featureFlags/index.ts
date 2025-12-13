@@ -4,11 +4,13 @@ import {
   getFeatureFlag,
   shutdownFeatureFlags,
   getFeatureFlagProvider,
+} from "tttc-common/feature-flags";
+import type {
   FeatureFlagProvider,
   FeatureFlagContext,
   FeatureFlagConfig,
 } from "tttc-common/feature-flags";
-import { Env } from "../types/context";
+import type { Env } from "../types/context";
 
 /**
  * Initializes feature flags for the express server using environment configuration.
@@ -34,6 +36,5 @@ export {
   getFeatureFlag,
   shutdownFeatureFlags,
   getFeatureFlagProvider,
-  FeatureFlagProvider,
-  FeatureFlagContext,
 };
+export type { FeatureFlagProvider, FeatureFlagContext };

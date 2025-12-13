@@ -3,17 +3,29 @@ import { ReportRef } from "tttc-common/firebase";
 import * as Firebase from "../Firebase";
 
 // Mock Firebase Admin SDK
-vi.mock("firebase-admin", () => ({
-  initializeApp: vi.fn(),
-  auth: vi.fn(),
-  credential: {
-    cert: vi.fn(),
-  },
-  firestore: vi.fn(() => ({
-    collection: vi.fn(),
-    runTransaction: vi.fn(),
-  })),
-}));
+vi.mock("firebase-admin", () => {
+  const mockFirestore = Object.assign(
+    vi.fn(() => ({
+      collection: vi.fn(),
+      runTransaction: vi.fn(),
+    })),
+    { FieldValue: { serverTimestamp: vi.fn() } },
+  );
+
+  const mockAdmin = {
+    initializeApp: vi.fn(),
+    auth: vi.fn(),
+    credential: {
+      cert: vi.fn(),
+    },
+    firestore: mockFirestore,
+  };
+
+  return {
+    default: mockAdmin,
+    ...mockAdmin,
+  };
+});
 
 // Mock logger
 vi.mock("tttc-common/logger", () => ({
