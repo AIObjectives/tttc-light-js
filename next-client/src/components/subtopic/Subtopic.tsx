@@ -358,7 +358,7 @@ function CruxDisplay({
   );
 
   return (
-    <HoverCard>
+    <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger asChild>
         <div onClick={handleClick} className="py-3 cursor-pointer">
           <p className="leading-6 pl-0 text-base font-medium">Crux</p>

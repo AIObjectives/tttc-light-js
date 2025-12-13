@@ -100,7 +100,7 @@ function BridgingBadge() {
   const hoverBackground = useThemeContextColor("bgAccentHover");
 
   return (
-    <HoverCard>
+    <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger asChild>
         <div
           className={`flex w-7 h-7 shrink-0 border rounded-sm items-center justify-center cursor-default ${hoverBackground}`}
