@@ -6,11 +6,13 @@ import {
   Card,
   CardContent,
   CardTitle,
+  ExpandableText,
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
   Separator,
   TextIcon,
+  WordLimitExpandableText,
 } from "../elements";
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
@@ -73,7 +75,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
             }
           />
           <TopicInteractiveGraphic subtopics={topicNode.children}>
-            <p>{description}</p>
+            <ExpandableText>{description}</ExpandableText>
           </TopicInteractiveGraphic>
         </Col>
       </CardContent>
@@ -133,7 +135,11 @@ export function TopicSummary({ summary }: { summary: string }) {
   return (
     <Col gap={2} className="px-4 sm:px-8 pb-6 print:px-12 print:py-4">
       <h5 className="print:ml-6">Summary</h5>
-      <p className="print:ml-8">{summary}</p>
+      <WordLimitExpandableText
+        text={summary}
+        wordLimit={180}
+        className="print:ml-8"
+      />
     </Col>
   );
 }
