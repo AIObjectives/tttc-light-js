@@ -75,6 +75,8 @@ function HoverQuoteCard({
 
   return (
     <HoverCard
+      openDelay={0}
+      closeDelay={0}
       open={isOpen}
       onOpenChange={(open) => {
         if (!isPinned) {
