@@ -20,7 +20,10 @@
  * useful for consolidating demo reports under a single demo account.
  *
  * Prerequisites:
- * 1. Set LEGACY_REPORT_USER_ID in express-server/.env
+ * 1. Ensure express-server/.env has the required credentials:
+ *    - FIREBASE_CREDENTIALS_ENCODED: Firebase Admin SDK credentials (for Firestore)
+ *    - GOOGLE_CREDENTIALS_ENCODED: GCP credentials (for GCS bucket access)
+ * 2. Set LEGACY_REPORT_USER_ID in express-server/.env
  *    - For demo reports: Use the Firebase UID of the configured demo account
  *    - For legacy reports: Use your account or create a dedicated "legacy" user
  *    - The UID can be found in Firebase Console (Authentication > Users)
@@ -50,6 +53,7 @@ dotenv.config({ path: envPath });
 // Validate required environment variables
 const envSchema = z.object({
   FIREBASE_CREDENTIALS_ENCODED: z.string().min(1),
+  GOOGLE_CREDENTIALS_ENCODED: z.string().min(1),
   LEGACY_REPORT_USER_ID: z.string().min(1),
   NODE_ENV: z.enum(["development", "production"]).default("development"),
 });
@@ -180,6 +184,7 @@ function validateEnvironment(): Env {
     console.error(envResult.error.format());
     console.error("\nMissing or invalid environment variables:");
     console.error("- FIREBASE_CREDENTIALS_ENCODED (from express-server/.env)");
+    console.error("- GOOGLE_CREDENTIALS_ENCODED (from express-server/.env)");
     console.error(
       "- LEGACY_REPORT_USER_ID (create owner user first, see script header)",
     );
@@ -225,10 +230,13 @@ async function initializeFirebase(env: Env): Promise<{
     throw new Error("Owner user not found in Firebase Auth");
   }
 
-  // Initialize GCS
+  // Initialize GCS (using separate GCP credentials, not Firebase credentials)
   console.log("\nInitializing Google Cloud Storage...");
+  const gcsCredentials = JSON.parse(
+    Buffer.from(env.GOOGLE_CREDENTIALS_ENCODED, "base64").toString("utf-8"),
+  );
   const storage = new Storage({
-    credentials: firebaseCredentials,
+    credentials: gcsCredentials,
   });
   console.log("   Storage initialized");
 
@@ -387,6 +395,7 @@ async function migrateReport(
   gcsUri: string,
   dryRun: boolean = false,
   forceUpdate: boolean = false,
+  dateOverride?: Date,
 ): Promise<void> {
   // Parse and validate URI
   console.log("\nParsing GCS URI...");
@@ -433,6 +442,14 @@ async function migrateReport(
   // Download and validate report
   const reportData = await downloadAndValidateReport(storage, bucket, fileName);
   const metadata = extractMetadata(reportData);
+
+  // Apply date override if provided
+  if (dateOverride) {
+    metadata.createdDate = dateOverride;
+    metadata.dateFromFallback = false;
+    console.log(`   Using date override: ${dateOverride.toISOString()}`);
+  }
+
   displayMetadataSummary(metadata);
 
   // Handle dry run
@@ -474,9 +491,10 @@ Usage:
   npm run migrate-legacy -- --force "bucket/file.json"
 
 Options:
-  --dry-run    Preview the migration without writing to Firestore
-  --force      Force ownership transfer without confirmation (use with caution)
-  --help       Show this help message
+  --dry-run         Preview the migration without writing to Firestore
+  --force           Force ownership transfer without confirmation (use with caution)
+  --date YYYY-MM-DD Override the report creation date (useful for legacy reports without timestamps)
+  --help            Show this help message
 
 For detailed documentation including prerequisites and environment setup,
 see the header comment in this file.
@@ -486,7 +504,29 @@ see the header comment in this file.
 
 const dryRun = args.includes("--dry-run");
 const forceUpdate = args.includes("--force");
-const gcsUri = args.find((arg) => !arg.startsWith("--"));
+
+// Parse --date option
+let dateOverride: Date | undefined;
+const dateArgIndex = args.indexOf("--date");
+if (dateArgIndex !== -1 && args[dateArgIndex + 1]) {
+  const dateStr = args[dateArgIndex + 1];
+  // Strict YYYY-MM-DD format validation
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    console.error(`ERROR: Invalid date format: ${dateStr}`);
+    console.error("Expected format: YYYY-MM-DD (e.g., 2024-02-21)");
+    process.exit(1);
+  }
+  const parsed = new Date(dateStr);
+  if (isNaN(parsed.getTime())) {
+    console.error(`ERROR: Invalid date: ${dateStr}`);
+    process.exit(1);
+  }
+  dateOverride = parsed;
+}
+
+const gcsUri = args.find(
+  (arg, i) => !arg.startsWith("--") && args[i - 1] !== "--date",
+);
 
 if (!gcsUri) {
   console.error("ERROR: GCS URI required");
@@ -496,7 +536,7 @@ if (!gcsUri) {
 }
 
 // Run migration
-migrateReport(gcsUri, dryRun, forceUpdate)
+migrateReport(gcsUri, dryRun, forceUpdate, dateOverride)
   .then(() => process.exit(0))
   .catch((error) => {
     console.error("\nERROR: Unexpected error:");
