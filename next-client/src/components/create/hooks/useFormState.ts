@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import * as prompts from "tttc-common/prompts";
 import { Result, success, failure } from "tttc-common/functional-utils";
-import { User } from "firebase/auth";
 
 type FormStatus<T, E> = Result<T, E> | { tag: "initial"; value: T };
 
@@ -11,6 +10,8 @@ export type FormItemState<T> = {
   setState: (val: T) => void;
   status: FormStatus<T, { message: string }>;
   hasChanged: boolean;
+  /** Returns the validation error message if invalid, regardless of hasChanged state */
+  getError: () => string | null;
 };
 
 type UnChanged<T> = { _tag: "unchanged"; value: T | undefined };
@@ -59,12 +60,19 @@ function useFormItem<T>({
     else setStatus(statusEval(state));
   }, [state, hasChanged]);
 
+  /** Returns validation error regardless of hasChanged, for forced validation on submit */
+  const getError = (): string | null => {
+    const result = statusEval(state);
+    return result.tag === "failure" ? result.error.message : null;
+  };
+
   return {
     initialValue,
     state,
     setState,
     status,
     hasChanged,
+    getError,
   };
 }
 
@@ -150,34 +158,26 @@ export function useFormState() {
     },
   });
 
-  const hasValidationErrors = (fields: FormItemState<string>[]) =>
-    fields.some((field) => field.status.tag === "failure");
+  /**
+   * Returns a list of validation error messages for required fields.
+   * Used to show error count on submit attempt.
+   */
+  const getValidationErrors = (files: FileList | undefined): string[] => {
+    const errors: string[] = [];
 
-  const hasEmptyRequiredFields = (fields: Array<{ state: string }>) =>
-    fields.some((field) => field.state.trim() === "");
+    // Check title and description (always required)
+    const titleError = title.getError();
+    if (titleError) errors.push(titleError);
 
-  const isCruxValidationInvalid = () =>
-    cruxesEnabled.state &&
-    (cruxInstructions.status.tag === "failure" ||
-      cruxInstructions.state.trim() === "");
+    const descriptionError = description.getError();
+    if (descriptionError) errors.push(descriptionError);
 
-  const isFormInvalid = (files: FileList | undefined, user: User | null) => {
-    const requiredTextFields = [title, description];
-    const allInstructionFields = [
-      systemInstructions,
-      clusteringInstructions,
-      extractionInstructions,
-      dedupInstructions,
-      summariesInstructions,
-    ];
+    // Check CSV file
+    if (!files?.item(0)) {
+      errors.push("Add a CSV file");
+    }
 
-    return (
-      !files?.item(0) ||
-      !user ||
-      hasEmptyRequiredFields(requiredTextFields) ||
-      hasValidationErrors([...requiredTextFields, ...allInstructionFields]) ||
-      isCruxValidationInvalid()
-    );
+    return errors;
   };
 
   return {
@@ -191,6 +191,6 @@ export function useFormState() {
     cruxInstructions,
     cruxesEnabled,
     bridgingEnabled,
-    isFormInvalid,
+    getValidationErrors,
   };
 }

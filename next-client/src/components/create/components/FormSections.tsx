@@ -101,13 +101,29 @@ export const FormAbout = () => (
   </Col>
 );
 
+/** Get error message for a form field, considering both touched state and forced display */
+function getFieldError(
+  field: FormItemState<string>,
+  forceShow: boolean,
+): string | null {
+  if (field.status.tag === "failure") return field.status.error.message;
+  if (forceShow) return field.getError();
+  return null;
+}
+
 export const FormDescription = ({
   title,
   description,
+  showErrors = false,
 }: {
   title: FormItemState<string>;
   description: FormItemState<string>;
+  /** When true, show validation errors even if field hasn't been touched */
+  showErrors?: boolean;
 }) => {
+  const titleError = getFieldError(title, showErrors);
+  const descError = getFieldError(description, showErrors);
+
   return (
     <Col gap={4}>
       <h4>Description</h4>
@@ -128,13 +144,9 @@ export const FormDescription = ({
           required
           value={title.state}
           onChange={(e) => title.setState(e.target.value)}
-          className={cn(title.status.tag === "failure" && "border-destructive")}
+          className={cn(titleError && "border-destructive")}
         />
-        {title.status.tag === "failure" && (
-          <p className="text-destructive text-sm">
-            {title.status.error.message}
-          </p>
-        )}
+        {titleError && <p className="text-destructive text-sm">{titleError}</p>}
       </Col>
       <Col gap={2}>
         <Col>
@@ -142,7 +154,7 @@ export const FormDescription = ({
             General description
           </label>
           <p className="p2 text-muted-foreground">
-            Description shows up below the title and doesn’t influence the
+            Description shows up below the title and doesn't influence the
             contents of the report
           </p>
         </Col>
@@ -154,15 +166,9 @@ export const FormDescription = ({
           required
           value={description.state}
           onChange={(e) => description.setState(e.target.value)}
-          className={cn(
-            description.status.tag === "failure" && "border-destructive",
-          )}
+          className={cn(descError && "border-destructive")}
         />
-        {description.status.tag === "failure" && (
-          <p className="text-destructive text-sm">
-            {description.status.error.message}
-          </p>
-        )}
+        {descError && <p className="text-destructive text-sm">{descError}</p>}
       </Col>
     </Col>
   );
@@ -171,11 +177,15 @@ export const FormDescription = ({
 export function FormDataInput({
   files,
   setFiles,
+  showErrors = false,
 }: {
   files: FileList | undefined;
   setFiles: (files: FileList | undefined) => void;
+  /** When true, show validation error if no file is selected */
+  showErrors?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const showMissingFileError = showErrors && !files?.item(0);
 
   const fileName = useReactiveValue(() => files?.item(0)?.name || "", [files]);
 
@@ -355,6 +365,11 @@ export function FormDataInput({
             ref={inputRef}
           />
         </div>
+
+        {/* Error for missing file (shown after submit attempt) */}
+        {showMissingFileError && (
+          <p className="text-destructive text-sm">Add a CSV file</p>
+        )}
 
         {/* Inline error banner for broken/empty files */}
         {inlineError && (
