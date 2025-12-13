@@ -1,6 +1,7 @@
 {
   "name": "tttc-common",
   "version": "1.0.0",
+  "type": "module",
   "description": "Shares common code across monorepo",
   "exports": {
     "./api": {

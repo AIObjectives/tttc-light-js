@@ -1,15 +1,16 @@
 {
   "name": "express-pipeline",
   "version": "1.0.0",
+  "type": "module",
   "description": "pipeline for tttc-light-js",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "build": "npx tsc && npx prettier ./dist --write",
-    "dev": "nodemon src/server.ts",
+    "dev": "nodemon --exec tsx src/server.ts",
     "test": "vitest",
-    "start": "node dist/server.js"
+    "start": "tsx dist/server.js"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
@@ -20,11 +21,11 @@
     "@types/supertest": "^6.0.3",
     "nodemon": "^3.1.0",
     "supertest": "^7.1.4",
-    "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vitest": "^3.1.2"
   },
   "dependencies": {
+    "tsx": "^4.20.6",
     "@anthropic-ai/sdk": "^0.20.4",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.7.0",
