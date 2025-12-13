@@ -11,6 +11,7 @@ import {
   SelectValue,
   Sheet,
   SheetContent,
+  SheetTitle,
   SheetTrigger,
 } from "../../elements";
 import { Col, Row } from "@/components/layout";
@@ -92,7 +93,12 @@ export function MobileHamburgerMenu() {
   // Render a placeholder button during SSR to maintain layout
   if (!isMounted) {
     return (
-      <Button variant={"ghost"} className="p-1 visible md:hidden" disabled>
+      <Button
+        variant={"ghost"}
+        className="size-10 visible md:hidden"
+        disabled
+        aria-label="Open menu"
+      >
         <Icons.Menu />
       </Button>
     );
@@ -105,31 +111,40 @@ export function MobileHamburgerMenu() {
         onClick={() => setIsOpen((val) => !val)}
         asChild
       >
-        <Button variant={"ghost"} className="p-1">
+        <Button
+          variant={"ghost"}
+          className="size-10"
+          aria-label={isOpen ? "Close menu" : "Open menu"}
+        >
           {isOpen ? <Icons.X /> : <Icons.Menu />}
         </Button>
       </SheetTrigger>
-      <SheetContent side={"bottom"} className="h-[90vh]">
+      <SheetContent
+        side={"bottom"}
+        className="h-[90vh]"
+        aria-describedby={undefined}
+      >
+        <SheetTitle className="sr-only">Navigation menu</SheetTitle>
         <Col className="flex h-full justify-between">
           <Col>
             <Link
               onClick={() => setIsOpen(false)}
               href={"/"}
-              className="p-2 items-start w-full self-center rounded-[6px]"
+              className="p-3 min-h-[44px] flex items-center w-full self-center rounded-[6px]"
             >
               <p>Home</p>
             </Link>
             <Link
               onClick={() => setIsOpen(false)}
               href={"/about"}
-              className="p-2 items-start w-full self-center rounded-[6px]"
+              className="p-3 min-h-[44px] flex items-center w-full self-center rounded-[6px]"
             >
               <p>About</p>
             </Link>
             <Link
               onClick={() => setIsOpen(false)}
               href={"https://github.com/aIObjectives/tttc-light-js"}
-              className="p-2 items-start w-full self-center rounded-[6px]"
+              className="p-3 min-h-[44px] flex items-center w-full self-center rounded-[6px]"
             >
               <p>Github</p>
             </Link>
