@@ -99,7 +99,7 @@ function HoverQuoteCard({
           ref={contentRef}
           sideOffset={-1}
           side="top"
-          avoidCollisions={false}
+          collisionPadding={16}
         >
           <QuoteCard claim={claim} />
         </HoverCardContent>

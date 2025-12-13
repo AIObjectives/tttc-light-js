@@ -88,7 +88,7 @@ export function Cell(
           data-testid={"point-graphic-cell"}
         />
       </HoverCardTrigger>
-      <HoverCardContent sideOffset={-1} className="p-4">
+      <HoverCardContent sideOffset={-1} collisionPadding={16} className="p-4">
         <QuoteCard claim={claim} />
       </HoverCardContent>
     </HoverCard>
