@@ -6,7 +6,11 @@
     "format": "npx prettier . --write",
     "dev": "node dev.js",
     "build": "node build.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "quality:check": "cs delta --staged",
+    "codescene:local": "cs delta --staged",
+    "codescene:pr": "cs delta main",
+    "codescene:full": "bash scripts/codescene-scan.sh"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
