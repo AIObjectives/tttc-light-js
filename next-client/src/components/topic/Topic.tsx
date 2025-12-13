@@ -283,13 +283,19 @@ function ExpandTopic() {
   const { topicNode } = useContext(TopicContext);
   const { isOpen, pagination, children: subtopicNodes, data } = topicNode;
 
+  // Check if "Show more" button will be hidden (all subtopics already visible)
+  const showMoreButtonHidden =
+    isOpen && subtopicNodes.length - 1 - pagination <= 0;
+
   return (
     <Col>
       {/* Topic context - only render when topic is expanded */}
       {isOpen && data.context && (
         <TopicContextDescription context={data.context} />
       )}
-      <Col className="px-3 sm:px-8 gap-y-4">
+      <Col
+        className={`px-3 sm:px-8 gap-y-4 ${showMoreButtonHidden ? "pb-4 sm:pb-8" : ""}`}
+      >
         {subtopicNodes.map((node, i) => (
           <Subtopic
             subtopicNode={node}
@@ -301,13 +307,11 @@ function ExpandTopic() {
         ))}
       </Col>
       {isOpen && pagination <= subtopicNodes.length && (
-        <>
-          <ShowMoreButton
-            moreLeftNum={subtopicNodes.length - 1 - pagination}
-            topicId={data.id}
-            topicColor={data.topicColor}
-          />
-        </>
+        <ShowMoreButton
+          moreLeftNum={subtopicNodes.length - 1 - pagination}
+          topicId={data.id}
+          topicColor={data.topicColor}
+        />
       )}
     </Col>
   );
