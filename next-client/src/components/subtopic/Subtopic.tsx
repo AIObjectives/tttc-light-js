@@ -9,6 +9,7 @@ import React, {
 import * as schema from "tttc-common/schema";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import {
+  ExpandableText,
   TextIcon,
   HoverCard,
   HoverCardContent,
@@ -155,7 +156,7 @@ export function SubtopicHeader({
 }
 
 export function SubtopicDescription({ description }: { description: string }) {
-  return <p>{description}</p>;
+  return <ExpandableText>{description}</ExpandableText>;
 }
 
 export function SubtopicSummary({
