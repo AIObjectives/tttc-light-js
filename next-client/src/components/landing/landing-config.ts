@@ -17,36 +17,31 @@ export const SAMPLE_REPORTS = [
   {
     title: "AI Assemblies",
     imageUri: "/images/sample-ai-assemblies.png",
-    resourceUrl:
-      "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_assembly_2023_t3c.json",
+    resourceUrl: "/report/HAcEAQ3bTfXlWhtCXHa7",
     date: "February 21, 2024",
   },
   {
     title: "AI Manifestos",
     imageUri: "/images/sample-ai-manifestos.png",
-    resourceUrl:
-      "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fai_manifestos_10s_12K.json",
+    resourceUrl: "/report/u1jxGWkhZwU3F6cthVKk",
     date: "November 5, 2024",
   },
   {
     title: "Deliberative Technologies in Polarized Contexts",
     imageUri: "/images/sample-deliberative.png",
-    resourceUrl:
-      "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fdeliberative_tech_polarized_context_t3c.json",
+    resourceUrl: "/report/iQ81mSpYfuGfZ4sy7r80",
     date: "June 26, 2024",
   },
   {
     title: "Recent views on DeepSeek",
     imageUri: "/images/sample-deepseek.png",
-    resourceUrl:
-      "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-dev%2F7b8053b6ccbc5f85d10770281696281a421309f6c6e0aecc461cb82ac65b4777",
+    resourceUrl: "/report/fnsO4ctahpFjbBmYE5Kq",
     date: "February 8, 2025",
   },
   {
     title: "Heal Michigan",
     imageUri: "/images/sample-heal-michigan.png",
-    resourceUrl:
-      "/report/https%3A%2F%2Fstorage.googleapis.com%2Ftttc-light-newbucket%2Fheal_michigan_t3c.json",
+    resourceUrl: "/report/678bPeGL1QdKJbveKiWY",
     date: "August 25, 2023",
   },
 ] as const;
