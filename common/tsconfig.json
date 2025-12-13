@@ -1,22 +1,19 @@
 {
   "compilerOptions": {
-    "outDir": "./dist", // Output directory for compiled JS files
-    "module": "NodeNext", // Use CommonJS modules for Node.js
-    "target": "es2022",
-    "declaration": true, // Generate declaration files
-    "sourceMap": true, // Generate source maps
-    "composite": true, // Enable project references,
+    "outDir": "./dist",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "declaration": true,
+    "sourceMap": true,
+    "composite": true,
     "jsx": "react",
     "strict": true,
-    "paths": {
-      "*": ["*", "node_modules/*"]
-    },
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "baseUrl": ".",
     "resolveJsonModule": true,
-    "lib": ["ES2022", "DOM"]
+    "lib": ["ESNext", "DOM"]
   },
   "include": [
     "*",
