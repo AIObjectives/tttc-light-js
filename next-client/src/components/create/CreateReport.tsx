@@ -9,12 +9,13 @@ import { useUser } from "@/lib/hooks/getUser";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { SigninModal } from "./components/Modals";
-import { useDeferredValue } from "./hooks/useDeferredValue";
 import { EmailVerificationPrompt } from "@/components/auth/EmailVerificationPrompt";
 import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
 import { toast } from "sonner";
 
 import { useFormState } from "./hooks/useFormState";
+import { useSubmitValidation } from "./hooks/useSubmitValidation";
+import { useSignInModal } from "./hooks/useSignInModal";
 import { User } from "firebase/auth";
 import { logger } from "tttc-common/logger/browser";
 import {
@@ -26,8 +27,21 @@ import {
   FormHeader,
   TermsAndConditions,
 } from "./components/FormSections";
+import { Alert, AlertDescription, AlertTitle } from "@/components/elements";
+import { AlertCircle } from "lucide-react";
 
 const createReportLogger = logger.child({ module: "create-report" });
+
+/** Check if user needs email verification (email/password users only, not Google) */
+function checkNeedsEmailVerification(
+  user: ReturnType<typeof useUser>["user"],
+  emailVerified: boolean,
+): boolean {
+  const isEmailPasswordUser =
+    user?.providerData.some((provider) => provider.providerId === "password") ??
+    false;
+  return isEmailPasswordUser && !emailVerified;
+}
 
 /**
  * Hook for getting the authenticated user state.
@@ -102,7 +116,6 @@ function CreateReportComponent({
   user: ReturnType<typeof useUser>["user"];
   emailVerified: boolean;
 }) {
-  const [modalOpen, setModalOpen] = useState(false);
   const submitActionWithUser = bindTokenToAction(user, submitAction);
   const [state, formAction] = useActionState(
     submitActionWithUser,
@@ -110,19 +123,7 @@ function CreateReportComponent({
   );
   const [files, setFiles] = useState<FileList | undefined>(undefined);
 
-  // Use deferred value to avoid showing sign-in modal immediately on page load
-  const deferredUser = useDeferredValue(user);
-
-  useEffect(() => {
-    if (deferredUser === "deferred") {
-      setModalOpen(false);
-    } else if (deferredUser === null) {
-      setModalOpen(true);
-    } else {
-      setModalOpen(false);
-    }
-  }, [deferredUser]);
-
+  const formState = useFormState();
   const {
     title,
     description,
@@ -134,27 +135,24 @@ function CreateReportComponent({
     cruxInstructions,
     cruxesEnabled,
     bridgingEnabled,
-    isFormInvalid,
-  } = useFormState();
+  } = formState;
 
-  // Check if user is signed in with email/password (not Google)
-  // Google sign-ins are automatically verified
-  const isEmailPasswordUser =
-    user?.providerData.some((provider) => provider.providerId === "password") ??
-    false;
-  const needsEmailVerification = isEmailPasswordUser && !emailVerified;
+  const { submitAttempted, errorCount, handleSubmit } = useSubmitValidation(
+    formState,
+    files,
+  );
 
-  const isDisabled = isFormInvalid(files, user) || needsEmailVerification;
-
-  // Handle auth errors by showing sign-in modal
-  const handleAuthError = () => {
-    setModalOpen(true);
-  };
+  const { modalOpen, handleAuthError } = useSignInModal(user);
+  const needsEmailVerification = checkNeedsEmailVerification(
+    user,
+    emailVerified,
+  );
+  const isDisabled = !user || needsEmailVerification;
 
   return (
     <>
       <SigninModal isOpen={modalOpen} />
-      <Form action={formAction}>
+      <Form action={formAction} onSubmit={handleSubmit} noValidate>
         <SubmitFormControl response={state} onAuthError={handleAuthError}>
           <Col gap={8} className="mb-20">
             <h3>Create a report</h3>
@@ -163,8 +161,16 @@ function CreateReportComponent({
             {needsEmailVerification && (
               <EmailVerificationPrompt userEmail={user?.email ?? null} />
             )}
-            <FormDescription title={title} description={description} />
-            <FormDataInput files={files} setFiles={setFiles} />
+            <FormDescription
+              title={title}
+              description={description}
+              showErrors={submitAttempted}
+            />
+            <FormDataInput
+              files={files}
+              setFiles={setFiles}
+              showErrors={submitAttempted}
+            />
             {/* <CostEstimate files={files} /> */}
             <TermsAndConditions />
             <AdvancedSettings
@@ -182,6 +188,16 @@ function CreateReportComponent({
               !state.error.code.startsWith("AUTH_") && (
                 <SubmissionErrorBanner error={state.error} />
               )}
+            {submitAttempted && errorCount > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  You need to fix {errorCount} error{errorCount > 1 ? "s" : ""}{" "}
+                  above before continuing
+                </AlertDescription>
+              </Alert>
+            )}
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
                 Generate the report
