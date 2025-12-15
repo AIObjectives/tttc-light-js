@@ -6,7 +6,7 @@
  */
 
 import OpenAI from "openai";
-import { Logger } from "pino";
+import type { Logger } from "pino";
 import { Result, success, failure } from "tttc-common/functional-utils";
 import {
   Comment,

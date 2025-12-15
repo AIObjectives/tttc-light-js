@@ -18,6 +18,7 @@
   "description": "",
   "devDependencies": {
     "@types/node": "^20.11.24",
+    "pino": "^10.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vitest": "^3.1.2",
