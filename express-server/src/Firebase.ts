@@ -647,6 +647,72 @@ export interface ProfileUpdateData {
   newsletterOptIn?: boolean;
 }
 
+// ============================================================================
+// Profile Data Helpers
+// ============================================================================
+
+/** Check if any substantive profile field is set (excludes newsletterOptIn). */
+function hasAnyProfileField(profileData: ProfileUpdateData): boolean {
+  return !!(
+    profileData.company ||
+    profileData.title ||
+    profileData.phone ||
+    profileData.useCase
+  );
+}
+
+/** Apply profile data to a new user record. */
+function applyProfileToNewUser(
+  userData: Record<string, unknown>,
+  profileData: ProfileUpdateData,
+): void {
+  if (profileData.company) userData.company = profileData.company;
+  if (profileData.title) userData.title = profileData.title;
+  if (profileData.phone) userData.phone = profileData.phone;
+  if (profileData.useCase) userData.useCase = profileData.useCase;
+  if (profileData.newsletterOptIn !== undefined) {
+    userData.newsletterOptIn = profileData.newsletterOptIn;
+  }
+  if (hasAnyProfileField(profileData)) {
+    userData.profileCompletedAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+}
+
+/** Build update fields from profile data for existing user. */
+function buildProfileUpdateFields(
+  profileData: ProfileUpdateData,
+  existingProfileCompletedAt: unknown,
+): Record<string, unknown> {
+  const fields: Record<string, unknown> = {};
+
+  if (profileData.company !== undefined) fields.company = profileData.company;
+  if (profileData.title !== undefined) fields.title = profileData.title;
+  if (profileData.phone !== undefined) fields.phone = profileData.phone;
+  if (profileData.useCase !== undefined) fields.useCase = profileData.useCase;
+  if (profileData.newsletterOptIn !== undefined) {
+    fields.newsletterOptIn = profileData.newsletterOptIn;
+  }
+
+  // Mark profile completion if this is the first time
+  if (!existingProfileCompletedAt && hasAnyProfileField(profileData)) {
+    fields.profileCompletedAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  return fields;
+}
+
+/** Convert Firestore timestamps to Date objects in user document. */
+function convertUserTimestamps(
+  userData: FirebaseFirestore.DocumentData,
+): UserDocument {
+  return {
+    ...userData,
+    createdAt: userData.createdAt?.toDate() || new Date(),
+    lastLoginAt: userData.lastLoginAt?.toDate() || new Date(),
+    profileCompletedAt: userData.profileCompletedAt?.toDate(),
+  } as unknown as UserDocument;
+}
+
 export interface EnsureUserResult {
   user: UserDocument;
   isNew: boolean;
@@ -659,102 +725,31 @@ export async function ensureUserDocument(
   profileData?: ProfileUpdateData,
 ): Promise<EnsureUserResult> {
   firebaseLogger.debug(
-    {
-      firebaseUid,
-      email,
-      displayName,
-      hasProfileData: !!profileData,
-    },
+    { firebaseUid, email, displayName, hasProfileData: !!profileData },
     "ensureUserDocument called",
   );
+
   try {
     const userRef = db.collection(getCollectionName("USERS")).doc(firebaseUid);
     const userDoc = await userRef.get();
     const isNew = !userDoc.exists;
 
     if (isNew) {
-      // Create new user document
-      const newUserData: Record<string, unknown> = {
+      await createNewUserDocument(
+        userRef,
         firebaseUid,
         email,
         displayName,
-        isValid: true, // This user is allowed to login, set to false to ban/disable.
-        roles: ["user"],
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-
-      // Add profile data if provided
-      if (profileData) {
-        if (profileData.company) newUserData.company = profileData.company;
-        if (profileData.title) newUserData.title = profileData.title;
-        if (profileData.phone) newUserData.phone = profileData.phone;
-        if (profileData.useCase) newUserData.useCase = profileData.useCase;
-        if (profileData.newsletterOptIn !== undefined) {
-          newUserData.newsletterOptIn = profileData.newsletterOptIn;
-        }
-        // Mark profile completion timestamp if any profile field is set
-        if (
-          profileData.company ||
-          profileData.title ||
-          profileData.phone ||
-          profileData.useCase
-        ) {
-          newUserData.profileCompletedAt =
-            admin.firestore.FieldValue.serverTimestamp();
-        }
-      }
-
-      await userRef.set({
-        ...newUserData,
-        schemaVersion: SCHEMA_VERSIONS.USER_DOCUMENT, // Set current schema version
-      });
+        profileData,
+      );
     } else {
-      // Update existing user document with latest login time and potentially changed info
-      const updateData: Record<string, unknown> = {
-        lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-
-      // Update email and displayName if they've changed
-      const currentData = userDoc.data();
-      if (email && currentData?.email !== email) {
-        updateData.email = email;
-      }
-      if (displayName && currentData?.displayName !== displayName) {
-        updateData.displayName = displayName;
-      }
-
-      // Update profile fields if provided
-      if (profileData) {
-        if (profileData.company !== undefined) {
-          updateData.company = profileData.company;
-        }
-        if (profileData.title !== undefined) {
-          updateData.title = profileData.title;
-        }
-        if (profileData.phone !== undefined) {
-          updateData.phone = profileData.phone;
-        }
-        if (profileData.useCase !== undefined) {
-          updateData.useCase = profileData.useCase;
-        }
-        if (profileData.newsletterOptIn !== undefined) {
-          updateData.newsletterOptIn = profileData.newsletterOptIn;
-        }
-        // Mark profile completion if this is the first time profile is completed
-        if (
-          !currentData?.profileCompletedAt &&
-          (profileData.company ||
-            profileData.title ||
-            profileData.phone ||
-            profileData.useCase)
-        ) {
-          updateData.profileCompletedAt =
-            admin.firestore.FieldValue.serverTimestamp();
-        }
-      }
-
-      await userRef.update(updateData);
+      await updateExistingUserDocument(
+        userRef,
+        userDoc,
+        email,
+        displayName,
+        profileData,
+      );
     }
 
     // Fetch and return the updated user document
@@ -767,23 +762,74 @@ export async function ensureUserDocument(
       );
     }
 
-    // Convert Firestore timestamps to dates for the return type
-    // Using double assertion because userData is typed as DocumentData (Record<string, any>)
-    // but we know it conforms to UserDocument schema based on how we create/update it
-    const user = {
-      ...userData,
-      createdAt: userData.createdAt?.toDate() || new Date(),
-      lastLoginAt: userData.lastLoginAt?.toDate() || new Date(),
-      profileCompletedAt: userData.profileCompletedAt?.toDate(),
-    } as unknown as UserDocument;
-
-    return { user, isNew };
+    return { user: convertUserTimestamps(userData), isNew };
   } catch (error) {
     firebaseLogger.error({ error }, "Error ensuring user document");
     throw new Error(
       `Failed to ensure user document for ${firebaseUid}: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
+}
+
+/** Create a new user document with optional profile data. */
+async function createNewUserDocument(
+  userRef: FirebaseFirestore.DocumentReference,
+  firebaseUid: string,
+  email: string | null,
+  displayName: string | null,
+  profileData?: ProfileUpdateData,
+): Promise<void> {
+  const newUserData: Record<string, unknown> = {
+    firebaseUid,
+    email,
+    displayName,
+    isValid: true, // Set to false to ban/disable user
+    roles: ["user"],
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  if (profileData) {
+    applyProfileToNewUser(newUserData, profileData);
+  }
+
+  await userRef.set({
+    ...newUserData,
+    schemaVersion: SCHEMA_VERSIONS.USER_DOCUMENT,
+  });
+}
+
+/** Update an existing user document with changed fields and optional profile data. */
+async function updateExistingUserDocument(
+  userRef: FirebaseFirestore.DocumentReference,
+  userDoc: FirebaseFirestore.DocumentSnapshot,
+  email: string | null,
+  displayName: string | null,
+  profileData?: ProfileUpdateData,
+): Promise<void> {
+  const currentData = userDoc.data();
+  const updateData: Record<string, unknown> = {
+    lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  // Update email and displayName if changed
+  if (email && currentData?.email !== email) {
+    updateData.email = email;
+  }
+  if (displayName && currentData?.displayName !== displayName) {
+    updateData.displayName = displayName;
+  }
+
+  // Merge profile updates
+  if (profileData) {
+    const profileFields = buildProfileUpdateFields(
+      profileData,
+      currentData?.profileCompletedAt,
+    );
+    Object.assign(updateData, profileFields);
+  }
+
+  await userRef.update(updateData);
 }
 
 /**
