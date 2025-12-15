@@ -96,6 +96,37 @@ const CIRCUIT_BREAKER_ERROR_THRESHOLD = 0.1;
  */
 const CIRCUIT_BREAKER_MIN_REQUESTS = 10;
 
+// ============================================================================
+// API Configuration
+// ============================================================================
+
+interface ApiConfig {
+  apiKey: string;
+  envPrefix: string;
+}
+
+/**
+ * Resolve API key and environment prefix from parameters or environment.
+ * Returns null if no API key is available.
+ */
+function resolveApiConfig(
+  apiKey?: string,
+  envPrefix?: string,
+): ApiConfig | null {
+  const effectiveApiKey = apiKey || process.env.PERSPECTIVE_API_KEY;
+  const effectiveEnvPrefix =
+    envPrefix || process.env.RATE_LIMIT_PREFIX || "dev";
+
+  if (!effectiveApiKey) {
+    perspectiveLogger.warn(
+      "PERSPECTIVE_API_KEY not set, skipping bridging scores.",
+    );
+    return null;
+  }
+
+  return { apiKey: effectiveApiKey, envPrefix: effectiveEnvPrefix };
+}
+
 /**
  * Sanitize text input for Perspective API.
  * Removes control characters and limits length to avoid API errors.
@@ -213,6 +244,96 @@ async function getCachedScore(
   return null;
 }
 
+// Perspective API response shape for attribute scores
+type AttributeScores = Record<
+  string,
+  { summaryScore?: { value?: number } } | undefined
+>;
+
+/**
+ * Make HTTP request to Perspective API.
+ * Returns attribute scores or null on error.
+ */
+async function callPerspectiveApi(
+  text: string,
+  apiKey: string,
+): Promise<AttributeScores | null> {
+  const requestBody = {
+    comment: { text },
+    requestedAttributes: BRIDGING_ATTRIBUTES,
+    doNotStore: true, // Privacy: don't store text on Google servers
+    languages: ["en"], // Bridging attributes are English-only
+  };
+
+  const response = await fetch(`${PERSPECTIVE_API_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    perspectiveLogger.error(
+      { status: response.status, error: errorData },
+      "Perspective API error",
+    );
+    return null;
+  }
+
+  const data = await response.json();
+  return data.attributeScores ?? {};
+}
+
+/**
+ * Extract individual attribute scores from API response and calculate bridging score.
+ */
+function extractAttributeScores(
+  attrScores: AttributeScores,
+): PerspectiveScores {
+  const personalStory =
+    attrScores.PERSONAL_STORY_EXPERIMENTAL?.summaryScore?.value ?? 0.0;
+  const reasoning =
+    attrScores.REASONING_EXPERIMENTAL?.summaryScore?.value ?? 0.0;
+  const curiosity =
+    attrScores.CURIOSITY_EXPERIMENTAL?.summaryScore?.value ?? 0.0;
+  const toxicity = attrScores.TOXICITY?.summaryScore?.value ?? 0.0;
+
+  return {
+    personalStory,
+    reasoning,
+    curiosity,
+    toxicity,
+    bridgingScore: calculateBridgingScore(
+      personalStory,
+      reasoning,
+      curiosity,
+      toxicity,
+    ),
+  };
+}
+
+/**
+ * Cache scores in Redis with 30-day TTL.
+ */
+async function cacheScoreInRedis(
+  cacheKey: string,
+  scores: PerspectiveScores,
+  redis: Redis,
+): Promise<void> {
+  try {
+    await redis.setex(cacheKey, CACHE_TTL_SECONDS, JSON.stringify(scores));
+    perspectiveLogger.debug(
+      { cacheKey: cacheKey.substring(0, 30), ttlDays: 30 },
+      "Cached bridging score in Redis",
+    );
+  } catch (error) {
+    perspectiveLogger.warn(
+      { error, cacheKey: cacheKey.substring(0, 30) },
+      "Failed to cache bridging score in Redis",
+    );
+  }
+}
+
 /**
  * Score a single text using Perspective API with Redis caching.
  *
@@ -228,101 +349,32 @@ async function scoreText(
   redis?: Redis,
   envPrefix?: string,
 ): Promise<PerspectiveScores | null> {
-  if (!text || !text.trim()) {
+  if (!text?.trim()) {
     perspectiveLogger.warn("Empty text provided for scoring, skipping");
     return null;
   }
 
-  // Sanitize input text
   const sanitizedText = sanitizeText(text);
   if (!sanitizedText.trim()) {
     perspectiveLogger.warn("Text became empty after sanitization, skipping");
     return null;
   }
 
-  // Generate cache key for writing to Redis after API call
-  // Note: Cache reads are handled by scoreItems() before calling this function
-  const cacheKey = getCacheKey(text, envPrefix);
-
   try {
-    const requestBody = {
-      comment: { text: sanitizedText },
-      requestedAttributes: BRIDGING_ATTRIBUTES,
-      doNotStore: true, // Privacy: don't store text on Google servers
-      languages: ["en"], // Bridging attributes are English-only
-    };
+    const attrScores = await callPerspectiveApi(sanitizedText, apiKey);
+    if (!attrScores) return null;
 
-    const response = await fetch(`${PERSPECTIVE_API_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const scores = extractAttributeScores(attrScores);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      perspectiveLogger.error(
-        {
-          status: response.status,
-          error: errorData,
-        },
-        "Perspective API error",
-      );
-      return null;
-    }
-
-    const data = await response.json();
-
-    // Extract scores from response (nullish coalescing for precise handling)
-    const attrScores = data.attributeScores ?? {};
-
-    const personalStory =
-      attrScores.PERSONAL_STORY_EXPERIMENTAL?.summaryScore?.value ?? 0.0;
-    const reasoning =
-      attrScores.REASONING_EXPERIMENTAL?.summaryScore?.value ?? 0.0;
-    const curiosity =
-      attrScores.CURIOSITY_EXPERIMENTAL?.summaryScore?.value ?? 0.0;
-    const toxicity = attrScores.TOXICITY?.summaryScore?.value ?? 0.0;
-
-    // Calculate composite score
-    const bridgingScore = calculateBridgingScore(
-      personalStory,
-      reasoning,
-      curiosity,
-      toxicity,
-    );
-
-    const scores: PerspectiveScores = {
-      personalStory,
-      reasoning,
-      curiosity,
-      toxicity,
-      bridgingScore,
-    };
-
-    // Cache the result in Redis with 30-day TTL
     if (redis) {
-      try {
-        await redis.setex(cacheKey, CACHE_TTL_SECONDS, JSON.stringify(scores));
-        perspectiveLogger.debug(
-          { cacheKey: cacheKey.substring(0, 30), ttlDays: 30 },
-          "Cached bridging score in Redis",
-        );
-      } catch (error) {
-        perspectiveLogger.warn(
-          { error, cacheKey: cacheKey.substring(0, 30) },
-          "Failed to cache bridging score in Redis",
-        );
-      }
+      const cacheKey = getCacheKey(text, envPrefix);
+      await cacheScoreInRedis(cacheKey, scores, redis);
     }
 
     return scores;
   } catch (error) {
     perspectiveLogger.error(
-      {
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: error instanceof Error ? error.message : "Unknown error" },
       "Unexpected error scoring text",
     );
     return null;
@@ -517,19 +569,74 @@ function extractClaimsFromTree(tree: unknown): Array<{
   return claims;
 }
 
+// ============================================================================
+// Scoring Progress Tracking
+// ============================================================================
+
+/**
+ * Tracks scoring progress and implements circuit breaker logic.
+ */
+class ScoringProgress {
+  processed = 0;
+  errors = 0;
+  cacheHits = 0;
+  apiCalls = 0;
+
+  recordCacheHit(): void {
+    this.cacheHits++;
+  }
+
+  recordApiCall(success: boolean): void {
+    this.processed++;
+    this.apiCalls++;
+    if (!success) this.errors++;
+  }
+
+  recordError(): void {
+    this.errors++;
+    this.processed++;
+  }
+
+  /**
+   * Check if circuit breaker should trip.
+   * Returns true if error rate exceeds threshold after minimum requests.
+   */
+  shouldStopDueToErrors(): boolean {
+    if (this.processed < CIRCUIT_BREAKER_MIN_REQUESTS) return false;
+    return this.errors / this.processed > CIRCUIT_BREAKER_ERROR_THRESHOLD;
+  }
+
+  getErrorRate(): string {
+    return ((this.errors / this.processed) * 100).toFixed(1) + "%";
+  }
+
+  getSummary(totalItems: number): Record<string, number> {
+    return {
+      cacheHits: this.cacheHits,
+      apiCalls: this.apiCalls,
+      errors: this.errors,
+      totalItems,
+    };
+  }
+}
+
+/** Shared context for scoring operations. */
+interface ScoringContext {
+  itemTypeName: string;
+  redis?: Redis;
+  apiKey: string;
+  envPrefix: string;
+}
+
 /**
  * Generic helper to score a collection of items using Perspective API.
  * Shared by scoreClaims and scoreQuotes to eliminate code duplication.
- *
- * @param items - Collection of items to score
- * @param options - Configuration for scoring process
- * @returns Array of scored results
  */
 async function scoreItems<TItem, TResult>(
   items: TItem[],
   options: {
-    itemTypeName: string; // "claim" or "quote"
-    itemTypeNamePlural: string; // "claims" or "quotes"
+    itemTypeName: string;
+    itemTypeNamePlural: string;
     getText: (item: TItem) => string | null | undefined;
     getId: (item: TItem) => string;
     buildResult: (item: TItem, score: PerspectiveScores) => TResult;
@@ -548,6 +655,7 @@ async function scoreItems<TItem, TResult>(
     apiKey,
     envPrefix,
   } = options;
+  const ctx: ScoringContext = { itemTypeName, redis, apiKey, envPrefix };
 
   perspectiveLogger.info(
     { [`${itemTypeName}Count`]: items.length },
@@ -555,71 +663,37 @@ async function scoreItems<TItem, TResult>(
   );
 
   const scores: TResult[] = [];
-  let errors = 0;
-  let processed = 0;
-
-  // Track API calls to apply rate limiting only when needed
-  let apiCallsMade = 0;
-  let cacheHits = 0;
+  const progress = new ScoringProgress();
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     const itemId = getId(item);
+    const text = getText(item);
+
+    if (!text?.trim()) {
+      perspectiveLogger.warn(
+        { [`${itemTypeName}Id`]: itemId },
+        `${itemTypeName} has no text, skipping`,
+      );
+      continue;
+    }
 
     try {
-      const text = getText(item);
-      if (!text?.trim()) {
-        perspectiveLogger.warn(
-          { [`${itemTypeName}Id`]: itemId },
-          `${itemTypeName} has no text, skipping`,
-        );
-        continue;
-      }
-
-      // Check cache BEFORE applying rate limiting delay
-      // This allows cached items to be processed without waiting
-      const cachedScore = await getCachedScore(text, redis, envPrefix);
-      if (cachedScore) {
-        scores.push(buildResult(item, cachedScore));
-        cacheHits++;
-        perspectiveLogger.debug(
-          {
-            [`${itemTypeName}Id`]: itemId,
-            bridgingScore: cachedScore.bridgingScore.toFixed(3),
-            progress: `${i + 1}/${items.length}`,
-            cached: true,
-          },
-          `Scored ${itemTypeName} (cached)`,
-        );
-        continue;
-      }
-
-      // Acquire global rate limit for ALL API calls (including first)
-      // Another pipeline might have made a call milliseconds ago
-      await acquireRateLimitWithFallback(redis);
-
-      processed++;
-      apiCallsMade++;
-      const score = await scoreText(text, apiKey, redis, envPrefix);
-
+      const score = await scoreItemWithCache(
+        text,
+        itemId,
+        i,
+        items.length,
+        ctx,
+        progress,
+      );
       if (score) {
         scores.push(buildResult(item, score));
-
-        perspectiveLogger.debug(
-          {
-            [`${itemTypeName}Id`]: itemId,
-            bridgingScore: score.bridgingScore.toFixed(3),
-            progress: `${i + 1}/${items.length}`,
-            cached: false,
-          },
-          `Scored ${itemTypeName}`,
-        );
       } else {
         perspectiveLogger.warn(
           { [`${itemTypeName}Id`]: itemId },
           `Failed to score ${itemTypeName}`,
         );
-        errors++;
       }
     } catch (error) {
       perspectiveLogger.error(
@@ -629,42 +703,81 @@ async function scoreItems<TItem, TResult>(
         },
         `Error scoring ${itemTypeName}`,
       );
-      errors++;
-      processed++;
+      progress.recordError();
 
-      // Circuit breaker: stop if error rate exceeds threshold
-      if (processed >= CIRCUIT_BREAKER_MIN_REQUESTS) {
-        const errorRate = errors / processed;
-        if (errorRate > CIRCUIT_BREAKER_ERROR_THRESHOLD) {
-          perspectiveLogger.error(
-            {
-              errors,
-              processed,
-              errorRate: (errorRate * 100).toFixed(1) + "%",
-              threshold:
-                (CIRCUIT_BREAKER_ERROR_THRESHOLD * 100).toFixed(1) + "%",
-            },
-            `Error rate exceeded threshold, stopping ${itemTypeName} scoring`,
-          );
-          break;
-        }
+      if (progress.shouldStopDueToErrors()) {
+        perspectiveLogger.error(
+          {
+            errors: progress.errors,
+            processed: progress.processed,
+            errorRate: progress.getErrorRate(),
+          },
+          `Error rate exceeded threshold, stopping ${itemTypeName} scoring`,
+        );
+        break;
       }
     }
   }
 
   perspectiveLogger.info(
-    {
-      scoresGenerated: scores.length,
-      cacheHits,
-      apiCalls: apiCallsMade,
-      errors,
-      [`total${itemTypeNamePlural.charAt(0).toUpperCase() + itemTypeNamePlural.slice(1)}`]:
-        items.length,
-    },
-    `${itemTypeName.charAt(0).toUpperCase() + itemTypeName.slice(1)} bridging scoring complete`,
+    { ...progress.getSummary(items.length), scoresGenerated: scores.length },
+    `${capitalize(itemTypeName)} bridging scoring complete`,
   );
-
   return scores;
+}
+
+/**
+ * Score a single item, checking cache first.
+ */
+async function scoreItemWithCache(
+  text: string,
+  itemId: string,
+  index: number,
+  total: number,
+  ctx: ScoringContext,
+  progress: ScoringProgress,
+): Promise<PerspectiveScores | null> {
+  const { itemTypeName, redis, apiKey, envPrefix } = ctx;
+
+  // Check cache before rate limiting
+  const cachedScore = await getCachedScore(text, redis, envPrefix);
+  if (cachedScore) {
+    progress.recordCacheHit();
+    perspectiveLogger.debug(
+      {
+        [`${itemTypeName}Id`]: itemId,
+        bridgingScore: cachedScore.bridgingScore.toFixed(3),
+        progress: `${index + 1}/${total}`,
+        cached: true,
+      },
+      `Scored ${itemTypeName} (cached)`,
+    );
+    return cachedScore;
+  }
+
+  // Acquire rate limit and make API call
+  await acquireRateLimitWithFallback(redis);
+  const score = await scoreText(text, apiKey, redis, envPrefix);
+  progress.recordApiCall(score !== null);
+
+  if (score) {
+    perspectiveLogger.debug(
+      {
+        [`${itemTypeName}Id`]: itemId,
+        bridgingScore: score.bridgingScore.toFixed(3),
+        progress: `${index + 1}/${total}`,
+        cached: false,
+      },
+      `Scored ${itemTypeName}`,
+    );
+  }
+
+  return score;
+}
+
+/** Capitalize first letter of a string. */
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /**
@@ -682,20 +795,10 @@ export async function scoreClaims(
   apiKey?: string,
   envPrefix?: string,
 ): Promise<schema.ClaimBridgingScore[]> {
-  const effectiveApiKey = apiKey || process.env.PERSPECTIVE_API_KEY;
-  const effectiveEnvPrefix =
-    envPrefix || process.env.RATE_LIMIT_PREFIX || "dev";
-
-  if (!effectiveApiKey) {
-    perspectiveLogger.warn(
-      "PERSPECTIVE_API_KEY not set, skipping bridging scores. " +
-        "Set PERSPECTIVE_API_KEY environment variable to enable.",
-    );
-    return [];
-  }
+  const config = resolveApiConfig(apiKey, envPrefix);
+  if (!config) return [];
 
   const claims = extractClaimsFromTree(claimsTree);
-
   if (!claims || claims.length === 0) {
     perspectiveLogger.info("No claims provided for scoring");
     return [];
@@ -713,8 +816,8 @@ export async function scoreClaims(
       ...score,
     }),
     redis,
-    apiKey: effectiveApiKey,
-    envPrefix: effectiveEnvPrefix,
+    apiKey: config.apiKey,
+    envPrefix: config.envPrefix,
   });
 }
 /**
@@ -768,19 +871,10 @@ export async function scoreClaimsFromHydratedTree(
   apiKey?: string,
   envPrefix?: string,
 ): Promise<schema.ClaimBridgingScore[]> {
-  const effectiveApiKey = apiKey || process.env.PERSPECTIVE_API_KEY;
-  const effectiveEnvPrefix =
-    envPrefix || process.env.RATE_LIMIT_PREFIX || "dev";
-
-  if (!effectiveApiKey) {
-    perspectiveLogger.warn(
-      "PERSPECTIVE_API_KEY not set, skipping claim bridging scores.",
-    );
-    return [];
-  }
+  const config = resolveApiConfig(apiKey, envPrefix);
+  if (!config) return [];
 
   const claims = extractClaimsFromHydratedTree(tree);
-
   if (!claims || claims.length === 0) {
     perspectiveLogger.info("No claims provided for scoring");
     return [];
@@ -798,8 +892,8 @@ export async function scoreClaimsFromHydratedTree(
       ...score,
     }),
     redis,
-    apiKey: effectiveApiKey,
-    envPrefix: effectiveEnvPrefix,
+    apiKey: config.apiKey,
+    envPrefix: config.envPrefix,
   });
 }
 
@@ -820,38 +914,22 @@ export function extractQuotesFromTree(tree: schema.Topic[]): Array<{
   speakerId: string;
   interview: string;
 }> {
-  const quotes: Array<{
-    quoteId: string;
-    claimId: string;
-    text: string;
-    topicName: string;
-    subtopicName: string;
-    speakerId: string;
-    interview: string;
-  }> = [];
-
-  for (const topic of tree) {
-    for (const subtopic of topic.subtopics) {
-      for (const claim of subtopic.claims) {
+  return tree.flatMap((topic) =>
+    topic.subtopics.flatMap((subtopic) =>
+      subtopic.claims.flatMap((claim) =>
         // Get all quotes including from similarClaims
-        const allQuotes = getQuotes(claim);
-
-        for (const quote of allQuotes) {
-          quotes.push({
-            quoteId: quote.id,
-            claimId: claim.id,
-            text: quote.text,
-            topicName: topic.title,
-            subtopicName: subtopic.title,
-            speakerId: quote.reference.sourceId,
-            interview: quote.reference.interview,
-          });
-        }
-      }
-    }
-  }
-
-  return quotes;
+        getQuotes(claim).map((quote) => ({
+          quoteId: quote.id,
+          claimId: claim.id,
+          text: quote.text,
+          topicName: topic.title,
+          subtopicName: subtopic.title,
+          speakerId: quote.reference.sourceId,
+          interview: quote.reference.interview,
+        })),
+      ),
+    ),
+  );
 }
 
 /**
@@ -869,19 +947,10 @@ export async function scoreQuotes(
   apiKey?: string,
   envPrefix?: string,
 ): Promise<schema.QuoteBridgingScore[]> {
-  const effectiveApiKey = apiKey || process.env.PERSPECTIVE_API_KEY;
-  const effectiveEnvPrefix =
-    envPrefix || process.env.RATE_LIMIT_PREFIX || "dev";
-
-  if (!effectiveApiKey) {
-    perspectiveLogger.warn(
-      "PERSPECTIVE_API_KEY not set, skipping quote bridging scores.",
-    );
-    return [];
-  }
+  const config = resolveApiConfig(apiKey, envPrefix);
+  if (!config) return [];
 
   const quotes = extractQuotesFromTree(tree);
-
   if (!quotes || quotes.length === 0) {
     perspectiveLogger.info("No quotes provided for scoring");
     return [];
@@ -902,7 +971,7 @@ export async function scoreQuotes(
       ...score,
     }),
     redis,
-    apiKey: effectiveApiKey,
-    envPrefix: effectiveEnvPrefix,
+    apiKey: config.apiKey,
+    envPrefix: config.envPrefix,
   });
 }
