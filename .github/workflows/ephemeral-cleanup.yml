@@ -4,13 +4,121 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  schedule:
+    # Run daily at 10:00 UTC (2-3 AM Pacific depending on daylight saving)
+    - cron: "0 10 * * *"
+  workflow_dispatch: # Allow manual trigger for testing
 
 env:
   PROJECT_ID: tttc-light-js
   REGION: us-central1
 
 jobs:
+  # Scheduled job: find and clean up all orphaned environments
+  scheduled-cleanup:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Find and clean orphaned environments
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Finding orphaned ephemeral environments..."
+
+          # Get list of open PR numbers (with error handling)
+          if ! OPEN_PRS=$(gh pr list --state=open --json number --jq '.[].number' | sort -n); then
+            echo "ERROR: Failed to fetch open PRs from GitHub. Aborting to prevent accidental deletion."
+            exit 1
+          fi
+          echo "Open PRs: $OPEN_PRS"
+
+          # Get list of PR numbers with ephemeral services
+          EPHEMERAL_PRS=$(gcloud run services list --region=$REGION --format="value(name)" 2>/dev/null | grep -oE "pr-[0-9]+" | sed 's/pr-//' | sort -nu)
+          echo "PRs with ephemeral services: $EPHEMERAL_PRS"
+
+          # Safeguard: if we got zero open PRs but have many ephemeral services, something is wrong
+          EPHEMERAL_COUNT=$(echo "$EPHEMERAL_PRS" | wc -w)
+          OPEN_COUNT=$(echo "$OPEN_PRS" | wc -w)
+          if [ "$OPEN_COUNT" -eq 0 ] && [ "$EPHEMERAL_COUNT" -gt 5 ]; then
+            echo "WARNING: Found 0 open PRs but $EPHEMERAL_COUNT ephemeral services. This seems wrong. Aborting."
+            exit 1
+          fi
+
+          # Find orphaned PRs (have services but PR is closed)
+          ORPHANED_PRS=""
+          for pr in $EPHEMERAL_PRS; do
+            if ! echo "$OPEN_PRS" | grep -q "^${pr}$"; then
+              ORPHANED_PRS="$ORPHANED_PRS $pr"
+            fi
+          done
+
+          if [ -z "$ORPHANED_PRS" ]; then
+            echo "No orphaned environments found."
+            exit 0
+          fi
+
+          echo "Orphaned PRs to clean up: $ORPHANED_PRS"
+
+          # Clean up each orphaned PR
+          for pr in $ORPHANED_PRS; do
+            echo ""
+            echo "=== Cleaning up PR $pr ==="
+
+            # Get frontend URL for Firebase domain cleanup
+            FRONTEND_URL=$(gcloud run services describe dev-t3c-next-client-pr-${pr} --region=$REGION --format='value(status.url)' 2>/dev/null || echo "")
+
+            # Delete Pub/Sub resources
+            gcloud pubsub subscriptions delete dev-pipeline-pr-${pr}-subscription --quiet 2>/dev/null || echo "Subscription not found"
+            gcloud pubsub topics delete dev-pipeline-pr-${pr} --quiet 2>/dev/null || echo "Topic not found"
+
+            # Delete Cloud Run services
+            gcloud run services delete dev-t3c-next-client-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Frontend not found"
+            gcloud run services delete dev-t3c-express-server-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Backend not found"
+            gcloud run services delete dev-pyserver-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Pyserver not found"
+
+            # Remove from Firebase authorized domains
+            if [ -n "$FRONTEND_URL" ]; then
+              FRONTEND_DOMAIN=$(echo "$FRONTEND_URL" | sed 's|https://||' | sed 's|http://||')
+              ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
+              CURRENT_CONFIG=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+                "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config")
+              CURRENT_DOMAINS=$(echo "$CURRENT_CONFIG" | jq -r '.authorizedDomains // []' | jq -r '.[]')
+
+              if echo "$CURRENT_DOMAINS" | grep -q "^$FRONTEND_DOMAIN$"; then
+                NEW_DOMAINS_JSON=$(echo "$CURRENT_DOMAINS" | grep -v "^$FRONTEND_DOMAIN$" | jq -R -s 'split("\n")[:-1]')
+                curl -s -X PATCH \
+                  -H "Authorization: Bearer $ACCESS_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d "{\"authorizedDomains\": $NEW_DOMAINS_JSON}" \
+                  "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT_ID/config?updateMask=authorizedDomains" > /dev/null
+                echo "Removed $FRONTEND_DOMAIN from Firebase authorized domains"
+              fi
+            fi
+
+            echo "Cleaned up PR $pr"
+          done
+
+          echo ""
+          echo "=== Scheduled cleanup complete ==="
+
+  # PR close job: clean up specific PR environment
   cleanup:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
