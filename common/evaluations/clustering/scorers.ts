@@ -14,6 +14,151 @@ import type {
 const evaluationLogger = logger.child({ module: "evaluations" });
 
 /**
+ * Validates basic taxonomy structure
+ * @param modelOutput - The model output to validate
+ * @returns True if taxonomy exists and is a non-empty array
+ */
+function hasValidTaxonomyStructure(
+  modelOutput: ClusteringScorerInput["modelOutput"],
+): boolean {
+  return !!(
+    modelOutput &&
+    modelOutput.taxonomy &&
+    Array.isArray(modelOutput.taxonomy) &&
+    modelOutput.taxonomy.length > 0
+  );
+}
+
+/**
+ * Validates word count is within acceptable range
+ * @param text - The text to count words in
+ * @param min - Minimum word count
+ * @param max - Maximum word count
+ * @returns Validation result with word count
+ */
+function validateWordCount(
+  text: string,
+  min: number,
+  max: number,
+): { valid: boolean; count: number } {
+  const count = text.trim().split(/\s+/).length;
+  return {
+    valid: count >= min && count <= max,
+    count,
+  };
+}
+
+/**
+ * Validates a single topic's structure and content
+ * @param topic - The topic to validate
+ * @returns Validation result with success status and reason for failure
+ */
+function validateTopic(topic: LLMTopic): {
+  valid: boolean;
+  reason?: string;
+} {
+  if (
+    !topic.topicName ||
+    !topic.topicShortDescription ||
+    !Array.isArray(topic.subtopics)
+  ) {
+    return {
+      valid: false,
+      reason: "Invalid topic structure",
+    };
+  }
+
+  const wordCountResult = validateWordCount(
+    topic.topicShortDescription,
+    25,
+    35,
+  );
+  if (!wordCountResult.valid) {
+    return {
+      valid: false,
+      reason: `Topic description must be 25-35 words: got ${wordCountResult.count} words`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validates a single subtopic's structure and content
+ * @param subtopic - The subtopic to validate
+ * @returns Validation result with success status and reason for failure
+ */
+function validateSubtopic(subtopic: LLMTopic["subtopics"][0]): {
+  valid: boolean;
+  reason?: string;
+} {
+  if (!subtopic.subtopicName || !subtopic.subtopicShortDescription) {
+    return {
+      valid: false,
+      reason: "Invalid subtopic structure",
+    };
+  }
+
+  const wordCountResult = validateWordCount(
+    subtopic.subtopicShortDescription,
+    70,
+    90,
+  );
+  if (!wordCountResult.valid) {
+    return {
+      valid: false,
+      reason: `Subtopic description must be 70-90 words: got ${wordCountResult.count} words`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validates all topics and their subtopics
+ * @param taxonomy - The taxonomy array to validate
+ * @returns Validation result with success status and reason for failure
+ */
+function validateAllTopics(taxonomy: Array<LLMTopic>): {
+  valid: boolean;
+  reason?: string;
+} {
+  for (const topic of taxonomy) {
+    const topicResult = validateTopic(topic);
+    if (!topicResult.valid) {
+      return topicResult;
+    }
+
+    for (const subtopic of topic.subtopics) {
+      const subtopicResult = validateSubtopic(subtopic);
+      if (!subtopicResult.valid) {
+        return subtopicResult;
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Calculates taxonomy statistics
+ * @param taxonomy - The taxonomy array to analyze
+ * @returns Object with topic count and total subtopics
+ */
+function calculateTaxonomyStats(taxonomy: Array<LLMTopic>): {
+  topic_count: number;
+  total_subtopics: number;
+} {
+  return {
+    topic_count: taxonomy.length,
+    total_subtopics: taxonomy.reduce(
+      (sum: number, topic: LLMTopic) => sum + topic.subtopics.length,
+      0,
+    ),
+  };
+}
+
+/**
  * Scorer for valid JSON structure
  * Validates that the model output conforms to the expected schema with required fields
  * @param input - The scorer input containing model output and dataset row
@@ -23,71 +168,25 @@ export const jsonStructureScorer = weave.op(function jsonStructureScorer({
   modelOutput,
 }: ClusteringScorerInput): JsonStructureScorerOutput {
   try {
-    const hasValidStructure =
-      modelOutput &&
-      modelOutput.taxonomy &&
-      Array.isArray(modelOutput.taxonomy) &&
-      modelOutput.taxonomy.length > 0;
-
-    if (!hasValidStructure) {
+    if (!hasValidTaxonomyStructure(modelOutput)) {
       return {
         valid_json_structure: false,
         reason: "Missing or invalid taxonomy array",
       };
     }
 
-    // Check each topic has required fields
-    for (const topic of modelOutput.taxonomy) {
-      if (
-        !topic.topicName ||
-        !topic.topicShortDescription ||
-        !Array.isArray(topic.subtopics)
-      ) {
-        return {
-          valid_json_structure: false,
-          reason: "Invalid topic structure",
-        };
-      }
-
-      // Check topic description word count (25-35 words)
-      const topicWordCount = topic.topicShortDescription
-        .trim()
-        .split(/\s+/).length;
-      if (topicWordCount < 25 || topicWordCount > 35) {
-        return {
-          valid_json_structure: false,
-          reason: `Topic description must be 25-35 words: got ${topicWordCount} words`,
-        };
-      }
-
-      // Check subtopics
-      for (const subtopic of topic.subtopics) {
-        if (!subtopic.subtopicName || !subtopic.subtopicShortDescription) {
-          return {
-            valid_json_structure: false,
-            reason: "Invalid subtopic structure",
-          };
-        }
-        // Check subtopic description word count (70-80 words)
-        const subtopicWordCount = subtopic.subtopicShortDescription
-          .trim()
-          .split(/\s+/).length;
-        if (subtopicWordCount < 70 || subtopicWordCount > 90) {
-          return {
-            valid_json_structure: false,
-            reason: `Subtopic description must be 70-90 words: got ${subtopicWordCount} words`,
-          };
-        }
-      }
+    const validationResult = validateAllTopics(modelOutput.taxonomy);
+    if (!validationResult.valid) {
+      return {
+        valid_json_structure: false,
+        reason: validationResult.reason ?? "Validation failed",
+      };
     }
 
+    const stats = calculateTaxonomyStats(modelOutput.taxonomy);
     return {
       valid_json_structure: true,
-      topic_count: modelOutput.taxonomy.length,
-      total_subtopics: modelOutput.taxonomy.reduce(
-        (sum: number, topic: LLMTopic) => sum + topic.subtopics.length,
-        0,
-      ),
+      ...stats,
     };
   } catch (error: unknown) {
     if (error instanceof Error) {
