@@ -1,5 +1,5 @@
 import { Storage } from "@google-cloud/storage";
-import { formatError } from "common/utils";
+import { formatError } from "tttc-common/utils";
 import { BucketStore, UploadFailedError } from "../types";
 
 /**

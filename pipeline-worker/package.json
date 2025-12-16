@@ -1,30 +1,27 @@
 {
   "name": "pipeline-worker",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "build": "npx tsc && npx prettier ./dist --write",
-    "dev": "ts-node src/index.ts",
+    "build": "tsc && prettier ./dist --write",
+    "dev": "tsx src/index.ts",
     "test": "vitest",
     "test:unit": "vitest --exclude **/*.integration.test.*",
     "test:integration": "./scripts/test-integration.sh",
-    "start": "node dist/index.js"
+    "start": "tsx dist/index.js"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "AI Objectives Institute",
+  "license": "Apache-2.0",
+  "description": "Pipeline worker for T3C report processing",
   "devDependencies": {
-    "@types/node": "^20.11.24",
-    "pino": "^10.1.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3",
-    "vitest": "^3.1.2",
-    "zod": "^3.23.8"
+    "ts-node": "^10.9.2"
   },
   "dependencies": {
+    "tsx": "^4.20.6",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.17.2",
     "dotenv": "^16.4.5",
@@ -32,8 +29,10 @@
     "firebase-admin": "^13.0.2",
     "ioredis": "^5.4.1",
     "openai": "^6.10.0",
+    "pino": "^10.1.0",
     "prettier": "^3.2.5",
-    "tttc-common": "file:../common",
-    "weave": "^0.11.0"
+    "tttc-common": "workspace:*",
+    "weave": "^0.11.0",
+    "zod": "^3.23.8"
   }
 }

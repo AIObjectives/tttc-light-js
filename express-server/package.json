@@ -1,5 +1,5 @@
 {
-  "name": "express-pipeline",
+  "name": "express-server",
   "version": "1.0.0",
   "type": "module",
   "description": "pipeline for tttc-light-js",
@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "npx tsc && npx prettier ./dist --write",
+    "build": "tsc && prettier ./dist --write",
     "dev": "nodemon --exec tsx src/server.ts",
     "test": "vitest",
     "start": "tsx dist/server.js"
@@ -17,12 +17,9 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.6",
-    "@types/node": "^22.10.0",
     "@types/supertest": "^6.0.3",
     "nodemon": "^3.1.0",
-    "supertest": "^7.1.4",
-    "typescript": "^5.9.3",
-    "vitest": "^3.1.2"
+    "supertest": "^7.1.4"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.4",
@@ -41,12 +38,13 @@
     "ioredis": "^5.4.1",
     "node-fetch": "^3.3.2",
     "openai": "^4.28.4",
+    "pino": "^9.9.0",
     "pino-http": "^10.5.0",
     "posthog-node": "^4.18.0",
     "prettier": "^3.2.5",
     "rate-limit-redis": "^4.2.2",
     "tsx": "^4.20.6",
-    "tttc-common": "file:../common",
-    "zod": "^3.25.76"
+    "tttc-common": "workspace:*",
+    "zod": "^3.23.8"
   }
 }

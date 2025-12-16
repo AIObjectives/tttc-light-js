@@ -1,6 +1,6 @@
 import Redis from "ioredis";
-import { formatError } from "common/utils";
-import { logger } from "common/logger";
+import { formatError } from "tttc-common/utils";
+import { logger } from "tttc-common/logger";
 import {
   Cache,
   RedisCacheConfig,

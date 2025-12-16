@@ -13,6 +13,8 @@
   "references": [
     { "path": "./common" },
     { "path": "./express-server" },
-    { "path": "./next-client" }
+    { "path": "./next-client" },
+    { "path": "./pipeline-worker" },
+    { "path": "./utils" }
   ]
 }

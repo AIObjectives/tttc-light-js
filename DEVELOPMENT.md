@@ -34,12 +34,18 @@ This guide covers setting up a local development environment for Talk to the Cit
 
 Before starting setup, ensure you have:
 
-- **Node.js 24+** and npm
+- **Node.js 24+** and **pnpm**
   - **New to Node.js?** Use [nvm](https://github.com/nvm-sh/nvm) to easily install and switch between Node.js versions:
     ```bash
     # Install and use Node.js 24
     nvm install 24
     nvm use 24
+    ```
+  - **Install pnpm:**
+    ```bash
+    corepack enable
+    corepack prepare pnpm@9 --activate
+    # or: npm install -g pnpm
     ```
 - **Python 3.8+** and pip
 - **Redis server** (local or remote)
@@ -107,29 +113,29 @@ Required for LLM processing in pyserver.
 
 ## Local Development Setup
 
-### 1. Root Dependencies
+### 1. Install All Dependencies
 
-First, install root-level dependencies to set up development tools like Husky for pre-commit hooks:
+From the repository root, install all packages at once using pnpm workspaces:
 
 ```bash
 # From repository root
-npm install
+pnpm install
 ```
 
-This installs Husky and other development tools, and automatically sets up git hooks.
+This installs dependencies for all workspace packages (common, express-server, next-client, pipeline-worker, utils) and sets up git hooks via Husky.
 
-### 2. common (Shared Package)
+**Safety guardrail**: If you accidentally run `npm install`, you'll see an error message directing you to use pnpm instead.
 
-Contains shared types, schemas, and utilities.
+### 2. Build Common Package
+
+The common package contains shared types, schemas, and utilities.
 **Important**: Always build the `common` package first as it's required by other services.
 
 ```bash
-cd common
-npm install
-npm run build
+pnpm --filter=tttc-common run build
 ```
 
-**Note**: Rebuild `common` whenever you modify shared types or schemas, or use the root `npm run dev` which watches for changes.
+**Note**: During development, use `pnpm dev:common` to watch for changes and rebuild automatically.
 
 ### 3. Redis
 
@@ -155,20 +161,42 @@ redis-cli ping  # Should return "PONG"
 
 ### 4. GCP Pubsub Emulator
 
-You will need the google cloud CLI tool.
-Follow this link for installation instructions: [GCP CLI tool](https://cloud.google.com/sdk/docs/install)
+You will need the Google Cloud CLI (`gcloud`) with the Pub/Sub emulator component.
 
-**Install the Emulator**
+**Install gcloud CLI:**
+
+Follow the [official installation guide](https://cloud.google.com/sdk/docs/install) for your platform.
+
+**Install the Pub/Sub Emulator:**
+
+The installation method depends on how you installed gcloud:
 
 ```bash
+# If installed via manual SDK download (most common):
 gcloud components install pubsub-emulator
 gcloud components update
+
+# If installed via apt (Debian/Ubuntu):
+sudo apt-get install google-cloud-cli-pubsub-emulator
+
+# If installed via Homebrew (macOS):
+# The emulator is included, no extra install needed
 ```
 
-**Start the Emulator**
+**Verify Installation:**
 
 ```bash
-gcloud beta emulators pubsub start
+gcloud beta emulators pubsub start --help
+```
+
+**Start the Emulator:**
+
+```bash
+# Standalone:
+gcloud beta emulators pubsub start --host-port=localhost:8085
+
+# Or via pnpm (recommended):
+pnpm dev:pubsub
 ```
 
 ### 5. pyserver (Python/FastAPI)
@@ -208,12 +236,7 @@ pytest
 
 Main backend API that coordinates with pyserver and manages jobs.
 
-**Setup:**
-
-```bash
-cd express-server
-npm install
-```
+No separate install needed - dependencies were installed by `pnpm install` at root.
 
 **Configuration:**
 
@@ -271,28 +294,22 @@ Copy the output strings (without newlines) to the respective `_ENCODED` variable
 **Run:**
 
 ```bash
-cd express-server
-npm run dev
+pnpm dev:server
+# or: pnpm --filter=express-server run dev
 ```
 
 **Test:**
 
 ```bash
-cd express-server
-npm test
-# For coverage: npm run test:coverage
+pnpm --filter=express-server run test
+# For coverage: pnpm --filter=express-server run test:coverage
 ```
 
-### 6. next-client (Next.js Frontend)
+### 7. next-client (Next.js Frontend)
 
 Web application frontend.
 
-**Setup:**
-
-```bash
-cd next-client
-npm install
-```
+No separate install needed - dependencies were installed by `pnpm install` at root.
 
 **Configuration:**
 
@@ -314,35 +331,52 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123:web:abc123
 **Run:**
 
 ```bash
-cd next-client
-npm run dev
+pnpm dev:client
+# or: pnpm --filter=next-client run dev
 ```
 
 **Test:**
 
 ```bash
-cd next-client
-npm test
-# For coverage: npm run test:coverage
+pnpm --filter=next-client run test
+# For coverage: pnpm --filter=next-client run test:coverage
 ```
 
 ## Development Workflow
 
 ### Starting All Services
 
-After initial setup, use the convenience script:
+After initial setup, start all services with colored, labeled output:
 
 ```bash
 # From repository root
-npm run dev
+pnpm dev
 ```
 
-This launches:
+This launches concurrently:
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8080
-- Python LLM service: http://localhost:8000
-- Automatic `common` package rebuilding
+- **common**: Watch mode for automatic rebuilding
+- **server**: Express backend API at http://localhost:8080
+- **client**: Next.js frontend at http://localhost:3000
+- **pubsub**: Google Pub/Sub emulator at localhost:8085
+
+### Starting Individual Services
+
+For more control, start services individually:
+
+```bash
+pnpm dev:common   # Common package in watch mode
+pnpm dev:server   # Express server only
+pnpm dev:client   # Next.js client only
+pnpm dev:pubsub   # Pub/Sub emulator only
+pnpm dev:pyserver # Python server only
+```
+
+This is useful when:
+
+- You only need certain services running
+- A service crashes and needs restarting
+- You want to see logs from a specific service
 
 ### Using the Application
 

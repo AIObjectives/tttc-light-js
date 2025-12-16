@@ -9,3 +9,9 @@ node_modules
 dist
 .next
 out
+
+# npm lock files (using pnpm)
+package-lock.json
+
+# pnpm cache (lock file is copied explicitly in Dockerfiles)
+.pnpm-store
