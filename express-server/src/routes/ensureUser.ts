@@ -12,7 +12,7 @@ export default async function ensureUser(
 ) {
   req.log.info("Ensure user endpoint called");
   try {
-    const { firebaseAuthToken } = req.body;
+    const firebaseAuthToken = req.body?.firebaseAuthToken;
 
     if (!firebaseAuthToken) {
       req.log.warn("No firebaseAuthToken provided");
