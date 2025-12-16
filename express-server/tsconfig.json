@@ -3,7 +3,8 @@
     "outDir": "./dist",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "target": "ESNext",
+    "target": "ES2024",
+    "lib": ["ES2024"],
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {

@@ -3,7 +3,7 @@
     "outDir": "./dist",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "target": "ESNext",
+    "target": "ES2024",
     "declaration": true,
     "sourceMap": true,
     "composite": true,
@@ -13,7 +13,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "resolveJsonModule": true,
-    "lib": ["ESNext", "DOM"]
+    "lib": ["ES2024", "DOM"]
   },
   "include": [
     "*",

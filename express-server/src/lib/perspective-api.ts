@@ -280,7 +280,7 @@ async function callPerspectiveApi(
     return null;
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as { attributeScores?: AttributeScores };
   return data.attributeScores ?? {};
 }
 
