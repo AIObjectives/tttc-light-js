@@ -86,14 +86,14 @@
   "scripts": {
     "test": "vitest",
     "test:integration": "INTEGRATION_TESTS=true vitest",
-    "build": "npx tsc",
-    "watch": "npx tsc --watch --outDir ./dist",
-    "eval:pipeline": "npx tsx evaluations/pipeline-evaluate.ts",
-    "eval:clustering": "npx tsx evaluations/pipeline-evaluate.ts clustering",
-    "eval:extraction": "npx tsx evaluations/pipeline-evaluate.ts extraction",
-    "eval:deduplication": "npx tsx evaluations/pipeline-evaluate.ts deduplication",
-    "eval:summaries": "npx tsx evaluations/pipeline-evaluate.ts summaries",
-    "eval:crux": "npx tsx evaluations/pipeline-evaluate.ts crux"
+    "build": "tsc",
+    "watch": "tsc --watch --outDir ./dist",
+    "eval:pipeline": "tsx evaluations/pipeline-evaluate.ts",
+    "eval:clustering": "tsx evaluations/pipeline-evaluate.ts clustering",
+    "eval:extraction": "tsx evaluations/pipeline-evaluate.ts extraction",
+    "eval:deduplication": "tsx evaluations/pipeline-evaluate.ts deduplication",
+    "eval:summaries": "tsx evaluations/pipeline-evaluate.ts summaries",
+    "eval:crux": "tsx evaluations/pipeline-evaluate.ts crux"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
@@ -111,12 +111,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^22.1.0",
     "@types/react": "^18.2.67",
     "@types/sanitize-html": "^2.16.0",
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vitest": "^3.1.2"
+    "tsx": "^4.20.6"
   }
 }

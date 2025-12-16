@@ -10,7 +10,7 @@ fi
 echo "🔍 Running Prettier on staged files..."
 
 # Format all staged files and re-add them to staging
-echo "$STAGED_FILES" | xargs npx prettier --write || true
+echo "$STAGED_FILES" | xargs pnpm exec prettier --write || true
 
 # Add the formatted files back to staging
 echo "$STAGED_FILES" | xargs git add

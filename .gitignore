@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Keep npm lock files out (using pnpm)
+package-lock.json
+
 # Build outputs
 dist
 .next

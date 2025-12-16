@@ -1,4 +1,5 @@
 // @ts-check
+const path = require("path");
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true",
 });
@@ -7,7 +8,17 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 const nextConfig = {
   /* config options here */
   output: "standalone",
-  outputFileTracingRoot: __dirname, // Set to next-client directory to avoid incorrect workspace inference
+  // Set to monorepo root for pnpm workspace support
+  outputFileTracingRoot: path.join(__dirname, ".."),
+
+  // Transpile local workspace packages (required for Turbopack and pnpm workspaces)
+  transpilePackages: ["tttc-common"],
+
+  // Turbopack configuration for pnpm workspaces
+  // Note: In Next.js 16, experimental.turbo becomes just "turbopack"
+  turbopack: {
+    root: path.join(__dirname, ".."), // Monorepo root for module resolution
+  },
   typescript: {
     tsconfigPath: "tsconfig.build.json",
   },

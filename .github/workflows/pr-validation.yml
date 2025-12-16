@@ -21,32 +21,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: "npm"
+          cache: "pnpm"
 
-      - name: Install all dependencies
-        run: |
-          # Install root dependencies
-          npm ci
-          # Install subdirectory dependencies without breaking symlinks
-          cd common && npm ci
-          cd ../express-server && npm ci
-          cd ../next-client && npm ci
-          cd ../pipeline-worker && npm ci
-          cd ..
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: npx prettier . --check
+        run: pnpm exec prettier . --check
 
       - name: Build and test common package
         run: |
-          cd common
-          npx tsc --noEmit
-          npm run build
-          npm test
+          pnpm --filter=tttc-common exec tsc --noEmit
+          pnpm --filter=tttc-common run build
+          pnpm --filter=tttc-common run test
 
       - name: Build and test Express server
         env:
@@ -61,10 +55,9 @@ jobs:
           ALLOWED_ORIGINS: http://localhost:3000
           ALLOWED_GCS_BUCKETS: dummy-bucket
         run: |
-          cd express-server
-          npx tsc --noEmit
-          npm run build
-          npm test
+          pnpm --filter=express-server exec tsc --noEmit
+          pnpm --filter=express-server run build
+          pnpm --filter=express-server run test
 
       - name: Build and test Next.js client
         env:
@@ -76,10 +69,9 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID: 1:123456789012:web:abcdef123456
           PIPELINE_EXPRESS_URL: http://localhost:8080
         run: |
-          cd next-client
-          npx tsc --noEmit
-          npm run build
-          npm test
+          pnpm --filter=next-client exec tsc --noEmit
+          pnpm --filter=next-client run build
+          pnpm --filter=next-client run test
 
       - name: Build and test pipeline worker
         env:
@@ -90,10 +82,9 @@ jobs:
           FIREBASE_CREDENTIALS_ENCODED: eyJmYWtlIjogImNyZWRlbnRpYWxzIiwgImZvciI6ICJjaXRlc3QifQ==
           REDIS_URL: redis://localhost:6379
         run: |
-          cd pipeline-worker
-          npx tsc --noEmit
-          npm run build
-          npm test
+          pnpm --filter=pipeline-worker exec tsc --noEmit
+          pnpm --filter=pipeline-worker run build
+          pnpm --filter=pipeline-worker run test
 
       - name: Setup Python and test
         uses: actions/setup-python@v5

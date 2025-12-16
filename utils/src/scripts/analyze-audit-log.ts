@@ -283,9 +283,11 @@ function main(): void {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error("Usage: npm run analyze-audit -- <report-file.json> [...]");
     console.error(
-      "\nExample: npm run analyze-audit -- ../Community-report.json",
+      "Usage: pnpm -F utils analyze-audit -- <report-file.json> [...]",
+    );
+    console.error(
+      "\nExample: pnpm -F utils analyze-audit -- ../Community-report.json",
     );
     process.exit(1);
   }

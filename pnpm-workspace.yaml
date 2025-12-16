@@ -1,0 +1,6 @@
+packages:
+  - "common"
+  - "express-server"
+  - "next-client"
+  - "pipeline-worker"
+  - "utils"

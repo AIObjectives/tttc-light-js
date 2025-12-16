@@ -1,11 +1,30 @@
 {
   "name": "tttc-light-js",
   "version": "1.0.0",
+  "private": true,
   "description": "Talk to the City app",
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "format": "npx prettier . --write",
-    "dev": "node dev.js",
-    "build": "node build.js",
+    "preinstall": "npx only-allow pnpm",
+    "format": "pnpm exec prettier . --write",
+    "dev": "concurrently -n common,server,client,pubsub,pyserver -c blue,green,cyan,yellow,magenta \"pnpm dev:common\" \"pnpm dev:server\" \"pnpm dev:client\" \"pnpm dev:pubsub\" \"pnpm dev:pyserver\"",
+    "dev:start": "pm2 start ecosystem.config.cjs",
+    "dev:stop": "pm2 stop all",
+    "dev:restart": "pm2 restart",
+    "dev:status": "pm2 jlist",
+    "dev:logs": "pm2 logs --lines 50",
+    "dev:kill": "pm2 kill",
+    "dev:common": "pnpm -F tttc-common run watch",
+    "dev:server": "pnpm -F express-server run dev",
+    "dev:client": "pnpm -F next-client run dev",
+    "dev:pubsub": "gcloud beta emulators pubsub start --host-port=localhost:8085",
+    "dev:pyserver": "pyserver/.venv/bin/uvicorn --app-dir pyserver main:app --reload --host 0.0.0.0 --port 8000",
+    "build": "pnpm -F tttc-common run build && pnpm -F '!tttc-common' -r run build",
+    "build:common": "pnpm -F tttc-common run build",
+    "test": "pnpm -r run test",
+    "test:common": "pnpm -F tttc-common run test",
+    "test:server": "pnpm -F express-server run test",
+    "test:client": "pnpm -F next-client run test",
     "prepare": "husky",
     "quality:check": "cs delta --staged",
     "codescene:local": "cs delta --staged",
@@ -18,12 +37,13 @@
     "node": ">=24"
   },
   "devDependencies": {
+    "@types/node": "^22.10.0",
+    "concurrently": "^9.1.0",
     "husky": "^9.0.11",
+    "pm2": "^6.0.14",
     "prettier": "3.2.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.1.2"
   },
-  "type": "module",
-  "dependencies": {
-    "rate-limit-redis": "^4.2.2"
-  }
+  "type": "module"
 }

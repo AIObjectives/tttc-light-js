@@ -28,10 +28,12 @@
  *    - For legacy reports: Use your account or create a dedicated "legacy" user
  *    - The UID can be found in Firebase Console (Authentication > Users)
  *
- * Usage:
- *   npm run migrate-legacy -- "https://storage.googleapis.com/tttc-light-newbucket/heal_michigan_t3c.json"
- *   npm run migrate-legacy -- "tttc-light-newbucket/heal_michigan_t3c.json"
- *   npm run migrate-legacy -- --dry-run "bucket/file.json"
+ * Usage (from repository root):
+ *   pnpm -F utils migrate-legacy -- "https://storage.googleapis.com/tttc-light-newbucket/heal_michigan_t3c.json"
+ *   pnpm -F utils migrate-legacy -- --dry-run "bucket/file.json"
+ *
+ * Or from utils directory:
+ *   cd utils && pnpm migrate-legacy -- "bucket/file.json"
  *
  * Options:
  *   --dry-run    Preview the migration without writing to Firestore
@@ -289,7 +291,7 @@ async function handleExistingReport(
     console.log(
       "To proceed with ownership transfer, re-run with --force flag:",
     );
-    console.log(`  npm run migrate-legacy -- --force "${gcsUri}"`);
+    console.log(`  pnpm -F utils migrate-legacy -- --force "${gcsUri}"`);
     throw new Error("Ownership transfer requires --force flag");
   }
 
@@ -484,11 +486,11 @@ if (args.includes("--help") || args.length === 0) {
   console.log(`
 Migration script to create Firestore ReportRef entries for legacy reports
 
-Usage:
-  npm run migrate-legacy -- "https://storage.googleapis.com/bucket/file.json"
-  npm run migrate-legacy -- "bucket/file.json"
-  npm run migrate-legacy -- --dry-run "bucket/file.json"
-  npm run migrate-legacy -- --force "bucket/file.json"
+Usage (from repository root):
+  pnpm -F utils migrate-legacy -- "https://storage.googleapis.com/bucket/file.json"
+  pnpm -F utils migrate-legacy -- "bucket/file.json"
+  pnpm -F utils migrate-legacy -- --dry-run "bucket/file.json"
+  pnpm -F utils migrate-legacy -- --force "bucket/file.json"
 
 Options:
   --dry-run         Preview the migration without writing to Firestore
@@ -530,7 +532,7 @@ const gcsUri = args.find(
 
 if (!gcsUri) {
   console.error("ERROR: GCS URI required");
-  console.error('Usage: npm run migrate-legacy -- "bucket/file.json"');
+  console.error('Usage: pnpm -F utils migrate-legacy -- "bucket/file.json"');
   console.error("Run with --help for more information");
   process.exit(1);
 }

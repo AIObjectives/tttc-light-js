@@ -29,17 +29,17 @@ Each evaluation type combines:
 ### Run All Evaluations
 
 ```bash
-npm run eval:pipeline
+pnpm run eval:pipeline
 ```
 
 ### Run Individual Evaluations
 
 ```bash
-npm run eval:clustering      # Topic/subtopic generation
-npm run eval:extraction      # Claim extraction
-npm run eval:deduplication   # Claim consolidation
-npm run eval:summaries       # Summary generation
-npm run eval:crux            # Disagreement analysis
+pnpm run eval:clustering      # Topic/subtopic generation
+pnpm run eval:extraction      # Claim extraction
+pnpm run eval:deduplication   # Claim consolidation
+pnpm run eval:summaries       # Summary generation
+pnpm run eval:crux            # Disagreement analysis
 ```
 
 ### Evaluation Output
@@ -57,14 +57,14 @@ Results are logged to the Weave project "t3c-pipeline-evaluation" and displayed 
 
 ```bash
 # Run all unit tests
-npm test
+pnpm test
 
 # Run tests for a specific evaluation type
-npm test extraction
-npm test deduplication
+pnpm test extraction
+pnpm test deduplication
 
 # Run all scorer unit tests
-npm test -- scorers.test.ts
+pnpm test -- scorers.test.ts
 ```
 
 Unit tests:
@@ -77,10 +77,10 @@ Unit tests:
 
 ```bash
 # Run all integration tests
-INTEGRATION_TESTS=true npm test
+INTEGRATION_TESTS=true pnpm test
 
-# Or use the npm script
-npm run test:integration
+# Or use the pnpm script
+pnpm run test:integration
 ```
 
 Integration tests:
@@ -681,9 +681,9 @@ To add a new evaluation type (e.g., "sentiment"):
      break;
    ```
 
-8. **Add npm script** (`common/package.json`):
+8. **Add pnpm script** (`common/package.json`):
    ```json
-   "eval:sentiment": "npx tsx evaluations/pipeline-evaluate.ts sentiment"
+   "eval:sentiment": "tsx evaluations/pipeline-evaluate.ts sentiment"
    ```
 
 ## Resources
