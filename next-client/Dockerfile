@@ -12,9 +12,9 @@ COPY common/package*.json ./common/
 COPY next-client/package*.json ./next-client/
 
 # Install dependencies for common first since it's a dependency
-RUN npm ci --prefix ./common --frozen-lockfile
+RUN npm ci --prefix ./common
 # Install dependencies for next-client
-RUN npm ci --prefix ./next-client --frozen-lockfile
+RUN npm ci --prefix ./next-client
 
 # Build stage
 FROM base AS builder
