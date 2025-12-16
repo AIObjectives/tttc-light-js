@@ -344,7 +344,10 @@ export async function createMondayItem(
           );
         }
 
-        const result = await response.json();
+        const result = (await response.json()) as {
+          errors?: unknown[];
+          data?: { create_item?: { id: string } };
+        };
 
         // Check for GraphQL errors (HTTP 200 but query failed)
         if (result.errors) {
@@ -466,7 +469,7 @@ export async function updateMondayItem(
       );
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as { errors?: unknown[] };
 
     if (result.errors) {
       throw new Error(
@@ -546,7 +549,10 @@ export async function findMondayItemByEmail(
       );
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as {
+      errors?: unknown[];
+      data?: { items_page_by_column_values?: { items: { id: string }[] } };
+    };
 
     if (result.errors) {
       throw new Error(

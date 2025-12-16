@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "ES2024",
     "module": "NodeNext",
     "jsx": "react",
     "strict": true,
