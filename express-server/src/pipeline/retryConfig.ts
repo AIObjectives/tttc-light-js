@@ -1,7 +1,10 @@
-import retry from "async-retry";
+import pRetry, { AbortError, type FailedAttemptError } from "p-retry";
 import { logger } from "tttc-common/logger";
 
 const retryLogger = logger.child({ module: "retry-config" });
+
+// Re-export AbortError for use in other modules
+export { AbortError };
 
 /**
  * Default retry configuration for PyServer API calls
@@ -36,18 +39,19 @@ export const TEST_RETRY_OPTIONS = {
 export const OPERATION_TIMEOUT = 3600000; // 1 hour (Cloud Run maximum)
 
 /**
- * Creates a retry logger with context
+ * Creates a retry logger with context for p-retry's onFailedAttempt callback
  */
 export function createRetryLogger(operation: string) {
-  return (error: Error, attempt: number) => {
+  return (error: FailedAttemptError) => {
     retryLogger.warn(
       {
         operation,
-        attempt,
-        maxAttempts: DEFAULT_RETRY_OPTIONS.retries! + 1,
+        attempt: error.attemptNumber,
+        retriesLeft: error.retriesLeft,
+        maxAttempts: DEFAULT_RETRY_OPTIONS.retries + 1,
         error: error.message,
       },
-      "Retry attempt",
+      "Retry attempt failed",
     );
   };
 }
@@ -91,6 +95,9 @@ export const withoutRetries = (
 
 /**
  * Consolidated retry utility for HTTP requests with proper error handling
+ *
+ * Uses p-retry for ESM-compatible retry logic with exponential backoff.
+ * Throw AbortError to stop retrying immediately.
  */
 export async function withRetry<T>(
   operation: () => Promise<T>,
@@ -100,17 +107,20 @@ export async function withRetry<T>(
   onBeforeRetry?: (attempt: number) => Promise<void>,
 ): Promise<T> {
   const options = { ...getRetryOptions(), ...retryOptions };
+  let attemptNumber = 0;
 
   return withOperationTimeout(
-    retry(
-      async (bail, attemptNumber) => {
+    pRetry(
+      async () => {
+        attemptNumber++;
+
         try {
           // Run pre-retry health check if provided (skip on first attempt)
           if (onBeforeRetry && attemptNumber > 1) {
             try {
               await onBeforeRetry(attemptNumber);
             } catch (healthError) {
-              // Health check failed - bail immediately without retrying
+              // Health check failed - abort immediately without retrying
               retryLogger.error(
                 {
                   operation: operationName,
@@ -120,27 +130,37 @@ export async function withRetry<T>(
                       ? healthError.message
                       : String(healthError),
                 },
-                "Health check failed before retry, bailing",
+                "Health check failed before retry, aborting",
               );
-              bail(healthError as Error);
-              throw healthError;
+              throw new AbortError(
+                healthError instanceof Error
+                  ? healthError
+                  : new Error(String(healthError)),
+              );
             }
           }
 
           return await operation();
         } catch (error) {
-          // If this error shouldn't be retried, bail immediately
-          if (shouldBail(error)) {
-            bail(error as Error);
-            throw error; // This will never execute but satisfies TypeScript
+          // If already an AbortError, let it propagate
+          if (error instanceof AbortError) {
+            throw error;
           }
+
+          // If this error shouldn't be retried, abort immediately
+          if (shouldBail(error)) {
+            throw new AbortError(
+              error instanceof Error ? error : new Error(String(error)),
+            );
+          }
+
           // Re-throw to trigger retry
           throw error;
         }
       },
       {
         ...options,
-        onRetry:
+        onFailedAttempt:
           options.retries > 0 ? createRetryLogger(operationName) : undefined,
       },
     ),
