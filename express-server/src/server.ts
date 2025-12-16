@@ -298,7 +298,11 @@ app.get("/test", async (_req, res) => {
   return res.send("hi");
 });
 
-const server = app.listen(port, () => {
+const server = app.listen(port, (err?: Error) => {
+  if (err) {
+    serverLogger.error({ error: err, port }, "Failed to start server");
+    process.exit(1);
+  }
   serverLogger.info({ port }, "Server started");
 });
 
