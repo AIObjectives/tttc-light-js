@@ -4,8 +4,6 @@ import { Toaster } from "@/components/elements";
 import "./global.css";
 import { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Talk to the City",
   openGraph: {

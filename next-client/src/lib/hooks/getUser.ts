@@ -10,18 +10,37 @@ import { ensureUserDocumentOnClient } from "@/lib/firebase/ensureUserDocument";
 const ensuredUsers = new Set<string>();
 const pendingEnsures = new Map<string, Promise<void>>();
 
+// Timeout for Firebase auth initialization on cold start
+// If onAuthStateChanged doesn't fire within this time, assume no user is logged in
+const AUTH_INIT_TIMEOUT_MS = 5000;
+
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const previousUserRef = useRef<User | null>(null);
+  const hasReceivedCallback = useRef(false);
 
   useEffect(() => {
     let mounted = true;
 
+    // Timeout fallback: if onAuthStateChanged hasn't fired after timeout,
+    // assume no user is logged in (Firebase SDK initialization was slow on cold start)
+    const timeoutId = setTimeout(() => {
+      if (mounted && !hasReceivedCallback.current) {
+        console.debug(
+          "[user-hook-client] Auth init timeout - assuming no user",
+        );
+        setLoading(false);
+      }
+    }, AUTH_INIT_TIMEOUT_MS);
+
     try {
       const unsubscribe = onAuthStateChanged(async (authUser: User | null) => {
         if (!mounted) return;
+
+        hasReceivedCallback.current = true;
+        clearTimeout(timeoutId);
 
         console.debug("[user-hook-client] Auth state changed", {
           uid: authUser?.uid,
@@ -89,9 +108,11 @@ export function useUser() {
 
       return () => {
         mounted = false;
+        clearTimeout(timeoutId);
         unsubscribe();
       };
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error("[user-hook-client] Failed to initialize auth", {
         error: err,
       });

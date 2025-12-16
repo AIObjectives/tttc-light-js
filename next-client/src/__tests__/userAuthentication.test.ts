@@ -230,5 +230,71 @@ describe("User Authentication Hook", () => {
       // Wait for the promise rejection to be handled
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
+
+    it("should stop loading after timeout if auth callback never fires", async () => {
+      // Arrange - mock onAuthStateChanged that never calls callback (simulates slow Firebase init)
+      vi.useFakeTimers();
+
+      mockOnAuthStateChanged.mockImplementation(() => {
+        // Return unsubscribe but never call the callback
+        return unsubscribeMock;
+      });
+
+      // Act
+      const { result } = renderHook(() => useUser());
+
+      // Initially loading
+      expect(result.current.loading).toBe(true);
+      expect(result.current.user).toBeNull();
+
+      // Advance timer past the timeout (5 seconds)
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // Assert - should no longer be loading, no user, no error
+      expect(result.current.loading).toBe(false);
+      expect(result.current.user).toBeNull();
+      expect(result.current.error).toBeNull(); // Timeout is expected, not an error
+
+      vi.useRealTimers();
+    });
+
+    it("should handle late auth callback after timeout", async () => {
+      // Arrange - mock onAuthStateChanged that fires after timeout
+      vi.useFakeTimers();
+
+      let authCallback: (user: User | null) => void;
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        authCallback = callback;
+        return unsubscribeMock;
+      });
+
+      const mockUser: Partial<User> = {
+        uid: "late-user",
+        email: "late@example.com",
+        displayName: "Late User",
+      };
+
+      // Act
+      const { result } = renderHook(() => useUser());
+
+      // Advance timer past the timeout (5 seconds)
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // Verify timeout occurred - no longer loading, no user
+      expect(result.current.loading).toBe(false);
+      expect(result.current.user).toBeNull();
+
+      // Now fire the late callback (Firebase finally initialized)
+      authCallback!(mockUser as User);
+
+      // Need to run all pending microtasks
+      await vi.runAllTimersAsync();
+
+      // Assert - should update with the user despite timeout having occurred
+      expect(result.current.user).toEqual(mockUser);
+      expect(result.current.loading).toBe(false);
+
+      vi.useRealTimers();
+    });
   });
 });
