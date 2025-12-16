@@ -132,6 +132,13 @@ type ColumnIds = z.infer<typeof columnIdsSchema>;
 let cachedColumnIds: ColumnIds | null = null;
 
 /**
+ * In-memory tracking of pending create operations per email
+ * Prevents race conditions when multiple calls try to create items for the same email
+ * Note: This works within a single instance; cross-instance races are handled by findMondayItemByEmail
+ */
+const pendingCreates = new Map<string, Promise<string | null>>();
+
+/**
  * Get column IDs from environment variable
  * Parses MONDAY_COLUMN_IDS JSON and validates structure
  * @throws Error if MONDAY_COLUMN_IDS is missing or invalid
@@ -264,6 +271,24 @@ export async function createMondayItem(
   try {
     validateMondayConfig();
 
+    // Check if there's already a pending create for this email (race condition prevention)
+    const pendingCreate = pendingCreates.get(profile.email);
+    if (pendingCreate) {
+      mondayLogger.info(
+        { email: profile.email },
+        "Waiting for pending monday.com create to complete",
+      );
+      const itemId = await pendingCreate;
+      if (itemId) {
+        mondayLogger.info(
+          { email: profile.email, itemId },
+          "Pending create completed, updating item instead",
+        );
+        return updateMondayItem(itemId, profile);
+      }
+      // If pending create failed/returned null, fall through to try again
+    }
+
     // Check if user already exists - update instead of creating duplicate
     const existingItemId = await findMondayItemByEmail(profile.email);
     if (existingItemId) {
@@ -290,50 +315,77 @@ export async function createMondayItem(
       "Creating monday.com item",
     );
 
-    const response = await fetchWithRetry(
-      "https://api.monday.com/v2",
-      {
-        method: "POST",
-        headers: {
-          Authorization: process.env.MONDAY_API_TOKEN!,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: mutation,
-          variables: {
-            boardId: process.env.MONDAY_BOARD_ID,
-            itemName: profile.displayName,
-            columnValues: JSON.stringify(columnValues),
+    // Track this create operation to prevent race conditions
+    const createPromise = (async (): Promise<string | null> => {
+      try {
+        const response = await fetchWithRetry(
+          "https://api.monday.com/v2",
+          {
+            method: "POST",
+            headers: {
+              Authorization: process.env.MONDAY_API_TOKEN!,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: mutation,
+              variables: {
+                boardId: process.env.MONDAY_BOARD_ID,
+                itemName: profile.displayName,
+                columnValues: JSON.stringify(columnValues),
+              },
+            }),
           },
-        }),
-      },
-      "createMondayItem",
-    );
+          "createMondayItem",
+        );
 
-    if (!response.ok) {
-      throw new Error(
-        `monday.com API HTTP error: ${response.status} ${response.statusText}`,
-      );
+        if (!response.ok) {
+          throw new Error(
+            `monday.com API HTTP error: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const result = await response.json();
+
+        // Check for GraphQL errors (HTTP 200 but query failed)
+        if (result.errors) {
+          throw new Error(
+            `monday.com GraphQL error: ${JSON.stringify(result.errors)}`,
+          );
+        }
+
+        const itemId = result.data?.create_item?.id;
+        mondayLogger.info(
+          {
+            itemId,
+            displayName: profile.displayName,
+            email: profile.email,
+          },
+          "monday.com item created successfully",
+        );
+        return itemId || null;
+      } catch (error) {
+        mondayLogger.error(
+          {
+            error,
+            profile: {
+              displayName: profile.displayName,
+              email: profile.email,
+              hasCompany: !!profile.company,
+              hasUseCase: !!profile.useCase,
+            },
+          },
+          "Failed to create monday.com item",
+        );
+        return null;
+      }
+    })();
+
+    pendingCreates.set(profile.email, createPromise);
+    try {
+      await createPromise;
+    } finally {
+      pendingCreates.delete(profile.email);
     }
-
-    const result = await response.json();
-
-    // Check for GraphQL errors (HTTP 200 but query failed)
-    if (result.errors) {
-      throw new Error(
-        `monday.com GraphQL error: ${JSON.stringify(result.errors)}`,
-      );
-    }
-
-    const itemId = result.data?.create_item?.id;
-    mondayLogger.info(
-      {
-        itemId,
-        displayName: profile.displayName,
-        email: profile.email,
-      },
-      "monday.com item created successfully",
-    );
   } catch (error) {
     // Log error but don't throw - monday.com sync is non-critical
     mondayLogger.error(
