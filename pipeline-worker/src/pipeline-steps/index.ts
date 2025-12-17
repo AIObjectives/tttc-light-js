@@ -4,6 +4,7 @@
  */
 
 export { commentsToTree } from "./clustering/index.js";
+export { extractClaims } from "./claims/index.js";
 export type {
   Comment,
   LLMConfig,
@@ -13,4 +14,8 @@ export type {
   TopicTreeResult,
   ClusteringOptions,
   TokenUsage,
+  Claim,
+  ClaimsTree,
+  ClaimsResult,
+  ClaimsOptions,
 } from "./types.js";

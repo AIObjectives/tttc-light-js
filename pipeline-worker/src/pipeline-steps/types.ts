@@ -2,6 +2,8 @@
  * Shared type definitions for pipeline steps
  */
 
+import type OpenAI from "openai";
+
 /**
  * Base class for all clustering errors
  */
@@ -158,4 +160,124 @@ export interface ClusteringOutput {
   taxonomy: Topic[];
   usage: TokenUsage;
   cost: number;
+}
+
+/**
+ * A single claim extracted from a comment
+ * @property claim - The concise extracted claim text
+ * @property quote - The exact quote from the comment supporting this claim
+ * @property speaker - The speaker who made the comment
+ * @property topicName - The topic this claim belongs to
+ * @property subtopicName - The subtopic this claim belongs to
+ * @property commentId - The ID of the source comment
+ */
+export interface Claim {
+  claim: string;
+  quote: string;
+  speaker: string;
+  topicName: string;
+  subtopicName: string;
+  commentId: string;
+}
+
+/**
+ * Claims grouped under a subtopic
+ * @property total - Total number of claims in this subtopic
+ * @property claims - Array of claims in this subtopic
+ */
+export interface SubtopicClaimNode {
+  total: number;
+  claims: Claim[];
+}
+
+/**
+ * Subtopics with their claims, grouped under a topic
+ * @property total - Total number of claims in this topic across all subtopics
+ * @property subtopics - Record mapping subtopic names to their claim nodes
+ */
+export interface TopicClaimNode {
+  total: number;
+  subtopics: Record<string, SubtopicClaimNode>;
+}
+
+/**
+ * The complete claims tree structure
+ * Maps topic names to their claim nodes
+ */
+export type ClaimsTree = Record<string, TopicClaimNode>;
+
+/**
+ * Result from claims extraction
+ * @property data - The claims tree with all extracted claims organized by topic/subtopic
+ * @property usage - Token usage statistics from the LLM calls
+ * @property cost - Estimated total cost in USD
+ */
+export interface ClaimsResult {
+  data: ClaimsTree;
+  usage: TokenUsage;
+  cost: number;
+}
+
+/**
+ * Options for claims extraction
+ * @property reportId - Optional identifier for the report being processed
+ * @property userId - Optional identifier for the user making the request
+ * @property enableScoring - Optional flag to enable evaluation scoring
+ */
+export interface ClaimsOptions {
+  reportId?: string;
+  userId?: string;
+  enableScoring?: boolean;
+}
+
+/**
+ * Output from claims extraction model
+ * @property claims - Array of claims with topic/subtopic assignments (without speaker/commentId)
+ */
+export interface ClaimsOutput {
+  claims: Array<{
+    claim: string;
+    quote: string;
+    topicName: string;
+    subtopicName: string;
+  }>;
+}
+
+/**
+ * Full result from claims extraction model including usage and cost
+ * @property claims - Array of extracted claims with all metadata
+ * @property usage - Token usage statistics from the API call
+ * @property cost - Estimated cost in USD for the API call
+ */
+export interface ClaimsModelResult {
+  claims: Claim[];
+  usage: TokenUsage;
+  cost: number;
+}
+
+/**
+ * Input parameters for claims extraction from a single comment
+ */
+export interface ExtractClaimsInput {
+  /** OpenAI client instance */
+  openaiClient: OpenAI;
+  /** Model name (e.g., "gpt-4o-mini") */
+  modelName: string;
+  /** System prompt */
+  systemPrompt: string;
+  /** User prompt template */
+  userPrompt: string;
+  /** The comment text to extract claims from */
+  commentText: string;
+  /** Array of topics with subtopics */
+  taxonomy: Topic[];
+  /** The speaker who made the comment */
+  speaker: string;
+  /** The ID of the comment */
+  commentId: string;
+  /** Optional evaluation options */
+  options?: {
+    enableScoring?: boolean;
+    weaveProjectName?: string;
+  };
 }
