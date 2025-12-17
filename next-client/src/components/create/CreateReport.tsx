@@ -56,9 +56,22 @@ function useAuthState(): {
   return { user, emailVerified, isLoading: loading };
 }
 
+/** Check if user signed up with email/password (not OAuth like Google) */
+function isEmailPasswordUser(user: User | null): boolean {
+  return (
+    user?.providerData.some((provider) => provider.providerId === "password") ??
+    false
+  );
+}
+
 /**
  * Binds the user to the form submission, fetching a fresh token at submit time.
  * This prevents stale token issues when users spend a long time editing the form.
+ *
+ * For email/password users, we force a token refresh to ensure the server gets
+ * the latest email_verified claim. This is necessary because the client's
+ * user.emailVerified state can be updated (e.g., after clicking verification link)
+ * while the cached JWT token still has email_verified: false.
  */
 const bindTokenToAction = (
   user: User | null,
@@ -74,8 +87,10 @@ const bindTokenToAction = (
     let token: string | null = null;
     if (user) {
       try {
-        // Fetch fresh token at submit time - Firebase automatically refreshes if expired
-        token = await user.getIdToken();
+        // Force refresh for email/password users to get updated email_verified claim
+        // OAuth users (Google, etc.) don't need this since their email is pre-verified
+        const forceRefresh = isEmailPasswordUser(user);
+        token = await user.getIdToken(forceRefresh);
       } catch (error) {
         createReportLogger.error({ error }, "Failed to refresh auth token");
         throw new Error("Authentication error. Please try signing in again.");

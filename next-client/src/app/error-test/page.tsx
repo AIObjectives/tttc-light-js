@@ -719,7 +719,7 @@ function SignInRequiredPreview() {
         <EmptyContent>
           <div className="flex gap-2">
             <Button onClick={(e) => e.preventDefault()} variant="default">
-              Sign in with Google
+              Sign in
             </Button>
             <Button variant="outline" onClick={(e) => e.preventDefault()}>
               Homepage
