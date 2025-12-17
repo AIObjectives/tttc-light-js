@@ -11,7 +11,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { PipelineJob } from "src/jobs/pipeline";
 import { Env } from "../types/context";
 import { sendErrorByCode } from "./sendError";
-import { ERROR_CODES } from "tttc-common/errors";
+import { ERROR_CODES, ERROR_MESSAGES, ErrorCode } from "tttc-common/errors";
 import { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities, DEFAULT_LIMITS } from "tttc-common/permissions";
@@ -28,6 +28,13 @@ class CreateReportError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "CreateReportError";
+  }
+}
+
+class EmailNotVerifiedError extends Error {
+  constructor() {
+    super(ERROR_MESSAGES[ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED]);
+    this.name = "EmailNotVerifiedError";
   }
 }
 
@@ -240,9 +247,7 @@ const handleUserAuthenticationAndCreateDocuments = async (
         },
         "Email verification required for email/password users",
       );
-      throw new Error(
-        "Email verification required. Please check your inbox for a verification link, or click 'Resend Verification Email' to get a new one.",
-      );
+      throw new EmailNotVerifiedError();
     }
 
     createLogger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
@@ -531,6 +536,22 @@ async function createNewReport(
   };
 }
 
+/**
+ * Map error types to their corresponding error codes.
+ */
+function getErrorCodeForException(e: unknown): ErrorCode {
+  const errorName = e instanceof Error ? e.name : "Unknown";
+  switch (errorName) {
+    case "EmailNotVerifiedError":
+      return ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED;
+    case "CreateReportError":
+      // CSV security violations are client errors, not server errors
+      return ERROR_CODES.CSV_SECURITY_VIOLATION;
+    default:
+      return ERROR_CODES.INTERNAL_ERROR;
+  }
+}
+
 export default async function create(req: RequestWithLogger, res: Response) {
   const requestId = getRequestId(req);
 
@@ -574,16 +595,6 @@ export default async function create(req: RequestWithLogger, res: Response) {
       },
       "Create report error",
     );
-    // CSV security violations are client errors, not server errors
-    if (e instanceof CreateReportError) {
-      sendErrorByCode(
-        res,
-        ERROR_CODES.CSV_SECURITY_VIOLATION,
-        createLogger,
-        requestId,
-      );
-    } else {
-      sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, createLogger, requestId);
-    }
+    sendErrorByCode(res, getErrorCodeForException(e), createLogger, requestId);
   }
 }

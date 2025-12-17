@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import CreateReport from "@/components/create/CreateReport";
 import { useUser } from "@/lib/hooks/getUser";
 import { Center } from "@/components/layout";
 import { Button, Spinner } from "@/components/elements";
-import { signInWithGoogle } from "@/lib/firebase/auth";
+import { SigninModal } from "@/components/create/components/Modals";
 import {
   Empty,
   EmptyHeader,
@@ -17,6 +18,7 @@ import { ExternalLink } from "lucide-react";
 
 export default function ReportCreationPage() {
   const { user, loading } = useUser();
+  const [showSignInModal, setShowSignInModal] = useState(false);
 
   if (loading) {
     return (
@@ -29,6 +31,10 @@ export default function ReportCreationPage() {
   if (user === null) {
     return (
       <Center>
+        <SigninModal
+          isOpen={showSignInModal}
+          onClose={() => setShowSignInModal(false)}
+        />
         <Empty className="border-0 bg-background p-8 rounded-lg max-w-sm">
           <EmptyHeader>
             <EmptyTitle>Sign in required</EmptyTitle>
@@ -39,8 +45,11 @@ export default function ReportCreationPage() {
 
           <EmptyContent>
             <div className="flex gap-2">
-              <Button onClick={() => signInWithGoogle()} variant="default">
-                Sign in with Google
+              <Button
+                onClick={() => setShowSignInModal(true)}
+                variant="default"
+              >
+                Sign in
               </Button>
               <Button asChild variant="outline">
                 <Link href="/">Homepage</Link>

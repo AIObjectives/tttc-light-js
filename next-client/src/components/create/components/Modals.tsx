@@ -8,7 +8,13 @@ import { logger } from "tttc-common/logger/browser";
 
 const signinModalLogger = logger.child({ module: "signin-modal" });
 
-export const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
+export const SigninModal = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose?: () => void;
+}) => {
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(
     "signin",
   );
@@ -22,8 +28,15 @@ export const SigninModal = ({ isOpen }: { isOpen: boolean }) => {
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setAuthMode("signin"); // Reset mode when closing
+      onClose?.();
+    }
+  };
+
   return (
-    <Dialog open={isOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         className="gap-2 p-6 z-[100] max-w-[400px]"
         overlayProps={{ className: "opacity-20 z-[90]" }}
