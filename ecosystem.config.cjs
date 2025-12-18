@@ -38,6 +38,9 @@ module.exports = {
       restart_delay: 1000,
       env: {
         NODE_ENV: "development",
+        // Skip GCE metadata lookup to prevent MetadataLookupWarning in local dev
+        PUBSUB_EMULATOR_HOST: "localhost:8085",
+        METADATA_SERVER_DETECTION: "none",
       },
     },
     {
