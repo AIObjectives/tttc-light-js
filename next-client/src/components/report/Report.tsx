@@ -52,6 +52,17 @@ import { downloadReportData } from "@/lib/report/downloadUtils";
 import { ReportLayout } from "./components/ReportLayout";
 import { ReportHeader } from "./components/ReportHeader";
 import { ReportToolbar } from "./components/ReportToolbar";
+import { PromptToggle } from "./components/PromptToggle";
+
+// Default prompts for comparison
+import {
+  defaultSystemPrompt,
+  defaultClusteringPrompt,
+  defaultExtractionPrompt,
+  defaultDedupPrompt,
+  defaultSummariesPrompt,
+  defaultCruxPrompt,
+} from "tttc-common/prompts";
 
 /**
  * Report Component
@@ -718,8 +729,15 @@ function Appendix({
     }
   };
 
+  const prompts = rawPipelineOutput.promptsUsed;
+
+  // Normalize line endings for comparison (stored prompts may have \r\n)
+  const normalizePrompt = (s: string) => s.replace(/\r\n/g, "\n");
+  const promptsMatch = (stored: string, defaultPrompt: string) =>
+    normalizePrompt(stored) === normalizePrompt(defaultPrompt);
+
   return (
-    <Col className="p-8 appendix-section" gap={1}>
+    <Col className="p-8 appendix-section print:hidden" gap={2}>
       <p className="p-medium">Appendix</p>
       <p
         className="text-muted-foreground underline cursor-pointer"
@@ -727,6 +745,70 @@ function Appendix({
       >
         Download report in JSON
       </p>
+
+      {prompts && (
+        <Col gap={2}>
+          <p className="text-muted-foreground">
+            AI Prompts used to generate this report:
+          </p>
+          <PromptToggle
+            title="System prompt"
+            content={prompts.systemInstructions}
+            isDefault={promptsMatch(
+              prompts.systemInstructions,
+              defaultSystemPrompt,
+            )}
+            defaultContent={defaultSystemPrompt}
+          />
+          <PromptToggle
+            title="Topics and subtopics prompt"
+            content={prompts.clusteringInstructions}
+            isDefault={promptsMatch(
+              prompts.clusteringInstructions,
+              defaultClusteringPrompt,
+            )}
+            defaultContent={defaultClusteringPrompt}
+          />
+          <PromptToggle
+            title="Claim extraction prompt"
+            content={prompts.extractionInstructions}
+            isDefault={promptsMatch(
+              prompts.extractionInstructions,
+              defaultExtractionPrompt,
+            )}
+            defaultContent={defaultExtractionPrompt}
+          />
+          <PromptToggle
+            title="Merging claims prompt"
+            content={prompts.dedupInstructions}
+            isDefault={promptsMatch(
+              prompts.dedupInstructions,
+              defaultDedupPrompt,
+            )}
+            defaultContent={defaultDedupPrompt}
+          />
+          <PromptToggle
+            title="Summaries prompt"
+            content={prompts.summariesInstructions}
+            isDefault={promptsMatch(
+              prompts.summariesInstructions,
+              defaultSummariesPrompt,
+            )}
+            defaultContent={defaultSummariesPrompt}
+          />
+          {prompts.cruxInstructions && (
+            <PromptToggle
+              title="Cruxes prompt"
+              content={prompts.cruxInstructions}
+              isDefault={promptsMatch(
+                prompts.cruxInstructions,
+                defaultCruxPrompt,
+              )}
+              defaultContent={defaultCruxPrompt}
+            />
+          )}
+        </Col>
+      )}
     </Col>
   );
 }

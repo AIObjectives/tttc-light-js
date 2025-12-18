@@ -787,6 +787,9 @@ export const llmPipelineOutput = z.object({
   systemInstructions: z.string(),
   clusteringInstructions: z.string(),
   extractionInstructions: z.string(),
+  dedupInstructions: z.string(),
+  summariesInstructions: z.string(),
+  cruxInstructions: z.string().optional(),
   batchSize: z.number(),
   tree: taxonomy,
   start: z.number(),
@@ -1210,6 +1213,22 @@ export const processingAuditLog = z.object({
 export type ProcessingAuditLog = z.infer<typeof processingAuditLog>;
 
 /********************************
+ * Prompts Used
+ * The actual prompts used when generating a report
+ ********************************/
+
+export const promptsUsed = z.object({
+  systemInstructions: z.string(),
+  clusteringInstructions: z.string(),
+  extractionInstructions: z.string(),
+  dedupInstructions: z.string(),
+  summariesInstructions: z.string(),
+  cruxInstructions: z.string().optional(),
+});
+
+export type PromptsUsed = z.infer<typeof promptsUsed>;
+
+/********************************
  * Pipeline output
  * What the object received from the LLM pipeline should look like.
  ********************************/
@@ -1218,6 +1237,7 @@ export const pipelineOutput = z.object({
   data: reportData,
   metadata: reportMetadata,
   auditLog: processingAuditLog.optional(),
+  promptsUsed: promptsUsed.optional(),
 });
 
 export type PipelineOutput = z.infer<typeof pipelineOutput>;

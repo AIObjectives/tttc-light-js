@@ -417,12 +417,23 @@ export async function pipelineJob(job: PipelineJob) {
     const finalResult = mapResult(outputResult, (pipelineOutput) => {
       const result = llmPipelineToSchema(pipelineOutput);
 
+      // Add prompts used for report appendix
+      const promptsUsed: schema.PromptsUsed = {
+        systemInstructions: pipelineOutput.systemInstructions,
+        clusteringInstructions: pipelineOutput.clusteringInstructions,
+        extractionInstructions: pipelineOutput.extractionInstructions,
+        dedupInstructions: pipelineOutput.dedupInstructions,
+        summariesInstructions: pipelineOutput.summariesInstructions,
+        cruxInstructions: pipelineOutput.cruxInstructions,
+      };
+
       // Claim scoring happens after this, once IDs are assigned
-      // Add audit log if available
-      if (auditLog) {
-        return { ...result, auditLog };
-      }
-      return result;
+      // Add audit log and prompts
+      return {
+        ...result,
+        promptsUsed,
+        ...(auditLog && { auditLog }),
+      };
     });
 
     if (finalResult.tag === "success") {
