@@ -4,3 +4,10 @@ packages:
   - "next-client"
   - "pipeline-worker"
   - "utils"
+
+# Hoist to reduce duplication while maintaining isolation
+# Required for Next.js and some packages that expect flat node_modules
+shamefullyHoist: true
+
+# Faster installs - use locked versions
+preferFrozenLockfile: true
