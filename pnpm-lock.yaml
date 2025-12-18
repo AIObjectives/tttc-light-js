@@ -114,8 +114,8 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1
       express-rate-limit:
-        specifier: ^7.5.0
-        version: 7.5.1(express@5.2.1)
+        specifier: ^8.2.1
+        version: 8.2.1(express@5.2.1)
       firebase-admin:
         specifier: ^13.0.2
         version: 13.6.0
@@ -148,7 +148,7 @@ importers:
         version: 3.2.5
       rate-limit-redis:
         specifier: ^4.2.2
-        version: 4.3.1(express-rate-limit@7.5.1(express@5.2.1))
+        version: 4.3.1(express-rate-limit@8.2.1(express@5.2.1))
       tsx:
         specifier: ^4.20.6
         version: 4.21.0
@@ -303,10 +303,6 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.25.76
-    optionalDependencies:
-      '@rollup/rollup-linux-x64-gnu':
-        specifier: ^4.40.1
-        version: 4.53.5
     devDependencies:
       '@chromatic-com/storybook':
         specifier: ^4.1.3
@@ -374,6 +370,10 @@ importers:
       tailwindcss:
         specifier: ^3.4.3
         version: 3.4.19(tsx@4.21.0)
+    optionalDependencies:
+      '@rollup/rollup-linux-x64-gnu':
+        specifier: ^4.40.1
+        version: 4.53.5
 
   pipeline-worker:
     dependencies:
@@ -4559,8 +4559,8 @@ packages:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
     engines: {node: '>=12.0.0'}
 
-  express-rate-limit@7.5.1:
-    resolution: {integrity: sha512-7iN8iPMDzOMHPUYllBEsQdWVB6fPDMPqwjBaFrgr4Jgr/+okjvzAy+UHlYYL/Vs0OsOrMkwS6PJDkFlJwoxUnw==}
+  express-rate-limit@8.2.1:
+    resolution: {integrity: sha512-PCZEIEIxqwhzw4KF0n7QF4QqruVTcF73O5kFKUnGOyjbCCgizBBiFaYpd/fnBLUMPw/BWw9OsiN7GgrNYr7j6g==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
@@ -5170,6 +5170,10 @@ packages:
   ioredis@5.8.2:
     resolution: {integrity: sha512-C6uC+kleiIMmjViJINWk80sOQw5lEzse1ZmvD+S/s8p8CWapftSaC+kocGTx6xrbrJ4WmYQGC08ffHLr6ToR6Q==}
     engines: {node: '>=12.22.0'}
+
+  ip-address@10.0.1:
+    resolution: {integrity: sha512-NWv9YLW4PoW2B7xtzaS3NCot75m6nK7Icdv0o3lfMceJVRfSoQwqD4wEH5rLwoKJwUiZ/rfpiVBhnaF0FK4HoA==}
+    engines: {node: '>= 12'}
 
   ip-address@10.1.0:
     resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
@@ -12062,9 +12066,10 @@ snapshots:
 
   expect-type@1.3.0: {}
 
-  express-rate-limit@7.5.1(express@5.2.1):
+  express-rate-limit@8.2.1(express@5.2.1):
     dependencies:
       express: 5.2.1
+      ip-address: 10.0.1
 
   express@5.2.1:
     dependencies:
@@ -12908,6 +12913,8 @@ snapshots:
       standard-as-callback: 2.1.0
     transitivePeerDependencies:
       - supports-color
+
+  ip-address@10.0.1: {}
 
   ip-address@10.1.0: {}
 
@@ -14254,9 +14261,9 @@ snapshots:
 
   range-parser@1.2.1: {}
 
-  rate-limit-redis@4.3.1(express-rate-limit@7.5.1(express@5.2.1)):
+  rate-limit-redis@4.3.1(express-rate-limit@8.2.1(express@5.2.1)):
     dependencies:
-      express-rate-limit: 7.5.1(express@5.2.1)
+      express-rate-limit: 8.2.1(express@5.2.1)
 
   raw-body@3.0.2:
     dependencies:
