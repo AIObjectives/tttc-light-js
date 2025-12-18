@@ -19,11 +19,11 @@ export class GooglePubSubQueue implements Queue {
 
   constructor(topicName: string, subscriptionName: string, projectId?: string) {
     // Use emulator in development environment
+    // Note: PUBSUB_EMULATOR_HOST must be set before this runs (via PM2/env)
+    // to prevent MetadataLookupWarning from GCE credential detection
     const pubsubOptions: PubSubConfig = { projectId };
 
     if (process.env.NODE_ENV === "development") {
-      // Configure for Pub/Sub emulator
-      pubsubOptions.apiEndpoint = "localhost:8085";
       pubsubOptions.projectId = projectId || "dev-project";
     }
 
