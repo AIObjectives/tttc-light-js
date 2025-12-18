@@ -40,12 +40,12 @@ export function ReportItem(props: ReportRef) {
   const { description, id } = props;
 
   return (
-    <Card className="min-w-72 h-60">
+    <Card className="min-w-72 h-60 overflow-hidden">
       <Link href={reportLink(id)}>
         <CardContent>
           <Col gap={4}>
             <ReportItemTop {...props} />
-            <p className="line-clamp-4">{description}</p>
+            <p className="line-clamp-3">{description}</p>
           </Col>
         </CardContent>
       </Link>
@@ -63,8 +63,8 @@ const ReportItemTop = ({
 }: ReportRef) => (
   <Col gap={2}>
     <Row className="justify-between">
-      <h4>{title}</h4>
-      <div className="self-center">
+      <h4 className="line-clamp-1">{title}</h4>
+      <div className="self-center shrink-0">
         <Icons.ChevronRight className="w-6 h-6 stroke-muted-foreground" />
       </div>
     </Row>
