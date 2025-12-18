@@ -34,7 +34,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions on:
 
 ## Example Data
 
-See the `examples/` directory for sample CSV files:
+See the `examples/sample_csv_files/` directory for sample CSV files:
 
 - `reddit_climate_change_posts_500.csv`: Climate change discussion posts
 
