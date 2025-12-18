@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import { cn } from "@/lib/utils/shadcn";
 
 // Blur placeholder matching actual image aspect ratio (1764x1218 = 1.45:1)
 const blurDataURL =
@@ -9,7 +10,10 @@ const blurDataURL =
 
 export default function LandingHero({ className }: { className?: string }) {
   return (
-    <div className={className}>
+    <div
+      className={cn(className, "bg-slate-50")}
+      style={{ aspectRatio: "1764/1218" }} // Reserve space, prevent layout shift
+    >
       <Image
         src="/images/t3c-product-desktop-mobile.png"
         alt="Talk to the City product interface dashboard"
