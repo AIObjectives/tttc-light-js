@@ -36,15 +36,10 @@ jobs:
       - name: Check formatting
         run: pnpm exec prettier . --check
 
-      - name: Build and test common package
-        run: |
-          pnpm --filter=tttc-common exec tsc --noEmit
-          pnpm --filter=tttc-common run build
-          pnpm --filter=tttc-common run test
-
-      - name: Build and test Express server
+      - name: Build, typecheck, and test all packages
         env:
-          NODE_ENV: development
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
           OPENAI_API_KEY: dummy-key-for-ci
           GCLOUD_STORAGE_BUCKET: dummy-bucket
           GOOGLE_CREDENTIALS_ENCODED: eyJ0ZXN0IjogInJhbmRvbSIsICJkYXRhIjogImZha2UifQ==
@@ -54,13 +49,6 @@ jobs:
           REDIS_URL: redis://localhost:6379
           ALLOWED_ORIGINS: http://localhost:3000
           ALLOWED_GCS_BUCKETS: dummy-bucket
-        run: |
-          pnpm --filter=express-server exec tsc --noEmit
-          pnpm --filter=express-server run build
-          pnpm --filter=express-server run test
-
-      - name: Build and test Next.js client
-        env:
           NEXT_PUBLIC_FIREBASE_API_KEY: dummy-api-key-for-ci-build
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: dummy-project.firebaseapp.com
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: dummy-project-id
@@ -68,23 +56,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: 123456789012
           NEXT_PUBLIC_FIREBASE_APP_ID: 1:123456789012:web:abcdef123456
           PIPELINE_EXPRESS_URL: http://localhost:8080
-        run: |
-          pnpm --filter=next-client exec tsc --noEmit
-          pnpm --filter=next-client run build
-          pnpm --filter=next-client run test
-
-      - name: Build and test pipeline worker
-        env:
-          NODE_ENV: development
-          OPENAI_API_KEY: dummy-key-for-ci
-          GCLOUD_STORAGE_BUCKET: dummy-bucket
-          GOOGLE_CREDENTIALS_ENCODED: eyJ0ZXN0IjogInJhbmRvbSIsICJkYXRhIjogImZha2UifQ==
-          FIREBASE_CREDENTIALS_ENCODED: eyJmYWtlIjogImNyZWRlbnRpYWxzIiwgImZvciI6ICJjaXRlc3QifQ==
-          REDIS_URL: redis://localhost:6379
-        run: |
-          pnpm --filter=pipeline-worker exec tsc --noEmit
-          pnpm --filter=pipeline-worker run build
-          pnpm --filter=pipeline-worker run test
+        run: pnpm exec turbo run build && pnpm exec turbo run typecheck test --concurrency=4
 
       - name: Setup Python and test
         uses: actions/setup-python@v5

@@ -2,7 +2,7 @@
 FROM node:24-alpine AS base
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN corepack enable && corepack prepare pnpm@10 --activate
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -10,7 +10,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy workspace config
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 COPY common/package.json ./common/
 COPY next-client/package.json ./next-client/
 
@@ -21,6 +21,12 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
+# Turbo remote cache credentials (optional - builds work without them)
+ARG TURBO_TOKEN
+ARG TURBO_TEAM
+ENV TURBO_TOKEN=$TURBO_TOKEN
+ENV TURBO_TEAM=$TURBO_TEAM
+
 # Copy from deps
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/common/node_modules ./common/node_modules
@@ -28,14 +34,14 @@ COPY --from=deps /app/next-client/node_modules ./next-client/node_modules
 COPY --from=deps /app/package.json ./
 COPY --from=deps /app/pnpm-workspace.yaml ./
 COPY --from=deps /app/pnpm-lock.yaml ./
+COPY --from=deps /app/turbo.json ./
 
 # Copy source code
 COPY common/ ./common/
 COPY next-client/ ./next-client/
 
-# Build
-RUN pnpm --filter=tttc-common run build
-RUN pnpm --filter=next-client run build
+# Build with Turborepo (uses remote cache if credentials provided)
+RUN pnpm turbo run build --filter=next-client
 
 # Production image
 FROM base AS runner

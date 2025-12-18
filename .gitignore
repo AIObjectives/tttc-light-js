@@ -21,6 +21,7 @@ google-credentials.json
 
 # Cache
 **/.cache/*
+.turbo
 
 # Python
 __pycache__

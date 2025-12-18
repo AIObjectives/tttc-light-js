@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc && prettier ./dist --write",
+    "typecheck": "tsc --noEmit",
     "dev": "nodemon --exec tsx src/server.ts",
     "test": "vitest",
     "start": "tsx dist/server.js"

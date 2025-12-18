@@ -1,12 +1,19 @@
 # Stage 1: Install dependencies and build
 FROM node:24-slim AS build
 
-RUN corepack enable && corepack prepare pnpm@9 --activate
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@10 --activate
 
 WORKDIR /usr/src/app
 
-# Copy workspace config
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+# Turbo remote cache credentials (optional - builds work without them)
+ARG TURBO_TOKEN
+ARG TURBO_TEAM
+ENV TURBO_TOKEN=$TURBO_TOKEN
+ENV TURBO_TEAM=$TURBO_TEAM
+
+# Copy workspace config files first for layer caching
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 COPY common/package.json ./common/
 COPY pipeline-worker/package.json ./pipeline-worker/
 
@@ -15,13 +22,13 @@ RUN pnpm install --frozen-lockfile
 COPY common/ ./common/
 COPY pipeline-worker/ ./pipeline-worker/
 
-RUN pnpm --filter=tttc-common run build
-RUN pnpm --filter=pipeline-worker run build
+# Build with Turborepo (uses remote cache if credentials provided)
+RUN pnpm turbo run build --filter=pipeline-worker
 
 # Stage 2: Production image
 FROM node:24-slim
 
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN corepack enable && corepack prepare pnpm@10 --activate
 
 WORKDIR /usr/src/app
 

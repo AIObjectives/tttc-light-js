@@ -41,7 +41,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t gcr.io/tttc-light-js/t3c-next-client -f next-client/Dockerfile .
+          docker build \
+            --build-arg TURBO_TOKEN=${{ secrets.TURBO_TOKEN }} \
+            --build-arg TURBO_TEAM=${{ secrets.TURBO_TEAM }} \
+            -t gcr.io/tttc-light-js/t3c-next-client \
+            -f next-client/Dockerfile .
 
       - name: Push Docker image
         run: |

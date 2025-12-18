@@ -1,0 +1,104 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.json", "pnpm-lock.yaml"],
+  "globalEnv": ["NODE_ENV", "CI"],
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": ["*.tsbuildinfo"],
+      "inputs": ["src/**", "tsconfig.json"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "storybook:build": {
+      "dependsOn": ["^build"],
+      "outputs": ["storybook-static/**"],
+      "inputs": ["src/**", ".storybook/**", "**/*.stories.*"]
+    },
+    "tttc-common#build": {
+      "outputs": ["dist/**"],
+      "inputs": [
+        "*.ts",
+        "analytics/**",
+        "api/**",
+        "apiPyserver/**",
+        "csv-security/**",
+        "csv-validation/**",
+        "errors/**",
+        "evaluations/**",
+        "feature-flags/**",
+        "firebase/**",
+        "functional-utils/**",
+        "logger/**",
+        "morphisms/**",
+        "permissions/**",
+        "prompts/**",
+        "schema/**",
+        "utils/**",
+        "tsconfig.json"
+      ]
+    },
+    "next-client#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "inputs": [
+        "src/**",
+        "public/**",
+        "next.config.js",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "env": [
+        "NEXT_PUBLIC_FIREBASE_API_KEY",
+        "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+        "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+        "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+        "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+        "NEXT_PUBLIC_FIREBASE_APP_ID",
+        "PIPELINE_EXPRESS_URL",
+        "ANALYZE"
+      ]
+    },
+    "express-server#test": {
+      "cache": false,
+      "env": [
+        "OPENAI_API_KEY",
+        "GCLOUD_STORAGE_BUCKET",
+        "GOOGLE_CREDENTIALS_ENCODED",
+        "FIREBASE_CREDENTIALS_ENCODED",
+        "CLIENT_BASE_URL",
+        "PYSERVER_URL",
+        "REDIS_URL",
+        "ALLOWED_ORIGINS",
+        "ALLOWED_GCS_BUCKETS"
+      ]
+    },
+    "pipeline-worker#test": {
+      "cache": false,
+      "env": [
+        "OPENAI_API_KEY",
+        "GCLOUD_STORAGE_BUCKET",
+        "GOOGLE_CREDENTIALS_ENCODED",
+        "FIREBASE_CREDENTIALS_ENCODED",
+        "REDIS_URL"
+      ]
+    }
+  }
+}
