@@ -20,7 +20,7 @@ This guide covers setting up a local development environment for Talk to the Cit
        └─────────────────────────────────────┘
 ```
 
-**External Services**: Firebase (Auth), Google Cloud Storage (Reports), Redis (Rate Limiting), Google Pub/Sub (Jobs)
+**External Services**: Firebase (Auth), Google Cloud Storage (Reports), Redis (Rate Limiting & Caching), Google Pub/Sub (Jobs)
 
 ### Data Flow
 
@@ -37,9 +37,9 @@ Before starting setup, ensure you have:
 - **Node.js 24+** and **pnpm**
   - **New to Node.js?** Use [nvm](https://github.com/nvm-sh/nvm) to easily install and switch between Node.js versions:
     ```bash
-    # Install and use Node.js 24
+    # Install Node.js 24, then use .nvmrc for automatic version selection
     nvm install 24
-    nvm use 24
+    nvm use  # Reads version from .nvmrc file
     ```
   - **Install pnpm:**
     ```bash
@@ -47,7 +47,7 @@ Before starting setup, ensure you have:
     corepack prepare pnpm@9 --activate
     # or: npm install -g pnpm
     ```
-- **Python 3.8+** and pip
+- **Python 3.11+** and pip
 - **Redis server** (local or remote)
 
 You'll also need service accounts and API keys for:
@@ -139,7 +139,7 @@ pnpm --filter=tttc-common run build
 
 ### 3. Redis
 
-Used for rate limiting.
+Used for rate limiting and LLM response caching (reduces API costs on retries).
 
 **Install Redis:**
 
@@ -172,15 +172,32 @@ Follow the [official installation guide](https://cloud.google.com/sdk/docs/insta
 The installation method depends on how you installed gcloud:
 
 ```bash
-# If installed via manual SDK download (most common):
+# If installed via manual SDK download (recommended):
 gcloud components install pubsub-emulator
 gcloud components update
 
-# If installed via apt (Debian/Ubuntu):
-sudo apt-get install google-cloud-cli-pubsub-emulator
-
 # If installed via Homebrew (macOS):
 # The emulator is included, no extra install needed
+```
+
+**Important for Ubuntu/Debian users:** The apt-installed gcloud CLI (`apt-get install google-cloud-cli`) does **not** allow installing additional components like the Pub/Sub emulator. You must use the [manual SDK installation](https://cloud.google.com/sdk/docs/install#linux) instead:
+
+```bash
+# Download and extract the SDK (don't use apt)
+curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz
+tar -xf google-cloud-cli-linux-x86_64.tar.gz
+./google-cloud-sdk/install.sh
+
+# Then install the emulator
+./google-cloud-sdk/bin/gcloud components install pubsub-emulator
+```
+
+If you have both versions installed, verify you're using the manual SDK:
+
+```bash
+which gcloud  # Should NOT be /usr/bin/gcloud
+# If wrong, add to your shell config (~/.bashrc or ~/.zshrc):
+export PATH="$HOME/google-cloud-sdk/bin:$PATH"
 ```
 
 **Verify Installation:**
@@ -213,15 +230,30 @@ pip install -r requirements.txt
 ```
 
 **Configuration:**
-No environment variables needed - pyserver receives jobs from express-server.
+
+Create `pyserver/.env` file with these variables:
+
+```bash
+# CORS Configuration (REQUIRED - server will fail to start without this)
+ALLOWED_ORIGINS=http://localhost:8080
+
+# Redis for LLM response caching (optional but recommended)
+REDIS_URL=redis://localhost:6379
+```
 
 **Run:**
 
 ```bash
+# From repository root (recommended):
+pnpm dev:pyserver
+
+# Or manually:
 cd pyserver
 source ./.venv/bin/activate
-uvicorn main:app --host 127.0.0.1 --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
+
+**Note:** Always use `uvicorn` directly. Do not use `fastapi dev` as it changes the working directory and breaks local imports.
 
 **Test:**
 
@@ -267,6 +299,13 @@ ALLOWED_ORIGINS=http://localhost:3000
 GCLOUD_STORAGE_BUCKET=your-bucket-name
 ALLOWED_GCS_BUCKETS=your-bucket-name
 GOOGLE_CREDENTIALS_ENCODED=<base64-encoded-google-credentials.json>
+
+# Google Pub/Sub (optional - defaults shown)
+PUBSUB_TOPIC_NAME=test-topic
+PUBSUB_SUBSCRIPTION_NAME=test-subscription
+
+# Perspective API (optional - for bridging content evaluation)
+# PERSPECTIVE_API_KEY=your-perspective-api-key
 
 # Feature Flags
 FEATURE_FLAG_PROVIDER=local
@@ -359,6 +398,7 @@ This launches concurrently:
 - **server**: Express backend API at http://localhost:8080
 - **client**: Next.js frontend at http://localhost:3000
 - **pubsub**: Google Pub/Sub emulator at localhost:8085
+- **pyserver**: Python FastAPI server at http://localhost:8000
 
 ### Starting Individual Services
 
@@ -406,6 +446,11 @@ id,interview,comment
 
 ### Example Files
 
-See `examples/` directory:
+**Recommended**: Use the sample CSV from the create page (same file users can download):
 
-- `reddit_climate_change_posts_500.csv`: Sample climate change posts
+- `next-client/public/Talk-to-the-City-Sample.csv`: Clean 9-row dataset with all columns
+
+**Larger datasets** in `examples/sample_csv_files/` directory:
+
+- `reddit_climate_change_posts_500.csv`: 500 Reddit posts (uses `id,comment` format)
+- `tiny.csv`, `pets.csv`: Small test files for development
