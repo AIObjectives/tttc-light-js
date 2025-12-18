@@ -418,6 +418,28 @@ This is useful when:
 - A service crashes and needs restarting
 - You want to see logs from a specific service
 
+### Turborepo Remote Cache (Optional)
+
+The project uses Turborepo for build orchestration with an optional shared remote cache. Without setup, you still get local caching and parallel builds. With remote cache enabled, you'll share cached build artifacts with CI and other developers.
+
+**To enable remote cache:**
+
+1. Get `TURBO_TOKEN` and `TURBO_TEAM` from Bitwarden (shared team credentials)
+2. Add to your shell profile (`~/.bashrc` or `~/.zshrc`):
+   ```bash
+   export TURBO_TOKEN="<from-bitwarden>"
+   export TURBO_TEAM="<from-bitwarden>"
+   ```
+3. Restart your terminal or run `source ~/.zshrc`
+
+**Verify it's working:**
+
+```bash
+pnpm build
+# Should show: "Remote caching enabled"
+# Subsequent builds show: "FULL TURBO" with cache hits
+```
+
 ### Using the Application
 
 1. Visit http://localhost:3000

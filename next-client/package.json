@@ -8,6 +8,7 @@
   "scripts": {
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
+    "typecheck": "tsc --noEmit",
     "start": "next start",
     "start-old": "node dist/server.js",
     "dev": "next dev",

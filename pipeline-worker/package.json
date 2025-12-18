@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc && prettier ./dist --write",
+    "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts",
     "test": "vitest",
     "test:unit": "vitest --exclude **/*.integration.test.*",

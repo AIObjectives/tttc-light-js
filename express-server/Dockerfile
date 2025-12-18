@@ -2,12 +2,18 @@
 FROM node:24-slim AS build
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN corepack enable && corepack prepare pnpm@10 --activate
 
 WORKDIR /usr/src/app
 
+# Turbo remote cache credentials (optional - builds work without them)
+ARG TURBO_TOKEN
+ARG TURBO_TEAM
+ENV TURBO_TOKEN=$TURBO_TOKEN
+ENV TURBO_TEAM=$TURBO_TEAM
+
 # Copy workspace config files first for layer caching
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 COPY common/package.json ./common/
 COPY express-server/package.json ./express-server/
 
@@ -18,14 +24,13 @@ RUN pnpm install --frozen-lockfile
 COPY common/ ./common/
 COPY express-server/ ./express-server/
 
-# Build common first, then express-server
-RUN pnpm --filter=tttc-common run build
-RUN pnpm --filter=express-server run build
+# Build with Turborepo (uses remote cache if credentials provided)
+RUN pnpm turbo run build --filter=express-server
 
 # Stage 2: Production image
 FROM node:24-slim
 
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN corepack enable && corepack prepare pnpm@10 --activate
 
 WORKDIR /usr/src/app
 

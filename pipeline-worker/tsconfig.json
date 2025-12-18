@@ -5,6 +5,7 @@
     "target": "ES2024",
     "lib": ["ES2024"],
     "sourceMap": true,
+    "incremental": true,
     "baseUrl": ".",
     "paths": {
       "common/*": ["../common/*"]

@@ -87,6 +87,7 @@
     "test": "vitest",
     "test:integration": "INTEGRATION_TESTS=true vitest",
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "watch": "tsc --watch --outDir ./dist",
     "eval:pipeline": "tsx evaluations/pipeline-evaluate.ts",
     "eval:clustering": "tsx evaluations/pipeline-evaluate.ts clustering",

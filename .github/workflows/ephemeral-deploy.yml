@@ -60,7 +60,11 @@ jobs:
           PR_NUMBER=${{ github.event.number }}
           COMMIT_SHA=${{ github.sha }}
           SHORT_SHA=${COMMIT_SHA:0:7}
-          docker build -f next-client/Dockerfile -t gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
+          docker build \
+            --build-arg TURBO_TOKEN=${{ secrets.TURBO_TOKEN }} \
+            --build-arg TURBO_TEAM=${{ secrets.TURBO_TEAM }} \
+            -f next-client/Dockerfile \
+            -t gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA} .
           docker push gcr.io/$PROJECT_ID/dev-t3c-next-client:pr-${PR_NUMBER}-${SHORT_SHA}
 
       - name: Build and push Docker image for Express Server
@@ -68,8 +72,11 @@ jobs:
           PR_NUMBER=${{ github.event.number }}
           COMMIT_SHA=${{ github.sha }}
           SHORT_SHA=${COMMIT_SHA:0:7}
-
-          docker build -f express-server/Dockerfile -t gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA} .
+          docker build \
+            --build-arg TURBO_TOKEN=${{ secrets.TURBO_TOKEN }} \
+            --build-arg TURBO_TEAM=${{ secrets.TURBO_TEAM }} \
+            -f express-server/Dockerfile \
+            -t gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA} .
           docker push gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA}
 
       - name: Build and push Docker image for Python server
