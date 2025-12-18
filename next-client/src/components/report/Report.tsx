@@ -53,6 +53,7 @@ import { ReportLayout } from "./components/ReportLayout";
 import { ReportHeader } from "./components/ReportHeader";
 import { ReportToolbar } from "./components/ReportToolbar";
 import { PromptToggle } from "./components/PromptToggle";
+import { ProcessingSummary } from "./components/ProcessingSummary";
 
 // Default prompts for comparison
 import {
@@ -745,6 +746,10 @@ function Appendix({
       >
         Download report in JSON
       </p>
+
+      {rawPipelineOutput.auditLog && (
+        <ProcessingSummary auditLog={rawPipelineOutput.auditLog} />
+      )}
 
       {prompts && (
         <Col gap={2}>
