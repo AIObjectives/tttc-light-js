@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  color-normalize: ^2.0.0
+  color-space: ^2.0.0
+  flat-cache: ^4.0.1
+
 importers:
 
   .:
@@ -3254,9 +3259,6 @@ packages:
   ajv@8.17.1:
     resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
 
-  almost-equal@1.1.0:
-    resolution: {integrity: sha512-0V/PkoculFl5+0Lp47JoxUcO0xSxhIBvm+BxHdD/OgXNmdRpRHCFnKVuUoWyS9EzQP+otSGv0m9Lb4yVkQBn2A==}
-
   amp-message@0.1.2:
     resolution: {integrity: sha512-JqutcFwoU1+jhv7ArgW38bqrE+LQdcRv4NxNw0mp0JHQyB6tXesWRjtYKlDgHRY2o3JE5UTaBGUK8kSWUdxWUg==}
 
@@ -3686,8 +3688,8 @@ packages:
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
 
-  color-normalize@1.5.0:
-    resolution: {integrity: sha512-rUT/HDXMr6RFffrR53oX3HGWkDOP9goSAQGBkUaAYKjOE2JxozccdGyufageWDlInRAjm/jYPrf/Y38oa+7obw==}
+  color-normalize@2.0.0:
+    resolution: {integrity: sha512-vwFI3VOB4OLhCaIjhW43Y/VLVAxb2Q1dVHwRx78yRhP+oaGLHJvjAEESDsWcGMk9TCkO6t2gTgJVL39gnt2FRA==}
 
   color-parse@1.4.3:
     resolution: {integrity: sha512-BADfVl/FHkQkyo8sRBwMYBqemqsgnu7JZAwUgvBvuwwuNUZAhSvLTbsEErS5bQXzOjDR0dWzJ4vXN2Q+QoPx0A==}
@@ -3698,8 +3700,11 @@ packages:
   color-rgba@2.1.1:
     resolution: {integrity: sha512-VaX97wsqrMwLSOR6H7rU1Doa2zyVdmShabKrPEIFywLlHoibgD3QW9Dw6fSqM4+H/LfjprDNAUUW31qEQcGzNw==}
 
-  color-space@1.16.0:
-    resolution: {integrity: sha512-A6WMiFzunQ8KEPFmj02OnnoUnqhmSaHaZ/0LVFcPTdlvm8+3aMJ5x1HRHy3bDHPkovkf4sS0f4wsVvwk71fKkg==}
+  color-rgba@3.0.0:
+    resolution: {integrity: sha512-PPwZYkEY3M2THEHHV6Y95sGUie77S7X8v+h1r6LSAPF3/LL2xJ8duUXSrkic31Nzc4odPwHgUbiX/XuTYzQHQg==}
+
+  color-space@2.3.2:
+    resolution: {integrity: sha512-BcKnbOEsOarCwyoLstcoEztwT0IJxqqQkNwDuA3a65sICvvHL2yoeV13psoDFh5IuiOMnIOKdQDwB4Mk3BypiA==}
 
   colorette@2.0.20:
     resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
@@ -4521,9 +4526,9 @@ packages:
   firebase@11.10.0:
     resolution: {integrity: sha512-nKBXoDzF0DrXTBQJlZa+sbC5By99ysYU1D6PkMRYknm0nCW7rJly47q492Ht7Ndz5MeYSBuboKuhS1e6mFC03w==}
 
-  flat-cache@3.2.0:
-    resolution: {integrity: sha512-CYcENa+FtcUKLmhhqyctpclsq7QF38pKjZHsGNiSQF5r4FtoKDWabFDl3hzaEQMvT1LHEysw5twgLvpYYb4vbw==}
-    engines: {node: ^10.12.0 || >=12.0.0}
+  flat-cache@4.0.1:
+    resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
+    engines: {node: '>=16'}
 
   flatted@3.3.3:
     resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
@@ -4608,9 +4613,6 @@ packages:
 
   fs-monkey@1.1.0:
     resolution: {integrity: sha512-QMUezzXWII9EV5aTFXW1UBVUO77wYPpjqIF8/AviUCThNeSYZykpoTixUeaNNBwmCev0AMDWMAni+f8Hxb1IFw==}
-
-  fs.realpath@1.0.0:
-    resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
   fsevents@2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
@@ -4725,10 +4727,6 @@ packages:
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
     hasBin: true
-
-  glob@7.2.3:
-    resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
 
   global-prefix@4.0.0:
     resolution: {integrity: sha512-w0Uf9Y9/nyHinEk5vMJKRie+wa4kR5hmDbEhGGds/kG1PwGLLHKRoNMeJOyCQjjBkANlnScqgzcFwGHgmgLkVA==}
@@ -4884,9 +4882,6 @@ packages:
   hmac-drbg@1.0.1:
     resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
 
-  hsluv@0.0.3:
-    resolution: {integrity: sha512-08iL2VyCRbkQKBySkSh6m8zMUa3sADAxGVWs3Z1aPcUkTJeK0ETG4Fc27tEmQBGUAXZjIsXOZqBvacuVNSC/fQ==}
-
   html-encoding-sniffer@4.0.0:
     resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
     engines: {node: '>=18'}
@@ -4996,10 +4991,6 @@ packages:
   indent-string@4.0.0:
     resolution: {integrity: sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==}
     engines: {node: '>=8'}
-
-  inflight@1.0.6:
-    resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
-    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
@@ -5534,10 +5525,6 @@ packages:
   msgpackr@1.11.6:
     resolution: {integrity: sha512-DzHs4d3a2AaIF4bQZNX5z7NfcoV1pHK/FIcX8Ow65s2DVYPVhJoq0S7wf6I17NkYuWRnG0mvRv4/Bii0D1PEfA==}
 
-  mumath@3.3.4:
-    resolution: {integrity: sha512-VAFIOG6rsxoc7q/IaY3jdjmrsuX9f15KlRLYTHmixASBZkZEKC1IFqE2BC5CdhXmK6WLM1Re33z//AGmeRI6FA==}
-    deprecated: Redundant dependency in your project.
-
   murmurhash-js@1.0.0:
     resolution: {integrity: sha512-TvmkNhkv8yct0SVBSy+o8wYzXjE4Zz3PCesbfs8HiCXXdcTuocApFv11UWlNFWKYsP2okqrhb7JNlSm9InBhIw==}
 
@@ -5850,10 +5837,6 @@ packages:
   path-exists@5.0.0:
     resolution: {integrity: sha512-RjhtfwJOxzcFmNOi6ltcbcu4Iu+FL3zEj83dk4kAS+fVpTxXLO1b38RvJgT/0QwvV/L3aY9TAnyv0EOqW4GoMQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
-  path-is-absolute@1.0.1:
-    resolution: {integrity: sha512-AVbw3UJ2e9bq64vSaS9Am0fje1Pa8pbGqTTsmXfaIiMpnr5DlDhfJOuLj9Sf95ZPVDAUerDfEk88MPmPe7UCQg==}
-    engines: {node: '>=0.10.0'}
 
   path-key@3.1.1:
     resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
@@ -6441,11 +6424,6 @@ packages:
 
   right-now@1.0.0:
     resolution: {integrity: sha512-DA8+YS+sMIVpbsuKgy+Z67L9Lxb1p05mNxRpDPNksPDEFir4vmBlUtuN9jkTGn9YMMdlBuK7XQgFiz6ws+yhSg==}
-
-  rimraf@3.0.2:
-    resolution: {integrity: sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==}
-    deprecated: Rimraf versions prior to v4 are no longer supported
-    hasBin: true
 
   rimraf@5.0.10:
     resolution: {integrity: sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==}
@@ -10085,7 +10063,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       endent: 2.1.0
       find-cache-dir: 3.3.2
-      flat-cache: 3.2.0
+      flat-cache: 4.0.1
       micromatch: 4.0.8
       react-docgen-typescript: 2.4.0(typescript@5.9.3)
       tslib: 2.8.1
@@ -10639,8 +10617,6 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  almost-equal@1.1.0: {}
-
   amp-message@0.1.2:
     dependencies:
       amp: 0.3.1
@@ -11075,10 +11051,9 @@ snapshots:
 
   color-name@1.1.4: {}
 
-  color-normalize@1.5.0:
+  color-normalize@2.0.0:
     dependencies:
-      clamp: 1.0.1
-      color-rgba: 2.1.1
+      color-rgba: 3.0.0
       dtype: 2.0.0
 
   color-parse@1.4.3:
@@ -11093,12 +11068,14 @@ snapshots:
     dependencies:
       clamp: 1.0.1
       color-parse: 1.4.3
-      color-space: 1.16.0
+      color-space: 2.3.2
 
-  color-space@1.16.0:
+  color-rgba@3.0.0:
     dependencies:
-      hsluv: 0.0.3
-      mumath: 3.3.4
+      color-parse: 2.0.0
+      color-space: 2.3.2
+
+  color-space@2.3.2: {}
 
   colorette@2.0.20: {}
 
@@ -12021,11 +11998,10 @@ snapshots:
     transitivePeerDependencies:
       - '@react-native-async-storage/async-storage'
 
-  flat-cache@3.2.0:
+  flat-cache@4.0.1:
     dependencies:
       flatted: 3.3.3
       keyv: 4.5.4
-      rimraf: 3.0.2
 
   flatted@3.3.3: {}
 
@@ -12129,8 +12105,6 @@ snapshots:
       universalify: 2.0.1
 
   fs-monkey@1.1.0: {}
-
-  fs.realpath@1.0.0: {}
 
   fsevents@2.3.2:
     optional: true
@@ -12239,7 +12213,7 @@ snapshots:
   gl-text@1.4.0:
     dependencies:
       bit-twiddle: 1.0.2
-      color-normalize: 1.5.0
+      color-normalize: 2.0.0
       css-font: 1.2.0
       detect-kerning: 2.1.2
       es6-weak-map: 2.0.3
@@ -12284,15 +12258,6 @@ snapshots:
       minipass: 7.1.2
       package-json-from-dist: 1.0.1
       path-scurry: 1.11.1
-
-  glob@7.2.3:
-    dependencies:
-      fs.realpath: 1.0.0
-      inflight: 1.0.6
-      inherits: 2.0.4
-      minimatch: 3.1.2
-      once: 1.4.0
-      path-is-absolute: 1.0.1
 
   global-prefix@4.0.0:
     dependencies:
@@ -12527,8 +12492,6 @@ snapshots:
       minimalistic-assert: 1.0.1
       minimalistic-crypto-utils: 1.0.1
 
-  hsluv@0.0.3: {}
-
   html-encoding-sniffer@4.0.0:
     dependencies:
       whatwg-encoding: 3.1.1
@@ -12655,11 +12618,6 @@ snapshots:
       module-details-from-path: 1.0.4
 
   indent-string@4.0.0: {}
-
-  inflight@1.0.6:
-    dependencies:
-      once: 1.4.0
-      wrappy: 1.0.2
 
   inherits@2.0.4: {}
 
@@ -13189,10 +13147,6 @@ snapshots:
     optionalDependencies:
       msgpackr-extract: 3.0.3
 
-  mumath@3.3.4:
-    dependencies:
-      almost-equal: 1.1.0
-
   murmurhash-js@1.0.0: {}
 
   mute-stream@0.0.8: {}
@@ -13527,8 +13481,6 @@ snapshots:
 
   path-exists@5.0.0: {}
 
-  path-is-absolute@1.0.1: {}
-
   path-key@3.1.1: {}
 
   path-parse@1.0.7: {}
@@ -13672,7 +13624,7 @@ snapshots:
       base64-arraybuffer: 1.0.2
       canvas-fit: 1.5.0
       color-alpha: 1.0.4
-      color-normalize: 1.5.0
+      color-normalize: 2.0.0
       color-parse: 2.0.0
       color-rgba: 2.1.1
       country-regex: 1.1.0
@@ -14222,7 +14174,7 @@ snapshots:
   regl-error2d@2.0.12:
     dependencies:
       array-bounds: 1.0.1
-      color-normalize: 1.5.0
+      color-normalize: 2.0.0
       flatten-vertex-data: 1.0.2
       object-assign: 4.1.1
       pick-by-alias: 1.2.0
@@ -14234,7 +14186,7 @@ snapshots:
       array-bounds: 1.0.1
       array-find-index: 1.0.2
       array-normalize: 1.1.4
-      color-normalize: 1.5.0
+      color-normalize: 2.0.0
       earcut: 2.2.4
       es6-weak-map: 2.0.3
       flatten-vertex-data: 1.0.2
@@ -14250,7 +14202,7 @@ snapshots:
       array-rearrange: 2.2.2
       clamp: 1.0.1
       color-id: 1.1.0
-      color-normalize: 1.5.0
+      color-normalize: 2.0.0
       color-rgba: 2.1.1
       flatten-vertex-data: 1.0.2
       glslify: 7.1.1
@@ -14341,10 +14293,6 @@ snapshots:
   reusify@1.1.0: {}
 
   right-now@1.0.0: {}
-
-  rimraf@3.0.2:
-    dependencies:
-      glob: 7.2.3
 
   rimraf@5.0.10:
     dependencies:
