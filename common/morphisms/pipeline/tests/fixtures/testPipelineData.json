@@ -5,6 +5,8 @@
   "systemInstructions": "",
   "clusteringInstructions": "",
   "extractionInstructions": "",
+  "dedupInstructions": "",
+  "summariesInstructions": "",
   "batchSize": 0,
   "start": 0,
   "costs": 0,

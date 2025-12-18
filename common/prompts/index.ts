@@ -63,7 +63,7 @@ Now here is the list of topics/subtopics:
 \${taxonomy}
 
 And then here is the comment:
-\${comment} `;
+\${comment}`;
 
 export const defaultDedupPrompt = `You are grouping claims to help users understand which themes matter most in this consultation. Your goal is to consolidate similar claims into well-supported groups while preserving genuinely unique perspectives.
 
@@ -133,8 +133,7 @@ Return a JSON object of the form {
 Now here are the claims to group:
 \${claims}`;
 
-export const defaultSummariesPrompt = `
-I'm going to give you a single topic with its description, subtopics, and claims.
+export const defaultSummariesPrompt = `I'm going to give you a single topic with its description, subtopics, and claims.
 
 Generate a detailed summary (100-140 words) that:
 - Synthesizes the key themes and patterns across all subtopics

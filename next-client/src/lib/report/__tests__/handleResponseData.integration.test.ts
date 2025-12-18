@@ -177,6 +177,8 @@ describe("handleResponseData - Integration Tests", () => {
         systemInstructions: "Test instructions",
         clusteringInstructions: "Test clustering",
         extractionInstructions: "Test extraction",
+        dedupInstructions: "Test dedup",
+        summariesInstructions: "Test summaries",
         batchSize: 10,
         tree: [], // taxonomy is array of llmTopic
         start: Date.now(),

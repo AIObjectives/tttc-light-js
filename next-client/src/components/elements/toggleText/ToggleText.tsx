@@ -64,7 +64,7 @@ function Content({ children }: React.PropsWithChildren<{}>) {
   const { isOpen } = useContext(ToggleContext);
   return (
     <div className={`pl-5 ${!isOpen ? "hidden" : "block"}`}>
-      <p className="text-muted-foreground">{children}</p>
+      <div className="text-muted-foreground">{children}</div>
     </div>
   );
 }
