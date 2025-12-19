@@ -1,7 +1,5 @@
-import * as schema from "../../schema";
-// ! for some reason uuid's types aren't working?
-// @ts-ignore
 import { v4 } from "uuid";
+import * as schema from "../../schema";
 
 // type SourcePair = [schema.SourceRow, schema.Source];
 
@@ -11,8 +9,9 @@ type ClaimMap = Record<string, schema.Claim>;
 type SourceMap = Record<string, schema.Source>;
 
 function mulberry32(a: number) {
-  return function () {
-    let t = (a += 0x6d2b79f5);
+  return () => {
+    a += 0x6d2b79f5;
+    let t = a;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -36,7 +35,7 @@ const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
 const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
   const usedAnonNums: number[] = sourceRows
     .map((r) => r.interview && r.interview.match(/Anonymous #(\d+)/))
-    .map((expArr) => (expArr ? parseInt(expArr[1]) : null))
+    .map((expArr) => (expArr ? parseInt(expArr[1], 10) : null))
     .filter((val): val is number => val !== null)
     .map(Math.abs);
 

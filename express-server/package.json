@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc && prettier ./dist --write",
+    "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "nodemon --exec tsx src/server.ts",
     "test": "vitest",
@@ -42,7 +42,6 @@
     "pino": "^9.9.0",
     "pino-http": "^10.5.0",
     "posthog-node": "^4.18.0",
-    "prettier": "^3.2.5",
     "rate-limit-redis": "^4.2.2",
     "tsx": "^4.20.6",
     "tttc-common": "workspace:*",
