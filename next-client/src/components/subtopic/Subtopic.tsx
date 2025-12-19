@@ -189,6 +189,40 @@ export function SubtopicSummary({
   );
 }
 
+/** Hook to process crux speaker data */
+function useCruxSpeakers(crux: ReturnType<typeof getSubtopicCrux>) {
+  const speakerIdToName = React.useMemo(() => {
+    if (!crux) return new Map<string, string>();
+    const map = new Map<string, string>();
+    for (const speakerStr of [
+      ...crux.agree,
+      ...crux.disagree,
+      ...crux.no_clear_position,
+    ]) {
+      const { id, name } = parseSpeaker(speakerStr);
+      map.set(id, name);
+    }
+    return map;
+  }, [crux]);
+
+  const parsedAgree = React.useMemo(
+    () => crux?.agree.map((s) => parseSpeaker(s)) ?? [],
+    [crux?.agree],
+  );
+
+  const parsedDisagree = React.useMemo(
+    () => crux?.disagree.map((s) => parseSpeaker(s)) ?? [],
+    [crux?.disagree],
+  );
+
+  const parsedNoClear = React.useMemo(
+    () => crux?.no_clear_position?.map((s) => parseSpeaker(s)),
+    [crux?.no_clear_position],
+  );
+
+  return { speakerIdToName, parsedAgree, parsedDisagree, parsedNoClear };
+}
+
 function CruxDisplay({
   topicTitle,
   subtopicTitle,
@@ -205,82 +239,47 @@ function CruxDisplay({
   const [showReadMore, setShowReadMore] = useState(false);
   const explanationRef = useRef<HTMLParagraphElement>(null);
 
-  // Use shared hook for delayed scroll with cleanup
   const scrollToAfterRender = useDelayedScroll(setScrollTo);
-
-  // Create unique ID for this crux
   const cruxId = `${topicTitle}:${subtopicTitle}`;
 
-  // Check if explanation text is truncated
-  useIsomorphicLayoutEffect(() => {
-    if (!explanationRef.current || !crux) return;
+  // Extract speaker processing to separate hook
+  const { speakerIdToName, parsedAgree, parsedDisagree, parsedNoClear } =
+    useCruxSpeakers(crux);
 
-    // Temporarily remove line-clamp to measure full height
-    const element = explanationRef.current;
-    const originalClass = element.className;
-    element.className = element.className.replace(/line-clamp-\d+/g, "");
-
-    const fullHeight = element.scrollHeight;
-
-    // Restore line-clamp
-    element.className = originalClass;
-
-    const clampedHeight = element.clientHeight;
-
-    // Show button if content would be taller than clamped height
-    setShowReadMore(fullHeight > clampedHeight);
-  }, [crux?.explanation]);
-
-  // Don't show if no crux data
-  if (!crux) return null;
-
-  // Build speaker ID -> name map with useMemo to avoid re-creating on every render
-  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
-  const speakerIdToName = React.useMemo(() => {
-    const map = new Map<string, string>();
-    const allSpeakers = [
-      ...crux.agree,
-      ...crux.disagree,
-      ...crux.no_clear_position,
-    ];
-    allSpeakers.forEach((speakerStr) => {
-      const { id, name } = parseSpeaker(speakerStr);
-      map.set(id, name);
-    });
-    return map;
-  }, [crux.agree, crux.disagree, crux.no_clear_position]);
-
-  // Clean up the explanation text
-  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
   const cleanExplanation = React.useCallback(
     (text: string): string => {
       let cleaned = text;
-
-      // Replace "Participant X" or "Participants X, Y, Z" with actual names
       cleaned = cleaned.replace(
         /Participants?\s+([\d,\s]+)/g,
         (_match, idList) => {
           const ids = idList.split(/,\s*/).map((id: string) => id.trim());
-          const names = ids
+          return ids
             .map((id: string) => speakerIdToName.get(id) || `Participant ${id}`)
             .join(", ");
-          return names;
         },
       );
-
-      // Replace technical terms with natural language
       cleaned = cleaned.replace(/cruxClaim/g, "key point of disagreement");
       cleaned = cleaned.replace(/the cruxClaim/gi, "this claim");
       cleaned = cleaned.replace(
         /'no_clear_position'/g,
         "those without a clear stance",
       );
-      cleaned = cleaned.replace(/no_clear_position/g, "unclear position");
-
-      return cleaned;
+      return cleaned.replace(/no_clear_position/g, "unclear position");
     },
     [speakerIdToName],
   );
+
+  useIsomorphicLayoutEffect(() => {
+    if (!explanationRef.current || !crux) return;
+    const element = explanationRef.current;
+    const originalClass = element.className;
+    element.className = element.className.replace(/line-clamp-\d+/g, "");
+    const fullHeight = element.scrollHeight;
+    element.className = originalClass;
+    setShowReadMore(fullHeight > element.clientHeight);
+  }, [crux?.explanation]);
+
+  if (!crux) return null;
 
   const category = getControversyCategory(crux.controversyScore);
   const textColorClass = topicColor
@@ -289,76 +288,31 @@ function CruxDisplay({
   const hoverBgClass = topicColor
     ? getThemeColor(topicColor, "bgAccentHover")
     : "hover:bg-accent";
+  const totalPeople =
+    crux.agree.length +
+    crux.disagree.length +
+    (crux.no_clear_position?.length || 0);
 
-  // Handle click: Navigate to Cruxes tab and scroll to this crux
   const handleClick = () => {
     setActiveContentTab("cruxes");
-
-    // Scroll after state updates complete
     scrollToAfterRender(cruxId);
   };
 
-  // Handle subtopic click: Navigate to Report tab and scroll to subtopic
   const handleSubtopicClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    const needsTabSwitch = activeContentTab !== "report";
-
-    if (needsTabSwitch) {
-      // Switch to report tab first, then scroll after render completes
+    if (activeContentTab !== "report") {
       setActiveContentTab("report");
       scrollToAfterRender(subtopicTitle);
     } else {
-      // Already on report tab, scroll immediately
       const element = document.getElementById(subtopicTitle);
-
-      // Scroll to the subtopic
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
-        // Use requestAnimationFrame for scroll offset to ensure smooth scroll completes
         requestAnimationFrame(() => {
           window.scrollBy({ top: NAVBAR_SCROLL_OFFSET, behavior: "auto" });
         });
       }
     }
   };
-
-  // Calculate total people count
-  const totalPeople =
-    crux.agree.length +
-    crux.disagree.length +
-    (crux.no_clear_position?.length || 0);
-
-  // Memoize parsed speakers to avoid re-parsing on every render
-  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
-  const parsedAgree = React.useMemo(
-    () =>
-      crux.agree.map((s) => {
-        const parsed = parseSpeaker(s);
-        return { id: parsed.id, name: parsed.name };
-      }),
-    [crux.agree],
-  );
-
-  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
-  const parsedDisagree = React.useMemo(
-    () =>
-      crux.disagree.map((s) => {
-        const parsed = parseSpeaker(s);
-        return { id: parsed.id, name: parsed.name };
-      }),
-    [crux.disagree],
-  );
-
-  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
-  const parsedNoClear = React.useMemo(
-    () =>
-      crux.no_clear_position?.map((s) => {
-        const parsed = parseSpeaker(s);
-        return { id: parsed.id, name: parsed.name };
-      }),
-    [crux.no_clear_position],
-  );
 
   return (
     <HoverCard openDelay={0} closeDelay={0}>
