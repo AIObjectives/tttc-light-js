@@ -34,8 +34,6 @@ export class RedisCache implements Cache {
    * @param config - Redis configuration including host, port, password, and db
    */
   constructor(config: RedisCacheConfig) {
-    this.config = config;
-
     try {
       this.client = new Redis({
         host: config.host,
