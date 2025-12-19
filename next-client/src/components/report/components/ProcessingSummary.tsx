@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import * as schema from "tttc-common/schema";
-import { Col, Row } from "@/components/layout";
+import { useState } from "react";
+import type * as schema from "tttc-common/schema";
 import { ToggleText } from "@/components/elements";
+import { Col, Row } from "@/components/layout";
 
 /**
  * User-friendly labels for technical audit log terms
@@ -28,7 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
 function formatDate(isoString: string): string {
   const date = new Date(isoString);
   // new Date() returns Invalid Date (not an exception) for invalid inputs
-  if (isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime())) {
     return isoString;
   }
   return date.toLocaleDateString("en-US", {
@@ -216,7 +216,7 @@ function ProcessingEntryRow({ entry }: ProcessingEntryRowProps) {
   // Truncate preview if too long
   const preview = entry.textPreview
     ? entry.textPreview.length > TEXT_PREVIEW_MAX_LENGTH
-      ? entry.textPreview.slice(0, TEXT_PREVIEW_MAX_LENGTH) + "..."
+      ? `${entry.textPreview.slice(0, TEXT_PREVIEW_MAX_LENGTH)}...`
       : entry.textPreview
     : entry.interview || "—";
 
