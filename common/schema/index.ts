@@ -23,28 +23,10 @@ export const sourceRow = z.object({
 const csvDataPayload = z.tuple([z.literal("csv"), sourceRow.array()]);
 
 /**
- * Google Sheet Data
- * What input from a google sheet should look like
- */
-const googleSheetData = z.object({
-  url: z.string(),
-  pieChartColumns: z.string().array().optional(),
-  filterEmails: z.string().array().optional(),
-  oneSubmissionPerEmail: z.boolean(),
-});
-
-export type GoogleSheetData = z.infer<typeof googleSheetData>;
-
-const googleSheetDataPayload = z.tuple([
-  z.literal("googlesheet"),
-  googleSheetData,
-]);
-
-/**
  * Data Payload
- * Union of CSV and Google Sheet inputs
+ * CSV input data
  */
-export const dataPayload = z.union([csvDataPayload, googleSheetDataPayload]);
+export const dataPayload = csvDataPayload;
 
 export type DataPayload = z.infer<typeof dataPayload>;
 
@@ -102,14 +84,6 @@ export const oldOptions = z.object({
   cruxesEnabled: z.boolean(),
   batchSize: z.number(),
   filename: z.string(),
-  googleSheet: z
-    .object({
-      url: z.string(),
-      pieChartColumns: z.string().array().optional(),
-      filterEmails: z.string().array().optional(),
-      oneSubmissionPerEmail: z.boolean(),
-    })
-    .optional(),
 });
 
 export type OldOptions = z.infer<typeof oldOptions>;

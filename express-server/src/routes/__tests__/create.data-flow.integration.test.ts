@@ -59,16 +59,6 @@ vi.mock("../../server", () => ({
   },
 }));
 
-vi.mock("../../googlesheet", () => ({
-  fetchSpreadsheetData: vi.fn().mockResolvedValue({
-    data: [
-      { id: "1", comment: "Google Sheets comment 1" },
-      { id: "2", comment: "Google Sheets comment 2" },
-    ],
-    pieCharts: [],
-  }),
-}));
-
 describe("End-to-End Data Flow Integration", () => {
   let app: express.Application;
 
@@ -392,10 +382,6 @@ describe("End-to-End Data Flow Integration", () => {
       expect(duration).toBeLessThan(30000);
     });
   });
-
-  // Note: Google Sheets tests require actual Google API credentials
-  // The Google Sheets code path is tested manually and in production
-  // Automated testing would require complex mocking or real credentials
 
   describe("Edge Cases and Error Handling", () => {
     it("should handle empty dataset gracefully", async () => {
