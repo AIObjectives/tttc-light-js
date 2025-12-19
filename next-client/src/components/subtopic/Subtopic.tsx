@@ -32,7 +32,6 @@ import {
   HoverCardOverlay,
   HoverCardPortal,
   HoverCardTrigger,
-  TextIcon,
 } from "../elements";
 import { Col, Row } from "../layout";
 import PointGraphic from "../pointGraphic/PointGraphic";
@@ -260,7 +259,7 @@ function CruxDisplay({
       // Replace "Participant X" or "Participants X, Y, Z" with actual names
       cleaned = cleaned.replace(
         /Participants?\s+([\d,\s]+)/g,
-        (match, idList) => {
+        (_match, idList) => {
           const ids = idList.split(/,\s*/).map((id: string) => id.trim());
           const names = ids
             .map((id: string) => speakerIdToName.get(id) || `Participant ${id}`)
@@ -397,6 +396,7 @@ function CruxDisplay({
         </div>
       </HoverCardTrigger>
       <HoverCardPortal>
+        {/* biome-ignore lint/complexity/noUselessFragments: Fragment needed for HoverCardPortal to accept multiple children */}
         <>
           <HoverCardOverlay className="bg-black/[0.03]" />
           <HoverCardContent side="top" className="w-[40rem]">
@@ -443,6 +443,7 @@ function CruxDisplay({
                   </p>
                   {showReadMore && !isExplanationExpanded && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsExplanationExpanded(true);
