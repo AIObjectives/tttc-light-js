@@ -55,10 +55,11 @@ function useFormItem<T>({
   });
   const hasChanged = useHasChanged(state);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: statusEval is intentionally omitted - callers pass inline functions that would cause infinite loops if included
   useEffect(() => {
     if (!hasChanged) return;
     else setStatus(statusEval(state));
-  }, [state, hasChanged, statusEval]);
+  }, [state, hasChanged]);
 
   /** Returns validation error regardless of hasChanged, for forced validation on submit */
   const getError = (): string | null => {

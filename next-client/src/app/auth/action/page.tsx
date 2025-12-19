@@ -68,6 +68,7 @@ function AuthActionContent() {
     setMessage(error);
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: status intentionally excluded to prevent re-triggering on status changes
   useEffect(() => {
     const handleAction = async () => {
       // Log component mount and all URL parameters
@@ -176,8 +177,7 @@ function AuthActionContent() {
     };
 
     handleAction();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- status intentionally excluded to prevent re-triggering on status changes
-  }, [oobCode, modeParam, searchParams.keys, status]);
+  }, [oobCode, modeParam]);
 
   const handleContinue = () => {
     console.info("[auth-action] Continue button clicked", {

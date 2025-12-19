@@ -179,6 +179,8 @@ function Report({
   );
   // Track navbar visibility for sheet positioning
   const navbarState = useNavbarVisibility();
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dispatch is stable from useReducer, state is read inside effect but shouldn't trigger re-runs
   useEffect(() => {
     if (!hashNav) return;
     const nodes = [
@@ -191,7 +193,7 @@ function Report({
     const matchingNode = nodes.find((node) => node.data.title === hashNav);
     if (!matchingNode) return;
     dispatch({ type: "open", payload: { id: matchingNode.data.id } });
-  }, [hashNav, dispatch, state.children.flatMap, state.children.map]);
+  }, [hashNav]);
 
   const [isMobileOutlineOpen, setIsMobileOutlineOpen] =
     useState<boolean>(false);
