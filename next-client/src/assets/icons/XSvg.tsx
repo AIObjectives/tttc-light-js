@@ -11,6 +11,7 @@ const SvgComponent = (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
+    <title>Close</title>
     <path
       {...props}
       d="M24 16L16 24"

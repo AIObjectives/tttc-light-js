@@ -1074,7 +1074,7 @@ const makePyserverFuncs = (
   userId?: string,
   reportId?: string,
 ) => {
-  const { instructions, llm, api_key } = config;
+  const { instructions, llm } = config;
   // Make each config object for each call
   const [
     topicTreeLLMConfig,

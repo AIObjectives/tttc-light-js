@@ -94,7 +94,12 @@ const Video = ({
   console.log(link);
   return (
     <Col>
-      <iframe src={link} width={"100%"} className="aspect-video" />
+      <iframe
+        title="Video player"
+        src={link}
+        width={"100%"}
+        className="aspect-video"
+      />
     </Col>
   );
 };

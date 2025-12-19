@@ -50,7 +50,7 @@ const nextConfig = {
       "date-fns",
     ],
   },
-  webpack: (config, { isServer, webpack }) => {
+  webpack: (config, { webpack }) => {
     // Prevent webpack from bundling Node.js-only logger dependencies
     // These are only used in pure Node.js environments (express-server)
     // and should never be included in Next.js bundles

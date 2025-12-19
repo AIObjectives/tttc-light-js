@@ -259,7 +259,7 @@ export function validateCSVFormat(
   const formattedData = formatDataWithMappings(
     data,
     lowerKeys,
-    commentMapping.detected!,
+    commentMapping.detected,
     idMapping.detected,
     interviewMapping.detected,
     videoMapping.detected,

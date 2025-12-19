@@ -88,9 +88,18 @@ function HoverQuoteCard({
         <div
           ref={triggerRef}
           className="cursor-pointer"
+          role="button"
+          tabIndex={0}
           onClick={() => {
             setIsPinned(true);
             setIsOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setIsPinned(true);
+              setIsOpen(true);
+            }
           }}
         >
           {children}

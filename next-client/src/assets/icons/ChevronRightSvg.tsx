@@ -8,6 +8,7 @@ const SvgComponent = (props: React.SVGProps<SVGPathElement>) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
+    <title>Chevron right</title>
     <g id="chevron-right">
       <path
         id="Vector"

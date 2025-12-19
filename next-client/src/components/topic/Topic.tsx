@@ -257,6 +257,8 @@ export function SubtopicListItem({
           className="cursor-pointer text-muted-foreground text-sm  inline"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
+          onFocus={onMouseOver}
+          onBlur={onMouseOut}
         >
           <span className="link" data-testid={"subtopic-list-item"}>
             {subtopic.title}

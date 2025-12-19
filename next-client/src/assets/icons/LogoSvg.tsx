@@ -9,6 +9,7 @@ const SvgComponent = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     {...props}
   >
+    <title>Logo</title>
     <path
       fillRule="evenodd"
       clipRule="evenodd"

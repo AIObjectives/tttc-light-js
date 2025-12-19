@@ -10,6 +10,7 @@ const SvgComponent = (
     fill="none"
     {...props}
   >
+    <title>Topic</title>
     <path
       stroke="#64748B"
       strokeWidth={1}

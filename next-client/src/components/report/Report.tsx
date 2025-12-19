@@ -738,12 +738,13 @@ function Appendix({
   return (
     <Col className="p-8 appendix-section print:hidden" gap={2}>
       <p className="p-medium">Appendix</p>
-      <p
-        className="text-muted-foreground underline cursor-pointer"
+      <button
+        type="button"
+        className="text-muted-foreground underline cursor-pointer text-left"
         onClick={handleDownload}
       >
         Download report in JSON
-      </p>
+      </button>
 
       {prompts && (
         <Col gap={2}>

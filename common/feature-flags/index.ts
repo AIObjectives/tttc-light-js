@@ -70,7 +70,7 @@ export function initializeFeatureFlags(
     { provider: config.provider },
     "Feature flags initialized",
   );
-  return featureFlagProvider!;
+  return featureFlagProvider;
 }
 
 /**

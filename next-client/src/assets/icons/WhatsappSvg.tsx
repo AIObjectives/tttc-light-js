@@ -8,6 +8,7 @@ const SvgComponent = (props: React.SVGProps<SVGPathElement>) => (
     viewBox="0 0 12 12"
     fill="none"
   >
+    <title>WhatsApp</title>
     <path
       fillRule="evenodd"
       clipRule="evenodd"

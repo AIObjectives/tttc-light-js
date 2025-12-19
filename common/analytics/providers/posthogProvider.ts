@@ -41,7 +41,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
-      this.posthog = new PostHog(this.config.apiKey!, {
+      this.posthog = new PostHog(this.config.apiKey, {
         host: this.config.host || "https://us.i.posthog.com",
         flushAt: this.config.flushAt || 20,
         flushInterval: this.config.flushInterval || 10000,

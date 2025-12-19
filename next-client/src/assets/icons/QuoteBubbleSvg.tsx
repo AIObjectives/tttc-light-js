@@ -11,6 +11,7 @@ const SvgComponent = (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
+    <title>Quote bubble</title>
     <g clipPath="url(#clip0_5218_57792)">
       <path
         {...props}

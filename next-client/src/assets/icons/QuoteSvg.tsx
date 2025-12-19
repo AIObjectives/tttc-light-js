@@ -10,6 +10,7 @@ const SvgComponent = (
     fill="none"
     {...props}
   >
+    <title>Quote</title>
     <path
       fill="#64748B"
       {...props}
