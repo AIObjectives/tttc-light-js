@@ -1,14 +1,14 @@
+import type {
+  FeatureFlagConfig,
+  FeatureFlagContext,
+  FeatureFlagProvider,
+} from "tttc-common/feature-flags";
 import {
+  getFeatureFlag,
+  getFeatureFlagProvider,
   initializeFeatureFlags as initializeFeatureFlagsCommon,
   isFeatureEnabled,
-  getFeatureFlag,
   shutdownFeatureFlags,
-  getFeatureFlagProvider,
-} from "tttc-common/feature-flags";
-import type {
-  FeatureFlagProvider,
-  FeatureFlagContext,
-  FeatureFlagConfig,
 } from "tttc-common/feature-flags";
 import type { Env } from "../types/context";
 

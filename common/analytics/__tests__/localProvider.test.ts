@@ -2,12 +2,12 @@
  * Tests for LocalAnalyticsProvider
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocalAnalyticsProvider } from "../providers/localProvider";
 import type {
+  AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsContext,
 } from "../types";
 import { CommonEvents } from "../types";
 

@@ -1,7 +1,7 @@
-import { expect } from "vitest";
-import { ReportState } from "@/components/report/hooks/useReportState";
-import * as matchers from "@testing-library/jest-dom/matchers";
 import type { TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
+import * as matchers from "@testing-library/jest-dom/matchers";
+import { expect } from "vitest";
+import type { ReportState } from "@/components/report/hooks/useReportState";
 
 // Extend expect with jest-dom matchers
 expect.extend(matchers);

@@ -1,6 +1,13 @@
 "use client";
 
 import React, { useReducer, useState } from "react";
+import { toast } from "sonner";
+import { logger } from "tttc-common/logger/browser";
+import Icons from "@/assets/icons";
+import { fetchToken } from "@/lib/firebase/getIdToken";
+import { useUser } from "@/lib/hooks/getUser";
+import { feedbackResponse } from "@/lib/types/clientRoutes";
+import { cn } from "@/lib/utils/shadcn";
 import {
   Button,
   Dialog,
@@ -11,13 +18,6 @@ import {
   DialogTrigger,
   TextArea,
 } from "../elements";
-import { useUser } from "@/lib/hooks/getUser";
-import { feedbackResponse } from "@/lib/types/clientRoutes";
-import { toast } from "sonner";
-import Icons from "@/assets/icons";
-import { cn } from "@/lib/utils/shadcn";
-import { fetchToken } from "@/lib/firebase/getIdToken";
-import { logger } from "tttc-common/logger/browser";
 
 const feedbackLogger = logger.child({ module: "feedback-component" });
 

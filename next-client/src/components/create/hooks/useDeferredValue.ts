@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 export const useDeferredValue = <T>(value: T, delay = 1000): T | "deferred" => {
   const [deferredValue, setDeferredValue] = useState<T | "deferred">(
     "deferred",

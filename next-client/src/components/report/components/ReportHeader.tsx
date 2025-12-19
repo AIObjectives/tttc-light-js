@@ -1,6 +1,12 @@
 import React, { useState } from "react";
-import * as schema from "tttc-common/schema";
-import { Col, Row } from "@/components/layout";
+import { getNPeople } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import {
+  BarChart,
+  type BarChartItemType,
+} from "@/components/barchart/Barchart";
+import { CopyLinkButton } from "@/components/copyButton/CopyButton";
 import {
   Button,
   CardContent,
@@ -8,10 +14,7 @@ import {
   TextIcon,
   ToggleText,
 } from "@/components/elements";
-import Icons from "@/assets/icons";
-import { getNPeople } from "tttc-common/morphisms";
-import { BarChart, BarChartItemType } from "@/components/barchart/Barchart";
-import { CopyLinkButton } from "@/components/copyButton/CopyButton";
+import { Col, Row } from "@/components/layout";
 
 interface IReportTitle {
   title: string;

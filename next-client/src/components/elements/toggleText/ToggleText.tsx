@@ -1,13 +1,14 @@
 "use client";
-import Icons from "@/assets/icons";
-import { Col, Row } from "@/components/layout";
-import React, {
+import type React from "react";
+import {
   createContext,
-  Dispatch,
-  SetStateAction,
+  type Dispatch,
+  type SetStateAction,
   useContext,
   useState,
 } from "react";
+import Icons from "@/assets/icons";
+import { Col, Row } from "@/components/layout";
 
 interface IToggleContext {
   isOpen: boolean;

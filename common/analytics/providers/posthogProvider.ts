@@ -1,14 +1,15 @@
+import { logger } from "../../logger";
 import type {
-  AnalyticsProvider,
+  AnalyticsConfig,
+  AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsContext,
   AnalyticsProperties,
-  AnalyticsConfig,
+  AnalyticsProvider,
 } from "../types";
-import { logger } from "../../logger";
 
 const posthogLogger = logger.child({ module: "analytics-posthog" });
+
 import { PostHog } from "posthog-node";
 
 /**

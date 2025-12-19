@@ -2,11 +2,11 @@
  * API client for fetching user capabilities and limits
  */
 
-import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 import {
+  type UserCapabilitiesResponse,
   userCapabilitiesResponse,
-  UserCapabilitiesResponse,
 } from "tttc-common/api";
+import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 
 export type UserCapabilities = UserCapabilitiesResponse;
 

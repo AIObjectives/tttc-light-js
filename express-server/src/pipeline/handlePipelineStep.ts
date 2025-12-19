@@ -1,16 +1,16 @@
-import { z } from "zod";
 import { performance } from "perf_hooks";
-import { Result } from "tttc-common/functional-utils";
+import type { Result } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
+import type { z } from "zod";
 import {
   FetchError,
   InvalidResponseDataError,
+  PyserverHungError,
   PyserverOOMError,
   PyserverUnresponsiveError,
-  PyserverHungError,
 } from "./errors";
-import { withRetry } from "./retryConfig";
-import { logger } from "tttc-common/logger";
 import { checkPyserverHealth } from "./healthCheck";
+import { withRetry } from "./retryConfig";
 
 const pipelineStepLogger = logger.child({ module: "pipeline-step" });
 

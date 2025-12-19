@@ -1,13 +1,13 @@
-import { ReportState, TopicNode, SubtopicNode } from "./types";
-import { TopicPath, SubtopicPath } from "./path";
-import { pipe, Array } from "effect";
+import { Array, pipe } from "effect";
+import type { ActionStreamActions, MapActions } from "./actions";
 import {
-  defaultTopicPagination,
   defaultAddSubtopicPagination,
   defaultAddTopicPagination,
   defaultSubtopicPagination,
+  defaultTopicPagination,
 } from "./consts";
-import { ActionStreamActions, MapActions } from "./actions";
+import type { SubtopicPath, TopicPath } from "./path";
+import type { ReportState, SubtopicNode, TopicNode } from "./types";
 
 //  ********************************
 //  * ACTION STREAM REDUCER *

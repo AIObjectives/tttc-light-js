@@ -7,8 +7,9 @@
  * Requires Redis to be running locally (redis://localhost:6379).
  * Skip these tests in environments without Redis.
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+
 import Redis from "ioredis";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 // Test configuration - matches production constants
 const GLOBAL_RATE_LIMIT_KEY = "perspective:global-rate-limit";

@@ -7,13 +7,13 @@
  */
 
 import {
-  initializeAnalytics,
-  getAnalytics,
+  type AnalyticsConfig,
   createAnalyticsConfig,
-  AnalyticsConfig,
+  getAnalytics,
+  initializeAnalytics,
 } from "tttc-common/analytics";
-import { Env } from "./types/context";
 import { logger } from "tttc-common/logger";
+import type { Env } from "./types/context";
 
 const analyticsLogger = logger.child({ module: "analytics-client" });
 

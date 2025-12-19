@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
-import { Col, Row } from "../layout";
+import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
-import * as schema from "tttc-common/schema";
 import { getThemeColor } from "@/lib/color";
+import { Col, Row } from "../layout";
 import { ReportContext } from "../report/Report";
 export type BarChartItemType = {
   id: string;

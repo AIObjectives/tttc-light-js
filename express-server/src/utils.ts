@@ -1,6 +1,7 @@
 // sync version of sha256 hash to make strong unique urls
 // that do not leak
 import { createHash } from "crypto";
+
 function sha256(str: string) {
   return createHash("sha256").update(str).digest("hex");
 }

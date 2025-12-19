@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { formatData } from "tttc-common/csv-validation";
+import { describe, expect, it } from "vitest";
 
 describe("formatData", () => {
   describe("WhatsApp consultation format", () => {

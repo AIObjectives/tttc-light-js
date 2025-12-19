@@ -2,25 +2,24 @@
  * Firestore Operations (Client SDK)
  */
 
-import { z } from "zod";
 import {
-  collection,
-  query,
-  getDocs,
-  where,
   addDoc,
+  collection,
+  type Firestore,
+  getDocs,
+  query,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
-import { Firestore } from "firebase/firestore";
-
 import {
-  useGetCollectionName,
+  type ReportRef,
   reportRef,
   reportRefWithDefaults,
-  ReportRef,
+  useGetCollectionName,
 } from "tttc-common/firebase";
-import { FeedbackRequest } from "../types/clientRoutes";
-import { failure, Result, success } from "tttc-common/functional-utils";
+import { failure, type Result, success } from "tttc-common/functional-utils";
+import { z } from "zod";
+import type { FeedbackRequest } from "../types/clientRoutes";
 
 const NODE_ENV = z
   .union([z.literal("development"), z.literal("production")])

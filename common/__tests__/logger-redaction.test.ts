@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock pino logger for testing
 const mockPinoLogger = {
@@ -134,10 +134,8 @@ describe("Logger Redaction Security", () => {
         uid: Symbol("test"),
         email: new Date(),
         displayName: BigInt(123),
-        password: function () {
-          return "secret";
-        },
-        token: new RegExp("test"),
+        password: () => "secret",
+        token: /test/,
       };
 
       expect(() => {

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as firebase from "../Firebase";
+import { type PipelineJob, pipelineJob } from "../jobs/pipeline";
 import { processJob, processJobFailure } from "../workers";
-import { PipelineJob, pipelineJob } from "../jobs/pipeline";
 
 // Mock dependencies
 vi.mock("../jobs/pipeline", () => ({

@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
 import type { OpenAI } from "openai";
+import { describe, expect, it, vi } from "vitest";
+import { EVAL_MODEL } from "../../constants";
 import {
+  createLLMJudgeScorer,
   jsonStructureScorer,
   topicCoverageScorer,
-  createLLMJudgeScorer,
 } from "../scorers";
-import { EVAL_MODEL } from "../../constants";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({

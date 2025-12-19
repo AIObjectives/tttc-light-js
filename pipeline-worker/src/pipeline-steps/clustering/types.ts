@@ -4,21 +4,21 @@
  */
 
 export type {
+  ClusteringInput,
+  ClusteringOptions,
+  ClusteringOutput,
   Comment,
   LLMConfig,
   Subtopic,
-  Topic,
   Taxonomy,
   TokenUsage,
+  Topic,
   TopicTreeResult,
-  ClusteringOptions,
-  ClusteringInput,
-  ClusteringOutput,
 } from "../types.js";
 
 export {
-  ClusteringError,
   ApiCallFailedError,
+  ClusteringError,
   EmptyResponseError,
   ParseFailedError,
 } from "../types.js";

@@ -2,15 +2,15 @@
  * Tests for CSV Security Validation Module
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  CSV_SECURITY_CONFIG,
   detectCSVInjection,
   sanitizeCSVCell,
+  validateCSVSecurity,
   validateCSVStructure,
   validateEncoding,
   validateParsedData,
-  validateCSVSecurity,
-  CSV_SECURITY_CONFIG,
 } from "../index";
 
 describe("CSV Security Module", () => {

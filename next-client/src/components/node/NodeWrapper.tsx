@@ -1,7 +1,8 @@
 "use client";
-import React, { useContext } from "react";
+import type React from "react";
+import { useContext } from "react";
+import type { SomeNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
-import { SomeNode } from "../report/hooks/useReportState";
 
 export function NodeWrapper({
   node,

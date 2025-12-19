@@ -1,9 +1,9 @@
-import { Response } from "express";
-import { Logger } from "pino";
+import type { Response } from "express";
+import type { Logger } from "pino";
 import {
-  ErrorCode,
-  getErrorStatusCode,
   createErrorResponse,
+  type ErrorCode,
+  getErrorStatusCode,
 } from "tttc-common/errors";
 
 /**

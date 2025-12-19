@@ -1,12 +1,13 @@
 "use client";
 
-import React, { Ref, createContext, forwardRef, useContext } from "react";
-import * as schema from "tttc-common/schema";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
-import { QuoteCard } from "../claim";
-import { ReportContext } from "../report/Report";
+import type React from "react";
+import { createContext, forwardRef, type Ref, useContext } from "react";
+import type * as schema from "tttc-common/schema";
+import type { ThemeClass } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
-import { ThemeClass } from "@/lib/color";
+import { QuoteCard } from "../claim";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
+import { ReportContext } from "../report/Report";
 
 type CellContextType = {
   borderClass: ThemeClass | string;

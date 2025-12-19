@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { getUserCapabilities } from "@/lib/api/userLimits";
-import { toast } from "sonner";
 import pRetry from "p-retry";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { getUserCapabilities } from "@/lib/api/userLimits";
 
 const DEFAULT_SIZE_LIMIT = 150 * 1024; // 150KB
 

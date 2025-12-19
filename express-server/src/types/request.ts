@@ -1,6 +1,6 @@
-import { Request } from "express";
-import { Logger } from "pino";
-import { DecodedIdToken } from "firebase-admin/auth";
+import type { Request } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
+import type { Logger } from "pino";
 
 /**
  * Extended Express Request interface that includes the pino-http logger.

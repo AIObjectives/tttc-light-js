@@ -1,7 +1,7 @@
 "use client";
 
-import { Dispatch, useEffect, useState } from "react";
-import { ReportStateAction } from "./useReportState";
+import { type Dispatch, useEffect, useState } from "react";
+import type { ReportStateAction } from "./useReportState";
 
 type ReportActionEffectFunc = (action: ReportStateAction) => void;
 type ReportActionEffect = (func: ReportActionEffectFunc) => void;

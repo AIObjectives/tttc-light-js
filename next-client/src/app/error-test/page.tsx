@@ -9,18 +9,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Button } from "@/components/elements/button/Button";
-import { Col } from "@/components/layout/Directions";
+import { ERROR_CODES, ERROR_MESSAGES } from "tttc-common/errors";
 import { SubmissionErrorBanner } from "@/components/create/components/SubmissionErrorBanner";
+import { Button } from "@/components/elements/button/Button";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/elements/empty";
+import { Col } from "@/components/layout/Directions";
 import { ReportErrorState } from "@/components/report/ReportErrorState";
-import { ERROR_CODES, ERROR_MESSAGES } from "tttc-common/errors";
 
 export default function ErrorTestPage() {
   const [triggerError, setTriggerError] = useState(false);

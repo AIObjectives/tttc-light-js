@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useReducer } from "react";
-import { Result } from "tttc-common/functional-utils";
+import type { Result } from "tttc-common/functional-utils";
 
 /**
  * Default state. Async function has not been called.

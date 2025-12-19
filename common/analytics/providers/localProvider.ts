@@ -1,11 +1,11 @@
+import { logger } from "../../logger";
 import type {
-  AnalyticsProvider,
+  AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsContext,
   AnalyticsProperties,
+  AnalyticsProvider,
 } from "../types";
-import { logger } from "../../logger";
 
 const localLogger = logger.child({ module: "analytics-local" });
 

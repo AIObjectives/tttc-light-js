@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
-import { setupTestState } from "./testStateSetup";
-import { ReportState, SomeNode } from "../types";
+import { describe, expect, test } from "vitest";
 import { defaultSubtopicPagination, defaultTopicPagination } from "../consts";
+import type { ReportState, SomeNode } from "../types";
+import { setupTestState } from "./testStateSetup";
 
 const { state, reducer } = setupTestState();
 

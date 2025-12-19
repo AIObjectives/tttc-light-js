@@ -1,10 +1,10 @@
-import React, { Ref } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import Subtopic from "./Subtopic";
+import React, { type Ref } from "react";
 import { reportData } from "../../../stories/data/dummyData";
 import { stateBuilder } from "../report/hooks/useReportState/utils";
 import { ReportContext } from "../report/Report";
 import { TopicContext } from "../topic/Topic";
+import Subtopic from "./Subtopic";
 
 // Limit data for Storybook to avoid 30-second timeout with massive hidden DOM.
 // Large report testing is done manually outside CI - see test-csv-examples/

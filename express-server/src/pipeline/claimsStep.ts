@@ -1,8 +1,8 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
-import { ClaimsStep } from "./types";
-import { Env } from "../types/context";
-import { handlePipelineStep } from "./handlePipelineStep";
 import { logger } from "tttc-common/logger";
+import type { Env } from "../types/context";
+import { handlePipelineStep } from "./handlePipelineStep";
+import type { ClaimsStep } from "./types";
 
 const claimsLogger = logger.child({ module: "claims-step" });
 

@@ -1,20 +1,20 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import CreateReport from "@/components/create/CreateReport";
-import { useUser } from "@/lib/hooks/getUser";
-import { Center } from "@/components/layout";
-import { Button, Spinner } from "@/components/elements";
 import { SigninModal } from "@/components/create/components/Modals";
+import { Button, Spinner } from "@/components/elements";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/elements/empty";
-import { ExternalLink } from "lucide-react";
+import { Center } from "@/components/layout";
+import { useUser } from "@/lib/hooks/getUser";
 
 export default function ReportCreationPage() {
   const { user, loading } = useUser();

@@ -1,21 +1,21 @@
 import { OpenAI } from "openai";
 import * as weave from "weave";
+import { logger } from "../../logger";
+import { defaultDedupPrompt, defaultSystemPrompt } from "../../prompts";
+import { createEvaluationModel } from "../";
+import { EVAL_MODEL } from "../constants";
+import { deduplicationTestCases } from "./datasets";
 import {
-  deduplicationJsonStructureScorer,
   claimCoverageScorer,
   consolidationScorer,
-  groupClaimQualityScorer,
   createLLMJudgeScorer,
+  deduplicationJsonStructureScorer,
+  groupClaimQualityScorer,
 } from "./scorers";
 import type {
   DeduplicationDatasetRow,
   DeduplicationModelOutput,
 } from "./types";
-import { deduplicationTestCases } from "./datasets";
-import { defaultDedupPrompt, defaultSystemPrompt } from "../../prompts";
-import { logger } from "../../logger";
-import { createEvaluationModel } from "../";
-import { EVAL_MODEL } from "../constants";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
 

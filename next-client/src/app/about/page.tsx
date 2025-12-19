@@ -1,10 +1,10 @@
-import Icons from "@/assets/icons";
-import { Col, Row } from "@/components/layout";
-import { Card } from "@/components/elements";
-import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
-import Link from "next/link";
 import Image from "next/image";
-import React from "react";
+import Link from "next/link";
+import type React from "react";
+import Icons from "@/assets/icons";
+import { Card } from "@/components/elements";
+import { Col, Row } from "@/components/layout";
+import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
 
 // Case studies data
 const CASE_STUDIES = [
@@ -412,6 +412,7 @@ export default async function AboutPage() {
               <a
                 target="_blank"
                 href="https://platform.openai.com/docs/guides/your-data"
+                rel="noopener"
               >
                 OpenAI’s API policy
               </a>{" "}

@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createMondayItem,
-  updateMondayItem,
   findMondayItemByEmail,
   isMondayEnabled,
-  MondayUserProfile,
+  type MondayUserProfile,
+  updateMondayItem,
 } from "../services/monday";
 
 // Mock fetch globally

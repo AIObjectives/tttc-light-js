@@ -1,24 +1,24 @@
-import { ReportState } from "./types";
 import {
-  Option,
-  pipe,
   Array,
+  Boolean,
   Either,
   flow,
-  Record,
   Match,
-  Boolean,
+  Option,
+  pipe,
+  Record,
 } from "effect";
-import {
-  TopicPath,
-  SubtopicPath,
-  ClaimPath,
-  TaggedTopicPath,
-  TaggedSubtopicPath,
-  TaggedClaimPath,
-} from "./path";
 import { ActionStream } from "./actionStream";
 import { actionStreamReducer } from "./actionStreamReducer";
+import {
+  ClaimPath,
+  SubtopicPath,
+  type TaggedClaimPath,
+  type TaggedSubtopicPath,
+  type TaggedTopicPath,
+  TopicPath,
+} from "./path";
+import type { ReportState } from "./types";
 
 //  ********************************
 //  * REPORT STATE REDUCER *
@@ -61,7 +61,7 @@ export type ReportStateAction =
 export function createPathMapReducer(
   idMap: Record<string, TaggedTopicPath | TaggedSubtopicPath | TaggedClaimPath>,
 ) {
-  return function (state: ReportState, action: ReportStateAction): ReportState {
+  return (state: ReportState, action: ReportStateAction): ReportState => {
     switch (action.type) {
       // For open, we want the same function to work for topics or subtopics.
       // If subtopic, should open parent and set pagination to the correct value

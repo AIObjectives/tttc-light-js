@@ -1,6 +1,6 @@
+import { reportData } from "__tests__/data/testData";
 import { mapIdsToPath } from "../path";
 import { createPathMapReducer } from "../reducer";
-import { reportData } from "__tests__/data/testData";
 import { stateBuilder } from "../utils";
 
 const state = stateBuilder(reportData.topics);

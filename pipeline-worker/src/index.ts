@@ -1,4 +1,5 @@
 process.loadEnvFile(".env");
+
 import { initServices } from "./services";
 
 async function main() {

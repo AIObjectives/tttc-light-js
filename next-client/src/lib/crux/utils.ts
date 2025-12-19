@@ -22,9 +22,10 @@
  * This formula ensures scores are highest when opinions are evenly divided
  * and lowest when there's strong consensus in either direction.
  */
-import * as schema from "tttc-common/schema";
-import type { ControversyLevel, ControversyCategory } from "./types";
+
 import { logger } from "tttc-common/logger/browser";
+import type * as schema from "tttc-common/schema";
+import type { ControversyCategory, ControversyLevel } from "./types";
 
 // Create logger for speaker parsing
 const speakerLogger = logger.child({ module: "speaker-parsing" });

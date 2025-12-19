@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Button } from "@/components/elements/button/Button";
-import { Center } from "@/components/layout/Center";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/elements/empty";
+import { Center } from "@/components/layout/Center";
 
 export default function NotFound() {
   return (

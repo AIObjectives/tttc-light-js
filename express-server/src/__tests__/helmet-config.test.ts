@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
 import express from "express";
 import helmet from "helmet";
 import request from "supertest";
+import { describe, expect, it } from "vitest";
 
 describe("Helmet Security Configuration", () => {
   it("should have secure CSP directives for production", () => {

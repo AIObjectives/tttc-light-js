@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
 import { Record } from "effect";
-import { setupTestState } from "./testStateSetup";
+import { describe, expect, test } from "vitest";
 import { mapIdsToPath } from "../path";
+import { setupTestState } from "./testStateSetup";
 
 const { state } = setupTestState();
 describe("Utility functions", () => {

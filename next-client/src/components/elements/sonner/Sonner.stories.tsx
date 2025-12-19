@@ -1,8 +1,8 @@
+import type { Meta, StoryObj } from "@storybook/react";
 import { useEffect } from "react";
-import { Toaster } from "./Sonner";
 import { toast } from "sonner";
-import { Meta, StoryObj } from "@storybook/react";
 import { Button } from "../button/Button";
+import { Toaster } from "./Sonner";
 import "../../../app/global.css";
 
 // ! For some reason the stylings aren't applying to the Storybook Sonner

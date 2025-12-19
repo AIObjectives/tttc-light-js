@@ -6,23 +6,23 @@
  */
 
 import OpenAI from "openai";
-import { Logger } from "pino";
-import { Result, success, failure } from "tttc-common/functional-utils";
-import type {
-  Comment,
-  LLMConfig,
-  Topic,
-  ClaimsTree,
-  ClaimsResult,
-  ClaimsOptions,
-  Claim,
-  TopicClaimNode,
-  SubtopicClaimNode,
-} from "./types";
-import { ClusteringError } from "../types";
+import type { Logger } from "pino";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { basicSanitize, sanitizeForOutput } from "../sanitizer";
+import { ClusteringError } from "../types";
 import { getReportLogger, processBatchConcurrently } from "../utils";
 import { extractClaimsFromComment } from "./model";
+import type {
+  Claim,
+  ClaimsOptions,
+  ClaimsResult,
+  ClaimsTree,
+  Comment,
+  LLMConfig,
+  SubtopicClaimNode,
+  Topic,
+  TopicClaimNode,
+} from "./types";
 
 // Concurrency configuration for rate limiting
 const MAX_CONCURRENCY = parseInt(process.env.CLAIMS_MAX_CONCURRENCY || "6", 10);

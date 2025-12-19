@@ -1,5 +1,5 @@
-import { pipe, Array, Record } from "effect";
-import { ReportState } from "./types";
+import { Array, pipe, type Record } from "effect";
+import type { ReportState } from "./types";
 
 //  ********************************
 //  * PATH FINDING *

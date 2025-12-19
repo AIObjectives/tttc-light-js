@@ -1,15 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
 import type { OpenAI } from "openai";
-import {
-  extractionJsonStructureScorer,
-  claimQualityScorer,
-  taxonomyAlignmentScorer,
-  quoteRelevanceScorer,
-  createLLMJudgeScorer,
-} from "../scorers";
-import { sampleTaxonomy } from "../datasets";
+import { describe, expect, it, vi } from "vitest";
 import { EVAL_MODEL } from "../../constants";
-import { ExtractionDatasetRow } from "../types";
+import { sampleTaxonomy } from "../datasets";
+import {
+  claimQualityScorer,
+  createLLMJudgeScorer,
+  extractionJsonStructureScorer,
+  quoteRelevanceScorer,
+  taxonomyAlignmentScorer,
+} from "../scorers";
+import type { ExtractionDatasetRow } from "../types";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({

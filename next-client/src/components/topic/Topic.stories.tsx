@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import Topic from "./Topic";
 import { reportData } from "../../../stories/data/dummyData";
 import { stateBuilder } from "../report/hooks/useReportState/utils";
+import Topic from "./Topic";
 
 /**
  * TODO

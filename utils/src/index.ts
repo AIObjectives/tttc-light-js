@@ -1,5 +1,6 @@
-import { select } from "./tools/terminal";
 import { turboToSchemaScript } from "./scripts/turboToSchemaScript";
+import { select } from "./tools/terminal";
+
 (async () => {
   const options = ["Translate: Turbo => t3c-light schema", "Exit"] as const;
   console.log("T3C Code Utilities");

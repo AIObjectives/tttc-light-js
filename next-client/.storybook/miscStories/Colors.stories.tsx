@@ -1,24 +1,24 @@
-import {
-  getThemeColor,
-  ThemeColor,
-  themeColorMap,
-  ColorVariant,
-  BackgroundClass,
-  BackgroundAccentClass,
-  BorderClass,
-  BorderAccentClass,
-  TextClass,
-  BackgroundAccentHoverClass,
-  TextHoverClass,
-  BackgroundHoverClass,
-  TextAccentClass,
-  FillClass,
-  FillAccentClass,
-} from "../../src/lib/color";
-import { Col, Row } from "../../src/components/layout/Directions";
 import type { Meta, StoryObj } from "@storybook/react";
-import React from "react";
+import type React from "react";
 import { Separator } from "storybook/internal/components";
+import { Col, Row } from "../../src/components/layout/Directions";
+import {
+  type BackgroundAccentClass,
+  type BackgroundAccentHoverClass,
+  type BackgroundClass,
+  type BackgroundHoverClass,
+  type BorderAccentClass,
+  type BorderClass,
+  type ColorVariant,
+  type FillAccentClass,
+  type FillClass,
+  getThemeColor,
+  type TextAccentClass,
+  type TextClass,
+  type TextHoverClass,
+  type ThemeColor,
+  themeColorMap,
+} from "../../src/lib/color";
 
 const colorVariants = Object.keys(
   themeColorMap["blueSea"],

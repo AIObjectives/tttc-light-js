@@ -1,8 +1,8 @@
-import { describe, test, expect } from "vitest";
-import { __internals, OutlineState } from "../useOutlineState";
-import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
-import { reportData } from "../../../../../stories/data/dummyData";
 import { Array } from "effect";
+import { describe, expect, test } from "vitest";
+import { reportData } from "../../../../../stories/data/dummyData";
+import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
+import { __internals, type OutlineState } from "../useOutlineState";
 
 const { createReducer, mapIdsToPath, createInitialState } = __internals;
 

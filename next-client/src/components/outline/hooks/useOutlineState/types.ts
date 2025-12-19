@@ -2,7 +2,7 @@
 //  * Types *
 //  ********************************/
 
-import { TextClass, TextHoverClass } from "@/lib/color";
+import type { TextClass, TextHoverClass } from "@/lib/color";
 
 /**
  * Top level outline nodes for topics

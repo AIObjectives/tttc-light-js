@@ -1,7 +1,7 @@
 import { getNPeople } from "tttc-common/morphisms";
-import * as schema from "tttc-common/schema";
-import { ReportState, TopicNode, ClaimNode, SubtopicNode } from "./types";
-import { defaultTopicPagination, defaultSubtopicPagination } from "./consts";
+import type * as schema from "tttc-common/schema";
+import { defaultSubtopicPagination, defaultTopicPagination } from "./consts";
+import type { ClaimNode, ReportState, SubtopicNode, TopicNode } from "./types";
 
 //  ********************************
 //  * STATE BUILDERS *

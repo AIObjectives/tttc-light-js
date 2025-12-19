@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useUser } from "../lib/hooks/getUser";
-import { ensureUserDocumentOnClient } from "../lib/firebase/ensureUserDocument";
+import type { User } from "firebase/auth";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onAuthStateChanged } from "../lib/firebase/auth";
-import { User } from "firebase/auth";
+import { ensureUserDocumentOnClient } from "../lib/firebase/ensureUserDocument";
+import { useUser } from "../lib/hooks/getUser";
 
 // Mock Firebase auth
 vi.mock("../lib/firebase/auth", () => ({

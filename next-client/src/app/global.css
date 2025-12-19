@@ -198,8 +198,7 @@
     @apply bg-background text-foreground;
   }
   h1 {
-    @apply text-5xl font-extrabold leading-11 tracking-tight
-    /* Does text-5xl apply the right line height by itself? If so, remove leading-11 */;
+    @apply text-5xl font-extrabold leading-11 tracking-tight /* Does text-5xl apply the right line height by itself? If so, remove leading-11 */;
   }
   h2 {
     @apply text-3xl font-semibold tracking-tight;

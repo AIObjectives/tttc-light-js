@@ -1,16 +1,16 @@
-import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
+import React from "react";
+import { getNPeople } from "tttc-common/morphisms";
+import * as schema from "tttc-common/schema";
 import { reportData } from "../../../stories/data/dummyData";
-import Report from "./Report";
+import jsonData from "../../../stories/data/healMichigan.json";
 import {
   ReportHeader,
   ReportOverview,
   ReportSummary,
   ReportTitle,
 } from "./components/ReportHeader";
-import { getNPeople } from "tttc-common/morphisms";
-import * as schema from "tttc-common/schema";
-import jsonData from "../../../stories/data/healMichigan.json";
+import Report from "./Report";
 
 const meta = {
   title: "Report",

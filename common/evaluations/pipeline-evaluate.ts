@@ -1,10 +1,10 @@
 import * as weave from "weave";
-import { runClusteringEvaluation } from "./clustering/model";
-import { runExtractionEvaluation } from "./extraction/model";
-import { runDeduplicationEvaluation } from "./deduplication/model";
-import { runSummariesEvaluation } from "./summaries/model";
-import { runCruxEvaluation } from "./crux/model";
 import { logger } from "../logger";
+import { runClusteringEvaluation } from "./clustering/model";
+import { runCruxEvaluation } from "./crux/model";
+import { runDeduplicationEvaluation } from "./deduplication/model";
+import { runExtractionEvaluation } from "./extraction/model";
+import { runSummariesEvaluation } from "./summaries/model";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
 

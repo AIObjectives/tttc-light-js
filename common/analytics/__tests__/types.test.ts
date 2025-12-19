@@ -2,19 +2,19 @@
  * Tests for analytics types and enums
  */
 
-import { describe, it, expect } from "vitest";
-import { CommonEvents, AnalyticsError } from "../types";
+import { describe, expect, it } from "vitest";
 import type {
-  AnalyticsProperties,
-  AnalyticsUser,
+  AnalyticsClient,
+  AnalyticsConfig,
   AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsConfig,
+  AnalyticsProperties,
   AnalyticsProvider,
+  AnalyticsUser,
   EnvironmentInfo,
-  AnalyticsClient,
 } from "../types";
+import { AnalyticsError, CommonEvents } from "../types";
 
 describe("Analytics Types", () => {
   describe("AnalyticsProperties", () => {

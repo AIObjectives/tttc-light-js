@@ -1,16 +1,16 @@
-import { Response } from "express";
-import { RequestWithLogger } from "../types/request";
-import {
-  verifyUser,
-  ensureUserDocument,
-  db,
-  admin,
-  getCollectionName,
-} from "../Firebase";
-import { DecodedIdToken } from "firebase-admin/auth";
-import { sendErrorByCode } from "./sendError";
+import type { Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
 import { ERROR_CODES } from "tttc-common/errors";
 import { z } from "zod";
+import {
+  admin,
+  db,
+  ensureUserDocument,
+  getCollectionName,
+  verifyUser,
+} from "../Firebase";
+import type { RequestWithLogger } from "../types/request";
+import { sendErrorByCode } from "./sendError";
 
 const feedbackRequest = z.object({
   text: z.string(),

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Component, ReactNode } from "react";
+import type React from "react";
+import { Component, type ReactNode } from "react";
 import { Col } from "../layout";
 import { Button } from "./button/Button";
 

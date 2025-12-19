@@ -1,11 +1,11 @@
 import React, { useContext, useMemo } from "react";
-import * as schema from "tttc-common/schema";
-import { Col, Row } from "../layout";
-import { ScrollArea } from "../elements";
 import { getQuotes } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import { sortQuotesByBridging } from "@/lib/bridging/utils";
+import { ScrollArea } from "../elements";
+import { Col, Row } from "../layout";
 import { Quote } from "../quote/Quote";
 import { ReportContext } from "../report/Report";
-import { sortQuotesByBridging } from "@/lib/bridging/utils";
 
 export function QuoteCard({ claim }: { claim: schema.Claim }) {
   const { addOns, sortByBridging } = useContext(ReportContext);

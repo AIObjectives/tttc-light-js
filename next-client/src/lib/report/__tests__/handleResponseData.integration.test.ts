@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import type * as api from "tttc-common/api";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { handleResponseData } from "../handleResponseData";
-import * as api from "tttc-common/api";
 
 // Mock server setup for integration testing
 const TEST_EXPRESS_URL = "http://localhost:8080";

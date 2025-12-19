@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type * as schema from "tttc-common/schema";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadReportData } from "./downloadUtils";
-import * as schema from "tttc-common/schema";
 
 // Mock DOM APIs
 const mockCreateElement = vi.fn();

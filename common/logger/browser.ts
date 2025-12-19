@@ -5,7 +5,7 @@ const createBrowserLogger = () => {
   const log = (level: string, data: any, message?: string) => {
     const timestamp = new Date().toISOString();
 
-    let logData = data;
+    const logData = data;
 
     // Use appropriate console method
     const consoleFn = (console as any)[level] || console.log;

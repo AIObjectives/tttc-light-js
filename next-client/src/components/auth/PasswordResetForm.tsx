@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button, Input, Spinner } from "@/components/elements";
-import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { Button, Input, Spinner } from "@/components/elements";
 import { MIN_PASSWORD_LENGTH } from "@/lib/constants/auth";
-import { getPasswordStrength } from "@/lib/utils/password";
+import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 import { getFirebaseErrorMessage } from "@/lib/utils/firebaseErrors";
+import { getPasswordStrength } from "@/lib/utils/password";
 
 interface PasswordResetFormProps {
   actionCode: string;

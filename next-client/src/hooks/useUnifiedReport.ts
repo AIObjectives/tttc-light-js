@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { ReportRef } from "tttc-common/firebase";
-import * as api from "tttc-common/api";
+import { useCallback, useEffect, useState } from "react";
+import type * as api from "tttc-common/api";
+import type { ReportRef } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger/browser";
 
 const unifiedReportLogger = logger.child({ module: "unified-report-hook" });

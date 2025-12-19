@@ -1,7 +1,7 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
-import { SortClaimTreeStep } from "./types";
-import { Env } from "../types/context";
+import type { Env } from "../types/context";
 import { handlePipelineStep } from "./handlePipelineStep";
+import type { SortClaimTreeStep } from "./types";
 
 export async function sortClaimsTreePipelineStep(
   env: Env,

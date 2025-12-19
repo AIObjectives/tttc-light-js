@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // ! This component isn't being currently used. Mark for deletion.
 

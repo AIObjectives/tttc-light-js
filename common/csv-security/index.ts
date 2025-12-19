@@ -3,9 +3,9 @@
  * Provides comprehensive input sanitization and validation for CSV files
  */
 
-import { z } from "zod";
-import { Result, success, failure } from "../functional-utils";
 import sanitizeHtml from "sanitize-html";
+import { z } from "zod";
+import { failure, type Result, success } from "../functional-utils";
 
 // Security configuration constants
 export const CSV_SECURITY_CONFIG = {
@@ -205,10 +205,7 @@ export function validateEncoding(
  * Returns configuration object with security settings
  */
 export const createSecurePapaParseConfig = (
-  options: {
-    enableSanitization?: boolean;
-    maxRows?: number;
-  } = {},
+  options: { enableSanitization?: boolean; maxRows?: number } = {},
 ) => ({
   header: true,
   skipEmptyLines: true,

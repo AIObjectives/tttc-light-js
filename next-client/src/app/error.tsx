@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/elements/button/Button";
-import { Center } from "@/components/layout/Center";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/elements/empty";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import { Center } from "@/components/layout/Center";
 
 export default function Error({
   error,

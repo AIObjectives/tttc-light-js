@@ -1,4 +1,4 @@
-import { SourceRow } from "../schema";
+import type { SourceRow } from "../schema";
 
 /**
  * Column name mapping configurations

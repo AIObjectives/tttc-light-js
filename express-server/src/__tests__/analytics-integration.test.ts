@@ -2,14 +2,14 @@
  * Integration tests for the analytics client using the common analytics package
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  initializeAnalyticsClient,
-  shutdownAnalyticsClient,
-  isAnalyticsClientInitialized,
   getAnalyticsClient,
+  initializeAnalyticsClient,
+  isAnalyticsClientInitialized,
+  shutdownAnalyticsClient,
 } from "../analytics";
-import { Env } from "../types/context";
+import type { Env } from "../types/context";
 
 // Mock child logger
 const childLogger = vi.hoisted(() => {

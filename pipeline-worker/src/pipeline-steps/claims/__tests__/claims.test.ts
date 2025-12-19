@@ -2,7 +2,7 @@
  * Tests for claims extraction pipeline step
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the model
 vi.mock("../model", () => ({
@@ -30,8 +30,8 @@ vi.mock("../model", () => ({
 }));
 
 import { extractClaims } from "../index";
-import { tokenCost, extractTopicNames, extractSubtopicNames } from "../utils";
 import type { Comment, LLMConfig, Topic } from "../types";
+import { extractSubtopicNames, extractTopicNames, tokenCost } from "../utils";
 
 // Mock the logger before importing modules that use it
 vi.mock("tttc-common/logger", () => ({

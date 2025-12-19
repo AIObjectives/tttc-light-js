@@ -7,14 +7,15 @@
  * - Circuit breaker functionality
  * - End-to-end scoring flows
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
 import type * as schema from "tttc-common/schema";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  scoreClaimsFromHydratedTree,
-  scoreQuotes,
   calculateBridgingScore,
   extractClaimsFromHydratedTree,
   extractQuotesFromTree,
+  scoreClaimsFromHydratedTree,
+  scoreQuotes,
 } from "../perspective-api";
 
 // ============================================================================

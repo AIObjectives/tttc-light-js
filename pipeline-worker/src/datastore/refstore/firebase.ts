@@ -1,6 +1,6 @@
-import * as admin from "firebase-admin";
-import { z } from "zod";
-import { RefStore } from ".";
+import type * as admin from "firebase-admin";
+import type { z } from "zod";
+import type { RefStore } from ".";
 
 /**
  * Firebase implementation of our refstore

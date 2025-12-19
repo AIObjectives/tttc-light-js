@@ -1,14 +1,14 @@
-import * as weave from "weave";
 import type { OpenAI } from "openai";
-import { LLMTopic } from "../../schema";
+import * as weave from "weave";
 import { logger } from "../../logger";
+import type { LLMTopic } from "../../schema";
 import { EVAL_MODEL } from "../constants";
 import type {
   ClusteringScorerInput,
   JsonStructureScorerOutput,
-  TopicCoverageScorerOutput,
   LLMJudgeOutput,
   LLMJudgeScorerFunction,
+  TopicCoverageScorerOutput,
 } from "./types";
 
 const evaluationLogger = logger.child({ module: "evaluations" });

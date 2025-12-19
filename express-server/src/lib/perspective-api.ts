@@ -13,11 +13,11 @@
  */
 
 import "dotenv/config";
-import { logger } from "tttc-common/logger";
-import * as schema from "tttc-common/schema";
-import { getQuotes } from "tttc-common/morphisms";
 import { createHash } from "crypto";
 import type Redis from "ioredis";
+import { logger } from "tttc-common/logger";
+import { getQuotes } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
 import { z } from "zod";
 
 const perspectiveLogger = logger.child({ module: "perspective-api" });

@@ -1,16 +1,16 @@
-import * as weave from "weave";
 import type { OpenAI } from "openai";
+import * as weave from "weave";
 import { logger } from "../../logger";
 import { EVAL_MODEL } from "../constants";
 import type {
   Claim,
-  GroupedClaim,
-  DeduplicationScorerInput,
-  DeduplicationJsonStructureScorerOutput,
   ClaimCoverageScorerOutput,
   DeduplicationConsolidationScorerOutput,
   DeduplicationGroupClaimQualityScorerOutput,
+  DeduplicationJsonStructureScorerOutput,
   DeduplicationLLMJudgeOutput,
+  DeduplicationScorerInput,
+  GroupedClaim,
   LLMJudgeScorerFunction,
 } from "./types";
 
@@ -220,7 +220,7 @@ export const consolidationScorer = weave.op(function consolidationScorer({
   const underConsolidated = singleClaimRatio > 0.7 && inputClaimsCount > 3;
 
   let consolidationScore = 1;
-  let issues = [];
+  const issues = [];
 
   if (overConsolidated) {
     consolidationScore -= 0.4;
@@ -267,7 +267,7 @@ export const groupClaimQualityScorer = weave.op(
     }
 
     const groups = modelOutput.groupedClaims;
-    let qualityIssues = [];
+    const qualityIssues = [];
     let qualityScore = 1;
 
     // Check for vague platitudes

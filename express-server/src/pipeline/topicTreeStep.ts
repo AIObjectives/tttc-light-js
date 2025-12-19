@@ -1,7 +1,7 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
-import { TopicTreeStep } from "./types";
-import { Env } from "../types/context";
+import type { Env } from "../types/context";
 import { handlePipelineStep } from "./handlePipelineStep";
+import type { TopicTreeStep } from "./types";
 
 export async function topicTreePipelineStep(
   env: Env,

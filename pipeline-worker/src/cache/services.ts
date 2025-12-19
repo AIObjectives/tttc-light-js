@@ -1,5 +1,5 @@
-import { Cache, RedisCacheConfig } from "./types";
 import { createCache } from "./index";
+import type { Cache, RedisCacheConfig } from "./types";
 
 /**
  * Parses Redis configuration from environment variables.

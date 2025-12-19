@@ -12,8 +12,8 @@
  * 4. Server verifies token using Admin SDK
  */
 
-import { User } from "firebase/auth";
-import { Result, success, failure } from "tttc-common/functional-utils";
+import type { User } from "firebase/auth";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger/browser";
 
 const tokenLogger = logger.child({ module: "id-token-client" });

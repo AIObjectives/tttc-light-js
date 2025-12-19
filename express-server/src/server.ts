@@ -1,42 +1,41 @@
 import "dotenv/config";
-import express, { Request, Response, NextFunction } from "express";
-import { RequestWithLogger } from "./types/request";
-import rateLimit from "express-rate-limit";
-import { RedisStore, type RedisReply } from "rate-limit-redis";
 import cors from "cors";
+import express, { type NextFunction, Request, type Response } from "express";
+import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import pinoHttp from "pino-http";
-import { logger } from "tttc-common/logger";
-import create from "./routes/create";
-import ensureUser from "./routes/ensureUser";
-import feedback from "./routes/feedback";
-import authEvents from "./routes/authEvents";
-import { getUserLimits } from "./routes/user";
-import { updateProfile } from "./routes/profile";
-
-import { validateEnv } from "./types/context";
-import { contextMiddleware } from "./middleware";
-import {
-  migrateReportUrlHandler,
-  getUnifiedReportHandler,
-} from "./routes/report";
-import { createQueue, Queue } from "./queue";
 import Redis from "ioredis";
-import {
-  getAllowedOrigins,
-  createCorsOptions,
-  logCorsConfiguration,
-} from "./utils/corsConfig";
-import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
-import {
-  initializeAnalyticsClient,
-  shutdownAnalyticsClient,
-} from "./analytics";
+import pinoHttp from "pino-http";
+import { type RedisReply, RedisStore } from "rate-limit-redis";
 import {
   ERROR_CODES,
   ERROR_MESSAGES,
   getErrorStatusCode,
 } from "tttc-common/errors";
+import { logger } from "tttc-common/logger";
+import {
+  initializeAnalyticsClient,
+  shutdownAnalyticsClient,
+} from "./analytics";
+import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
+import { contextMiddleware } from "./middleware";
+import { createQueue, Queue } from "./queue";
+import authEvents from "./routes/authEvents";
+import create from "./routes/create";
+import ensureUser from "./routes/ensureUser";
+import feedback from "./routes/feedback";
+import { updateProfile } from "./routes/profile";
+import {
+  getUnifiedReportHandler,
+  migrateReportUrlHandler,
+} from "./routes/report";
+import { getUserLimits } from "./routes/user";
+import { validateEnv } from "./types/context";
+import type { RequestWithLogger } from "./types/request";
+import {
+  createCorsOptions,
+  getAllowedOrigins,
+  logCorsConfiguration,
+} from "./utils/corsConfig";
 
 const serverLogger = logger.child({ module: "server" });
 

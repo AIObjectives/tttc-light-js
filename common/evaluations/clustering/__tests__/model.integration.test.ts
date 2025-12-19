@@ -1,17 +1,15 @@
-import { describe, it, expect, beforeAll, vi } from "vitest";
-import * as weave from "weave";
 import { OpenAI } from "openai";
-import {
-  jsonStructureScorer,
-  topicCoverageScorer,
-  createLLMJudgeScorer,
-} from "../scorers";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import * as weave from "weave";
 import { defaultClusteringPrompt, defaultSystemPrompt } from "../../../prompts";
-
-import type { ClusteringDatasetRow, ClusteringModelOutput } from "../types";
-
 import { createEvaluationModel } from "../..";
 import { EVAL_MODEL } from "../../constants";
+import {
+  createLLMJudgeScorer,
+  jsonStructureScorer,
+  topicCoverageScorer,
+} from "../scorers";
+import type { ClusteringDatasetRow, ClusteringModelOutput } from "../types";
 
 /**
  * Clustering Weave Integration Tests

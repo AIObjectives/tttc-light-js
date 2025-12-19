@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import * as schema from "tttc-common/schema";
+import type * as schema from "tttc-common/schema";
 import {
   Drawer,
   DrawerContent,

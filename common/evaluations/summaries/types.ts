@@ -1,4 +1,4 @@
-import type { TopicSummary, SortedTopic } from "../../apiPyserver";
+import type { SortedTopic, TopicSummary } from "../../apiPyserver";
 
 /**
  * Structure of a dataset row for summaries evaluation

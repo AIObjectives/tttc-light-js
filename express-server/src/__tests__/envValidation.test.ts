@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { validateEnv } from "../types/context";
 
 describe("Environment Variable Validation", () => {

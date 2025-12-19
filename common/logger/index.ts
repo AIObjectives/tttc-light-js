@@ -93,7 +93,7 @@ const customCensor = (value: any, path: string[]): any => {
   }
 
   switch (fieldName) {
-    case "uid":
+    case "uid": {
       // Convert to string and handle both short and long UIDs safely
       const uidStr = String(value);
       if (uidStr.length > 8) {
@@ -103,8 +103,9 @@ const customCensor = (value: any, path: string[]): any => {
         return `${uidStr.substring(0, Math.min(3, uidStr.length))}...`;
       }
       return "[UID-REDACTED]";
+    }
 
-    case "email":
+    case "email": {
       const emailStr = String(value);
       if (emailStr.includes("@") && emailStr.length > 1) {
         const parts = emailStr.split("@");
@@ -114,6 +115,7 @@ const customCensor = (value: any, path: string[]): any => {
       }
       // Fallback for malformed emails or non-string values
       return "<redacted@domain>";
+    }
 
     case "displayName":
       return "<redacted>";

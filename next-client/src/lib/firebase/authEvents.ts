@@ -1,6 +1,6 @@
-import { User } from "firebase/auth";
-import { fetchToken } from "./getIdToken";
+import type { User } from "firebase/auth";
 import { logger } from "tttc-common/logger/browser";
+import { fetchToken } from "./getIdToken";
 
 const authEventsLogger = logger.child({ module: "auth-events-client" });
 
@@ -13,7 +13,7 @@ export async function logAuthEvent(
   user: User,
 ): Promise<void> {
   try {
-    let body: {
+    const body: {
       event: "signin" | "signout";
       clientTimestamp: string;
       token?: string;

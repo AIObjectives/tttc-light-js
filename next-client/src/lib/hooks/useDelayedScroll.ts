@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 /**
  * Hook for scrolling to elements after React state updates complete.

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import type { User } from "firebase/auth";
+import { useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "@/lib/firebase/auth";
-import { User } from "firebase/auth";
 import { ensureUserDocumentOnClient } from "@/lib/firebase/ensureUserDocument";
 
 // Module-level dedup tracking - survives React StrictMode remounts

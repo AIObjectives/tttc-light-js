@@ -2,11 +2,11 @@
  * Shared utility functions for pipeline steps
  */
 
-import { logger } from "tttc-common/logger";
-import { Logger } from "pino";
 import type OpenAI from "openai";
+import type { Logger } from "pino";
+import { failure, type Result, success } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
 import * as weave from "weave";
-import { Result, success, failure } from "tttc-common/functional-utils";
 
 const utilsLogger = logger.child({ module: "pipeline-utils" });
 

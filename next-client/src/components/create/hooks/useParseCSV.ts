@@ -8,12 +8,15 @@
  */
 
 import { useCallback } from "react";
-import { AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
-import * as schema from "tttc-common/schema";
-import { z } from "zod";
-import { failure, success, Result } from "tttc-common/functional-utils";
+import {
+  type ColumnMappings,
+  validateCSVFormat,
+} from "tttc-common/csv-validation";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { DEFAULT_LIMITS } from "tttc-common/permissions";
-import { validateCSVFormat, ColumnMappings } from "tttc-common/csv-validation";
+import type * as schema from "tttc-common/schema";
+import { z } from "zod";
+import { type AsyncState, useAsyncState } from "@/lib/hooks/useAsyncState";
 
 /**
  * Shape of error that can be returned by useParseCSV. Use this to build specific errors

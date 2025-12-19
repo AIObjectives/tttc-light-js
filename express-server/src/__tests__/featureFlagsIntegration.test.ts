@@ -1,25 +1,25 @@
+import express from "express";
+import type { Server } from "http";
+import request from "supertest";
 import {
-  describe,
-  it,
-  expect,
-  beforeAll,
   afterAll,
   afterEach,
+  beforeAll,
   beforeEach,
+  describe,
+  expect,
+  it,
   vi,
 } from "vitest";
-import express from "express";
-import request from "supertest";
-import { Server } from "http";
 import {
-  initializeFeatureFlags,
-  shutdownFeatureFlags,
-  isFeatureEnabled,
   getFeatureFlag,
   getFeatureFlagProvider,
+  initializeFeatureFlags,
+  isFeatureEnabled,
+  shutdownFeatureFlags,
 } from "../featureFlags";
-import { validateEnv } from "../types/context";
 import { contextMiddleware } from "../middleware";
+import { validateEnv } from "../types/context";
 
 // Helper function to create mock environment for feature flag tests
 const createMockEnv = (

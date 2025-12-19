@@ -5,13 +5,13 @@
  * including deterministic hash-based positioning.
  */
 
+import { cleanup, render } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   AgreeDisagreeSpectrum,
-  simpleHash,
   type Speaker,
+  simpleHash,
 } from "./AgreeDisagreeSpectrum";
 
 // Helper function to convert speaker strings to Speaker objects for tests
@@ -232,7 +232,7 @@ describe("AgreeDisagreeSpectrum", () => {
       // Calculate spread (standard deviation)
       const mean = positions.reduce((a, b) => a + b, 0) / positions.length;
       const variance =
-        positions.reduce((sum, pos) => sum + Math.pow(pos - mean, 2), 0) /
+        positions.reduce((sum, pos) => sum + (pos - mean) ** 2, 0) /
         positions.length;
       const stdDev = Math.sqrt(variance);
 

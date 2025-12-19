@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import {
-  ReportJob,
-  ReportRef,
+  type ReportJob,
+  type ReportRef,
   reportJob,
   reportRef,
 } from "tttc-common/firebase";

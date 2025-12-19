@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { success, failure } from "tttc-common/functional-utils";
-import * as apiPyserver from "tttc-common/apiPyserver";
+import type * as apiPyserver from "tttc-common/apiPyserver";
+import { failure, success } from "tttc-common/functional-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the pipeline module
 vi.mock("../../pipeline/", () => ({

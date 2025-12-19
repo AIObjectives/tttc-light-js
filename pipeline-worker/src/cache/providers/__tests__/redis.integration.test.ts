@@ -1,15 +1,15 @@
+import Redis from "ioredis";
 import {
-  describe,
-  it,
-  expect,
-  beforeAll,
   afterAll,
+  beforeAll,
   beforeEach,
+  describe,
+  expect,
+  it,
   vi,
 } from "vitest";
+import type { RedisCacheConfig } from "../../types";
 import { RedisCache } from "../redis";
-import { RedisCacheConfig } from "../../types";
-import Redis from "ioredis";
 
 // Mock logger to avoid pino dependency issues in tests
 vi.mock("common/logger", () => ({

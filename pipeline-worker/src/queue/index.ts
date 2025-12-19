@@ -1,9 +1,8 @@
 export * from "./googlepubsub";
 
-import { GooglePubSub } from "./googlepubsub";
 import { PubSub } from "@google-cloud/pubsub";
-
 import { z } from "zod";
+import { GooglePubSub } from "./googlepubsub";
 
 export interface PubSubMessage<T = unknown> {
   id: string;

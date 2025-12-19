@@ -1,44 +1,44 @@
 import React, {
   forwardRef,
   useContext,
-  useState,
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
-import * as schema from "tttc-common/schema";
+import { mergeRefs } from "react-merge-refs";
+import { getNPeople } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import { ControversyIcon } from "@/assets/icons/ControversyIcons";
+import {
+  AgreeDisagreeSpectrum,
+  ControversyIndicator,
+} from "@/components/controversy";
+import { getThemeColor } from "@/lib/color";
+import {
+  getControversyCategory,
+  getSubtopicCrux,
+  parseSpeaker,
+} from "@/lib/crux/utils";
+import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
+import { Claim } from "../claim";
+import { ClaimItem } from "../claim/ClaimItem";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import {
   ExpandableText,
-  TextIcon,
   HoverCard,
   HoverCardContent,
-  HoverCardTrigger,
-  HoverCardPortal,
   HoverCardOverlay,
+  HoverCardPortal,
+  HoverCardTrigger,
+  TextIcon,
 } from "../elements";
-import PointGraphic from "../pointGraphic/PointGraphic";
-import { Claim } from "../claim";
 import { Col, Row } from "../layout";
-import Icons from "@/assets/icons";
-import ClaimLoader from "./components/ClaimLoader";
-import { getNPeople } from "tttc-common/morphisms";
-import { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
-import { ClaimItem } from "../claim/ClaimItem";
+import PointGraphic from "../pointGraphic/PointGraphic";
+import type { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
-import {
-  getSubtopicCrux,
-  parseSpeaker,
-  getControversyCategory,
-} from "@/lib/crux/utils";
-import { getThemeColor } from "@/lib/color";
-import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
-import {
-  ControversyIndicator,
-  AgreeDisagreeSpectrum,
-} from "@/components/controversy";
-import { ControversyIcon } from "@/assets/icons/ControversyIcons";
-import { mergeRefs } from "react-merge-refs";
+import ClaimLoader from "./components/ClaimLoader";
 import { VirtualizedClaimsList } from "./VirtualizedClaimsList";
 
 // Threshold for enabling virtualization. Below this count, the DOM overhead of

@@ -1,14 +1,14 @@
 import {
   Storage as BucketStorage,
-  Bucket as GBucket,
-  GetSignedUrlConfig,
+  type Bucket as GBucket,
+  type GetSignedUrlConfig,
 } from "@google-cloud/storage";
-import { CustomError } from "./error";
+import type { Result } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
-import { Result } from "tttc-common/functional-utils";
-import { logger } from "tttc-common/logger";
-import { Env } from "./types/context";
+import { CustomError } from "./error";
+import type { Env } from "./types/context";
 
 const storageLogger = logger.child({ module: "storage" });
 
@@ -37,7 +37,7 @@ export class Bucket extends Storage {
   private storage: BucketStorage;
   private bucket: GBucket;
 
-  static VALID_FILENAME_REGEX = /^[^(\r\n#\[\]*?\:"<>|)]+$/; // GCS filenames are very permissive, so we check the negative.
+  static VALID_FILENAME_REGEX = /^[^(\r\n#[\]*?:"<>|)]+$/; // GCS filenames are very permissive, so we check the negative.
   static MAX_FILENAME_LENGTH = 512; // Reasonable max length for filenames
 
   constructor(encoded_creds: string, name: string) {

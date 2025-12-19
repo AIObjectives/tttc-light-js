@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import type React from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 // SSR-safe useLayoutEffect
 const useIsomorphicLayoutEffect =

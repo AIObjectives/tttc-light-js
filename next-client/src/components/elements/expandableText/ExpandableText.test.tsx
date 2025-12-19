@@ -13,18 +13,18 @@
  * we mock the truncation behavior rather than testing exact truncation points.
  */
 
+import { act, cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import React from "react";
 import {
-  describe,
-  it,
-  expect,
   afterEach,
   beforeEach,
-  vi,
+  describe,
+  expect,
+  it,
   type Mock,
+  vi,
 } from "vitest";
-import { render, screen, cleanup, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { ExpandableText } from "./ExpandableText";
 
 // Mock ResizeObserver

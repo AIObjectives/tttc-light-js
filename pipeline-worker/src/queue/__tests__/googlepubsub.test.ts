@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { PubSub } from "@google-cloud/pubsub";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { GooglePubSub } from "../googlepubsub";
-import type { PubSub } from "@google-cloud/pubsub";
 
 const mockTopic = {
   subscription: vi.fn(),

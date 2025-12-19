@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import * as weave from "weave";
 import { OpenAI } from "openai";
-import {
-  extractionJsonStructureScorer,
-  claimQualityScorer,
-  createLLMJudgeScorer,
-} from "../scorers";
+import { beforeAll, describe, expect, it } from "vitest";
+import * as weave from "weave";
 import { defaultExtractionPrompt, defaultSystemPrompt } from "../../../prompts";
 import { createEvaluationModel } from "../../";
-import { ExtractionDatasetRow, ExtractionModelOutput } from "../types";
 import { EVAL_MODEL } from "../../constants";
+import {
+  claimQualityScorer,
+  createLLMJudgeScorer,
+  extractionJsonStructureScorer,
+} from "../scorers";
+import type { ExtractionDatasetRow, ExtractionModelOutput } from "../types";
 
 /**
  * Extraction Weave Integration Tests

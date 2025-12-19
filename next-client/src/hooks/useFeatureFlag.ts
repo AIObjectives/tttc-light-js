@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  isFeatureEnabled,
+  type FeatureFlagContext,
   getFeatureFlag,
-  FeatureFlagContext,
+  isFeatureEnabled,
 } from "../lib/feature-flags/featureFlags";
 
 /**

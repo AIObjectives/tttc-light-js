@@ -1,69 +1,67 @@
 "use client";
 
+import { ChevronsUpDown } from "lucide-react";
 import React, {
-  Dispatch,
-  Ref,
-  SetStateAction,
   createContext,
+  type Dispatch,
+  type Ref,
+  type SetStateAction,
   useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
-import * as schema from "tttc-common/schema";
-import { Col, Row } from "../layout";
+import { toast } from "sonner";
+// Default prompts for comparison
+import {
+  defaultClusteringPrompt,
+  defaultCruxPrompt,
+  defaultDedupPrompt,
+  defaultExtractionPrompt,
+  defaultSummariesPrompt,
+  defaultSystemPrompt,
+} from "tttc-common/prompts";
+import type * as schema from "tttc-common/schema";
+import { getSortedCruxes, getTopicControversy } from "@/lib/crux/utils";
+import { useHashChange } from "@/lib/hooks/useHashChange";
+import { downloadReportData } from "@/lib/report/downloadUtils";
+import { cn } from "@/lib/utils/shadcn";
 import {
   Button,
   CardContent,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
   ErrorBoundary,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "../elements";
-import { ChevronsUpDown } from "lucide-react";
+import { Col, Row } from "../layout";
 import {
-  useReportState,
-  ReportStateAction,
-  TopicNode,
-} from "./hooks/useReportState";
-import { cn } from "@/lib/utils/shadcn";
-import Outline from "../outline/Outline";
-import { getTopicControversy, getSortedCruxes } from "@/lib/crux/utils";
-import Theme from "../topic/Topic";
-import useScrollListener from "./hooks/useScrollListener";
-import useReportSubscribe from "./hooks/useReportSubscribe";
-import { CruxCard } from "./CruxCard";
-import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
-import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
-import { useHashChange } from "@/lib/hooks/useHashChange";
-import { toast } from "sonner";
-import {
-  OutlineStateAction,
+  type OutlineStateAction,
   useOutlineState,
 } from "../outline/hooks/useOutlineState";
-import { downloadReportData } from "@/lib/report/downloadUtils";
-
+import Outline from "../outline/Outline";
+import Theme from "../topic/Topic";
+import { CruxCard } from "./CruxCard";
+import { ProcessingSummary } from "./components/ProcessingSummary";
+import { PromptToggle } from "./components/PromptToggle";
+import { ReportHeader } from "./components/ReportHeader";
 // Extracted components
 import { ReportLayout } from "./components/ReportLayout";
-import { ReportHeader } from "./components/ReportHeader";
 import { ReportToolbar } from "./components/ReportToolbar";
-import { PromptToggle } from "./components/PromptToggle";
-import { ProcessingSummary } from "./components/ProcessingSummary";
-
-// Default prompts for comparison
+import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
+import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
 import {
-  defaultSystemPrompt,
-  defaultClusteringPrompt,
-  defaultExtractionPrompt,
-  defaultDedupPrompt,
-  defaultSummariesPrompt,
-  defaultCruxPrompt,
-} from "tttc-common/prompts";
+  type ReportStateAction,
+  type TopicNode,
+  useReportState,
+} from "./hooks/useReportState";
+import useReportSubscribe from "./hooks/useReportSubscribe";
+import useScrollListener from "./hooks/useScrollListener";
 
 /**
  * Report Component

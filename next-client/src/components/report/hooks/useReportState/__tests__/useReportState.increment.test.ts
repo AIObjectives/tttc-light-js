@@ -1,14 +1,13 @@
-import { describe, test, expect } from "vitest";
 import { Array, pipe } from "effect";
-
-import { setupTestState } from "./testStateSetup";
+import { describe, expect, test } from "vitest";
 import {
   defaultAddSubtopicPagination,
   defaultAddTopicPagination,
   defaultSubtopicPagination,
   defaultTopicPagination,
 } from "../consts";
-import { ReportState, SubtopicNode, TopicNode } from "../types";
+import type { ReportState, SubtopicNode, TopicNode } from "../types";
+import { setupTestState } from "./testStateSetup";
 
 const { state, reducer } = setupTestState();
 

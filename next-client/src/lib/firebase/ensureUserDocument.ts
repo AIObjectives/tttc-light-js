@@ -1,15 +1,16 @@
-import { User } from "firebase/auth";
-import { fetchToken } from "./getIdToken";
-import { logger } from "tttc-common/logger/browser";
+import type { User } from "firebase/auth";
 import pRetry, { AbortError } from "p-retry";
-import { APIError, isAPIError } from "../types/api";
+import { logger } from "tttc-common/logger/browser";
+import { type APIError, isAPIError } from "../types/api";
+import { fetchToken } from "./getIdToken";
 
 const ensureUserLogger = logger.child({ module: "ensure-user-client" });
 
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_REQUEST_TIMEOUT = 408;
 const HTTP_TOO_MANY_REQUESTS = 429;
-import { UserDocument } from "tttc-common/firebase";
+
+import type { UserDocument } from "tttc-common/firebase";
 
 /**
  * Ensures a user document exists in Firestore by calling the server API

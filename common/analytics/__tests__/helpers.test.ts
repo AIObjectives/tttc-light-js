@@ -2,7 +2,7 @@
  * Tests for analytics helper functions from index.ts
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createAnalyticsConfig,
   createEventProperties,

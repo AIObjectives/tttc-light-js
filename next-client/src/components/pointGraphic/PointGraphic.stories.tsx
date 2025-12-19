@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { reportData } from "../../../stories/data/dummyData";
 import React, { useRef, useState } from "react";
+import { reportData } from "../../../stories/data/dummyData";
+import { Button } from "../elements";
+import { Col, Row } from "../layout";
 import PointGraphic, {
   Cell as CellComponent,
   PointGraphicGroup,
 } from "./PointGraphic";
-import { Button } from "../elements";
-import { Col, Row } from "../layout";
 
 /**
  * ! This story will be broken until it's properly refactored

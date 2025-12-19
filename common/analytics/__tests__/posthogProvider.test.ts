@@ -3,20 +3,20 @@
  */
 
 import {
-  describe,
-  it,
-  expect,
-  beforeEach,
   afterEach,
-  vi,
+  beforeEach,
+  describe,
+  expect,
+  it,
   type MockedFunction,
+  vi,
 } from "vitest";
 import { PostHogAnalyticsProvider } from "../providers/posthogProvider";
 import type {
   AnalyticsConfig,
+  AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsContext,
 } from "../types";
 import { CommonEvents } from "../types";
 

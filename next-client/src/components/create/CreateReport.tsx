@@ -1,23 +1,25 @@
 "use client";
-import React, { useEffect, useState, useActionState } from "react";
-import * as api from "tttc-common/api";
-import { Center, Col } from "@/components/layout";
-import { Button, Spinner } from "@/components/elements";
+import type { User } from "firebase/auth";
+import { AlertCircle } from "lucide-react";
 import Form from "next/form";
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useFormStatus } from "react-dom";
+import { toast } from "sonner";
+import type * as api from "tttc-common/api";
+import { logger } from "tttc-common/logger/browser";
+import { EmailVerificationPrompt } from "@/components/auth/EmailVerificationPrompt";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Spinner,
+} from "@/components/elements";
+import { Center, Col } from "@/components/layout";
 import submitAction from "@/features/submission/actions/SubmitAction";
 import { useUser } from "@/lib/hooks/getUser";
-import { useFormStatus } from "react-dom";
-import { useRouter } from "next/navigation";
-import { SigninModal } from "./components/Modals";
-import { EmailVerificationPrompt } from "@/components/auth/EmailVerificationPrompt";
-import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
-import { toast } from "sonner";
-
-import { useFormState } from "./hooks/useFormState";
-import { useSubmitValidation } from "./hooks/useSubmitValidation";
-import { useSignInModal } from "./hooks/useSignInModal";
-import { User } from "firebase/auth";
-import { logger } from "tttc-common/logger/browser";
 import {
   AdvancedSettings,
   CostEstimate,
@@ -27,8 +29,11 @@ import {
   FormHeader,
   TermsAndConditions,
 } from "./components/FormSections";
-import { Alert, AlertDescription, AlertTitle } from "@/components/elements";
-import { AlertCircle } from "lucide-react";
+import { SigninModal } from "./components/Modals";
+import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
+import { useFormState } from "./hooks/useFormState";
+import { useSignInModal } from "./hooks/useSignInModal";
+import { useSubmitValidation } from "./hooks/useSubmitValidation";
 
 const createReportLogger = logger.child({ module: "create-report" });
 

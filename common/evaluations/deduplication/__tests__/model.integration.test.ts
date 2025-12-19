@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import * as weave from "weave";
 import { OpenAI } from "openai";
+import { beforeAll, describe, expect, it } from "vitest";
+import * as weave from "weave";
+import { defaultDedupPrompt, defaultSystemPrompt } from "../../../prompts";
+import { createEvaluationModel } from "../../";
+import { EVAL_MODEL } from "../../constants";
 import {
-  deduplicationJsonStructureScorer,
   claimCoverageScorer,
   createLLMJudgeScorer,
+  deduplicationJsonStructureScorer,
 } from "../scorers";
-import { defaultDedupPrompt, defaultSystemPrompt } from "../../../prompts";
 import type {
   DeduplicationDatasetRow,
   DeduplicationModelOutput,
 } from "../types";
-import { createEvaluationModel } from "../../";
-import { EVAL_MODEL } from "../../constants";
 
 /**
  * Deduplication Weave Integration Tests

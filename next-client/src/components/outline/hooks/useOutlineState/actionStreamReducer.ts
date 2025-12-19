@@ -1,6 +1,6 @@
-import { OutlineState } from "./types";
-import { pipe, Array } from "effect";
-import { ActionStreamActions } from "./actions";
+import { Array, pipe } from "effect";
+import type { ActionStreamActions } from "./actions";
+import type { OutlineState } from "./types";
 /**
  * Intermediate reducer to handle main actions more atomically
  */

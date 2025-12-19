@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function getWindowDimensions() {
   if (!globalThis.window) return { width: 0, height: 0 };

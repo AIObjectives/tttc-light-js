@@ -1,5 +1,5 @@
-import { RefStore } from ".";
-import { z } from "zod";
+import type { z } from "zod";
+import type { RefStore } from ".";
 
 export class PostgresRefStore<T extends z.ZodTypeAny>
   implements RefStore<z.infer<T>>

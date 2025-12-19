@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { parseConfig } from "../index";
 import assert from "assert";
+import { describe, expect, it } from "vitest";
+import { parseConfig } from "../index";
 
 const firebaseCredentials = Buffer.from(
   JSON.stringify("super secret do not steal"),

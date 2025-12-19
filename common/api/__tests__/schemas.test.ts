@@ -5,7 +5,7 @@
  * These tests ensure schema definitions remain consistent with actual data structures.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { userCapabilitiesResponse } from "../index";
 
 describe("API Schema Validation", () => {

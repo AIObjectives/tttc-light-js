@@ -7,21 +7,21 @@
 
 import OpenAI from "openai";
 import type { Logger } from "pino";
-import { Result, success, failure } from "tttc-common/functional-utils";
-import {
-  Comment,
-  LLMConfig,
-  TopicTreeResult,
-  ClusteringOptions,
-  ClusteringError,
-} from "./types";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import {
   basicSanitize,
-  sanitizePromptLength,
   sanitizeForOutput,
+  sanitizePromptLength,
 } from "../sanitizer";
 import { getReportLogger } from "../utils";
 import { callClusteringModel } from "./model";
+import type {
+  ClusteringError,
+  ClusteringOptions,
+  Comment,
+  LLMConfig,
+  TopicTreeResult,
+} from "./types";
 
 /**
  * Check if a comment has meaningful content

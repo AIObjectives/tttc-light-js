@@ -1,5 +1,11 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { logger } from "tttc-common/logger/browser";
+import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import {
   Avatar,
   AvatarFallback,
@@ -13,17 +19,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/elements";
-import Link from "next/link";
-import { useUser } from "@/lib/hooks/getUser";
+import { ProfileSetupModal } from "@/components/profile/ProfileSetupModal";
+import { AUTH_ACTIONS } from "@/lib/constants/auth";
 import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
 import { logAuthEvent } from "@/lib/firebase/authEvents";
-import { logger } from "tttc-common/logger/browser";
-import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { AUTH_ACTIONS } from "@/lib/constants/auth";
-import { ProfileSetupModal } from "@/components/profile/ProfileSetupModal";
+import { useUser } from "@/lib/hooks/getUser";
 
 const loginLogger = logger.child({ module: "login-button" });
 

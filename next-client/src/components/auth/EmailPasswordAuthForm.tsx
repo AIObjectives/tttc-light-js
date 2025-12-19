@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import type { UserCredential } from "firebase/auth";
+import type React from "react";
+import { useState } from "react";
 import { Button, Input } from "@/components/elements";
-import {
-  signUpWithEmail,
-  signInWithEmail,
-  resetPassword,
-} from "@/lib/firebase/auth";
-import { UserCredential } from "firebase/auth";
 import { MIN_PASSWORD_LENGTH } from "@/lib/constants/auth";
-import { getPasswordStrength } from "@/lib/utils/password";
+import {
+  resetPassword,
+  signInWithEmail,
+  signUpWithEmail,
+} from "@/lib/firebase/auth";
 import { getFirebaseErrorMessage } from "@/lib/utils/firebaseErrors";
+import { getPasswordStrength } from "@/lib/utils/password";
 
 type AuthMode = "signin" | "signup" | "reset";
 

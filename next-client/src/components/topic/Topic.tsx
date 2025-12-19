@@ -1,6 +1,15 @@
 "use client";
 
-import React, { createContext, forwardRef, useContext } from "react";
+import type React from "react";
+import { createContext, forwardRef, useContext } from "react";
+import { mergeRefs } from "react-merge-refs";
+import { getNClaims, getNPeople } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import { ControversyIndicator } from "@/components/controversy";
+import { getThemeColor } from "@/lib/color";
+import { getTopicControversy } from "@/lib/crux/utils";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import {
   Button,
   Card,
@@ -14,20 +23,12 @@ import {
   TextIcon,
   WordLimitExpandableText,
 } from "../elements";
-import * as schema from "tttc-common/schema";
-import { CopyLinkButton } from "../copyButton/CopyButton";
-import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
-import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
-import { Subtopic, SubtopicHeader } from "../subtopic/Subtopic";
-import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
+import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
+import type { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
-import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
-import { mergeRefs } from "react-merge-refs";
-import { getThemeColor } from "@/lib/color";
-import { getTopicControversy } from "@/lib/crux/utils";
-import { ControversyIndicator } from "@/components/controversy";
+import { Subtopic, SubtopicHeader } from "../subtopic/Subtopic";
 
 type TopicContextType = {
   topicNode: TopicNode;
@@ -51,7 +52,7 @@ function Topic({ node }: { node: TopicNode }) {
     </TopicContext.Provider>
   );
 }
-interface TopicCardProps {}
+type TopicCardProps = {};
 /**
  * UI for Topic
  */

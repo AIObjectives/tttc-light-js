@@ -1,7 +1,7 @@
 import * as apiPyserver from "tttc-common/apiPyserver";
-import { CruxesStep } from "./types";
-import { Env } from "../types/context";
+import type { Env } from "../types/context";
 import { handlePipelineStep } from "./handlePipelineStep";
+import type { CruxesStep } from "./types";
 
 export async function cruxesPipelineStep(
   env: Env,

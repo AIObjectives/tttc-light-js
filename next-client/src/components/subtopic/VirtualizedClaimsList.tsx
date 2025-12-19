@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useLayoutEffect, useState, useEffect } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { ClaimNode } from "../report/hooks/useReportState";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ClaimNode } from "../report/hooks/useReportState";
 import { VirtualClaimItem } from "./VirtualClaimItem";
 
 // Suppress useLayoutEffect warning in SSR

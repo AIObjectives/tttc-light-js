@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useUserCapabilities } from "../useUserCapabilities";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as userLimitsModule from "@/lib/api/userLimits";
+import { useUserCapabilities } from "../useUserCapabilities";
 
 // Mock the userLimits API module
 vi.mock("@/lib/api/userLimits", () => ({

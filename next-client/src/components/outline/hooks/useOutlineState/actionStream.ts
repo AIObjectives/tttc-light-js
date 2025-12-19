@@ -1,6 +1,6 @@
 import { Match } from "effect";
-import { TaggedTopicPath, TaggedSubtopicPath } from "./types";
 import { actionStreamActions } from "./actions";
+import type { TaggedSubtopicPath, TaggedTopicPath } from "./types";
 //  ********************************
 //  * Action stream creators *
 //  *

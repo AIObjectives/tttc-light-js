@@ -1,5 +1,5 @@
-export { ControversyIndicator } from "./ControversyIndicator";
 export { AgreeDisagreeSpectrum } from "./AgreeDisagreeSpectrum";
-export { InteractiveControversy } from "./InteractiveControversy";
 export { ControversyDrawer } from "./ControversyDrawer";
+export { ControversyIndicator } from "./ControversyIndicator";
 export { ControversyTooltipContent } from "./ControversyTooltipContent";
+export { InteractiveControversy } from "./InteractiveControversy";

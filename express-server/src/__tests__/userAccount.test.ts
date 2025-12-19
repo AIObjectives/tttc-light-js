@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ensureUserDocument } from "../Firebase";
 import { logger } from "tttc-common/logger";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ensureUserDocument } from "../Firebase";
 
 // Mock Firebase Admin SDK
 vi.mock("firebase-admin", () => {

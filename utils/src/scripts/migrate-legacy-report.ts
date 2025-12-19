@@ -42,11 +42,11 @@
  */
 
 import { Storage } from "@google-cloud/storage";
+import * as dotenv from "dotenv";
 import * as admin from "firebase-admin";
+import { resolve } from "path";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
-import * as dotenv from "dotenv";
-import { resolve } from "path";
 
 // Load environment from express-server/.env
 const envPath = resolve(process.cwd(), "../express-server/.env");
@@ -88,14 +88,14 @@ function parseGcsUri(uri: string): { bucket: string; fileName: string } | null {
 
   // Try full URL format
   const urlMatch = uri.match(
-    /https:\/\/storage\.googleapis\.com\/([^\/]+)\/(.+)/,
+    /https:\/\/storage\.googleapis\.com\/([^/]+)\/(.+)/,
   );
   if (urlMatch) {
     return { bucket: urlMatch[1], fileName: urlMatch[2] };
   }
 
   // Try bucket/file format
-  const pathMatch = uri.match(/^([^\/]+)\/(.+)$/);
+  const pathMatch = uri.match(/^([^/]+)\/(.+)$/);
   if (pathMatch) {
     return { bucket: pathMatch[1], fileName: pathMatch[2] };
   }

@@ -1,18 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
 import type { OpenAI } from "openai";
+import { describe, expect, it, vi } from "vitest";
+import { EVAL_MODEL } from "../../constants";
+import { deduplicationTestCases } from "../datasets";
 import {
-  deduplicationJsonStructureScorer,
   claimCoverageScorer,
   consolidationScorer,
-  groupClaimQualityScorer,
   createLLMJudgeScorer,
+  deduplicationJsonStructureScorer,
+  groupClaimQualityScorer,
 } from "../scorers";
 import type {
-  DeduplicationModelOutput,
   DeduplicationDatasetRow,
+  DeduplicationModelOutput,
 } from "../types.js";
-import { deduplicationTestCases } from "../datasets";
-import { EVAL_MODEL } from "../../constants";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({

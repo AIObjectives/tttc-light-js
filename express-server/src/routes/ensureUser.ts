@@ -1,10 +1,10 @@
-import { Response } from "express";
-import { RequestWithLogger } from "../types/request";
-import * as firebase from "../Firebase";
-import { DecodedIdToken } from "firebase-admin/auth";
-import { sendErrorByCode } from "./sendError";
+import type { Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
 import { ERROR_CODES } from "tttc-common/errors";
+import * as firebase from "../Firebase";
 import { createMondayItem } from "../services/monday";
+import type { RequestWithLogger } from "../types/request";
+import { sendErrorByCode } from "./sendError";
 
 export default async function ensureUser(
   req: RequestWithLogger,

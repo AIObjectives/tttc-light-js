@@ -2,7 +2,7 @@
  * Tests for Analytics client
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   Analytics,
   getAnalytics,
@@ -10,9 +10,9 @@ import {
   trackEvent,
 } from "../client";
 import type {
+  AnalyticsConfig,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsConfig,
 } from "../types";
 import { CommonEvents } from "../types";
 

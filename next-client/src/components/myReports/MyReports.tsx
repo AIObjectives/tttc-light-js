@@ -1,10 +1,10 @@
 "use client";
+import Link from "next/link";
 import React from "react";
+import type { ReportRef } from "tttc-common/firebase";
+import Icons from "@/assets/icons";
 import { Card, CardContent, Separator, TextIcon } from "../elements";
 import { Col, Row } from "../layout";
-import Icons from "@/assets/icons";
-import { ReportRef } from "tttc-common/firebase";
-import Link from "next/link";
 
 const reportLink = (id: string) =>
   location.protocol + "//" + location.host + `/report/${id}`;

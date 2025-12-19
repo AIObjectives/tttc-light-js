@@ -2,8 +2,8 @@
 
 import posthog from "posthog-js";
 import type {
-  FeatureFlagProvider,
   FeatureFlagContext,
+  FeatureFlagProvider,
 } from "tttc-common/feature-flags";
 
 /**

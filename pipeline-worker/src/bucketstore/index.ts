@@ -1,5 +1,5 @@
-import { BucketStore, BucketStoreConfig } from "./types";
 import { GCPBucketStore } from "./providers/gcp";
+import type { BucketStore, BucketStoreConfig } from "./types";
 
 export type {
   BucketStore,
@@ -7,10 +7,10 @@ export type {
   GCPBucketStoreConfig,
 } from "./types";
 export {
-  BucketStoreError,
-  BucketNotFoundError,
-  UploadFailedError,
   AccessDeniedError,
+  BucketNotFoundError,
+  BucketStoreError,
+  UploadFailedError,
   UrlGenerationFailedError,
 } from "./types";
 

@@ -1,11 +1,12 @@
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardPortal,
   HoverCardTrigger,
 } from "@/components/elements";
-import { getControversyCategory } from "@/lib/crux/utils";
+import type { getControversyCategory } from "@/lib/crux/utils";
 import { ControversyTooltipContent } from "./ControversyTooltipContent";
 
 interface InteractiveControversyProps {

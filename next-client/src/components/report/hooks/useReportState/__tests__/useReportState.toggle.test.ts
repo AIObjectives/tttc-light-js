@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
-import { ReportState, TopicNode } from "../";
-import { setupTestState } from "./testStateSetup";
 import { pipe } from "effect";
+import { describe, expect, test } from "vitest";
+import type { ReportState, TopicNode } from "../";
+import { setupTestState } from "./testStateSetup";
 
 const { state, reducer } = setupTestState();
 

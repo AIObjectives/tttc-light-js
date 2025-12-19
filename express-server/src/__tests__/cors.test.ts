@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import express from "express";
 import cors from "cors";
+import express from "express";
 import helmet from "helmet";
 import request from "supertest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Store original env
 const originalEnv = process.env;
 
-import { getAllowedOrigins, createCorsOptions } from "../utils/corsConfig";
 import { validateEnv } from "../types/context";
+import { createCorsOptions, getAllowedOrigins } from "../utils/corsConfig";
 
 // Create a test app with the same CORS configuration as server.ts
 const createTestApp = (includeSecurityHeaders = false) => {

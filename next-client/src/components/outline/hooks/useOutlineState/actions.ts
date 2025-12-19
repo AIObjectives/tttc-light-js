@@ -1,9 +1,9 @@
-import { ValueOf } from "next/dist/shared/lib/constants";
-import {
-  TopicPath,
+import type { ValueOf } from "next/dist/shared/lib/constants";
+import type {
   SubtopicPath,
   TaggedSubtopicPath,
   TaggedTopicPath,
+  TopicPath,
 } from "./types";
 
 //  ********************************

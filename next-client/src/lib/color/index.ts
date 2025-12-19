@@ -1,5 +1,10 @@
-import { ThemeColor, ColorVariant, ThemeMap, themeColorMap } from "./types";
 import * as schema from "tttc-common/schema";
+import {
+  type ColorVariant,
+  type ThemeColor,
+  type ThemeMap,
+  themeColorMap,
+} from "./types";
 
 /**
  * An implementation of MurmurHash3's mixing function.

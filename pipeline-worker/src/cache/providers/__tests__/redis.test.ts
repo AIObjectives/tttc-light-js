@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import { RedisCache } from "../redis";
+import Redis from "ioredis";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import {
+  CacheDeleteError,
   CacheGetError,
   CacheSetError,
-  CacheDeleteError,
-  RedisCacheConfig,
+  type RedisCacheConfig,
 } from "../../types";
-import Redis from "ioredis";
+import { RedisCache } from "../redis";
 
 // Module-level mock functions that will be shared
 const mockSet = vi.fn();

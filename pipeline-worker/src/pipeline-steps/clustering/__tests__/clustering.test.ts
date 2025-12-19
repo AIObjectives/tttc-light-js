@@ -2,7 +2,7 @@
  * Tests for clustering pipeline step
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the logger before importing modules that use it
 vi.mock("tttc-common/logger", () => ({
@@ -52,14 +52,14 @@ vi.mock("../model", () => ({
   ),
 }));
 
-import { commentsToTree } from "../index";
 import {
   basicSanitize,
+  escapeQuotes,
   filterPII,
   sanitizePromptLength,
-  escapeQuotes,
 } from "../../sanitizer";
 import { tokenCost } from "../../utils";
+import { commentsToTree } from "../index";
 import type { Comment, LLMConfig } from "../types";
 
 describe("Clustering Pipeline Step", () => {

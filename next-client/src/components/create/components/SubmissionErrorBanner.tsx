@@ -1,10 +1,10 @@
+import { AlertCircle, Check, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { AlertCircle, Copy, Check, ExternalLink } from "lucide-react";
 import type { FormActionError } from "tttc-common/api";
 import {
   Alert,
-  AlertTitle,
   AlertDescription,
+  AlertTitle,
   Button,
 } from "@/components/elements";
 

@@ -1,13 +1,17 @@
+import { Array, Either, flow, Option, pipe, Record } from "effect";
 import {
-  createOpenActionStream,
   createCloseActionStream,
   createHighlightedActionStream,
+  createOpenActionStream,
   createToggleActionStream,
   createUnhighlightedActionStream,
 } from "./actionStream";
 import { actionStreamReducer } from "./actionStreamReducer";
-import { TaggedTopicPath, TaggedSubtopicPath, OutlineState } from "./types";
-import { pipe, Record, Either, Array, flow, Option } from "effect";
+import type {
+  OutlineState,
+  TaggedSubtopicPath,
+  TaggedTopicPath,
+} from "./types";
 
 //  ********************************
 //  * Reducer *
@@ -34,10 +38,7 @@ export type OutlineStateAction =
 export function createReducer(
   idMap: Record<string, TaggedTopicPath | TaggedSubtopicPath>,
 ) {
-  return function (
-    state: OutlineState,
-    action: OutlineStateAction,
-  ): OutlineState {
+  return (state: OutlineState, action: OutlineStateAction): OutlineState => {
     switch (action.type) {
       case "open": {
         const { id } = action.payload;

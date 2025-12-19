@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import * as api from "tttc-common/api";
+import type * as api from "tttc-common/api";
 import { logger } from "tttc-common/logger/browser";
-import { Col } from "../layout";
-import { Progress } from "../elements";
-import { useUnifiedReport } from "@/hooks/useUnifiedReport";
 import { ReportErrorState } from "@/components/report/ReportErrorState";
+import { useUnifiedReport } from "@/hooks/useUnifiedReport";
+import { Progress } from "../elements";
+import { Col } from "../layout";
 
 const reportProgressLogger = logger.child({ module: "report-progress" });
 

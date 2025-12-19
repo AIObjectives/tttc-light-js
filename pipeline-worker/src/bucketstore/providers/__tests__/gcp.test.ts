@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import { GCPBucketStore } from "../gcp";
-import { UploadFailedError } from "../../types";
 import { Storage } from "@google-cloud/storage";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { UploadFailedError } from "../../types";
+import { GCPBucketStore } from "../gcp";
 
 /**
  * Mock the @google-cloud/storage module

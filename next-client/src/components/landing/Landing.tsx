@@ -1,27 +1,27 @@
-import React from "react";
-import { Col, Row } from "../layout";
+import Image from "next/image";
+import type React from "react";
+import LandingHero from "@/assets/hero/LandingHero";
+import Icons from "@/assets/icons";
+import type { BackgroundAccentClass, BorderClass } from "@/lib/color";
 import {
   Avatar,
-  AvatarImage,
   AvatarFallback,
+  AvatarImage,
+  Button,
   Card,
   CardContent,
-  Button,
 } from "../elements";
-import Icons from "@/assets/icons";
-import { BackgroundAccentClass, BorderClass } from "@/lib/color";
-import LandingHero from "@/assets/hero/LandingHero";
-import Image from "next/image";
+import { Col, Row } from "../layout";
 import {
-  SAMPLE_REPORTS,
-  MEDIA_ITEMS,
-  PARTNERS,
-  EXTERNAL_LINKS,
   CONTACT_EMAIL,
-  SPACING,
-  IMAGE_SIZES,
+  EXTERNAL_LINKS,
   ICON_NAMES,
   type IconName,
+  IMAGE_SIZES,
+  MEDIA_ITEMS,
+  PARTNERS,
+  SAMPLE_REPORTS,
+  SPACING,
 } from "./landing-config";
 
 export default function Landing() {

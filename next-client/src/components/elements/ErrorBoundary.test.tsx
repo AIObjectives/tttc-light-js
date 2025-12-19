@@ -1,18 +1,18 @@
-import React from "react";
 import {
+  cleanup,
+  fireEvent,
   render,
   screen,
-  fireEvent,
-  cleanup,
   waitFor,
 } from "@testing-library/react";
+import React from "react";
 import {
-  beforeAll,
   afterAll,
   afterEach,
+  beforeAll,
   describe,
-  it,
   expect,
+  it,
   vi,
 } from "vitest";
 import { ErrorBoundary } from "./ErrorBoundary";

@@ -1,13 +1,13 @@
-import { reader, select } from "../tools/terminal";
+import assert from "assert";
+import { parse as parseCsv } from "csv-parse";
+import * as fs from "fs-extra";
 import {
-  turboSourceRow,
   turboClaimMap,
+  turboSourceRow,
   turboTopicClustering,
   turboToSchema,
 } from "../functions/turboToSchema";
-import * as fs from "fs-extra";
-import { parse as parseCsv } from "csv-parse";
-import assert from "assert";
+import { reader, select } from "../tools/terminal";
 
 const repeatIfCondition =
   (condition: (str: string) => boolean) =>

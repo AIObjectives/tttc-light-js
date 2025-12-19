@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import * as weave from "weave";
 import { OpenAI } from "openai";
-import {
-  cruxJsonStructureScorer,
-  explanationQualityScorer,
-  createLLMJudgeScorer,
-} from "../scorers";
+import { beforeAll, describe, expect, it } from "vitest";
+import * as weave from "weave";
 import { defaultCruxPrompt, defaultSystemPrompt } from "../../../prompts/index";
-import { CruxDatasetRow, CruxModelOutput } from "../types";
 import { createEvaluationModel } from "../..";
 import { EVAL_MODEL } from "../../constants";
+import {
+  createLLMJudgeScorer,
+  cruxJsonStructureScorer,
+  explanationQualityScorer,
+} from "../scorers";
+import type { CruxDatasetRow, CruxModelOutput } from "../types";
 
 /**
  * Crux Weave Integration Tests

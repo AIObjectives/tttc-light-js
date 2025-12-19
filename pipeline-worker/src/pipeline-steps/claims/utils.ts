@@ -5,7 +5,7 @@
 import type { Topic } from "./types.js";
 
 // Re-export shared utilities
-export { tokenCost, getReportLogger } from "../utils.js";
+export { getReportLogger, tokenCost } from "../utils.js";
 
 /**
  * Extract all valid topic names from taxonomy

@@ -1,14 +1,14 @@
 import Redis from "ioredis";
-import { formatError } from "tttc-common/utils";
 import { logger } from "tttc-common/logger";
+import { formatError } from "tttc-common/utils";
 import {
-  Cache,
-  RedisCacheConfig,
-  SetOptions,
+  type Cache,
   CacheConnectionError,
+  CacheDeleteError,
   CacheGetError,
   CacheSetError,
-  CacheDeleteError,
+  type RedisCacheConfig,
+  type SetOptions,
 } from "../types";
 
 const cacheLogger = logger.child({ module: "cache-redis" });

@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import express from "express";
 import cors from "cors";
+import express from "express";
 import request from "supertest";
-import { getAllowedOrigins, createCorsOptions } from "../utils/corsConfig";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { validateEnv } from "../types/context";
+import { createCorsOptions, getAllowedOrigins } from "../utils/corsConfig";
 
 describe("CORS Service Integration Tests", () => {
   const originalEnv = process.env;

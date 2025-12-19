@@ -6,9 +6,9 @@
  */
 
 import type Redis from "ioredis";
+import { logger } from "tttc-common/logger";
 import type { ProcessingAuditLog } from "tttc-common/schema";
 import { processingAuditLog } from "tttc-common/schema";
-import { logger } from "tttc-common/logger";
 
 const auditLogLogger = logger.child({ module: "audit-log-redis" });
 

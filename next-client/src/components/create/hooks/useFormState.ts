@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import * as prompts from "tttc-common/prompts";
-import { Result, success, failure } from "tttc-common/functional-utils";
 
 type FormStatus<T, E> = Result<T, E> | { tag: "initial"; value: T };
 

@@ -7,8 +7,9 @@
  * TODO: Determine which function to use. Will probably change in the future depending on new media types.
  */
 
-import * as schema from "tttc-common/schema";
+import type * as schema from "tttc-common/schema";
 import { useParseCsv } from "./useParseCSV";
+
 // import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
 
 /**

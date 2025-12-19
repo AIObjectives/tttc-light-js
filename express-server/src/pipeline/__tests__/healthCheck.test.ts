@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { checkPyserverHealth } from "../healthCheck";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  PyserverHungError,
   PyserverOOMError,
   PyserverUnresponsiveError,
-  PyserverHungError,
 } from "../errors";
+import { checkPyserverHealth } from "../healthCheck";
 
 // Mock fetch globally
 const mockFetch = vi.fn();

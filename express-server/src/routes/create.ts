@@ -1,19 +1,25 @@
 import "dotenv/config";
-import { Response } from "express";
-import { RequestWithLogger, getRequestId } from "../types/request";
-import { createStorage } from "../storage";
+import type { Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
+import type { PipelineJob } from "src/jobs/pipeline";
 import * as api from "tttc-common/api";
-import * as schema from "tttc-common/schema";
-import { pipelineQueue } from "../server";
-import * as firebase from "../Firebase";
-import { DecodedIdToken } from "firebase-admin/auth";
-import { PipelineJob } from "src/jobs/pipeline";
-import { Env } from "../types/context";
-import { sendErrorByCode } from "./sendError";
-import { ERROR_CODES, ERROR_MESSAGES, ErrorCode } from "tttc-common/errors";
-import { Result } from "tttc-common/functional-utils";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  type ErrorCode,
+} from "tttc-common/errors";
+import type { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import { getUserCapabilities, DEFAULT_LIMITS } from "tttc-common/permissions";
+import { DEFAULT_LIMITS, getUserCapabilities } from "tttc-common/permissions";
+import type * as schema from "tttc-common/schema";
+import * as firebase from "../Firebase";
+import { fetchSpreadsheetData } from "../googlesheet";
+import { pipelineQueue } from "../server";
+import { createStorage } from "../storage";
+import type { Env } from "../types/context";
+import { getRequestId, type RequestWithLogger } from "../types/request";
+import { sendErrorByCode } from "./sendError";
+
 const REPORT_PLACEHOLDER_MESSAGE = "Your data is being generated";
 
 const createLogger = logger.child({ module: "create" });
@@ -110,7 +116,7 @@ const parseData = async (
 
 /* Randomize array using Durstenfeld shuffle algorithm */
 function shuffleArray<T>(array: T[]): T[] {
-  let arr = array.slice(0); // copy array so it doesn't happen in place
+  const arr = array.slice(0); // copy array so it doesn't happen in place
   for (var i = arr.length - 1; i >= 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
     var temp = arr[i];
@@ -446,7 +452,7 @@ async function createNewReport(
   const reportUrl = new URL(`report/${reportId}`, CLIENT_BASE_URL).toString();
 
   // ! Brandon: This config object should be phased out
-  // @ts-ignore
+  // @ts-expect-error
   const config: schema.OldOptions = {
     ...userConfig,
     ...parsedData,

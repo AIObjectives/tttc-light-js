@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
 import express from "express";
-import request from "supertest";
 import pinoHttp from "pino-http";
+import request from "supertest";
 import { logger } from "tttc-common/logger";
+import { beforeEach, describe, expect, it } from "vitest";
 import { validateOpenAIApiKeyHeader } from "../middleware";
 
 describe("validateOpenAIApiKeyHeader middleware", () => {

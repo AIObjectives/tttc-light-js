@@ -1,11 +1,11 @@
-import { Response } from "express";
-import { RequestWithLogger } from "../types/request";
-import * as firebase from "../Firebase";
+import type { Response } from "express";
+import * as api from "tttc-common/api";
+import { ERROR_CODES } from "tttc-common/errors";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities } from "tttc-common/permissions";
+import * as firebase from "../Firebase";
+import type { RequestWithLogger } from "../types/request";
 import { sendErrorByCode } from "./sendError";
-import { ERROR_CODES } from "tttc-common/errors";
-import * as api from "tttc-common/api";
 
 const userLogger = logger.child({ module: "user" });
 

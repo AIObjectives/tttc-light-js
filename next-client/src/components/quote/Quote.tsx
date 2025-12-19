@@ -1,9 +1,9 @@
 import React from "react";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import { cn } from "@/lib/utils/shadcn";
 import { Card, CardContent, Separator } from "../elements";
 import { Col, Row } from "../layout";
-import Icons from "@/assets/icons";
-import * as schema from "tttc-common/schema";
-import { cn } from "@/lib/utils/shadcn";
 
 /**
  * Single quote - not wrapped in card.

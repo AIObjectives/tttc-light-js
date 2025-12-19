@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from "express";
-import { Env } from "./types/context";
-import { RequestWithLogger } from "./types/request";
+import type { NextFunction, Request, Response } from "express";
+import type { Env } from "./types/context";
+import type { RequestWithLogger } from "./types/request";
 
 /**
  * Adds context to the request object

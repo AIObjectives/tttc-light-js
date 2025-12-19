@@ -1,7 +1,7 @@
-import { FeatureFlagProvider, FeatureFlagContext } from "./types";
+import { logger } from "../logger";
 import { LocalFeatureFlagProvider } from "./providers/localProvider";
 import { PostHogFeatureFlagProvider } from "./providers/posthogProvider";
-import { logger } from "../logger";
+import type { FeatureFlagContext, FeatureFlagProvider } from "./types";
 
 const featureFlagsLogger = logger.child({ module: "feature-flags" });
 

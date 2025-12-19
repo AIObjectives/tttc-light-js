@@ -1,20 +1,19 @@
 import { OpenAI } from "openai";
 import * as weave from "weave";
-import {
-  jsonStructureScorer,
-  topicCoverageScorer,
-  createLLMJudgeScorer,
-} from "./scorers.js";
-import { clusteringDatasets } from "./datasets";
+import { logger } from "../../logger";
 import {
   defaultClusteringPrompt,
   defaultSystemPrompt,
 } from "../../prompts/index.js";
-import { ClusteringDatasetRow, ClusteringModelOutput } from "./types";
-
-import { logger } from "../../logger";
 import { createEvaluationModel } from "../";
 import { EVAL_MODEL } from "../constants";
+import { clusteringDatasets } from "./datasets";
+import {
+  createLLMJudgeScorer,
+  jsonStructureScorer,
+  topicCoverageScorer,
+} from "./scorers.js";
+import type { ClusteringDatasetRow, ClusteringModelOutput } from "./types";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
 
