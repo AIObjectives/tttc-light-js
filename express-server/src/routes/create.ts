@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { Response } from "express";
 import { RequestWithLogger, getRequestId } from "../types/request";
-import { fetchSpreadsheetData } from "../googlesheet";
 import { createStorage } from "../storage";
 import * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
@@ -37,38 +36,6 @@ class EmailNotVerifiedError extends Error {
     this.name = "EmailNotVerifiedError";
   }
 }
-
-/**
- * Process Google Sheets data for report creation.
- *
- * @param googleData - Google Sheets configuration including URL and options
- * @returns Formatted source rows and optional pie chart data
- *
- * @remarks
- * Data Flow:
- * 1. fetchSpreadsheetData() fetches and parses Google Sheets via API
- * 2. Data is transformed into SourceRow[] format during parsing
- * 3. Returns pre-formatted data ready for security validation
- *
- * Note: formatData() is NOT called here because fetchSpreadsheetData()
- * already formats data into SourceRow[] during the parsing phase.
- */
-const handleGoogleSheets = async (
-  googleData: schema.GoogleSheetData,
-): Promise<{ data: schema.SourceRow[]; pieCharts: schema.LLMPieChart[] }> => {
-  const { data, pieCharts } = await fetchSpreadsheetData(
-    googleData.url,
-    googleData.pieChartColumns,
-    googleData.filterEmails,
-    googleData.oneSubmissionPerEmail,
-  );
-
-  // fetchSpreadsheetData already returns properly formatted SourceRow[]
-  return {
-    data,
-    pieCharts,
-  };
-};
 
 /**
  * Process and validate CSV data from client.
@@ -135,15 +102,10 @@ const handleCsvData = async (
 const parseData = async (
   data: schema.DataPayload,
 ): Promise<{ data: schema.SourceRow[]; pieChart?: schema.LLMPieChart[] }> => {
-  switch (data[0]) {
-    case "csv":
-      return await handleCsvData(data[1]);
-    case "googlesheet":
-      return await handleGoogleSheets(data[1]);
-    default: {
-      throw new Error("Unrecognized data payload");
-    }
+  if (data[0] !== "csv") {
+    throw new Error("Unrecognized data payload type");
   }
+  return await handleCsvData(data[1]);
 };
 
 /* Randomize array using Durstenfeld shuffle algorithm */
