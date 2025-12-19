@@ -78,7 +78,7 @@ function ClaimHeader({ claim }: { claim: schema.Claim }) {
       <p className="p2">
         #{number}
         &ensp;
-        <a id={`${title}`}>{title}</a>
+        <span id={`${title}`}>{title}</span>
       </p>
       <div className="print:hidden">
         <InteractiveQuoteCard

@@ -46,9 +46,9 @@ function QuoteHeader({ number, title }: { number: number; title: string }) {
       <p>
         <span className="font-medium">#{number}</span>
         &ensp;
-        <a id={`${title}`} className={"text-muted-foreground"}>
+        <span id={`${title}`} className={"text-muted-foreground"}>
           {title}
-        </a>
+        </span>
       </p>
     </Row>
   );

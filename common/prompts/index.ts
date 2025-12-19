@@ -201,6 +201,7 @@ Now here is the topic and participant claims:
  *
  * Be careful to make sure your dataObj contains the correct fields that match the correct ${vars}
  */
+// biome-ignore lint/suspicious/noExplicitAny: dataObj accepts any shape for template hydration
 export function hydratePromptLiterals(prompt: string, dataObj: any): string {
   try {
     const templateFn = Function(

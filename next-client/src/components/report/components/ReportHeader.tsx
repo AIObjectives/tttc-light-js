@@ -86,8 +86,8 @@ export function ReportTitle({
     <Col gap={2} className="pb-1">
       {/* Title and copy button */}
       <Row gap={2} className="justify-between">
-        <h3 className="print-report-title">
-          <a id={`${title}`}>{title}</a>
+        <h3 id={`${title}`} className="print-report-title">
+          {title}
         </h3>
         <CopyLinkButton anchor={title} />
       </Row>
@@ -188,9 +188,8 @@ export function ReportSummary({
       <div className="print:text-xs">{description}</div>
 
       {/* Summary Meta Questions */}
-      {/* biome-ignore lint/suspicious/noArrayIndexKey: qa items don't have stable unique IDs */}
       {questionAnswers?.map((qa, index) => (
-        <ToggleText key={index}>
+        <ToggleText key={`qa-${index}-${qa.question.slice(0, 20)}`}>
           <ToggleText.Title>{qa.question}</ToggleText.Title>
           <ToggleText.Content>{qa.answer}</ToggleText.Content>
         </ToggleText>

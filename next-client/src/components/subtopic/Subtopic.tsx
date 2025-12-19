@@ -137,9 +137,7 @@ export function SubtopicHeader({
   return (
     <Row gap={4} className="justify-between items-center">
       <div className="flex flex-grow">
-        <h5>
-          <a id={`${title}`}>{title}</a>
-        </h5>
+        <h5 id={`${title}`}>{title}</h5>
       </div>
       <div className="flex items-center gap-2">
         <div className="print:hidden">
@@ -181,7 +179,7 @@ export function SubtopicSummary({
       <div className="print:hidden">
         <PointGraphic claims={claims} />
       </div>
-      <SubtopicDescription description={description!} />
+      <SubtopicDescription description={description} />
       <CruxDisplay
         topicTitle={topicTitle}
         subtopicTitle={title}
@@ -365,7 +363,18 @@ function CruxDisplay({
   return (
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger asChild>
-        <div onClick={handleClick} className="py-3 cursor-pointer">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
+          className="py-3 cursor-pointer"
+        >
           <p className="leading-6 pl-0 text-base font-medium">Crux</p>
           <Row gap={2} className="justify-between items-start">
             <p className="leading-6 text-foreground flex-1 min-w-0">

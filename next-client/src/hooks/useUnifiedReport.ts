@@ -79,6 +79,7 @@ export function useUnifiedReport(identifier: string) {
   }, [fetchReport]);
 
   // Set up polling when report is processing
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state.status is only accessed after type narrowing (state.type === "processing"), and doesn't affect when the effect should re-run
   useEffect(() => {
     if (state.type === "processing") {
       unifiedReportLogger.debug(
@@ -91,7 +92,7 @@ export function useUnifiedReport(identifier: string) {
         clearInterval(interval);
       };
     }
-  }, [fetchReport, state.type, identifier, state.status]);
+  }, [fetchReport, state.type, identifier]);
 
   return state;
 }

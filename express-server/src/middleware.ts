@@ -54,7 +54,7 @@ const createSecurityErrorResponse = (
 const logSecurityFailure = (
   req: RequestWithLogger,
   reason: string,
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
 ) => {
   req.log.warn(
     {

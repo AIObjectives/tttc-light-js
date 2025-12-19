@@ -51,7 +51,8 @@ function Topic({ node }: { node: TopicNode }) {
     </TopicContext.Provider>
   );
 }
-type TopicCardProps = Record<string, never>;
+// Empty props type - component only receives ref via forwardRef
+type TopicCardProps = object;
 /**
  * UI for Topic
  */
@@ -94,8 +95,12 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
 
   return (
     <Row gap={2}>
-      <CardTitle className="self-center flex-grow" data-testid="topic-title">
-        <a id={`${title}`}>{title}</a>
+      <CardTitle
+        id={`${title}`}
+        className="self-center flex-grow"
+        data-testid="topic-title"
+      >
+        {title}
       </CardTitle>
       <div className="flex flex-row items-center text-muted-foreground fill-muted-foreground gap-[6px]">
         <div className="print:hidden">
@@ -254,6 +259,8 @@ export function SubtopicListItem({
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
         <span
+          role="button"
+          tabIndex={0}
           className="cursor-pointer text-muted-foreground text-sm  inline"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}

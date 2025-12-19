@@ -293,13 +293,12 @@ export function EmailPasswordAuthForm({
             minLength={mode === "signup" ? MIN_PASSWORD_LENGTH : undefined}
           />
           {mode === "signup" && password.length > 0 && (
-            <div
+            <output
               className={`text-xs mt-1 ${passwordStrength.color}`}
-              role="status"
               aria-live="polite"
             >
               {passwordStrength.label}
-            </div>
+            </output>
           )}
         </FormField>
 

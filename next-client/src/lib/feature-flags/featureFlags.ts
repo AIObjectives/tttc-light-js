@@ -178,7 +178,7 @@ export async function isFeatureEnabled(
   if (!provider) {
     initializeFeatureFlags();
   }
-  return provider?.isEnabled(flagName, context);
+  return provider?.isEnabled(flagName, context) ?? false;
 }
 
 /**
@@ -195,7 +195,7 @@ export async function getFeatureFlag(
   if (!provider) {
     initializeFeatureFlags();
   }
-  return provider?.getFeatureFlag(flagName, context);
+  return provider?.getFeatureFlag(flagName, context) ?? null;
 }
 
 /**

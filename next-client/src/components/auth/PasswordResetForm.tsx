@@ -119,13 +119,12 @@ export function PasswordResetForm({
           autoFocus={typeof window !== "undefined" && window.innerWidth > 768}
         />
         {password.length > 0 && (
-          <div
+          <output
             className={`text-xs mt-1 ${passwordStrength.color}`}
-            role="status"
             aria-live="polite"
           >
             {passwordStrength.label}
-          </div>
+          </output>
         )}
       </div>
 

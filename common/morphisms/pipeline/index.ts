@@ -54,22 +54,24 @@ const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
 const buildSourceMap = (sourceRows: schema.SourceRow[]) => {
   const genAnon = makeAnonymousInterview(sourceRows);
   return sourceRows.reduce((accum, curr) => {
-    accum[curr.id!] = {
+    accum[curr.id] = {
       id: uuid(),
       interview: curr.interview || genAnon(),
       data: curr.video
         ? [
             "video",
             {
-              text: curr.comment!,
+              text: curr.comment,
               link: curr.video,
+              // timestamp is optional in schema but required for video entries
+              // biome-ignore lint/style/noNonNullAssertion: video entries always have timestamp
               timestamp: curr.timestamp!,
             },
           ]
         : [
             "text",
             {
-              text: curr.comment!,
+              text: curr.comment,
             },
           ],
     };

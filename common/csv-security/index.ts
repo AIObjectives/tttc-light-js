@@ -219,7 +219,7 @@ export const createSecurePapaParseConfig = (
   chunkSize: 10000, // Process in chunks
   preview: options.maxRows || CSV_SECURITY_CONFIG.MAX_ROWS, // Limit rows processed
   // Error handling
-  error: (error: any) => {
+  error: (error: unknown) => {
     console.warn("Papa Parse error:", error);
   },
 });
