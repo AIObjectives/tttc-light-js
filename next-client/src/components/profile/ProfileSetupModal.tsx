@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  Input,
+  TextArea,
 } from "@/components/elements";
-import { Button, Input } from "@/components/elements";
-import { TextArea } from "@/components/elements";
 import { useUser } from "@/lib/hooks/getUser";
 
 interface ProfileSetupModalProps {
@@ -103,12 +104,15 @@ export function ProfileSetupModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleSkip()}>
-      <DialogContent className="gap-6 p-4 sm:p-6 sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Help us understand your needs</DialogTitle>
-          <DialogDescription>
-            Tell us a bit about how you'll use Talk to the City. This helps us
-            provide better support and relevant features.
+      <DialogContent
+        className="gap-8 p-6 max-w-sm z-[100]"
+        overlayProps={{ className: "z-[90]" }}
+      >
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="text-xl">What are your needs</DialogTitle>
+          <DialogDescription className="text-base font-medium">
+            How will you use Talk to the City? It helps us offer better support
+            and features.
           </DialogDescription>
         </DialogHeader>
 
@@ -116,14 +120,14 @@ export function ProfileSetupModal({
           <div className="space-y-2">
             <label
               htmlFor="company"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Company or Organization
+              Company or organization
             </label>
             <Input
               id="company"
               type="text"
-              placeholder="e.g., Acme Corp, Greendale Community College"
+              placeholder="Acme Corp"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               disabled={isSubmitting}
@@ -131,60 +135,58 @@ export function ProfileSetupModal({
             />
           </div>
 
-          <div className="flex gap-4">
-            <div className="space-y-2 flex-1">
-              <label
-                htmlFor="title"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Job Title{" "}
-                <span className="text-muted-foreground font-normal">
-                  (optional)
-                </span>
-              </label>
-              <Input
-                id="title"
-                type="text"
-                placeholder="e.g., Research Director"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={isSubmitting}
-                maxLength={100}
-              />
-            </div>
+          <div className="space-y-2">
+            <label
+              htmlFor="title"
+              className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Job title{" "}
+              <span className="text-muted-foreground font-normal">
+                (optional)
+              </span>
+            </label>
+            <Input
+              id="title"
+              type="text"
+              placeholder="Research director"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              disabled={isSubmitting}
+              maxLength={100}
+            />
+          </div>
 
-            <div className="space-y-2 flex-1">
-              <label
-                htmlFor="phone"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Phone{" "}
-                <span className="text-muted-foreground font-normal">
-                  (optional)
-                </span>
-              </label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="e.g., +1 555 123 4567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                disabled={isSubmitting}
-                maxLength={50}
-              />
-            </div>
+          <div className="space-y-2">
+            <label
+              htmlFor="phone"
+              className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Phone{" "}
+              <span className="text-muted-foreground font-normal">
+                (optional)
+              </span>
+            </label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+1 (555) 555-5555"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={isSubmitting}
+              maxLength={50}
+            />
           </div>
 
           <div className="space-y-2">
             <label
               htmlFor="useCase"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               How will you use Talk to the City?
             </label>
             <TextArea
               id="useCase"
-              placeholder="e.g., Analyzing community feedback, Research project, Policy consultation"
+              placeholder="e.g. Analyzing community feedback, research project, policy consultation"
               value={useCase}
               onChange={(e) => setUseCase(e.target.value)}
               disabled={isSubmitting}
@@ -194,17 +196,17 @@ export function ProfileSetupModal({
           </div>
 
           {/* Newsletter opt-in (GDPR: defaults to unchecked) */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <input
               type="checkbox"
               id="newsletterOptIn"
               checked={newsletterOptIn}
               onChange={(e) => setNewsletterOptIn(e.target.checked)}
               disabled={isSubmitting}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-primary"
             />
             <label htmlFor="newsletterOptIn" className="text-sm font-medium">
-              Subscribe to newsletter for updates and tips
+              Subscribe to our newsletter
             </label>
           </div>
 
@@ -215,19 +217,19 @@ export function ProfileSetupModal({
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
           <Button
             variant="outline"
             onClick={handleSkip}
             disabled={isSubmitting}
-            className="w-full sm:w-auto"
+            className="w-full"
           >
             Skip for now
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full sm:w-auto"
+            className="w-full"
           >
             {isSubmitting ? "Saving..." : "Continue"}
           </Button>
