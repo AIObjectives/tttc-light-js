@@ -66,6 +66,7 @@ export function useAsyncState<T, E, Params>(
     result: undefined,
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: func is intentionally omitted - callers pass inline functions that would cause infinite loops if included
   useEffect(() => {
     if (dep === undefined) return;
     dispatch({ type: "loading" });
@@ -73,7 +74,7 @@ export function useAsyncState<T, E, Params>(
       const res = await func(dep);
       dispatch({ type: "finished", payload: res });
     })();
-  }, [dep, func]);
+  }, [dep]);
 
   return state;
 }
