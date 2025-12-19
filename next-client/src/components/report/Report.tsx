@@ -747,10 +747,6 @@ function Appendix({
         Download report in JSON
       </p>
 
-      {rawPipelineOutput.auditLog && (
-        <ProcessingSummary auditLog={rawPipelineOutput.auditLog} />
-      )}
-
       {prompts && (
         <Col gap={2}>
           <p className="text-muted-foreground">
@@ -813,6 +809,10 @@ function Appendix({
             />
           )}
         </Col>
+      )}
+
+      {rawPipelineOutput.auditLog && (
+        <ProcessingSummary auditLog={rawPipelineOutput.auditLog} />
       )}
     </Col>
   );
