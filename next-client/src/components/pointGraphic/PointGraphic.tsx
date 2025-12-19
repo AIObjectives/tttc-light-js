@@ -18,7 +18,7 @@ type CellContextType = {
 
 const CellContext = createContext<CellContextType>({} as CellContextType);
 
-function PointGraphicWrapper({ children }: React.PropsWithChildren<{}>) {
+function PointGraphicWrapper({ children }: React.PropsWithChildren) {
   const borderClass = useThemeContextColor("border");
   const backgroundClass = useThemeContextColor("bgAccent");
   const hoverClass = useThemeContextColor("bgHover");

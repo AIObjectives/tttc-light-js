@@ -1,5 +1,5 @@
 import pRetry from "p-retry";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getUserCapabilities } from "@/lib/api/userLimits";
 
@@ -16,7 +16,7 @@ export function useUserCapabilities() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchCapabilities = async () => {
+  const fetchCapabilities = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -59,7 +59,7 @@ export function useUserCapabilities() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCapabilities();

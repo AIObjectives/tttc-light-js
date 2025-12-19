@@ -11,6 +11,6 @@ export function ClaimItem({
   const { useScrollTo } = useContext(ReportContext);
   const scrollRef = useScrollTo(id);
 
-  if (!show) return <></>;
+  if (!show) return null;
   return <div ref={scrollRef}>{children}</div>;
 }

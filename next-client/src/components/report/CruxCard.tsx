@@ -223,6 +223,7 @@ export function CruxCard({
             </p>
             {showReadMore && !isExplanationExpanded && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsExplanationExpanded(true);

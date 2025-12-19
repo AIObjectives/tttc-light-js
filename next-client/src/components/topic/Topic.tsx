@@ -51,7 +51,7 @@ function Topic({ node }: { node: TopicNode }) {
     </TopicContext.Provider>
   );
 }
-type TopicCardProps = {};
+type TopicCardProps = Record<string, never>;
 /**
  * UI for Topic
  */

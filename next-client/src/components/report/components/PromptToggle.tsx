@@ -37,6 +37,7 @@ export function PromptToggle({
           {!isDefault && defaultContent && (
             <div className="mt-2">
               <button
+                type="button"
                 onClick={() => setShowDefault(!showDefault)}
                 className="text-sm text-muted-foreground underline cursor-pointer hover:text-foreground"
               >

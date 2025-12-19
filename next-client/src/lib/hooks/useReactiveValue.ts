@@ -12,6 +12,7 @@ export function useReactiveValue<T, _K>(
 ) {
   const [val, setVal] = useState<T>(fn());
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps are dynamically passed by caller
   useEffect(() => {
     setVal(() => fn());
   }, deps);

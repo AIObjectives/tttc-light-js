@@ -79,6 +79,7 @@ export default function ErrorPage({
                   Error reference
                 </span>
                 <button
+                  type="button"
                   onClick={copyToClipboard}
                   aria-label="Copy error reference"
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"

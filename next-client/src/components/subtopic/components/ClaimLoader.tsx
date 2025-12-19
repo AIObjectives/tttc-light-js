@@ -11,7 +11,7 @@ function ClaimLoader({
   onExpandSubtopic: () => void;
 }) {
   const hoverBackground = useThemeContextColor("bgAccentHover");
-  if (remaining <= 0) return <></>;
+  if (remaining <= 0) return null;
   return (
     <div className="pl-4 sm:pl-8">
       <Button

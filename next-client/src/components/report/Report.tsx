@@ -152,7 +152,7 @@ export const ReportContext = createContext<{
  */
 function Report({
   reportData,
-  reportUri,
+  reportUri: _reportUri,
   rawPipelineOutput,
 }: {
   reportData: schema.UIReportData;

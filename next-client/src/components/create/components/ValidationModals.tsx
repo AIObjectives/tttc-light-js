@@ -230,6 +230,7 @@ export function InvalidCSVErrorModal({
               Incorrect column names
             </p>
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+              {/* biome-ignore lint/suspicious/noArrayIndexKey: header strings may not be unique, index is safest key */}
               {detectedHeaders.map((header, idx) => (
                 <span
                   key={idx}
@@ -248,6 +249,7 @@ export function InvalidCSVErrorModal({
             Accepted column names
           </p>
           <div className="flex flex-wrap gap-2">
+            {/* biome-ignore lint/suspicious/noArrayIndexKey: suggestion strings may not be unique, index is safest key */}
             {suggestions.map((suggestion, idx) => (
               <span
                 key={idx}

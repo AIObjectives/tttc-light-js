@@ -188,6 +188,7 @@ export function ReportSummary({
       <div className="print:text-xs">{description}</div>
 
       {/* Summary Meta Questions */}
+      {/* biome-ignore lint/suspicious/noArrayIndexKey: qa items don't have stable unique IDs */}
       {questionAnswers?.map((qa, index) => (
         <ToggleText key={index}>
           <ToggleText.Title>{qa.question}</ToggleText.Title>

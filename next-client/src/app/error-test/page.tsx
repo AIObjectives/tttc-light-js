@@ -391,6 +391,7 @@ function AppErrorPreview() {
                 Error reference
               </span>
               <button
+                type="button"
                 onClick={copyToClipboard}
                 aria-label="Copy error reference"
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -532,6 +533,7 @@ function GlobalErrorPreview() {
             }}
           >
             <button
+              type="button"
               style={{
                 backgroundColor: "hsl(243, 75%, 59%)",
                 color: "#ffffff",
@@ -632,6 +634,7 @@ function GlobalErrorPreview() {
                 Error reference
               </span>
               <button
+                type="button"
                 onClick={copyToClipboard}
                 style={{
                   background: "none",

@@ -46,6 +46,7 @@ export function ControversyTooltipContent({
       <p className="text-sm text-muted-foreground">{category.description}</p>
       {onClick && (
         <button
+          type="button"
           onClick={onClick}
           className="text-sm text-primary hover:underline text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // ! This component isn't being currently used. Mark for deletion.
 
@@ -18,7 +18,10 @@ export function useHashChange(format: "raw" | "decoded" = "decoded") {
   const formatter: (str: string) => string =
     format === "decoded" ? decode : (str: string) => str;
 
-  const handleHashChange = () => setHash(formatter(window.location.hash));
+  const handleHashChange = useCallback(
+    () => setHash(formatter(window.location.hash)),
+    [formatter],
+  );
 
   useEffect(() => {
     // Set initial hash

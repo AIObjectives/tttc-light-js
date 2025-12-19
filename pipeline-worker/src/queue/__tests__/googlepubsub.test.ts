@@ -63,7 +63,7 @@ describe("GooglePubSub", () => {
       };
 
       mockSubscription.on.mockImplementation(
-        (event: string, callback: Function) => {
+        (event: string, callback: (msg: typeof mockMessage) => void) => {
           if (event === "message") {
             setTimeout(() => callback(mockMessage), 0);
           }
@@ -102,7 +102,7 @@ describe("GooglePubSub", () => {
       };
 
       mockSubscription.on.mockImplementation(
-        (event: string, callback: Function) => {
+        (event: string, callback: (msg: typeof mockMessage) => void) => {
           if (event === "message") {
             setTimeout(() => callback(mockMessage), 0);
           }

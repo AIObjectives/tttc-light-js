@@ -41,8 +41,6 @@ const profileUpdateSchema = z.object({
   newsletterOptIn: z.boolean().optional(),
 });
 
-type ProfileUpdateRequest = z.infer<typeof profileUpdateSchema>;
-
 /**
  * Verify Firebase authentication token from request headers
  * @returns Decoded token if valid, null otherwise (sends error response)

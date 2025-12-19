@@ -31,10 +31,6 @@ interface MockLogger {
   child: ReturnType<typeof vi.fn>;
 }
 
-interface MockJob {
-  progress: Promise<{ status: string }>;
-}
-
 interface MockStorage {
   getUrl: ReturnType<typeof vi.fn>;
   // Add other Bucket methods as needed for testing

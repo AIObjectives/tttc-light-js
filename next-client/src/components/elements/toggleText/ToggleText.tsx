@@ -20,7 +20,7 @@ const ToggleContext = createContext<IToggleContext>({
   setIsOpen: () => null,
 });
 
-export function ToggleText({ children }: React.PropsWithChildren<{}>) {
+export function ToggleText({ children }: React.PropsWithChildren) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   return (
@@ -30,7 +30,7 @@ export function ToggleText({ children }: React.PropsWithChildren<{}>) {
   );
 }
 
-function Title({ children }: React.PropsWithChildren<{}>) {
+function Title({ children }: React.PropsWithChildren) {
   const { setIsOpen, isOpen } = useContext(ToggleContext);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -61,7 +61,7 @@ function Title({ children }: React.PropsWithChildren<{}>) {
   );
 }
 
-function Content({ children }: React.PropsWithChildren<{}>) {
+function Content({ children }: React.PropsWithChildren) {
   const { isOpen } = useContext(ToggleContext);
   return (
     <div className={`pl-5 ${!isOpen ? "hidden" : "block"}`}>

@@ -335,9 +335,9 @@ function OutlineCarrot({
 
 function CruxOutlineItem({
   cruxClaim,
-  subtopic,
-  category,
-  colors,
+  subtopic: _subtopic,
+  category: _category,
+  colors: _colors,
   isHighlighted,
   onClick,
 }: {

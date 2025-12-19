@@ -46,7 +46,6 @@ export default async function feedback(req: RequestWithLogger, res: Response) {
     }
 
     // Add feedback to Firestore
-    const { env } = req.context;
     const collectionName = getCollectionName("FEEDBACK");
     const feedbackCollection = db.collection(collectionName);
 

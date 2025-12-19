@@ -115,6 +115,7 @@ export default function GlobalError({
               }}
             >
               <button
+                type="button"
                 onClick={reset}
                 style={{
                   backgroundColor: "hsl(243, 75%, 59%)",
@@ -215,6 +216,7 @@ export default function GlobalError({
                     Error reference
                   </span>
                   <button
+                    type="button"
                     onClick={copyToClipboard}
                     aria-label="Copy error reference"
                     style={{
