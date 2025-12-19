@@ -4,13 +4,11 @@
 
 import { describe, expect, it } from "vitest";
 import type {
-  AnalyticsClient,
   AnalyticsConfig,
   AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
   AnalyticsProperties,
-  AnalyticsProvider,
   AnalyticsUser,
   EnvironmentInfo,
 } from "../types";

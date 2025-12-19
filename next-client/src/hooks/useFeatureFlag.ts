@@ -38,7 +38,7 @@ export function useFeatureFlag(
   const [loading, setLoading] = useState(true);
 
   // Stringify context for stable comparison
-  const contextKey = useMemo(
+  const _contextKey = useMemo(
     () => (context ? JSON.stringify(context) : ""),
     [context],
   );
@@ -68,7 +68,7 @@ export function useFeatureFlag(
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flagName, contextKey]);
+  }, [flagName, context]);
 
   return { enabled, loading };
 }
@@ -103,7 +103,7 @@ export function useFeatureFlagValue<
   const [loading, setLoading] = useState(true);
 
   // Stringify context for stable comparison
-  const contextKey = useMemo(
+  const _contextKey = useMemo(
     () => (context ? JSON.stringify(context) : ""),
     [context],
   );
@@ -133,7 +133,7 @@ export function useFeatureFlagValue<
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flagName, contextKey]);
+  }, [flagName, context]);
 
   return { value, loading };
 }

@@ -1,4 +1,3 @@
-import React from "react";
 import Icons from "@/assets/icons";
 import { Button, TextArea } from "@/components/elements";
 import { Col, Row } from "@/components/layout";

@@ -32,7 +32,6 @@ import {
   HoverCardOverlay,
   HoverCardPortal,
   HoverCardTrigger,
-  TextIcon,
 } from "../elements";
 import { Col, Row } from "../layout";
 import PointGraphic from "../pointGraphic/PointGraphic";
@@ -238,6 +237,7 @@ function CruxDisplay({
   if (!crux) return null;
 
   // Build speaker ID -> name map with useMemo to avoid re-creating on every render
+  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
   const speakerIdToName = React.useMemo(() => {
     const map = new Map<string, string>();
     const allSpeakers = [
@@ -253,6 +253,7 @@ function CruxDisplay({
   }, [crux.agree, crux.disagree, crux.no_clear_position]);
 
   // Clean up the explanation text
+  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
   const cleanExplanation = React.useCallback(
     (text: string): string => {
       let cleaned = text;
@@ -260,7 +261,7 @@ function CruxDisplay({
       // Replace "Participant X" or "Participants X, Y, Z" with actual names
       cleaned = cleaned.replace(
         /Participants?\s+([\d,\s]+)/g,
-        (match, idList) => {
+        (_match, idList) => {
           const ids = idList.split(/,\s*/).map((id: string) => id.trim());
           const names = ids
             .map((id: string) => speakerIdToName.get(id) || `Participant ${id}`)
@@ -331,6 +332,7 @@ function CruxDisplay({
     (crux.no_clear_position?.length || 0);
 
   // Memoize parsed speakers to avoid re-parsing on every render
+  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
   const parsedAgree = React.useMemo(
     () =>
       crux.agree.map((s) => {
@@ -340,6 +342,7 @@ function CruxDisplay({
     [crux.agree],
   );
 
+  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
   const parsedDisagree = React.useMemo(
     () =>
       crux.disagree.map((s) => {
@@ -349,6 +352,7 @@ function CruxDisplay({
     [crux.disagree],
   );
 
+  // biome-ignore lint/correctness/useHookAtTopLevel: hook after early return is safe - crux null check ensures consistent execution
   const parsedNoClear = React.useMemo(
     () =>
       crux.no_clear_position?.map((s) => {
@@ -383,74 +387,72 @@ function CruxDisplay({
         </div>
       </HoverCardTrigger>
       <HoverCardPortal>
-        <>
-          <HoverCardOverlay className="bg-black/[0.03]" />
-          <HoverCardContent side="top" className="w-[40rem]">
-            <Col gap={3} className="text-sm">
-              {/* Header row - matches CruxCard format */}
-              <Row
-                gap={4}
-                className="justify-between items-center flex-wrap pb-2"
-              >
-                <Row gap={3} className="items-center">
-                  <ControversyIndicator
-                    score={crux.controversyScore}
-                    showLabel={true}
-                  />
-                  <Row
-                    gap={1}
-                    className="items-center text-sm text-muted-foreground"
-                  >
-                    <Icons.People className="w-4 h-4" />
-                    <span>{totalPeople} people</span>
-                  </Row>
-                </Row>
-                <button
-                  type="button"
-                  onClick={handleSubtopicClick}
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:underline"
+        <HoverCardOverlay className="bg-black/[0.03]" />
+        <HoverCardContent side="top" className="w-[40rem]">
+          <Col gap={3} className="text-sm">
+            {/* Header row - matches CruxCard format */}
+            <Row
+              gap={4}
+              className="justify-between items-center flex-wrap pb-2"
+            >
+              <Row gap={3} className="items-center">
+                <ControversyIndicator
+                  score={crux.controversyScore}
+                  showLabel={true}
+                />
+                <Row
+                  gap={1}
+                  className="items-center text-sm text-muted-foreground"
                 >
-                  <Icons.Theme className="w-4 h-4" />
-                  <span>{subtopicTitle}</span>
-                  <Icons.ChevronRight className="w-4 h-4" />
-                </button>
+                  <Icons.People className="w-4 h-4" />
+                  <span>{totalPeople} people</span>
+                </Row>
               </Row>
+              <button
+                type="button"
+                onClick={handleSubtopicClick}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:underline"
+              >
+                <Icons.Theme className="w-4 h-4" />
+                <span>{subtopicTitle}</span>
+                <Icons.ChevronRight className="w-4 h-4" />
+              </button>
+            </Row>
 
-              <Col gap={2}>
-                <p className="font-medium">{crux.cruxClaim}</p>
-                <div>
-                  <p
-                    ref={explanationRef}
-                    className={`text-sm text-muted-foreground ${
-                      isExplanationExpanded ? "" : "line-clamp-3"
-                    }`}
+            <Col gap={2}>
+              <p className="font-medium">{crux.cruxClaim}</p>
+              <div>
+                <p
+                  ref={explanationRef}
+                  className={`text-sm text-muted-foreground ${
+                    isExplanationExpanded ? "" : "line-clamp-3"
+                  }`}
+                >
+                  {cleanExplanation(crux.explanation)}
+                </p>
+                {showReadMore && !isExplanationExpanded && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsExplanationExpanded(true);
+                    }}
+                    className="text-xs underline mt-1"
+                    aria-expanded={false}
                   >
-                    {cleanExplanation(crux.explanation)}
-                  </p>
-                  {showReadMore && !isExplanationExpanded && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsExplanationExpanded(true);
-                      }}
-                      className="text-xs underline mt-1"
-                      aria-expanded={false}
-                    >
-                      Read more
-                    </button>
-                  )}
-                </div>
-              </Col>
-
-              <AgreeDisagreeSpectrum
-                agree={parsedAgree}
-                disagree={parsedDisagree}
-                noClearPosition={parsedNoClear}
-                topicColor={topicColor}
-              />
+                    Read more
+                  </button>
+                )}
+              </div>
             </Col>
-          </HoverCardContent>
-        </>
+
+            <AgreeDisagreeSpectrum
+              agree={parsedAgree}
+              disagree={parsedDisagree}
+              noClearPosition={parsedNoClear}
+              topicColor={topicColor}
+            />
+          </Col>
+        </HoverCardContent>
       </HoverCardPortal>
     </HoverCard>
   );

@@ -1,4 +1,4 @@
-import { Array, pipe, type Record } from "effect";
+import type { Record } from "effect";
 import type { ReportState } from "./types";
 
 //  ********************************

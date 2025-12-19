@@ -93,7 +93,7 @@ describe("Redis Integration Tests", () => {
       }
       await redis.disconnect();
       await cache.disconnect();
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   });

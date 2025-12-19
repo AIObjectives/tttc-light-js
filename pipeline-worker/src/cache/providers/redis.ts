@@ -27,7 +27,6 @@ const cacheLogger = logger.child({ module: "cache-redis" });
  */
 export class RedisCache implements Cache {
   private client: Redis;
-  private config: RedisCacheConfig;
 
   /**
    * Creates a new RedisCache instance.

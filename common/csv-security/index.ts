@@ -95,8 +95,7 @@ export function sanitizeCSVCell(content: string): string {
 
   // Limit length to prevent buffer overflow
   if (sanitized.length > CSV_SECURITY_CONFIG.MAX_CELL_LENGTH) {
-    sanitized =
-      sanitized.substring(0, CSV_SECURITY_CONFIG.MAX_CELL_LENGTH) + "...";
+    sanitized = `${sanitized.substring(0, CSV_SECURITY_CONFIG.MAX_CELL_LENGTH)}...`;
   }
 
   return sanitized;
@@ -191,7 +190,7 @@ export function validateEncoding(
     }
 
     return success(content);
-  } catch (error) {
+  } catch (_error) {
     return failure({
       tag: "INVALID_ENCODING",
       message: "Unable to decode file with supported encodings",

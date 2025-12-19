@@ -21,7 +21,7 @@ function getFormData() {
   return data;
 }
 
-function loadAllFields() {
+function _loadAllFields() {
   fields.forEach((field) => {
     const value = localStorage.getItem(field);
     if (value) {
@@ -47,22 +47,22 @@ function saveAllFields() {
   });
 }
 
-function failure(message) {
+function _failure(message) {
   document.getElementById("modalMessage").innerText = message;
   toggle("messageModal", "open");
 }
 
-function success(message) {
+function _success(message) {
   document.getElementById("modalMessage").innerText = message;
   toggle("messageModal", "open");
 }
 
-function onFileChange(event) {
-  var file = event.target.files[0];
+function _onFileChange(event) {
+  const file = event.target.files[0];
   if (file) {
-    var reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = (event) => {
-      var csvData = event.target.result;
+      const csvData = event.target.result;
       Papa.parse(csvData, {
         complete: (results) => {
           localStorage.data = JSON.stringify(results.data);
@@ -77,7 +77,7 @@ function onFileChange(event) {
   }
 }
 
-function unsetCsv() {
+function _unsetCsv() {
   delete localStorage.data;
   delete localStorage.uploadedFile;
   document.getElementById("csvInput").value = "";
@@ -98,13 +98,13 @@ function updateDataField() {
   }
 }
 
-function submitForm(event) {
+function _submitForm(event) {
   console.log("submitForm");
   event.preventDefault();
   saveAllFields();
   const config = getFormData();
   config.data = JSON.parse(localStorage.data || "[]");
-  const url = window.location.origin + "/generate";
+  const url = `${window.location.origin}/generate`;
   fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -136,6 +136,6 @@ function showSuccessModal(message) {
   document.getElementById("messageModal").classList.remove("hidden");
 }
 
-function closeModal() {
+function _closeModal() {
   document.getElementById("messageModal").classList.add("hidden");
 }

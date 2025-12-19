@@ -1,5 +1,5 @@
 import { HeartHandshake } from "lucide-react";
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { getQuotes } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";

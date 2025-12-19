@@ -22,8 +22,7 @@ function hasValidTaxonomyStructure(
   modelOutput: ClusteringScorerInput["modelOutput"],
 ): boolean {
   return !!(
-    modelOutput &&
-    modelOutput.taxonomy &&
+    modelOutput?.taxonomy &&
     Array.isArray(modelOutput.taxonomy) &&
     modelOutput.taxonomy.length > 0
   );

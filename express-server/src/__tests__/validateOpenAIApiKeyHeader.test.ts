@@ -22,7 +22,7 @@ describe("validateOpenAIApiKeyHeader middleware", () => {
    * @returns Valid API key string
    */
   const createValidKey = (length: number = TEST_KEY_LENGTH) =>
-    "sk-" + "A".repeat(length);
+    `sk-${"A".repeat(length)}`;
 
   /**
    * Creates a mixed alphanumeric valid API key for testing
@@ -135,7 +135,7 @@ describe("validateOpenAIApiKeyHeader middleware", () => {
     });
 
     it("should reject keys that don't start with 'sk-'", async () => {
-      const invalidKey = "pk-" + "A".repeat(48);
+      const invalidKey = `pk-${"A".repeat(48)}`;
       const response = await createTestRequestWithKey(app, invalidKey).expect(
         401,
       );
@@ -163,7 +163,7 @@ describe("validateOpenAIApiKeyHeader middleware", () => {
     });
 
     it("should reject keys with invalid characters", async () => {
-      const invalidKey = "sk-" + "A".repeat(46) + INVALID_CHARS;
+      const invalidKey = `sk-${"A".repeat(46)}${INVALID_CHARS}`;
       const response = await createTestRequestWithKey(app, invalidKey).expect(
         401,
       );
@@ -215,7 +215,7 @@ describe("validateOpenAIApiKeyHeader middleware", () => {
     };
 
     it("should sanitize keys with control characters via direct middleware test", async () => {
-      const corruptedKey = "sk-" + "A".repeat(46) + CONTROL_CHARS;
+      const corruptedKey = `sk-${"A".repeat(46)}${CONTROL_CHARS}`;
       const testApp = createSanitizationTestApp(corruptedKey);
 
       const response = await request(testApp)
@@ -227,7 +227,7 @@ describe("validateOpenAIApiKeyHeader middleware", () => {
     });
 
     it("should sanitize keys with newlines via direct middleware test", async () => {
-      const corruptedKey = "sk-" + "A".repeat(46) + "\n\r";
+      const corruptedKey = `sk-${"A".repeat(46)}\n\r`;
       const testApp = createSanitizationTestApp(corruptedKey);
 
       const response = await request(testApp)
@@ -239,7 +239,7 @@ describe("validateOpenAIApiKeyHeader middleware", () => {
     });
 
     it("should handle keys with null bytes via direct middleware test", async () => {
-      const corruptedKey = "sk-" + "A".repeat(46) + NULL_BYTES;
+      const corruptedKey = `sk-${"A".repeat(46)}${NULL_BYTES}`;
       const testApp = createSanitizationTestApp(corruptedKey);
 
       const response = await request(testApp)

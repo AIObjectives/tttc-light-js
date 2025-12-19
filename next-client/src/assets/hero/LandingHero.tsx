@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import React from "react";
 import { cn } from "@/lib/utils/shadcn";
 
 // Blur placeholder matching actual image aspect ratio (1764x1218 = 1.45:1)

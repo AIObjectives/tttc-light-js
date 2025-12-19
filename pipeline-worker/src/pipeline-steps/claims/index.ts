@@ -19,9 +19,7 @@ import type {
   ClaimsTree,
   Comment,
   LLMConfig,
-  SubtopicClaimNode,
   Topic,
-  TopicClaimNode,
 } from "./types";
 
 // Concurrency configuration for rate limiting
@@ -104,7 +102,7 @@ function initializeClaimsTree(taxonomy: Topic[]): {
     };
 
     for (const subtopic of topic.subtopics || []) {
-      validSubtopics.get(topic.topicName)!.add(subtopic.subtopicName);
+      validSubtopics.get(topic.topicName)?.add(subtopic.subtopicName);
       tree[topic.topicName].subtopics[subtopic.subtopicName] = {
         total: 0,
         claims: [],

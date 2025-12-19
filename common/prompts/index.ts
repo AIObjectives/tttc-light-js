@@ -208,7 +208,7 @@ export function hydratePromptLiterals(prompt: string, dataObj: any): string {
       `return \`${prompt}\`;`,
     );
     return templateFn(...Object.values(dataObj));
-  } catch (e) {
+  } catch (_e) {
     return "Error hydrating prompt with variables";
   }
 }

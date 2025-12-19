@@ -1,5 +1,4 @@
-import { beforeAll, describe, expect, test } from "vitest";
-import { z } from "zod";
+import { describe, expect, test } from "vitest";
 import * as schema from "../../schema";
 import { getNPeople } from "../tree-metrics.js";
 
@@ -8,7 +7,7 @@ const data = require("./data/getNPeople.json");
 function isJsonString(str: string) {
   try {
     JSON.stringify(str);
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
   return true;

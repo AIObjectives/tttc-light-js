@@ -11,6 +11,7 @@ import { TopicContext } from "../topic/Topic";
 
 const safeUseColor = (color: ColorVariant) => {
   try {
+    // biome-ignore lint/correctness/useHookAtTopLevel: intentional try-catch for graceful fallback when context unavailable
     return useThemeContextColor(color);
   } catch {
     return undefined;

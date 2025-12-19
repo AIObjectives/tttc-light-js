@@ -235,7 +235,7 @@ export class Analytics implements AnalyticsClient {
    * Checks if analytics is initialized
    */
   isInitialized(): boolean {
-    return this.provider !== null && this.provider.isReady();
+    return this.provider?.isReady();
   }
 
   /**

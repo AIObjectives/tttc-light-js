@@ -1,4 +1,3 @@
-import React from "react";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import { cn } from "@/lib/utils/shadcn";

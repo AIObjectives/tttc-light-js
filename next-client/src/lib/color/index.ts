@@ -22,7 +22,8 @@ const murmurhash = (str: string): number => {
 
   h = Math.imul(h ^ (h >>> 16), 2246822507);
   h = Math.imul(h ^ (h >>> 13), 3266489909);
-  h = (h ^= h >>> 16) >>> 0;
+  h ^= h >>> 16;
+  h = h >>> 0;
 
   return h / 0xffffffff;
 };

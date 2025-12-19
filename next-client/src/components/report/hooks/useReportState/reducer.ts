@@ -1,22 +1,19 @@
 import {
-  Array,
-  Boolean,
+  Array as Arr,
+  Boolean as Bool,
   Either,
   flow,
   Match,
   Option,
   pipe,
-  Record,
+  Record as Rec,
 } from "effect";
 import { ActionStream } from "./actionStream";
 import { actionStreamReducer } from "./actionStreamReducer";
-import {
-  ClaimPath,
-  SubtopicPath,
-  type TaggedClaimPath,
-  type TaggedSubtopicPath,
-  type TaggedTopicPath,
-  TopicPath,
+import type {
+  TaggedClaimPath,
+  TaggedSubtopicPath,
+  TaggedTopicPath,
 } from "./path";
 import type { ReportState } from "./types";
 
@@ -71,7 +68,7 @@ export function createPathMapReducer(
           // string: Path
           idMap,
           // Some Path
-          Record.get(id),
+          Rec.get(id),
           Option.map(
             // Path
             flow(
@@ -80,7 +77,7 @@ export function createPathMapReducer(
               ActionStream.open,
               // and reduce over the state
               // ActionStream -> ReportState
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           // If idxMap for some reason couldn't find the Path, return the state with error set
@@ -99,7 +96,7 @@ export function createPathMapReducer(
           // string: Path
           idMap,
           // Option Path
-          Record.get(id),
+          Rec.get(id),
           Option.flatMap((val) =>
             val.type === "topic" ? Option.some(val) : Option.none(),
           ),
@@ -111,7 +108,7 @@ export function createPathMapReducer(
               // Path -> ActionStream
               ActionStream.close,
               // ActionStream -> ReportState
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           // TODO: include more comprehensive error handling
@@ -133,7 +130,7 @@ export function createPathMapReducer(
         return pipe(
           // get the topic's path
           idMap,
-          Record.get(id),
+          Rec.get(id),
           Either.fromOption(() => "Could not find path"),
           // If for some reason its not a topic path, error out
           Either.flatMap(
@@ -150,13 +147,13 @@ export function createPathMapReducer(
           Either.map((path) =>
             pipe(
               // We can use unsafeGet. Should never fail unless something with horrifically wrong.
-              Array.unsafeGet(state.children, path.topicIdx),
+              Arr.unsafeGet(state.children, path.topicIdx),
               (topic) => topic.isOpen,
-              Boolean.match({
+              Bool.match({
                 onTrue: () => ActionStream.close(path),
                 onFalse: () => ActionStream.open(path),
               }),
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -173,13 +170,13 @@ export function createPathMapReducer(
       case "openAll": {
         return pipe(
           ActionStream.openAll,
-          Array.reduce(state, actionStreamReducer),
+          Arr.reduce(state, actionStreamReducer),
         );
       }
       case "closeAll": {
         return pipe(
           ActionStream.closeAll,
-          Array.reduce(state, actionStreamReducer),
+          Arr.reduce(state, actionStreamReducer),
         );
       }
       case "expandTopic":
@@ -187,7 +184,7 @@ export function createPathMapReducer(
         const { id } = action.payload;
         return pipe(
           idMap,
-          Record.get(id),
+          Rec.get(id),
           Option.flatMap((val) =>
             val.type === "topic" || val.type === "subtopic"
               ? Option.some(val)
@@ -199,7 +196,7 @@ export function createPathMapReducer(
           Either.map(
             flow(
               ActionStream.incrementPagination,
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {

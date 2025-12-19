@@ -52,9 +52,9 @@ describe("Closing -> Topic.isOpen", () => {
   });
 
   test("Opening and then closing a topic resets it to the original state", () => {
-    [firstClosed, middleClosed, lastClosed].forEach((newState) =>
-      expect(newState).toMatchReportState(state),
-    );
+    [firstClosed, middleClosed, lastClosed].forEach((newState) => {
+      expect(newState).toMatchReportState(state);
+    });
   });
 });
 

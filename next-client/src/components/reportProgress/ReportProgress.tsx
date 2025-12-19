@@ -20,6 +20,7 @@ export default function ReportProgress({
   // Only use client-side polling for processing reports and if we have an identifier
   const shouldPoll =
     identifier && !["finished", "failed", "notFound"].includes(status);
+  // biome-ignore lint/correctness/useHookAtTopLevel: conditional hook is intentional - shouldPoll is stable per render cycle
   const reportState = shouldPoll ? useUnifiedReport(identifier) : null;
 
   // Determine current status

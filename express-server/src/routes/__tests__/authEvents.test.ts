@@ -35,7 +35,7 @@ vi.mock("tttc-common/logger", () => {
 
 describe("Auth Events Route", () => {
   let mockVerifyUser: any;
-  let mockSendError: any;
+  let _mockSendError: any;
   let mockLogger: Logger;
 
   const createMockRequest = (body: any = {}): RequestWithLogger => {
@@ -56,7 +56,7 @@ describe("Auth Events Route", () => {
     vi.clearAllMocks();
 
     mockVerifyUser = vi.mocked(verifyUser);
-    mockSendError = vi.mocked(sendError);
+    _mockSendError = vi.mocked(sendError);
 
     mockLogger = {
       info: vi.fn(),

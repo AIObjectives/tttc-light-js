@@ -24,7 +24,7 @@ export function useIsVisible(): [RefObject<HTMLDivElement>, boolean] {
     return () => {
       if (containerRef.current) obs.unobserve(containerRef.current);
     };
-  }, []);
+  }, [handleIntersect]);
 
   return [containerRef, isVisible];
 }

@@ -1,4 +1,3 @@
-import React from "react";
 import type { ColumnMappings } from "tttc-common/csv-validation";
 import {
   AlertDialog,

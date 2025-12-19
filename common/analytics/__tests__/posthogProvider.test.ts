@@ -2,15 +2,7 @@
  * Comprehensive tests for PostHogAnalyticsProvider
  */
 
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  type MockedFunction,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PostHogAnalyticsProvider } from "../providers/posthogProvider";
 import type {
   AnalyticsConfig,
@@ -103,7 +95,7 @@ describe("PostHogAnalyticsProvider", () => {
   });
 
   afterEach(async () => {
-    if (provider && provider.isReady()) {
+    if (provider?.isReady()) {
       await provider.shutdown();
     }
   });

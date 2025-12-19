@@ -63,7 +63,7 @@ export function useUserCapabilities() {
 
   useEffect(() => {
     fetchCapabilities();
-  }, []);
+  }, [fetchCapabilities]);
 
   return {
     userSizeLimit,

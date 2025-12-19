@@ -25,7 +25,7 @@ export const cruxJsonStructureScorer = weave.op(
   }: CruxScorerInput): CruxJsonScorerOutput {
     try {
       const hasValidStructure =
-        modelOutput && modelOutput.crux && typeof modelOutput.crux === "object";
+        modelOutput?.crux && typeof modelOutput.crux === "object";
 
       if (!hasValidStructure) {
         return {

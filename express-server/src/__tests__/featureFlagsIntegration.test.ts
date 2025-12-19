@@ -1,5 +1,5 @@
+import type { Server } from "node:http";
 import express from "express";
-import type { Server } from "http";
 import request from "supertest";
 import {
   afterAll,
@@ -82,7 +82,7 @@ vi.mock("../types/context", () => ({
 
 // Mock contextMiddleware to avoid dependency issues
 vi.mock("../middleware", () => ({
-  contextMiddleware: vi.fn(() => (req: any, res: any, next: any) => next()),
+  contextMiddleware: vi.fn(() => (_req: any, _res: any, next: any) => next()),
 }));
 
 // Mock PostHog to avoid external dependencies in integration tests
@@ -242,11 +242,11 @@ describe("Feature Flags Integration Tests", () => {
       });
 
       // Add test routes that use feature flags
-      app.get("/test-feature-enabled", async (req, res) => {
+      app.get("/test-feature-enabled", async (_req, res) => {
         try {
           const enabled = await isFeatureEnabled("test-feature");
           res.json({ enabled });
-        } catch (error) {
+        } catch (_error) {
           res.status(500).json({ error: "Failed to check feature flag" });
         }
       });
@@ -255,12 +255,12 @@ describe("Feature Flags Integration Tests", () => {
         try {
           const value = await getFeatureFlag(req.params.flagName);
           res.json({ flagName: req.params.flagName, value });
-        } catch (error) {
+        } catch (_error) {
           res.status(500).json({ error: "Failed to get feature flag" });
         }
       });
 
-      app.get("/conditional-feature", async (req, res) => {
+      app.get("/conditional-feature", async (_req, res) => {
         const showNewUI = await isFeatureEnabled("experimental-ui");
         const showBetaAnalytics = await isFeatureEnabled("beta-analytics");
 
@@ -391,7 +391,7 @@ describe("Feature Flags Integration Tests", () => {
           const { flagName, context } = req.body;
           const enabled = await isFeatureEnabled(flagName, context);
           res.json({ flagName, enabled, provider: "posthog" });
-        } catch (error) {
+        } catch (_error) {
           res.status(500).json({ error: "Failed to check PostHog feature" });
         }
       });
@@ -560,7 +560,7 @@ describe("Feature Flags Integration Tests", () => {
 
   describe("Error Handling Integration", () => {
     beforeEach(() => {
-      app.get("/error-prone-route", async (req, res) => {
+      app.get("/error-prone-route", async (_req, res) => {
         try {
           // Test various error conditions
           const feature1 = await isFeatureEnabled("test-feature");

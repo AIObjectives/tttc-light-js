@@ -1,4 +1,4 @@
-import path, { resolve } from "path";
+import path, { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({

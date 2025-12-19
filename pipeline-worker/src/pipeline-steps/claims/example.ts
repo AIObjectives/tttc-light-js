@@ -201,7 +201,7 @@ function displayUsageStats(
   console.log("Prompt tokens:", usage.input_tokens);
   console.log("Completion tokens:", usage.output_tokens);
   console.log("Total tokens:", usage.total_tokens);
-  console.log("Estimated cost: $" + cost.toFixed(4));
+  console.log(`Estimated cost: $${cost.toFixed(4)}`);
 }
 
 /**

@@ -49,7 +49,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
         },
         "Event tracked",
       );
-    } catch (error) {
+    } catch (_error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
@@ -75,7 +75,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
         },
         "User identified",
       );
-    } catch (error) {
+    } catch (_error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
@@ -105,7 +105,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
         },
         "Page tracked",
       );
-    } catch (error) {
+    } catch (_error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
@@ -120,7 +120,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
 
     try {
       localLogger.info({}, "Flush requested");
-    } catch (error) {
+    } catch (_error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
   }
@@ -131,7 +131,7 @@ export class LocalAnalyticsProvider implements AnalyticsProvider {
   async shutdown(): Promise<void> {
     try {
       localLogger.info({}, "Analytics shutdown");
-    } catch (error) {
+    } catch (_error) {
       // Silently handle logging errors to prevent disrupting analytics flow
     }
     this.ready = false;

@@ -1,4 +1,3 @@
-import { logger } from "tttc-common/logger";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ensureUserDocument } from "../Firebase";
 

@@ -114,9 +114,9 @@ describe("Summaries Scorers", () => {
       expect(result.total_summaries).toBe(1);
       expect(result.issues_count).toBe(1);
       expect(result.issues).toBeDefined();
-      expect(result.issues!.length).toBe(1);
-      expect(result.issues![0]).toContain("Pets");
-      expect(result.issues![0]).toContain("150 words");
+      expect(result.issues?.length).toBe(1);
+      expect(result.issues?.[0]).toContain("Pets");
+      expect(result.issues?.[0]).toContain("150 words");
     });
   });
 

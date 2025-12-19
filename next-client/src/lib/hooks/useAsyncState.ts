@@ -29,7 +29,7 @@ export type FinishedLoading<T, E> = {
   result: Result<T, E>;
 };
 
-type LoadingAction<T, E> = { type: "loading" };
+type LoadingAction<_T, _E> = { type: "loading" };
 type FinishedAction<T, E> = {
   type: "finished";
   payload: Result<T, E>;
@@ -73,7 +73,7 @@ export function useAsyncState<T, E, Params>(
       const res = await func(dep);
       dispatch({ type: "finished", payload: res });
     })();
-  }, [dep]);
+  }, [dep, func]);
 
   return state;
 }

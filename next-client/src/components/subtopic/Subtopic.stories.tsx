@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import React, { type Ref } from "react";
+import type { Ref } from "react";
 import { reportData } from "../../../stories/data/dummyData";
 import { stateBuilder } from "../report/hooks/useReportState/utils";
 import { ReportContext } from "../report/Report";

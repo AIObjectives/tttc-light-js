@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await expressResponse.json();
+    const _result = await expressResponse.json();
     feedbackApiLogger.info(
       {},
       "Feedback submitted successfully via express server",

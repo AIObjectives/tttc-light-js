@@ -11,12 +11,11 @@ import { TextIcon } from "../elements";
 import { Col, Row } from "../layout";
 import type { ReportStateAction } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
-import {
-  type OutlineState,
-  type OutlineStateAction,
-  type OutlineSubtopicNode,
-  type OutlineTopicNode,
-  useOutlineState,
+import type {
+  OutlineState,
+  OutlineStateAction,
+  OutlineSubtopicNode,
+  OutlineTopicNode,
 } from "./hooks/useOutlineState";
 
 type OutlineContextType = {
@@ -84,9 +83,8 @@ function Outline({
         </TextIcon>
         {/* Scrolly part */}
         <Col gap={outlineSpacing} className="overflow-y-scroll no-scrollbar">
-          {activeContentTab === "cruxes" ? (
-            <>
-              {sortedCruxes.map((crux) => {
+          {activeContentTab === "cruxes"
+            ? sortedCruxes.map((crux) => {
                 const cruxId = `${crux.topic}:${crux.subtopic}`;
                 const category = getControversyCategory(crux.controversyScore);
                 const colors = getControversyColors(crux.controversyScore);
@@ -118,11 +116,8 @@ function Outline({
                     }}
                   />
                 );
-              })}
-            </>
-          ) : (
-            <>
-              {outlineState.tree.map((node) => (
+              })
+            : outlineState.tree.map((node) => (
                 <OutlineItem
                   key={node.id}
                   node={node}
@@ -174,8 +169,6 @@ function Outline({
                   ))}
                 </OutlineItem>
               ))}
-            </>
-          )}
         </Col>
       </nav>
     </OutlineContext.Provider>

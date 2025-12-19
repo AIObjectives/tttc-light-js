@@ -91,7 +91,7 @@ export function useUnifiedReport(identifier: string) {
         clearInterval(interval);
       };
     }
-  }, [fetchReport, state.type, identifier]);
+  }, [fetchReport, state.type, identifier, state.status]);
 
   return state;
 }

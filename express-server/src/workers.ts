@@ -1,5 +1,3 @@
-import { Job, Worker } from "bullmq";
-import Redis from "ioredis";
 import { logger } from "tttc-common/logger";
 import * as firebase from "./Firebase";
 import { type PipelineJob, pipelineJob } from "./jobs/pipeline";

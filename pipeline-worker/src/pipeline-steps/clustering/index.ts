@@ -59,7 +59,7 @@ function sanitizeAndBuildPrompt(
     );
 
     if (isSafe && commentIsMeaningful(sanitizedText)) {
-      fullPrompt += "\n" + sanitizedText;
+      fullPrompt += `\n${sanitizedText}`;
       sanitizedComments.push(sanitizedText);
     } else if (!isSafe) {
       reportLogger.warn(

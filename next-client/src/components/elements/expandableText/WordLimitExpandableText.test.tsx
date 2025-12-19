@@ -11,7 +11,6 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { WordLimitExpandableText } from "./WordLimitExpandableText";
 
@@ -33,7 +32,7 @@ describe("WordLimitExpandableText", () => {
       );
 
       const paragraph = container.querySelector("p");
-      expect(paragraph?.textContent).toBe(shortText + " ");
+      expect(paragraph?.textContent).toBe(`${shortText} `);
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
 
@@ -44,7 +43,7 @@ describe("WordLimitExpandableText", () => {
       );
 
       const paragraph = container.querySelector("p");
-      expect(paragraph?.textContent).toBe(exactText + " ");
+      expect(paragraph?.textContent).toBe(`${exactText} `);
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
 

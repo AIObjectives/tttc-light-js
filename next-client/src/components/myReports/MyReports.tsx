@@ -1,13 +1,12 @@
 "use client";
 import Link from "next/link";
-import React from "react";
 import type { ReportRef } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
 import { Card, CardContent, Separator, TextIcon } from "../elements";
 import { Col, Row } from "../layout";
 
 const reportLink = (id: string) =>
-  location.protocol + "//" + location.host + `/report/${id}`;
+  `${location.protocol}//${location.host}/report/${id}`;
 
 interface MyReportsProps {
   reports: ReportRef[];

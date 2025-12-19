@@ -10,8 +10,7 @@ import {
 } from "tttc-common/evaluations/clustering/scorers";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import * as weave from "weave";
-import type { ClusteringInput, ClusteringOutput, Topic } from "../types";
+import type { ClusteringOutput, Topic } from "../types";
 import {
   ApiCallFailedError,
   type ClusteringError,
@@ -55,7 +54,7 @@ export async function callClusteringModel(
   );
 
   // Call OpenAI API directly to capture usage information
-  let response;
+  let response: Awaited<ReturnType<typeof responsesCreate>> | undefined;
   try {
     response = await responsesCreate({
       model: modelName,

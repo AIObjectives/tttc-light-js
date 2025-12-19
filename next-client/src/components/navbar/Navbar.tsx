@@ -1,14 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import React from "react";
 import { Button } from "../elements";
 import { Row } from "../layout";
 import {
   About,
   CreateReport,
   Headline,
-  LanguageSelector,
   MobileHamburgerMenu,
   RepoGithub,
 } from "./components/NavbarButtons";

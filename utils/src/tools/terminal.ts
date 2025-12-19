@@ -1,5 +1,5 @@
+import readline from "node:readline";
 import * as fs from "fs-extra";
-import readline from "readline";
 
 export const clearScreen = () =>
   fs.writeFileSync(
@@ -57,11 +57,11 @@ export async function select<SelectOption extends string>(
   // Helper to render the menu
   const renderMenu = () => {
     // Move cursor up and clear
-    process.stdout.write("\x1B[" + (options.length + 1) + "A"); // Move up
+    process.stdout.write(`\x1B[${options.length + 1}A`); // Move up
     process.stdout.write("\x1B[J"); // Clear below
 
     // Print menu
-    process.stdout.write(prompt + "\n");
+    process.stdout.write(`${prompt}\n`);
     options.forEach((option, i) => {
       const prefix = i === selectedIndex ? "> " : "  ";
       process.stdout.write(`${prefix}${option}\n`);
@@ -102,7 +102,7 @@ export async function select<SelectOption extends string>(
           process.stdin.pause();
 
           // Move cursor to bottom and resolve
-          process.stdout.write("\x1B[" + options.length + "B");
+          process.stdout.write(`\x1B[${options.length}B`);
           resolve(options[selectedIndex]);
         } else if (key === "\u0003") {
           // Ctrl+C

@@ -71,7 +71,7 @@ function useScrollListener(
         element.removeEventListener("animationend", handleAnimationEnd);
         element.classList.remove("scroll-target-highlight");
       };
-    }, [scrollToState, listenForId]);
+    }, [listenForId]);
 
     return ref;
   };

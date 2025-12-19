@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useLayoutEffect, useRef, useState } from "react";
+import { useContext } from "react";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import { getThemeColor } from "@/lib/color";

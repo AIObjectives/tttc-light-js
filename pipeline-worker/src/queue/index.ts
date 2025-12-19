@@ -109,9 +109,9 @@ export const PubSubServicesLive = async (env: {
   [key: string]: string | undefined;
 }): Promise<PubSubServices> => {
   const factory = createPubSubFactory({
-    node_env: env["NODE_ENV"],
-    projectId: env["PUBSUB_PROJECT_ID"],
-    subscriptionName: env["SUBSCRIPTION_NAME"],
+    node_env: env.NODE_ENV,
+    projectId: env.PUBSUB_PROJECT_ID,
+    subscriptionName: env.SUBSCRIPTION_NAME,
   });
 
   return {

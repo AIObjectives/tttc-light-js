@@ -1,4 +1,4 @@
-import { Array, pipe } from "effect";
+import { Array as Arr, pipe } from "effect";
 import type { ActionStreamActions } from "./actions";
 import type { OutlineState } from "./types";
 /**
@@ -12,7 +12,7 @@ export const actionStreamReducer = (
     case "openTopic": {
       return pipe(
         state.tree,
-        Array.modify(action.payload.topicIdx, (node) => ({
+        Arr.modify(action.payload.topicIdx, (node) => ({
           ...node,
           isOpen: true,
         })),
@@ -23,7 +23,7 @@ export const actionStreamReducer = (
     case "closeTopic": {
       return pipe(
         state.tree,
-        Array.modify(action.payload.topicIdx, (node) => ({
+        Arr.modify(action.payload.topicIdx, (node) => ({
           ...node,
           isOpen: false,
         })),
@@ -34,7 +34,7 @@ export const actionStreamReducer = (
     case "toggleTopic": {
       return pipe(
         state.tree,
-        Array.modify(action.payload.topicIdx, (node) => ({
+        Arr.modify(action.payload.topicIdx, (node) => ({
           ...node,
           isOpen: !node.isOpen,
         })),
@@ -46,7 +46,7 @@ export const actionStreamReducer = (
       // When changing the highlighting state, we want to update the cached path
       return pipe(
         state.tree,
-        Array.modify(action.payload.topicIdx, (node) => ({
+        Arr.modify(action.payload.topicIdx, (node) => ({
           ...node,
           isHighlighted: true,
         })),
@@ -58,7 +58,7 @@ export const actionStreamReducer = (
       // When changing the highlighting state, we want to update the cached path
       return pipe(
         state.tree,
-        Array.modify(action.payload.topicIdx, (node) => ({
+        Arr.modify(action.payload.topicIdx, (node) => ({
           ...node,
           isHighlighted: false,
         })),
@@ -70,9 +70,9 @@ export const actionStreamReducer = (
       // When changing the highlighting state, we want to update the cached path
       return pipe(
         state.tree,
-        Array.modify(action.payload.topicIdx, (topic) => ({
+        Arr.modify(action.payload.topicIdx, (topic) => ({
           ...topic,
-          children: Array.modify(
+          children: Arr.modify(
             topic.children,
             action.payload.subtopicIdx,
             (subtopic) => ({ ...subtopic, isHighlighted: true }),
@@ -86,9 +86,9 @@ export const actionStreamReducer = (
       // When changing the highlighting state, we want to update the cached path
       return pipe(
         state.tree,
-        Array.modify(action.payload.topicIdx, (topic) => ({
+        Arr.modify(action.payload.topicIdx, (topic) => ({
           ...topic,
-          children: Array.modify(
+          children: Arr.modify(
             topic.children,
             action.payload.subtopicIdx,
             (subtopic) => ({ ...subtopic, isHighlighted: false }),

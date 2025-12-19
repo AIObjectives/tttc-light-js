@@ -316,7 +316,7 @@ export function validateCSVFormat(
  */
 function formatDataWithMappings(
   data: Record<string, unknown>[],
-  lowerKeys: Map<string, string>,
+  _lowerKeys: Map<string, string>,
   commentColumn: string,
   idColumn: string | null,
   interviewColumn: string | null,

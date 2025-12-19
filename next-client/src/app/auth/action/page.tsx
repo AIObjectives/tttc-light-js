@@ -176,7 +176,7 @@ function AuthActionContent() {
 
     handleAction();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- status intentionally excluded to prevent re-triggering on status changes
-  }, [oobCode, modeParam]);
+  }, [oobCode, modeParam, searchParams.keys, status]);
 
   const handleContinue = () => {
     console.info("[auth-action] Continue button clicked", {

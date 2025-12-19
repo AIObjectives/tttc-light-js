@@ -1,5 +1,4 @@
 import Image from "next/image";
-import * as React from "react";
 import type { ControversyLevel } from "@/lib/crux/types";
 
 interface ControversyIconProps {

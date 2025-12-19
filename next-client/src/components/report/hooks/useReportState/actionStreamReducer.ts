@@ -1,4 +1,4 @@
-import { Array, pipe } from "effect";
+import { Array as Arr, pipe } from "effect";
 import type { ActionStreamActions, MapActions } from "./actions";
 import {
   defaultAddSubtopicPagination,
@@ -118,7 +118,7 @@ export function actionStreamReducer(
         // The payload of this action is a function: ReportState -> ActionStream[]
         payload,
         // Reduce ActionStream[] over the actionStreamReducer.
-        Array.reduce(state, actionStreamReducer),
+        Arr.reduce(state, actionStreamReducer),
       );
     }
   }
@@ -160,7 +160,7 @@ const subtopicNodePagSetter = nodePaginationSetter(defaultSubtopicPagination);
 const modifyTopic =
   (f: (node: TopicNode) => TopicNode) =>
   (state: ReportState, path: TopicPath): ReportState =>
-    pipe(state.children, Array.modify(path.topicIdx, f), (children) => ({
+    pipe(state.children, Arr.modify(path.topicIdx, f), (children) => ({
       ...state,
       children,
     }));
@@ -173,5 +173,5 @@ const modifySubtopic =
   (state: ReportState, path: SubtopicPath): ReportState =>
     modifyTopic((topicNode) => ({
       ...topicNode,
-      children: Array.modify(topicNode.children, path.subtopicIdx, f),
+      children: Arr.modify(topicNode.children, path.subtopicIdx, f),
     }))(state, path);

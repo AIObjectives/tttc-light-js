@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 import { Row } from "@/components/layout";
 import { getThemeColor } from "@/lib/color";

@@ -28,9 +28,7 @@ export const deduplicationJsonStructureScorer = weave.op(
   }: DeduplicationScorerInput): DeduplicationJsonStructureScorerOutput {
     try {
       const hasValidStructure =
-        modelOutput &&
-        modelOutput.groupedClaims &&
-        Array.isArray(modelOutput.groupedClaims);
+        modelOutput?.groupedClaims && Array.isArray(modelOutput.groupedClaims);
 
       if (!hasValidStructure) {
         return {

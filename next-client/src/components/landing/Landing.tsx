@@ -7,7 +7,6 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-  Button,
   Card,
   CardContent,
 } from "../elements";

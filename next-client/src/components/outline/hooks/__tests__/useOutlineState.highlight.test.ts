@@ -1,4 +1,4 @@
-import { Array } from "effect";
+import { Array as Arr } from "effect";
 import { describe, expect, test } from "vitest";
 import { reportData } from "../../../../../stories/data/dummyData";
 import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
@@ -33,7 +33,7 @@ describe("Highlighting outline subtopic nodes", () => {
 });
 
 describe("Highlighting another node resets the previous", () => {
-  const newState = Array.reduce(
+  const newState = Arr.reduce(
     outlineState.tree,
     outlineState,
     (accum, curr) => {

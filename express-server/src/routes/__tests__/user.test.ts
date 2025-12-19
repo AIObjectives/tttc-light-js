@@ -58,7 +58,7 @@ describe("getUserLimits", () => {
   let mockReq: RequestWithLogger;
   let mockRes: Response;
   let mockFirebase: any;
-  let mockPermissions: any;
+  let _mockPermissions: any;
 
   // Helper factories for test setup
   const createMockUser = (
@@ -91,7 +91,7 @@ describe("getUserLimits", () => {
 
     // Setup mocks
     mockFirebase = vi.mocked(await import("../../Firebase.js"));
-    mockPermissions = vi.mocked(await import("tttc-common/permissions"));
+    _mockPermissions = vi.mocked(await import("tttc-common/permissions"));
 
     // Create mock request with logger
     mockReq = {

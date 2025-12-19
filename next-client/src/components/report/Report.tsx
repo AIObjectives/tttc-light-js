@@ -191,7 +191,7 @@ function Report({
     const matchingNode = nodes.find((node) => node.data.title === hashNav);
     if (!matchingNode) return;
     dispatch({ type: "open", payload: { id: matchingNode.data.id } });
-  }, [hashNav]);
+  }, [hashNav, dispatch, state.children.flatMap, state.children.map]);
 
   const [isMobileOutlineOpen, setIsMobileOutlineOpen] =
     useState<boolean>(false);

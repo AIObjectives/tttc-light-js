@@ -1,6 +1,4 @@
 import type { Preview } from "@storybook/react";
-import React, { useEffect } from "react";
-import { nextTypography } from "../src/lib/font";
 import ThemeProvider from "./ThemeProvider";
 import "../src/app/global.css";
 

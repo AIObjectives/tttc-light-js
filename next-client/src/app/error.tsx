@@ -13,7 +13,7 @@ import {
 } from "@/components/elements/empty";
 import { Center } from "@/components/layout/Center";
 
-export default function Error({
+export default function ErrorPage({
   error,
   reset,
 }: {

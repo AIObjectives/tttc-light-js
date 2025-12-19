@@ -103,7 +103,7 @@ Comments:`,
   console.log("Prompt tokens:", topicTree.usage.input_tokens);
   console.log("Completion tokens:", topicTree.usage.output_tokens);
   console.log("Total tokens:", topicTree.usage.total_tokens);
-  console.log("Estimated cost: $" + topicTree.cost.toFixed(4));
+  console.log(`Estimated cost: $${topicTree.cost.toFixed(4)}`);
 }
 
 main().catch((error) => {

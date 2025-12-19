@@ -25,7 +25,7 @@ export function Sticky({ children, className, stickyClass }: StickyProps) {
   useEffect(() => {
     window.addEventListener("scroll", handleIsSticky);
     return () => window.removeEventListener("scroll", handleIsSticky);
-  }, []);
+  }, [handleIsSticky]);
 
   return (
     // <div >

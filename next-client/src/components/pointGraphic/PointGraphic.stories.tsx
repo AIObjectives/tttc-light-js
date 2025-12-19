@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import React, { useRef, useState } from "react";
+import { useState } from "react";
 import { reportData } from "../../../stories/data/dummyData";
 import { Button } from "../elements";
 import { Col, Row } from "../layout";
@@ -20,7 +20,7 @@ const meta = {
   },
   tags: ["autodocs"],
   decorators: [
-    (Story) => (
+    (_Story) => (
       <div className="flex h-screen border items-center justify-center">
         {/* <Story /> */}
       </div>

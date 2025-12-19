@@ -13,7 +13,7 @@
  */
 
 import "dotenv/config";
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 import type Redis from "ioredis";
 import { logger } from "tttc-common/logger";
 import { getQuotes } from "tttc-common/morphisms";
@@ -133,6 +133,7 @@ function resolveApiConfig(
  */
 function sanitizeText(text: string): string {
   // Remove control characters (except newline and tab)
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional control char removal for API safety
   const cleanedText = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
   if (cleanedText.length > PERSPECTIVE_API_MAX_TEXT_LENGTH) {
@@ -607,7 +608,7 @@ class ScoringProgress {
   }
 
   getErrorRate(): string {
-    return ((this.errors / this.processed) * 100).toFixed(1) + "%";
+    return `${((this.errors / this.processed) * 100).toFixed(1)}%`;
   }
 
   getSummary(totalItems: number): Record<string, number> {

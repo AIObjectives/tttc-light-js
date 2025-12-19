@@ -279,7 +279,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
         // Test if value can be serialized (handles circular references)
         JSON.stringify(value);
         cleaned[key] = value;
-      } catch (error) {
+      } catch (_error) {
         // Convert to string representation
         cleaned[key] = String(value);
       }

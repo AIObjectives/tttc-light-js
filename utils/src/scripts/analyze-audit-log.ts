@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
+import * as path from "node:path";
 import * as fs from "fs-extra";
-import * as path from "path";
 
 interface AuditLogEntry {
   entryId: string;

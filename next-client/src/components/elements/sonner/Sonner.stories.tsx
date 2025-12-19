@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "../button/Button";
 import { Toaster } from "./Sonner";

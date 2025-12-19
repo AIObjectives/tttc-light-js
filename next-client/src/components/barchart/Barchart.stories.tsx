@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import React from "react";
 import { getNClaims } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 import { reportData } from "../../../stories/data/dummyData";

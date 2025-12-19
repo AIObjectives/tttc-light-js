@@ -81,7 +81,7 @@ export class Bucket extends Storage {
         expires: Date.now() + expiresInSeconds * 1000,
       } as GetSignedUrlConfig);
       return { tag: "success", value: url };
-    } catch (e) {
+    } catch (_e) {
       return {
         tag: "failure",
         error: new StorageGetUrlError("Could not generate URL"),

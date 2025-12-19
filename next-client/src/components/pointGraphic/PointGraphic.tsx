@@ -52,7 +52,7 @@ function PointGraphic({ claims }: { claims: schema.Claim[] }) {
 
 export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
   { claims, isHighlighted }: { claims: schema.Claim[]; isHighlighted: boolean },
-  ref: Ref<HTMLDivElement>,
+  _ref: Ref<HTMLDivElement>,
 ) {
   return (
     <PointGraphicWrapper>
@@ -74,7 +74,7 @@ interface ICell
 
 export function Cell(
   { claim, isHighlighted }: ICell,
-  ref: Ref<HTMLDivElement>,
+  _ref: Ref<HTMLDivElement>,
 ) {
   const { dispatch } = useContext(ReportContext);
   const { borderClass, backgroundClass, hoverClass, highlightedClass } =

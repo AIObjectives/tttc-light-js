@@ -2,7 +2,7 @@
  * Tests for claims extraction pipeline step
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock the model
 vi.mock("../model", () => ({
@@ -294,7 +294,7 @@ describe("Claims Extraction Pipeline Step", () => {
 
       let callCount = 0;
       (extractClaimsFromComment as any).mockImplementation(
-        async (input: any) => {
+        async (_input: any) => {
           callCount++;
           // Fail for first 3 calls
           if (callCount <= 3) {

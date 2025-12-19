@@ -20,6 +20,7 @@ const OPENAI_KEY_TOTAL_LENGTH =
 const OPENAI_KEY_PATTERN = new RegExp(
   `^${OPENAI_KEY_PREFIX}[A-Za-z0-9]{${OPENAI_KEY_SUFFIX_LENGTH}}$`,
 );
+// biome-ignore lint/suspicious/noControlCharactersInRegex: intentional pattern for security validation
 const CONTROL_CHARS_PATTERN = /[\x00-\x1F\x7F\r\n]/g;
 
 /**

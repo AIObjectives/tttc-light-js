@@ -110,7 +110,7 @@ describe("End-to-End Report Loading Flow", () => {
     it("should handle processing Firebase ID report correctly", async () => {
       const firebaseId = "ProcessingReport123";
 
-      const mockFetch = vi.fn().mockImplementation((url) => {
+      const mockFetch = vi.fn().mockImplementation((_url) => {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -148,14 +148,14 @@ describe("End-to-End Report Loading Flow", () => {
   describe("Complete Legacy URL Report Flow", () => {
     it("should load a legacy bucket URL report end-to-end", async () => {
       const legacyUrl = "test-bucket/reports/legacy-report.json";
-      const mockReportData = {
+      const _mockReportData = {
         topics: [{ id: "1", title: "Legacy Topic", subtopicIds: [] }],
         subtopics: [],
         claims: [],
         people: [],
       };
 
-      const mockFetch = vi.fn().mockImplementation((url) => {
+      const mockFetch = vi.fn().mockImplementation((_url) => {
         // Unified endpoint handles legacy URL and returns finished with dataUrl
         return Promise.resolve({
           ok: true,
@@ -263,7 +263,7 @@ describe("End-to-End Report Loading Flow", () => {
       const processingId = "PollingTest12345678";
 
       let callCount = 0;
-      const mockFetch = vi.fn().mockImplementation((url) => {
+      const mockFetch = vi.fn().mockImplementation((_url) => {
         callCount++;
         if (callCount === 1) {
           // First call - processing
@@ -342,7 +342,7 @@ describe("End-to-End Report Loading Flow", () => {
     it("should never call deprecated endpoints in the complete flow", async () => {
       const testId = "EndpointValidation123";
 
-      const mockFetch = vi.fn().mockImplementation((url) => {
+      const mockFetch = vi.fn().mockImplementation((_url) => {
         return Promise.resolve({
           ok: true,
           status: 200,

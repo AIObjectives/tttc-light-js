@@ -1,7 +1,7 @@
 "use client";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
-import React, {
+import {
   type ChangeEvent,
   type RefObject,
   useCallback,
@@ -331,7 +331,7 @@ export function FormDataInput({
         </div>
 
         <div>
-          {!(inputRef.current?.files && inputRef.current.files[0]) ? (
+          {!inputRef.current?.files?.[0] ? (
             <Button
               name="csvUpload"
               type="button"

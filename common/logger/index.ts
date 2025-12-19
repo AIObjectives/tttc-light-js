@@ -28,7 +28,7 @@ const isDevelopment = (() => {
       (typeof window !== "undefined" &&
         window.location?.hostname === "localhost")
     );
-  } catch (error) {
+  } catch (_error) {
     // Fallback to safe default in case of environment detection errors
     return false;
   }
@@ -38,7 +38,7 @@ const isDevelopment = (() => {
 const isBrowser = (() => {
   try {
     return typeof window !== "undefined" && typeof document !== "undefined";
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -55,7 +55,7 @@ const isBundled = (() => {
         typeof (window as any).__webpack_require__ === "function");
 
     return hasWebpack;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -64,7 +64,7 @@ const isBundled = (() => {
 const isNextJSServer = (() => {
   try {
     return typeof window === "undefined" && !!process.env.NEXT_RUNTIME;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -78,7 +78,7 @@ const isPureNodeJS = (() => {
       typeof process !== "undefined" &&
       typeof require !== "undefined"
     );
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -217,7 +217,7 @@ const configureNodeDevelopmentTransport = (config: any): void => {
         ignore: "pid,hostname",
       },
     };
-  } catch (prettierError) {
+  } catch (_prettierError) {
     // Silently fallback if pino-pretty is not available
     // This is expected in browser/webpack environments
   }

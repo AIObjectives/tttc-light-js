@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { getNPeople } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";

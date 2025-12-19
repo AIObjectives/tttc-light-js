@@ -1,4 +1,4 @@
-import { performance } from "perf_hooks";
+import { performance } from "node:perf_hooks";
 import type { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import type { z } from "zod";

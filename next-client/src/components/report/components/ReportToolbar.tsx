@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 import Icons from "@/assets/icons";
 import { Button } from "@/components/elements";
 import { Row } from "@/components/layout";

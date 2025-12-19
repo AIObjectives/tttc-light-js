@@ -1,13 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { logger } from "tttc-common/logger/browser";
 import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/elements";
+import { Dialog, DialogContent, DialogTitle } from "@/components/elements";
 import { signInWithGoogle } from "@/lib/firebase/auth";
 
 const signinModalLogger = logger.child({ module: "signin-modal" });

@@ -10,7 +10,7 @@
 
 import { z } from "zod";
 
-const requiredKeys = [
+const _requiredKeys = [
   "apiKey",
   "authDomain",
   "projectId",

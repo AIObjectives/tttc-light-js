@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from "react";
+import { useContext, useMemo } from "react";
 import { getQuotes } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
 import { sortQuotesByBridging } from "@/lib/bridging/utils";

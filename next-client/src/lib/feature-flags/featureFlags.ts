@@ -29,7 +29,7 @@ class PostHogBrowserProvider implements FeatureFlagProvider {
     if (typeof window !== "undefined" && !posthog.__loaded) {
       posthog.init(apiKey, {
         api_host: host || "https://app.posthog.com",
-        loaded: (posthog) => {
+        loaded: (_posthog) => {
           // PostHog is ready
         },
       });
@@ -178,7 +178,7 @@ export async function isFeatureEnabled(
   if (!provider) {
     initializeFeatureFlags();
   }
-  return provider!.isEnabled(flagName, context);
+  return provider?.isEnabled(flagName, context);
 }
 
 /**
@@ -195,7 +195,7 @@ export async function getFeatureFlag(
   if (!provider) {
     initializeFeatureFlags();
   }
-  return provider!.getFeatureFlag(flagName, context);
+  return provider?.getFeatureFlag(flagName, context);
 }
 
 /**

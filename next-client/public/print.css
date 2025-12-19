@@ -59,13 +59,13 @@
 [data-radix-scroll-area-viewport],
 [role="dialog"],
 [data-radix-popper-content-wrapper] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide the outline sidebar column (any sticky sidebar with min-width) */
 aside.sticky[class*="min-w"],
 .sticky[class*="min-w-"] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide toolbar buttons (high z-index interactive overlays) - exact class matching */
@@ -73,7 +73,7 @@ aside.sticky[class*="min-w"],
 .z-30,
 .z-40,
 .z-50 {
-  display: none !important;
+  display: none;
 }
 
 /* Hide copy link buttons and link icons */
@@ -86,26 +86,26 @@ a[aria-label*="link" i],
 .lucide-link-2,
 [data-testid="copybutton"],
 button:has(svg[class*="Copy"]) {
-  display: none !important;
+  display: none;
 }
 
 /* Hide "Show more" buttons (expand claims, expand subtopics) */
 [data-testid="show-more-claims-button"],
 [data-testid="show-more-subtopics-button"] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide quote bubble icons next to claims (interactive quote indicators) */
 svg[class*="QuoteBubble"],
 .lucide-quote,
 [class*="quote-bubble" i] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide the entire quote indicator wrapper (bordered pill with cursor-pointer) */
 [data-testid="claim-item"] .cursor-pointer,
 [data-testid="claim-item"] [class*="border"][class*="rounded"] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide chevron/arrow indicators */
@@ -113,28 +113,28 @@ svg[class*="QuoteBubble"],
 .lucide-chevron-down,
 .lucide-chevron-up,
 svg[class*="chevron" i] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide info and other UI icons */
 .lucide-info,
 .lucide-circle-help,
 svg[class*="info" i] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide checkbox/controversy indicators */
 input[type="checkbox"],
 [role="checkbox"],
 .controversy-indicator {
-  display: none !important;
+  display: none;
 }
 
 /* Hide "Read more" / "Show less" toggle buttons */
 span.underline.cursor-pointer,
 button.underline,
 button.absolute.bottom-0.right-0 {
-  display: none !important;
+  display: none;
 }
 
 /* Hide expand/collapse topic buttons */
@@ -143,25 +143,25 @@ button:has(svg[class*="Expand"]),
 [data-testid="open-topic-button"],
 [data-testid="open-all-button"],
 [data-testid="collapse-all-button"] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide sort/dropdown menus (Radix UI dropdowns) */
 [data-radix-dropdown-menu-trigger],
 button:has(svg[class*="ChevronsUpDown"]),
 button:has(.lucide-chevrons-up-down) {
-  display: none !important;
+  display: none;
 }
 
 /* Hide tabs (Report/Cruxes toggle) - show all content in print */
 [role="tablist"],
 [data-radix-tabs-list] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide video embeds */
 iframe {
-  display: none !important;
+  display: none;
 }
 
 /* Hide the info dismissible box and informational tooltips */
@@ -169,23 +169,23 @@ iframe {
 [role="alert"],
 .info-tooltip,
 .info-banner {
-  display: none !important;
+  display: none;
 }
 
 /* Hide appendix section - target by class pattern */
 .appendix-section {
-  display: none !important;
+  display: none;
 }
 
 /* Hide appendix download link */
 .cursor-pointer.underline {
-  display: none !important;
+  display: none;
 }
 
 /* Hide mobile menu sheet */
 [data-radix-dialog-overlay],
 [data-state="open"][role="dialog"] {
-  display: none !important;
+  display: none;
 }
 
 /* Hide bridging score indicators and badges */
@@ -193,7 +193,7 @@ iframe {
 [data-bridging-indicator],
 .bridging-badge,
 [class*="bridging" i]:not([class*="print"]) {
-  display: none !important;
+  display: none;
 }
 
 /* ========================================
@@ -202,42 +202,42 @@ iframe {
    ======================================== */
 /* Layout adjustments - single column */
 body {
-  background: white !important;
-  color: black !important;
-  overflow-x: hidden !important;
-  word-wrap: break-word !important;
-  overflow-wrap: break-word !important;
+  background: white;
+  color: black;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Ensure all content respects page width */
 * {
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Make the main content column full width (any max-width container) */
 [class*="max-w-"] {
-  max-width: 100% !important;
+  max-width: 100%;
 }
 
 /* Remove right spacer column and flex grow spacers */
 .flex-grow.hidden,
 [class*="flex-grow"][class*="hidden"] {
-  display: none !important;
+  display: none;
 }
 
 /* Remove sticky positioning */
 .sticky {
-  position: static !important;
+  position: static;
 }
 
 /* Expand all line-clamped text */
 .line-clamp-2,
 .line-clamp-3,
 .line-clamp-4 {
-  -webkit-line-clamp: unset !important;
-  display: block !important;
-  overflow: visible !important;
+  -webkit-line-clamp: unset;
+  display: block;
+  overflow: visible;
 }
 
 /* ========================================
@@ -317,16 +317,16 @@ h5::after {
    page breaks would push it to page 2 when expanded. Instead, allow it
    to flow naturally across pages while keeping header on same page. */
 div[data-testid="topic-item"]:nth-child(2) {
-  page-break-before: avoid !important; /* Stay with header */
-  page-break-inside: auto !important; /* Allow internal breaks */
-  break-inside: auto !important;
-  margin-top: var(--print-spacing-xl) !important; /* Space after description */
+  page-break-before: avoid; /* Stay with header */
+  page-break-inside: auto; /* Allow internal breaks */
+  break-inside: auto;
+  margin-top: var(--print-spacing-xl); /* Space after description */
 }
 
 /* Allow first topic's children to break freely */
 div[data-testid="topic-item"]:nth-child(2) * {
-  page-break-inside: auto !important;
-  break-inside: auto !important;
+  page-break-inside: auto;
+  break-inside: auto;
 }
 
 /* ========================================
@@ -335,49 +335,49 @@ div[data-testid="topic-item"]:nth-child(2) * {
    ======================================== */
 /* Typography adjustments for print - compact professional sizing */
 h1 {
-  font-size: var(--print-h1-size) !important;
-  line-height: var(--print-heading-line-height) !important;
-  margin-bottom: var(--print-spacing-xl) !important;
-  margin-top: var(--print-spacing-xl) !important;
+  font-size: var(--print-h1-size);
+  line-height: var(--print-heading-line-height);
+  margin-bottom: var(--print-spacing-xl);
+  margin-top: var(--print-spacing-xl);
 }
 
 /* First page title should be even larger */
 body > * h1:first-of-type,
 [data-testid="report"] h1:first-of-type {
-  font-size: var(--print-h1-first) !important;
+  font-size: var(--print-h1-first);
 }
 
 h2 {
-  font-size: var(--print-h2-size) !important;
-  line-height: var(--print-heading-line-height) !important;
-  margin-bottom: var(--print-spacing-sm) !important;
-  margin-top: var(--print-spacing-sm) !important;
+  font-size: var(--print-h2-size);
+  line-height: var(--print-heading-line-height);
+  margin-bottom: var(--print-spacing-sm);
+  margin-top: var(--print-spacing-sm);
 }
 
 h3 {
-  font-size: var(--print-h3-size) !important;
-  line-height: var(--print-heading-line-height) !important;
-  margin-bottom: var(--print-spacing-xs) !important;
-  margin-top: var(--print-spacing-sm) !important;
+  font-size: var(--print-h3-size);
+  line-height: var(--print-heading-line-height);
+  margin-bottom: var(--print-spacing-xs);
+  margin-top: var(--print-spacing-sm);
 }
 
 h4 {
-  font-size: var(--print-h4-size) !important;
-  line-height: var(--print-body-line-height) !important;
-  margin-bottom: var(--print-spacing-xs) !important;
-  margin-top: var(--print-spacing-sm) !important;
+  font-size: var(--print-h4-size);
+  line-height: var(--print-body-line-height);
+  margin-bottom: var(--print-spacing-xs);
+  margin-top: var(--print-spacing-sm);
 }
 
 h5 {
-  font-size: var(--print-h5-size) !important;
-  line-height: var(--print-body-line-height) !important;
-  margin-bottom: var(--print-spacing-xs) !important;
+  font-size: var(--print-h5-size);
+  line-height: var(--print-body-line-height);
+  margin-bottom: var(--print-spacing-xs);
 }
 
 p {
-  font-size: var(--print-body-size) !important;
-  line-height: var(--print-body-line-height) !important;
-  margin-bottom: var(--print-spacing-xs) !important;
+  font-size: var(--print-body-size);
+  line-height: var(--print-body-line-height);
+  margin-bottom: var(--print-spacing-xs);
 }
 
 h1,
@@ -385,69 +385,69 @@ h2,
 h3,
 h4,
 h5 {
-  color: var(--print-heading-color) !important;
+  color: var(--print-heading-color);
 }
 
 /* Body text should use muted foreground for better hierarchy */
 p {
-  color: var(--print-body-color) !important;
+  color: var(--print-body-color);
 }
 
 /* Section headers using p tags with font-medium should stay dark */
 p.font-medium,
 p[class*="font-medium"] {
-  color: var(--print-heading-color) !important;
+  color: var(--print-heading-color);
 }
 
 /* Compact text sizing for metadata and details */
 details,
 small,
 .text-sm {
-  font-size: var(--print-small-size) !important;
-  line-height: var(--print-body-line-height) !important;
+  font-size: var(--print-small-size);
+  line-height: var(--print-body-line-height);
 }
 
 /* Topic summary - slight indentation and spacing */
 [class*="px-4"][class*="sm:px-8"][class*="pb-6"] {
-  padding-left: 0.5rem !important;
-  padding-bottom: var(--print-spacing-md) !important;
+  padding-left: 0.5rem;
+  padding-bottom: var(--print-spacing-md);
 }
 
 /* Overview print styles - using design tokens for consistency */
 .print-overview-topic {
-  font-size: var(--print-h3-size) !important;
-  line-height: var(--print-heading-line-height) !important;
+  font-size: var(--print-h3-size);
+  line-height: var(--print-heading-line-height);
 }
 
 .print-overview-subtopic {
-  font-size: var(--print-h5-size) !important;
-  line-height: var(--print-body-line-height) !important;
+  font-size: var(--print-h5-size);
+  line-height: var(--print-body-line-height);
 }
 
 /* Main report title on first page */
 .print-report-title {
-  font-size: var(--print-report-title-size) !important;
-  line-height: var(--print-body-line-height) !important;
-  margin-bottom: var(--print-spacing-md) !important;
+  font-size: var(--print-report-title-size);
+  line-height: var(--print-body-line-height);
+  margin-bottom: var(--print-spacing-md);
 }
 
 /* Bold claim text to differentiate from quotes, keep dark */
 [data-testid="claim-item"] p {
-  font-weight: 600 !important;
-  color: var(--print-heading-color) !important;
+  font-weight: 600;
+  color: var(--print-heading-color);
 }
 
 /* Quote author names should match quote text color */
 .quote-row .text-muted-foreground,
 [data-testid="claim-item"] .text-muted-foreground {
-  color: var(--print-body-color) !important;
-  font-weight: 400 !important;
+  color: var(--print-body-color);
+  font-weight: 400;
 }
 
 /* Ensure links are visible but not styled as clickable */
 a {
-  color: black !important;
-  text-decoration: none !important;
+  color: black;
+  text-decoration: none;
 }
 
 /* ========================================
@@ -458,19 +458,19 @@ a {
 /* Target all custom theme color classes (text-theme_*) */
 [class*="text-theme_"],
 [class*="text-theme_"] * {
-  color: var(--print-heading-color) !important;
+  color: var(--print-heading-color);
 }
 
 /* Make point graphic dots monochrome using filter */
 div[data-testid="point-graphic-cell"] {
-  filter: grayscale(100%) !important;
-  opacity: 0.7 !important;
+  filter: grayscale(100%);
+  opacity: 0.7;
 }
 
 /* Make agree/disagree spectrum dots monochrome */
 div[data-testid="spectrum-dot"] {
-  background-color: hsl(215 16% 85%) !important;
-  border-color: hsl(215 16% 60%) !important;
+  background-color: hsl(215 16% 85%);
+  border-color: hsl(215 16% 60%);
 }
 
 /* Hide controversy icons in print (CSS mask doesn't print well) */
@@ -479,45 +479,45 @@ div[data-testid="spectrum-dot"] {
 [style*="-webkit-mask-image"],
 div[style*="mask-image"],
 div[style*="-webkit-mask-image"] {
-  display: none !important;
+  display: none;
 }
 
 /* Remove gap from all flex containers with gap-1 to prevent indentation from hidden icons */
 .flex.gap-1,
 .gap-1,
 [class*="gap-1"] {
-  gap: 0 !important;
+  gap: 0;
 }
 
 /* Target the specific controversy indicator in cruxes tab - remove indentation */
 .hidden.sm\:block.cursor-pointer > div,
 .sm\:block.cursor-pointer > div {
-  gap: 0 !important;
-  padding-left: 0 !important;
+  gap: 0;
+  padding-left: 0;
 }
 
 /* Ensure no margins on controversy label spans */
 span.whitespace-nowrap,
 span.text-sm.whitespace-nowrap {
-  margin: 0 !important;
-  padding-left: 0 !important;
+  margin: 0;
+  padding-left: 0;
 }
 
 /* Ensure controversy badge text is left-aligned */
 .flex.items-center.gap-1.border.border-border.rounded-md,
 .flex.items-center.gap-1.border.rounded-md.px-2 {
-  justify-content: flex-start !important;
-  text-align: left !important;
-  padding-left: var(--print-spacing-md) !important;
-  padding-right: var(--print-spacing-md) !important;
+  justify-content: flex-start;
+  text-align: left;
+  padding-left: var(--print-spacing-md);
+  padding-right: var(--print-spacing-md);
 }
 
 /* Ensure span inside badge is also left-aligned and takes full width */
 .flex.items-center.gap-1.border.rounded-md span.text-xs {
-  display: block !important;
-  width: 100% !important;
-  margin: 0 !important;
-  text-align: left !important;
+  display: block;
+  width: 100%;
+  margin: 0;
+  text-align: left;
 }
 
 /* ========================================
@@ -531,42 +531,42 @@ section,
 article,
 header,
 footer {
-  margin: 0 !important;
-  padding: 0 !important;
+  margin: 0;
+  padding: 0;
 }
 
 /* Reset spacing on topic and subtopic containers */
 [data-testid="topic-item"],
 [data-testid="subtopic-item"] {
-  margin: 0 !important;
-  padding: var(--print-spacing-sm) !important;
+  margin: 0;
+  padding: var(--print-spacing-sm);
 }
 
 /* Apply intentional spacing between major sections */
 [data-testid="topic-item"] {
-  margin-bottom: var(--print-spacing-xl) !important;
-  padding: var(--print-spacing-md) !important;
+  margin-bottom: var(--print-spacing-xl);
+  padding: var(--print-spacing-md);
 }
 
 [data-testid="subtopic-item"] {
-  margin-bottom: var(--print-spacing-md) !important;
+  margin-bottom: var(--print-spacing-md);
 }
 
 /* Compact but readable spacing for content */
 [class*="mb-"] {
-  margin-bottom: var(--print-spacing-xs) !important;
+  margin-bottom: var(--print-spacing-xs);
 }
 
 [class*="mt-"] {
-  margin-top: var(--print-spacing-xs) !important;
+  margin-top: var(--print-spacing-xs);
 }
 
 [class*="ml-"] {
-  margin-left: var(--print-spacing-sm) !important;
+  margin-left: var(--print-spacing-sm);
 }
 
 [class*="mr-"] {
-  margin-right: var(--print-spacing-sm) !important;
+  margin-right: var(--print-spacing-sm);
 }
 
 /* Override very large margins */
@@ -580,73 +580,73 @@ footer {
 .mt-20,
 .mt-16,
 .mt-12 {
-  margin-bottom: var(--print-spacing-md) !important;
-  margin-top: var(--print-spacing-md) !important;
+  margin-bottom: var(--print-spacing-md);
+  margin-top: var(--print-spacing-md);
 }
 
 /* Minimal padding for cards and sections */
 [class*="p-"],
 [class*="px-"],
 [class*="py-"] {
-  padding: var(--print-spacing-sm) !important;
+  padding: var(--print-spacing-sm);
 }
 
 /* Minimal gap spacing */
 [class*="gap-"] {
-  gap: var(--print-spacing-xs) !important;
+  gap: var(--print-spacing-xs);
 }
 
 /* Override: Claim items need zero padding/margin for tight quote spacing */
 [data-testid="claim-item"],
 [data-testid="claim-item"] * {
-  margin: 0 !important;
-  padding: 0 !important;
+  margin: 0;
+  padding: 0;
 }
 
 /* Override: Print-only quotes section - nuclear reset */
 [data-print-quotes] {
-  margin: 0 0 var(--print-spacing-sm) 0 !important;
-  padding: var(--print-spacing-sm) 0 0 0 !important; /* small top padding */
+  margin: 0 0 var(--print-spacing-sm) 0;
+  padding: var(--print-spacing-sm) 0 0 0; /* small top padding */
 }
 
 [data-print-quotes] * {
-  margin: 0 !important;
-  padding: 0 !important;
+  margin: 0;
+  padding: 0;
 }
 
 /* Restore just the gap inside quote-row for icon spacing */
 [data-print-quotes] .quote-row {
-  gap: var(--print-spacing-lg) !important;
+  gap: var(--print-spacing-lg);
 }
 
 /* Exception: Quote rows need more spacing between icon and text */
 .quote-row {
-  gap: var(--print-spacing-lg) !important;
+  gap: var(--print-spacing-lg);
 }
 
 /* Prevent quote icon from being clipped */
 .quote-row > div:first-child {
-  padding: 0 !important;
-  min-width: var(--print-spacing-lg) !important;
-  overflow: visible !important;
+  padding: 0;
+  min-width: var(--print-spacing-lg);
+  overflow: visible;
 }
 
 .quote-row > div:first-child svg {
-  overflow: visible !important;
-  width: 10pt !important;
-  height: 10pt !important;
+  overflow: visible;
+  width: 10pt;
+  height: 10pt;
 }
 
 /* Quote icons should be lighter than muted text */
 .quote-row svg,
 .quote-row svg.fill-black,
 .quote-row > div:first-child svg {
-  fill: var(--print-icon-color) !important;
+  fill: var(--print-icon-color);
 }
 
 /* Override any fill utilities on quote icons */
 .quote-row [class*="fill-"] {
-  fill: var(--print-icon-color) !important;
+  fill: var(--print-icon-color);
 }
 
 /* Remove spacing from containers */
@@ -657,15 +657,15 @@ article,
 div,
 header,
 footer {
-  margin: 0 !important;
+  margin: 0;
 }
 
 [class*="space-y-"] > * + * {
-  margin-top: 1pt !important;
+  margin-top: 1pt;
 }
 
 [class*="space-x-"] > * + * {
-  margin-left: 1pt !important;
+  margin-left: 1pt;
 }
 
 /* ========================================
@@ -674,7 +674,7 @@ footer {
    ======================================== */
 /* Make hover cards content visible inline (quotes) */
 [data-radix-hover-card-content] {
-  display: none !important;
+  display: none;
 }
 
 /* ========================================
@@ -688,28 +688,28 @@ svg,
 .point-graphic,
 [data-testid="point-graphic-cell"],
 [data-testid="spectrum-dot"] {
-  filter: grayscale(100%) !important;
+  filter: grayscale(100%);
 }
 
 /* Ensure WCAG AA contrast ratios for text (4.5:1 for normal text) */
 .text-muted-foreground {
-  color: #4a4a4a !important; /* Medium gray for secondary text */
+  color: #4a4a4a; /* Medium gray for secondary text */
 }
 
 body,
 .text-foreground {
-  color: #1a1a1a !important; /* Near-black for body text */
+  color: #1a1a1a; /* Near-black for body text */
 }
 
 /* Subtle borders for visual hierarchy */
 .border {
-  border-color: #ccc !important;
-  border-width: 1px !important;
+  border-color: #ccc;
+  border-width: 1px;
 }
 
 /* Ensure backgrounds provide contrast */
 .bg-muted {
-  background-color: #f5f5f5 !important;
+  background-color: #f5f5f5;
 }
 
 /* Topic headers and headings need strong contrast */
@@ -718,14 +718,14 @@ h2,
 h3,
 .topic-title,
 [data-testid="topic-title"] {
-  color: #000 !important;
+  color: #000;
 }
 
 /* Force theme colors to grayscale values */
 [class*="text-theme_"] {
-  color: #333 !important;
+  color: #333;
 }
 
 [class*="bg-theme-"] {
-  background-color: #e0e0e0 !important;
+  background-color: #e0e0e0;
 }

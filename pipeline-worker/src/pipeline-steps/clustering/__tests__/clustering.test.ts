@@ -2,7 +2,7 @@
  * Tests for clustering pipeline step
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock the logger before importing modules that use it
 vi.mock("tttc-common/logger", () => ({
@@ -20,12 +20,12 @@ vi.mock("tttc-common/logger", () => ({
 vi.mock("../model", () => ({
   callClusteringModel: vi.fn(
     async (
-      client,
-      modelName,
-      systemPrompt,
-      userPrompt,
-      commentsText,
-      options,
+      _client,
+      _modelName,
+      _systemPrompt,
+      _userPrompt,
+      _commentsText,
+      _options,
     ) => ({
       value: {
         taxonomy: [

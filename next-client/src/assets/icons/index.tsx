@@ -14,7 +14,6 @@ import {
   Minus,
   PlaySquare,
   Plus,
-  X,
 } from "lucide-react";
 import ChevronRight16SVG from "./ChevronRight16Svg";
 // TODO:  Capitalize Chevron and Response SVG

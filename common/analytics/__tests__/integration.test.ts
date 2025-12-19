@@ -2,9 +2,8 @@
  * Integration tests for analytics module
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  Analytics,
   createAnalyticsConfig,
   createEventProperties,
   extractUserProperties,

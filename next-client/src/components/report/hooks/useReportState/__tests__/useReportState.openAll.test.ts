@@ -24,8 +24,8 @@ describe("TopicNode properties", () => {
 describe("SubtopicNode properties", () => {
   test("All subtopics are set to match their number of children", () => {
     const subtopics = openedState.children.flatMap((t) => t.children);
-    subtopics.forEach((node) =>
-      expect(node.pagination).toBe(node.children.length - 1),
-    );
+    subtopics.forEach((node) => {
+      expect(node.pagination).toBe(node.children.length - 1);
+    });
   });
 });

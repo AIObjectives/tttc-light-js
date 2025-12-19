@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { Col } from "@/components/layout";
 import { isValidSpeaker } from "@/lib/crux/utils";
 

@@ -1,4 +1,4 @@
-import { Array } from "effect";
+import { Array as Arr } from "effect";
 import { describe, expect, test } from "vitest";
 import { reportData } from "../../../../../stories/data/dummyData";
 import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
@@ -17,6 +17,6 @@ describe("Open all outline topics", () => {
   test("Opening all sets all topic nodes to open", () => {
     const newState = openAll(outlineState);
     const vals = newState.tree.map((node) => node.isOpen);
-    expect(vals).toEqual(Array.makeBy(vals.length, () => true));
+    expect(vals).toEqual(Arr.makeBy(vals.length, () => true));
   });
 });

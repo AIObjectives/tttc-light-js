@@ -67,7 +67,7 @@ describe("Open", () => {
       expect(
         withSecondOpened
           .map((s) => s.children.filter((t) => t.isOpen).length)
-          .every((n) => n == 2),
+          .every((n) => n === 2),
       ).true;
     });
 
@@ -79,7 +79,7 @@ describe("Open", () => {
       expect(
         [firstAgain, middleAgain, lastAgain]
           .map((s) => s.children.filter((t) => t.isOpen).length)
-          .every((n) => n == 1),
+          .every((n) => n === 1),
       ).true;
     });
   });

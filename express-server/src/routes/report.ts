@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 import type { Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { getAnalytics } from "tttc-common/analytics";
@@ -372,7 +372,7 @@ function getBucketAndFileName(
   let uri: string;
   try {
     uri = decodeURIComponent(api.getReportRequestUri.parse(rawUri));
-  } catch (error) {
+  } catch (_error) {
     return {
       tag: "failure",
       error: new BucketParseError("Failed to decode URI parameter"),

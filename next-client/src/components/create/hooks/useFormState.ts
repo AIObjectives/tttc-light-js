@@ -31,7 +31,7 @@ function useHasChanged<T>(val: T) {
     if (state._tag === "changed") return;
     if (val === initialState.current) return;
     else setState({ _tag: "changed", value: val });
-  }, [val]);
+  }, [val, state._tag]);
 
   return state._tag === "changed";
 }
@@ -58,7 +58,7 @@ function useFormItem<T>({
   useEffect(() => {
     if (!hasChanged) return;
     else setStatus(statusEval(state));
-  }, [state, hasChanged]);
+  }, [state, hasChanged, statusEval]);
 
   /** Returns validation error regardless of hasChanged, for forced validation on submit */
   const getError = (): string | null => {

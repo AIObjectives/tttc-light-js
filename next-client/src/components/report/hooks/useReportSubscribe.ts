@@ -29,7 +29,7 @@ function useReportSubscribe(
     useEffect(() => {
       if (!actionState[0]) return;
       func(actionState[0]);
-    }, [actionState]);
+    }, [func]);
   };
 
   return [newDispatch, useReportEffect];

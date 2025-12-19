@@ -1,5 +1,5 @@
 import { OpenAI } from "openai";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import * as weave from "weave";
 import { defaultClusteringPrompt, defaultSystemPrompt } from "../../../prompts";
 import { createEvaluationModel } from "../..";

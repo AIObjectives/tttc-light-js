@@ -27,7 +27,7 @@ export const extractionJsonStructureScorer = weave.op(
   }: ExtractionScorerInput): ExtractionJsonStructureScorerOutput {
     try {
       const hasValidStructure =
-        modelOutput && modelOutput.claims && Array.isArray(modelOutput.claims);
+        modelOutput?.claims && Array.isArray(modelOutput.claims);
 
       if (!hasValidStructure) {
         return {

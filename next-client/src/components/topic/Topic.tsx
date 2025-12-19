@@ -20,7 +20,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
   Separator,
-  TextIcon,
   WordLimitExpandableText,
 } from "../elements";
 import { Col, Row } from "../layout";
@@ -57,7 +56,7 @@ type TopicCardProps = {};
  * UI for Topic
  */
 const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
-  {}: TopicCardProps,
+  _props: TopicCardProps,
   ref,
 ) {
   const { topicNode } = useContext(TopicContext);
@@ -68,11 +67,9 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
         <Col gap={3}>
           <TopicHeader
             button={
-              <>
-                <div className="self-center">
-                  <CopyLinkButton anchor={title} />
-                </div>
-              </>
+              <div className="self-center">
+                <CopyLinkButton anchor={title} />
+              </div>
             }
           />
           <TopicInteractiveGraphic subtopics={topicNode.children}>

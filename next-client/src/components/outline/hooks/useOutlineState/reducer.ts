@@ -1,4 +1,11 @@
-import { Array, Either, flow, Option, pipe, Record } from "effect";
+import {
+  Array as Arr,
+  Either,
+  flow,
+  Option,
+  pipe,
+  Record as Rec,
+} from "effect";
 import {
   createCloseActionStream,
   createHighlightedActionStream,
@@ -45,14 +52,14 @@ export function createReducer(
         return pipe(
           idMap,
           // get the path to reach this id
-          Record.get(id),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Rec.get(id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               // create the set of actions based on the type of path
               createOpenActionStream,
               // reduce the set of actions over the state
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -71,15 +78,15 @@ export function createReducer(
         const { id } = action.payload;
         return pipe(
           idMap,
-          Record.get(id),
+          Rec.get(id),
           Option.flatMap((val) =>
             val.type === "subtopic" ? Option.none() : Option.some(val),
           ),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               createCloseActionStream,
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -98,15 +105,15 @@ export function createReducer(
         const { id } = action.payload;
         return pipe(
           idMap,
-          Record.get(id),
+          Rec.get(id),
           Option.flatMap((val) =>
             val.type === "subtopic" ? Option.none() : Option.some(val),
           ),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               createToggleActionStream,
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -125,8 +132,8 @@ export function createReducer(
         const { id } = action.payload;
         return pipe(
           idMap,
-          Record.get(id),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Rec.get(id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               /**
@@ -136,12 +143,12 @@ export function createReducer(
                * before turning the next one on.
                */
               (path) =>
-                Array.flatten([
+                Arr.flatten([
                   createUnhighlightedActionStream(state.cache.highlightedPath),
                   createHighlightedActionStream(path),
                 ]),
               (arr) => arr,
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -159,19 +166,19 @@ export function createReducer(
       case "openAll": {
         return pipe(
           state.tree,
-          Array.flatMap((_, i) =>
+          Arr.flatMap((_, i) =>
             createOpenActionStream({ type: "topic", topicIdx: i }),
           ),
-          Array.reduce(state, actionStreamReducer),
+          Arr.reduce(state, actionStreamReducer),
         );
       }
       case "closeAll": {
         return pipe(
           state.tree,
-          Array.flatMap((_, i) =>
+          Arr.flatMap((_, i) =>
             createCloseActionStream({ type: "topic", topicIdx: i }),
           ),
-          Array.reduce(state, actionStreamReducer),
+          Arr.reduce(state, actionStreamReducer),
         );
       }
       case "clearError": {

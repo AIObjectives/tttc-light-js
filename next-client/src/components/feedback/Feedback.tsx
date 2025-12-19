@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useReducer, useState } from "react";
+import { useReducer, useState } from "react";
 import { toast } from "sonner";
 import { logger } from "tttc-common/logger/browser";
 import Icons from "@/assets/icons";
@@ -12,7 +12,6 @@ import {
   Button,
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,

@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(_prevProps: Props, prevState: State) {
     // Reset error count when successfully recovering from error state
     if (
       prevState.hasError &&

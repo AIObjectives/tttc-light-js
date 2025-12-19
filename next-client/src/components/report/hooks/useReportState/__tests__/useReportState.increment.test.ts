@@ -1,4 +1,4 @@
-import { Array, pipe } from "effect";
+import { Array as Arr, pipe } from "effect";
 import { describe, expect, test } from "vitest";
 import {
   defaultAddSubtopicPagination,
@@ -51,8 +51,8 @@ describe("Topic Node", () => {
     // apply increment a bunch of times and make sure it caps off at right point
     const maxLen = getTestTopic(state).children.length - 1;
     const newState = pipe(
-      Array.replicate(incrementTopic, maxLen),
-      Array.reduce(state, (accumState, f) =>
+      Arr.replicate(incrementTopic, maxLen),
+      Arr.reduce(state, (accumState, f) =>
         f(accumState, getTestTopic(state).id),
       ),
     );
@@ -90,8 +90,8 @@ describe("Subtopic Node", () => {
   test("Caps at childrens length", () => {
     // apply increment a ton of times and make sure it caps at right point
     const newState = pipe(
-      Array.replicate(incrementSubtopic, maxLen),
-      Array.reduce(state, (accumState, f) =>
+      Arr.replicate(incrementSubtopic, maxLen),
+      Arr.reduce(state, (accumState, f) =>
         f(accumState, getTestSubtopic(state).id),
       ),
     );

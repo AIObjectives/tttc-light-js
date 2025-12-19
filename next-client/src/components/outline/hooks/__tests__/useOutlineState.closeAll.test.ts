@@ -1,4 +1,4 @@
-import { Array } from "effect";
+import { Array as Arr } from "effect";
 import { describe, expect, test } from "vitest";
 import { reportData } from "../../../../../stories/data/dummyData";
 import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
@@ -20,6 +20,6 @@ describe("Closing all topic nodes", () => {
     const openedState = openAll(outlineState);
     const closedState = closeAll(openedState);
     const vals = closedState.tree.map((node) => node.isOpen);
-    expect(vals).toEqual(Array.makeBy(vals.length, () => false));
+    expect(vals).toEqual(Arr.makeBy(vals.length, () => false));
   });
 });

@@ -8,7 +8,6 @@ import {
   createEventProperties,
   extractUserProperties,
 } from "../index";
-import type { AnalyticsConfig, AnalyticsProperties } from "../types";
 
 describe("Analytics Helper Functions", () => {
   beforeEach(() => {

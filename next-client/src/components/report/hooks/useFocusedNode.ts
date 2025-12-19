@@ -169,7 +169,7 @@ export function useFocusedNode(
       } else {
         removeNodeRef(id);
       }
-    }, [isObserved, ignore]);
+    }, [isObserved, ignore, id, observedRef]);
 
     return observedRef;
   };

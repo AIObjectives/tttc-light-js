@@ -11,7 +11,7 @@ import type { Cache, RedisCacheConfig } from "./types";
 const parseConfig = (env: {
   [key: string]: string | undefined;
 }): RedisCacheConfig => {
-  const redisUrl = env["REDIS_URL"];
+  const redisUrl = env.REDIS_URL;
 
   if (!redisUrl) {
     throw new Error("REDIS_URL environment variable is required");

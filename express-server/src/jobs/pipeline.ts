@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "crypto";
+import { createHash, randomUUID } from "node:crypto";
 import Redis from "ioredis";
 import { getAnalytics } from "tttc-common/analytics";
 import type * as apiPyserver from "tttc-common/apiPyserver";
@@ -16,7 +16,6 @@ import type * as schema from "tttc-common/schema";
 import { CustomError } from "../error";
 import * as Firebase from "../Firebase";
 import {
-  scoreClaims,
   scoreClaimsFromHydratedTree,
   scoreQuotes,
 } from "../lib/perspective-api";

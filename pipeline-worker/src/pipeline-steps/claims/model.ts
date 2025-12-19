@@ -12,7 +12,6 @@ import {
 } from "tttc-common/evaluations/extraction/scorers";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import * as weave from "weave";
 import { escapeQuotes } from "../sanitizer";
 import {
   ApiCallFailedError,
@@ -23,7 +22,7 @@ import {
   ParseFailedError,
 } from "../types";
 import { initializeWeaveIfEnabled, tokenCost } from "../utils";
-import type { Claim, ClaimsOutput, TokenUsage, Topic } from "./types";
+import type { Claim, TokenUsage, Topic } from "./types";
 import { extractSubtopicNames, extractTopicNames } from "./utils";
 
 const claimsLogger = logger.child({ module: "claims-model" });
@@ -71,7 +70,7 @@ async function callOpenAIForClaims(
   const fullUserPrompt = `${userPrompt}\n\nComment:\n${commentText}`;
 
   // Call OpenAI Responses API with JSON output
-  let response;
+  let response: Awaited<ReturnType<typeof responsesCreate>> | undefined;
   try {
     response = await responsesCreate({
       model: modelName,

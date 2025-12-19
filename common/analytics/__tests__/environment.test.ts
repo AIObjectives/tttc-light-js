@@ -2,7 +2,7 @@
  * Tests for environment detection utilities
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   generateRequestId,
   generateSessionId,

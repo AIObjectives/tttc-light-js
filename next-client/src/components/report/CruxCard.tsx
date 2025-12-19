@@ -117,7 +117,7 @@ export function CruxCard({
     scrollToAfterRender(subtopicId);
   };
 
-  const category = getControversyCategory(crux.controversyScore);
+  const _category = getControversyCategory(crux.controversyScore);
 
   // Explanation expansion state
   const [isExplanationExpanded, setIsExplanationExpanded] = useState(false);

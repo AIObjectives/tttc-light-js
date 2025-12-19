@@ -3,7 +3,6 @@ import type { ReportRef } from "tttc-common/firebase";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMinimalTestEnv } from "../../__tests__/helpers";
 import * as Firebase from "../../Firebase";
-import { pipelineQueue } from "../../server";
 import { Bucket } from "../../storage";
 import type { RequestWithLogger } from "../../types/request";
 import { getUnifiedReportHandler, migrateReportUrlHandler } from "../report";

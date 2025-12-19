@@ -1,10 +1,6 @@
-import { Array, pipe, type Record } from "effect";
+import type { Record } from "effect";
 import type { ReportState } from "@/components/report/hooks/useReportState";
-import {
-  OutlineState,
-  type TaggedSubtopicPath,
-  type TaggedTopicPath,
-} from "./types";
+import type { TaggedSubtopicPath, TaggedTopicPath } from "./types";
 
 /**
  * Maps outline ids to their location in the outline state

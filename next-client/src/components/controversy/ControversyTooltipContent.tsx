@@ -1,4 +1,3 @@
-import React from "react";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 import { Col, Row } from "@/components/layout";
 import type { getControversyCategory } from "@/lib/crux/utils";

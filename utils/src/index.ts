@@ -22,6 +22,7 @@ import { select } from "./tools/terminal";
     case "Exit": {
       console.log("Exiting...");
       process.exit(0);
+      break;
     }
     default: {
       console.error(

@@ -3,7 +3,6 @@ import type React from "react";
 import { reportData } from "../../../stories/data/dummyData";
 import { stateBuilder } from "../report/hooks/useReportState/utils";
 import { ReportContext } from "../report/Report";
-import { __internals } from "./hooks/useOutlineState";
 import { createInitialState } from "./hooks/useOutlineState/utils";
 import Outline from "./Outline";
 

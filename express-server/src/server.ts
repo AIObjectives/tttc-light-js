@@ -1,6 +1,6 @@
 import "dotenv/config";
 import cors from "cors";
-import express, { type NextFunction, Request, type Response } from "express";
+import express, { type NextFunction, type Response } from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import Redis from "ioredis";
@@ -18,7 +18,7 @@ import {
 } from "./analytics";
 import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
 import { contextMiddleware } from "./middleware";
-import { createQueue, Queue } from "./queue";
+import { createQueue } from "./queue";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
 import ensureUser from "./routes/ensureUser";
@@ -232,7 +232,7 @@ const authRateLimiter = rateLimit({
 });
 
 // Skip rate limiting in development
-const rateLimiter =
+const _rateLimiter =
   process.env.NODE_ENV === "production"
     ? defaultRateLimiter
     : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();

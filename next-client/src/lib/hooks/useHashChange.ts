@@ -10,8 +10,8 @@ import { useEffect, useState } from "react";
  */
 export function useHashChange(format: "raw" | "decoded" = "decoded") {
   const [hash, setHash] = useState("");
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const _pathname = usePathname();
+  const _searchParams = useSearchParams();
 
   const decode = (hash: string) => decodeURIComponent(hash.slice(1));
 
@@ -32,7 +32,7 @@ export function useHashChange(format: "raw" | "decoded" = "decoded") {
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
     };
-  }, [pathname, searchParams]);
+  }, [handleHashChange]);
 
   return hash;
 }
