@@ -13,7 +13,6 @@ import { logger } from "tttc-common/logger";
 import { DEFAULT_LIMITS, getUserCapabilities } from "tttc-common/permissions";
 import type * as schema from "tttc-common/schema";
 import * as firebase from "../Firebase";
-import { fetchSpreadsheetData } from "../googlesheet";
 import { pipelineQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";

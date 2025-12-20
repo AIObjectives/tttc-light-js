@@ -2,23 +2,24 @@
  * Deduplication model using OpenAI API
  */
 
-import OpenAI, { APIError, RateLimitError, BadRequestError } from "openai";
-import { Result, success, failure } from "tttc-common/functional-utils";
+import type OpenAI from "openai";
+import { APIError, BadRequestError, RateLimitError } from "openai";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import { initializeWeaveIfEnabled } from "../utils";
-import type {
-  Claim,
-  DeduplicationResponse,
-  LLMConfig,
-  TokenUsage,
-  ClusteringError,
-  DeduplicationOutput,
-} from "./types";
 import {
   ApiCallFailedError,
   EmptyResponseError,
   ParseFailedError,
 } from "../types";
+import { initializeWeaveIfEnabled } from "../utils";
+import type {
+  Claim,
+  ClusteringError,
+  DeduplicationOutput,
+  DeduplicationResponse,
+  LLMConfig,
+  TokenUsage,
+} from "./types";
 
 const dedupLogger = logger.child({ module: "deduplication-model" });
 
@@ -105,6 +106,7 @@ export async function callDeduplicationModel(
   );
 
   // Call OpenAI Responses API
+  // biome-ignore lint/suspicious/noImplicitAnyLet: responsesCreate return type is complex and inferred from Weave wrapper
   let response;
   try {
     response = await responsesCreate({
