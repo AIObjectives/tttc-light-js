@@ -1,43 +1,29 @@
-import React, {
-  forwardRef,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { forwardRef, useContext, useMemo } from "react";
 import { mergeRefs } from "react-merge-refs";
 import { getNPeople } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
-import {
-  AgreeDisagreeSpectrum,
-  ControversyIndicator,
-} from "@/components/controversy";
 import { getThemeColor } from "@/lib/color";
 import {
+  createExplanationCleaner,
   getControversyCategory,
   getSubtopicCrux,
-  parseSpeaker,
 } from "@/lib/crux/utils";
 import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
 import { Claim } from "../claim";
 import { ClaimItem } from "../claim/ClaimItem";
 import { CopyLinkButton } from "../copyButton/CopyButton";
-import {
-  ExpandableText,
-  HoverCard,
-  HoverCardContent,
-  HoverCardOverlay,
-  HoverCardPortal,
-  HoverCardTrigger,
-} from "../elements";
+import { ExpandableText, HoverCard, HoverCardTrigger } from "../elements";
 import { Col, Row } from "../layout";
 import PointGraphic from "../pointGraphic/PointGraphic";
 import type { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
+import { CruxHoverContent } from "./CruxHoverContent";
 import ClaimLoader from "./components/ClaimLoader";
+import { useCruxNavigation } from "./hooks/useCruxNavigation";
+import { useParsedSpeakers } from "./hooks/useParsedSpeakers";
+import { useTextTruncation } from "./hooks/useTextTruncation";
 import { VirtualizedClaimsList } from "./VirtualizedClaimsList";
 
 // Threshold for enabling virtualization. Below this count, the DOM overhead of
@@ -45,13 +31,6 @@ import { VirtualizedClaimsList } from "./VirtualizedClaimsList";
 // At 20+ claims, virtualization significantly reduces DOM nodes and improves
 // scroll performance on large reports.
 const VIRTUALIZATION_THRESHOLD = 20;
-
-// Suppress useLayoutEffect warning in SSR
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
-// Scroll offset to account for fixed navbar height
-const NAVBAR_SCROLL_OFFSET = -80;
 
 /**
  * Second highest level node in a Report. Expands to show claims.
@@ -201,87 +180,46 @@ function CruxDisplay({
   const { addOns, activeContentTab, setActiveContentTab, setScrollTo } =
     useContext(ReportContext);
   const crux = getSubtopicCrux(addOns, topicTitle, subtopicTitle);
-  const [isExplanationExpanded, setIsExplanationExpanded] = useState(false);
-  const [showReadMore, setShowReadMore] = useState(false);
-  const explanationRef = useRef<HTMLParagraphElement>(null);
-
-  // Use shared hook for delayed scroll with cleanup
   const scrollToAfterRender = useDelayedScroll(setScrollTo);
-
-  // Create unique ID for this crux
   const cruxId = `${topicTitle}:${subtopicTitle}`;
 
-  // Check if explanation text is truncated
-  useIsomorphicLayoutEffect(() => {
-    if (!explanationRef.current || !crux) return;
+  // Extract text truncation logic to hook
+  const {
+    ref: explanationRef,
+    isExpanded,
+    setIsExpanded,
+    showReadMore,
+  } = useTextTruncation(crux?.explanation);
 
-    // Temporarily remove line-clamp to measure full height
-    const element = explanationRef.current;
-    const originalClass = element.className;
-    element.className = element.className.replace(/line-clamp-\d+/g, "");
+  // Extract speaker parsing to hook
+  const {
+    speakerIdToName,
+    parsedAgree,
+    parsedDisagree,
+    parsedNoClear,
+    totalPeople,
+  } = useParsedSpeakers(crux);
 
-    const fullHeight = element.scrollHeight;
-
-    // Restore line-clamp
-    element.className = originalClass;
-
-    const clampedHeight = element.clientHeight;
-
-    // Show button if content would be taller than clamped height
-    setShowReadMore(fullHeight > clampedHeight);
-  }, [crux?.explanation]);
-
-  // Don't show if no crux data
-  if (!crux) return null;
-
-  // Build speaker ID -> name map with useMemo to avoid re-creating on every render
-  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
-  const speakerIdToName = React.useMemo(() => {
-    const map = new Map<string, string>();
-    const allSpeakers = [
-      ...crux.agree,
-      ...crux.disagree,
-      ...crux.no_clear_position,
-    ];
-    allSpeakers.forEach((speakerStr) => {
-      const { id, name } = parseSpeaker(speakerStr);
-      map.set(id, name);
+  // Extract navigation handlers to hook
+  const { handleCruxClick, handleSubtopicClick, handleKeyDown } =
+    useCruxNavigation({
+      cruxId,
+      subtopicTitle,
+      activeContentTab,
+      setActiveContentTab,
+      scrollToAfterRender,
     });
-    return map;
-  }, [crux.agree, crux.disagree, crux.no_clear_position]);
 
-  // Clean up the explanation text
-  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
-  const cleanExplanation = React.useCallback(
-    (text: string): string => {
-      let cleaned = text;
-
-      // Replace "Participant X" or "Participants X, Y, Z" with actual names
-      cleaned = cleaned.replace(
-        /Participants?\s+([\d,\s]+)/g,
-        (_match, idList) => {
-          const ids = idList.split(/,\s*/).map((id: string) => id.trim());
-          const names = ids
-            .map((id: string) => speakerIdToName.get(id) || `Participant ${id}`)
-            .join(", ");
-          return names;
-        },
-      );
-
-      // Replace technical terms with natural language
-      cleaned = cleaned.replace(/cruxClaim/g, "key point of disagreement");
-      cleaned = cleaned.replace(/the cruxClaim/gi, "this claim");
-      cleaned = cleaned.replace(
-        /'no_clear_position'/g,
-        "those without a clear stance",
-      );
-      cleaned = cleaned.replace(/no_clear_position/g, "unclear position");
-
-      return cleaned;
-    },
+  // Memoize explanation cleaner
+  const cleanExplanation = useMemo(
+    () => createExplanationCleaner(speakerIdToName),
     [speakerIdToName],
   );
 
+  // Early return after all hooks
+  if (!crux) return null;
+
+  // Compute theme colors
   const category = getControversyCategory(crux.controversyScore);
   const textColorClass = topicColor
     ? getThemeColor(topicColor, "text")
@@ -290,89 +228,14 @@ function CruxDisplay({
     ? getThemeColor(topicColor, "bgAccentHover")
     : "hover:bg-accent";
 
-  // Handle click: Navigate to Cruxes tab and scroll to this crux
-  const handleClick = () => {
-    setActiveContentTab("cruxes");
-
-    // Scroll after state updates complete
-    scrollToAfterRender(cruxId);
-  };
-
-  // Handle subtopic click: Navigate to Report tab and scroll to subtopic
-  const handleSubtopicClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    const needsTabSwitch = activeContentTab !== "report";
-
-    if (needsTabSwitch) {
-      // Switch to report tab first, then scroll after render completes
-      setActiveContentTab("report");
-      scrollToAfterRender(subtopicTitle);
-    } else {
-      // Already on report tab, scroll immediately
-      const element = document.getElementById(subtopicTitle);
-
-      // Scroll to the subtopic
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
-        // Use requestAnimationFrame for scroll offset to ensure smooth scroll completes
-        requestAnimationFrame(() => {
-          window.scrollBy({ top: NAVBAR_SCROLL_OFFSET, behavior: "auto" });
-        });
-      }
-    }
-  };
-
-  // Calculate total people count
-  const totalPeople =
-    crux.agree.length +
-    crux.disagree.length +
-    (crux.no_clear_position?.length || 0);
-
-  // Memoize parsed speakers to avoid re-parsing on every render
-  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
-  const parsedAgree = React.useMemo(
-    () =>
-      crux.agree.map((s) => {
-        const parsed = parseSpeaker(s);
-        return { id: parsed.id, name: parsed.name };
-      }),
-    [crux.agree],
-  );
-
-  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
-  const parsedDisagree = React.useMemo(
-    () =>
-      crux.disagree.map((s) => {
-        const parsed = parseSpeaker(s);
-        return { id: parsed.id, name: parsed.name };
-      }),
-    [crux.disagree],
-  );
-
-  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
-  const parsedNoClear = React.useMemo(
-    () =>
-      crux.no_clear_position?.map((s) => {
-        const parsed = parseSpeaker(s);
-        return { id: parsed.id, name: parsed.name };
-      }),
-    [crux.no_clear_position],
-  );
-
   return (
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger asChild>
         <div
           role="button"
           tabIndex={0}
-          onClick={handleClick}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleClick();
-            }
-          }}
+          onClick={handleCruxClick}
+          onKeyDown={handleKeyDown}
           className="py-3 cursor-pointer"
         >
           <p className="leading-6 pl-0 text-base font-medium">Crux</p>
@@ -395,78 +258,23 @@ function CruxDisplay({
           </Row>
         </div>
       </HoverCardTrigger>
-      <HoverCardPortal>
-        {/* biome-ignore lint/complexity/noUselessFragments: Fragment needed for HoverCardPortal to accept multiple children */}
-        <>
-          <HoverCardOverlay className="bg-black/[0.03]" />
-          <HoverCardContent side="top" className="w-[40rem]">
-            <Col gap={3} className="text-sm">
-              {/* Header row - matches CruxCard format */}
-              <Row
-                gap={4}
-                className="justify-between items-center flex-wrap pb-2"
-              >
-                <Row gap={3} className="items-center">
-                  <ControversyIndicator
-                    score={crux.controversyScore}
-                    showLabel={true}
-                  />
-                  <Row
-                    gap={1}
-                    className="items-center text-sm text-muted-foreground"
-                  >
-                    <Icons.People className="w-4 h-4" />
-                    <span>{totalPeople} people</span>
-                  </Row>
-                </Row>
-                <button
-                  type="button"
-                  onClick={handleSubtopicClick}
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:underline"
-                >
-                  <Icons.Theme className="w-4 h-4" />
-                  <span>{subtopicTitle}</span>
-                  <Icons.ChevronRight className="w-4 h-4" />
-                </button>
-              </Row>
-
-              <Col gap={2}>
-                <p className="font-medium">{crux.cruxClaim}</p>
-                <div>
-                  <p
-                    ref={explanationRef}
-                    className={`text-sm text-muted-foreground ${
-                      isExplanationExpanded ? "" : "line-clamp-3"
-                    }`}
-                  >
-                    {cleanExplanation(crux.explanation)}
-                  </p>
-                  {showReadMore && !isExplanationExpanded && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsExplanationExpanded(true);
-                      }}
-                      className="text-xs underline mt-1"
-                      aria-expanded={false}
-                    >
-                      Read more
-                    </button>
-                  )}
-                </div>
-              </Col>
-
-              <AgreeDisagreeSpectrum
-                agree={parsedAgree}
-                disagree={parsedDisagree}
-                noClearPosition={parsedNoClear}
-                topicColor={topicColor}
-              />
-            </Col>
-          </HoverCardContent>
-        </>
-      </HoverCardPortal>
+      <CruxHoverContent
+        cruxClaim={crux.cruxClaim}
+        explanation={crux.explanation}
+        controversyScore={crux.controversyScore}
+        totalPeople={totalPeople}
+        subtopicTitle={subtopicTitle}
+        topicColor={topicColor}
+        parsedAgree={parsedAgree}
+        parsedDisagree={parsedDisagree}
+        parsedNoClear={parsedNoClear}
+        cleanExplanation={cleanExplanation}
+        explanationRef={explanationRef}
+        isExplanationExpanded={isExpanded}
+        setIsExplanationExpanded={setIsExpanded}
+        showReadMore={showReadMore}
+        handleSubtopicClick={handleSubtopicClick}
+      />
     </HoverCard>
   );
 }

@@ -312,3 +312,46 @@ export function findSubtopicId(
   }
   return null;
 }
+
+/**
+ * Create a function to clean crux explanation text for display.
+ * Replaces participant IDs with names and converts technical terms to natural language.
+ *
+ * @param speakerIdToName - Map of speaker IDs to display names
+ * @returns Function that cleans explanation text
+ *
+ * @example
+ * const cleaner = createExplanationCleaner(speakerMap);
+ * cleaner("Participant 42 agrees with the cruxClaim")
+ * // => "John Doe agrees with the key point of disagreement"
+ */
+export function createExplanationCleaner(
+  speakerIdToName: Map<string, string>,
+): (text: string) => string {
+  return (text: string): string => {
+    let cleaned = text;
+
+    // Replace "Participant X" or "Participants X, Y, Z" with actual names
+    cleaned = cleaned.replace(
+      /Participants?\s+([\d,\s]+)/g,
+      (_match, idList) => {
+        const ids = idList.split(/,\s*/).map((id: string) => id.trim());
+        const names = ids
+          .map((id: string) => speakerIdToName.get(id) || `Participant ${id}`)
+          .join(", ");
+        return names;
+      },
+    );
+
+    // Replace technical terms with natural language
+    cleaned = cleaned.replace(/cruxClaim/g, "key point of disagreement");
+    cleaned = cleaned.replace(/the cruxClaim/gi, "this claim");
+    cleaned = cleaned.replace(
+      /'no_clear_position'/g,
+      "those without a clear stance",
+    );
+    cleaned = cleaned.replace(/no_clear_position/g, "unclear position");
+
+    return cleaned;
+  };
+}
