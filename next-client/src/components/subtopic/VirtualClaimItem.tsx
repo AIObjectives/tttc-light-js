@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useContext, useCallback } from "react";
+import type React from "react";
+import { useCallback, useContext } from "react";
 import { mergeRefs } from "react-merge-refs";
-import { ReportContext } from "../report/Report";
 import { Claim } from "../claim";
-import { ClaimNode } from "../report/hooks/useReportState";
+import type { ClaimNode } from "../report/hooks/useReportState";
+import { ReportContext } from "../report/Report";
 
 export function VirtualClaimItem({
   claim,

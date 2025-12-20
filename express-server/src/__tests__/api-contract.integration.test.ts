@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import type express from "express";
 import request from "supertest";
-import express from "express";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { setupTestApp } from "./helpers/testApp";
 
 /**

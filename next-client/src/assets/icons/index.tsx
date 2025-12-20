@@ -1,45 +1,43 @@
 import {
-  Link,
-  Plus,
-  Minus,
-  BookText,
-  CircleUserRound,
-  Calendar,
-  ArrowUpDown,
-  Github,
-  Menu,
-  CheckCircle,
   AlignLeft,
+  ArrowUpDown,
+  BookText,
+  Calendar,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
+  CircleUserRound,
+  Github,
+  Link,
+  Menu,
   MessageCircle,
-  X,
+  Minus,
   PlaySquare,
+  Plus,
 } from "lucide-react";
-
-import TopicSVG from "./TopicSvg";
-import QuoteSVG from "./QuoteSvg";
-import ClaimSVG from "./ClaimSvg";
+import ChevronRight16SVG from "./ChevronRight16Svg";
 // TODO:  Capitalize Chevron and Response SVG
 import ChevronRightSvg from "./ChevronRightSvg";
-import ChevronRight16SVG from "./ChevronRight16Svg";
-import ResponseSvg from "./ResponseSvg";
-import LightbulbSvg from "./LightbulbSvg";
-import XSVG from "./XSvg";
-import X2SVG from "./X2Svg";
-import QuoteBubbleSVG from "./QuoteBubbleSvg";
-import ResetSVG from "./Reset";
-import InfoSvg from "./InfoSvg";
-import LogoSvg from "./LogoSvg";
-import TTTC_SVG from "./TTTC";
-import MobileOutlineSvg from "./MobileOutlineSvg";
-import WhatsAppSvg from "./WhatsappSvg";
+import ClaimSVG from "./ClaimSvg";
 import {
+  ControversyHighIcon,
   ControversyIcon,
   ControversyLowIcon,
   ControversyModerateIcon,
-  ControversyHighIcon,
 } from "./ControversyIcons";
+import InfoSvg from "./InfoSvg";
+import LightbulbSvg from "./LightbulbSvg";
+import LogoSvg from "./LogoSvg";
+import MobileOutlineSvg from "./MobileOutlineSvg";
+import QuoteBubbleSVG from "./QuoteBubbleSvg";
+import QuoteSVG from "./QuoteSvg";
+import ResetSVG from "./Reset";
+import ResponseSvg from "./ResponseSvg";
+import TopicSVG from "./TopicSvg";
+import TTTC_SVG from "./TTTC";
+import WhatsAppSvg from "./WhatsappSvg";
+import X2SVG from "./X2Svg";
+import XSVG from "./XSvg";
 
 const Icons = () => <></>;
 

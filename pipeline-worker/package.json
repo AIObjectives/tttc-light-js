@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc && prettier ./dist --write",
+    "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts",
     "test": "vitest",
@@ -31,7 +31,6 @@
     "ioredis": "^5.4.1",
     "openai": "^6.10.0",
     "pino": "^10.1.0",
-    "prettier": "^3.2.5",
     "tttc-common": "workspace:*",
     "weave": "^0.11.0",
     "zod": "^3.23.8"

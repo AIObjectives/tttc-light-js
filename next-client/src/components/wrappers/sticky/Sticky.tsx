@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type StickyProps = React.PropsWithChildren<{
   stickyClass?: React.DetailedHTMLProps<
@@ -15,16 +16,16 @@ export function Sticky({ children, className, stickyClass }: StickyProps) {
   const stickyRef = useRef<HTMLDivElement>(null);
   const [isSticky, setIsSticky] = useState<boolean>(false);
 
-  const handleIsSticky = () => {
+  const handleIsSticky = useCallback(() => {
     const top = stickyRef.current?.getBoundingClientRect().top;
     const val = top !== undefined && top <= 0;
     setIsSticky(val);
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener("scroll", handleIsSticky);
     return () => window.removeEventListener("scroll", handleIsSticky);
-  }, []);
+  }, [handleIsSticky]);
 
   return (
     // <div >

@@ -1,6 +1,15 @@
 "use client";
 
-import React, { createContext, forwardRef, useContext } from "react";
+import type React from "react";
+import { createContext, forwardRef, useContext } from "react";
+import { mergeRefs } from "react-merge-refs";
+import { getNClaims, getNPeople } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import { ControversyIndicator } from "@/components/controversy";
+import { getThemeColor } from "@/lib/color";
+import { getTopicControversy } from "@/lib/crux/utils";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import {
   Button,
   Card,
@@ -11,23 +20,14 @@ import {
   HoverCardContent,
   HoverCardTrigger,
   Separator,
-  TextIcon,
   WordLimitExpandableText,
 } from "../elements";
-import * as schema from "tttc-common/schema";
-import { CopyLinkButton } from "../copyButton/CopyButton";
-import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
-import Icons from "@/assets/icons";
 import { Col, Row } from "../layout";
-import { Subtopic, SubtopicHeader } from "../subtopic/Subtopic";
-import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
+import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
+import type { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
-import { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
-import { mergeRefs } from "react-merge-refs";
-import { getThemeColor } from "@/lib/color";
-import { getTopicControversy } from "@/lib/crux/utils";
-import { ControversyIndicator } from "@/components/controversy";
+import { Subtopic, SubtopicHeader } from "../subtopic/Subtopic";
 
 type TopicContextType = {
   topicNode: TopicNode;
@@ -51,12 +51,13 @@ function Topic({ node }: { node: TopicNode }) {
     </TopicContext.Provider>
   );
 }
-interface TopicCardProps {}
+// Empty props type - component only receives ref via forwardRef
+type TopicCardProps = object;
 /**
  * UI for Topic
  */
 const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
-  {}: TopicCardProps,
+  _props: TopicCardProps,
   ref,
 ) {
   const { topicNode } = useContext(TopicContext);
@@ -67,11 +68,9 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
         <Col gap={3}>
           <TopicHeader
             button={
-              <>
-                <div className="self-center">
-                  <CopyLinkButton anchor={title} />
-                </div>
-              </>
+              <div className="self-center">
+                <CopyLinkButton anchor={title} />
+              </div>
             }
           />
           <TopicInteractiveGraphic subtopics={topicNode.children}>
@@ -96,8 +95,12 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
 
   return (
     <Row gap={2}>
-      <CardTitle className="self-center flex-grow" data-testid="topic-title">
-        <a id={`${title}`}>{title}</a>
+      <CardTitle
+        id={`${title}`}
+        className="self-center flex-grow"
+        data-testid="topic-title"
+      >
+        {title}
       </CardTitle>
       <div className="flex flex-row items-center text-muted-foreground fill-muted-foreground gap-[6px]">
         <div className="print:hidden">
@@ -256,9 +259,13 @@ export function SubtopicListItem({
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
         <span
+          role="button"
+          tabIndex={0}
           className="cursor-pointer text-muted-foreground text-sm  inline"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
+          onFocus={onMouseOver}
+          onBlur={onMouseOut}
         >
           <span className="link" data-testid={"subtopic-list-item"}>
             {subtopic.title}

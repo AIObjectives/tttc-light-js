@@ -1,8 +1,13 @@
-import { PubSub, Topic, Subscription, Message } from "@google-cloud/pubsub";
-import { Queue } from "../types";
-import { PipelineJob } from "../../jobs/pipeline";
-import { processJob, processJobFailure } from "../../workers";
+import {
+  type Message,
+  PubSub,
+  type Subscription,
+  type Topic,
+} from "@google-cloud/pubsub";
 import { logger } from "tttc-common/logger";
+import type { PipelineJob } from "../../jobs/pipeline";
+import { processJob, processJobFailure } from "../../workers";
+import type { Queue } from "../types";
 
 const pubsubLogger = logger.child({ module: "pubsub" });
 

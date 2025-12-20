@@ -9,18 +9,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Button } from "@/components/elements/button/Button";
-import { Col } from "@/components/layout/Directions";
+import { ERROR_CODES, ERROR_MESSAGES } from "tttc-common/errors";
 import { SubmissionErrorBanner } from "@/components/create/components/SubmissionErrorBanner";
+import { Button } from "@/components/elements/button/Button";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/elements/empty";
+import { Col } from "@/components/layout/Directions";
 import { ReportErrorState } from "@/components/report/ReportErrorState";
-import { ERROR_CODES, ERROR_MESSAGES } from "tttc-common/errors";
 
 export default function ErrorTestPage() {
   const [triggerError, setTriggerError] = useState(false);
@@ -391,6 +391,7 @@ function AppErrorPreview() {
                 Error reference
               </span>
               <button
+                type="button"
                 onClick={copyToClipboard}
                 aria-label="Copy error reference"
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -532,6 +533,7 @@ function GlobalErrorPreview() {
             }}
           >
             <button
+              type="button"
               style={{
                 backgroundColor: "hsl(243, 75%, 59%)",
                 color: "#ffffff",
@@ -632,6 +634,7 @@ function GlobalErrorPreview() {
                 Error reference
               </span>
               <button
+                type="button"
                 onClick={copyToClipboard}
                 style={{
                   background: "none",
@@ -653,6 +656,7 @@ function GlobalErrorPreview() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
+                      aria-hidden="true"
                     >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
@@ -667,6 +671,7 @@ function GlobalErrorPreview() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
+                      aria-hidden="true"
                     >
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />

@@ -7,56 +7,50 @@
  *
  */
 
-import { AnalyticsConfig, AnalyticsProperties } from "./types";
+import type { AnalyticsConfig, AnalyticsProperties } from "./types";
 
 // Core classes and utilities
-export { Analytics } from "./client";
-
 // Convenience functions
 export {
+  Analytics,
   getAnalytics,
-  initializeAnalytics,
-  trackEvent,
   identifyUser,
-  trackPage,
+  initializeAnalytics,
   resetGlobalAnalytics,
+  trackEvent,
+  trackPage,
 } from "./client";
-
+// Environment utilities
+export {
+  generateRequestId,
+  generateSessionId,
+  getAppVersion,
+  getCurrentUrl,
+  getEnvironmentInfo,
+  getEnvironmentName,
+  getUserAgent,
+  isBrowser,
+  isDevelopment,
+  isServer,
+} from "./environment";
+// Provider implementations
+export { LocalAnalyticsProvider } from "./providers/localProvider";
+// Server-only providers (conditionally exported to avoid browser bundle issues)
+export type { PostHogAnalyticsProvider } from "./providers/posthogProvider";
 // Types and interfaces
 export type {
   AnalyticsClient,
   AnalyticsConfig,
+  AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsContext,
   AnalyticsProperties,
   AnalyticsProvider,
   AnalyticsUser,
   EnvironmentInfo,
 } from "./types";
-
 // Common events enum
-export { CommonEvents, AnalyticsError } from "./types";
-
-// Environment utilities
-export {
-  isBrowser,
-  isServer,
-  isDevelopment,
-  getCurrentUrl,
-  getUserAgent,
-  getEnvironmentInfo,
-  generateSessionId,
-  generateRequestId,
-  getAppVersion,
-  getEnvironmentName,
-} from "./environment";
-
-// Provider implementations
-export { LocalAnalyticsProvider } from "./providers/localProvider";
-
-// Server-only providers (conditionally exported to avoid browser bundle issues)
-export type { PostHogAnalyticsProvider } from "./providers/posthogProvider";
+export { AnalyticsError, CommonEvents } from "./types";
 
 /**
  * Helper function to create a basic analytics configuration

@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  Dispatch,
-  Ref,
-  SetStateAction,
+  type Dispatch,
+  type Ref,
+  type SetStateAction,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { ReportStateAction } from "./useReportState";
+import type { ReportStateAction } from "./useReportState";
 
 type ReportActionEffectFunc = (action: ReportStateAction) => void;
 type ReportActionEffect = (func: ReportActionEffectFunc) => void;
@@ -71,7 +71,7 @@ function useScrollListener(
         element.removeEventListener("animationend", handleAnimationEnd);
         element.classList.remove("scroll-target-highlight");
       };
-    }, [scrollToState, listenForId]);
+    }, [listenForId]);
 
     return ref;
   };

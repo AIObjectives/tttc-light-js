@@ -1,14 +1,15 @@
+import { logger } from "../../logger";
 import type {
-  AnalyticsProvider,
+  AnalyticsConfig,
+  AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsContext,
   AnalyticsProperties,
-  AnalyticsConfig,
+  AnalyticsProvider,
 } from "../types";
-import { logger } from "../../logger";
 
 const posthogLogger = logger.child({ module: "analytics-posthog" });
+
 import { PostHog } from "posthog-node";
 
 /**
@@ -16,6 +17,7 @@ import { PostHog } from "posthog-node";
  * Provides real analytics tracking using PostHog's Node.js SDK
  */
 export class PostHogAnalyticsProvider implements AnalyticsProvider {
+  // biome-ignore lint/suspicious/noExplicitAny: PostHog SDK methods are accessed dynamically
   private posthog: any = null;
   private config: AnalyticsConfig;
   private ready: boolean = false;
@@ -40,6 +42,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
     }
 
     try {
+      // biome-ignore lint/style/noNonNullAssertion: constructor validates apiKey exists
       this.posthog = new PostHog(this.config.apiKey!, {
         host: this.config.host || "https://us.i.posthog.com",
         flushAt: this.config.flushAt || 20,
@@ -278,7 +281,7 @@ export class PostHogAnalyticsProvider implements AnalyticsProvider {
         // Test if value can be serialized (handles circular references)
         JSON.stringify(value);
         cleaned[key] = value;
-      } catch (error) {
+      } catch (_error) {
         // Convert to string representation
         cleaned[key] = String(value);
       }

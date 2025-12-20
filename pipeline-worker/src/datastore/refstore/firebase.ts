@@ -1,6 +1,6 @@
-import * as admin from "firebase-admin";
-import { z } from "zod";
-import { RefStore } from ".";
+import type * as admin from "firebase-admin";
+import type { z } from "zod";
+import type { RefStore } from ".";
 
 /**
  * Firebase implementation of our refstore
@@ -18,51 +18,38 @@ export class FirebaseRefStore<T extends z.ZodTypeAny>
   }
 
   async get(id: string): Promise<z.infer<T> | null> {
-    try {
-      /**
-       * Get Doc from Firebase
-       */
-      const doc = await this.collection.doc(id).get();
-      const data = doc.data();
+    /**
+     * Get Doc from Firebase
+     */
+    const doc = await this.collection.doc(id).get();
+    const data = doc.data();
 
-      if (!data) {
-        return null;
-      }
-
-      /**
-       * Parse the data
-       */
-      return this.schema.parse(data);
-    } catch (error) {
-      throw error;
+    if (!data) {
+      return null;
     }
+
+    /**
+     * Parse the data
+     */
+    return this.schema.parse(data);
   }
 
   async create(data: z.infer<T>): Promise<string> {
-    try {
-      const docRef = await this.collection.add(data);
-      return docRef.id;
-    } catch (error) {
-      throw error;
-    }
+    const docRef = await this.collection.add(data);
+    return docRef.id;
   }
 
   async modify(id: string, data: z.infer<T>): Promise<void> {
     const docRef = this.collection.doc(id);
+    await this.collection.firestore.runTransaction(async (t) => {
+      const doc = await t.get(docRef);
+      const existingData = doc.data();
 
-    try {
-      await this.collection.firestore.runTransaction(async (t) => {
-        const doc = await t.get(docRef);
-        const existingData = doc.data();
+      if (!existingData) {
+        throw new Error("Document not found");
+      }
 
-        if (!existingData) {
-          throw new Error("Document not found");
-        }
-
-        t.update(docRef, data as any);
-      });
-    } catch (error) {
-      throw error;
-    }
+      t.update(docRef, data as any);
+    });
   }
 }

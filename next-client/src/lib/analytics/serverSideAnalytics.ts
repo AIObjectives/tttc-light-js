@@ -1,10 +1,10 @@
 "use server";
 
 import {
+  type AnalyticsConfig,
   createAnalyticsConfig,
-  AnalyticsConfig,
-  initializeAnalytics,
   getAnalytics,
+  initializeAnalytics,
 } from "tttc-common/analytics";
 
 const config: AnalyticsConfig = createAnalyticsConfig(

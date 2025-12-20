@@ -1,8 +1,8 @@
 import { z } from "zod";
 import {
+  PyserverHungError,
   PyserverOOMError,
   PyserverUnresponsiveError,
-  PyserverHungError,
 } from "./errors";
 import { OPERATION_TIMEOUT } from "./retryConfig";
 

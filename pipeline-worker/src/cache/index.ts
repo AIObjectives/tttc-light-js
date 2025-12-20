@@ -1,13 +1,13 @@
-import { Cache, CacheConfig } from "./types";
 import { RedisCache } from "./providers/redis";
+import type { Cache, CacheConfig } from "./types";
 
 export type { Cache, CacheConfig, RedisCacheConfig, SetOptions } from "./types";
 export {
-  CacheError,
   CacheConnectionError,
+  CacheDeleteError,
+  CacheError,
   CacheGetError,
   CacheSetError,
-  CacheDeleteError,
 } from "./types";
 
 /**

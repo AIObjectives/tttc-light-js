@@ -1,5 +1,10 @@
-import { PubSub, Subscription, Message, Topic } from "@google-cloud/pubsub";
-import { z } from "zod";
+import type {
+  Message,
+  PubSub,
+  Subscription,
+  Topic,
+} from "@google-cloud/pubsub";
+import type { z } from "zod";
 import type { PubSubInterface, PubSubMessage, PubSubSubscription } from ".";
 
 export class GooglePubSub<T extends z.ZodTypeAny>

@@ -2,7 +2,7 @@
  * Tests for sort-and-deduplicate pipeline step
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock the logger before importing modules that use it
 vi.mock("tttc-common/logger", () => ({
@@ -19,14 +19,21 @@ vi.mock("tttc-common/logger", () => ({
 // Mock the deduplication model
 vi.mock("../model.js", () => ({
   callDeduplicationModel: vi.fn(
-    async (client, claims, llmConfig, topicName, subtopicName, reportId) => {
+    async (
+      _client,
+      claims,
+      _llmConfig,
+      _topicName,
+      _subtopicName,
+      _reportId,
+    ) => {
       // Simulate LLM grouping: group claims with same claim text
       const groups: Map<string, number[]> = new Map();
 
       claims.forEach((claim: any, index: number) => {
         const claimText = claim.claim;
         if (groups.has(claimText)) {
-          groups.get(claimText)!.push(index);
+          groups.get(claimText)?.push(index);
         } else {
           groups.set(claimText, [index]);
         }
@@ -55,7 +62,7 @@ vi.mock("../model.js", () => ({
 }));
 
 import { sortAndDeduplicateClaims } from "../index.js";
-import type { ClaimsTree, SortAndDeduplicateInput, Claim } from "../types.js";
+import type { Claim, ClaimsTree, SortAndDeduplicateInput } from "../types.js";
 
 // Test helper functions to reduce duplication
 
@@ -175,8 +182,8 @@ describe("Sort and Deduplicate Pipeline Step", () => {
       const primaryClaim = subtopicData.claims[0];
       expect(primaryClaim.claim).toBe("Cats are the best pets.");
       expect(primaryClaim.duplicates).toHaveLength(1);
-      expect(primaryClaim.duplicates![0].commentId).toBe("c2");
-      expect(primaryClaim.duplicates![0].duplicated).toBe(true);
+      expect(primaryClaim.duplicates?.[0].commentId).toBe("c2");
+      expect(primaryClaim.duplicates?.[0].duplicated).toBe(true);
 
       // Should track both speakers
       expect(subtopicData.speakers).toHaveLength(2);
@@ -593,7 +600,7 @@ describe("Sort and Deduplicate Pipeline Step", () => {
       expect(subtopicData.claims).toHaveLength(1);
       expect(subtopicData.claims[0].duplicates).toHaveLength(1);
       expect(subtopicData.claims[0].commentId).toBe("c1");
-      expect(subtopicData.claims[0].duplicates![0].commentId).toBe("c2");
+      expect(subtopicData.claims[0].duplicates?.[0].commentId).toBe("c2");
     });
 
     it("should handle large subtopics efficiently", async () => {

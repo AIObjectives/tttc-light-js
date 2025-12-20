@@ -1,8 +1,8 @@
-import { nextTypography } from "@/lib/font";
-import Navbar from "@/components/navbar/Navbar";
 import { Toaster } from "@/components/elements";
+import Navbar from "@/components/navbar/Navbar";
+import { nextTypography } from "@/lib/font";
 import "./global.css";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Talk to the City",

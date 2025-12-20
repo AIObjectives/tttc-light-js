@@ -1,12 +1,11 @@
 "use client";
 
-import React from "react";
-import { Row } from "@/components/layout";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
-import { getControversyCategory } from "@/lib/crux/utils";
+import { Row } from "@/components/layout";
 import { getThemeColor } from "@/lib/color";
-import { InteractiveControversy } from "./InteractiveControversy";
+import { getControversyCategory } from "@/lib/crux/utils";
 import { ControversyDrawer } from "./ControversyDrawer";
+import { InteractiveControversy } from "./InteractiveControversy";
 
 interface ControversyIndicatorProps {
   /** Controversy score from 0-1 */

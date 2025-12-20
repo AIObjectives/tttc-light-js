@@ -22,9 +22,10 @@
  * This formula ensures scores are highest when opinions are evenly divided
  * and lowest when there's strong consensus in either direction.
  */
-import * as schema from "tttc-common/schema";
-import type { ControversyLevel, ControversyCategory } from "./types";
+
 import { logger } from "tttc-common/logger/browser";
+import type * as schema from "tttc-common/schema";
+import type { ControversyCategory } from "./types";
 
 // Create logger for speaker parsing
 const speakerLogger = logger.child({ module: "speaker-parsing" });
@@ -60,7 +61,7 @@ const CONTROVERSY_PERCENT_MODERATE = 20;
  */
 export function getControversyCategory(score: number): ControversyCategory {
   // Validate score is in valid range
-  if (score < 0 || score > 1 || !isFinite(score)) {
+  if (score < 0 || score > 1 || !Number.isFinite(score)) {
     throw new Error(`Controversy score must be between 0 and 1, got: ${score}`);
   }
 
@@ -152,7 +153,6 @@ export function getControversyColors(score: number): {
         text: "text-yellow-800",
         border: "border-yellow-300",
       };
-    case "low":
     default:
       // Low controversy/consensus: green
       return {
@@ -283,7 +283,7 @@ export function parseSpeaker(speakerStr: string): {
   let validStrength: number | undefined;
   if (strengthStr) {
     const strength = parseFloat(strengthStr);
-    if (!isNaN(strength) && isFinite(strength)) {
+    if (!Number.isNaN(strength) && Number.isFinite(strength)) {
       validStrength = strength;
     }
   }

@@ -1,17 +1,15 @@
 "use client";
 
-import React from "react";
 import dynamic from "next/dynamic";
+import { Button } from "../elements";
 import { Row } from "../layout";
 import {
   About,
   CreateReport,
   Headline,
-  LanguageSelector,
   MobileHamburgerMenu,
   RepoGithub,
 } from "./components/NavbarButtons";
-import { Button } from "../elements";
 
 // Lazy-load LoginButton to defer Firebase SDK loading
 // This reduces initial bundle size for anonymous visitors (e.g., landing page)

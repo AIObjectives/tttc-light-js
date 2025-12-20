@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { getFirebaseErrorMessage } from "../firebaseErrors";
+import { describe, expect, it } from "vitest";
 import { MIN_PASSWORD_LENGTH } from "@/lib/constants/auth";
+import { getFirebaseErrorMessage } from "../firebaseErrors";
 
 describe("getFirebaseErrorMessage", () => {
   describe("Email enumeration prevention", () => {

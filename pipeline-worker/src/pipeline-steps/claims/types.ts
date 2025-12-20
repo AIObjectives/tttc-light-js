@@ -4,17 +4,17 @@
  */
 
 export type {
-  Comment,
-  LLMConfig,
-  Topic,
-  Subtopic,
-  TokenUsage,
   Claim,
-  SubtopicClaimNode,
-  TopicClaimNode,
-  ClaimsTree,
-  ClaimsResult,
   ClaimsOptions,
   ClaimsOutput,
+  ClaimsResult,
+  ClaimsTree,
   ClusteringError,
+  Comment,
+  LLMConfig,
+  Subtopic,
+  SubtopicClaimNode,
+  TokenUsage,
+  Topic,
+  TopicClaimNode,
 } from "../types.js";

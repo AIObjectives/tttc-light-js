@@ -1,8 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { FirebaseRefStore } from "../firebase";
+import assert from "node:assert";
+import type {
+  CollectionReference,
+  DocumentData,
+} from "firebase-admin/firestore";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { CollectionReference, DocumentData } from "firebase-admin/firestore";
-import assert from "assert";
+import { FirebaseRefStore } from "../firebase";
 
 // Mock DocumentReference
 export const createMockDocumentReference = (id: string, data: any = null) => ({

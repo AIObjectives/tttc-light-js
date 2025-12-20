@@ -1,8 +1,6 @@
-import { Worker, Job } from "bullmq";
-import Redis from "ioredis";
-import * as firebase from "./Firebase";
 import { logger } from "tttc-common/logger";
-import { PipelineJob, pipelineJob } from "./jobs/pipeline";
+import * as firebase from "./Firebase";
+import { type PipelineJob, pipelineJob } from "./jobs/pipeline";
 
 const workersLogger = logger.child({ module: "workers" });
 

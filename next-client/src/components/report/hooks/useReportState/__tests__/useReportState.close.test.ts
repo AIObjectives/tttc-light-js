@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest";
-import { setupTestState } from "./testStateSetup";
-import { ReportState, SomeNode } from "../types";
+import { describe, expect, test } from "vitest";
 import { defaultTopicPagination } from "../consts";
+import type { ReportState, SomeNode } from "../types";
+import { setupTestState } from "./testStateSetup";
 
 const { state, reducer } = setupTestState();
 
@@ -52,9 +52,9 @@ describe("Closing -> Topic.isOpen", () => {
   });
 
   test("Opening and then closing a topic resets it to the original state", () => {
-    [firstClosed, middleClosed, lastClosed].forEach((newState) =>
-      expect(newState).toMatchReportState(state),
-    );
+    [firstClosed, middleClosed, lastClosed].forEach((newState) => {
+      expect(newState).toMatchReportState(state);
+    });
   });
 });
 

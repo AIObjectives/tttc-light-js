@@ -1,9 +1,8 @@
 export * from "./googlepubsub";
 
-import { GooglePubSub } from "./googlepubsub";
 import { PubSub } from "@google-cloud/pubsub";
-
 import { z } from "zod";
+import { GooglePubSub } from "./googlepubsub";
 
 export interface PubSubMessage<T = unknown> {
   id: string;
@@ -110,9 +109,9 @@ export const PubSubServicesLive = async (env: {
   [key: string]: string | undefined;
 }): Promise<PubSubServices> => {
   const factory = createPubSubFactory({
-    node_env: env["NODE_ENV"],
-    projectId: env["PUBSUB_PROJECT_ID"],
-    subscriptionName: env["SUBSCRIPTION_NAME"],
+    node_env: env.NODE_ENV,
+    projectId: env.PUBSUB_PROJECT_ID,
+    subscriptionName: env.SUBSCRIPTION_NAME,
   });
 
   return {

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import type React from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 // SSR-safe useLayoutEffect
 const useIsomorphicLayoutEffect =
@@ -54,7 +55,7 @@ function calculateTruncationPoint(
 
     while (lo < hi) {
       const mid = Math.ceil((lo + hi) / 2);
-      measureEl.textContent = text.slice(0, mid).trimEnd() + "..." + buttonText;
+      measureEl.textContent = `${text.slice(0, mid).trimEnd()}...${buttonText}`;
 
       if (measureEl.scrollHeight <= maxHeight) {
         lo = mid;
@@ -118,7 +119,7 @@ export function ExpandableText({
   const displayText =
     isOpen || !needsTruncation
       ? text
-      : text.slice(0, truncateAt).trimEnd() + "...";
+      : `${text.slice(0, truncateAt).trimEnd()}...`;
 
   const buttonClass =
     "text-muted-foreground cursor-pointer text-sm whitespace-nowrap";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import * as schema from "tttc-common/schema";
+import type * as schema from "tttc-common/schema";
 import {
   Drawer,
   DrawerContent,
@@ -88,9 +88,18 @@ function HoverQuoteCard({
         <div
           ref={triggerRef}
           className="cursor-pointer"
+          role="button"
+          tabIndex={0}
           onClick={() => {
             setIsPinned(true);
             setIsOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setIsPinned(true);
+              setIsOpen(true);
+            }
           }}
         >
           {children}

@@ -1,8 +1,8 @@
-import { describe, test, expect } from "vitest";
-import { __internals, OutlineState } from "../useOutlineState";
-import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
+import { Array as Arr } from "effect";
+import { describe, expect, test } from "vitest";
 import { reportData } from "../../../../../stories/data/dummyData";
-import { Array } from "effect";
+import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
+import { __internals, type OutlineState } from "../useOutlineState";
 
 const { createReducer, mapIdsToPath, createInitialState } = __internals;
 
@@ -18,7 +18,7 @@ const close = (state: OutlineState, id: string) =>
   reducer(state, { type: "close", payload: { id } });
 
 describe("Closing topic nodes", () => {
-  const openState = Array.reduce(
+  const openState = Arr.reduce(
     outlineState.tree,
     outlineState,
     (accum, curr) => {
@@ -26,21 +26,21 @@ describe("Closing topic nodes", () => {
     },
   );
 
-  const newState = Array.reduce(openState.tree, openState, (accum, curr) => {
+  const newState = Arr.reduce(openState.tree, openState, (accum, curr) => {
     return close(accum, curr.id);
   });
 
   test("When a topic node is closed, its isOpen value is set to false", () => {
     const vals = newState.tree.map((node) => node.isOpen);
-    expect(vals).toEqual(Array.makeBy(vals.length, () => false));
+    expect(vals).toEqual(Arr.makeBy(vals.length, () => false));
   });
 
   test("Closing a topic is idempotent", () => {
-    const secondState = Array.reduce(newState.tree, newState, (accum, curr) => {
+    const secondState = Arr.reduce(newState.tree, newState, (accum, curr) => {
       return close(accum, curr.id);
     });
 
     const vals = secondState.tree.map((node) => node.isOpen);
-    expect(vals).toEqual(Array.makeBy(vals.length, () => false));
+    expect(vals).toEqual(Arr.makeBy(vals.length, () => false));
   });
 });

@@ -1,6 +1,6 @@
-import { ValueOf } from "next/dist/shared/lib/constants";
-import { SubtopicPath, TopicPath } from "./path";
-import { ReportState } from "./types";
+import type { ValueOf } from "next/dist/shared/lib/constants";
+import type { SubtopicPath, TopicPath } from "./path";
+import type { ReportState } from "./types";
 
 //  ********************************
 //  * ACTION STREAM ACTIONS *

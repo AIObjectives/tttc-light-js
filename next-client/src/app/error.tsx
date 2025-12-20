@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/elements/button/Button";
-import { Center } from "@/components/layout/Center";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/elements/empty";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import { Center } from "@/components/layout/Center";
 
-export default function Error({
+export default function ErrorPage({
   error,
   reset,
 }: {
@@ -79,6 +79,7 @@ export default function Error({
                   Error reference
                 </span>
                 <button
+                  type="button"
                   onClick={copyToClipboard}
                   aria-label="Copy error reference"
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"

@@ -1,4 +1,5 @@
-import React from "react";
+import { X } from "lucide-react";
+import type React from "react";
 import {
   Drawer,
   DrawerClose,
@@ -8,8 +9,7 @@ import {
   DrawerTrigger,
 } from "@/components/elements";
 import { Col } from "@/components/layout";
-import { X } from "lucide-react";
-import { getControversyCategory } from "@/lib/crux/utils";
+import type { getControversyCategory } from "@/lib/crux/utils";
 import { ControversyTooltipContent } from "./ControversyTooltipContent";
 
 interface ControversyDrawerProps {

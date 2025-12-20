@@ -1,8 +1,8 @@
-import { describe, test, expect } from "vitest";
-import { __internals, OutlineState } from "../useOutlineState";
-import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
+import { Array as Arr } from "effect";
+import { describe, expect, test } from "vitest";
 import { reportData } from "../../../../../stories/data/dummyData";
-import { Array } from "effect";
+import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
+import { __internals, type OutlineState } from "../useOutlineState";
 
 const { createReducer, mapIdsToPath, createInitialState } = __internals;
 
@@ -20,6 +20,6 @@ describe("Closing all topic nodes", () => {
     const openedState = openAll(outlineState);
     const closedState = closeAll(openedState);
     const vals = closedState.tree.map((node) => node.isOpen);
-    expect(vals).toEqual(Array.makeBy(vals.length, () => false));
+    expect(vals).toEqual(Arr.makeBy(vals.length, () => false));
   });
 });

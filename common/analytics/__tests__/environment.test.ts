@@ -2,18 +2,18 @@
  * Tests for environment detection utilities
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  isBrowser,
-  isServer,
-  isDevelopment,
-  getCurrentUrl,
-  getUserAgent,
-  getEnvironmentInfo,
-  generateSessionId,
   generateRequestId,
+  generateSessionId,
   getAppVersion,
+  getCurrentUrl,
+  getEnvironmentInfo,
   getEnvironmentName,
+  getUserAgent,
+  isBrowser,
+  isDevelopment,
+  isServer,
 } from "../environment";
 
 // Mock global objects

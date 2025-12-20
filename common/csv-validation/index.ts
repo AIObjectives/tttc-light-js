@@ -1,4 +1,4 @@
-import { SourceRow } from "../schema";
+import type { SourceRow } from "../schema";
 
 /**
  * Column name mapping configurations
@@ -259,7 +259,7 @@ export function validateCSVFormat(
   const formattedData = formatDataWithMappings(
     data,
     lowerKeys,
-    commentMapping.detected!,
+    commentMapping.detected,
     idMapping.detected,
     interviewMapping.detected,
     videoMapping.detected,
@@ -316,7 +316,7 @@ export function validateCSVFormat(
  */
 function formatDataWithMappings(
   data: Record<string, unknown>[],
-  lowerKeys: Map<string, string>,
+  _lowerKeys: Map<string, string>,
   commentColumn: string,
   idColumn: string | null,
   interviewColumn: string | null,

@@ -1,33 +1,32 @@
-import * as schema from "tttc-common/schema";
-import { Env } from "../types/context";
-import { createStorage } from "../storage";
-import * as apiPyserver from "tttc-common/apiPyserver";
-import { logger } from "tttc-common/logger";
+import { createHash, randomUUID } from "node:crypto";
+import Redis from "ioredis";
+import { getAnalytics } from "tttc-common/analytics";
+import type * as apiPyserver from "tttc-common/apiPyserver";
 import {
-  Result,
   failure,
   flatMapResultAsync,
   mapResult,
+  type Result,
   sequenceResult,
   success,
 } from "tttc-common/functional-utils";
-import { CustomError } from "../error";
-import * as Pyserver from "../pipeline/";
-import { randomUUID, createHash } from "crypto";
+import { logger } from "tttc-common/logger";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import { CustomError } from "../error";
 import * as Firebase from "../Firebase";
-import { getAnalytics } from "tttc-common/analytics";
 import {
-  initializeAuditLog,
-  getAuditLog,
-  deleteAuditLog,
-} from "../utils/auditLogRedis";
-import Redis from "ioredis";
-import {
-  scoreClaims,
   scoreClaimsFromHydratedTree,
   scoreQuotes,
 } from "../lib/perspective-api";
+import * as Pyserver from "../pipeline/";
+import { createStorage } from "../storage";
+import type { Env } from "../types/context";
+import {
+  deleteAuditLog,
+  getAuditLog,
+  initializeAuditLog,
+} from "../utils/auditLogRedis";
 
 const pipelineLogger = logger.child({ module: "pipeline" });
 
@@ -222,7 +221,7 @@ export async function pipelineJob(job: PipelineJob) {
     "Creating Redis connection for pipeline",
   );
 
-  let redis: Redis | undefined = undefined;
+  let redis: Redis | undefined;
   try {
     redis = new Redis(env.REDIS_URL, {
       connectionName: "Pipeline-AuditLog",
@@ -1075,7 +1074,7 @@ const makePyserverFuncs = (
   userId?: string,
   reportId?: string,
 ) => {
-  const { instructions, llm, api_key, env } = config;
+  const { instructions, llm, env } = config;
   // Make each config object for each call
   const [
     topicTreeLLMConfig,

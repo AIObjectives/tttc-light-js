@@ -1,6 +1,10 @@
-import { TaggedClaimPath, TaggedSubtopicPath, TaggedTopicPath } from "./path";
 import { Match } from "effect";
-import { ActionStreamActions, Actions, MapActions } from "./actions";
+import { type ActionStreamActions, Actions, type MapActions } from "./actions";
+import type {
+  TaggedClaimPath,
+  TaggedSubtopicPath,
+  TaggedTopicPath,
+} from "./path";
 
 //  ********************************
 //  * CREATE ACTION STREAMS *

@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 const SvgComponent = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -9,6 +9,7 @@ const SvgComponent = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     {...props}
   >
+    <title>Talk to the City</title>
     <g id="Text">
       <path
         id="Vector"

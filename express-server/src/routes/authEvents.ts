@@ -1,11 +1,11 @@
-import { Response } from "express";
-import { RequestWithLogger } from "src/types/request";
-import { verifyUser } from "../Firebase";
-import { DecodedIdToken } from "firebase-admin/auth";
-import { sendErrorByCode } from "./sendError";
+import type { Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
+import type { RequestWithLogger } from "src/types/request";
+import { CommonEvents, getAnalytics } from "tttc-common/analytics";
 import { ERROR_CODES } from "tttc-common/errors";
 import { z } from "zod";
-import { getAnalytics, CommonEvents } from "tttc-common/analytics";
+import { verifyUser } from "../Firebase";
+import { sendErrorByCode } from "./sendError";
 
 const authEventRequest = z.object({
   event: z.enum(["signin", "signout"]),

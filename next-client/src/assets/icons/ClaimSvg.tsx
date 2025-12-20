@@ -1,4 +1,5 @@
-import * as React from "react";
+import type * as React from "react";
+
 const SvgComponent = (props: React.SVGProps<SVGPathElement>) => (
   <svg
     width="16"
@@ -7,6 +8,7 @@ const SvgComponent = (props: React.SVGProps<SVGPathElement>) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
+    <title>Claim</title>
     <g id="Claim 16">
       <path
         id="Vector"

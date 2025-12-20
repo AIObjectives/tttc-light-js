@@ -1,12 +1,13 @@
 /**
  * Unit tests for quote bridging utility functions
  */
-import { describe, it, expect } from "vitest";
+
 import type { AddOns, Quote } from "tttc-common/schema";
+import { describe, expect, it } from "vitest";
 import {
-  sortQuotesByBridging,
-  getClaimBridgingScore,
   BRIDGING_THRESHOLDS,
+  getClaimBridgingScore,
+  sortQuotesByBridging,
 } from "./utils";
 
 // Helper to create a minimal quote for testing

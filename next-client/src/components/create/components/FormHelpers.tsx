@@ -1,8 +1,7 @@
-import React from "react";
-import { Col, Row } from "@/components/layout";
-import { Button, TextArea } from "@/components/elements";
 import Icons from "@/assets/icons";
-import { FormItemState } from "../hooks/useFormState";
+import { Button, TextArea } from "@/components/elements";
+import { Col, Row } from "@/components/layout";
+import type { FormItemState } from "../hooks/useFormState";
 
 export function CustomizePromptSection({
   title,

@@ -12,7 +12,7 @@ export function useNavbarVisibility(): NavbarVisibilityState {
   });
 
   useEffect(() => {
-    let lastScrollY = 0;
+    let _lastScrollY = 0;
     let ticking = false;
 
     const updateNavbarVisibility = () => {
@@ -32,7 +32,7 @@ export function useNavbarVisibility(): NavbarVisibilityState {
         });
       }
 
-      lastScrollY = scrollY;
+      _lastScrollY = scrollY;
       ticking = false;
     };
 

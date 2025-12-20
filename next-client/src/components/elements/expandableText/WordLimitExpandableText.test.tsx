@@ -9,10 +9,9 @@
  * - Edge cases (empty text, exact limit, custom limit)
  */
 
-import React from "react";
-import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it } from "vitest";
 import { WordLimitExpandableText } from "./WordLimitExpandableText";
 
 // Clean up after each test to prevent DOM accumulation
@@ -33,7 +32,7 @@ describe("WordLimitExpandableText", () => {
       );
 
       const paragraph = container.querySelector("p");
-      expect(paragraph?.textContent).toBe(shortText + " ");
+      expect(paragraph?.textContent).toBe(`${shortText} `);
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
 
@@ -44,7 +43,7 @@ describe("WordLimitExpandableText", () => {
       );
 
       const paragraph = container.querySelector("p");
-      expect(paragraph?.textContent).toBe(exactText + " ");
+      expect(paragraph?.textContent).toBe(`${exactText} `);
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
 

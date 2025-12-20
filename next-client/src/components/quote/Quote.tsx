@@ -1,9 +1,8 @@
-import React from "react";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import { cn } from "@/lib/utils/shadcn";
 import { Card, CardContent, Separator } from "../elements";
 import { Col, Row } from "../layout";
-import Icons from "@/assets/icons";
-import * as schema from "tttc-common/schema";
-import { cn } from "@/lib/utils/shadcn";
 
 /**
  * Single quote - not wrapped in card.
@@ -95,7 +94,12 @@ const Video = ({
   console.log(link);
   return (
     <Col>
-      <iframe src={link} width={"100%"} className="aspect-video" />
+      <iframe
+        title="Video player"
+        src={link}
+        width={"100%"}
+        className="aspect-video"
+      />
     </Col>
   );
 };

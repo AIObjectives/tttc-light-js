@@ -21,6 +21,7 @@ export interface FeatureFlagContext {
   /**
    * Additional properties for feature flag evaluation (e.g., plan, region).
    */
+  // biome-ignore lint/suspicious/noExplicitAny: PostHog SDK requires Record<string, any> for properties
   properties?: Record<string, any>;
 }
 

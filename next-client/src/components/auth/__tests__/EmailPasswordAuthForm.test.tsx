@@ -1,9 +1,8 @@
-import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { EmailPasswordAuthForm } from "../EmailPasswordAuthForm";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MIN_PASSWORD_LENGTH } from "@/lib/constants/auth";
+import { EmailPasswordAuthForm } from "../EmailPasswordAuthForm";
 
 // Mock Firebase auth functions
 vi.mock("@/lib/firebase/auth", () => ({
@@ -36,9 +35,9 @@ vi.mock("@/lib/utils/firebaseErrors", () => ({
 }));
 
 import {
-  signUpWithEmail,
-  signInWithEmail,
   resetPassword,
+  signInWithEmail,
+  signUpWithEmail,
 } from "@/lib/firebase/auth";
 import { getFirebaseErrorMessage } from "@/lib/utils/firebaseErrors";
 

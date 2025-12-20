@@ -2,29 +2,29 @@
  * Firestore Operations (Client SDK)
  */
 
-import { z } from "zod";
 import {
-  collection,
-  query,
-  getDocs,
-  where,
   addDoc,
+  collection,
+  type Firestore,
+  getDocs,
+  query,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
-import { Firestore } from "firebase/firestore";
-
 import {
-  useGetCollectionName,
+  type ReportRef,
   reportRef,
   reportRefWithDefaults,
-  ReportRef,
+  useGetCollectionName,
 } from "tttc-common/firebase";
-import { FeedbackRequest } from "../types/clientRoutes";
-import { failure, Result, success } from "tttc-common/functional-utils";
+import { failure, type Result, success } from "tttc-common/functional-utils";
+import { z } from "zod";
+import type { FeedbackRequest } from "../types/clientRoutes";
 
 const NODE_ENV = z
   .union([z.literal("development"), z.literal("production")])
   .parse(process.env.NODE_ENV);
+// biome-ignore lint/correctness/useHookAtTopLevel: useGetCollectionName is a factory function, not a React hook despite its name
 const getCollectionName = useGetCollectionName(NODE_ENV);
 
 /**
@@ -70,7 +70,7 @@ export async function getUsersReports(
   } catch (e) {
     console.error("Error in getUsersReports:", e);
     const error =
-      e instanceof Error ? e : new Error("Could not get your reports: " + e);
+      e instanceof Error ? e : new Error(`Could not get your reports: ${e}`);
     return failure(error);
   }
 }
@@ -82,7 +82,7 @@ export async function addFeedback(
   db: Firestore,
   data: FeedbackRequest,
 ): Promise<"success"> {
-  const docRef = await addDoc(collection(db, getCollectionName("FEEDBACK")), {
+  const _docRef = await addDoc(collection(db, getCollectionName("FEEDBACK")), {
     ...data,
     userId: data.userId ?? "Unsigned",
     timestamp: serverTimestamp(),

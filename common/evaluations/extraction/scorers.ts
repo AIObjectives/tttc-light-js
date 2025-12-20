@@ -1,16 +1,16 @@
-import * as weave from "weave";
 import type { OpenAI } from "openai";
+import * as weave from "weave";
 import { logger } from "../../logger";
 import { EVAL_MODEL } from "../constants";
 import type {
+  ClaimQualityScorerOutput,
+  ExtractionDatasetRow,
+  ExtractionJsonStructureScorerOutput,
+  ExtractionLLMJudgeOutput,
   ExtractionModelOutput,
   ExtractionScorerInput,
-  ExtractionJsonStructureScorerOutput,
-  ClaimQualityScorerOutput,
-  TaxonomyAlignmentScorerOutput,
   QuoteRelevanceScorerOutput,
-  ExtractionLLMJudgeOutput,
-  ExtractionDatasetRow,
+  TaxonomyAlignmentScorerOutput,
 } from "./types";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
@@ -27,7 +27,7 @@ export const extractionJsonStructureScorer = weave.op(
   }: ExtractionScorerInput): ExtractionJsonStructureScorerOutput {
     try {
       const hasValidStructure =
-        modelOutput && modelOutput.claims && Array.isArray(modelOutput.claims);
+        modelOutput?.claims && Array.isArray(modelOutput.claims);
 
       if (!hasValidStructure) {
         return {
@@ -95,7 +95,7 @@ export const claimQualityScorer = weave.op(function claimQualityScorer({
   }
 
   const claims = modelOutput.claims;
-  let qualityIssues = [];
+  const qualityIssues = [];
   let qualityScore = 1;
 
   // Check for platitudes or truisms
@@ -179,7 +179,7 @@ export const taxonomyAlignmentScorer = weave.op(
     const taxonomy = datasetRow.taxonomy;
 
     let validMappings = 0;
-    let invalidMappings = [];
+    const invalidMappings = [];
 
     for (const claim of claims) {
       let foundValidMapping = false;
@@ -239,10 +239,10 @@ export const quoteRelevanceScorer = weave.op(function quoteRelevanceScorer({
   const originalComment = datasetRow?.comment || "";
 
   let relevantQuotes = 0;
-  let quoteIssues = [];
+  const quoteIssues = [];
 
   for (const claim of claims) {
-    let issuesWithThisQuote = [];
+    const issuesWithThisQuote = [];
 
     // Check if quote exists in original comment (allowing for [...] ellipsis)
     const cleanQuote = claim.quote.replace(/\[\.\.\.\]/g, "").trim();

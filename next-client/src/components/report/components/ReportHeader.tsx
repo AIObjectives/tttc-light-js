@@ -1,6 +1,12 @@
-import React, { useState } from "react";
-import * as schema from "tttc-common/schema";
-import { Col, Row } from "@/components/layout";
+import { useState } from "react";
+import { getNPeople } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import {
+  BarChart,
+  type BarChartItemType,
+} from "@/components/barchart/Barchart";
+import { CopyLinkButton } from "@/components/copyButton/CopyButton";
 import {
   Button,
   CardContent,
@@ -8,10 +14,7 @@ import {
   TextIcon,
   ToggleText,
 } from "@/components/elements";
-import Icons from "@/assets/icons";
-import { getNPeople } from "tttc-common/morphisms";
-import { BarChart, BarChartItemType } from "@/components/barchart/Barchart";
-import { CopyLinkButton } from "@/components/copyButton/CopyButton";
+import { Col, Row } from "@/components/layout";
 
 interface IReportTitle {
   title: string;
@@ -83,8 +86,8 @@ export function ReportTitle({
     <Col gap={2} className="pb-1">
       {/* Title and copy button */}
       <Row gap={2} className="justify-between">
-        <h3 className="print-report-title">
-          <a id={`${title}`}>{title}</a>
+        <h3 id={`${title}`} className="print-report-title">
+          {title}
         </h3>
         <CopyLinkButton anchor={title} />
       </Row>
@@ -186,7 +189,7 @@ export function ReportSummary({
 
       {/* Summary Meta Questions */}
       {questionAnswers?.map((qa, index) => (
-        <ToggleText key={index}>
+        <ToggleText key={`qa-${index}-${qa.question.slice(0, 20)}`}>
           <ToggleText.Title>{qa.question}</ToggleText.Title>
           <ToggleText.Content>{qa.answer}</ToggleText.Content>
         </ToggleText>

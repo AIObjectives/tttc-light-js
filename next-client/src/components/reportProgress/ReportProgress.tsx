@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import * as api from "tttc-common/api";
+import type * as api from "tttc-common/api";
 import { logger } from "tttc-common/logger/browser";
-import { Col } from "../layout";
-import { Progress } from "../elements";
-import { useUnifiedReport } from "@/hooks/useUnifiedReport";
 import { ReportErrorState } from "@/components/report/ReportErrorState";
+import { useUnifiedReport } from "@/hooks/useUnifiedReport";
+import { Progress } from "../elements";
+import { Col } from "../layout";
 
 const reportProgressLogger = logger.child({ module: "report-progress" });
 
@@ -20,6 +20,7 @@ export default function ReportProgress({
   // Only use client-side polling for processing reports and if we have an identifier
   const shouldPoll =
     identifier && !["finished", "failed", "notFound"].includes(status);
+  // biome-ignore lint/correctness/useHookAtTopLevel: conditional hook is intentional - shouldPoll is stable per render cycle
   const reportState = shouldPoll ? useUnifiedReport(identifier) : null;
 
   // Determine current status

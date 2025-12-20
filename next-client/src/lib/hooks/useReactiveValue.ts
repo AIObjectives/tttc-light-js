@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
  * Utility hook that combines useState and useEffect.
  * ! Warning: Not tested.
  */
-export function useReactiveValue<T, K>(
+export function useReactiveValue<T, _K>(
   fn: (...args: unknown[]) => T,
   deps: unknown[],
 ) {
@@ -14,6 +14,7 @@ export function useReactiveValue<T, K>(
 
   useEffect(() => {
     setVal(() => fn());
+    // biome-ignore lint/correctness/useExhaustiveDependencies: deps are dynamically passed by caller
   }, deps);
 
   return val;

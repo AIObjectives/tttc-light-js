@@ -1,6 +1,6 @@
 import { Storage } from "@google-cloud/storage";
 import { formatError } from "tttc-common/utils";
-import { BucketStore, UploadFailedError } from "../types";
+import { type BucketStore, UploadFailedError } from "../types";
 
 /**
  * GCP Cloud Storage implementation of the BucketStore interface.

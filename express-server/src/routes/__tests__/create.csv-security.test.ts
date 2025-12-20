@@ -2,14 +2,14 @@
  * Server-side CSV security validation tests for create route
  */
 
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
-import request from "supertest";
 import express from "express";
-import create from "../create";
+import request from "supertest";
 import {
-  validateParsedData,
   detectCSVInjection,
+  validateParsedData,
 } from "tttc-common/csv-security";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import create from "../create";
 
 // Mock dependencies
 vi.mock("tttc-common/csv-security", () => ({

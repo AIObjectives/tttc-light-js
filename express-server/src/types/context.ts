@@ -123,7 +123,7 @@ export const env = z.object({
     .optional()
     .default("20")
     .transform((val) => parseInt(val, 10))
-    .refine((val) => !isNaN(val) && val > 0, {
+    .refine((val) => !Number.isNaN(val) && val > 0, {
       message: "ANALYTICS_FLUSH_AT must be a positive number",
     }),
   ANALYTICS_FLUSH_INTERVAL: z
@@ -131,7 +131,7 @@ export const env = z.object({
     .optional()
     .default("10000")
     .transform((val) => parseInt(val, 10))
-    .refine((val) => !isNaN(val) && val > 0, {
+    .refine((val) => !Number.isNaN(val) && val > 0, {
       message: "ANALYTICS_FLUSH_INTERVAL must be a positive number",
     }),
   ANALYTICS_ENABLED: z
@@ -153,7 +153,7 @@ export const env = z.object({
     .optional()
     .default("8") // Match pyserver default
     .transform((val) => parseInt(val, 10))
-    .refine((val) => !isNaN(val) && val > 0 && val <= 20, {
+    .refine((val) => !Number.isNaN(val) && val > 0 && val <= 20, {
       message: "PYSERVER_MAX_CONCURRENCY must be between 1 and 20",
     }),
 });

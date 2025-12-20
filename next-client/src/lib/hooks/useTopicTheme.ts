@@ -1,8 +1,8 @@
 "use client";
 
-import { TopicContext } from "@/components/topic/Topic";
 import { useContext } from "react";
-import { getThemeColor, ColorVariant } from "@/lib/color";
+import { TopicContext } from "@/components/topic/Topic";
+import { type ColorVariant, getThemeColor } from "@/lib/color";
 
 /**
  * Variation of getThemeColor that uses the topic context instead of a prop

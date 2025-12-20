@@ -1,13 +1,12 @@
-import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  BarChart,
-  BarChartItemType,
-  BarItem as BarItemComponent,
-} from "./Barchart";
-import { reportData } from "../../../stories/data/dummyData";
 import { getNClaims } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
+import { reportData } from "../../../stories/data/dummyData";
+import {
+  BarChart,
+  type BarChartItemType,
+  BarItem as BarItemComponent,
+} from "./Barchart";
 
 const meta = {
   title: "BarChart",

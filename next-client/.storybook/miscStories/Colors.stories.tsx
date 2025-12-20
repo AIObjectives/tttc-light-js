@@ -1,28 +1,26 @@
-import {
-  getThemeColor,
-  ThemeColor,
-  themeColorMap,
-  ColorVariant,
-  BackgroundClass,
-  BackgroundAccentClass,
-  BorderClass,
-  BorderAccentClass,
-  TextClass,
-  BackgroundAccentHoverClass,
-  TextHoverClass,
-  BackgroundHoverClass,
-  TextAccentClass,
-  FillClass,
-  FillAccentClass,
-} from "../../src/lib/color";
-import { Col, Row } from "../../src/components/layout/Directions";
 import type { Meta, StoryObj } from "@storybook/react";
-import React from "react";
+import type React from "react";
 import { Separator } from "storybook/internal/components";
+import { Col, Row } from "../../src/components/layout/Directions";
+import {
+  type BackgroundAccentClass,
+  type BackgroundAccentHoverClass,
+  type BackgroundClass,
+  type BackgroundHoverClass,
+  type BorderAccentClass,
+  type BorderClass,
+  type ColorVariant,
+  type FillAccentClass,
+  type FillClass,
+  getThemeColor,
+  type TextAccentClass,
+  type TextClass,
+  type TextHoverClass,
+  type ThemeColor,
+  themeColorMap,
+} from "../../src/lib/color";
 
-const colorVariants = Object.keys(
-  themeColorMap["blueSea"],
-) as Array<ColorVariant>;
+const colorVariants = Object.keys(themeColorMap.blueSea) as Array<ColorVariant>;
 
 type Annotation = { annotation: string };
 
@@ -93,6 +91,7 @@ const Fill = ({
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
     >
+      <title>Color swatch</title>
       <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
     </svg>
   </Annotate>
@@ -109,6 +108,7 @@ const ColorPalette = <Color extends ThemeColor>({
         case "bg":
           return (
             <BackgroundSquare
+              key={variant}
               backgroundColor={getThemeColor(color, variant)}
               annotation={"bg"}
             />
@@ -116,6 +116,7 @@ const ColorPalette = <Color extends ThemeColor>({
         case "bgAccent":
           return (
             <BackgroundSquare
+              key={variant}
               backgroundColor={getThemeColor(color, variant)}
               annotation={"bg-accent"}
             />
@@ -124,6 +125,7 @@ const ColorPalette = <Color extends ThemeColor>({
         case "border":
           return (
             <BorderSquare
+              key={variant}
               borderColor={getThemeColor(color, variant)}
               annotation="border"
             />
@@ -131,6 +133,7 @@ const ColorPalette = <Color extends ThemeColor>({
         case "borderAccent":
           return (
             <BorderSquare
+              key={variant}
               borderColor={getThemeColor(color, variant)}
               annotation="border-accent"
             />
@@ -138,6 +141,7 @@ const ColorPalette = <Color extends ThemeColor>({
         case "bgHover":
           return (
             <BackgroundHoverSquare
+              key={variant}
               backgroundHover={getThemeColor(color, variant)}
               annotation="bg-hover"
             />
@@ -145,17 +149,23 @@ const ColorPalette = <Color extends ThemeColor>({
         case "bgAccentHover":
           return (
             <BackgroundHoverSquare
+              key={variant}
               backgroundHover={getThemeColor(color, variant)}
               annotation="bg-accent-hover"
             />
           );
         case "text":
           return (
-            <Text textColor={getThemeColor(color, variant)} annotation="text" />
+            <Text
+              key={variant}
+              textColor={getThemeColor(color, variant)}
+              annotation="text"
+            />
           );
         case "textAccent":
           return (
             <Text
+              key={variant}
               textColor={getThemeColor(color, variant)}
               annotation="text-accent"
             />
@@ -163,21 +173,29 @@ const ColorPalette = <Color extends ThemeColor>({
         case "textHover":
           return (
             <Text
+              key={variant}
               textColor={getThemeColor(color, variant)}
               annotation="text-hover"
             />
           );
         case "fill":
           return (
-            <Fill fillColor={getThemeColor(color, variant)} annotation="fill" />
+            <Fill
+              key={variant}
+              fillColor={getThemeColor(color, variant)}
+              annotation="fill"
+            />
           );
         case "fillAccent":
           return (
             <Fill
+              key={variant}
               fillColor={getThemeColor(color, variant)}
               annotation="fill-accent"
             />
           );
+        default:
+          return null;
       }
     })}
   </Row>

@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useReducer } from "react";
-import { Result } from "tttc-common/functional-utils";
+import type { Result } from "tttc-common/functional-utils";
 
 /**
  * Default state. Async function has not been called.
@@ -29,7 +29,7 @@ export type FinishedLoading<T, E> = {
   result: Result<T, E>;
 };
 
-type LoadingAction<T, E> = { type: "loading" };
+type LoadingAction<_T, _E> = { type: "loading" };
 type FinishedAction<T, E> = {
   type: "finished";
   payload: Result<T, E>;
@@ -66,6 +66,7 @@ export function useAsyncState<T, E, Params>(
     result: undefined,
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: func is intentionally omitted - callers pass inline functions that would cause infinite loops if included
   useEffect(() => {
     if (dep === undefined) return;
     dispatch({ type: "loading" });

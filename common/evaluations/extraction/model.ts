@@ -1,16 +1,16 @@
 import { OpenAI } from "openai";
 import * as weave from "weave";
-import {
-  extractionJsonStructureScorer,
-  taxonomyAlignmentScorer,
-  createLLMJudgeScorer,
-} from "./scorers.js";
-import { ExtractionDatasetRow, ExtractionModelOutput } from "./types";
-import { extractionTestCases } from "./datasets";
-import { defaultExtractionPrompt, defaultSystemPrompt } from "../../prompts";
 import { logger } from "../../logger";
+import { defaultExtractionPrompt, defaultSystemPrompt } from "../../prompts";
 import { createEvaluationModel } from "../";
 import { EVAL_MODEL } from "../constants";
+import { extractionTestCases } from "./datasets";
+import {
+  createLLMJudgeScorer,
+  extractionJsonStructureScorer,
+  taxonomyAlignmentScorer,
+} from "./scorers.js";
+import type { ExtractionDatasetRow, ExtractionModelOutput } from "./types";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
 

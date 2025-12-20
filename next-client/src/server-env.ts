@@ -25,7 +25,7 @@ const env = z.object({
 });
 
 const result = env.safeParse({
-  PIPELINE_EXPRESS_URL: process.env["PIPELINE_EXPRESS_URL"],
+  PIPELINE_EXPRESS_URL: process.env.PIPELINE_EXPRESS_URL,
 });
 
 if (!result.success) {

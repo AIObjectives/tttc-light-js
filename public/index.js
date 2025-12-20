@@ -61,10 +61,10 @@ function onFileChange(event) {
   var file = event.target.files[0];
   if (file) {
     var reader = new FileReader();
-    reader.onload = function (event) {
+    reader.onload = (event) => {
       var csvData = event.target.result;
       Papa.parse(csvData, {
-        complete: function (results) {
+        complete: (results) => {
           localStorage.data = JSON.stringify(results.data);
           localStorage.dataLength = String(results.data.length);
           localStorage.uploadedFile = file.name;

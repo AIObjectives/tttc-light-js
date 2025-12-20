@@ -1,18 +1,18 @@
 import {
-  describe,
-  it,
-  expect,
-  beforeAll,
   afterEach,
-  vi,
+  beforeAll,
   beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
 } from "vitest";
 import {
+  type FeatureFlagConfig,
+  getFeatureFlag,
   initializeFeatureFlags,
   isFeatureEnabled,
-  getFeatureFlag,
   shutdownFeatureFlags,
-  FeatureFlagConfig,
 } from "../index";
 import { LocalFeatureFlagProvider } from "../providers/localProvider";
 import { PostHogFeatureFlagProvider } from "../providers/posthogProvider";

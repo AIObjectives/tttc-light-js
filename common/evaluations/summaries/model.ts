@@ -1,20 +1,20 @@
 import { OpenAI } from "openai";
 import * as weave from "weave";
-import {
-  summariesJsonStructureScorer,
-  summaryLengthScorer,
-  summaryContentQualityScorer,
-  createLLMJudgeScorer,
-} from "./scorers.js";
-import { SummariesDatasetRow, SummariesModelOutput } from "./types.js";
-import { summariesTestCases } from "./datasets.js";
+import { logger } from "../../logger/index.js";
 import {
   defaultSummariesPrompt,
   defaultSystemPrompt,
 } from "../../prompts/index.js";
-import { createEvaluationModel } from "../index.js";
 import { EVAL_MODEL } from "../constants";
-import { logger } from "../../logger/index.js";
+import { createEvaluationModel } from "../index.js";
+import { summariesTestCases } from "./datasets.js";
+import {
+  createLLMJudgeScorer,
+  summariesJsonStructureScorer,
+  summaryContentQualityScorer,
+  summaryLengthScorer,
+} from "./scorers.js";
+import type { SummariesDatasetRow, SummariesModelOutput } from "./types.js";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
 

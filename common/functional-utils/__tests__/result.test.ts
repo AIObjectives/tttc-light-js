@@ -1,12 +1,12 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
-  success,
   failure,
-  Result,
-  mapResult,
   flatMapResult,
   flatMapResultAsync,
+  mapResult,
+  type Result,
   sequenceResult,
+  success,
 } from "../result";
 
 const s = success(1) as Result<number, boolean>;

@@ -1,5 +1,5 @@
-import * as weave from "weave";
 import type { OpenAI } from "openai";
+import * as weave from "weave";
 import { hydratePromptLiterals } from "../prompts";
 
 /**

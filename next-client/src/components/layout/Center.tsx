@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 /**
  * Centers content both horizontally and vertically.

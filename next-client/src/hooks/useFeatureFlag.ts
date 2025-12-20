@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  isFeatureEnabled,
+  type FeatureFlagContext,
   getFeatureFlag,
-  FeatureFlagContext,
+  isFeatureEnabled,
 } from "../lib/feature-flags/featureFlags";
 
 /**
@@ -37,12 +37,13 @@ export function useFeatureFlag(
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Stringify context for stable comparison
+  // Stringify context for stable comparison - contextKey provides stable deps even if context object reference changes
   const contextKey = useMemo(
     () => (context ? JSON.stringify(context) : ""),
     [context],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: contextKey intentionally used instead of context for stable comparison
   useEffect(() => {
     let isMounted = true;
 
@@ -67,7 +68,6 @@ export function useFeatureFlag(
     return () => {
       isMounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagName, contextKey]);
 
   return { enabled, loading };
@@ -102,12 +102,13 @@ export function useFeatureFlagValue<
   const [value, setValue] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Stringify context for stable comparison
+  // Stringify context for stable comparison - contextKey provides stable deps even if context object reference changes
   const contextKey = useMemo(
     () => (context ? JSON.stringify(context) : ""),
     [context],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: contextKey intentionally used instead of context for stable comparison
   useEffect(() => {
     let isMounted = true;
 
@@ -132,7 +133,6 @@ export function useFeatureFlagValue<
     return () => {
       isMounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagName, contextKey]);
 
   return { value, loading };

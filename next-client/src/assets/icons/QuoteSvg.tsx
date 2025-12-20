@@ -1,4 +1,5 @@
-import * as React from "react";
+import type * as React from "react";
+
 const SvgComponent = (
   props: React.SVGProps<SVGSVGElement & SVGPathElement>,
 ) => (
@@ -9,6 +10,7 @@ const SvgComponent = (
     fill="none"
     {...props}
   >
+    <title>Quote</title>
     <path
       fill="#64748B"
       {...props}

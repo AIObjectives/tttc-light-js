@@ -2,7 +2,7 @@
  * Utility functions for downloading report data
  */
 
-import * as schema from "tttc-common/schema";
+import type * as schema from "tttc-common/schema";
 
 /**
  * Downloads report data from in-memory PipelineOutput

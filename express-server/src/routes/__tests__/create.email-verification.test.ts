@@ -2,15 +2,15 @@
  * Tests for email verification error handling in the create route
  */
 
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
-import request from "supertest";
 import express from "express";
-import create from "../create";
+import request from "supertest";
 import {
-  validateParsedData,
   detectCSVInjection,
+  validateParsedData,
 } from "tttc-common/csv-security";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as firebase from "../../Firebase";
+import create from "../create";
 
 vi.mock("tttc-common/csv-security", () => ({
   validateParsedData: vi.fn(),
@@ -208,22 +208,21 @@ describe("Email Verification in Create Route", () => {
       },
     ];
 
-    it.each(testCases)(
-      "should allow $name to create reports",
-      async ({ user }) => {
-        vi.mocked(firebase.verifyUser).mockResolvedValue(user as any);
+    it.each(testCases)("should allow $name to create reports", async ({
+      user,
+    }) => {
+      vi.mocked(firebase.verifyUser).mockResolvedValue(user as any);
 
-        const response = await request(app)
-          .post("/create")
-          .send(
-            createValidRequestBody([
-              { comment: "Test", id: "1", interview: "Alice" },
-            ]),
-          )
-          .expect(200);
+      const response = await request(app)
+        .post("/create")
+        .send(
+          createValidRequestBody([
+            { comment: "Test", id: "1", interview: "Alice" },
+          ]),
+        )
+        .expect(200);
 
-        expect(response.body.message).toBe("Request received.");
-      },
-    );
+      expect(response.body.message).toBe("Request received.");
+    });
   });
 });

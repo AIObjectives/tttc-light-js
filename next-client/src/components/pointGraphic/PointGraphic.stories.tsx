@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
 import { reportData } from "../../../stories/data/dummyData";
-import React, { useRef, useState } from "react";
+import { Button } from "../elements";
+import { Col, Row } from "../layout";
 import PointGraphic, {
   Cell as CellComponent,
   PointGraphicGroup,
 } from "./PointGraphic";
-import { Button } from "../elements";
-import { Col, Row } from "../layout";
 
 /**
  * ! This story will be broken until it's properly refactored
@@ -20,7 +20,7 @@ const meta = {
   },
   tags: ["autodocs"],
   decorators: [
-    (Story) => (
+    (_Story) => (
       <div className="flex h-screen border items-center justify-center">
         {/* <Story /> */}
       </div>

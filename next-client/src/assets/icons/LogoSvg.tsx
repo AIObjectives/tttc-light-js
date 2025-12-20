@@ -1,4 +1,5 @@
-import * as React from "react";
+import type * as React from "react";
+
 const SvgComponent = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     width="15"
@@ -8,6 +9,7 @@ const SvgComponent = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     {...props}
   >
+    <title>Logo</title>
     <path
       fillRule="evenodd"
       clipRule="evenodd"

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "storybook/test";
-import { Button } from "./Button";
 import Icons from "@/assets/icons";
+import { Button } from "./Button";
 
 /**
  * NOTES:
@@ -27,7 +27,9 @@ type Sizes = "lg" | "default" | "sm";
 const sizes: Sizes[] = ["lg", "default", "sm"];
 
 const enummerateButtonSizes = (story: Story) =>
-  sizes.map((size) => <Button {...story.args} size={size} className="mx-2" />);
+  sizes.map((size) => (
+    <Button key={size} {...story.args} size={size} className="mx-2" />
+  ));
 
 export const Primary: Story = {
   args: {

@@ -1,22 +1,22 @@
-import { Response } from "express";
-import { RequestWithLogger } from "../types/request";
+import { createHash } from "node:crypto";
+import type { Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
+import { getAnalytics } from "tttc-common/analytics";
 import * as api from "tttc-common/api";
-import { Bucket } from "../storage";
-import { sendErrorByCode } from "./sendError";
 import { ERROR_CODES } from "tttc-common/errors";
-import { Result } from "tttc-common/functional-utils";
-import {
-  findReportRefByUri,
-  getReportRefById,
-  db,
-  getCollectionName,
-} from "../Firebase";
+import type { ReportRef } from "tttc-common/firebase";
+import type { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { FIRESTORE_ID_REGEX } from "tttc-common/utils";
-import { ReportRef } from "tttc-common/firebase";
-import { DecodedIdToken } from "firebase-admin/auth";
-import { getAnalytics } from "tttc-common/analytics";
-import { createHash } from "crypto";
+import {
+  db,
+  findReportRefByUri,
+  getCollectionName,
+  getReportRefById,
+} from "../Firebase";
+import { Bucket } from "../storage";
+import type { RequestWithLogger } from "../types/request";
+import { sendErrorByCode } from "./sendError";
 
 // Simple validation helpers
 function isValidFirebaseId(id: string): boolean {
@@ -104,7 +104,7 @@ class BucketParseError extends Error {
  * Simple GCS URI parser
  */
 function parseGcsUri(uri: string): { bucket: string; fileName: string } | null {
-  const match = uri.match(/https:\/\/storage\.googleapis\.com\/([^\/]+)\/(.+)/);
+  const match = uri.match(/https:\/\/storage\.googleapis\.com\/([^/]+)\/(.+)/);
   if (!match) return null;
   return { bucket: match[1], fileName: match[2] };
 }
@@ -372,7 +372,7 @@ function getBucketAndFileName(
   let uri: string;
   try {
     uri = decodeURIComponent(api.getReportRequestUri.parse(rawUri));
-  } catch (error) {
+  } catch (_error) {
     return {
       tag: "failure",
       error: new BucketParseError("Failed to decode URI parameter"),

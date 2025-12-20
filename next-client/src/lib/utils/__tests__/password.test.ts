@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { getPasswordStrength } from "../password";
+import { describe, expect, it } from "vitest";
 import { MIN_PASSWORD_LENGTH } from "@/lib/constants/auth";
+import { getPasswordStrength } from "../password";
 
 describe("getPasswordStrength", () => {
   describe("Empty password", () => {

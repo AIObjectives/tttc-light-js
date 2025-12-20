@@ -1,6 +1,6 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
+import type { ReportState } from "../types";
 import { setupTestState } from "./testStateSetup";
-import { ReportState } from "../types";
 
 const { state, reducer } = setupTestState();
 
@@ -24,8 +24,8 @@ describe("TopicNode properties", () => {
 describe("SubtopicNode properties", () => {
   test("All subtopics are set to match their number of children", () => {
     const subtopics = openedState.children.flatMap((t) => t.children);
-    subtopics.forEach((node) =>
-      expect(node.pagination).toBe(node.children.length - 1),
-    );
+    subtopics.forEach((node) => {
+      expect(node.pagination).toBe(node.children.length - 1);
+    });
   });
 });

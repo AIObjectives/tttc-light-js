@@ -1,10 +1,10 @@
+import { AlertCircle, Check, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { AlertCircle, Copy, Check, ExternalLink } from "lucide-react";
 import type { FormActionError } from "tttc-common/api";
 import {
   Alert,
-  AlertTitle,
   AlertDescription,
+  AlertTitle,
   Button,
 } from "@/components/elements";
 
@@ -56,6 +56,7 @@ export function SubmissionErrorBanner({ error }: SubmissionErrorBannerProps) {
               {errorReference}
             </code>
             <button
+              type="button"
               onClick={copyToClipboard}
               aria-label="Copy error reference"
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors min-h-[44px] px-2 -my-2"

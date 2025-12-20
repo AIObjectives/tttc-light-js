@@ -1,6 +1,6 @@
-import React from "react";
-import { Col, Row } from "@/components/layout";
+import type React from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/elements";
+import { Col, Row } from "@/components/layout";
 import { Sticky } from "@/components/wrappers";
 import { cn } from "@/lib/utils/shadcn";
 

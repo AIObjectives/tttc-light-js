@@ -1,10 +1,14 @@
-import {
+import type {
   ReportState,
   SubtopicNode,
   TopicNode,
 } from "@/components/report/hooks/useReportState";
-import { OutlineState, OutlineSubtopicNode, OutlineTopicNode } from "./types";
 import { getThemeColor } from "@/lib/color";
+import type {
+  OutlineState,
+  OutlineSubtopicNode,
+  OutlineTopicNode,
+} from "./types";
 
 //  ********************************
 //  * State Builder *

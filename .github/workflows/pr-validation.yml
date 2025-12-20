@@ -33,8 +33,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm exec prettier . --check
+      - name: Check formatting and lint
+        run: pnpm exec biome check .
 
       - name: Build, typecheck, and test all packages
         env:

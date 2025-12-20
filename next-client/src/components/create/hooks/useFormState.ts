@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import * as prompts from "tttc-common/prompts";
-import { Result, success, failure } from "tttc-common/functional-utils";
 
 type FormStatus<T, E> = Result<T, E> | { tag: "initial"; value: T };
 
@@ -31,7 +31,7 @@ function useHasChanged<T>(val: T) {
     if (state._tag === "changed") return;
     if (val === initialState.current) return;
     else setState({ _tag: "changed", value: val });
-  }, [val]);
+  }, [val, state._tag]);
 
   return state._tag === "changed";
 }
@@ -55,6 +55,7 @@ function useFormItem<T>({
   });
   const hasChanged = useHasChanged(state);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: statusEval is intentionally omitted - callers pass inline functions that would cause infinite loops if included
   useEffect(() => {
     if (!hasChanged) return;
     else setStatus(statusEval(state));

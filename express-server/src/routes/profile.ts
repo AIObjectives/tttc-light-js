@@ -5,14 +5,14 @@
  * Users can update their profile information which syncs to monday.com.
  */
 
-import { Response } from "express";
-import { RequestWithLogger } from "../types/request";
+import type { Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
+import { logger } from "tttc-common/logger";
 import { z } from "zod";
 import * as firebase from "../Firebase";
-import { sendError } from "./sendError";
 import { createMondayItem } from "../services/monday";
-import { logger } from "tttc-common/logger";
-import { DecodedIdToken } from "firebase-admin/auth";
+import type { RequestWithLogger } from "../types/request";
+import { sendError } from "./sendError";
 
 const profileLogger = logger.child({ module: "profile" });
 
@@ -40,8 +40,6 @@ const profileUpdateSchema = z.object({
   useCase: z.string().trim().min(1).max(500).optional(),
   newsletterOptIn: z.boolean().optional(),
 });
-
-type ProfileUpdateRequest = z.infer<typeof profileUpdateSchema>;
 
 /**
  * Verify Firebase authentication token from request headers

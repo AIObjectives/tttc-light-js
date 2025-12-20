@@ -1,13 +1,13 @@
-import Report from "@/components/report/Report";
-import * as schema from "tttc-common/schema";
-import * as api from "tttc-common/api";
-import * as utils from "tttc-common/utils";
-import ReportProgress from "@/components/reportProgress/ReportProgress";
-import { ReportErrorState } from "@/components/report/ReportErrorState";
-import Feedback from "@/components/feedback/Feedback";
 import pRetry from "p-retry";
+import type * as api from "tttc-common/api";
 import { logger } from "tttc-common/logger/browser";
+import * as schema from "tttc-common/schema";
+import * as utils from "tttc-common/utils";
+import Feedback from "@/components/feedback/Feedback";
 import LegacyReportWrapper from "@/components/report/LegacyReportWrapper";
+import Report from "@/components/report/Report";
+import { ReportErrorState } from "@/components/report/ReportErrorState";
+import ReportProgress from "@/components/reportProgress/ReportProgress";
 import { handleResponseData } from "@/lib/report/handleResponseData";
 
 const reportPageLogger = logger.child({ module: "report-page" });

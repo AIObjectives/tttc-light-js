@@ -1,4 +1,5 @@
-import * as React from "react";
+import type * as React from "react";
+
 const SvgComponent = (props: React.SVGProps<SVGPathElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -7,6 +8,7 @@ const SvgComponent = (props: React.SVGProps<SVGPathElement>) => (
     viewBox="0 0 12 12"
     fill="none"
   >
+    <title>WhatsApp</title>
     <path
       fillRule="evenodd"
       clipRule="evenodd"

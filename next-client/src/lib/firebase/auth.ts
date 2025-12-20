@@ -14,18 +14,18 @@
 "use client";
 
 import {
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut as firebaseSignOut,
-  onAuthStateChanged as firebaseOnAuthStateChanged,
-  setPersistence,
   browserLocalPersistence,
-  UserCredential,
-  User,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
+  onAuthStateChanged as firebaseOnAuthStateChanged,
+  signOut as firebaseSignOut,
+  GoogleAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  type User,
+  type UserCredential,
 } from "firebase/auth";
 import { getFirebaseAuth } from "./clientApp";
 

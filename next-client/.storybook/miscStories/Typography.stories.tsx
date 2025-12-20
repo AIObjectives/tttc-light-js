@@ -1,6 +1,6 @@
-import { Col } from "@/components/layout";
 import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "storybook/test";
+import { Col } from "@/components/layout";
 
 function Typography() {
   return (

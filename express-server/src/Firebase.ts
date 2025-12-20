@@ -1,15 +1,15 @@
 import admin from "firebase-admin";
-import { Env, validateEnv } from "./types/context";
 import {
-  ReportJob,
-  ReportRef,
-  useGetCollectionName,
-  UserDocument,
+  type ReportJob,
+  type ReportRef,
   SCHEMA_VERSIONS,
+  type UserDocument,
+  useGetCollectionName,
 } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger";
-import { z } from "zod";
 import { FIRESTORE_ID_REGEX, isValidReportUri } from "tttc-common/utils";
+import { z } from "zod";
+import { type Env, validateEnv } from "./types/context";
 
 // Zod schemas for ID-based URL system validation
 const reportIdSchema = z
@@ -626,7 +626,7 @@ export async function updateReportRefStatusWithRetry(
       }
 
       // Wait before retry with exponential backoff
-      const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+      const delay = Math.min(1000 * 2 ** attempt, 5000);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }

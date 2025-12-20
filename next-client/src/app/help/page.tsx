@@ -1,5 +1,5 @@
+import type React from "react";
 import { Col } from "@/components/layout";
-import React from "react";
 
 export default function TranscriptionPage() {
   return (

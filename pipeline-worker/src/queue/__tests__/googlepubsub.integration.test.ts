@@ -1,15 +1,15 @@
+import { PubSub } from "@google-cloud/pubsub";
 import {
-  describe,
-  it,
-  expect,
-  beforeAll,
   afterAll,
+  beforeAll,
   beforeEach,
+  describe,
+  expect,
+  it,
   vi,
 } from "vitest";
 import { z } from "zod";
-import { PubSub } from "@google-cloud/pubsub";
-import { GooglePubSub } from "../googlepubsub";
+import type { GooglePubSub } from "../googlepubsub";
 import { createPubSubFactory } from "../index";
 
 const TestSchema = z.object({

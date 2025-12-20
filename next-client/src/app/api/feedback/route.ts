@@ -1,7 +1,7 @@
-import { feedbackRequest } from "@/lib/types/clientRoutes";
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
+import { feedbackRequest } from "@/lib/types/clientRoutes";
 
 const feedbackApiLogger = logger.child({ module: "api-feedback" });
 
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await expressResponse.json();
+    const _result = await expressResponse.json();
     feedbackApiLogger.info(
       {},
       "Feedback submitted successfully via express server",

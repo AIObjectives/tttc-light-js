@@ -1,13 +1,24 @@
 import {
-  createOpenActionStream,
+  Array as Arr,
+  Either,
+  flow,
+  Option,
+  pipe,
+  Record as Rec,
+} from "effect";
+import {
   createCloseActionStream,
   createHighlightedActionStream,
+  createOpenActionStream,
   createToggleActionStream,
   createUnhighlightedActionStream,
 } from "./actionStream";
 import { actionStreamReducer } from "./actionStreamReducer";
-import { TaggedTopicPath, TaggedSubtopicPath, OutlineState } from "./types";
-import { pipe, Record, Either, Array, flow, Option } from "effect";
+import type {
+  OutlineState,
+  TaggedSubtopicPath,
+  TaggedTopicPath,
+} from "./types";
 
 //  ********************************
 //  * Reducer *
@@ -34,24 +45,21 @@ export type OutlineStateAction =
 export function createReducer(
   idMap: Record<string, TaggedTopicPath | TaggedSubtopicPath>,
 ) {
-  return function (
-    state: OutlineState,
-    action: OutlineStateAction,
-  ): OutlineState {
+  return (state: OutlineState, action: OutlineStateAction): OutlineState => {
     switch (action.type) {
       case "open": {
         const { id } = action.payload;
         return pipe(
           idMap,
           // get the path to reach this id
-          Record.get(id),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Rec.get(id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               // create the set of actions based on the type of path
               createOpenActionStream,
               // reduce the set of actions over the state
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -70,15 +78,15 @@ export function createReducer(
         const { id } = action.payload;
         return pipe(
           idMap,
-          Record.get(id),
+          Rec.get(id),
           Option.flatMap((val) =>
             val.type === "subtopic" ? Option.none() : Option.some(val),
           ),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               createCloseActionStream,
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -97,15 +105,15 @@ export function createReducer(
         const { id } = action.payload;
         return pipe(
           idMap,
-          Record.get(id),
+          Rec.get(id),
           Option.flatMap((val) =>
             val.type === "subtopic" ? Option.none() : Option.some(val),
           ),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               createToggleActionStream,
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -124,8 +132,8 @@ export function createReducer(
         const { id } = action.payload;
         return pipe(
           idMap,
-          Record.get(id),
-          Either.fromOption(() => "Could not find path for action: " + id),
+          Rec.get(id),
+          Either.fromOption(() => `Could not find path for action: ${id}`),
           Either.map(
             flow(
               /**
@@ -135,12 +143,12 @@ export function createReducer(
                * before turning the next one on.
                */
               (path) =>
-                Array.flatten([
+                Arr.flatten([
                   createUnhighlightedActionStream(state.cache.highlightedPath),
                   createHighlightedActionStream(path),
                 ]),
               (arr) => arr,
-              Array.reduce(state, actionStreamReducer),
+              Arr.reduce(state, actionStreamReducer),
             ),
           ),
           Either.getOrElse((e) => {
@@ -158,19 +166,19 @@ export function createReducer(
       case "openAll": {
         return pipe(
           state.tree,
-          Array.flatMap((_, i) =>
+          Arr.flatMap((_, i) =>
             createOpenActionStream({ type: "topic", topicIdx: i }),
           ),
-          Array.reduce(state, actionStreamReducer),
+          Arr.reduce(state, actionStreamReducer),
         );
       }
       case "closeAll": {
         return pipe(
           state.tree,
-          Array.flatMap((_, i) =>
+          Arr.flatMap((_, i) =>
             createCloseActionStream({ type: "topic", topicIdx: i }),
           ),
-          Array.reduce(state, actionStreamReducer),
+          Arr.reduce(state, actionStreamReducer),
         );
       }
       case "clearError": {

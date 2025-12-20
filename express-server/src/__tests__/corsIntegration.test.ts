@@ -1,13 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import express from "express";
 import cors from "cors";
+import express from "express";
 import request from "supertest";
-import {
-  getAllowedOrigins,
-  createCorsOptions,
-  logCorsConfiguration,
-} from "../utils/corsConfig";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { validateEnv } from "../types/context";
+import { createCorsOptions, getAllowedOrigins } from "../utils/corsConfig";
 
 describe("CORS Integration Tests", () => {
   const originalEnv = process.env;
@@ -36,12 +32,12 @@ describe("CORS Integration Tests", () => {
     const corsOptions = createCorsOptions(corsConfig.origins);
 
     expressApp.use(cors(corsOptions));
-    expressApp.get("/health", (req, res) => {
+    expressApp.get("/health", (_req, res) => {
       res.json({ status: "ok", service: "express" });
     });
 
     // Simulate calling Python service
-    expressApp.post("/call-python", (req, res) => {
+    expressApp.post("/call-python", (_req, res) => {
       res.json({
         status: "would call python service",
         pythonUrl: process.env.PYSERVER_URL,
@@ -130,7 +126,7 @@ describe("CORS Integration Tests", () => {
       const expressConfig = getAllowedOrigins(env);
 
       // Expected result should be clean array
-      const expectedOrigins = ["https://app1.com", "https://app2.com"];
+      const _expectedOrigins = ["https://app1.com", "https://app2.com"];
 
       // No longer includes localhost:3000 by default
       expect(expressConfig.origins).toContain("https://app1.com");

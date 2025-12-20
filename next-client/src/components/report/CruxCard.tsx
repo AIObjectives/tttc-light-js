@@ -2,23 +2,23 @@
 
 import React, {
   useContext,
-  useState,
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
 import { mergeRefs } from "react-merge-refs";
-import * as schema from "tttc-common/schema";
+import { logger } from "tttc-common/logger/browser";
+import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
-import { Col, Row } from "../layout";
 import {
-  ControversyIndicator,
   AgreeDisagreeSpectrum,
+  ControversyIndicator,
 } from "@/components/controversy";
 import { getControversyCategory, parseSpeaker } from "@/lib/crux/utils";
 import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
+import { Col, Row } from "../layout";
 import { ReportContext } from "./Report";
-import { logger } from "tttc-common/logger/browser";
 
 // Suppress useLayoutEffect warning in SSR
 const useIsomorphicLayoutEffect =
@@ -117,7 +117,7 @@ export function CruxCard({
     scrollToAfterRender(subtopicId);
   };
 
-  const category = getControversyCategory(crux.controversyScore);
+  const _category = getControversyCategory(crux.controversyScore);
 
   // Explanation expansion state
   const [isExplanationExpanded, setIsExplanationExpanded] = useState(false);
@@ -223,6 +223,7 @@ export function CruxCard({
             </p>
             {showReadMore && !isExplanationExpanded && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsExplanationExpanded(true);

@@ -2,8 +2,8 @@
  * Utility functions for clustering pipeline step
  */
 
-import { logger } from "tttc-common/logger";
 import type { Logger } from "pino";
+import { logger } from "tttc-common/logger";
 
 const utilsLogger = logger.child({ module: "clustering-utils" });
 

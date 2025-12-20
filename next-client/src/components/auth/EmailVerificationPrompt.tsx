@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   Alert,
-  AlertTitle,
   AlertDescription,
+  AlertTitle,
   Button,
 } from "@/components/elements";
 import { sendVerificationEmail } from "@/lib/firebase/auth";

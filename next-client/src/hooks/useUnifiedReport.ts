@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { ReportRef } from "tttc-common/firebase";
-import * as api from "tttc-common/api";
+import { useCallback, useEffect, useState } from "react";
+import type * as api from "tttc-common/api";
+import type { ReportRef } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger/browser";
 
 const unifiedReportLogger = logger.child({ module: "unified-report-hook" });
@@ -79,6 +79,7 @@ export function useUnifiedReport(identifier: string) {
   }, [fetchReport]);
 
   // Set up polling when report is processing
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state.status is only accessed after type narrowing (state.type === "processing"), and doesn't affect when the effect should re-run
   useEffect(() => {
     if (state.type === "processing") {
       unifiedReportLogger.debug(

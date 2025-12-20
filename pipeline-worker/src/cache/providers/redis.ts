@@ -1,14 +1,14 @@
 import Redis from "ioredis";
-import { formatError } from "tttc-common/utils";
 import { logger } from "tttc-common/logger";
+import { formatError } from "tttc-common/utils";
 import {
-  Cache,
-  RedisCacheConfig,
-  SetOptions,
+  type Cache,
   CacheConnectionError,
+  CacheDeleteError,
   CacheGetError,
   CacheSetError,
-  CacheDeleteError,
+  type RedisCacheConfig,
+  type SetOptions,
 } from "../types";
 
 const cacheLogger = logger.child({ module: "cache-redis" });
@@ -27,7 +27,6 @@ const cacheLogger = logger.child({ module: "cache-redis" });
  */
 export class RedisCache implements Cache {
   private client: Redis;
-  private config: RedisCacheConfig;
 
   /**
    * Creates a new RedisCache instance.
@@ -35,8 +34,6 @@ export class RedisCache implements Cache {
    * @param config - Redis configuration including host, port, password, and db
    */
   constructor(config: RedisCacheConfig) {
-    this.config = config;
-
     try {
       this.client = new Redis({
         host: config.host,

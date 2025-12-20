@@ -2,21 +2,20 @@
  * Integration tests for analytics module
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  Analytics,
-  getAnalytics,
-  initializeAnalytics,
-  trackEvent,
-  identifyUser,
-  trackPage,
   createAnalyticsConfig,
   createEventProperties,
   extractUserProperties,
+  getAnalytics,
+  identifyUser,
+  initializeAnalytics,
   resetGlobalAnalytics,
+  trackEvent,
+  trackPage,
 } from "../index";
-import { CommonEvents } from "../types";
 import type { AnalyticsConfig } from "../types";
+import { CommonEvents } from "../types";
 
 const mockChildLogger = vi.hoisted(() => {
   return {

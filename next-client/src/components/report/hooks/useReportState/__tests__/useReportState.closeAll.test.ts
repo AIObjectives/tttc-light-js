@@ -1,6 +1,6 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
+import type { ReportState } from "../types";
 import { setupTestState } from "./testStateSetup";
-import { ReportState } from "../types";
 
 const { state, reducer } = setupTestState();
 

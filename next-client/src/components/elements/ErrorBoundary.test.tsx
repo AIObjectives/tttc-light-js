@@ -1,18 +1,17 @@
-import React from "react";
 import {
+  cleanup,
+  fireEvent,
   render,
   screen,
-  fireEvent,
-  cleanup,
   waitFor,
 } from "@testing-library/react";
 import {
-  beforeAll,
   afterAll,
   afterEach,
+  beforeAll,
   describe,
-  it,
   expect,
+  it,
   vi,
 } from "vitest";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -86,7 +85,9 @@ describe("ErrorBoundary", () => {
         fallback={(reset) => (
           <div>
             <p>Error occurred</p>
-            <button onClick={reset}>Reset</button>
+            <button type="button" onClick={reset}>
+              Reset
+            </button>
           </div>
         )}
       >
@@ -102,7 +103,7 @@ describe("ErrorBoundary", () => {
     let shouldThrow = true;
     const TestComponent = () => <ThrowError shouldThrow={shouldThrow} />;
 
-    const { rerender } = render(
+    render(
       <ErrorBoundary>
         <TestComponent />
       </ErrorBoundary>,
@@ -130,7 +131,9 @@ describe("ErrorBoundary", () => {
         fallback={(reset) => (
           <div>
             <p>Custom error</p>
-            <button onClick={() => reset()}>Custom Reset</button>
+            <button type="button" onClick={() => reset()}>
+              Custom Reset
+            </button>
           </div>
         )}
       >

@@ -6,9 +6,10 @@
  */
 
 import type Redis from "ioredis";
+import { logger } from "tttc-common/logger";
 import type { ProcessingAuditLog } from "tttc-common/schema";
 import { processingAuditLog } from "tttc-common/schema";
-import { logger } from "tttc-common/logger";
+import { ZodError } from "zod";
 
 const auditLogLogger = logger.child({ module: "audit-log-redis" });
 
@@ -80,9 +81,9 @@ export async function getAuditLog(
     return validated;
   } catch (error) {
     // Log Zod validation errors with full details
-    if (error instanceof Error && "issues" in error) {
+    if (error instanceof ZodError) {
       auditLogLogger.error(
-        { reportId, error, zodIssues: (error as any).issues },
+        { reportId, error, zodIssues: error.issues },
         "Failed to parse audit log from Redis - Zod validation failed",
       );
     } else {

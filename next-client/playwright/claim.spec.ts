@@ -1,4 +1,4 @@
-import { test as base, Locator, expect } from "@playwright/test";
+import { test as base, expect, type Locator } from "@playwright/test";
 
 const baseUrl = new URL("http://localhost:3000");
 

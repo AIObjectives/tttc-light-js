@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import express from "express";
 import cors from "cors";
+import express from "express";
 import request from "supertest";
-import { getAllowedOrigins, createCorsOptions } from "../utils/corsConfig";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { validateEnv } from "../types/context";
+import { createCorsOptions, getAllowedOrigins } from "../utils/corsConfig";
 
 describe("CORS Service Integration Tests", () => {
   const originalEnv = process.env;
@@ -34,7 +34,7 @@ describe("CORS Service Integration Tests", () => {
     expressApp.use(cors(corsOptions));
 
     // Simulate Express→Python communication endpoint
-    expressApp.post("/call-python-service", (req, res) => {
+    expressApp.post("/call-python-service", (_req, res) => {
       // In real implementation, this would make HTTP request to Python server
       // For testing, we simulate the communication pattern
       res.json({
@@ -46,7 +46,7 @@ describe("CORS Service Integration Tests", () => {
     });
 
     // Health check endpoint
-    expressApp.get("/health", (req, res) => {
+    expressApp.get("/health", (_req, res) => {
       res.json({ status: "ok", service: "express" });
     });
   });
@@ -106,7 +106,7 @@ describe("CORS Service Integration Tests", () => {
       expect(expressConfig.origins).toContain("http://localhost:3000");
 
       // Python server needs to allow BOTH Next.js client AND Express server requests
-      const requiredPythonOrigins = [
+      const _requiredPythonOrigins = [
         "http://localhost:3000", // Next.js client
         "http://localhost:8080", // Express server - CRITICAL for service communication
       ];

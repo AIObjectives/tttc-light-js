@@ -1,4 +1,4 @@
-import { HttpError } from "http-errors";
+import type { HttpError } from "http-errors";
 
 /**
  * HTTP error interface with status code

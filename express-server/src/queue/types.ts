@@ -1,4 +1,4 @@
-import { PipelineJob } from "../jobs/pipeline";
+import type { PipelineJob } from "../jobs/pipeline";
 
 // Interface of impleneting a Queue.
 // Used for processing reports

@@ -1,6 +1,12 @@
 "use client";
 
-import { RefObject, useEffect, useRef, useState } from "react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 /**
  * Hook that triggers when component becomes visible on the screen.
@@ -10,13 +16,16 @@ export function useIsVisible(): [RefObject<HTMLDivElement>, boolean] {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleIntersect = (entries: IntersectionObserverEntry[]) => {
-    if (!containerRef.current) return;
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) setIsVisible(true);
-      else setIsVisible(false);
-    });
-  };
+  const handleIntersect = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (!containerRef.current) return;
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) setIsVisible(true);
+        else setIsVisible(false);
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     const obs = new IntersectionObserver(handleIntersect);
@@ -24,7 +33,7 @@ export function useIsVisible(): [RefObject<HTMLDivElement>, boolean] {
     return () => {
       if (containerRef.current) obs.unobserve(containerRef.current);
     };
-  }, []);
+  }, [handleIntersect]);
 
   return [containerRef, isVisible];
 }

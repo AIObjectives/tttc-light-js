@@ -5,7 +5,7 @@
  * ensuring speakers appear in exactly one list (agree/disagree/no_clear_position).
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { subtopicCrux } from "../index";
 
 describe("SubtopicCrux Speaker Deduplication", () => {

@@ -1,16 +1,16 @@
 import { OpenAI } from "openai";
 import * as weave from "weave";
-import {
-  cruxJsonStructureScorer,
-  explanationQualityScorer,
-  createLLMJudgeScorer,
-} from "./scorers.js";
-import { cruxTestCases } from "./datasets";
-import { CruxDatasetRow, CruxModelOutput } from "./types";
+import { logger } from "../../logger";
 import { defaultCruxPrompt, defaultSystemPrompt } from "../../prompts";
 import { createEvaluationModel } from "../";
-import { logger } from "../../logger";
 import { EVAL_MODEL } from "../constants";
+import { cruxTestCases } from "./datasets";
+import {
+  createLLMJudgeScorer,
+  cruxJsonStructureScorer,
+  explanationQualityScorer,
+} from "./scorers.js";
+import type { CruxDatasetRow, CruxModelOutput } from "./types";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
 

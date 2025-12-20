@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
 
 const profileUpdateApiLogger = logger.child({ module: "api-profile-update" });

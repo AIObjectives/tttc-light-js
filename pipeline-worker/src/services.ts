@@ -1,6 +1,9 @@
-import { RefStoreServicesLive, RefStoreServices } from "./datastore/refstore";
+import type { Cache } from "./cache";
 import { CacheServicesLive } from "./cache/services";
-import { Cache } from "./cache";
+import {
+  type RefStoreServices,
+  RefStoreServicesLive,
+} from "./datastore/refstore";
 
 export interface Services {
   RefStore: RefStoreServices;

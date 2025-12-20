@@ -46,7 +46,7 @@ function sleep(ms: number): Promise<void> {
  * Calculate delay with exponential backoff and jitter
  */
 function getRetryDelay(attempt: number): number {
-  const exponentialDelay = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt);
+  const exponentialDelay = RETRY_CONFIG.baseDelayMs * 2 ** attempt;
   const jitter = Math.random() * 0.3 * exponentialDelay; // 0-30% jitter
   return Math.min(exponentialDelay + jitter, RETRY_CONFIG.maxDelayMs);
 }
@@ -88,7 +88,6 @@ async function fetchWithRetry(
           "monday.com request failed, retrying with backoff",
         );
         await sleep(delay);
-        continue;
       }
     }
   }

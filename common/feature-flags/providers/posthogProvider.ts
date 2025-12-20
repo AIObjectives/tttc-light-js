@@ -1,6 +1,6 @@
 import { PostHog } from "posthog-node";
-import { FeatureFlagProvider, FeatureFlagContext } from "../types";
 import { logger } from "../../logger";
+import type { FeatureFlagContext, FeatureFlagProvider } from "../types";
 
 const posthogLogger = logger.child({ module: "feature-flags-posthog" });
 

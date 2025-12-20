@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Claim, QuoteIcon as QuoteIconComponent } from "..";
 import { reportData } from "../../../../stories/data/dummyData";
-import { TopicContext } from "../../topic/Topic";
 import { stateBuilder } from "../../report/hooks/useReportState/utils";
+import { TopicContext } from "../../topic/Topic";
+import { Claim, QuoteIcon as QuoteIconComponent } from "..";
 
 const reportState = stateBuilder(reportData.topics);
 const topicNode = reportState.children[0];

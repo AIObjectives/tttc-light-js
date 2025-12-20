@@ -1,11 +1,12 @@
 /**
  * Unit tests for Perspective API utility functions
  */
-import { describe, it, expect } from "vitest";
-import * as schema from "tttc-common/schema";
+
+import type * as schema from "tttc-common/schema";
+import { describe, expect, it } from "vitest";
 import {
-  extractQuotesFromTree,
   calculateBridgingScore,
+  extractQuotesFromTree,
 } from "../perspective-api";
 
 describe("calculateBridgingScore", () => {

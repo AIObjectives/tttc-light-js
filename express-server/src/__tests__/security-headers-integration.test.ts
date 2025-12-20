@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import express from "express";
-import request from "supertest";
 import cors from "cors";
+import express from "express";
 import helmet from "helmet";
-import { getAllowedOrigins, createCorsOptions } from "../utils/corsConfig";
+import request from "supertest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { validateEnv } from "../types/context";
+import { createCorsOptions, getAllowedOrigins } from "../utils/corsConfig";
 
 describe("CORS + Security Headers Integration", () => {
   let app: express.Application;

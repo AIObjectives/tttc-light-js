@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { getUserCapabilities } from "@/lib/api/userLimits";
-import { toast } from "sonner";
 import pRetry from "p-retry";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { getUserCapabilities } from "@/lib/api/userLimits";
 
 const DEFAULT_SIZE_LIMIT = 150 * 1024; // 150KB
 
@@ -16,7 +16,7 @@ export function useUserCapabilities() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchCapabilities = async () => {
+  const fetchCapabilities = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -59,11 +59,11 @@ export function useUserCapabilities() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCapabilities();
-  }, []);
+  }, [fetchCapabilities]);
 
   return {
     userSizeLimit,

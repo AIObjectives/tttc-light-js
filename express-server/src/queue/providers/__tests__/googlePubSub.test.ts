@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock environment validation to prevent Firebase initialization issues
 vi.mock("../../../types/context", () => ({
@@ -93,8 +93,8 @@ vi.mock("firebase-admin", () => ({
   })),
 }));
 
+import type { PipelineJob } from "../../../jobs/pipeline";
 import { GooglePubSubQueue } from "../googlePubSub";
-import { PipelineJob } from "../../../jobs/pipeline";
 
 // Mock the Google Cloud PubSub module
 vi.mock("@google-cloud/pubsub", () => ({

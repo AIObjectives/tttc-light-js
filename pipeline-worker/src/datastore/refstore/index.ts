@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import {
-  ReportJob,
-  ReportRef,
+  type ReportJob,
+  type ReportRef,
   reportJob,
   reportRef,
 } from "tttc-common/firebase";
@@ -174,7 +174,7 @@ export type RefStoreFactory = <T extends z.ZodTypeAny>(
 ) => RefStore<z.infer<T>>;
 
 const amendCollectionName = (collectionName: string, config: ServiceConfig) => {
-  if (config.node_env === "development") return collectionName + "_dev";
+  if (config.node_env === "development") return `${collectionName}_dev`;
   else return collectionName;
 };
 
@@ -234,10 +234,10 @@ export const RefStoreServicesLive = (env: {
   [key: string]: string | undefined;
 }): RefStoreServices => {
   const config = parseConfig({
-    node_env: env["NODE_ENV"],
-    whichService: env["WHICH_SERVICE_REFSTORE"],
-    firebaseCredentials: env["FIREBASE_CREDENTIALS_ENCODED"],
-    postgresConnectionString: env["POSTGRES_CONNECTION_STRING"],
+    node_env: env.NODE_ENV,
+    whichService: env.WHICH_SERVICE_REFSTORE,
+    firebaseCredentials: env.FIREBASE_CREDENTIALS_ENCODED,
+    postgresConnectionString: env.POSTGRES_CONNECTION_STRING,
   });
 
   const storeFactory = createStoreFactory(config);

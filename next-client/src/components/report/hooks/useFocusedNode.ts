@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { useIsVisible } from "@/lib/hooks/useIsVisible";
 import useWindowDimensions from "@/lib/hooks/useWindowDimensions";
 
@@ -169,7 +169,7 @@ export function useFocusedNode(
       } else {
         removeNodeRef(id);
       }
-    }, [isObserved, ignore]);
+    }, [isObserved, ignore, id, observedRef]);
 
     return observedRef;
   };

@@ -1,13 +1,13 @@
-import { reader, select } from "../tools/terminal";
+import assert from "node:assert";
+import { parse as parseCsv } from "csv-parse";
+import * as fs from "fs-extra";
 import {
-  turboSourceRow,
   turboClaimMap,
+  turboSourceRow,
   turboTopicClustering,
   turboToSchema,
 } from "../functions/turboToSchema";
-import * as fs from "fs-extra";
-import { parse as parseCsv } from "csv-parse";
-import assert from "assert";
+import { reader, select } from "../tools/terminal";
 
 const repeatIfCondition =
   (condition: (str: string) => boolean) =>
@@ -53,7 +53,7 @@ const parseCsvFile = async (fileName: string) => {
 export const turboToSchemaScript = async () => {
   const baseDataPath = "./src/scripts/input";
   console.log(process.cwd());
-  const makeFilePath = (fileName: string) => baseDataPath + "/" + fileName;
+  const makeFilePath = (fileName: string) => `${baseDataPath}/${fileName}`;
 
   // const dir = Deno.readDir(baseDataPath);
   const dir = await fs.readdir(baseDataPath);
@@ -132,7 +132,7 @@ export const turboToSchemaScript = async () => {
 
   if (errors.length > 0) {
     throw new Error(
-      "Zod parsers failed: " + errors.map((err) => err.message).join("\n\n"),
+      `Zod parsers failed: ${errors.map((err) => err.message).join("\n\n")}`,
     );
   }
 

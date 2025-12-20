@@ -1,14 +1,14 @@
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/elements/button/Button";
-import { Center } from "@/components/layout/Center";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/elements/empty";
-import { ExternalLink } from "lucide-react";
+import { Center } from "@/components/layout/Center";
 
 type ReportErrorType = "notFound" | "failed" | "loadError";
 

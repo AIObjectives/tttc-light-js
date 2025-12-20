@@ -1,12 +1,13 @@
 "use client";
 
-import React, { Ref, createContext, forwardRef, useContext } from "react";
-import * as schema from "tttc-common/schema";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
-import { QuoteCard } from "../claim";
-import { ReportContext } from "../report/Report";
+import type React from "react";
+import { createContext, forwardRef, type Ref, useContext } from "react";
+import type * as schema from "tttc-common/schema";
+import type { ThemeClass } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
-import { ThemeClass } from "@/lib/color";
+import { QuoteCard } from "../claim";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
+import { ReportContext } from "../report/Report";
 
 type CellContextType = {
   borderClass: ThemeClass | string;
@@ -17,7 +18,7 @@ type CellContextType = {
 
 const CellContext = createContext<CellContextType>({} as CellContextType);
 
-function PointGraphicWrapper({ children }: React.PropsWithChildren<{}>) {
+function PointGraphicWrapper({ children }: React.PropsWithChildren) {
   const borderClass = useThemeContextColor("border");
   const backgroundClass = useThemeContextColor("bgAccent");
   const hoverClass = useThemeContextColor("bgHover");
@@ -51,7 +52,7 @@ function PointGraphic({ claims }: { claims: schema.Claim[] }) {
 
 export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
   { claims, isHighlighted }: { claims: schema.Claim[]; isHighlighted: boolean },
-  ref: Ref<HTMLDivElement>,
+  _ref: Ref<HTMLDivElement>,
 ) {
   return (
     <PointGraphicWrapper>
@@ -73,7 +74,7 @@ interface ICell
 
 export function Cell(
   { claim, isHighlighted }: ICell,
-  ref: Ref<HTMLDivElement>,
+  _ref: Ref<HTMLDivElement>,
 ) {
   const { dispatch } = useContext(ReportContext);
   const { borderClass, backgroundClass, hoverClass, highlightedClass } =

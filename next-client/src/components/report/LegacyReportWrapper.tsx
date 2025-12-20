@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isValidReportUri, FIRESTORE_ID_REGEX } from "tttc-common/utils";
+import { FIRESTORE_ID_REGEX, isValidReportUri } from "tttc-common/utils";
 import { Spinner } from "@/components/elements";
 
 interface LegacyReportWrapperProps {

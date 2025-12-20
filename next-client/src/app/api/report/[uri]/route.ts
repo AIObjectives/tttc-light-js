@@ -4,7 +4,7 @@ import { logger } from "tttc-common/logger/browser";
 const unifiedReportApiLogger = logger.child({ module: "unified-report-api" });
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ uri: string }> },
 ) {
   try {

@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getFeatureFlag,
+  getFeatureFlagProvider,
   initializeFeatureFlags,
   isFeatureEnabled,
-  getFeatureFlag,
   shutdownFeatureFlags,
-  getFeatureFlagProvider,
 } from "../featureFlags";
 
 // Mock logger to avoid console output during tests

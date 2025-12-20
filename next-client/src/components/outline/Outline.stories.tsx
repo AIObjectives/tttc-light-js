@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import type React from "react";
 import { reportData } from "../../../stories/data/dummyData";
-import Outline from "./Outline";
-import { __internals } from "./hooks/useOutlineState";
 import { stateBuilder } from "../report/hooks/useReportState/utils";
-import { createInitialState } from "./hooks/useOutlineState/utils";
 import { ReportContext } from "../report/Report";
-import React from "react";
+import { createInitialState } from "./hooks/useOutlineState/utils";
+import Outline from "./Outline";
 
 const meta = {
   title: "Outline",

@@ -1,4 +1,4 @@
-import * as schema from "tttc-common/schema";
+import type * as schema from "tttc-common/schema";
 
 //  ********************************
 //  * NODE / STATE DEFINITIONS

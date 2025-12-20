@@ -1,12 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
 import type { OpenAI } from "openai";
+import { describe, expect, it, vi } from "vitest";
+import { EVAL_MODEL } from "../../constants";
+import { summariesTestCases } from "../datasets.js";
 import {
+  createLLMJudgeScorer,
   summariesJsonStructureScorer,
   summaryLengthScorer,
-  createLLMJudgeScorer,
 } from "../scorers.js";
-import { summariesTestCases } from "../datasets.js";
-import { EVAL_MODEL } from "../../constants";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({
@@ -114,9 +114,9 @@ describe("Summaries Scorers", () => {
       expect(result.total_summaries).toBe(1);
       expect(result.issues_count).toBe(1);
       expect(result.issues).toBeDefined();
-      expect(result.issues!.length).toBe(1);
-      expect(result.issues![0]).toContain("Pets");
-      expect(result.issues![0]).toContain("150 words");
+      expect(result.issues?.length).toBe(1);
+      expect(result.issues?.[0]).toContain("Pets");
+      expect(result.issues?.[0]).toContain("150 words");
     });
   });
 

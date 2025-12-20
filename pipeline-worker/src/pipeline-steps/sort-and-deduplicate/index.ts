@@ -10,27 +10,26 @@
  */
 
 import OpenAI from "openai";
-import { Logger } from "pino";
-import { Result, success, failure } from "tttc-common/functional-utils";
+import type { Logger } from "pino";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import { tokenCost, processBatchConcurrently, getReportLogger } from "../utils";
+import { getReportLogger, processBatchConcurrently, tokenCost } from "../utils";
 import { callDeduplicationModel } from "./model";
 import type {
-  ClaimsTree,
-  SortAndDeduplicateInput,
-  SortAndDeduplicateResult,
-  SortStrategy,
   Claim,
+  ClusteringError,
+  ClusteringOptions,
+  GroupedClaim,
   ProcessedSubtopic,
   ProcessedTopic,
-  SortedTree,
-  ClusteringOptions,
-  ClusteringError,
-  GroupedClaim,
   ProcessSubtopicResult,
+  SortAndDeduplicateInput,
+  SortAndDeduplicateResult,
+  SortedTree,
+  SortStrategy,
 } from "./types";
 
-const sortLogger = logger.child({ module: "sort-and-deduplicate" });
+const _sortLogger = logger.child({ module: "sort-and-deduplicate" });
 
 /**
  * Maximum number of subtopics to process concurrently
@@ -74,7 +73,7 @@ function parseClaimId(claimIdStr: string | number): number | null {
     }
 
     const parsed = parseInt(claimIdStr.replace("claimId", ""), 10);
-    return isNaN(parsed) ? null : parsed;
+    return Number.isNaN(parsed) ? null : parsed;
   }
 
   return null;
@@ -158,7 +157,7 @@ function createGroupedClaim(
   for (let i = 1; i < validClaimIds.length; i++) {
     const claimId = validClaimIds[i];
     const dupeClaim = { ...claims[claimId], duplicated: true };
-    groupedClaim.duplicates!.push(dupeClaim);
+    groupedClaim.duplicates?.push(dupeClaim);
 
     // Track duplicate speaker
     if (dupeClaim.speaker) {
@@ -195,7 +194,9 @@ function processGroupedClaims(
     if (!validClaimIds) continue;
 
     // Track accounted claims
-    validClaimIds.forEach((id) => accountedClaimIds.add(id));
+    validClaimIds.forEach((id) => {
+      accountedClaimIds.add(id);
+    });
 
     // Create grouped claim
     const groupedClaim = createGroupedClaim(
@@ -300,7 +301,9 @@ function mergeSpeakers(
   ...sources: (Set<string> | string[])[]
 ): void {
   for (const source of sources) {
-    source.forEach((s) => target.add(s));
+    source.forEach((s) => {
+      target.add(s);
+    });
   }
 }
 
@@ -317,7 +320,7 @@ function logDeduplicationStats(
   reportLogger: Logger,
 ): void {
   const singleQuoteCount = claims.filter(
-    (c) => c.duplicates!.length === 0,
+    (c) => c.duplicates?.length === 0,
   ).length;
 
   if (singleQuoteCount > 0) {
@@ -545,7 +548,9 @@ export async function sortAndDeduplicateClaims(
     // Collect all unique speakers for this topic
     const topicSpeakers = new Set<string>();
     for (const subtopic of Object.values(perTopicList)) {
-      subtopic.speakers.forEach((s) => topicSpeakers.add(s));
+      subtopic.speakers.forEach((s) => {
+        topicSpeakers.add(s);
+      });
     }
 
     // Sort subtopics based on strategy

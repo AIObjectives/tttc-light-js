@@ -1,44 +1,43 @@
 import React, {
   forwardRef,
   useContext,
-  useState,
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
-import * as schema from "tttc-common/schema";
+import { mergeRefs } from "react-merge-refs";
+import { getNPeople } from "tttc-common/morphisms";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
+import { ControversyIcon } from "@/assets/icons/ControversyIcons";
+import {
+  AgreeDisagreeSpectrum,
+  ControversyIndicator,
+} from "@/components/controversy";
+import { getThemeColor } from "@/lib/color";
+import {
+  getControversyCategory,
+  getSubtopicCrux,
+  parseSpeaker,
+} from "@/lib/crux/utils";
+import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
+import { Claim } from "../claim";
+import { ClaimItem } from "../claim/ClaimItem";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import {
   ExpandableText,
-  TextIcon,
   HoverCard,
   HoverCardContent,
-  HoverCardTrigger,
-  HoverCardPortal,
   HoverCardOverlay,
+  HoverCardPortal,
+  HoverCardTrigger,
 } from "../elements";
-import PointGraphic from "../pointGraphic/PointGraphic";
-import { Claim } from "../claim";
 import { Col, Row } from "../layout";
-import Icons from "@/assets/icons";
-import ClaimLoader from "./components/ClaimLoader";
-import { getNPeople } from "tttc-common/morphisms";
-import { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
-import { ClaimItem } from "../claim/ClaimItem";
+import PointGraphic from "../pointGraphic/PointGraphic";
+import type { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
 import { ReportContext } from "../report/Report";
-import {
-  getSubtopicCrux,
-  parseSpeaker,
-  getControversyCategory,
-} from "@/lib/crux/utils";
-import { getThemeColor } from "@/lib/color";
-import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
-import {
-  ControversyIndicator,
-  AgreeDisagreeSpectrum,
-} from "@/components/controversy";
-import { ControversyIcon } from "@/assets/icons/ControversyIcons";
-import { mergeRefs } from "react-merge-refs";
+import ClaimLoader from "./components/ClaimLoader";
 import { VirtualizedClaimsList } from "./VirtualizedClaimsList";
 
 // Threshold for enabling virtualization. Below this count, the DOM overhead of
@@ -138,9 +137,7 @@ export function SubtopicHeader({
   return (
     <Row gap={4} className="justify-between items-center">
       <div className="flex flex-grow">
-        <h5>
-          <a id={`${title}`}>{title}</a>
-        </h5>
+        <h5 id={`${title}`}>{title}</h5>
       </div>
       <div className="flex items-center gap-2">
         <div className="print:hidden">
@@ -182,7 +179,7 @@ export function SubtopicSummary({
       <div className="print:hidden">
         <PointGraphic claims={claims} />
       </div>
-      <SubtopicDescription description={description!} />
+      <SubtopicDescription description={description} />
       <CruxDisplay
         topicTitle={topicTitle}
         subtopicTitle={title}
@@ -238,6 +235,7 @@ function CruxDisplay({
   if (!crux) return null;
 
   // Build speaker ID -> name map with useMemo to avoid re-creating on every render
+  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
   const speakerIdToName = React.useMemo(() => {
     const map = new Map<string, string>();
     const allSpeakers = [
@@ -253,6 +251,7 @@ function CruxDisplay({
   }, [crux.agree, crux.disagree, crux.no_clear_position]);
 
   // Clean up the explanation text
+  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
   const cleanExplanation = React.useCallback(
     (text: string): string => {
       let cleaned = text;
@@ -260,7 +259,7 @@ function CruxDisplay({
       // Replace "Participant X" or "Participants X, Y, Z" with actual names
       cleaned = cleaned.replace(
         /Participants?\s+([\d,\s]+)/g,
-        (match, idList) => {
+        (_match, idList) => {
           const ids = idList.split(/,\s*/).map((id: string) => id.trim());
           const names = ids
             .map((id: string) => speakerIdToName.get(id) || `Participant ${id}`)
@@ -331,6 +330,7 @@ function CruxDisplay({
     (crux.no_clear_position?.length || 0);
 
   // Memoize parsed speakers to avoid re-parsing on every render
+  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
   const parsedAgree = React.useMemo(
     () =>
       crux.agree.map((s) => {
@@ -340,6 +340,7 @@ function CruxDisplay({
     [crux.agree],
   );
 
+  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
   const parsedDisagree = React.useMemo(
     () =>
       crux.disagree.map((s) => {
@@ -349,6 +350,7 @@ function CruxDisplay({
     [crux.disagree],
   );
 
+  // biome-ignore lint/correctness/useHookAtTopLevel: crux null check ensures consistent hook execution
   const parsedNoClear = React.useMemo(
     () =>
       crux.no_clear_position?.map((s) => {
@@ -361,7 +363,18 @@ function CruxDisplay({
   return (
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger asChild>
-        <div onClick={handleClick} className="py-3 cursor-pointer">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
+          className="py-3 cursor-pointer"
+        >
           <p className="leading-6 pl-0 text-base font-medium">Crux</p>
           <Row gap={2} className="justify-between items-start">
             <p className="leading-6 text-foreground flex-1 min-w-0">
@@ -383,6 +396,7 @@ function CruxDisplay({
         </div>
       </HoverCardTrigger>
       <HoverCardPortal>
+        {/* biome-ignore lint/complexity/noUselessFragments: Fragment needed for HoverCardPortal to accept multiple children */}
         <>
           <HoverCardOverlay className="bg-black/[0.03]" />
           <HoverCardContent side="top" className="w-[40rem]">
@@ -429,6 +443,7 @@ function CruxDisplay({
                   </p>
                   {showReadMore && !isExplanationExpanded && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsExplanationExpanded(true);

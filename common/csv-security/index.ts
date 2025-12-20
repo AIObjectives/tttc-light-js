@@ -3,9 +3,9 @@
  * Provides comprehensive input sanitization and validation for CSV files
  */
 
-import { z } from "zod";
-import { Result, success, failure } from "../functional-utils";
 import sanitizeHtml from "sanitize-html";
+import { z } from "zod";
+import { failure, type Result, success } from "../functional-utils";
 
 // Security configuration constants
 export const CSV_SECURITY_CONFIG = {
@@ -95,8 +95,7 @@ export function sanitizeCSVCell(content: string): string {
 
   // Limit length to prevent buffer overflow
   if (sanitized.length > CSV_SECURITY_CONFIG.MAX_CELL_LENGTH) {
-    sanitized =
-      sanitized.substring(0, CSV_SECURITY_CONFIG.MAX_CELL_LENGTH) + "...";
+    sanitized = `${sanitized.substring(0, CSV_SECURITY_CONFIG.MAX_CELL_LENGTH)}...`;
   }
 
   return sanitized;
@@ -191,7 +190,7 @@ export function validateEncoding(
     }
 
     return success(content);
-  } catch (error) {
+  } catch (_error) {
     return failure({
       tag: "INVALID_ENCODING",
       message: "Unable to decode file with supported encodings",
@@ -205,10 +204,7 @@ export function validateEncoding(
  * Returns configuration object with security settings
  */
 export const createSecurePapaParseConfig = (
-  options: {
-    enableSanitization?: boolean;
-    maxRows?: number;
-  } = {},
+  options: { enableSanitization?: boolean; maxRows?: number } = {},
 ) => ({
   header: true,
   skipEmptyLines: true,
@@ -223,7 +219,7 @@ export const createSecurePapaParseConfig = (
   chunkSize: 10000, // Process in chunks
   preview: options.maxRows || CSV_SECURITY_CONFIG.MAX_ROWS, // Limit rows processed
   // Error handling
-  error: (error: any) => {
+  error: (error: unknown) => {
     console.warn("Papa Parse error:", error);
   },
 });

@@ -1,16 +1,15 @@
-import React from "react";
+import type { ColumnMappings } from "tttc-common/csv-validation";
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
 } from "@/components/elements";
-import { Button } from "@/components/elements";
-import type { ColumnMappings } from "tttc-common/csv-validation";
 
 /**
  * Column Mapping Warning Modal
@@ -43,6 +42,7 @@ export function ColumnMappingWarningModal({
                 <div className="flex items-center gap-2">
                   <span
                     className="text-green-600 dark:text-green-400"
+                    role="img"
                     aria-label="detected"
                   >
                     ✓
@@ -71,6 +71,7 @@ export function ColumnMappingWarningModal({
                         ? "text-blue-600 dark:text-blue-400"
                         : "text-green-600 dark:text-green-400"
                     }
+                    role="img"
                     aria-label={
                       mappings.id.usingFallback ? "using fallback" : "detected"
                     }
@@ -109,6 +110,7 @@ export function ColumnMappingWarningModal({
                         ? "text-green-600 dark:text-green-400"
                         : "text-blue-600 dark:text-blue-400"
                     }
+                    role="img"
                     aria-label={
                       mappings.interview.detected ? "detected" : "not detected"
                     }
@@ -142,6 +144,7 @@ export function ColumnMappingWarningModal({
                   <div className="flex items-center gap-2">
                     <span
                       className="text-green-600 dark:text-green-400"
+                      role="img"
                       aria-label="detected"
                     >
                       ✓
@@ -161,6 +164,7 @@ export function ColumnMappingWarningModal({
                   <div className="flex items-center gap-2">
                     <span
                       className="text-green-600 dark:text-green-400"
+                      role="img"
                       aria-label="detected"
                     >
                       ✓
@@ -233,7 +237,7 @@ export function InvalidCSVErrorModal({
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
               {detectedHeaders.map((header, idx) => (
                 <span
-                  key={idx}
+                  key={`header-${idx}-${header}`}
                   className="inline-flex items-center rounded bg-red-50 dark:bg-red-950/50 px-1.5 py-1 text-sm leading-5 tracking-[0.42px] text-muted-foreground"
                 >
                   {header}
@@ -251,7 +255,7 @@ export function InvalidCSVErrorModal({
           <div className="flex flex-wrap gap-2">
             {suggestions.map((suggestion, idx) => (
               <span
-                key={idx}
+                key={`suggestion-${idx}-${suggestion}`}
                 className="inline-flex items-center rounded border border-border px-1.5 py-1 text-sm leading-5 tracking-[0.42px] text-muted-foreground"
               >
                 {suggestion}

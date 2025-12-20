@@ -1,6 +1,7 @@
 // sync version of sha256 hash to make strong unique urls
 // that do not leak
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
+
 function sha256(str: string) {
   return createHash("sha256").update(str).digest("hex");
 }
@@ -15,7 +16,7 @@ export function uniqueSlug(str: string): string {
   // Trim dashes from the start and end
   const trimmedStr = singleDashStr.replace(/^-+|-+$/g, "");
   // Postfix a timestamp to the slug to make it unique
-  const final = trimmedStr + "-" + Date.now();
+  const final = `${trimmedStr}-${Date.now()}`;
   // finally hash!
   const sha256Final = sha256(final);
   return sha256Final;

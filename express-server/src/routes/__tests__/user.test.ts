@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Response } from "express";
-import { RequestWithLogger } from "../../types/request";
-import { getUserLimits } from "../user";
+import type { Response } from "express";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMinimalTestEnv } from "../../__tests__/helpers";
+import type { RequestWithLogger } from "../../types/request";
+import { getUserLimits } from "../user";
 
 // Mock Firebase module
 vi.mock("../../Firebase", () => ({
@@ -58,7 +58,7 @@ describe("getUserLimits", () => {
   let mockReq: RequestWithLogger;
   let mockRes: Response;
   let mockFirebase: any;
-  let mockPermissions: any;
+  let _mockPermissions: any;
 
   // Helper factories for test setup
   const createMockUser = (
@@ -91,7 +91,7 @@ describe("getUserLimits", () => {
 
     // Setup mocks
     mockFirebase = vi.mocked(await import("../../Firebase.js"));
-    mockPermissions = vi.mocked(await import("tttc-common/permissions"));
+    _mockPermissions = vi.mocked(await import("tttc-common/permissions"));
 
     // Create mock request with logger
     mockReq = {

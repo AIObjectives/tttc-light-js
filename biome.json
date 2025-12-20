@@ -1,0 +1,134 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 80
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn",
+        "noUnusedFunctionParameters": "warn",
+        "useExhaustiveDependencies": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn"
+      },
+      "complexity": {
+        "noUselessFragments": "warn"
+      },
+      "a11y": {
+        "noSvgWithoutTitle": "warn",
+        "noStaticElementInteractions": "warn",
+        "useSemanticElements": "warn",
+        "useButtonType": "warn",
+        "useValidAnchor": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useKeyWithMouseEvents": "warn",
+        "useIframeTitle": "warn",
+        "useAriaPropsSupportedByRole": "warn"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "all"
+    }
+  },
+  "json": {
+    "formatter": {
+      "trailingCommas": "none"
+    }
+  },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    },
+    "linter": {
+      "enabled": true
+    },
+    "formatter": {
+      "enabled": true
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnknownAtRules": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/public/reports/**/*.html"],
+      "linter": {
+        "enabled": false
+      }
+    }
+  ],
+  "files": {
+    "maxSize": 2097152,
+    "includes": [
+      "common/**",
+      "express-server/**",
+      "next-client/**",
+      "pipeline-worker/**",
+      "utils/**",
+      "examples/**",
+      "*.json",
+      "*.ts",
+      "*.tsx",
+      "*.js",
+      "*.jsx",
+      "*.mjs",
+      "*.cjs",
+      "!**/node_modules",
+      "!**/build",
+      "!**/dist",
+      "!**/.next",
+      "!**/storybook-static",
+      "!**/*.tsbuildinfo",
+      "!**/.vscode",
+      "!**/.cache",
+      "!**/__pycache__",
+      "!**/.venv",
+      "!**/coverage",
+      "!**/fixtures",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!**/.playwright-mcp",
+      "!**/.turbo",
+      "!**/pnpm-lock.yaml",
+      "!**/*.min.js",
+      "!**/*.min.css",
+      "!**/*.map",
+      "!**/*.log",
+      "!**/utils/**/output",
+      "!**/utils/**/input",
+      "!**/*.csv",
+      "!**/PROJECT_INDEX.json",
+      "!**/*_combined.json"
+    ]
+  }
+}

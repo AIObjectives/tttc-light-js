@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Component, ReactNode } from "react";
+import type React from "react";
+import { Component, type ReactNode } from "react";
 import { Col } from "../layout";
 import { Button } from "./button/Button";
 
@@ -60,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(_prevProps: Props, prevState: State) {
     // Reset error count when successfully recovering from error state
     if (
       prevState.hasError &&

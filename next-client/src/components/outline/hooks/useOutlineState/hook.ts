@@ -1,9 +1,9 @@
-import { ReportState } from "@/components/report/hooks/useReportState";
-import { OutlineState } from "./types";
-import { createReducer, OutlineStateAction } from "./reducer";
-import { Dispatch, useReducer } from "react";
-import { createInitialState } from "./utils";
+import { type Dispatch, useReducer } from "react";
+import type { ReportState } from "@/components/report/hooks/useReportState";
 import { mapIdsToPath } from "./path";
+import { createReducer, type OutlineStateAction } from "./reducer";
+import type { OutlineState } from "./types";
+import { createInitialState } from "./utils";
 
 export function useOutlineState(
   reportState: ReportState,

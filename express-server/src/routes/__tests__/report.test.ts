@@ -1,13 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Response } from "express";
-import { RequestWithLogger } from "../../types/request";
-import { getUnifiedReportHandler, migrateReportUrlHandler } from "../report";
-import * as Firebase from "../../Firebase";
-import { ReportRef } from "tttc-common/firebase";
-import { Bucket } from "../../storage";
-import { pipelineQueue } from "../../server";
-import { sendError, sendErrorByCode } from "../sendError";
+import type { ReportRef } from "tttc-common/firebase";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMinimalTestEnv } from "../../__tests__/helpers";
+import * as Firebase from "../../Firebase";
+import { Bucket } from "../../storage";
+import type { RequestWithLogger } from "../../types/request";
+import { getUnifiedReportHandler, migrateReportUrlHandler } from "../report";
+import { sendError, sendErrorByCode } from "../sendError";
 
 const testReportId = "A1B2C3D4E5F6G7H8I9J0";
 
@@ -30,10 +29,6 @@ interface MockLogger {
   error: ReturnType<typeof vi.fn>;
   debug: ReturnType<typeof vi.fn>;
   child: ReturnType<typeof vi.fn>;
-}
-
-interface MockJob {
-  progress: Promise<{ status: string }>;
 }
 
 interface MockStorage {

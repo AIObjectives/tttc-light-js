@@ -1,18 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
 import type { OpenAI } from "openai";
+import { describe, expect, it, vi } from "vitest";
+import { EVAL_MODEL } from "../../constants";
+import { deduplicationTestCases } from "../datasets";
 import {
-  deduplicationJsonStructureScorer,
   claimCoverageScorer,
   consolidationScorer,
-  groupClaimQualityScorer,
   createLLMJudgeScorer,
+  deduplicationJsonStructureScorer,
+  groupClaimQualityScorer,
 } from "../scorers";
 import type {
-  DeduplicationModelOutput,
   DeduplicationDatasetRow,
+  DeduplicationModelOutput,
 } from "../types.js";
-import { deduplicationTestCases } from "../datasets";
-import { EVAL_MODEL } from "../../constants";
 
 // Mock weave.op to return the function directly for testing
 vi.mock("weave", () => ({
@@ -442,7 +442,7 @@ Quote: Quote 4`,
       });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues![0]).toContain("Potential platitude");
+      expect(result.quality_issues?.[0]).toContain("Potential platitude");
     });
 
     it("should detect generic language", () => {
@@ -462,7 +462,7 @@ Quote: Quote 4`,
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
       expect(
-        result.quality_issues!.some((issue: string) =>
+        result.quality_issues?.some((issue: string) =>
           issue.includes("Generic language"),
         ),
       ).toBe(true);
@@ -484,7 +484,7 @@ Quote: Quote 4`,
       });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues![0]).toContain("Claim too short");
+      expect(result.quality_issues?.[0]).toContain("Claim too short");
     });
 
     it("should detect claims that are too long", () => {
@@ -504,7 +504,7 @@ Quote: Quote 4`,
       });
 
       expect(result.group_claim_quality_score).toBeLessThan(1);
-      expect(result.quality_issues![0]).toContain("Claim too long");
+      expect(result.quality_issues?.[0]).toContain("Claim too long");
     });
   });
 

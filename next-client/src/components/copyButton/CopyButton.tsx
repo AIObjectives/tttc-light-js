@@ -1,15 +1,17 @@
 "use client";
 
-import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
-import { Button } from "../elements";
-import Icons from "@/assets/icons";
 import { useContext } from "react";
 import { toast } from "sonner";
 import tailwind from "tailwind.config";
-import { ColorVariant, getStrictColor } from "@/lib/color";
+import Icons from "@/assets/icons";
+import { type ColorVariant, getStrictColor } from "@/lib/color";
+import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
+import { Button } from "../elements";
 import { TopicContext } from "../topic/Topic";
+
 const safeUseColor = (color: ColorVariant) => {
   try {
+    // biome-ignore lint/correctness/useHookAtTopLevel: intentional try-catch for graceful fallback when context unavailable
     return useThemeContextColor(color);
   } catch {
     return undefined;

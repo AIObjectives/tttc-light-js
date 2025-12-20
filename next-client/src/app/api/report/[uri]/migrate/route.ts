@@ -4,7 +4,7 @@ import { logger } from "tttc-common/logger/browser";
 const migrateApiLogger = logger.child({ module: "api-migrate" });
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ uri: string }> },
 ) {
   try {

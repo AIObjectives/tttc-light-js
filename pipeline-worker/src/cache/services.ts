@@ -1,5 +1,5 @@
-import { Cache, RedisCacheConfig } from "./types";
 import { createCache } from "./index";
+import type { Cache, RedisCacheConfig } from "./types";
 
 /**
  * Parses Redis configuration from environment variables.
@@ -11,7 +11,7 @@ import { createCache } from "./index";
 const parseConfig = (env: {
   [key: string]: string | undefined;
 }): RedisCacheConfig => {
-  const redisUrl = env["REDIS_URL"];
+  const redisUrl = env.REDIS_URL;
 
   if (!redisUrl) {
     throw new Error("REDIS_URL environment variable is required");

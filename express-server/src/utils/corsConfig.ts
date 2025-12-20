@@ -1,5 +1,5 @@
-import { Env } from "../types/context";
 import { logger } from "tttc-common/logger";
+import type { Env } from "../types/context";
 
 const corsLogger = logger.child({ module: "cors" });
 

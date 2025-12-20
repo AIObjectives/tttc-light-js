@@ -1,8 +1,9 @@
-import { test as base, expect, Locator } from "@playwright/test";
+import { test as base, expect, type Locator } from "@playwright/test";
 import {
   defaultAddTopicPagination,
   defaultTopicPagination,
 } from "@/components/report/hooks/useReportState/consts";
+
 const baseUrl = new URL("http://localhost:3000");
 
 const reportBaseUrl = new URL("/report/", baseUrl);
@@ -108,7 +109,6 @@ test("Pressing show more claims will eventually run out of subtopics", async ({
       expect(text.slice(0, 1)).not.toBe("0");
       // Click again
       await subtopicsButton.click();
-      continue;
     } else {
       break;
     }

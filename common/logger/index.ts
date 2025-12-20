@@ -28,7 +28,7 @@ const isDevelopment = (() => {
       (typeof window !== "undefined" &&
         window.location?.hostname === "localhost")
     );
-  } catch (error) {
+  } catch (_error) {
     // Fallback to safe default in case of environment detection errors
     return false;
   }
@@ -38,7 +38,7 @@ const isDevelopment = (() => {
 const isBrowser = (() => {
   try {
     return typeof window !== "undefined" && typeof document !== "undefined";
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -55,7 +55,7 @@ const isBundled = (() => {
         typeof (window as any).__webpack_require__ === "function");
 
     return hasWebpack;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -64,7 +64,7 @@ const isBundled = (() => {
 const isNextJSServer = (() => {
   try {
     return typeof window === "undefined" && !!process.env.NEXT_RUNTIME;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -78,7 +78,7 @@ const isPureNodeJS = (() => {
       typeof process !== "undefined" &&
       typeof require !== "undefined"
     );
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 })();
@@ -93,7 +93,7 @@ const customCensor = (value: any, path: string[]): any => {
   }
 
   switch (fieldName) {
-    case "uid":
+    case "uid": {
       // Convert to string and handle both short and long UIDs safely
       const uidStr = String(value);
       if (uidStr.length > 8) {
@@ -103,8 +103,9 @@ const customCensor = (value: any, path: string[]): any => {
         return `${uidStr.substring(0, Math.min(3, uidStr.length))}...`;
       }
       return "[UID-REDACTED]";
+    }
 
-    case "email":
+    case "email": {
       const emailStr = String(value);
       if (emailStr.includes("@") && emailStr.length > 1) {
         const parts = emailStr.split("@");
@@ -114,6 +115,7 @@ const customCensor = (value: any, path: string[]): any => {
       }
       // Fallback for malformed emails or non-string values
       return "<redacted@domain>";
+    }
 
     case "displayName":
       return "<redacted>";
@@ -215,7 +217,7 @@ const configureNodeDevelopmentTransport = (config: any): void => {
         ignore: "pid,hostname",
       },
     };
-  } catch (prettierError) {
+  } catch (_prettierError) {
     // Silently fallback if pino-pretty is not available
     // This is expected in browser/webpack environments
   }

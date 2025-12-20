@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  getUserCsvSizeLimit,
-  getUserCapabilities,
   CAPABILITIES,
   DEFAULT_LIMITS,
+  getUserCapabilities,
+  getUserCsvSizeLimit,
 } from "../index";
 
 describe("Permission System", () => {

@@ -2,24 +2,22 @@
  * Clustering model using evaluation logic from common/evaluations
  */
 
-import OpenAI from "openai";
-import * as weave from "weave";
+import type OpenAI from "openai";
 import {
+  createLLMJudgeScorer,
   jsonStructureScorer,
   topicCoverageScorer,
-  createLLMJudgeScorer,
 } from "tttc-common/evaluations/clustering/scorers";
-import { Result, success, failure } from "tttc-common/functional-utils";
-import { tokenCost, initializeWeaveIfEnabled } from "../utils";
-import type { ClusteringInput, ClusteringOutput } from "../types";
+import { failure, type Result, success } from "tttc-common/functional-utils";
+import { logger } from "tttc-common/logger";
+import type { ClusteringOutput, Topic } from "../types";
 import {
-  ClusteringError,
   ApiCallFailedError,
+  type ClusteringError,
   EmptyResponseError,
   ParseFailedError,
 } from "../types";
-import type { Topic } from "../types";
-import { logger } from "tttc-common/logger";
+import { initializeWeaveIfEnabled, tokenCost } from "../utils";
 
 const clusteringLogger = logger.child({ module: "clustering-model" });
 
@@ -56,7 +54,7 @@ export async function callClusteringModel(
   );
 
   // Call OpenAI API directly to capture usage information
-  let response;
+  let response: Awaited<ReturnType<typeof responsesCreate>> | undefined;
   try {
     response = await responsesCreate({
       model: modelName,

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import { GCPBucketStore } from "../gcp";
-import { UploadFailedError } from "../../types";
 import { Storage } from "@google-cloud/storage";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { UploadFailedError } from "../../types";
+import { GCPBucketStore } from "../gcp";
 
 /**
  * Mock the @google-cloud/storage module
@@ -72,7 +72,7 @@ describe("GCPBucketStore", () => {
 
     it("should initialize Storage with empty config when projectId is not provided", () => {
       vi.clearAllMocks();
-      const store = new GCPBucketStore("my-bucket");
+      const _store = new GCPBucketStore("my-bucket");
 
       expect(Storage).toHaveBeenCalledWith({});
       expect(Storage).toHaveBeenCalledTimes(1);
@@ -80,7 +80,7 @@ describe("GCPBucketStore", () => {
 
     it("should initialize Storage with projectId config when provided", () => {
       vi.clearAllMocks();
-      const store = new GCPBucketStore("my-bucket", "test-project-123");
+      const _store = new GCPBucketStore("my-bucket", "test-project-123");
 
       expect(Storage).toHaveBeenCalledWith({ projectId: "test-project-123" });
       expect(Storage).toHaveBeenCalledTimes(1);
@@ -433,7 +433,7 @@ describe("GCPBucketStore", () => {
     it("should handle very long file names", async () => {
       mockSave.mockResolvedValue(undefined);
 
-      const longFileName = "a".repeat(500) + ".json";
+      const longFileName = `${"a".repeat(500)}.json`;
       const url = await bucketStore.storeFile(longFileName, "{}");
 
       expect(mockFile).toHaveBeenCalledWith(longFileName);

@@ -316,12 +316,13 @@ function buildSpeakerMap(data: {
           existing.fullString = speaker;
         }
       } else {
-        speakerMap.set(id, {
+        const newEntry = {
           fullString: speaker,
           appearsIn: new Set([listType]),
           countByList: { agree: 0, disagree: 0, no_clear: 0 },
-        });
-        speakerMap.get(id)!.countByList[listType] = 1;
+        };
+        newEntry.countByList[listType] = 1;
+        speakerMap.set(id, newEntry);
       }
     }
   };
@@ -557,7 +558,9 @@ export function reconcileCruxSpeakers<
   data.no_clear_position.forEach(processNonAmbiguousSpeaker);
 
   // Now append ambiguous speakers to no_clear (they go AFTER original no_clear speakers)
-  ambiguousSpeakersToAppend.forEach((s) => processSpeaker(s));
+  ambiguousSpeakersToAppend.forEach((s) => {
+    processSpeaker(s);
+  });
 
   // Log metrics if significant reconciliation occurred
   logReconciliationMetrics({

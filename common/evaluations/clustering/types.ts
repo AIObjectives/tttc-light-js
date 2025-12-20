@@ -1,4 +1,4 @@
-import { LLMTopic } from "../../schema";
+import type { LLMTopic } from "../../schema";
 
 /**
  * Output from the clustering LLM call

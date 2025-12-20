@@ -2,29 +2,28 @@
  * Claims extraction model using OpenAI Responses API
  */
 
-import OpenAI from "openai";
-import * as weave from "weave";
+import type OpenAI from "openai";
 import {
-  extractionJsonStructureScorer,
   claimQualityScorer,
-  taxonomyAlignmentScorer,
-  quoteRelevanceScorer,
   createLLMJudgeScorer,
+  extractionJsonStructureScorer,
+  quoteRelevanceScorer,
+  taxonomyAlignmentScorer,
 } from "tttc-common/evaluations/extraction/scorers";
-import { Result, success, failure } from "tttc-common/functional-utils";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import { tokenCost, initializeWeaveIfEnabled } from "../utils";
 import { escapeQuotes } from "../sanitizer";
-import { extractTopicNames, extractSubtopicNames } from "./utils";
-import type { Claim, ClaimsOutput, Topic, TokenUsage } from "./types";
 import {
-  ClusteringError,
   ApiCallFailedError,
+  type ClaimsModelResult,
+  type ClusteringError,
   EmptyResponseError,
+  type ExtractClaimsInput,
   ParseFailedError,
-  ClaimsModelResult,
-  ExtractClaimsInput,
 } from "../types";
+import { initializeWeaveIfEnabled, tokenCost } from "../utils";
+import type { Claim, TokenUsage, Topic } from "./types";
+import { extractSubtopicNames, extractTopicNames } from "./utils";
 
 const claimsLogger = logger.child({ module: "claims-model" });
 
@@ -71,7 +70,7 @@ async function callOpenAIForClaims(
   const fullUserPrompt = `${userPrompt}\n\nComment:\n${commentText}`;
 
   // Call OpenAI Responses API with JSON output
-  let response;
+  let response: Awaited<ReturnType<typeof responsesCreate>> | undefined;
   try {
     response = await responsesCreate({
       model: modelName,

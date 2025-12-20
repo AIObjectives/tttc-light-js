@@ -1,6 +1,6 @@
-import { Queue } from "./types";
+import type { Env } from "../types/context";
 import { GooglePubSubQueue } from "./providers/googlePubSub";
-import { Env } from "../types/context";
+import type { Queue } from "./types";
 
 export function createQueue(env: Env): Queue {
   // Create GooglePubSub queue using new environment variables

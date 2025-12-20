@@ -1,13 +1,13 @@
-import { test, expect, beforeAll, describe } from "vitest";
+import { describe, expect, test } from "vitest";
 import * as schema from "../../schema";
-import { z } from "zod";
 import { getNPeople } from "../tree-metrics.js";
+
 const data = require("./data/getNPeople.json");
 
 function isJsonString(str: string) {
   try {
     JSON.stringify(str);
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
   return true;

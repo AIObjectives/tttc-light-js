@@ -1,5 +1,6 @@
 "use client";
-import React, { useContext } from "react";
+import type React from "react";
+import { useContext } from "react";
 import { ReportContext } from "../report/Report";
 
 export function ClaimItem({
@@ -10,6 +11,6 @@ export function ClaimItem({
   const { useScrollTo } = useContext(ReportContext);
   const scrollRef = useScrollTo(id);
 
-  if (!show) return <></>;
+  if (!show) return null;
   return <div ref={scrollRef}>{children}</div>;
 }

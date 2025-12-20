@@ -1,30 +1,30 @@
 "use client";
-import React, {
-  useEffect,
-  useState,
-  useRef,
+import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import {
+  type ChangeEvent,
+  type RefObject,
   useCallback,
-  ChangeEvent,
-  RefObject,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
+import type { ColumnMappings } from "tttc-common/csv-validation";
+import Icons from "@/assets/icons";
+import { Button, Input, Separator, Switch } from "@/components/elements";
+import { Col, Row } from "@/components/layout";
+import { formatBytes } from "@/lib/api/userLimits";
+import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
+import { cn } from "@/lib/utils/shadcn";
+import { useCostEstimate } from "../hooks/useCostEstimate";
+import type { FormItemState } from "../hooks/useFormState";
+import { useParseCsv } from "../hooks/useParseCSV";
+import { useUserCapabilities } from "../hooks/useUserCapabilities";
 import { CustomizePromptSection } from "./FormHelpers";
 import {
   ColumnMappingWarningModal,
   InvalidCSVErrorModal,
 } from "./ValidationModals";
-import { FormItemState } from "../hooks/useFormState";
-import type { ColumnMappings } from "tttc-common/csv-validation";
-import { Col, Row } from "@/components/layout";
-import { Button, Input, Separator, Switch } from "@/components/elements";
-import { useCostEstimate } from "../hooks/useCostEstimate";
-import { cn } from "@/lib/utils/shadcn";
-import { useParseCsv } from "../hooks/useParseCSV";
-import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
-import { formatBytes } from "@/lib/api/userLimits";
-import { useUserCapabilities } from "../hooks/useUserCapabilities";
-import Icons from "@/assets/icons";
-import Link from "next/link";
-import { AlertCircle } from "lucide-react";
 
 export const FormHeader = () => (
   <Col gap={3}>
@@ -331,7 +331,7 @@ export function FormDataInput({
         </div>
 
         <div>
-          {!(inputRef.current?.files && inputRef.current.files[0]) ? (
+          {!inputRef.current?.files?.[0] ? (
             <Button
               name="csvUpload"
               type="button"

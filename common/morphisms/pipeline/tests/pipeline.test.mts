@@ -1,9 +1,10 @@
-import { beforeAll, expect, test, describe } from "vitest";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { beforeAll, describe, expect, test } from "vitest";
 import * as schema from "../../../schema";
-import { llmPipelineToSchema, _internal } from "../../pipeline";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { _internal, llmPipelineToSchema } from "../../pipeline";
+
 const {
   getTopicsFromTaxonomy,
   getReferenceEndIndex,

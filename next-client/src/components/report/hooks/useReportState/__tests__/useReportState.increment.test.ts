@@ -1,14 +1,13 @@
-import { describe, test, expect } from "vitest";
-import { Array, pipe } from "effect";
-
-import { setupTestState } from "./testStateSetup";
+import { Array as Arr, pipe } from "effect";
+import { describe, expect, test } from "vitest";
 import {
   defaultAddSubtopicPagination,
   defaultAddTopicPagination,
   defaultSubtopicPagination,
   defaultTopicPagination,
 } from "../consts";
-import { ReportState, SubtopicNode, TopicNode } from "../types";
+import type { ReportState, SubtopicNode, TopicNode } from "../types";
+import { setupTestState } from "./testStateSetup";
 
 const { state, reducer } = setupTestState();
 
@@ -52,8 +51,8 @@ describe("Topic Node", () => {
     // apply increment a bunch of times and make sure it caps off at right point
     const maxLen = getTestTopic(state).children.length - 1;
     const newState = pipe(
-      Array.replicate(incrementTopic, maxLen),
-      Array.reduce(state, (accumState, f) =>
+      Arr.replicate(incrementTopic, maxLen),
+      Arr.reduce(state, (accumState, f) =>
         f(accumState, getTestTopic(state).id),
       ),
     );
@@ -91,8 +90,8 @@ describe("Subtopic Node", () => {
   test("Caps at childrens length", () => {
     // apply increment a ton of times and make sure it caps at right point
     const newState = pipe(
-      Array.replicate(incrementSubtopic, maxLen),
-      Array.reduce(state, (accumState, f) =>
+      Arr.replicate(incrementSubtopic, maxLen),
+      Arr.reduce(state, (accumState, f) =>
         f(accumState, getTestSubtopic(state).id),
       ),
     );

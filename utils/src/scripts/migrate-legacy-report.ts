@@ -41,12 +41,12 @@
  *   --help       Show this help message
  */
 
+import { resolve } from "node:path";
 import { Storage } from "@google-cloud/storage";
+import * as dotenv from "dotenv";
 import * as admin from "firebase-admin";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
-import * as dotenv from "dotenv";
-import { resolve } from "path";
 
 // Load environment from express-server/.env
 const envPath = resolve(process.cwd(), "../express-server/.env");
@@ -88,14 +88,14 @@ function parseGcsUri(uri: string): { bucket: string; fileName: string } | null {
 
   // Try full URL format
   const urlMatch = uri.match(
-    /https:\/\/storage\.googleapis\.com\/([^\/]+)\/(.+)/,
+    /https:\/\/storage\.googleapis\.com\/([^/]+)\/(.+)/,
   );
   if (urlMatch) {
     return { bucket: urlMatch[1], fileName: urlMatch[2] };
   }
 
   // Try bucket/file format
-  const pathMatch = uri.match(/^([^\/]+)\/(.+)$/);
+  const pathMatch = uri.match(/^([^/]+)\/(.+)$/);
   if (pathMatch) {
     return { bucket: pathMatch[1], fileName: pathMatch[2] };
   }
@@ -223,7 +223,7 @@ async function initializeFirebase(env: Env): Promise<{
   try {
     const userRecord = await admin.auth(app).getUser(env.LEGACY_REPORT_USER_ID);
     console.log(`   User verified: ${userRecord.email || userRecord.uid}`);
-  } catch (error) {
+  } catch (_error) {
     console.error("ERROR: Owner user not found in Firebase Auth");
     console.error(`   User ID: ${env.LEGACY_REPORT_USER_ID}`);
     console.error(
@@ -341,7 +341,7 @@ function displayMetadataSummary(
   console.log(`   Title: ${metadata.title}`);
   const descPreview =
     metadata.description.length > 80
-      ? metadata.description.substring(0, 80) + "..."
+      ? `${metadata.description.substring(0, 80)}...`
       : metadata.description;
   console.log(`   Description: ${descPreview}`);
   console.log(`   Topics: ${metadata.numTopics}`);
@@ -519,7 +519,7 @@ if (dateArgIndex !== -1 && args[dateArgIndex + 1]) {
     process.exit(1);
   }
   const parsed = new Date(dateStr);
-  if (isNaN(parsed.getTime())) {
+  if (Number.isNaN(parsed.getTime())) {
     console.error(`ERROR: Invalid date: ${dateStr}`);
     process.exit(1);
   }

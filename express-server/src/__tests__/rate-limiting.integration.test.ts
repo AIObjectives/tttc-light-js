@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import express from "express";
+import type express from "express";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { setupTestApp } from "./helpers/testApp";
-import Redis from "ioredis";
 
 /**
  * Rate Limiting Integration Tests

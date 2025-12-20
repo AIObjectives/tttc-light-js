@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 import { applyActionCode, checkActionCode } from "firebase/auth";
-import { Button, Card, Spinner } from "@/components/elements";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
-import { AUTH_ACTIONS, ACTION_MODES } from "@/lib/constants/auth";
+import { Button, Card, Spinner } from "@/components/elements";
+import { ACTION_MODES, AUTH_ACTIONS } from "@/lib/constants/auth";
+import { getFirebaseAuth } from "@/lib/firebase/clientApp";
 
 type ActionMode = "resetPassword" | "verifyEmail" | "recoverEmail" | null;
 type ActionStatus = "loading" | "success" | "error";
@@ -32,6 +32,7 @@ function StatusIcon({ variant }: { variant: "success" | "error" }) {
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
+        aria-hidden="true"
       >
         <path
           strokeLinecap="round"
@@ -67,6 +68,7 @@ function AuthActionContent() {
     setMessage(error);
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: status intentionally excluded to prevent re-triggering on status changes
   useEffect(() => {
     const handleAction = async () => {
       // Log component mount and all URL parameters
@@ -139,7 +141,7 @@ function AuthActionContent() {
             );
             break;
 
-          case ACTION_MODES.RECOVER_EMAIL:
+          case ACTION_MODES.RECOVER_EMAIL: {
             console.info("[auth-action] Recovering email");
             const info = await checkActionCode(auth, oobCode);
             await applyActionCode(auth, oobCode);
@@ -151,6 +153,7 @@ function AuthActionContent() {
               `Email recovered successfully! Your email has been restored to ${info.data.email}.`,
             );
             break;
+          }
 
           default:
             console.error("[auth-action] Invalid action mode", {
@@ -174,7 +177,6 @@ function AuthActionContent() {
     };
 
     handleAction();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- status intentionally excluded to prevent re-triggering on status changes
   }, [oobCode, modeParam]);
 
   const handleContinue = () => {

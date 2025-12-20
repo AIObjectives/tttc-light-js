@@ -1,23 +1,23 @@
+import { logger } from "../logger";
+import {
+  generateRequestId,
+  generateSessionId,
+  getAppVersion,
+  getEnvironmentInfo,
+  getEnvironmentName,
+} from "./environment";
+import { LocalAnalyticsProvider } from "./providers/localProvider";
+import { PostHogAnalyticsProvider } from "./providers/posthogProvider";
 import type {
   AnalyticsClient,
   AnalyticsConfig,
+  AnalyticsContext,
   AnalyticsEvent,
   AnalyticsIdentify,
-  AnalyticsContext,
   AnalyticsProperties,
   AnalyticsProvider,
   EnvironmentInfo,
 } from "./types";
-import { LocalAnalyticsProvider } from "./providers/localProvider";
-import { PostHogAnalyticsProvider } from "./providers/posthogProvider";
-import {
-  getEnvironmentInfo,
-  generateSessionId,
-  generateRequestId,
-  getAppVersion,
-  getEnvironmentName,
-} from "./environment";
-import { logger } from "../logger";
 
 const analyticsLogger = logger.child({ module: "analytics" });
 
@@ -235,7 +235,7 @@ export class Analytics implements AnalyticsClient {
    * Checks if analytics is initialized
    */
   isInitialized(): boolean {
-    return this.provider !== null && this.provider.isReady();
+    return this.provider?.isReady() ?? false;
   }
 
   /**

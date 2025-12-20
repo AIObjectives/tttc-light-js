@@ -6,23 +6,21 @@
  */
 
 import OpenAI from "openai";
-import { Logger } from "pino";
-import { Result, success, failure } from "tttc-common/functional-utils";
+import type { Logger } from "pino";
+import { failure, type Result, success } from "tttc-common/functional-utils";
+import { basicSanitize, sanitizeForOutput } from "../sanitizer";
+import { ClusteringError } from "../types";
+import { getReportLogger, processBatchConcurrently } from "../utils";
+import { extractClaimsFromComment } from "./model";
 import type {
+  Claim,
+  ClaimsOptions,
+  ClaimsResult,
+  ClaimsTree,
   Comment,
   LLMConfig,
   Topic,
-  ClaimsTree,
-  ClaimsResult,
-  ClaimsOptions,
-  Claim,
-  TopicClaimNode,
-  SubtopicClaimNode,
 } from "./types";
-import { ClusteringError } from "../types";
-import { basicSanitize, sanitizeForOutput } from "../sanitizer";
-import { getReportLogger, processBatchConcurrently } from "../utils";
-import { extractClaimsFromComment } from "./model";
 
 // Concurrency configuration for rate limiting
 const MAX_CONCURRENCY = parseInt(process.env.CLAIMS_MAX_CONCURRENCY || "6", 10);
@@ -104,7 +102,7 @@ function initializeClaimsTree(taxonomy: Topic[]): {
     };
 
     for (const subtopic of topic.subtopics || []) {
-      validSubtopics.get(topic.topicName)!.add(subtopic.subtopicName);
+      validSubtopics.get(topic.topicName)?.add(subtopic.subtopicName);
       tree[topic.topicName].subtopics[subtopic.subtopicName] = {
         total: 0,
         claims: [],

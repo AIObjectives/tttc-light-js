@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  validateCSVFormat,
-  formatData,
   COLUMN_MAPPINGS,
+  formatData,
+  type ValidationError,
   type ValidationSuccess,
   type ValidationWarning,
-  type ValidationError,
+  validateCSVFormat,
 } from "./index";
 
 describe("csv-validation module", () => {

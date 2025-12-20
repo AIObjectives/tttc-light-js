@@ -1,4 +1,4 @@
-import * as apiPyserver from "tttc-common/apiPyserver";
+import type * as apiPyserver from "tttc-common/apiPyserver";
 
 type ConstructPipelineStep<S extends apiPyserver.PipelineSteps, D> = {
   step: S;

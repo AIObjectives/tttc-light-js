@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Response } from "express";
-import { RequestWithLogger } from "../../types/request";
-import authEvents from "../authEvents";
+import type { Response } from "express";
+import type { Logger } from "pino";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { verifyUser } from "../../Firebase";
+import type { RequestWithLogger } from "../../types/request";
+import authEvents from "../authEvents";
 import { sendError, sendErrorByCode } from "../sendError.js";
-import { Logger } from "pino";
 
 // Mock Firebase functions
 vi.mock("../../Firebase", () => ({
@@ -35,7 +35,7 @@ vi.mock("tttc-common/logger", () => {
 
 describe("Auth Events Route", () => {
   let mockVerifyUser: any;
-  let mockSendError: any;
+  let _mockSendError: any;
   let mockLogger: Logger;
 
   const createMockRequest = (body: any = {}): RequestWithLogger => {
@@ -56,7 +56,7 @@ describe("Auth Events Route", () => {
     vi.clearAllMocks();
 
     mockVerifyUser = vi.mocked(verifyUser);
-    mockSendError = vi.mocked(sendError);
+    _mockSendError = vi.mocked(sendError);
 
     mockLogger = {
       info: vi.fn(),

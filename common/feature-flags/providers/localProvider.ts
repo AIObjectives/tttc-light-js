@@ -1,4 +1,4 @@
-import { FeatureFlagProvider, FeatureFlagContext } from "../types";
+import type { FeatureFlagContext, FeatureFlagProvider } from "../types";
 
 /**
  * Local implementation of feature flag provider.

@@ -1,14 +1,14 @@
-import * as weave from "weave";
 import type { OpenAI } from "openai";
+import * as weave from "weave";
 import { logger } from "../../logger";
 import { EVAL_MODEL } from "../constants";
 import type {
   CruxDatasetRow,
-  CruxScorerInput,
   CruxJsonScorerOutput,
+  CruxScorerInput,
   ExplanationQualityScorerOutput,
-  LLMJudgeOutput,
   LLMJudgeFunction,
+  LLMJudgeOutput,
 } from "./types";
 
 const evaluationLogger = logger.child({ module: "evaluations" });
@@ -25,7 +25,7 @@ export const cruxJsonStructureScorer = weave.op(
   }: CruxScorerInput): CruxJsonScorerOutput {
     try {
       const hasValidStructure =
-        modelOutput && modelOutput.crux && typeof modelOutput.crux === "object";
+        modelOutput?.crux && typeof modelOutput.crux === "object";
 
       if (!hasValidStructure) {
         return {
@@ -128,7 +128,7 @@ export const explanationQualityScorer = weave.op(
 
     const explanation = modelOutput.crux.explanation;
     let qualityScore = 1;
-    let qualityIssues = [];
+    const qualityIssues = [];
 
     // Check if explanation is too short
     if (explanation.length < 30) {

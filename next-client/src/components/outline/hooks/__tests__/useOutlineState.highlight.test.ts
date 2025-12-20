@@ -1,8 +1,8 @@
-import { describe, test, expect } from "vitest";
-import { __internals, OutlineState } from "../useOutlineState";
-import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
+import { Array as Arr } from "effect";
+import { describe, expect, test } from "vitest";
 import { reportData } from "../../../../../stories/data/dummyData";
-import { Array } from "effect";
+import { stateBuilder as reportStateBuilder } from "../../../report/hooks/useReportState/utils";
+import { __internals, type OutlineState } from "../useOutlineState";
 
 const { createReducer, mapIdsToPath, createInitialState } = __internals;
 
@@ -33,7 +33,7 @@ describe("Highlighting outline subtopic nodes", () => {
 });
 
 describe("Highlighting another node resets the previous", () => {
-  const newState = Array.reduce(
+  const newState = Arr.reduce(
     outlineState.tree,
     outlineState,
     (accum, curr) => {

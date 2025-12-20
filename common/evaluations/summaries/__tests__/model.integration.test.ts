@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import * as weave from "weave";
 import { OpenAI } from "openai";
-import {
-  summariesJsonStructureScorer,
-  summaryLengthScorer,
-  createLLMJudgeScorer,
-} from "../scorers";
+import { beforeAll, describe, expect, it } from "vitest";
+import * as weave from "weave";
 import { defaultSummariesPrompt, defaultSystemPrompt } from "../../../prompts";
 import { createEvaluationModel } from "../../";
-import type { SummariesDatasetRow, SummariesModelOutput } from "../types";
 import { EVAL_MODEL } from "../../constants";
+import {
+  createLLMJudgeScorer,
+  summariesJsonStructureScorer,
+  summaryLengthScorer,
+} from "../scorers";
+import type { SummariesDatasetRow, SummariesModelOutput } from "../types";
 
 /**
  * Summaries Weave Integration Tests

@@ -1,24 +1,24 @@
-import React, { useContext } from "react";
-import Icons from "@/assets/icons";
-import { Row, Col } from "../layout";
-import * as schema from "tttc-common/schema";
+import { HeartHandshake } from "lucide-react";
+import { useContext } from "react";
 import { getQuotes } from "tttc-common/morphisms";
-import { InteractiveQuoteCard } from "./HoverQuoteCard";
-import { CopyLinkButton } from "../copyButton/CopyButton";
-import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
-import { Quote } from "../quote/Quote";
-import { ReportContext } from "../report/Report";
+import type * as schema from "tttc-common/schema";
+import Icons from "@/assets/icons";
 import {
-  getClaimBridgingScore,
   BRIDGING_THRESHOLDS,
+  getClaimBridgingScore,
 } from "@/lib/bridging/utils";
+import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
+import { CopyLinkButton } from "../copyButton/CopyButton";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardPortal,
   HoverCardTrigger,
 } from "../elements";
-import { HeartHandshake } from "lucide-react";
+import { Col, Row } from "../layout";
+import { Quote } from "../quote/Quote";
+import { ReportContext } from "../report/Report";
+import { InteractiveQuoteCard } from "./HoverQuoteCard";
 
 /**
  * Claim component that includes the claim text, quote icon, and link button
@@ -78,7 +78,7 @@ function ClaimHeader({ claim }: { claim: schema.Claim }) {
       <p className="p2">
         #{number}
         &ensp;
-        <a id={`${title}`}>{title}</a>
+        <span id={`${title}`}>{title}</span>
       </p>
       <div className="print:hidden">
         <InteractiveQuoteCard

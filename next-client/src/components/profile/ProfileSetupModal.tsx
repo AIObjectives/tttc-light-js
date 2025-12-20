@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  Input,
+  TextArea,
 } from "@/components/elements";
-import { Button, Input } from "@/components/elements";
-import { TextArea } from "@/components/elements";
 import { useUser } from "@/lib/hooks/getUser";
 
 interface ProfileSetupModalProps {

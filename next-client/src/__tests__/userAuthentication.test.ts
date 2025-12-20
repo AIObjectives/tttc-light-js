@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useUser } from "../lib/hooks/getUser";
-import { ensureUserDocumentOnClient } from "../lib/firebase/ensureUserDocument";
+import type { User } from "firebase/auth";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onAuthStateChanged } from "../lib/firebase/auth";
-import { User } from "firebase/auth";
+import { ensureUserDocumentOnClient } from "../lib/firebase/ensureUserDocument";
+import { useUser } from "../lib/hooks/getUser";
 
 // Mock Firebase auth
 vi.mock("../lib/firebase/auth", () => ({
@@ -87,7 +87,7 @@ describe("User Authentication Hook", () => {
       const { result } = renderHook(() => useUser());
 
       // Simulate user sign in
-      authCallback!(mockUser as User);
+      authCallback?.(mockUser as User);
 
       // Assert
       await waitFor(() => {
@@ -116,13 +116,13 @@ describe("User Authentication Hook", () => {
       const { result } = renderHook(() => useUser());
 
       // First sign in
-      authCallback!(mockUser as User);
+      authCallback?.(mockUser as User);
       await waitFor(() => {
         expect(result.current.user).toEqual(mockUser);
       });
 
       // Then sign out
-      authCallback!(null);
+      authCallback?.(null);
 
       // Assert
       await waitFor(() => {
@@ -148,7 +148,7 @@ describe("User Authentication Hook", () => {
       const { result } = renderHook(() => useUser());
 
       // Sign in same user twice
-      authCallback!(mockUser as User);
+      authCallback?.(mockUser as User);
       await waitFor(() => {
         expect(result.current.user).toEqual(mockUser);
       });
@@ -159,7 +159,7 @@ describe("User Authentication Hook", () => {
       });
 
       // Call auth callback again with same user
-      authCallback!(mockUser as User);
+      authCallback?.(mockUser as User);
 
       // Wait a bit to ensure any async operations complete
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -216,7 +216,7 @@ describe("User Authentication Hook", () => {
 
       // Act
       const { result } = renderHook(() => useUser());
-      authCallback!(mockUser as User);
+      authCallback?.(mockUser as User);
 
       // Assert - User should still be set even if document creation fails
       await waitFor(() => {
@@ -285,7 +285,7 @@ describe("User Authentication Hook", () => {
       expect(result.current.user).toBeNull();
 
       // Now fire the late callback (Firebase finally initialized)
-      authCallback!(mockUser as User);
+      authCallback?.(mockUser as User);
 
       // Need to run all pending microtasks
       await vi.runAllTimersAsync();

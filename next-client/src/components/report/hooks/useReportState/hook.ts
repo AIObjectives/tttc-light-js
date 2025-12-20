@@ -1,10 +1,10 @@
 "use client";
 
-import * as schema from "tttc-common/schema";
-import { ReportState } from "./types";
-import { Dispatch, useReducer } from "react";
-import { createPathMapReducer, ReportStateAction } from "./reducer";
+import { type Dispatch, useReducer } from "react";
+import type * as schema from "tttc-common/schema";
 import { mapIdsToPath } from "./path";
+import { createPathMapReducer, type ReportStateAction } from "./reducer";
+import type { ReportState } from "./types";
 import { stateBuilder } from "./utils";
 
 /**

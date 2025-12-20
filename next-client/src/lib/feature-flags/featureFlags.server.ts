@@ -1,12 +1,12 @@
 import {
+  type FeatureFlagConfig,
+  type FeatureFlagContext,
+  type FeatureFlagProvider,
+  getFeatureFlag,
+  getFeatureFlagProvider,
   initializeFeatureFlags as initializeFeatureFlagsCommon,
   isFeatureEnabled,
-  getFeatureFlag,
   shutdownFeatureFlags,
-  getFeatureFlagProvider,
-  FeatureFlagProvider,
-  FeatureFlagContext,
-  FeatureFlagConfig,
 } from "tttc-common/feature-flags";
 
 /**

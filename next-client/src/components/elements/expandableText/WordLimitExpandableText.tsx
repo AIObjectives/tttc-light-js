@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface Props {
   text: string;
@@ -21,7 +21,7 @@ export function WordLimitExpandableText({
       return { truncatedText: text, needsTruncation: false };
     }
     return {
-      truncatedText: words.slice(0, wordLimit).join(" ") + "...",
+      truncatedText: `${words.slice(0, wordLimit).join(" ")}...`,
       needsTruncation: true,
     };
   }, [text, wordLimit]);
