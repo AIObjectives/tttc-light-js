@@ -220,7 +220,7 @@ export function FormDataInput({
   );
 
   const handleReset = useCallback(
-    (ref: RefObject<HTMLInputElement>) => {
+    (ref: RefObject<HTMLInputElement | null>) => {
       if (!ref.current || !ref.current.files) return;
       ref.current.value = "";
       setFiles(undefined);

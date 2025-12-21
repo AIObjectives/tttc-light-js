@@ -15,7 +15,6 @@ const nextConfig = {
   transpilePackages: ["tttc-common"],
 
   // Turbopack configuration for pnpm workspaces
-  // Note: In Next.js 16, experimental.turbo becomes just "turbopack"
   turbopack: {
     root: path.join(__dirname, ".."), // Monorepo root for module resolution
   },

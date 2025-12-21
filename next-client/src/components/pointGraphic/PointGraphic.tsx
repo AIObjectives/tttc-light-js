@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, forwardRef, type Ref, useContext } from "react";
+import { createContext, useContext } from "react";
 import type * as schema from "tttc-common/schema";
 import type { ThemeClass } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
@@ -50,10 +50,13 @@ function PointGraphic({ claims }: { claims: schema.Claim[] }) {
   );
 }
 
-export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
-  { claims, isHighlighted }: { claims: schema.Claim[]; isHighlighted: boolean },
-  _ref: Ref<HTMLDivElement>,
-) {
+export function PointGraphicGroup({
+  claims,
+  isHighlighted,
+}: {
+  claims: schema.Claim[];
+  isHighlighted: boolean;
+}) {
   return (
     <PointGraphicWrapper>
       {claims.map((claim) => (
@@ -61,7 +64,7 @@ export const PointGraphicGroup = forwardRef(function PointGraphicGroup(
       ))}
     </PointGraphicWrapper>
   );
-});
+}
 
 interface ICell
   extends React.DetailedHTMLProps<
@@ -72,10 +75,7 @@ interface ICell
   isHighlighted?: boolean;
 }
 
-export function Cell(
-  { claim, isHighlighted }: ICell,
-  _ref: Ref<HTMLDivElement>,
-) {
+export function Cell({ claim, isHighlighted }: ICell) {
   const { dispatch } = useContext(ReportContext);
   const { borderClass, backgroundClass, hoverClass, highlightedClass } =
     useContext(CellContext);

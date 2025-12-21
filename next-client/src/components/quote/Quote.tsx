@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import { cn } from "@/lib/utils/shadcn";
@@ -21,7 +22,7 @@ export function QuoteText({
   className,
   iconClassName,
 }: {
-  text: string | JSX.Element;
+  text: string | ReactNode;
   interview: string;
   className?: string;
   iconClassName?: string;

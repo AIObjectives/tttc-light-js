@@ -25,13 +25,16 @@ type Position = {
 };
 
 // Tuple with node's id and ref
-type NodeRef = [string, RefObject<HTMLDivElement>];
+type NodeRef = [string, RefObject<HTMLDivElement | null>];
 
 // Tuple with node's id and distance
 type NodeDistance = [string, number];
 
 // Type of functional hook that's returned to be consumed by components
-type ReturnHook = (id: string, _ignore?: boolean) => RefObject<HTMLDivElement>;
+type ReturnHook = (
+  id: string,
+  _ignore?: boolean,
+) => RefObject<HTMLDivElement | null>;
 
 // Function to suppress scroll tracking temporarily
 type SuppressFunction = (durationMs?: number) => void;
