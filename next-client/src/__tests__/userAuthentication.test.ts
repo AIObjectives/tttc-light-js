@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import type { User } from "firebase/auth";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onAuthStateChanged } from "../lib/firebase/auth";
@@ -247,8 +247,10 @@ describe("User Authentication Hook", () => {
       expect(result.current.loading).toBe(true);
       expect(result.current.user).toBeNull();
 
-      // Advance timer past the timeout (5 seconds)
-      await vi.advanceTimersByTimeAsync(5000);
+      // Advance timer past the timeout (5 seconds) - wrap in act() for React 19
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
 
       // Assert - should no longer be loading, no user, no error
       expect(result.current.loading).toBe(false);
@@ -277,18 +279,20 @@ describe("User Authentication Hook", () => {
       // Act
       const { result } = renderHook(() => useUser());
 
-      // Advance timer past the timeout (5 seconds)
-      await vi.advanceTimersByTimeAsync(5000);
+      // Advance timer past the timeout (5 seconds) - wrap in act() for React 19
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
 
       // Verify timeout occurred - no longer loading, no user
       expect(result.current.loading).toBe(false);
       expect(result.current.user).toBeNull();
 
-      // Now fire the late callback (Firebase finally initialized)
-      authCallback?.(mockUser as User);
-
-      // Need to run all pending microtasks
-      await vi.runAllTimersAsync();
+      // Now fire the late callback (Firebase finally initialized) - wrap in act()
+      await act(async () => {
+        authCallback?.(mockUser as User);
+        await vi.runAllTimersAsync();
+      });
 
       // Assert - should update with the user despite timeout having occurred
       expect(result.current.user).toEqual(mockUser);

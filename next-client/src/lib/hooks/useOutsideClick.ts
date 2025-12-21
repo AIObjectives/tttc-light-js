@@ -1,7 +1,10 @@
 "use client";
 import { type RefObject, useEffect } from "react";
 
-function useOutsideClick(ref: RefObject<HTMLElement>, callBack: () => void) {
+function useOutsideClick(
+  ref: RefObject<HTMLElement | null>,
+  callBack: () => void,
+) {
   useEffect(() => {
     // ! Code works, but TypeScript is throwing a type error here. Can't figure out the right event type. But it does work.
     const handleOutsideClick = (event: MouseEvent) =>

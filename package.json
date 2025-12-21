@@ -58,7 +58,9 @@
     "overrides": {
       "color-normalize": "^2.0.0",
       "color-space": "^2.0.0",
-      "flat-cache": "^4.0.1"
+      "flat-cache": "^4.0.1",
+      "@types/react": "19.2.7",
+      "@types/react-dom": "19.2.3"
     }
   }
 }
