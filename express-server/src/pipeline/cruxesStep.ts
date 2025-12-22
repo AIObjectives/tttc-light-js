@@ -32,6 +32,7 @@ export async function cruxesPipelineStep(
         // 1-hour timeout to match Cloud Run service limit
         signal: AbortSignal.timeout(3600000),
       }),
+    "cruxes",
     env.PYSERVER_URL, // Enable health checks for retry logic
   );
 }

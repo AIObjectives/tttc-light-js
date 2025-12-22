@@ -35,7 +35,7 @@ describe("handlePipelineStep", () => {
         json: () => Promise.resolve({ status: true }),
       } as Response);
 
-    const result = await handlePipelineStep(testSchema, mockCall);
+    const result = await handlePipelineStep(testSchema, mockCall, "test-step");
 
     expect(result.tag).toBe("success");
 
@@ -53,7 +53,7 @@ describe("handlePipelineStep", () => {
     const mockError = new Error("Network error");
     const mockCall = () => Promise.reject(mockError);
 
-    const result = await handlePipelineStep(testSchema, mockCall);
+    const result = await handlePipelineStep(testSchema, mockCall, "test-step");
 
     expect(result.tag).toBe("failure");
 
@@ -74,7 +74,7 @@ describe("handlePipelineStep", () => {
         json: () => Promise.resolve(errorData),
       } as Response);
 
-    const result = await handlePipelineStep(testSchema, mockCall);
+    const result = await handlePipelineStep(testSchema, mockCall, "test-step");
 
     expect(result.tag).toBe("failure");
 
@@ -98,7 +98,7 @@ describe("handlePipelineStep", () => {
           }),
       } as Response);
 
-    const result = await handlePipelineStep(testSchema, mockCall);
+    const result = await handlePipelineStep(testSchema, mockCall, "test-step");
 
     expect(result.tag).toBe("failure");
 

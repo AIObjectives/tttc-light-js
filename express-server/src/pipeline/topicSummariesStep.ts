@@ -32,6 +32,7 @@ export async function topicSummariesPipelineStep(
         // 1-hour timeout to match Cloud Run service limit
         signal: AbortSignal.timeout(3600000),
       }),
+    "topic-summaries",
     env.PYSERVER_URL,
   );
 }

@@ -54,6 +54,7 @@ export async function claimsPipelineStep(
           // 1-hour timeout to match Cloud Run service limit
           signal: AbortSignal.timeout(3600000),
         }),
+      "claims-extraction",
       env.PYSERVER_URL, // Enable health checks for retry logic
     );
 

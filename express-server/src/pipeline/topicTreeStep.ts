@@ -32,6 +32,7 @@ export async function topicTreePipelineStep(
         // 1-hour timeout to match Cloud Run service limit
         signal: AbortSignal.timeout(3600000),
       }),
+    "topic-tree",
     env.PYSERVER_URL,
   );
 }

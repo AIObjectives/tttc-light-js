@@ -18,11 +18,17 @@ const pipelineStepLogger = logger.child({ module: "pipeline-step" });
  * Calls some fetch function with a parser and returns a Result type
  *
  * This is separated out from the particular fetch function used so that we can more easily mock it
+ *
+ * @param parser - Zod schema for validating the response
+ * @param call - Async function that performs the fetch
+ * @param stepName - Human-readable name of the step (for logging context)
+ * @param pyserverUrl - Optional: if provided, health checks will be performed before retries
  */
 export async function handlePipelineStep<T extends z.ZodTypeAny>(
-  parser: T, // Zod parser
-  call: () => Promise<Response>, // some fetch function.
-  pyserverUrl?: string, // Optional: if provided, health checks will be performed before retries
+  parser: T,
+  call: () => Promise<Response>,
+  stepName: string,
+  pyserverUrl?: string,
 ): Promise<
   Result<
     z.infer<T>,
@@ -37,7 +43,7 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
   const requestStartTime = Date.now();
 
   try {
-    pipelineStepLogger.debug("Starting pipeline step");
+    pipelineStepLogger.debug({ stepName }, "Starting pipeline step");
     const result = await withRetry(
       async () => {
         // Perform our fetch
@@ -47,6 +53,7 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
 
         pipelineStepLogger.debug(
           {
+            stepName,
             fetchDuration: Math.round(fetchEnd - fetchStart),
             status: response.status,
             statusText: response.statusText,
@@ -60,6 +67,7 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
         if (!response.ok) {
           pipelineStepLogger.error(
             {
+              stepName,
               status: response.status,
               statusText: response.statusText,
               responseBody:
@@ -77,19 +85,23 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
         if (schemaResult.success === false) {
           pipelineStepLogger.error(
             {
+              stepName,
               validationErrors: schemaResult.error.errors,
               responsePreview:
                 typeof parsed === "object"
                   ? JSON.stringify(parsed).substring(0, 500)
                   : String(parsed).substring(0, 500),
             },
-            "Pipeline step schema validation error",
+            "LLM response validation failed",
           );
           // Schema validation errors shouldn't be retried
           throw new InvalidResponseDataError(schemaResult.error);
         }
 
-        pipelineStepLogger.debug("Pipeline step completed successfully");
+        pipelineStepLogger.debug(
+          { stepName },
+          "Pipeline step completed successfully",
+        );
         // Return successful result
         return {
           tag: "success",

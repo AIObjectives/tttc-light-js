@@ -88,21 +88,48 @@ export const oldOptions = z.object({
 
 export type OldOptions = z.infer<typeof oldOptions>;
 
-// Zod has trouble with self-referential types, so leave this be until we need to parse
-type _LLMClaim = {
-  claim: string;
-  quote: string;
-  claimId?: string;
-  topicName: string;
-  subtopicName?: string;
-  commentId?: string;
+/**
+ * LLMClaim: Claims extracted by the LLM from source comments.
+ *
+ * This schema validates LLM output to catch malformed responses early.
+ * Uses z.lazy() to handle the recursive `duplicates` field.
+ *
+ * Required fields:
+ * - claim: The extracted claim text (must be non-empty string)
+ * - quote: The source quote supporting the claim (must be non-empty string)
+ * - topicName: The topic this claim belongs to (must be non-empty string)
+ *
+ * Optional fields:
+ * - claimId: Unique identifier assigned during processing
+ * - subtopicName: The subtopic within the topic
+ * - commentId: Reference to the source comment
+ * - duplicates: Array of claims identified as duplicates of this one
+ * - duplicated: Flag indicating this claim was marked as a duplicate
+ */
+
+// Base schema for LLMClaim without the recursive field
+const baseLLMClaim = z.object({
+  claim: z.string().min(1, "Claim text cannot be empty"),
+  quote: z.string().min(1, "Quote text cannot be empty"),
+  claimId: z.string().optional(),
+  topicName: z.string().min(1, "Topic name cannot be empty"),
+  subtopicName: z.string().optional(),
+  commentId: z.string().optional(),
+  duplicated: z.boolean().optional(),
+});
+
+// Type for LLMClaim including recursive duplicates
+export type LLMClaim = z.infer<typeof baseLLMClaim> & {
   duplicates?: LLMClaim[];
-  duplicated?: boolean;
 };
 
-const oldclaim = z.custom<_LLMClaim>();
+// Full schema with recursive duplicates field using z.lazy()
+export const llmClaim: z.ZodType<LLMClaim> = baseLLMClaim.extend({
+  duplicates: z.lazy(() => llmClaim.array()).optional(),
+});
 
-export type LLMClaim = z.infer<typeof oldclaim>;
+// Backward compatibility alias - will be removed in future version
+const oldclaim = llmClaim;
 
 export const cache = z.object({
   get: z.function().args(z.string()).returns(z.any()),
@@ -896,7 +923,10 @@ export type Quote = z.infer<typeof quote>;
  * Claims are specific points made that are derived from the source material
  * They also contain an array of similarly made claims
  ********************************/
-// Zod has trouble with self-referential types, so leave this be until we need to parse
+// Note: This UI-facing Claim type uses z.custom due to recursive structure
+// and .default() transforms in referenced schemas. Unlike LLMClaim (which is
+// validated at the LLM boundary), this type is validated by the pipeline
+// that constructs it from validated LLMClaim data.
 export type Claim = {
   id: string;
   title: string;
