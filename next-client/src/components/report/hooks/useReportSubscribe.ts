@@ -26,10 +26,11 @@ function useReportSubscribe(
 
   // Triggers some side-effect when dispatch is called
   const useReportEffect = (func: (action: ReportStateAction) => void) => {
+    // biome-ignore lint/correctness/useExhaustiveDependencies: func is intentionally excluded - we want this effect to run only when actionState changes (when a dispatch happens), not on every render when func is recreated
     useEffect(() => {
       if (!actionState[0]) return;
       func(actionState[0]);
-    }, [func]);
+    }, [actionState]);
   };
 
   return [newDispatch, useReportEffect];
