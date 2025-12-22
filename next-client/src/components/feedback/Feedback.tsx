@@ -12,6 +12,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,7 +23,7 @@ const feedbackLogger = logger.child({ module: "feedback-component" });
 
 export default function Feedback({ className }: { className?: string }) {
   return (
-    <div className={cn("fixed bottom-10 right-10", className)}>
+    <div className={cn("fixed bottom-6 right-6", className)}>
       <FeedbackForm />
     </div>
   );
@@ -73,11 +74,15 @@ function FeedbackForm() {
     feedbackDialogReducer,
     defaultFeedbackDialogState,
   );
-  const { user, loading, error } = useUser();
+  const { user, loading, error, emailVerified } = useUser();
 
   const handleSubmit = async () => {
-    if (!user) {
-      toast.error("Please sign in to submit feedback");
+    // User is guaranteed to exist due to early return below,
+    // but TypeScript doesn't know that
+    if (!user) return;
+
+    if (!emailVerified) {
+      toast.error("Please verify your email to submit feedback");
       dispatch({ type: "close" });
       return;
     }
@@ -92,7 +97,7 @@ function FeedbackForm() {
 
       const token = tokenResult.value;
       if (!token) {
-        toast.error("Please sign in to submit feedback");
+        toast.error("Authentication failed");
         dispatch({ type: "close" });
         return;
       }
@@ -125,34 +130,23 @@ function FeedbackForm() {
     dispatch({ type: "close" });
   };
 
-  // Handle loading and error states
-  if (loading) {
-    return (
-      <div className={cn("fixed bottom-10 right-10")}>
-        <Button
-          disabled
-          size="icon"
-          variant="outline"
-          className="rounded-full p-4"
-        >
-          <Icons.Feedback size={24} className="stroke-[1.2px]" />
-        </Button>
-      </div>
-    );
-  }
-
-  if (error) {
-    return null; // Hide feedback button if auth failed
+  // Only show feedback button for signed-in users
+  // TODO: T3C-944 - Extend to non-signed-in users
+  if (loading || error || !user) {
+    return null;
   }
 
   return (
-    <Dialog open={dialogState.dialog}>
-      <DialogTrigger onClick={() => dispatch({ type: "dialog" })}>
+    <Dialog
+      open={dialogState.dialog}
+      onOpenChange={(open) => !open && dispatch({ type: "close" })}
+    >
+      <DialogTrigger onClick={() => dispatch({ type: "dialog" })} asChild>
         <Button
-          asChild
-          size={"icon"}
-          variant={"outline"}
+          size="icon"
+          variant="outline"
           className="rounded-full p-4"
+          aria-label="Send feedback"
         >
           <Icons.Feedback size={24} className="stroke-[1.2px]" />
         </Button>
@@ -160,21 +154,31 @@ function FeedbackForm() {
       <DialogContent hideClose>
         <DialogHeader>
           <DialogTitle>Tell us what you think!</DialogTitle>
+          <DialogDescription className="sr-only">
+            Share your feedback about Talk to the City
+          </DialogDescription>
         </DialogHeader>
-        <TextArea
-          placeholder="Type your message here"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <Button
-          onClick={async (e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-          disabled={!user} // Disable if no user
-        >
-          Submit
-        </Button>
+        {!emailVerified ? (
+          <p className="text-sm text-muted-foreground py-2">
+            Please verify your email to send feedback.
+          </p>
+        ) : (
+          <>
+            <TextArea
+              placeholder="Type your message here"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <Button
+              onClick={async (e) => {
+                e.preventDefault();
+                handleSubmit();
+              }}
+            >
+              Submit
+            </Button>
+          </>
+        )}
         <Button variant={"outline"} onClick={() => dispatch({ type: "close" })}>
           Close
         </Button>

@@ -29,8 +29,22 @@ export default async function feedback(req: RequestWithLogger, res: Response) {
 
     const { text, firebaseAuthToken } = parsed.data;
 
-    const decodedUser: DecodedIdToken = await verifyUser(firebaseAuthToken);
+    let decodedUser: DecodedIdToken;
+    try {
+      decodedUser = await verifyUser(firebaseAuthToken);
+    } catch (error) {
+      req.log.warn({ error }, "Token verification failed");
+      return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, req.log);
+    }
     req.log.info({ uid: decodedUser.uid }, "Token verified");
+
+    // Require email verification for email/password users
+    const isEmailPasswordUser =
+      decodedUser.firebase?.sign_in_provider === "password";
+    if (isEmailPasswordUser && !decodedUser.email_verified) {
+      req.log.warn({ uid: decodedUser.uid }, "Email not verified");
+      return sendErrorByCode(res, ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED, req.log);
+    }
 
     // Ensure user document exists (in case feedback is submitted before other operations)
     const userDocRef = db

@@ -1,3 +1,4 @@
+import Feedback from "@/components/feedback/Feedback";
 import Landing from "@/components/landing/Landing";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
 
@@ -11,6 +12,7 @@ export default async function HomePage() {
   return (
     <div>
       <Landing />
+      <Feedback />
     </div>
   );
 }
