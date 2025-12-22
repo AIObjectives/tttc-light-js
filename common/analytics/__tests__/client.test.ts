@@ -204,6 +204,7 @@ describe("Analytics Client", () => {
 
     it("should handle provider errors gracefully", async () => {
       // Mock provider to throw error
+      // biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
       const provider = (analytics as any).provider;
       provider.track = vi.fn().mockRejectedValue(new Error("Provider error"));
 
