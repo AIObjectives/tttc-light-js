@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/syncpack@13.0.4/dist/schema.json",
+  "lintFormatting": false,
+  "versionGroups": [
+    {
+      "label": "Local workspace packages use workspace protocol",
+      "packages": ["**"],
+      "dependencies": ["tttc-common"],
+      "dependencyTypes": ["prod", "dev"],
+      "pinVersion": "workspace:*"
+    }
+  ],
+  "semverGroups": [
+    {
+      "label": "Use caret ranges for all dependencies",
+      "range": "^",
+      "dependencies": ["**"],
+      "packages": ["**"]
+    }
+  ]
+}
