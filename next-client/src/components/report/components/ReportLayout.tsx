@@ -15,7 +15,7 @@ export const ToolBarFrame = ({
 }: React.PropsWithChildren<{ className?: string; stickyClass?: string }>) => (
   <Sticky
     className={cn(
-      `z-[70] w-full dark:bg-background bg-white pointer-events-auto`,
+      `z-40 w-full dark:bg-background bg-white pointer-events-auto`,
       className,
     )}
     stickyClass={cn("border-b shadow-sm pointer-events-auto", stickyClass)}

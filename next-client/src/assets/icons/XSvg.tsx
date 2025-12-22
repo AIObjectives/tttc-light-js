@@ -1,28 +1,26 @@
 import type * as React from "react";
 
-const SvgComponent = (
-  props: React.SVGProps<SVGSVGElement & SVGPathElement>,
-) => (
+const SvgComponent = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    {...props}
-    width="40"
-    height="40"
-    viewBox="0 0 40 40"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
+    {...props}
   >
     <title>Close</title>
     <path
-      {...props}
-      d="M24 16L16 24"
-      stroke="#64748B"
+      d="M18 6L6 18"
+      stroke="currentColor"
+      strokeWidth="1.25"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
-      {...props}
-      d="M16 16L24 24"
-      stroke="#64748B"
+      d="M6 6L18 18"
+      stroke="currentColor"
+      strokeWidth="1.25"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
