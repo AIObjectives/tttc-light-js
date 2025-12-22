@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "labels": ["dependencies"],
+  "schedule": ["before 9am on monday"],
+  "timezone": "America/Los_Angeles",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "packageRules": [
+    {
+      "description": "Auto-merge patch updates",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "description": "Auto-merge minor updates",
+      "matchUpdateTypes": ["minor"],
+      "automerge": true
+    },
+    {
+      "description": "Group major updates for review",
+      "matchUpdateTypes": ["major"],
+      "groupName": "major updates",
+      "automerge": false
+    },
+    {
+      "description": "Group TypeScript type definitions",
+      "matchPackagePatterns": ["^@types/"],
+      "groupName": "@types packages"
+    },
+    {
+      "description": "Group Radix UI packages",
+      "matchPackagePatterns": ["^@radix-ui/"],
+      "groupName": "Radix UI"
+    },
+    {
+      "description": "Group Storybook packages",
+      "matchPackagePatterns": ["^@storybook/", "^storybook$"],
+      "groupName": "Storybook"
+    },
+    {
+      "description": "Group Google Cloud packages",
+      "matchPackagePatterns": ["^@google-cloud/"],
+      "groupName": "Google Cloud"
+    },
+    {
+      "description": "Group Firebase packages",
+      "matchPackagePatterns": ["^firebase", "^@firebase/"],
+      "groupName": "Firebase"
+    }
+  ]
+}
