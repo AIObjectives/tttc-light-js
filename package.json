@@ -36,7 +36,10 @@
     "quality:check": "cs delta --staged",
     "codescene:local": "cs delta --staged",
     "codescene:pr": "cs delta main",
-    "codescene:full": "bash scripts/codescene-scan.sh"
+    "codescene:full": "bash scripts/codescene-scan.sh",
+    "deps:check": "syncpack list-mismatches",
+    "deps:fix": "syncpack fix-mismatches",
+    "deps:lint": "syncpack lint"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
@@ -49,6 +52,7 @@
     "concurrently": "^9.1.0",
     "husky": "^9.0.11",
     "pm2": "^6.0.14",
+    "syncpack": "^13.0.4",
     "turbo": "^2.6.3",
     "typescript": "^5.9.3",
     "vitest": "^3.1.2"
