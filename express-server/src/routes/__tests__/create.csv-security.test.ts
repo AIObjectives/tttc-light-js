@@ -55,7 +55,7 @@ vi.mock("../../storage", () => ({
 
 vi.mock("../../server", () => ({
   pipelineQueue: {
-    add: vi.fn(),
+    enqueue: vi.fn(),
   },
 }));
 

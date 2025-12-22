@@ -13,9 +13,9 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import create from "../create";
 
 // Hoist mocks to avoid initialization errors
-const { mockStorageSave, mockQueueAdd } = vi.hoisted(() => ({
+const { mockStorageSave, mockQueueEnqueue } = vi.hoisted(() => ({
   mockStorageSave: vi.fn(),
-  mockQueueAdd: vi.fn(),
+  mockQueueEnqueue: vi.fn(),
 }));
 
 // Mock dependencies
@@ -55,7 +55,7 @@ vi.mock("../../storage", () => ({
 
 vi.mock("../../server", () => ({
   pipelineQueue: {
-    add: mockQueueAdd,
+    enqueue: mockQueueEnqueue,
   },
 }));
 
@@ -281,7 +281,7 @@ describe("End-to-End Data Flow Integration", () => {
       // Verify data was validated but NOT stored
       expect(validateParsedData).toHaveBeenCalledWith(invalidData);
       expect(mockStorageSave).not.toHaveBeenCalled();
-      expect(mockQueueAdd).not.toHaveBeenCalled();
+      expect(mockQueueEnqueue).not.toHaveBeenCalled();
     });
   });
 
