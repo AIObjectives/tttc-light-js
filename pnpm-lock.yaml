@@ -394,7 +394,7 @@ importers:
         version: 5.8.2
       openai:
         specifier: ^6.10.0
-        version: 6.14.0(ws@8.18.3)(zod@3.25.76)
+        version: 6.15.0(ws@8.18.3)(zod@3.25.76)
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -5928,8 +5928,8 @@ packages:
       zod:
         optional: true
 
-  openai@6.14.0:
-    resolution: {integrity: sha512-ZPD9MG5/sPpyGZ0idRoDK0P5MWEMuXe0Max/S55vuvoxqyEVkN94m9jSpE3YgNgz3WoESFvozs57dxWqAco31w==}
+  openai@6.15.0:
+    resolution: {integrity: sha512-F1Lvs5BoVvmZtzkUEVyh8mDQPPFolq4F+xdsx/DO8Hee8YF3IGAlZqUIsF+DVGhqf4aU0a3bTghsxB6OIsRy1g==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -13754,7 +13754,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  openai@6.14.0(ws@8.18.3)(zod@3.25.76):
+  openai@6.15.0(ws@8.18.3)(zod@3.25.76):
     optionalDependencies:
       ws: 8.18.3
       zod: 3.25.76

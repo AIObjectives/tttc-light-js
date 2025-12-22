@@ -28,13 +28,23 @@ export class UnknownModelError extends Error {
 }
 
 /**
- * Returns the cost for the current model running the given numbers of
- * tokens in/out for this call
+ * Calculate the cost in USD for an LLM API call based on token usage
  *
- * @param modelName - The name of the model being used
- * @param tokIn - Number of input tokens
- * @param tokOut - Number of output tokens
- * @returns Result containing cost in dollars, or error if model is unknown
+ * Currently supports only gpt-4o-mini model. If an unknown model is provided,
+ * returns a failure Result.
+ *
+ * @param modelName - The name of the model being used (e.g., "gpt-4o-mini")
+ * @param tokIn - Number of input tokens consumed
+ * @param tokOut - Number of output tokens generated
+ * @returns Result containing cost in USD (as a number), or UnknownModelError if model is not supported
+ *
+ * @example
+ * const costResult = tokenCost("gpt-4o-mini", 1000, 500);
+ * if (costResult.tag === "success") {
+ *   console.log(`Cost: $${costResult.value.toFixed(4)}`);
+ * } else {
+ *   console.error(`Unknown model: ${costResult.error.message}`);
+ * }
  */
 export function tokenCost(
   modelName: string,
@@ -81,6 +91,9 @@ export function getReportLogger(
  * This utility processes items in batches with a maximum concurrency limit,
  * useful for rate-limited API calls or memory-constrained operations.
  *
+ * Uses a semaphore pattern to ensure the concurrency limit is strictly enforced
+ * without race conditions.
+ *
  * @param items - Array of items to process
  * @param processor - Async function to process each item
  * @param concurrency - Maximum number of concurrent operations
@@ -99,34 +112,42 @@ export async function processBatchConcurrently<T, R>(
   concurrency: number,
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
-  const executing: Set<Promise<void>> = new Set();
+  let activeCount = 0;
+  let currentIndex = 0;
 
-  for (let i = 0; i < items.length; i++) {
-    const index = i;
-    const promise = processor(items[i])
-      .then((result) => {
-        results[index] = result;
-      })
-      .catch((error) => {
-        utilsLogger.error(
-          { error, index, item: items[i] },
-          "Error processing item in batch",
-        );
-        throw error;
-      })
-      .finally(() => {
-        executing.delete(promise);
-      });
+  return new Promise((resolve, reject) => {
+    const processNext = () => {
+      // If all items are queued and all processing is complete, we're done
+      if (currentIndex >= items.length && activeCount === 0) {
+        resolve(results);
+        return;
+      }
 
-    executing.add(promise);
+      // Process items while we have capacity and items remaining
+      while (activeCount < concurrency && currentIndex < items.length) {
+        const index = currentIndex++;
+        activeCount++;
 
-    if (executing.size >= concurrency) {
-      await Promise.race(executing);
-    }
-  }
+        processor(items[index])
+          .then((result) => {
+            results[index] = result;
+          })
+          .catch((error) => {
+            utilsLogger.error(
+              { error, index, item: items[index] },
+              "Error processing item in batch",
+            );
+            reject(error);
+          })
+          .finally(() => {
+            activeCount--;
+            processNext();
+          });
+      }
+    };
 
-  await Promise.all(executing);
-  return results;
+    processNext();
+  });
 }
 
 /**
