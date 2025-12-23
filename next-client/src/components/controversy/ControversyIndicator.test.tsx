@@ -25,38 +25,55 @@ describe("ControversyIndicator", () => {
       expect(labels.length).toBeGreaterThan(0);
     });
 
-    it("renders moderate controversy indicator", () => {
-      // Score of 0.35 falls in moderate range (20-50%)
-      render(<ControversyIndicator score={0.35} />);
+    it("renders light controversy indicator", () => {
+      // Score of 0.3 falls in light range (20-40%)
+      render(<ControversyIndicator score={0.3} />);
 
-      const labels = screen.getAllByText(/moderate controversy/i);
+      const labels = screen.getAllByText(/light controversy/i);
+      expect(labels.length).toBeGreaterThan(0);
+    });
+
+    it("renders mid controversy indicator", () => {
+      // Score of 0.5 falls in mid range (40-60%)
+      render(<ControversyIndicator score={0.5} />);
+
+      const labels = screen.getAllByText(/mid controversy/i);
       expect(labels.length).toBeGreaterThan(0);
     });
 
     it("renders high controversy indicator", () => {
-      render(<ControversyIndicator score={0.8} />);
+      // Score of 0.7 falls in high range (60-80%)
+      render(<ControversyIndicator score={0.7} />);
 
       const labels = screen.getAllByText(/high controversy/i);
+      expect(labels.length).toBeGreaterThan(0);
+    });
+
+    it("renders max controversy indicator", () => {
+      // Score of 0.9 falls in max range (80-100%)
+      render(<ControversyIndicator score={0.9} />);
+
+      const labels = screen.getAllByText(/max controversy/i);
       expect(labels.length).toBeGreaterThan(0);
     });
   });
 
   describe("Label visibility", () => {
     it("shows label by default", () => {
-      // Score of 0.35 falls in moderate range (20-50%)
-      render(<ControversyIndicator score={0.35} />);
+      // Score of 0.3 falls in light range (20-40%)
+      render(<ControversyIndicator score={0.3} />);
 
-      expect(
-        screen.getAllByText(/moderate controversy/i).length,
-      ).toBeGreaterThan(0);
+      expect(screen.getAllByText(/light controversy/i).length).toBeGreaterThan(
+        0,
+      );
     });
 
     it("hides label when showLabel is false", () => {
-      // Score of 0.35 falls in moderate range (20-50%)
-      render(<ControversyIndicator score={0.35} showLabel={false} />);
+      // Score of 0.3 falls in light range (20-40%)
+      render(<ControversyIndicator score={0.3} showLabel={false} />);
 
       // Icon should still be present, but no text label visible
-      const labels = screen.queryAllByText(/moderate controversy/i);
+      const labels = screen.queryAllByText(/light controversy/i);
       // There might be hidden labels in drawer/tooltip, but not in the main content
       // This is a basic check - the component structure shows/hides appropriately
       expect(labels).toBeDefined();
@@ -126,35 +143,51 @@ describe("ControversyIndicator", () => {
   });
 
   describe("Controversy category mapping", () => {
-    it("maps score 0-0.33 to low controversy", () => {
-      render(<ControversyIndicator score={0.2} />);
+    it("maps score 0-0.19 to low controversy", () => {
+      render(<ControversyIndicator score={0.1} />);
       expect(screen.getAllByText(/low controversy/i).length).toBeGreaterThan(0);
     });
 
-    it("maps score 0.34-0.66 to moderate controversy", () => {
-      render(<ControversyIndicator score={0.5} />);
-      expect(
-        screen.getAllByText(/moderate controversy/i).length,
-      ).toBeGreaterThan(0);
+    it("maps score 0.20-0.39 to light controversy", () => {
+      render(<ControversyIndicator score={0.3} />);
+      expect(screen.getAllByText(/light controversy/i).length).toBeGreaterThan(
+        0,
+      );
     });
 
-    it("maps score 0.67-1.0 to high controversy", () => {
-      render(<ControversyIndicator score={0.8} />);
+    it("maps score 0.40-0.59 to mid controversy", () => {
+      render(<ControversyIndicator score={0.5} />);
+      expect(screen.getAllByText(/mid controversy/i).length).toBeGreaterThan(0);
+    });
+
+    it("maps score 0.60-0.79 to high controversy", () => {
+      render(<ControversyIndicator score={0.7} />);
       expect(screen.getAllByText(/high controversy/i).length).toBeGreaterThan(
         0,
       );
+    });
+
+    it("maps score 0.80-1.0 to max controversy", () => {
+      render(<ControversyIndicator score={0.9} />);
+      expect(screen.getAllByText(/max controversy/i).length).toBeGreaterThan(0);
     });
 
     it("handles boundary values correctly", () => {
-      const { rerender } = render(<ControversyIndicator score={0.34} />);
-      expect(
-        screen.getAllByText(/moderate controversy/i).length,
-      ).toBeGreaterThan(0);
+      const { rerender } = render(<ControversyIndicator score={0.2} />);
+      expect(screen.getAllByText(/light controversy/i).length).toBeGreaterThan(
+        0,
+      );
 
-      rerender(<ControversyIndicator score={0.67} />);
+      rerender(<ControversyIndicator score={0.4} />);
+      expect(screen.getAllByText(/mid controversy/i).length).toBeGreaterThan(0);
+
+      rerender(<ControversyIndicator score={0.6} />);
       expect(screen.getAllByText(/high controversy/i).length).toBeGreaterThan(
         0,
       );
+
+      rerender(<ControversyIndicator score={0.8} />);
+      expect(screen.getAllByText(/max controversy/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -165,7 +198,7 @@ describe("ControversyIndicator", () => {
       // Both desktop (hover card) and mobile (drawer) versions are in DOM
       // Desktop version has class "hidden sm:block"
       // Mobile version has class "block sm:hidden"
-      const labels = screen.getAllByText(/moderate controversy/i);
+      const labels = screen.getAllByText(/mid controversy/i);
       expect(labels.length).toBeGreaterThanOrEqual(2);
     });
   });
@@ -197,29 +230,33 @@ describe("ControversyIndicator", () => {
 
     it("handles score of 1", () => {
       render(<ControversyIndicator score={1} />);
-      expect(screen.getAllByText(/high controversy/i).length).toBeGreaterThan(
-        0,
-      );
+      expect(screen.getAllByText(/max controversy/i).length).toBeGreaterThan(0);
     });
 
     it("handles score exactly at threshold boundaries", () => {
-      const { rerender } = render(<ControversyIndicator score={0.33} />);
+      // Low: 0-19%
+      const { rerender } = render(<ControversyIndicator score={0.19} />);
       expect(screen.getAllByText(/low controversy/i).length).toBeGreaterThan(0);
 
-      rerender(<ControversyIndicator score={0.34} />);
-      expect(
-        screen.getAllByText(/moderate controversy/i).length,
-      ).toBeGreaterThan(0);
+      // Light: 20-39%
+      rerender(<ControversyIndicator score={0.2} />);
+      expect(screen.getAllByText(/light controversy/i).length).toBeGreaterThan(
+        0,
+      );
 
-      rerender(<ControversyIndicator score={0.66} />);
-      expect(
-        screen.getAllByText(/moderate controversy/i).length,
-      ).toBeGreaterThan(0);
+      // Mid: 40-59%
+      rerender(<ControversyIndicator score={0.4} />);
+      expect(screen.getAllByText(/mid controversy/i).length).toBeGreaterThan(0);
 
-      rerender(<ControversyIndicator score={0.67} />);
+      // High: 60-79%
+      rerender(<ControversyIndicator score={0.6} />);
       expect(screen.getAllByText(/high controversy/i).length).toBeGreaterThan(
         0,
       );
+
+      // Max: 80-100%
+      rerender(<ControversyIndicator score={0.8} />);
+      expect(screen.getAllByText(/max controversy/i).length).toBeGreaterThan(0);
     });
   });
 });
