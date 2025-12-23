@@ -234,6 +234,10 @@ jobs:
               issue_number: pr_number,
               owner: context.repo.owner,
               repo: context.repo.repo,
+              per_page: 100,
+              issue_number: pr_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
             });
 
             const existingComment = comments.data.find(comment =>
