@@ -17,7 +17,7 @@
  * Examples:
  * - **Unanimous** (100% agree): min(1.0, 0.0) * 2 = 0.0 (no controversy)
  * - **Perfect split** (50/50): min(0.5, 0.5) * 2 = 1.0 (maximum controversy)
- * - **Mostly agree** (67/33): min(0.67, 0.33) * 2 = 0.66 (moderate controversy)
+ * - **Mostly agree** (67/33): min(0.67, 0.33) * 2 = 0.66 (high controversy)
  *
  * This formula ensures scores are highest when opinions are evenly divided
  * and lowest when there's strong consensus in either direction.
@@ -36,26 +36,25 @@ const speakerLogger = logger.child({ module: "speaker-parsing" });
  * NOTE: The function `getControversyCategory` accepts scores in 0-1 range and
  * converts them to percentages internally (score * 100) before comparing.
  *
- * These thresholds create 3 buckets matching our icon system:
+ * These thresholds create 5 buckets matching our icon system:
  *
- * - HIGH (50-100%): Significant disagreement - participants are clearly divided
- * - MODERATE (20-49%): Some disagreement - mixed opinions among engaged participants
- * - LOW (0-19%): General consensus - most participants agree or few took a stance
+ * - MAX (80-100%): Maximum controversy - opinions are nearly evenly split (filled shield + X)
+ * - HIGH (60-79%): Significant disagreement - participants are clearly divided (outline shield + X)
+ * - MID (40-59%): Mixed opinions - meaningful controversy exists (empty outline shield)
+ * - LIGHT (20-39%): Some disagreement - leaning toward consensus (outline shield + checkmark)
+ * - LOW (0-19%): Agreement/consensus - most participants agree (filled shield + checkmark)
  *
- * The formula (2 * min(agree, disagree) / total) dilutes controversy when many
- * speakers have "no_clear_position". These lower thresholds ensure that evenly
- * split opinions (e.g., 5 agree / 5 disagree / 20 no_clear = 25%) are categorized
- * as MODERATE rather than LOW.
- *
- * A score of 50%+ indicates the minority position holds at least 25% of total speakers.
- * A score of 20%+ indicates meaningful disagreement exists (minority >= 10% of total).
+ * The filled icons (low and max) draw attention to the extremes - noteworthy agreement
+ * or noteworthy controversy.
  */
-const CONTROVERSY_PERCENT_HIGH = 50;
-const CONTROVERSY_PERCENT_MODERATE = 20;
+const CONTROVERSY_PERCENT_MAX = 80;
+const CONTROVERSY_PERCENT_HIGH = 60;
+const CONTROVERSY_PERCENT_MID = 40;
+const CONTROVERSY_PERCENT_LIGHT = 20;
 
 /**
  * Get controversy category based on score (0-1 range)
- * Maps to 3 tiers matching the icon system
+ * Maps to 5 tiers matching the icon system
  *
  * @throws {Error} If score is outside the valid 0-1 range
  */
@@ -68,6 +67,13 @@ export function getControversyCategory(score: number): ControversyCategory {
   // Convert to percentage for easier thresholds
   const percentage = score * 100;
 
+  if (percentage >= CONTROVERSY_PERCENT_MAX) {
+    return {
+      level: "max",
+      label: "Max",
+      description: "Maximum controversy - opinions are nearly evenly split",
+    };
+  }
   if (percentage >= CONTROVERSY_PERCENT_HIGH) {
     return {
       level: "high",
@@ -75,10 +81,17 @@ export function getControversyCategory(score: number): ControversyCategory {
       description: "Significant disagreement among participants",
     };
   }
-  if (percentage >= CONTROVERSY_PERCENT_MODERATE) {
+  if (percentage >= CONTROVERSY_PERCENT_MID) {
     return {
-      level: "moderate",
-      label: "Moderate",
+      level: "mid",
+      label: "Mid",
+      description: "Mixed opinions among participants",
+    };
+  }
+  if (percentage >= CONTROVERSY_PERCENT_LIGHT) {
+    return {
+      level: "light",
+      label: "Light",
       description: "Some disagreement among participants",
     };
   }
@@ -128,6 +141,13 @@ export function formatControversyScore(score: number): string {
  * Get color classes for controversy badge based on score
  * Returns { bg, text, border } with Tailwind classes
  *
+ * Color progression from green (consensus) to red (controversy):
+ * - low: green (agreement)
+ * - light: lime (leaning agreement)
+ * - mid: yellow (mixed)
+ * - high: orange (leaning controversy)
+ * - max: red (maximum controversy)
+ *
  * NOTE: These classes are hardcoded to ensure Tailwind purge safety.
  * Do not dynamically construct these class names or they may be removed during build.
  */
@@ -139,6 +159,13 @@ export function getControversyColors(score: number): {
   const category = getControversyCategory(score);
 
   switch (category.level) {
+    case "max":
+      // Maximum controversy: red
+      return {
+        bg: "bg-red-100",
+        text: "text-red-800",
+        border: "border-red-300",
+      };
     case "high":
       // High controversy: orange
       return {
@@ -146,12 +173,19 @@ export function getControversyColors(score: number): {
         text: "text-orange-800",
         border: "border-orange-300",
       };
-    case "moderate":
-      // Moderate controversy: yellow
+    case "mid":
+      // Mid controversy: yellow
       return {
         bg: "bg-yellow-100",
         text: "text-yellow-800",
         border: "border-yellow-300",
+      };
+    case "light":
+      // Light controversy: lime
+      return {
+        bg: "bg-lime-100",
+        text: "text-lime-800",
+        border: "border-lime-300",
       };
     default:
       // Low controversy/consensus: green
