@@ -36,6 +36,70 @@ const RETRY_CONFIG = {
 };
 
 /**
+ * monday.com API endpoint
+ */
+const MONDAY_API_URL = "https://api.monday.com/v2";
+
+/**
+ * GraphQL queries and mutations for monday.com API
+ * Extracted for reusability and cleaner function bodies
+ */
+const GRAPHQL = {
+  findByEmail: `
+    query FindByEmail($boardId: ID!, $columnId: String!, $columnValue: String!) {
+      items_page_by_column_values(board_id: $boardId, limit: 1, columns: [{column_id: $columnId, column_values: [$columnValue]}]) {
+        items {
+          id
+          name
+        }
+      }
+    }
+  `,
+  createItem: `
+    mutation CreateItem($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
+      create_item(board_id: $boardId, item_name: $itemName, column_values: $columnValues) {
+        id
+      }
+    }
+  `,
+  updateItem: `
+    mutation UpdateItem($itemId: ID!, $boardId: ID!, $columnValues: JSON!) {
+      change_multiple_column_values(item_id: $itemId, board_id: $boardId, column_values: $columnValues) {
+        id
+      }
+    }
+  `,
+} as const;
+
+/**
+ * GraphQL response types for monday.com API
+ * Extracted from inline type assertions for reusability
+ */
+interface GraphQLError {
+  message: string;
+  extensions?: unknown;
+}
+
+interface GraphQLResponse<T> {
+  data?: T;
+  errors?: GraphQLError[];
+}
+
+interface CreateItemData {
+  create_item?: { id: string };
+}
+
+interface FindItemData {
+  items_page_by_column_values?: {
+    items: Array<{ id: string; name: string }>;
+  };
+}
+
+interface UpdateItemData {
+  change_multiple_column_values?: { id: string };
+}
+
+/**
  * Sleep for specified milliseconds
  */
 function sleep(ms: number): Promise<void> {
@@ -93,6 +157,64 @@ async function fetchWithRetry(
   }
 
   throw lastError || new Error("Request failed after retries");
+}
+
+/**
+ * Execute a GraphQL query/mutation against monday.com API
+ * Centralizes the fetch, response validation, and error handling pattern
+ *
+ * @param query GraphQL query or mutation string
+ * @param variables GraphQL variables object
+ * @param context Operation name for logging
+ * @returns Parsed GraphQL response
+ * @throws Error if HTTP request fails or GraphQL returns errors
+ */
+async function executeGraphQL<T>(
+  query: string,
+  variables: Record<string, unknown>,
+  context: string,
+): Promise<GraphQLResponse<T>> {
+  const response = await fetchWithRetry(
+    MONDAY_API_URL,
+    {
+      method: "POST",
+      headers: {
+        Authorization: process.env.MONDAY_API_TOKEN!,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query, variables }),
+    },
+    context,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `monday.com API HTTP error: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const result = (await response.json()) as GraphQLResponse<T>;
+
+  if (result.errors) {
+    throw new Error(
+      `monday.com GraphQL error: ${JSON.stringify(result.errors)}`,
+    );
+  }
+
+  return result;
+}
+
+/**
+ * Create a log context object for user profile
+ * Extracts safe fields for logging (no PII beyond what's necessary)
+ */
+function getProfileLogContext(profile: MondayUserProfile) {
+  return {
+    displayName: profile.displayName,
+    email: profile.email,
+    hasCompany: !!profile.company,
+    hasUseCase: !!profile.useCase,
+  };
 }
 
 /**
@@ -245,6 +367,40 @@ function buildColumnValues(
 }
 
 /**
+ * Execute the monday.com item creation API call
+ * Separated for testability and to reduce complexity in createMondayItem
+ */
+async function executeCreateItem(
+  profile: MondayUserProfile,
+  columnValues: Record<string, unknown>,
+): Promise<string | null> {
+  try {
+    const result = await executeGraphQL<CreateItemData>(
+      GRAPHQL.createItem,
+      {
+        boardId: process.env.MONDAY_BOARD_ID,
+        itemName: profile.displayName,
+        columnValues: JSON.stringify(columnValues),
+      },
+      "createMondayItem",
+    );
+
+    const itemId = result.data?.create_item?.id;
+    mondayLogger.info(
+      { itemId, displayName: profile.displayName, email: profile.email },
+      "monday.com item created successfully",
+    );
+    return itemId || null;
+  } catch (error) {
+    mondayLogger.error(
+      { error, profile: getProfileLogContext(profile) },
+      "Failed to create monday.com item",
+    );
+    return null;
+  }
+}
+
+/**
  * Create a new item in monday.com board
  *
  * @param profile User profile data to sync
@@ -300,88 +456,13 @@ export async function createMondayItem(
 
     const columnValues = buildColumnValues(profile);
 
-    // Use GraphQL variables to prevent injection attacks
-    const mutation = `
-      mutation CreateItem($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
-        create_item(board_id: $boardId, item_name: $itemName, column_values: $columnValues) {
-          id
-        }
-      }
-    `;
-
     mondayLogger.info(
       { displayName: profile.displayName, email: profile.email },
       "Creating monday.com item",
     );
 
     // Track this create operation to prevent race conditions
-    const createPromise = (async (): Promise<string | null> => {
-      try {
-        const response = await fetchWithRetry(
-          "https://api.monday.com/v2",
-          {
-            method: "POST",
-            headers: {
-              Authorization: process.env.MONDAY_API_TOKEN!,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              query: mutation,
-              variables: {
-                boardId: process.env.MONDAY_BOARD_ID,
-                itemName: profile.displayName,
-                columnValues: JSON.stringify(columnValues),
-              },
-            }),
-          },
-          "createMondayItem",
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `monday.com API HTTP error: ${response.status} ${response.statusText}`,
-          );
-        }
-
-        const result = (await response.json()) as {
-          errors?: unknown[];
-          data?: { create_item?: { id: string } };
-        };
-
-        // Check for GraphQL errors (HTTP 200 but query failed)
-        if (result.errors) {
-          throw new Error(
-            `monday.com GraphQL error: ${JSON.stringify(result.errors)}`,
-          );
-        }
-
-        const itemId = result.data?.create_item?.id;
-        mondayLogger.info(
-          {
-            itemId,
-            displayName: profile.displayName,
-            email: profile.email,
-          },
-          "monday.com item created successfully",
-        );
-        return itemId || null;
-      } catch (error) {
-        mondayLogger.error(
-          {
-            error,
-            profile: {
-              displayName: profile.displayName,
-              email: profile.email,
-              hasCompany: !!profile.company,
-              hasUseCase: !!profile.useCase,
-            },
-          },
-          "Failed to create monday.com item",
-        );
-        return null;
-      }
-    })();
-
+    const createPromise = executeCreateItem(profile, columnValues);
     pendingCreates.set(profile.email, createPromise);
     try {
       await createPromise;
@@ -391,15 +472,7 @@ export async function createMondayItem(
   } catch (error) {
     // Log error but don't throw - monday.com sync is non-critical
     mondayLogger.error(
-      {
-        error,
-        profile: {
-          displayName: profile.displayName,
-          email: profile.email,
-          hasCompany: !!profile.company,
-          hasUseCase: !!profile.useCase,
-        },
-      },
+      { error, profile: getProfileLogContext(profile) },
       "Failed to create monday.com item",
     );
   }
@@ -431,59 +504,22 @@ export async function updateMondayItem(
 
     const columnValues = buildColumnValues(updates as MondayUserProfile);
 
-    // Use GraphQL variables to prevent injection attacks
-    const mutation = `
-      mutation UpdateItem($itemId: ID!, $boardId: ID!, $columnValues: JSON!) {
-        change_multiple_column_values(item_id: $itemId, board_id: $boardId, column_values: $columnValues) {
-          id
-        }
-      }
-    `;
-
     mondayLogger.info({ itemId, updates }, "Updating monday.com item");
 
-    const response = await fetchWithRetry(
-      "https://api.monday.com/v2",
+    await executeGraphQL<UpdateItemData>(
+      GRAPHQL.updateItem,
       {
-        method: "POST",
-        headers: {
-          Authorization: process.env.MONDAY_API_TOKEN!,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: mutation,
-          variables: {
-            itemId,
-            boardId: process.env.MONDAY_BOARD_ID,
-            columnValues: JSON.stringify(columnValues),
-          },
-        }),
+        itemId,
+        boardId: process.env.MONDAY_BOARD_ID,
+        columnValues: JSON.stringify(columnValues),
       },
       "updateMondayItem",
     );
 
-    if (!response.ok) {
-      throw new Error(
-        `monday.com API HTTP error: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const result = (await response.json()) as { errors?: unknown[] };
-
-    if (result.errors) {
-      throw new Error(
-        `monday.com GraphQL error: ${JSON.stringify(result.errors)}`,
-      );
-    }
-
     mondayLogger.info({ itemId }, "monday.com item updated successfully");
   } catch (error) {
     mondayLogger.error(
-      {
-        error,
-        itemId,
-        updates,
-      },
+      { error, itemId, updates },
       "Failed to update monday.com item",
     );
   }
@@ -510,63 +546,21 @@ export async function findMondayItemByEmail(
     validateMondayConfig();
     const columnIds = getColumnIds();
 
-    // Use GraphQL variables to prevent injection attacks
-    const query = `
-      query FindByEmail($boardId: ID!, $columnId: String!, $columnValue: String!) {
-        items_page_by_column_values(board_id: $boardId, limit: 1, columns: [{column_id: $columnId, column_values: [$columnValue]}]) {
-          items {
-            id
-            name
-          }
-        }
-      }
-    `;
-
-    const response = await fetchWithRetry(
-      "https://api.monday.com/v2",
+    const result = await executeGraphQL<FindItemData>(
+      GRAPHQL.findByEmail,
       {
-        method: "POST",
-        headers: {
-          Authorization: process.env.MONDAY_API_TOKEN!,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query,
-          variables: {
-            boardId: process.env.MONDAY_BOARD_ID,
-            columnId: columnIds.email,
-            columnValue: email,
-          },
-        }),
+        boardId: process.env.MONDAY_BOARD_ID,
+        columnId: columnIds.email,
+        columnValue: email,
       },
       "findMondayItemByEmail",
     );
-
-    if (!response.ok) {
-      throw new Error(
-        `monday.com API HTTP error: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const result = (await response.json()) as {
-      errors?: unknown[];
-      data?: { items_page_by_column_values?: { items: { id: string }[] } };
-    };
-
-    if (result.errors) {
-      throw new Error(
-        `monday.com GraphQL error: ${JSON.stringify(result.errors)}`,
-      );
-    }
 
     const items = result.data?.items_page_by_column_values?.items || [];
     return items.length > 0 ? items[0].id : null;
   } catch (error) {
     mondayLogger.error(
-      {
-        error,
-        email,
-      },
+      { error, email },
       "Failed to query monday.com for existing item",
     );
     return null;
