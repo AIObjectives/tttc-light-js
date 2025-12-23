@@ -13,7 +13,7 @@ const userLogger = logger.child({ module: "user" });
  * Get the current user's capabilities and limits
  * Returns the user's CSV size limit based on their roles
  *
- * Requires: authMiddleware({ tokenLocation: "header" })
+ * Requires: authMiddleware()
  */
 export async function getUserLimits(
   req: RequestWithAuth,

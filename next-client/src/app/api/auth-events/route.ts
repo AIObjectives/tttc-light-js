@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
 
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
   authEventsApiLogger.info({ req: request }, "Auth event request received");
   try {
     const body = await request.json();
-    const { event, clientTimestamp, token } = body;
+    const { event, clientTimestamp } = body;
 
     if (!event || !["signin", "signout"].includes(event)) {
       authEventsApiLogger.warn({ event }, "Invalid event type");
@@ -16,6 +17,10 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    // Get Authorization header from client request
+    const headersList = await headers();
+    const authorization = headersList.get("Authorization");
 
     authEventsApiLogger.debug({ event }, "Processing auth event");
 
@@ -27,21 +32,22 @@ export async function POST(request: Request) {
       "Calling express server auth-events endpoint",
     );
 
-    const expressBody: {
-      event: string;
-      clientTimestamp: string;
-      firebaseAuthToken: string;
-    } = {
+    const expressBody = {
       event,
       clientTimestamp,
-      firebaseAuthToken: token,
     };
+
+    // Forward Authorization header if present (required for signin)
+    const expressHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (authorization) {
+      expressHeaders.Authorization = authorization;
+    }
 
     const expressResponse = await fetch(`${expressUrl}/auth-events`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: expressHeaders,
       body: JSON.stringify(expressBody),
     });
 

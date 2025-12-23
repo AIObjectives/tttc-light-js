@@ -125,7 +125,6 @@ export default async function submitAction(
     const body: GenerateApiRequest = {
       userConfig: config,
       data: dataPayload,
-      firebaseAuthToken,
     };
     submitActionLogger.debug(
       { cruxesEnabled: body.userConfig.cruxesEnabled },
@@ -139,6 +138,7 @@ export default async function submitAction(
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${firebaseAuthToken}`,
       },
     });
 

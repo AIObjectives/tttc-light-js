@@ -2,6 +2,7 @@
  * Tests for email verification error handling in the create route
  */
 
+import type { RequestHandler } from "express";
 import express from "express";
 import request from "supertest";
 import {
@@ -10,6 +11,7 @@ import {
 } from "tttc-common/csv-security";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as firebase from "../../Firebase";
+import { authMiddleware } from "../../middleware";
 import create from "../create";
 
 vi.mock("tttc-common/csv-security", () => ({
@@ -111,7 +113,7 @@ describe("Email Verification in Create Route", () => {
       next();
     });
 
-    app.post("/create", create);
+    app.post("/create", authMiddleware(), create as unknown as RequestHandler);
   });
 
   beforeEach(() => {
@@ -125,7 +127,6 @@ describe("Email Verification in Create Route", () => {
   });
 
   const createValidRequestBody = (csvData: any[]) => ({
-    firebaseAuthToken: "valid-token",
     userConfig: {
       title: "Test Report",
       description: "Test Description",
@@ -160,6 +161,7 @@ describe("Email Verification in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(cleanData))
       .expect(403); // AUTH_EMAIL_NOT_VERIFIED returns 403
 
@@ -215,6 +217,7 @@ describe("Email Verification in Create Route", () => {
 
       const response = await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send(
           createValidRequestBody([
             { comment: "Test", id: "1", interview: "Alice" },

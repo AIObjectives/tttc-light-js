@@ -179,14 +179,6 @@ export const validateOpenAIApiKeyHeader = () => {
 };
 
 /**
- * Configuration options for auth middleware
- */
-interface AuthMiddlewareOptions {
-  /** Where to extract the token from */
-  tokenLocation: "header" | "body";
-}
-
-/**
  * Extracts Bearer token from Authorization header
  * Trims whitespace from the extracted token per RFC 6750
  */
@@ -199,28 +191,16 @@ function extractBearerToken(authHeader: string | undefined): string | null {
 /**
  * Authentication middleware that validates Firebase ID tokens.
  *
- * Supports two token locations:
- * - "header": Extracts from Authorization: Bearer <token>
- * - "body": Extracts from request body firebaseAuthToken field
- *
+ * Extracts token from Authorization: Bearer <token> header.
  * On success, attaches decoded user to req.auth.
  * On failure, sends an error response (AUTH_TOKEN_MISSING or AUTH_TOKEN_INVALID).
  */
-export const authMiddleware = (
-  options: AuthMiddlewareOptions = { tokenLocation: "header" },
-) => {
+export const authMiddleware = () => {
   return async (req: RequestWithLogger, res: Response, next: NextFunction) => {
-    // Extract token based on location
-    const token =
-      options.tokenLocation === "header"
-        ? extractBearerToken(req.headers.authorization)
-        : req.body?.firebaseAuthToken;
+    const token = extractBearerToken(req.headers.authorization);
 
     if (!token) {
-      req.log.warn(
-        { tokenLocation: options.tokenLocation },
-        "Auth token missing",
-      );
+      req.log.warn("Auth token missing");
       return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_MISSING, req.log);
     }
 

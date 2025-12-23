@@ -45,7 +45,7 @@ const profileUpdateSchema = z.object({
  *
  * Update user profile fields and sync to monday.com
  *
- * Requires: authMiddleware({ tokenLocation: "header" })
+ * Requires: authMiddleware()
  *
  * Request body:
  * {

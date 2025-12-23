@@ -13,19 +13,8 @@ export async function logAuthEvent(
   user: User,
 ): Promise<void> {
   try {
-    const body: {
-      event: "signin" | "signout";
-      clientTimestamp: string;
-      token?: string;
-    } = {
-      event,
-      clientTimestamp: new Date().toISOString(),
-    };
-
     const tokenResult = await fetchToken(user);
-    if (tokenResult.tag === "success" && tokenResult.value) {
-      body.token = tokenResult.value;
-    } else {
+    if (tokenResult.tag !== "success" || !tokenResult.value) {
       authEventsLogger.warn(
         { user },
         "Could not get token for auth-event event logging",
@@ -33,11 +22,17 @@ export async function logAuthEvent(
       return;
     }
 
+    const body = {
+      event,
+      clientTimestamp: new Date().toISOString(),
+    };
+
     // Call our Next.js API route which will proxy to the express server
     const response = await fetch("/api/auth-events", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenResult.value}`,
       },
       body: JSON.stringify(body),
     });

@@ -251,7 +251,12 @@ const authLimiter =
  * Creates report
  * Uses reportLimiter (2000 req/15min per IP)
  */
-app.post("/create", reportLimiter, create);
+app.post(
+  "/create",
+  reportLimiter,
+  authMiddleware(),
+  create as unknown as express.RequestHandler,
+);
 
 /**
  * Ensures user document exists in Firestore
@@ -260,7 +265,7 @@ app.post("/create", reportLimiter, create);
 app.post(
   "/ensure-user",
   authLimiter,
-  authMiddleware({ tokenLocation: "body" }),
+  authMiddleware(),
   ensureUser as unknown as express.RequestHandler,
 );
 
@@ -271,7 +276,7 @@ app.post(
 app.post(
   "/feedback",
   authLimiter,
-  authMiddleware({ tokenLocation: "body" }),
+  authMiddleware(),
   feedback as unknown as express.RequestHandler,
 );
 
@@ -293,7 +298,7 @@ app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
 app.get(
   "/api/user/limits",
   authLimiter,
-  authMiddleware({ tokenLocation: "header" }),
+  authMiddleware(),
   getUserLimits as unknown as express.RequestHandler,
 );
 
@@ -304,7 +309,7 @@ app.get(
 app.post(
   "/api/profile/update",
   authLimiter,
-  authMiddleware({ tokenLocation: "header" }),
+  authMiddleware(),
   updateProfile as unknown as express.RequestHandler,
 );
 
