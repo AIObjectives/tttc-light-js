@@ -468,3 +468,244 @@ export interface GenerateSummaryInput {
     weaveProjectName?: string;
   };
 }
+
+/**
+ * A crux claim for a specific subtopic with speaker positions
+ * @property topic - The topic name this crux belongs to
+ * @property subtopic - The subtopic name this crux belongs to
+ * @property cruxClaim - The crux claim statement that splits opinions
+ * @property agree - Array of speakers who agree with the crux (format: "id:name")
+ * @property disagree - Array of speakers who disagree with the crux (format: "id:name")
+ * @property no_clear_position - Array of speakers with no clear position (format: "id:name")
+ * @property explanation - Explanation of the crux and positions
+ * @property agreementScore - Ratio of speakers who agree (0-1)
+ * @property disagreementScore - Ratio of speakers who disagree (0-1)
+ * @property controversyScore - How evenly split opinions are (0-1, higher = more split)
+ * @property speakersInvolved - Number of speakers who took a position (agree/disagree)
+ * @property totalSpeakersInSubtopic - Total number of speakers in this subtopic
+ */
+export interface SubtopicCrux {
+  topic: string;
+  subtopic: string;
+  cruxClaim: string;
+  agree: string[];
+  disagree: string[];
+  no_clear_position: string[];
+  explanation: string;
+  agreementScore: number;
+  disagreementScore: number;
+  controversyScore: number;
+  speakersInvolved: number;
+  totalSpeakersInSubtopic: number;
+}
+
+/**
+ * Topic-level rollup scores
+ * @property topic - The topic name
+ * @property averageControversy - Average controversy across all subtopics
+ * @property subtopicCount - Number of subtopics in this topic
+ * @property totalSpeakers - Total number of unique speakers across all subtopics
+ */
+export interface TopicScore {
+  topic: string;
+  averageControversy: number;
+  subtopicCount: number;
+  totalSpeakers: number;
+}
+
+/**
+ * Speaker × Crux agreement matrix for visualization
+ * @property speakers - Array of all speaker IDs (format: "id:name")
+ * @property cruxLabels - Array of crux labels (format: "Topic → Subtopic")
+ * @property matrix - 2D array where matrix[speakerIdx][cruxIdx] is "agree", "disagree", or "no_position"
+ */
+export interface SpeakerCruxMatrix {
+  speakers: string[];
+  cruxLabels: string[];
+  matrix: string[][];
+}
+
+/**
+ * Raw crux response from LLM (before validation)
+ * @property cruxClaim - The crux claim statement
+ * @property agree - Array of speaker IDs who agree (may be in "ID:claim" format)
+ * @property disagree - Array of speaker IDs who disagree (may be in "ID:claim" format)
+ * @property no_clear_position - Array of speaker IDs with no clear position (may be in "ID:claim" format)
+ * @property explanation - Explanation of the crux
+ */
+export interface RawCruxResponse {
+  crux: {
+    cruxClaim: string;
+    agree: (string | number)[];
+    disagree: (string | number)[];
+    no_clear_position?: (string | number)[];
+    explanation?: string;
+  };
+}
+
+/**
+ * Result from cruxes extraction
+ * @property subtopicCruxes - Array of crux objects for each subtopic
+ * @property topicScores - Array of topic-level rollup scores
+ * @property speakerCruxMatrix - Speaker × Crux agreement matrix
+ * @property usage - Token usage statistics from the LLM calls
+ * @property cost - Estimated total cost in USD
+ */
+export interface CruxesResult {
+  subtopicCruxes: SubtopicCrux[];
+  topicScores: TopicScore[];
+  speakerCruxMatrix: SpeakerCruxMatrix;
+  usage: TokenUsage;
+  cost: number;
+}
+
+/**
+ * Options for cruxes extraction
+ * @property reportId - Optional identifier for the report being processed
+ * @property userId - Optional identifier for the user making the request
+ * @property enableWeave - Optional flag to enable Weave evaluation tracking
+ * @property weaveProjectName - Optional Weave project name for tracking
+ */
+export interface CruxesOptions {
+  reportId?: string;
+  userId?: string;
+  enableWeave?: boolean;
+  weaveProjectName?: string;
+}
+
+/**
+ * Result from single subtopic crux extraction
+ * @property crux - The raw crux response from LLM
+ * @property usage - Token usage for this API call
+ */
+export interface CruxForTopicResult {
+  crux: RawCruxResponse;
+  usage: {
+    total_tokens: number;
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
+/**
+ * Speaker map type - maps speaker names to numeric IDs
+ */
+export type SpeakerMap = Record<string, string>;
+
+/**
+ * Topic description map - maps topic/subtopic names to descriptions
+ */
+export type TopicDescMap = Record<string, string>;
+
+/**
+ * Input parameters for generating a crux for a single subtopic
+ */
+export interface GenerateCruxInput {
+  /** OpenAI client instance */
+  openaiClient: OpenAI;
+  /** Model name (e.g., "gpt-4o-mini") */
+  modelName: string;
+  /** System prompt */
+  systemPrompt: string;
+  /** User prompt template */
+  userPrompt: string;
+  /** Topic identifier (format: "Topic, Subtopic") */
+  topic: string;
+  /** Description of the subtopic */
+  topicDesc: string;
+  /** Array of claims for this subtopic */
+  claims: Claim[];
+  /** Speaker map (name -> numeric ID) */
+  speakerMap: SpeakerMap;
+  /** Index of this subtopic for logging */
+  subtopicIndex: number;
+  /** Optional report ID for logging context */
+  reportId?: string;
+  /** Optional Weave evaluation options */
+  options?: {
+    enableWeave?: boolean;
+    weaveProjectName?: string;
+  };
+}
+/**
+ * Subtopic item to process during crux extraction
+ */
+export interface SubtopicItem {
+  topicName: string;
+  subtopicName: string;
+  claims: Claim[];
+  subtopicDesc: string;
+  cruxIdentifier: string;
+  subtopicIndex: number;
+  totalSpeakersInSubtopic: number;
+}
+
+/**
+ * Parameters for crux evaluation
+ */
+export interface CruxEvaluationParams {
+  openaiClient: OpenAI;
+  cruxResponse: RawCruxResponse;
+  claims: string[];
+  totalSpeakers: number;
+  topic: string;
+}
+
+/**
+ * Validated speaker IDs extracted from LLM response
+ */
+export interface ValidatedSpeakerIds {
+  agreeIds: string[];
+  disagreeIds: string[];
+  noClearPositionIds: string[];
+}
+
+/**
+ * Context for validating speaker IDs
+ */
+export interface SpeakerValidationContext {
+  validIds: Set<string>;
+  cruxIdentifier: string;
+  reportLogger: import("pino").Logger;
+}
+
+/**
+ * Context for processing subtopic results
+ */
+export interface SubtopicProcessingContext {
+  idsToSpeakers: Record<string, string>;
+  validIds: Set<string>;
+  reportLogger: import("pino").Logger;
+}
+
+/**
+ * Anonymized claims with speaker IDs
+ */
+export interface AnonymizedClaims {
+  claimsAnon: string[];
+  speakerCount: number;
+}
+
+/**
+ * Sanitized topic information
+ */
+export interface SanitizedTopicInfo {
+  sanitizedTopic: string;
+  sanitizedTopicDesc: string;
+}
+
+/**
+ * Input parameters for cruxes extraction
+ */
+export interface ExtractCruxesInput {
+  /** Claims tree organized by topic → subtopic → claims */
+  claimsTree: ClaimsTree;
+  /** Array of topics with descriptions (from clustering step) */
+  topics: Topic[];
+  /** LLM configuration (model, prompts) */
+  llmConfig: LLMConfig;
+  /** OpenAI API key */
+  apiKey: string;
+  /** Optional configuration */
+  options?: CruxesOptions;
+}
