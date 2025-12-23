@@ -4,7 +4,7 @@ import { ERROR_CODES } from "tttc-common/errors";
 import { logger } from "tttc-common/logger";
 import { getUserCapabilities } from "tttc-common/permissions";
 import * as firebase from "../Firebase";
-import type { RequestWithLogger } from "../types/request";
+import type { RequestWithAuth } from "../types/request";
 import { sendErrorByCode } from "./sendError";
 
 const userLogger = logger.child({ module: "user" });
@@ -12,27 +12,15 @@ const userLogger = logger.child({ module: "user" });
 /**
  * Get the current user's capabilities and limits
  * Returns the user's CSV size limit based on their roles
+ *
+ * Requires: authMiddleware({ tokenLocation: "header" })
  */
 export async function getUserLimits(
-  req: RequestWithLogger,
+  req: RequestWithAuth,
   res: Response,
 ): Promise<void> {
   try {
-    // Get authorization token from header
-    const authToken = req.headers.authorization?.replace("Bearer ", "");
-
-    if (!authToken) {
-      sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_MISSING, userLogger);
-      return;
-    }
-
-    // Verify the user's token
-    const decodedUser = await firebase.verifyUser(authToken);
-
-    if (!decodedUser) {
-      sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, userLogger);
-      return;
-    }
+    const decodedUser = req.auth;
 
     // Get user document to fetch roles
     const userRef = firebase.db

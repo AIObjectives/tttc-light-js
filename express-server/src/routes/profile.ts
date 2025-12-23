@@ -6,12 +6,11 @@
  */
 
 import type { Response } from "express";
-import type { DecodedIdToken } from "firebase-admin/auth";
 import { logger } from "tttc-common/logger";
 import { z } from "zod";
 import * as firebase from "../Firebase";
 import { createMondayItem } from "../services/monday";
-import type { RequestWithLogger } from "../types/request";
+import type { RequestWithAuth } from "../types/request";
 import { sendError } from "./sendError";
 
 const profileLogger = logger.child({ module: "profile" });
@@ -42,35 +41,11 @@ const profileUpdateSchema = z.object({
 });
 
 /**
- * Verify Firebase authentication token from request headers
- * @returns Decoded token if valid, null otherwise (sends error response)
- */
-async function verifyAuthToken(
-  req: RequestWithLogger,
-  res: Response,
-): Promise<DecodedIdToken | null> {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    sendError(res, 401, "Missing or invalid authorization header", "AuthError");
-    return null;
-  }
-
-  const token = authHeader.split("Bearer ")[1];
-  const decodedToken = await firebase.verifyUser(token);
-
-  if (!decodedToken) {
-    sendError(res, 401, "Invalid authentication token", "AuthError");
-    return null;
-  }
-
-  return decodedToken;
-}
-
-/**
  * POST /api/profile/update
  *
  * Update user profile fields and sync to monday.com
- * Requires Firebase authentication token
+ *
+ * Requires: authMiddleware({ tokenLocation: "header" })
  *
  * Request body:
  * {
@@ -87,13 +62,9 @@ async function verifyAuthToken(
  *   message: "Profile updated successfully"
  * }
  */
-export async function updateProfile(req: RequestWithLogger, res: Response) {
+export async function updateProfile(req: RequestWithAuth, res: Response) {
   try {
-    // Verify Firebase auth token
-    const decodedToken = await verifyAuthToken(req, res);
-    if (!decodedToken) {
-      return; // Response already sent by verifyAuthToken
-    }
+    const decodedToken = req.auth;
 
     // Parse and validate request body
     const profileData = profileUpdateSchema.parse(req.body);

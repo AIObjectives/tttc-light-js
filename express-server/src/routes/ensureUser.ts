@@ -1,32 +1,20 @@
 import type { Response } from "express";
-import type { DecodedIdToken } from "firebase-admin/auth";
 import { ERROR_CODES } from "tttc-common/errors";
 import * as firebase from "../Firebase";
 import { createMondayItem } from "../services/monday";
-import type { RequestWithLogger } from "../types/request";
+import type { RequestWithAuth } from "../types/request";
 import { sendErrorByCode } from "./sendError";
 
-export default async function ensureUser(
-  req: RequestWithLogger,
-  res: Response,
-) {
+/**
+ * Ensures a user document exists in Firestore and syncs new users to Monday.com
+ *
+ * Requires: authMiddleware({ tokenLocation: "body" })
+ */
+export default async function ensureUser(req: RequestWithAuth, res: Response) {
   req.log.info("Ensure user endpoint called");
   try {
-    const firebaseAuthToken = req.body?.firebaseAuthToken;
-
-    if (!firebaseAuthToken) {
-      req.log.warn("No firebaseAuthToken provided");
-      return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_MISSING, req.log);
-    }
-
-    let decodedUser: DecodedIdToken;
-    try {
-      decodedUser = await firebase.verifyUser(firebaseAuthToken);
-      req.log.info({ uid: decodedUser.uid }, "Token verified");
-    } catch (tokenError) {
-      req.log.error({ error: tokenError }, "Token verification failed");
-      return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, req.log);
-    }
+    const decodedUser = req.auth;
+    req.log.info({ uid: decodedUser.uid }, "Token verified");
 
     const { user: userDocument, isNew } = await firebase.ensureUserDocument(
       decodedUser.uid,
