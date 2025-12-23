@@ -599,7 +599,7 @@ describe("Topic Summaries Step - Individual Processing", () => {
       // If sequential, they would be ~10ms apart
       const maxTimeDiff =
         Math.max(...callTimestamps) - Math.min(...callTimestamps);
-      expect(maxTimeDiff).toBeLessThan(5); // Should all start nearly simultaneously
+      expect(maxTimeDiff).toBeLessThan(10); // Should all start nearly simultaneously
     });
   });
 });

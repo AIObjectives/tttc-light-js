@@ -19,6 +19,7 @@ import type {
   Claim,
   ClusteringError,
   ClusteringOptions,
+  DedupedClaim,
   GroupedClaim,
   ProcessedSubtopic,
   ProcessedTopic,
@@ -138,14 +139,15 @@ function createGroupedClaim(
   claimText: string | undefined,
   claims: Claim[],
   speakers: Set<string>,
-): Claim {
+): DedupedClaim {
   const primaryClaimId = validClaimIds[0];
   const baseClaim = claims[primaryClaimId];
 
-  const groupedClaim: Claim = {
+  const groupedClaim: DedupedClaim = {
     ...baseClaim,
     claim: claimText?.trim() || baseClaim.claim,
     duplicates: [],
+    duplicated: false,
   };
 
   // Track primary speaker
@@ -156,8 +158,12 @@ function createGroupedClaim(
   // Add remaining claims as duplicates
   for (let i = 1; i < validClaimIds.length; i++) {
     const claimId = validClaimIds[i];
-    const dupeClaim = { ...claims[claimId], duplicated: true };
-    groupedClaim.duplicates?.push(dupeClaim);
+    const dupeClaim: DedupedClaim = {
+      ...claims[claimId],
+      duplicates: [],
+      duplicated: true,
+    };
+    groupedClaim.duplicates.push(dupeClaim);
 
     // Track duplicate speaker
     if (dupeClaim.speaker) {
@@ -181,11 +187,11 @@ function processGroupedClaims(
   claims: Claim[],
   reportLogger: Logger,
 ): {
-  dedupedClaims: Claim[];
+  dedupedClaims: DedupedClaim[];
   accountedClaimIds: Set<number>;
   speakers: Set<string>;
 } {
-  const dedupedClaims: Claim[] = [];
+  const dedupedClaims: DedupedClaim[] = [];
   const accountedClaimIds = new Set<number>();
   const speakers = new Set<string>();
 
@@ -226,7 +232,7 @@ function addMissingClaims(
   claims: Claim[],
   reportLogger: Logger,
   subtopicName: string,
-): { claims: Claim[]; speakers: Set<string> } {
+): { claims: DedupedClaim[]; speakers: Set<string> } {
   const allClaimIds = new Set(
     Array.from({ length: claims.length }, (_, i) => i),
   );
@@ -234,7 +240,7 @@ function addMissingClaims(
     (id) => !accountedClaimIds.has(id),
   );
 
-  const missingClaims: Claim[] = [];
+  const missingClaims: DedupedClaim[] = [];
   const speakers = new Set<string>();
 
   if (missingClaimIds.length > 0) {
@@ -247,7 +253,11 @@ function addMissingClaims(
     );
 
     for (const missingId of missingClaimIds.sort((a, b) => a - b)) {
-      const claim = { ...claims[missingId], duplicates: [] };
+      const claim: DedupedClaim = {
+        ...claims[missingId],
+        duplicates: [],
+        duplicated: false,
+      };
       if (claim.speaker) {
         speakers.add(claim.speaker);
       }
@@ -283,8 +293,14 @@ function handleSingleClaim(claim: Claim): ProcessSubtopicResult {
     speakers.add(claim.speaker);
   }
 
+  const dedupedClaim: DedupedClaim = {
+    ...claim,
+    duplicates: [],
+    duplicated: false,
+  };
+
   return {
-    claims: [{ ...claim, duplicates: [] }],
+    claims: [dedupedClaim],
     speakers,
     usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
   };
@@ -315,12 +331,12 @@ function mergeSpeakers(
  * @param reportLogger - Logger instance
  */
 function logDeduplicationStats(
-  claims: Claim[],
+  claims: DedupedClaim[],
   subtopicName: string,
   reportLogger: Logger,
 ): void {
   const singleQuoteCount = claims.filter(
-    (c) => c.duplicates?.length === 0,
+    (c) => c.duplicates.length === 0,
   ).length;
 
   if (singleQuoteCount > 0) {
@@ -411,8 +427,9 @@ async function processSubtopic(
   logDeduplicationStats(allClaims, subtopicName, reportLogger);
 
   // Sort by number of duplicates (most duplicated first)
+  // All claims have duplicates array set at this point (either from deduplication or initialized to [])
   const sortedClaims = allClaims.sort(
-    (a, b) => (b.duplicates?.length || 0) - (a.duplicates?.length || 0),
+    (a, b) => b.duplicates.length - a.duplicates.length,
   );
 
   return success({
@@ -578,13 +595,15 @@ export async function sortAndDeduplicateClaims(
     totalInputTokens,
     totalOutputTokens,
   );
-  const cost = costResult.tag === "success" ? costResult.value : 0;
+  if (costResult.tag === "failure") {
+    return costResult;
+  }
 
   reportLogger.info(
     {
       numTopics: fullSortedTree.length,
       totalTokens,
-      cost,
+      cost: costResult.value,
     },
     "Sort and deduplicate complete",
   );
@@ -596,7 +615,7 @@ export async function sortAndDeduplicateClaims(
       output_tokens: totalOutputTokens,
       total_tokens: totalTokens,
     },
-    cost,
+    cost: costResult.value,
   };
 
   return success(result);

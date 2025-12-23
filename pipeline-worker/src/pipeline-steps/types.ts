@@ -135,11 +135,15 @@ export interface TopicTreeResult {
  * @property reportId - Optional identifier for the report being processed
  * @property userId - Optional identifier for the user making the request
  * @property enableWandB - Optional flag to enable Weights & Biases logging
+ * @property enableWeave - Optional flag to enable Weave evaluation tracking
+ * @property weaveProjectName - Optional Weave project name for tracking
  */
 export interface ClusteringOptions {
   reportId?: string;
   userId?: string;
   enableWandB?: boolean;
+  enableWeave?: boolean;
+  weaveProjectName?: string;
 }
 
 /**
@@ -170,8 +174,6 @@ export interface ClusteringOutput {
  * @property topicName - The topic this claim belongs to
  * @property subtopicName - The subtopic this claim belongs to
  * @property commentId - ID of the original comment
- * @property duplicates - Array of duplicate claims (present after deduplication)
- * @property duplicated - Flag indicating if this is a duplicate of another claim
  */
 export interface Claim {
   claim: string;
@@ -180,8 +182,15 @@ export interface Claim {
   topicName: string;
   subtopicName: string;
   commentId: string;
-  duplicates?: Claim[];
-  duplicated?: boolean;
+}
+
+/**
+ * A deduplicated claim with duplicates and duplicated fields
+ * After deduplication, all claims have these fields populated
+ */
+export interface DedupedClaim extends Claim {
+  duplicates: DedupedClaim[];
+  duplicated: boolean;
 }
 
 /**
@@ -235,7 +244,7 @@ export interface DeduplicationResponse {
  * @property counts - Counts of claims and speakers
  */
 export interface ProcessedSubtopic {
-  claims: Claim[];
+  claims: DedupedClaim[];
   speakers: string[];
   counts: {
     claims: number;
@@ -305,12 +314,12 @@ export interface DeduplicationOutput {
 
 /**
  * Return type for processSubtopic function
- * @property claims - Processed and sorted claims
+ * @property claims - Processed and sorted deduplicated claims
  * @property speakers - Set of unique speakers in the subtopic
  * @property usage - Token usage statistics
  */
 export interface ProcessSubtopicResult {
-  claims: Claim[];
+  claims: DedupedClaim[];
   speakers: Set<string>;
   usage: TokenUsage;
 }
@@ -387,6 +396,75 @@ export interface ExtractClaimsInput {
   /** Optional evaluation options */
   options?: {
     enableScoring?: boolean;
+    weaveProjectName?: string;
+  };
+}
+
+/**
+ * A topic summary containing the topic name and summary text
+ * @property topicName - Name of the topic
+ * @property summary - Summary text for the topic
+ */
+export interface TopicSummary {
+  topicName: string;
+  summary: string;
+}
+
+/**
+ * Input configuration for generating topic summaries
+ * @property tree - The sorted and deduplicated tree structure
+ * @property llm - LLM configuration for summary generation
+ */
+export interface SummariesInput {
+  tree: SortedTree;
+  llm: LLMConfig;
+}
+
+/**
+ * Result from topic summaries pipeline step
+ * @property data - Array of topic summaries
+ * @property usage - Token usage statistics
+ * @property cost - Estimated cost in USD
+ */
+export interface SummariesResult {
+  data: TopicSummary[];
+  usage: TokenUsage;
+  cost: number;
+}
+
+/**
+ * Result from summary generation model including usage and cost
+ * @property summary - The generated summary text
+ * @property usage - Token usage statistics from the API call
+ * @property cost - Estimated cost in USD for the API call
+ */
+export interface SummaryModelResult {
+  summary: string;
+  usage: TokenUsage;
+  cost: number;
+}
+
+/**
+ * Input parameters for generating a summary for a single topic
+ */
+export interface GenerateSummaryInput {
+  /** OpenAI client instance */
+  openaiClient: OpenAI;
+  /** Model name (e.g., "gpt-4o-mini") */
+  modelName: string;
+  /** System prompt */
+  systemPrompt: string;
+  /** User prompt template */
+  userPrompt: string;
+  /** The tree data for a single topic */
+  tree: SortedTree;
+  /** The topic name */
+  topicName: string;
+  /** Optional report ID for logging context */
+  reportId?: string;
+  /** Optional Weave evaluation options */
+  options?: {
+    enableWeave?: boolean;
     weaveProjectName?: string;
   };
 }

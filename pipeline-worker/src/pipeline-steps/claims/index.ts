@@ -184,6 +184,11 @@ function buildClaimsTree(
 /**
  * Extract claims from a list of comments and organize them into a tree structure.
  *
+ * This function processes comments in chunks with controlled concurrency to extract
+ * claims using an LLM. Each claim is categorized into topics and subtopics based on
+ * the provided taxonomy. Comments are sanitized and filtered for meaningful content
+ * before processing.
+ *
  * Input format:
  * - comments: Array of Comment objects (each has text, id, speaker)
  * - taxonomy: Array of topics with subtopics (the topic tree from clustering step)
@@ -203,9 +208,26 @@ function buildClaimsTree(
  * @param comments - Array of Comment objects to extract claims from
  * @param taxonomy - Array of topics with subtopics (from clustering step)
  * @param llmConfig - LLM configuration (model, prompts)
- * @param apiKey - OpenAI API key
- * @param options - Optional configuration (reportId, userId, etc.)
+ * @param apiKey - OpenAI API key for LLM calls
+ * @param options - Optional configuration object
+ * @param options.reportId - Optional report identifier for logging context
+ * @param options.userId - Optional user identifier for logging context
+ * @param options.enableScoring - Optional flag to enable Weave evaluation scoring
  * @returns Result containing claims tree with usage and cost information, or an error
+ *
+ * @example
+ * const result = await extractClaims(
+ *   comments,
+ *   taxonomy,
+ *   { model_name: "gpt-4o-mini", system_prompt: "...", user_prompt: "..." },
+ *   apiKey,
+ *   { reportId: "report-123", userId: "user-456" }
+ * );
+ *
+ * if (result.tag === "success") {
+ *   console.log(`Extracted ${result.value.data} claims`);
+ *   console.log(`Total cost: $${result.value.cost.toFixed(4)}`);
+ * }
  */
 export async function extractClaims(
   comments: Comment[],

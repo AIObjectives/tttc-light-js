@@ -8,6 +8,7 @@ export type {
   ClaimsTree,
   ClusteringError,
   ClusteringOptions,
+  DedupedClaim,
   DeduplicationOutput,
   DeduplicationResponse,
   GroupedClaim,
