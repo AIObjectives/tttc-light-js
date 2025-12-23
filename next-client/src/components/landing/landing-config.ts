@@ -23,7 +23,7 @@ export const SAMPLE_REPORTS = [
   {
     title: "AI Manifestos",
     imageUri: "/images/sample-ai-manifestos.jpg",
-    resourceUrl: "/report/u1jxGWkhZwU3F6cthVKk",
+    resourceUrl: "/report/QQ4zmwM85f43EejP3QDT",
     date: "November 5, 2024",
   },
   {
