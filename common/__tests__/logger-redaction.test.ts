@@ -97,6 +97,7 @@ describe("Logger Redaction Security", () => {
     it("should handle circular references in logged data", async () => {
       const { logger } = await import("../logger");
 
+      // biome-ignore lint/suspicious/noExplicitAny: Test requires circular reference which breaks type safety
       const circularObject: any = {
         uid: "circular123456789",
         email: "circular@example.com",

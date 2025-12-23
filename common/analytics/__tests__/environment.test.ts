@@ -39,37 +39,51 @@ const mockProcess = {
 };
 
 describe("Environment Detection", () => {
+  // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
   let originalWindow: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
   let originalProcess: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
   let originalNavigator: any;
 
   beforeEach(() => {
+    // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
     originalWindow = (globalThis as any).window;
+    // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
     originalProcess = (globalThis as any).process;
+    // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
     originalNavigator = (globalThis as any).navigator;
 
     // Clear all mocks
+    // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
     delete (globalThis as any).window;
+    // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
     delete (globalThis as any).process;
+    // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
     delete (globalThis as any).navigator;
   });
 
   afterEach(() => {
     // Restore original globals
     if (originalWindow !== undefined) {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = originalWindow;
     }
     if (originalProcess !== undefined) {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = originalProcess;
     }
     if (originalNavigator !== undefined) {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).navigator = originalNavigator;
     }
   });
 
   describe("isBrowser", () => {
     it("should return true when window and document are available", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = mockWindow;
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
 
       expect(isBrowser()).toBe(true);
@@ -80,7 +94,9 @@ describe("Environment Detection", () => {
     });
 
     it("should return false when document is not available", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = mockWindow;
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       delete (globalThis as any).document;
 
       expect(isBrowser()).toBe(false);
@@ -89,6 +105,7 @@ describe("Environment Detection", () => {
 
   describe("isServer", () => {
     it("should return true when process.versions.node is available", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = mockProcess;
 
       expect(isServer()).toBeTruthy();
@@ -99,6 +116,7 @@ describe("Environment Detection", () => {
     });
 
     it("should return false when process.versions.node is not available", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = { versions: {} };
 
       expect(isServer()).toBeFalsy();
@@ -107,49 +125,60 @@ describe("Environment Detection", () => {
 
   describe("isDevelopment", () => {
     it("should return true for localhost in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = mockWindow;
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
 
       expect(isDevelopment()).toBe(true);
     });
 
     it("should return true for 127.0.0.1 in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = {
         location: { hostname: "127.0.0.1" },
       };
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
 
       expect(isDevelopment()).toBe(true);
     });
 
     it("should return true for .local domains in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = {
         location: { hostname: "app.local" },
       };
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
 
       expect(isDevelopment()).toBe(true);
     });
 
     it("should return true for port 3000 in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = {
         location: { hostname: "example.com", port: "3000" },
       };
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
 
       expect(isDevelopment()).toBe(true);
     });
 
     it("should return false for production domains in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = {
         location: { hostname: "example.com", port: "443" },
       };
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
 
       expect(isDevelopment()).toBe(false);
     });
 
     it("should return true for NODE_ENV=development on server", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = {
         versions: { node: "18.0.0" },
         env: { NODE_ENV: "development" },
@@ -159,6 +188,7 @@ describe("Environment Detection", () => {
     });
 
     it("should return false for NODE_ENV=production on server", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = {
         versions: { node: "18.0.0" },
         env: { NODE_ENV: "production" },
@@ -170,6 +200,7 @@ describe("Environment Detection", () => {
 
   describe("getCurrentUrl", () => {
     it("should return current URL in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = mockWindow;
 
       expect(getCurrentUrl()).toBe("http://localhost:3000/test");
@@ -182,8 +213,11 @@ describe("Environment Detection", () => {
 
   describe("getUserAgent", () => {
     it("should return user agent in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = mockWindow;
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).navigator = mockNavigator;
 
       expect(getUserAgent()).toBe("Mozilla/5.0 (Test Browser)");
@@ -196,8 +230,11 @@ describe("Environment Detection", () => {
 
   describe("getEnvironmentInfo", () => {
     it("should return browser environment info", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = mockWindow;
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).document = {};
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).navigator = mockNavigator;
 
       const info = getEnvironmentInfo();
@@ -209,6 +246,7 @@ describe("Environment Detection", () => {
     });
 
     it("should return server environment info", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = mockProcess;
 
       const info = getEnvironmentInfo();
@@ -256,12 +294,14 @@ describe("Environment Detection", () => {
 
   describe("getAppVersion", () => {
     it("should return APP_VERSION from process.env on server", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = mockProcess;
 
       expect(getAppVersion()).toBe("1.2.3");
     });
 
     it("should return npm_package_version if APP_VERSION not available", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = {
         versions: { node: "18.0.0" },
         env: { npm_package_version: "1.0.0" },
@@ -271,6 +311,7 @@ describe("Environment Detection", () => {
     });
 
     it("should return default version if no version available", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = {
         versions: { node: "18.0.0" },
         env: {},
@@ -280,10 +321,12 @@ describe("Environment Detection", () => {
     });
 
     it("should return global __APP_VERSION__ in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).__APP_VERSION__ = "2.0.0";
 
       expect(getAppVersion()).toBe("2.0.0");
 
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       delete (globalThis as any).__APP_VERSION__;
     });
 
@@ -294,18 +337,21 @@ describe("Environment Detection", () => {
 
   describe("getEnvironmentName", () => {
     it("should return NODE_ENV from process.env on server", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).process = mockProcess;
 
       expect(getEnvironmentName()).toBe("test");
     });
 
     it("should return development for localhost in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = mockWindow;
 
       expect(getEnvironmentName()).toBe("development");
     });
 
     it("should return staging for staging domains in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = {
         location: { hostname: "staging.example.com" },
       };
@@ -314,6 +360,7 @@ describe("Environment Detection", () => {
     });
 
     it("should return production for production domains in browser", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Test utilities need to manipulate global objects
       (globalThis as any).window = {
         location: { hostname: "example.com" },
       };
