@@ -26,7 +26,7 @@ import { select } from "./tools/terminal";
     }
     default: {
       console.error(
-        "Error occured: index script received unrecognized options",
+        "Error occurred: index script received unrecognized options",
       );
     }
   }

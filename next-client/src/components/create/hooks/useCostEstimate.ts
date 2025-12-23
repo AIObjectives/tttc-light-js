@@ -13,7 +13,7 @@ import { useParseCsv } from "./useParseCSV";
 // import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
 
 /**
- * Number of char chracters in a 1mb string
+ * Number of characters in a 1mb string
  */
 const oneMbCharSize = 1048576;
 const costPerMb = 24;

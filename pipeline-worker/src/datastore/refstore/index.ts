@@ -18,7 +18,7 @@ import { PostgresRefStore } from "./postgres";
  *  for our different ref store implementations.
  *  - StoreFactory, we call the createStoreFactory function, taking our ServiceConfig, which returns a factory function
  *  for creating ref stores. The factory function takes the collection name (i.e. a database table name) and a zod parser
- *  that's used to validate the outputs / give our store a specific type signature. It will also automatically apply any variations to the colleciton name
+ *  that's used to validate the outputs / give our store a specific type signature. It will also automatically apply any variations to the collection name
  *  such as appending _dev to the name for dev env
  * - Creating refstores, we use our factory function to define whatever services we want to provide to the rest of the app.
  *

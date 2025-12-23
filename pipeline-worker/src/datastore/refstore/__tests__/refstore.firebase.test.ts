@@ -207,19 +207,19 @@ describe("FirebaseRefStore > MODIFY", () => {
     const updatedDoc = { id: "user1", name: "Some witty username" };
     await store.modify("user1", updatedDoc);
 
-    const transacton = mockCollection.firestore._getMockTransaction();
+    const transaction = mockCollection.firestore._getMockTransaction();
     expect(mockCollection.firestore.runTransaction).toHaveBeenCalled();
-    expect(transacton.get).toHaveBeenCalled();
-    expect(transacton.update).toHaveBeenCalled();
+    expect(transaction.get).toHaveBeenCalled();
+    expect(transaction.update).toHaveBeenCalled();
   });
 
   it("Should throw an error if no doc exists already", async () => {
-    const updatedDoc = { id: "doesnt exist", name: "Some witty username" };
-    await expect(store.modify("doesnt exist", updatedDoc)).rejects.toThrow();
+    const updatedDoc = { id: "does not exist", name: "Some witty username" };
+    await expect(store.modify("does not exist", updatedDoc)).rejects.toThrow();
 
-    const transacton = mockCollection.firestore._getMockTransaction();
+    const transaction = mockCollection.firestore._getMockTransaction();
     expect(mockCollection.firestore.runTransaction).toHaveBeenCalled();
-    expect(transacton.get).toHaveBeenCalled();
-    expect(transacton.update).not.toHaveBeenCalled();
+    expect(transaction.get).toHaveBeenCalled();
+    expect(transaction.update).not.toHaveBeenCalled();
   });
 });

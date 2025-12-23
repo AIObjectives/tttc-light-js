@@ -60,7 +60,7 @@ export const FormAbout = () => (
     <div className="text-muted-foreground">
       <p>
         We send the contents of the data uploaded below through OpenAI’s API to
-        extract key claims and topics, and store the resuts as a T3C report on
+        extract key claims and topics, and store the results as a T3C report on
         this site. Optionally, you can customize the prompts we use for each
         step of the pipeline &ndash; e.g. to focus on particular questions,
         themes, or perspectives in your data.
@@ -452,7 +452,7 @@ const CustomizePrompts = ({
       />
       <CustomizePromptSection
         title="Step 2 – Claim extraction prompt"
-        subheader="In the second step, the AI summarizes each particpant's comments as key claims with supporting quotes from the original text.
+        subheader="In the second step, the AI summarizes each participant's comments as key claims with supporting quotes from the original text.
       It then assigns the claim to the most relevant subtopic in the report. This prompt runs once for each participant's comment"
         inputName="extractionInstructions"
         formState={extractionInstructions}

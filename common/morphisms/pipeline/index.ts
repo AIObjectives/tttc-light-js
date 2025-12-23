@@ -181,7 +181,7 @@ const buildClaimsMap = (
 const makeReference = (
   source: schema.Source,
   claim: schema.LLMClaim,
-): schema.Referece => {
+): schema.Reference => {
   if (source.data[0] === "video" && source.data[1].timestamp === undefined) {
     console.log("HERE", source);
   }
@@ -316,10 +316,10 @@ const getReportMetaData = (
 });
 
 export const llmPipelineToSchema = (
-  pipelineOuput: schema.LLMPipelineOutput,
+  pipelineOutput: schema.LLMPipelineOutput,
 ): schema.PipelineOutput => ({
-  data: ["v0.2", getReportDataObj(pipelineOuput)],
-  metadata: ["v0.2", getReportMetaData(pipelineOuput)],
+  data: ["v0.2", getReportDataObj(pipelineOutput)],
+  metadata: ["v0.2", getReportMetaData(pipelineOutput)],
 });
 
 export const _internal = {

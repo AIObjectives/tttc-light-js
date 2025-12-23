@@ -1000,7 +1000,7 @@ type SortClaimsProps = Omit<apiPyserver.SortClaimsTreeRequest, "llm">;
 type OutputProps = apiPyserver.SortClaimsTreeResponse["data"];
 
 /**
- * Ouput of the topic summaries repsonse
+ * Output of the topic summaries response
  */
 type TopicSummariesProps = apiPyserver.TopicSummariesResponse["data"];
 

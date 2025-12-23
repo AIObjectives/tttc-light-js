@@ -105,18 +105,18 @@ const papaParse = async (
   // Dynamic import - only loads when function is called
   const Papa = (await import("papaparse")).default;
 
-  const papares = Papa.parse(Buffer.from(buffer).toString(), {
+  const parseResult = Papa.parse(Buffer.from(buffer).toString(), {
     header: true,
     skipEmptyLines: true,
   });
 
-  if (papares.errors.length > 0) {
+  if (parseResult.errors.length > 0) {
     return failure({
       tag: "Broken file",
-      message: formatPapaParseErrors(papares.errors),
+      message: formatPapaParseErrors(parseResult.errors),
     });
   } else {
-    return success(papares.data);
+    return success(parseResult.data);
   }
 };
 

@@ -340,7 +340,7 @@ export function createLLMJudgeScorer(
       if (!content) {
         evaluationLogger.error(
           { response },
-          "Empty or invalid response recieved from LLM while evaluating clustering prompt",
+          "Empty or invalid response received from LLM while evaluating clustering prompt",
         );
         return {
           llm_judge_score: 0,

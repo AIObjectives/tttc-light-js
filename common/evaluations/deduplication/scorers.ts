@@ -80,7 +80,7 @@ export const deduplicationJsonStructureScorer = weave.op(
       if (error instanceof Error) {
         evaluationLogger.error(
           { error },
-          `An error occured while evaluating the json structure of the deduplication response: ${error.message}`,
+          `An error occurred while evaluating the json structure of the deduplication response: ${error.message}`,
         );
         return {
           valid_json_structure: false,
@@ -89,7 +89,7 @@ export const deduplicationJsonStructureScorer = weave.op(
         };
       } else {
         evaluationLogger.error(
-          `An error occured while evaluating the json structure of the deduplication response: ${String(error)}`,
+          `An error occurred while evaluating the json structure of the deduplication response: ${String(error)}`,
         );
         return {
           valid_json_structure: false,

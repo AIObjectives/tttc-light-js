@@ -1531,7 +1531,7 @@ def sort_claims_tree(
                   "Alice",
                   "Bob",
                   "Charles",
-                  "Dany",
+                  "Danny",
                   "Elinor"
               ],
               "num_claims": 5,
@@ -1585,7 +1585,7 @@ def sort_claims_tree(
                                           "claim": "Birds are not suitable pets for everyone.",
                                           "commentId" "c3",
                                           "quote": "I don't know about birds.",
-                                          "speaker": "Dany",
+                                          "speaker": "Danny",
                                           "topicName": "Pets",
                                           "subtopicName": "Birds",
                                           "duplicated": true
@@ -1596,7 +1596,7 @@ def sort_claims_tree(
                           "num_speakers" : 2,
                           "speakers" : [
                               "Charles",
-                              "Dany"
+                              "Danny"
                           ]
                       }
                   ],

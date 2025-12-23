@@ -31,8 +31,8 @@ export type OutlineSubtopicNode = {
 };
 
 /**
- * We cache the path of the current highlight node so we don't have to continously
- * set every node to isHighlighted:false everytime it changes.
+ * We cache the path of the current highlight node so we don't have to continuously
+ * set every node to isHighlighted:false every time it changes.
  */
 type OutlineCache = {
   highlightedPath: TaggedTopicPath | TaggedSubtopicPath | null;
