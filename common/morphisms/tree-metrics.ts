@@ -2,14 +2,14 @@ import type { z } from "zod";
 import * as schema from "../schema/";
 
 // ! these functions haven't been tested thoroughly yet
-// TODO: Review this file - add comments and make more readble.
+// TODO: Review this file - add comments and make more readable.
 
 const fromSources = (arg: schema.Source[]): string[] =>
   Array.from(
     new Set(arg.map((src, i) => src.interview ?? `${Date.now()} #${i}`)),
   );
 
-const fromReferences = (arg: schema.Referece[]): string[] =>
+const fromReferences = (arg: schema.Reference[]): string[] =>
   Array.from(
     new Set(arg.map((ref, i) => ref.interview ?? `${Date.now()} #${i}`)),
   );
@@ -78,7 +78,7 @@ export const getNPeople = (
     | schema.Subtopic[]
     | schema.Claim[]
     | schema.Quote[]
-    | schema.Referece[]
+    | schema.Reference[]
     | schema.Source[],
 ) => chainReport(arg).length;
 

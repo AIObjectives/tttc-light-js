@@ -309,7 +309,7 @@ MOCK_RESPONSE = {
                         "claim": "Birds are not suitable pets for everyone.",
                         "commentId": "c3",
                         "quote": "I don't know about birds.",
-                        "speaker": "Dany",
+                        "speaker": "Danny",
                         "topicName": "Pets",
                         "subtopicName": "Birds",
                         "duplicated": True,
@@ -391,12 +391,12 @@ MOCK_RESPONSE = {
             {
                 "cruxClaim": "Epic fantasy storytelling should prioritize expansive worlds and detailed character backgrounds.",
                 "agree": ["Alice"],
-                "disagree": ["Dany"],
+                "disagree": ["Danny"],
                 "explanation": "The cruxClaim synthesizes the desire for expansive fantasy settings and the importance of character backgrounds. Participant 0 emphasizes the need for greater emphasis on epic fantasy worlds, indicating a preference for immersive settings. In contrast, Participant 3 focuses specifically on the inclusion of royal lineage as a character's background, which suggests a narrower view that does not necessarily align with the broader desire for expansive worlds. Thus, Participant 0 agrees with the cruxClaim, while Participant 3 disagrees.",
             },
             {
                 "cruxClaim": "Characters in fantasy should possess unique powers that enhance their individuality and connection to the universe.",
-                "agree": ["Elinor", "Dany"],
+                "agree": ["Elinor", "Danny"],
                 "disagree": [],
                 "explanation": "Both participants emphasize the importance of unique powers in enhancing character individuality and their connection to the universe. Participant 4 explicitly states that characters should have unique powers that connect them to the universe, while Participant 3 believes that magical elements should enhance character individuality. Since both claims align closely with the cruxClaim, they agree with it. There are no participants who disagree, as all statements support the idea of unique powers contributing to individuality and a connection to the universe.",
             },

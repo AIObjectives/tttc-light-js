@@ -1,0 +1,30 @@
+name: Spell Check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spell-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  spell-check:
+    name: Check Spelling
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run spell check
+        uses: streetsidesoftware/cspell-action@v6
+        with:
+          files: "**/*.{md,ts,tsx,py}"
+          incremental_files_only: true
+          config: ".cspell.json"

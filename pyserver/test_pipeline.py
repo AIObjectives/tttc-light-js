@@ -46,7 +46,7 @@ fancy_scifi_15 = [{"text" : "More epic fantasy worlds","speaker" : "Alice","id":
 {"text" : "I like really fast-paced plot, almost cinematic, the play-by-play of long elaborate battles or quests, none of that touchy-feely stuff", "speaker" : "Dany", "id" : "11"},\
 {"text" : "Emotionally realistic and rich relationships, how characters get to know each other and understand each other, I find that most interesting and compelling", "speaker" : "Alice", "id" : "12"},\
 {"text" : "I love really long stories with multiple installments, fully exploring one amazing universe", "speaker" : "Charles", "id" : "13"},\
-{"text" : "I don't like magic tricks, or powerful amulets or spells or deus ex machina spontaneous rescues for everyon—I want a scientific or technological explanation", "speaker" : "Bob", "id": "14"},\
+{"text" : "I don't like magic tricks, or powerful amulets or spells or deus ex machina spontaneous rescues for everyone—I want a scientific or technological explanation", "speaker" : "Bob", "id": "14"},\
 {"text" : "When I read sequels, the second book in a series is often the best, and then it's like they run out of material and it gets boring. With the exception of Adrian Tchaikovsky", "speaker": "Alice", "id": "15"}
 ]
 

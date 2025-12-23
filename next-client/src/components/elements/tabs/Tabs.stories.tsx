@@ -7,7 +7,7 @@ function TabsStory() {
   return (
     <Tabs>
       <TabsList>
-        <TabsTrigger value="teset1">Test1</TabsTrigger>
+        <TabsTrigger value="test1">Test1</TabsTrigger>
         <TabsTrigger value="test2">Test2</TabsTrigger>
       </TabsList>
     </Tabs>

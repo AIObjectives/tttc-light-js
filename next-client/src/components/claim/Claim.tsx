@@ -47,7 +47,7 @@ export function Claim({ claim }: { claim: schema.Claim }) {
                 key={quote.id}
                 quote={quote}
                 gap={1}
-                withSeperation={false}
+                withSeparation={false}
               />
             ))}
           </Col>

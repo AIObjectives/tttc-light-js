@@ -790,8 +790,8 @@ export type LLMSourceMap = z.infer<typeof llmSourceMap>;
 
 /********************************
  * Sources
- * Sources are the material being referrenced, e.g. a video or interview.
- * There exists a one-to-many relationship between sources and referrences.
+ * Sources are the material being referenced, e.g. a video or interview.
+ * There exists a one-to-many relationship between sources and references.
  ********************************/
 
 export const textMediaSource = z.tuple([
@@ -877,7 +877,7 @@ export const reference = z.object({
   data: z.union([referenceText, referenceVideo, referenceAudio]),
 });
 
-export type Referece = z.infer<typeof reference>;
+export type Reference = z.infer<typeof reference>;
 
 /********************************
  * Quote

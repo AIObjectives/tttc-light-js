@@ -46,10 +46,10 @@ export function QuoteText({
 export function Quote({
   quote,
   gap = 4,
-  withSeperation = false,
+  withSeparation = false,
 }: {
   quote: schema.Quote;
-  withSeperation?: boolean;
+  withSeparation?: boolean;
   gap?: number;
 }) {
   return (
@@ -63,7 +63,7 @@ export function Quote({
         </Col>
       ) : null}
       <QuoteText text={quote.text} interview={quote.reference.interview} />
-      {withSeperation ? <Separator /> : null}
+      {withSeparation ? <Separator /> : null}
     </Col>
   );
 }

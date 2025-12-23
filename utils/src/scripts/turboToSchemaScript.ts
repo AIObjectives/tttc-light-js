@@ -93,7 +93,7 @@ export const turboToSchemaScript = async () => {
     jsonFiles(inputFiles),
   );
   const topicClusteringName = await select(
-    "Which file is your topic clustring?",
+    "Which file is your topic clustering?",
     topicClusteringOptions,
   );
   console.log("Now we just need a few more things: \n\n");

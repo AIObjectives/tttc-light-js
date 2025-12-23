@@ -30,7 +30,7 @@ export function QuoteCard({ claim }: { claim: schema.Claim }) {
                 key={quote.id}
                 quote={quote}
                 gap={2}
-                withSeperation={quotes.length - 1 !== i}
+                withSeparation={quotes.length - 1 !== i}
               />
             ))}
           </Col>

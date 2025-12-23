@@ -34,7 +34,7 @@ const stateReplace = <T extends HasID>(
 ];
 
 /**
- * Find idx or throw an error if misisng
+ * Find idx or throw an error if missing
  */
 const safeFindIdx = <T extends HasID>(
   state: GroupHoverState<T>[],
