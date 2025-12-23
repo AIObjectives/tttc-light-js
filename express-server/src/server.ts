@@ -17,7 +17,7 @@ import {
   shutdownAnalyticsClient,
 } from "./analytics";
 import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
-import { contextMiddleware } from "./middleware";
+import { authMiddleware, contextMiddleware } from "./middleware";
 import { createQueue } from "./queue";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
@@ -257,13 +257,23 @@ app.post("/create", reportLimiter, create);
  * Ensures user document exists in Firestore
  * Uses authLimiter (5000 req/15min per IP) - critical path for user authentication
  */
-app.post("/ensure-user", authLimiter, ensureUser);
+app.post(
+  "/ensure-user",
+  authLimiter,
+  authMiddleware({ tokenLocation: "body" }),
+  ensureUser as unknown as express.RequestHandler,
+);
 
 /**
  * Submits user feedback
  * Uses authLimiter (5000 req/15min per IP)
  */
-app.post("/feedback", authLimiter, feedback);
+app.post(
+  "/feedback",
+  authLimiter,
+  authMiddleware({ tokenLocation: "body" }),
+  feedback as unknown as express.RequestHandler,
+);
 
 /**
  * Logs authentication events (signin/signout)
@@ -280,13 +290,23 @@ app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
  * Get the current user's capabilities and limits
  * Uses authLimiter (5000 req/15min per IP)
  */
-app.get("/api/user/limits", authLimiter, getUserLimits);
+app.get(
+  "/api/user/limits",
+  authLimiter,
+  authMiddleware({ tokenLocation: "header" }),
+  getUserLimits as unknown as express.RequestHandler,
+);
 
 /**
  * Update user profile (progressive profiling for monday.com CRM)
  * Uses authLimiter (5000 req/15min per IP)
  */
-app.post("/api/profile/update", authLimiter, updateProfile);
+app.post(
+  "/api/profile/update",
+  authLimiter,
+  authMiddleware({ tokenLocation: "header" }),
+  updateProfile as unknown as express.RequestHandler,
+);
 
 /**
  * Unified report endpoint - handles both Firebase IDs and legacy bucket URLs

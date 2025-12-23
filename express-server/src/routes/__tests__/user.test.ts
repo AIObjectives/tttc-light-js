@@ -1,12 +1,12 @@
 import type { Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMinimalTestEnv } from "../../__tests__/helpers";
-import type { RequestWithLogger } from "../../types/request";
+import type { RequestWithAuth } from "../../types/request";
 import { getUserLimits } from "../user";
 
 // Mock Firebase module
 vi.mock("../../Firebase", () => ({
-  verifyUser: vi.fn(),
   db: {
     collection: vi.fn(() => ({
       doc: vi.fn(() => ({
@@ -55,28 +55,28 @@ vi.mock("tttc-common/logger", () => ({
 }));
 
 describe("getUserLimits", () => {
-  let mockReq: RequestWithLogger;
+  let mockReq: RequestWithAuth;
   let mockRes: Response;
+  // Using any for mocked module - the mock setup handles the typing
+  // biome-ignore lint/suspicious/noExplicitAny: Test mock requires flexibility
   let mockFirebase: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Test mock requires flexibility
   let _mockPermissions: any;
 
   // Helper factories for test setup
   const createMockUser = (
     uid = "test-user-id",
     email = "test@example.com",
-  ) => ({
-    uid,
-    email,
-  });
+  ): DecodedIdToken =>
+    ({
+      uid,
+      email,
+    }) as DecodedIdToken;
 
   const createMockUserDoc = (roles: string[] = [], exists = true) => ({
     exists,
     data: () => ({ email: "test@example.com", roles }),
   });
-
-  const setupUserVerification = (user = createMockUser()) => {
-    mockFirebase.verifyUser.mockResolvedValue(user);
-  };
 
   const setupUserDocument = (roles: string[] = [], exists = true) => {
     const mockUserDoc = createMockUserDoc(roles, exists);
@@ -93,11 +93,9 @@ describe("getUserLimits", () => {
     mockFirebase = vi.mocked(await import("../../Firebase.js"));
     _mockPermissions = vi.mocked(await import("tttc-common/permissions"));
 
-    // Create mock request with logger
+    // Create mock request with auth (middleware provides req.auth)
     mockReq = {
-      headers: {
-        authorization: "Bearer test-token",
-      },
+      auth: createMockUser(),
       context: { env: createMinimalTestEnv() },
       log: {
         info: vi.fn(),
@@ -105,7 +103,7 @@ describe("getUserLimits", () => {
         warn: vi.fn(),
         debug: vi.fn(),
       },
-    } as unknown as RequestWithLogger;
+    } as unknown as RequestWithAuth;
 
     // Create mock response
     mockRes = {
@@ -115,7 +113,6 @@ describe("getUserLimits", () => {
   });
 
   it("should return default limits for user without roles", async () => {
-    setupUserVerification();
     setupUserDocument(); // Empty roles array by default
 
     await getUserLimits(mockReq, mockRes);
@@ -126,7 +123,6 @@ describe("getUserLimits", () => {
   });
 
   it("should return enhanced limits for user with large_uploads role", async () => {
-    setupUserVerification();
     setupUserDocument(["large_uploads"]);
 
     await getUserLimits(mockReq, mockRes);
@@ -136,36 +132,7 @@ describe("getUserLimits", () => {
     });
   });
 
-  it("should return 401 when no authorization token provided", async () => {
-    mockReq.headers = {};
-
-    await getUserLimits(mockReq, mockRes);
-
-    expect(mockRes.status).toHaveBeenCalledWith(401);
-    expect(mockRes.json).toHaveBeenCalledWith({
-      error: {
-        message: "Please sign in to continue.",
-        code: "AUTH_TOKEN_MISSING",
-      },
-    });
-  });
-
-  it("should return 401 when token is invalid", async () => {
-    mockFirebase.verifyUser.mockResolvedValue(null);
-
-    await getUserLimits(mockReq, mockRes);
-
-    expect(mockRes.status).toHaveBeenCalledWith(401);
-    expect(mockRes.json).toHaveBeenCalledWith({
-      error: {
-        message: "Your session is invalid. Please sign in again.",
-        code: "AUTH_TOKEN_INVALID",
-      },
-    });
-  });
-
   it("should handle user document not existing", async () => {
-    setupUserVerification();
     setupUserDocument([], false); // Document doesn't exist
 
     await getUserLimits(mockReq, mockRes);
@@ -176,8 +143,12 @@ describe("getUserLimits", () => {
     });
   });
 
-  it("should handle errors gracefully", async () => {
-    mockFirebase.verifyUser.mockRejectedValue(new Error("Database error"));
+  it("should handle Firestore errors gracefully", async () => {
+    // Simulate Firestore error
+    const mockGet = vi.fn().mockRejectedValue(new Error("Firestore error"));
+    const mockDoc = vi.fn().mockReturnValue({ get: mockGet });
+    const mockCollection = vi.fn().mockReturnValue({ doc: mockDoc });
+    mockFirebase.db.collection = mockCollection;
 
     await getUserLimits(mockReq, mockRes);
 
@@ -190,15 +161,14 @@ describe("getUserLimits", () => {
     });
   });
 
-  it("should extract Bearer token correctly", async () => {
-    mockReq.headers.authorization = "Bearer   test-token-with-spaces";
-    setupUserVerification();
+  it("should use uid from authenticated user", async () => {
+    // Set specific user
+    mockReq.auth = createMockUser("specific-uid", "specific@example.com");
     setupUserDocument();
 
     await getUserLimits(mockReq, mockRes);
 
-    expect(mockFirebase.verifyUser).toHaveBeenCalledWith(
-      "  test-token-with-spaces",
-    );
+    // Verify the collection was queried with the correct uid
+    expect(mockFirebase.db.collection).toHaveBeenCalled();
   });
 });

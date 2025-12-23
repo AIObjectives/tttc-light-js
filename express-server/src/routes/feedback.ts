@@ -1,23 +1,20 @@
 import type { Response } from "express";
-import type { DecodedIdToken } from "firebase-admin/auth";
 import { ERROR_CODES } from "tttc-common/errors";
 import { z } from "zod";
-import {
-  admin,
-  db,
-  ensureUserDocument,
-  getCollectionName,
-  verifyUser,
-} from "../Firebase";
-import type { RequestWithLogger } from "../types/request";
+import { admin, db, ensureUserDocument, getCollectionName } from "../Firebase";
+import type { RequestWithAuth } from "../types/request";
 import { sendErrorByCode } from "./sendError";
 
 const feedbackRequest = z.object({
   text: z.string(),
-  firebaseAuthToken: z.string(),
 });
 
-export default async function feedback(req: RequestWithLogger, res: Response) {
+/**
+ * Submit user feedback
+ *
+ * Requires: authMiddleware({ tokenLocation: "body" })
+ */
+export default async function feedback(req: RequestWithAuth, res: Response) {
   req.log.info("Feedback endpoint called");
   try {
     const parsed = feedbackRequest.safeParse(req.body);
@@ -27,15 +24,9 @@ export default async function feedback(req: RequestWithLogger, res: Response) {
       return sendErrorByCode(res, ERROR_CODES.VALIDATION_ERROR, req.log);
     }
 
-    const { text, firebaseAuthToken } = parsed.data;
+    const { text } = parsed.data;
 
-    let decodedUser: DecodedIdToken;
-    try {
-      decodedUser = await verifyUser(firebaseAuthToken);
-    } catch (error) {
-      req.log.warn({ error }, "Token verification failed");
-      return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, req.log);
-    }
+    const decodedUser = req.auth;
     req.log.info({ uid: decodedUser.uid }, "Token verified");
 
     // Require email verification for email/password users

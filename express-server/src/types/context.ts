@@ -42,10 +42,13 @@ export const env = z.object({
   PYSERVER_URL: z
     .string({ required_error: "Missing PYSERVER_URL" })
     .url({ message: "PYSERVER_URL in env should be a valid url" }),
-  NODE_ENV: z.union([z.literal("development"), z.literal("production")], {
-    required_error: "Missing NODE_ENV (production | development)",
-    invalid_type_error: "Invalid input for NODE_ENV",
-  }),
+  NODE_ENV: z.union(
+    [z.literal("development"), z.literal("production"), z.literal("test")],
+    {
+      required_error: "Missing NODE_ENV (production | development | test)",
+      invalid_type_error: "Invalid input for NODE_ENV",
+    },
+  ),
   // REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
   // REDIS_PORT: z
   //   .string({ required_error: "Missing REDIS_PORT" })

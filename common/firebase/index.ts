@@ -170,7 +170,7 @@ export const SCHEMA_VERSIONS = {
 } as const;
 
 export const useGetCollectionName =
-  (NODE_ENV: "development" | "production") =>
+  (NODE_ENV: "development" | "production" | "test") =>
   (name: keyof typeof COLLECTIONS) => {
     return NODE_ENV === "production"
       ? COLLECTIONS[name]
