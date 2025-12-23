@@ -12,7 +12,7 @@ const feedbackRequest = z.object({
 /**
  * Submit user feedback
  *
- * Requires: authMiddleware({ tokenLocation: "body" })
+ * Requires: authMiddleware()
  */
 export default async function feedback(req: RequestWithAuth, res: Response) {
   req.log.info("Feedback endpoint called");

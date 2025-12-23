@@ -5,10 +5,12 @@
  * silently failing after sending a success response (T3C-891).
  */
 
+import type { RequestHandler } from "express";
 import express from "express";
 import request from "supertest";
 import type { SourceRow } from "tttc-common/schema";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { authMiddleware } from "../../middleware";
 import create from "../create";
 
 // Hoist mocks
@@ -62,7 +64,6 @@ describe("Queue Failure Handling (T3C-891)", () => {
   let app: express.Application;
 
   const validRequest = {
-    firebaseAuthToken: "valid-token",
     userConfig: {
       title: "Test Report",
       description: "Test description",
@@ -119,7 +120,7 @@ describe("Queue Failure Handling (T3C-891)", () => {
       next();
     });
 
-    app.post("/create", create);
+    app.post("/create", authMiddleware(), create as unknown as RequestHandler);
   });
 
   beforeEach(() => {
@@ -135,6 +136,7 @@ describe("Queue Failure Handling (T3C-891)", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(validRequest)
       .expect(200);
 
@@ -147,6 +149,7 @@ describe("Queue Failure Handling (T3C-891)", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(validRequest)
       .expect(500);
 
@@ -199,9 +202,17 @@ describe("Queue Failure Handling (T3C-891)", () => {
       } as any;
       next();
     });
-    customApp.post("/create", create);
+    customApp.post(
+      "/create",
+      authMiddleware(),
+      create as unknown as RequestHandler,
+    );
 
-    await request(customApp).post("/create").send(validRequest).expect(500);
+    await request(customApp)
+      .post("/create")
+      .set("Authorization", "Bearer valid-token")
+      .send(validRequest)
+      .expect(500);
 
     expect(loggedError).toBeDefined();
     expect(loggedError.msg).toBe("Create report error");

@@ -9,9 +9,17 @@ import { sendErrorByCode } from "./sendError";
 
 const authEventRequest = z.object({
   event: z.enum(["signin", "signout"]),
-  firebaseAuthToken: z.string().optional(),
   clientTimestamp: z.string().optional(),
 });
+
+/**
+ * Extract Bearer token from Authorization header
+ */
+function extractBearerToken(authHeader: string | undefined): string | null {
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7).trim();
+  return token || null;
+}
 
 export default async function authEvents(
   req: RequestWithLogger,
@@ -26,10 +34,17 @@ export default async function authEvents(
       return sendErrorByCode(res, ERROR_CODES.VALIDATION_ERROR, req.log);
     }
 
-    const { event, firebaseAuthToken, clientTimestamp } = parsed.data;
+    const { event, clientTimestamp } = parsed.data;
 
-    if (event === "signin" && firebaseAuthToken) {
-      const decodedUser: DecodedIdToken = await verifyUser(firebaseAuthToken);
+    if (event === "signin") {
+      // Signin requires valid Authorization header
+      const token = extractBearerToken(req.headers.authorization);
+      if (!token) {
+        req.log.warn("Missing Authorization header for signin event");
+        return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_MISSING, req.log);
+      }
+
+      const decodedUser: DecodedIdToken = await verifyUser(token);
 
       req.log.info(
         { uid: decodedUser.uid, email: decodedUser.email },

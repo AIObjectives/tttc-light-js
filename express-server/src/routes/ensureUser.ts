@@ -8,7 +8,7 @@ import { sendErrorByCode } from "./sendError";
 /**
  * Ensures a user document exists in Firestore and syncs new users to Monday.com
  *
- * Requires: authMiddleware({ tokenLocation: "body" })
+ * Requires: authMiddleware()
  */
 export default async function ensureUser(req: RequestWithAuth, res: Response) {
   req.log.info("Ensure user endpoint called");

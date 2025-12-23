@@ -2,6 +2,7 @@
  * Server-side CSV security validation tests for create route
  */
 
+import type { RequestHandler } from "express";
 import express from "express";
 import request from "supertest";
 import {
@@ -9,6 +10,7 @@ import {
   validateParsedData,
 } from "tttc-common/csv-security";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { authMiddleware } from "../../middleware";
 import create from "../create";
 
 // Mock dependencies
@@ -114,7 +116,7 @@ describe("CSV Security in Create Route", () => {
       next();
     });
 
-    app.post("/create", create);
+    app.post("/create", authMiddleware(), create as unknown as RequestHandler);
   });
 
   beforeEach(() => {
@@ -123,7 +125,6 @@ describe("CSV Security in Create Route", () => {
   });
 
   const createValidRequestBody = (csvData: any[]) => ({
-    firebaseAuthToken: "valid-token",
     userConfig: {
       title: "Test Report",
       description: "Test Description",
@@ -172,6 +173,7 @@ describe("CSV Security in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(maliciousData))
       .expect(400);
 
@@ -192,6 +194,7 @@ describe("CSV Security in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(maliciousData))
       .expect(400);
 
@@ -212,6 +215,7 @@ describe("CSV Security in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(maliciousData))
       .expect(400);
 
@@ -233,6 +237,7 @@ describe("CSV Security in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(cleanData))
       .expect(200);
     expect(response.body.message).toBe("Request received.");
@@ -251,6 +256,7 @@ describe("CSV Security in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(dataWithNonStrings))
       .expect(200);
     expect(response.body.message).toBe("Request received.");
@@ -275,6 +281,7 @@ describe("CSV Security in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(testData))
       .expect(400);
 
@@ -305,6 +312,7 @@ describe("CSV Security in Create Route", () => {
 
     const response = await request(app)
       .post("/create")
+      .set("Authorization", "Bearer valid-token")
       .send(createValidRequestBody(csvData))
       .expect(200);
 

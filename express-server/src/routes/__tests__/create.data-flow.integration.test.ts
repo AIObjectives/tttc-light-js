@@ -5,11 +5,13 @@
  * through server validation to storage, ensuring data integrity at each step.
  */
 
+import type { RequestHandler } from "express";
 import express from "express";
 import request from "supertest";
 import { validateParsedData } from "tttc-common/csv-security";
 import type { SourceRow } from "tttc-common/schema";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { authMiddleware } from "../../middleware";
 import create from "../create";
 
 // Hoist mocks to avoid initialization errors
@@ -104,7 +106,7 @@ describe("End-to-End Data Flow Integration", () => {
       next();
     });
 
-    app.post("/create", create);
+    app.post("/create", authMiddleware(), create as unknown as RequestHandler);
   });
 
   beforeEach(() => {
@@ -140,8 +142,8 @@ describe("End-to-End Data Flow Integration", () => {
 
       const response = await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send({
-          firebaseAuthToken: "valid-token",
           userConfig: {
             title: "Test Report",
             description: "Integration test",
@@ -198,8 +200,8 @@ describe("End-to-End Data Flow Integration", () => {
 
       await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send({
-          firebaseAuthToken: "valid-token",
           userConfig: {
             title: "Optional Fields Test",
             description: "Test optional field handling",
@@ -261,8 +263,8 @@ describe("End-to-End Data Flow Integration", () => {
 
       await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send({
-          firebaseAuthToken: "valid-token",
           userConfig: {
             title: "Validation Test",
             description: "Test validation rejection",
@@ -299,8 +301,8 @@ describe("End-to-End Data Flow Integration", () => {
 
       await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send({
-          firebaseAuthToken: "valid-token",
           userConfig: {
             title: "Format Test",
             description: "Test no double-formatting",
@@ -343,8 +345,8 @@ describe("End-to-End Data Flow Integration", () => {
 
       await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send({
-          firebaseAuthToken: "valid-token",
           userConfig: {
             title: "Performance Test",
             description: "Large dataset test",
@@ -394,8 +396,8 @@ describe("End-to-End Data Flow Integration", () => {
 
       await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send({
-          firebaseAuthToken: "valid-token",
           userConfig: {
             title: "Empty Dataset Test",
             description: "Test empty data handling",
@@ -419,8 +421,8 @@ describe("End-to-End Data Flow Integration", () => {
       // Data that will fail Zod validation - missing required userConfig fields
       await request(app)
         .post("/create")
+        .set("Authorization", "Bearer valid-token")
         .send({
-          firebaseAuthToken: "valid-token",
           userConfig: {
             title: "Invalid Test",
             // Missing required fields

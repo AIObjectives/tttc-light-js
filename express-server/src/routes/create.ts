@@ -16,7 +16,7 @@ import * as firebase from "../Firebase";
 import { pipelineQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";
-import { getRequestId, type RequestWithLogger } from "../types/request";
+import { getRequestId, type RequestWithAuth } from "../types/request";
 import { sendErrorByCode } from "./sendError";
 
 const REPORT_PLACEHOLDER_MESSAGE = "Your data is being generated";
@@ -182,82 +182,72 @@ const createAndSaveReport = async (
   return { filename, jsonUrl: saveResult.value };
 };
 
-const handleUserAuthenticationAndCreateDocuments = async (
-  firebaseAuthToken: string | null,
+/**
+ * Creates Firebase documents for an authenticated user's report.
+ * Authentication is handled by authMiddleware, so decodedUser is always valid.
+ */
+const createUserDocuments = async (
+  decodedUser: DecodedIdToken,
   userConfig: schema.LLMUserConfig,
   jsonUrl: string,
   preGeneratedReportId: string,
 ) => {
-  const decodedUser: DecodedIdToken | null = firebaseAuthToken
-    ? await firebase.verifyUser(firebaseAuthToken)
-    : null;
+  // Check if user signed up with email/password and hasn't verified their email
+  // Note: firebase.sign_in_provider is only present in real Firebase tokens
+  const isEmailPasswordUser =
+    decodedUser.firebase?.sign_in_provider === "password";
+  const isEmailVerified = decodedUser.email_verified === true;
 
-  createLogger.info(
-    { decodedUser: decodedUser || undefined },
-    "Authentication result",
+  if (isEmailPasswordUser && !isEmailVerified) {
+    createLogger.warn(
+      {
+        uid: decodedUser.uid,
+        email: decodedUser.email,
+        provider: decodedUser.firebase?.sign_in_provider,
+        emailVerified: isEmailVerified,
+      },
+      "Email verification required for email/password users",
+    );
+    throw new EmailNotVerifiedError();
+  }
+
+  createLogger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
+  await firebase.ensureUserDocument(
+    decodedUser.uid,
+    decodedUser.email || null,
+    decodedUser.name || null,
+  );
+  createLogger.info({ uid: decodedUser.uid }, "ensureUserDocument completed");
+
+  // Atomically create both ReportJob and ReportRef documents with actual URL
+  const { jobId, reportId } = await firebase.createReportJobAndRef(
+    {
+      userId: decodedUser.uid,
+      title: userConfig.title,
+      description: userConfig.description,
+      reportDataUri: jsonUrl, // Use actual URL from storage
+      createdAt: new Date(),
+    },
+    {
+      userId: decodedUser.uid,
+      reportDataUri: jsonUrl, // Use actual URL from storage
+      title: userConfig.title,
+      description: userConfig.description,
+      numTopics: 0, // Placeholder, will be updated
+      numSubtopics: 0, // Placeholder, will be updated
+      numClaims: 0, // Placeholder, will be updated
+      numPeople: 0, // Placeholder, will be updated
+      createdDate: new Date(),
+    },
+    preGeneratedReportId, // Use the same reportId as storage filename
   );
 
-  if (decodedUser) {
-    // Check if user signed up with email/password and hasn't verified their email
-    // Note: firebase.sign_in_provider is only present in real Firebase tokens
-    const isEmailPasswordUser =
-      decodedUser.firebase?.sign_in_provider === "password";
-    const isEmailVerified = decodedUser.email_verified === true;
+  createLogger.info(
+    { jobId, reportId, uid: decodedUser.uid },
+    "Atomically created ReportJob and ReportRef documents",
+  );
 
-    if (isEmailPasswordUser && !isEmailVerified) {
-      createLogger.warn(
-        {
-          uid: decodedUser.uid,
-          email: decodedUser.email,
-          provider: decodedUser.firebase?.sign_in_provider,
-          emailVerified: isEmailVerified,
-        },
-        "Email verification required for email/password users",
-      );
-      throw new EmailNotVerifiedError();
-    }
-
-    createLogger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
-    await firebase.ensureUserDocument(
-      decodedUser.uid,
-      decodedUser.email || null,
-      decodedUser.name || null,
-    );
-    createLogger.info({ uid: decodedUser.uid }, "ensureUserDocument completed");
-
-    // Atomically create both ReportJob and ReportRef documents with actual URL
-    const { jobId, reportId } = await firebase.createReportJobAndRef(
-      {
-        userId: decodedUser.uid,
-        title: userConfig.title,
-        description: userConfig.description,
-        reportDataUri: jsonUrl, // Use actual URL from storage
-        createdAt: new Date(),
-      },
-      {
-        userId: decodedUser.uid,
-        reportDataUri: jsonUrl, // Use actual URL from storage
-        title: userConfig.title,
-        description: userConfig.description,
-        numTopics: 0, // Placeholder, will be updated
-        numSubtopics: 0, // Placeholder, will be updated
-        numClaims: 0, // Placeholder, will be updated
-        numPeople: 0, // Placeholder, will be updated
-        createdDate: new Date(),
-      },
-      preGeneratedReportId, // Use the same reportId as storage filename
-    );
-
-    createLogger.info(
-      { jobId, reportId, uid: decodedUser.uid },
-      "Atomically created ReportJob and ReportRef documents",
-    );
-
-    return { decodedUser, firebaseJobId: jobId, reportId };
-  } else {
-    createLogger.info("No decodedUser, skipping document creation");
-    return { decodedUser: null, firebaseJobId: null, reportId: null };
-  }
+  return { firebaseJobId: jobId, reportId };
 };
 
 const buildPipelineJob = (
@@ -341,47 +331,44 @@ const calculateDataSize = (data: schema.SourceRow[]): number | undefined => {
   return Buffer.byteLength(jsonString, "utf8");
 };
 
+/**
+ * Get the user's CSV size limit based on their roles.
+ * Authentication is handled by authMiddleware, so decodedUser is always valid.
+ */
 const getUserCsvSizeLimit = async (
-  firebaseAuthToken: string | null,
+  decodedUser: DecodedIdToken,
 ): Promise<number> => {
-  let userCsvSizeLimit = DEFAULT_LIMITS.csvSizeLimit;
-
-  if (firebaseAuthToken) {
-    try {
-      const decodedToken = await firebase.verifyUser(firebaseAuthToken);
-      if (decodedToken) {
-        const userRef = firebase.db
-          .collection(firebase.getCollectionName("USERS"))
-          .doc(decodedToken.uid);
-        const userDoc = await userRef.get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          const roles = userData?.roles || [];
-          const capabilities = getUserCapabilities(roles);
-          userCsvSizeLimit = capabilities.csvSizeLimit;
-          createLogger.info(
-            {
-              uid: decodedToken.uid,
-              roles,
-              capabilities,
-            },
-            "User CSV size limit determined from roles",
-          );
-        }
-      }
-    } catch (error) {
-      createLogger.warn(
-        { error },
-        "Failed to get user roles, using default limit",
+  try {
+    const userRef = firebase.db
+      .collection(firebase.getCollectionName("USERS"))
+      .doc(decodedUser.uid);
+    const userDoc = await userRef.get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      const roles = userData?.roles || [];
+      const capabilities = getUserCapabilities(roles);
+      createLogger.info(
+        {
+          uid: decodedUser.uid,
+          roles,
+          capabilities,
+        },
+        "User CSV size limit determined from roles",
       );
+      return capabilities.csvSizeLimit;
     }
+  } catch (error) {
+    createLogger.warn(
+      { error },
+      "Failed to get user roles, using default limit",
+    );
   }
 
-  return userCsvSizeLimit;
+  return DEFAULT_LIMITS.csvSizeLimit;
 };
 
 async function createNewReport(
-  req: RequestWithLogger,
+  req: RequestWithAuth,
 ): Promise<
   Result<
     { response: api.GenerateApiResponse; pipelineJob: PipelineJob },
@@ -390,11 +377,12 @@ async function createNewReport(
 > {
   const { env } = req.context;
   const { CLIENT_BASE_URL } = env;
+  const decodedUser = req.auth;
   const body = api.generateApiRequest.parse(req.body);
-  const { data, userConfig, firebaseAuthToken } = body;
+  const { data, userConfig } = body;
 
   // Get user's CSV size limit based on roles and feature flags
-  const userCsvSizeLimit = await getUserCsvSizeLimit(firebaseAuthToken);
+  const userCsvSizeLimit = await getUserCsvSizeLimit(decodedUser);
 
   // Validate file size for CSV uploads
   const isCsv = data[0] === "csv";
@@ -429,21 +417,11 @@ async function createNewReport(
   const storage = createStorage(env);
   const { filename, jsonUrl } = await createAndSaveReport(storage, reportId);
 
-  // Now handle authentication and create Firebase documents with actual URL
-  const {
-    decodedUser,
-    firebaseJobId,
-    reportId: createdReportId,
-  } = await handleUserAuthenticationAndCreateDocuments(
-    firebaseAuthToken,
-    userConfig,
-    jsonUrl,
-    reportId,
-  );
+  // Create Firebase documents for authenticated user
+  const { firebaseJobId, reportId: createdReportId } =
+    await createUserDocuments(decodedUser, userConfig, jsonUrl, reportId);
 
-  // Validate required Firebase data
-  if (decodedUser === null)
-    throw new Error("Firebase is now required to run a report.");
+  // Validate Firebase document creation
   if (firebaseJobId === null) throw new Error("Failed to add firebase job.");
   if (createdReportId === null)
     throw new Error("Failed to create report reference.");
@@ -519,7 +497,7 @@ function getErrorCodeForException(e: unknown): ErrorCode {
   }
 }
 
-export default async function create(req: RequestWithLogger, res: Response) {
+export default async function create(req: RequestWithAuth, res: Response) {
   const requestId = getRequestId(req);
 
   try {

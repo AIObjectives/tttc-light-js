@@ -68,12 +68,12 @@ describe("authMiddleware", () => {
     mockNext = vi.fn();
   });
 
-  describe("header-based token extraction", () => {
+  describe("token extraction", () => {
     it("should extract Bearer token from Authorization header", async () => {
       mockReq.headers.authorization = "Bearer valid-token";
       mockVerifyUser.mockResolvedValue(createMockDecodedToken());
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       expect(mockVerifyUser).toHaveBeenCalledWith("valid-token");
@@ -84,7 +84,7 @@ describe("authMiddleware", () => {
       mockReq.headers.authorization = "Bearer   token-with-spaces";
       mockVerifyUser.mockResolvedValue(createMockDecodedToken());
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       // Trims leading/trailing whitespace per RFC 6750
@@ -94,7 +94,7 @@ describe("authMiddleware", () => {
     it("should reject missing Authorization header", async () => {
       mockReq.headers.authorization = undefined;
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       expect(mockSendErrorByCode).toHaveBeenCalledWith(
@@ -108,7 +108,7 @@ describe("authMiddleware", () => {
     it("should reject non-Bearer authorization", async () => {
       mockReq.headers.authorization = "Basic dXNlcjpwYXNz";
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       expect(mockSendErrorByCode).toHaveBeenCalledWith(
@@ -122,48 +122,7 @@ describe("authMiddleware", () => {
     it("should reject Bearer with no token", async () => {
       mockReq.headers.authorization = "Bearer ";
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
-      await middleware(mockReq, mockRes, mockNext);
-
-      expect(mockSendErrorByCode).toHaveBeenCalledWith(
-        mockRes,
-        "AUTH_TOKEN_MISSING",
-        mockReq.log,
-      );
-      expect(mockNext).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("body-based token extraction", () => {
-    it("should extract firebaseAuthToken from request body", async () => {
-      mockReq.body = { firebaseAuthToken: "body-token" };
-      mockVerifyUser.mockResolvedValue(createMockDecodedToken());
-
-      const middleware = authMiddleware({ tokenLocation: "body" });
-      await middleware(mockReq, mockRes, mockNext);
-
-      expect(mockVerifyUser).toHaveBeenCalledWith("body-token");
-      expect(mockNext).toHaveBeenCalled();
-    });
-
-    it("should reject missing firebaseAuthToken in body", async () => {
-      mockReq.body = { otherField: "value" };
-
-      const middleware = authMiddleware({ tokenLocation: "body" });
-      await middleware(mockReq, mockRes, mockNext);
-
-      expect(mockSendErrorByCode).toHaveBeenCalledWith(
-        mockRes,
-        "AUTH_TOKEN_MISSING",
-        mockReq.log,
-      );
-      expect(mockNext).not.toHaveBeenCalled();
-    });
-
-    it("should reject undefined body", async () => {
-      mockReq.body = undefined;
-
-      const middleware = authMiddleware({ tokenLocation: "body" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       expect(mockSendErrorByCode).toHaveBeenCalledWith(
@@ -181,7 +140,7 @@ describe("authMiddleware", () => {
       mockReq.headers.authorization = "Bearer valid-token";
       mockVerifyUser.mockResolvedValue(decodedToken);
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       expect((mockReq as RequestWithAuth).auth).toEqual(decodedToken);
@@ -193,7 +152,7 @@ describe("authMiddleware", () => {
       mockReq.headers.authorization = "Bearer invalid-token";
       mockVerifyUser.mockRejectedValue(new Error("Token expired"));
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       expect(mockSendErrorByCode).toHaveBeenCalledWith(
@@ -209,7 +168,7 @@ describe("authMiddleware", () => {
       mockReq.headers.authorization = "Bearer bad-token";
       mockVerifyUser.mockRejectedValue(tokenError);
 
-      const middleware = authMiddleware({ tokenLocation: "header" });
+      const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
       expect(mockReq.log.warn).toHaveBeenCalledWith(
@@ -220,41 +179,13 @@ describe("authMiddleware", () => {
   });
 
   describe("logging", () => {
-    it("should log warning with tokenLocation when token is missing", async () => {
+    it("should log warning when token is missing", async () => {
       mockReq.headers.authorization = undefined;
-
-      const middleware = authMiddleware({ tokenLocation: "header" });
-      await middleware(mockReq, mockRes, mockNext);
-
-      expect(mockReq.log.warn).toHaveBeenCalledWith(
-        { tokenLocation: "header" },
-        "Auth token missing",
-      );
-    });
-
-    it("should include body tokenLocation in missing token log", async () => {
-      mockReq.body = {};
-
-      const middleware = authMiddleware({ tokenLocation: "body" });
-      await middleware(mockReq, mockRes, mockNext);
-
-      expect(mockReq.log.warn).toHaveBeenCalledWith(
-        { tokenLocation: "body" },
-        "Auth token missing",
-      );
-    });
-  });
-
-  describe("default options", () => {
-    it("should default to header-based extraction", async () => {
-      mockReq.headers.authorization = "Bearer default-token";
-      mockVerifyUser.mockResolvedValue(createMockDecodedToken());
 
       const middleware = authMiddleware();
       await middleware(mockReq, mockRes, mockNext);
 
-      expect(mockVerifyUser).toHaveBeenCalledWith("default-token");
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockReq.log.warn).toHaveBeenCalledWith("Auth token missing");
     });
   });
 });

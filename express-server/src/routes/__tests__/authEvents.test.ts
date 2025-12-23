@@ -38,9 +38,13 @@ describe("Auth Events Route", () => {
   let _mockSendError: any;
   let mockLogger: Logger;
 
-  const createMockRequest = (body: any = {}): RequestWithLogger => {
+  const createMockRequest = (
+    body: any = {},
+    headers: Record<string, string> = {},
+  ): RequestWithLogger => {
     return {
       body,
+      headers,
       log: mockLogger,
     } as RequestWithLogger;
   };
@@ -84,11 +88,13 @@ describe("Auth Events Route", () => {
         name: "Test User",
       };
 
-      const mockRequest = createMockRequest({
-        event: "signin",
-        firebaseAuthToken: "valid-token",
-        clientTimestamp: "2024-01-15T10:30:00.000Z",
-      });
+      const mockRequest = createMockRequest(
+        {
+          event: "signin",
+          clientTimestamp: "2024-01-15T10:30:00.000Z",
+        },
+        { authorization: "Bearer valid-token" },
+      );
       const mockResponse = createMockResponse();
 
       mockVerifyUser.mockResolvedValue(mockDecodedUser);
@@ -154,21 +160,23 @@ describe("Auth Events Route", () => {
       // Act
       await authEvents(mockRequest, mockResponse as Response);
 
-      // Assert - now uses sendErrorByCode with standardized error codes
+      // Assert - now uses sendErrorByCode with AUTH_TOKEN_MISSING
       expect(vi.mocked(sendErrorByCode)).toHaveBeenCalledWith(
         mockResponse,
-        "VALIDATION_ERROR",
+        "AUTH_TOKEN_MISSING",
         mockRequest.log,
       );
     });
 
     it("should handle invalid Firebase tokens", async () => {
       // Arrange
-      const mockRequest = createMockRequest({
-        event: "signin",
-        firebaseAuthToken: "invalid-token",
-        clientTimestamp: "2024-01-15T10:30:00.000Z",
-      });
+      const mockRequest = createMockRequest(
+        {
+          event: "signin",
+          clientTimestamp: "2024-01-15T10:30:00.000Z",
+        },
+        { authorization: "Bearer invalid-token" },
+      );
       const mockResponse = createMockResponse();
 
       const authError = new Error("Invalid token");
@@ -211,11 +219,13 @@ describe("Auth Events Route", () => {
         name: "Monitor User",
       };
 
-      const mockRequest = createMockRequest({
-        event: "signin",
-        firebaseAuthToken: "valid-token",
-        clientTimestamp: "2024-01-15T10:30:00.000Z",
-      });
+      const mockRequest = createMockRequest(
+        {
+          event: "signin",
+          clientTimestamp: "2024-01-15T10:30:00.000Z",
+        },
+        { authorization: "Bearer valid-token" },
+      );
       const mockResponse = createMockResponse();
 
       mockVerifyUser.mockResolvedValue(mockDecodedUser);
