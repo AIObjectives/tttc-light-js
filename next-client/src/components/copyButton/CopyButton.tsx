@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import tailwind from "tailwind.config";
 import Icons from "@/assets/icons";
 import type { ColorVariant } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
@@ -15,12 +14,10 @@ const safeUseColor = (color: ColorVariant) => {
     return undefined;
   }
 };
-const themes = tailwind.theme.extend.colors;
 
-const themeColor = () => {
-  // T3C-822: Use muted gray for all link buttons to deprioritize them visually
-  return themes.muted.foreground;
-};
+// T3C-822: Use muted gray for all link buttons to deprioritize them visually
+// Using CSS variable directly since tailwind.config.ts was migrated to CSS in Tailwind v4
+const MUTED_FOREGROUND_COLOR = "hsl(var(--muted-foreground))";
 
 function CopyButton({
   copyStr,
@@ -30,7 +27,7 @@ function CopyButton({
   successMessage: string;
 }) {
   const hoverBackground = safeUseColor("bgAccentHover");
-  const fillColor = themeColor();
+  const fillColor = MUTED_FOREGROUND_COLOR;
   const copy = async () => navigator.clipboard.writeText(copyStr);
   const notify = async () => toast.success(successMessage);
   return (

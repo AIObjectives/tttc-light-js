@@ -160,7 +160,7 @@ export function CruxCard({
       ref={focusedRef}
       id={cruxId}
       type="button"
-      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-left w-full"
+      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
       onClick={handleClick}
       aria-label={`Crux: ${crux.cruxClaim}. Click to view in report.`}
     >

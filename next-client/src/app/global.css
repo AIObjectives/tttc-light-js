@@ -1,6 +1,174 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
+@theme {
+  --font-sans:
+    var(--font-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-subtle: hsl(var(--muted-subtle));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-AOI_graph_cell: hsl(var(--AOI-graph-cell));
+
+  --color-theme_violet: hsl(var(--theme-violet));
+  --color-theme_violet-accent: hsl(var(--theme-violet-accent));
+
+  --color-theme_blueSea: hsl(var(--theme-blueSea));
+  --color-theme_blueSea-accent: hsl(var(--theme-blueSea-accent));
+
+  --color-theme_blueSky: hsl(var(--theme-blueSky));
+  --color-theme_blueSky-accent: hsl(var(--theme-blueSky-accent));
+
+  --color-theme_greenLeaf: hsl(var(--theme-greenLeaf));
+  --color-theme_greenLeaf-accent: hsl(var(--theme-greenLeaf-accent));
+
+  --color-theme_greenLime: hsl(var(--theme-greenLime));
+  --color-theme_greenLime-accent: hsl(var(--theme-greenLime-accent));
+
+  --color-theme_yellow: hsl(var(--theme-yellow));
+  --color-theme_yellow-accent: hsl(var(--theme-yellow-accent));
+
+  --color-theme_red: hsl(var(--theme-red));
+  --color-theme_red-accent: hsl(var(--theme-red-accent));
+
+  --color-theme_purple: hsl(var(--theme-purple));
+  --color-theme_purple-accent: hsl(var(--theme-purple-accent));
+
+  --color-theme_brown: hsl(var(--theme-brown));
+  --color-theme_brown-accent: hsl(var(--theme-brown-accent));
+
+  --color-theme_gray: hsl(var(--theme-gray));
+  --color-theme_gray-accent: hsl(var(--theme-gray-accent));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  --leading-11: 48px;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility leading-11 {
+  line-height: 48px;
+
+  /* Respect user preference for reduced motion */
+}
+
+@utility scroll-target-highlight {
+  /* Highlight pulse animation for scroll-to targets */
+  animation: highlight-pulse 1s ease-out;
+
+  /* Respect user preference for reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility p-medium {
+  @apply text-base leading-6 font-medium;
+}
+
+@utility p2 {
+  @apply text-sm tracking-wide;
+}
+
+@utility p2-medium {
+  @apply text-sm font-medium tracking-wide;
+}
+
+@utility link {
+  @apply underline;
+  &:hover {
+    @apply opacity-60;
+  }
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 @layer base {
   :root {
@@ -133,11 +301,6 @@
 }
 
 @layer utilities {
-  .leading-11 {
-    line-height: 48px;
-  }
-
-  /* Highlight pulse animation for scroll-to targets */
   @keyframes highlight-pulse {
     0% {
       background-color: transparent;
@@ -148,42 +311,6 @@
     100% {
       background-color: transparent;
     }
-  }
-
-  .scroll-target-highlight {
-    animation: highlight-pulse 1s ease-out;
-  }
-
-  /* Respect user preference for reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    .scroll-target-highlight {
-      animation: none;
-    }
-  }
-}
-
-@layer components {
-  .p-medium {
-    @apply text-base leading-6 font-medium;
-  }
-  .p2 {
-    @apply text-sm tracking-wide;
-  }
-  .p2-medium {
-    @apply text-sm font-medium tracking-wide;
-  }
-  .link {
-    @apply underline;
-  }
-  .link:hover {
-    @apply opacity-60;
-  }
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
   }
 }
 

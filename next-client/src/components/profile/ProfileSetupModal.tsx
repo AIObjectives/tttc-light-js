@@ -106,8 +106,8 @@ export function ProfileSetupModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleSkip()}>
       <DialogContent
-        className="gap-8 p-6 max-w-sm z-[100]"
-        overlayProps={{ className: "z-[90]" }}
+        className="gap-8 p-6 max-w-sm z-100"
+        overlayProps={{ className: "z-90" }}
       >
         <DialogHeader className="space-y-2">
           <DialogTitle className="text-xl">What are your needs</DialogTitle>

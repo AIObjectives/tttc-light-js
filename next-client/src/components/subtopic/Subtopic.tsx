@@ -121,7 +121,7 @@ export function SubtopicHeader({
 }) {
   return (
     <Row gap={4} className="justify-between items-center">
-      <div className="flex flex-grow">
+      <div className="flex grow">
         <h5 id={`${title}`}>{title}</h5>
       </div>
       <div className="flex items-center gap-2">
