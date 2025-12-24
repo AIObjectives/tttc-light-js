@@ -9,7 +9,6 @@ import React, {
   useContext,
   useEffect,
   useRef,
-  useState,
 } from "react";
 import { toast } from "sonner";
 // Default prompts for comparison
@@ -26,6 +25,19 @@ import { getSortedCruxes, getTopicControversy } from "@/lib/crux/utils";
 import { useHashChange } from "@/lib/hooks/useHashChange";
 import { downloadReportData } from "@/lib/report/downloadUtils";
 import { cn } from "@/lib/utils/shadcn";
+// Zustand stores for state management
+import { useReportStore } from "@/stores/reportStore";
+import {
+  useActiveContentTab,
+  useExpandedCruxId,
+  useFocusedCruxId,
+  useIsMobileOutlineOpen,
+  useReportUIStore,
+  useSortByBridging,
+  useSortByControversy,
+  useSortMode,
+} from "@/stores/reportUIStore";
+import type { SortMode } from "@/stores/types";
 import {
   Button,
   CardContent,
@@ -76,13 +88,13 @@ import useScrollListener from "./hooks/useScrollListener";
 type ReportActionEffectFunc = (action: ReportStateAction) => void;
 type ReportActionEffect = (func: ReportActionEffectFunc) => void;
 
+// Re-export SortMode from stores for backward compatibility
+export type { SortMode } from "@/stores/types";
+
 /**
- * Sort mode for unified sort dropdown
- * - "frequent": Default sort by claim frequency (no special sorting)
- * - "controversy": Sort topics by controversy score
- * - "bridging": Sort claims by bridging potential
+ * Content tab type
  */
-export type SortMode = "frequent" | "controversy" | "bridging";
+type ContentTab = "report" | "cruxes";
 
 /**
  * Context thats passed through Report
@@ -109,16 +121,19 @@ export const ReportContext = createContext<{
   addOns?: schema.AddOns;
   // Unified sort mode (frequent, controversy, or bridging)
   sortMode: SortMode;
-  setSortMode: Dispatch<SetStateAction<SortMode>>;
+  // NOTE: Store action signature - accepts value directly (not SetStateAction)
+  setSortMode: (mode: SortMode) => void;
   // Derived booleans for backward compatibility with sorting logic
   sortByControversy: boolean;
   sortByBridging: boolean;
   // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
   expandedCruxId: string | null;
-  setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
+  // NOTE: Store action signature - accepts value directly (not SetStateAction)
+  setExpandedCruxId: (id: string | null) => void;
   // Active content tab ("report" or "cruxes")
-  activeContentTab: "report" | "cruxes";
-  setActiveContentTab: Dispatch<SetStateAction<"report" | "cruxes">>;
+  activeContentTab: ContentTab;
+  // NOTE: Store action signature - accepts value directly (not SetStateAction)
+  setActiveContentTab: (tab: ContentTab) => void;
   // Get topic color by topic title
   getTopicColor: (topicTitle: string) => string | undefined;
   // Get subtopic ID by topic and subtopic titles
@@ -135,13 +150,13 @@ export const ReportContext = createContext<{
   suppressFocusTracking: () => {},
   addOns: undefined,
   sortMode: "frequent",
-  setSortMode: () => null,
+  setSortMode: () => {},
   sortByControversy: false,
   sortByBridging: false,
   expandedCruxId: null,
-  setExpandedCruxId: () => null,
+  setExpandedCruxId: () => {},
   activeContentTab: "report",
-  setActiveContentTab: () => null,
+  setActiveContentTab: () => {},
   getTopicColor: () => undefined,
   getSubtopicId: () => null,
   focusedCruxId: null,
@@ -159,7 +174,46 @@ function Report({
   reportUri: string;
   rawPipelineOutput: schema.PipelineOutput;
 }) {
-  // Report State reducer
+  // ========================================
+  // Zustand Store Initialization
+  // ========================================
+
+  // Get store actions
+  const initializeStore = useReportStore((s) => s.initialize);
+  const resetStore = useReportStore((s) => s.reset);
+
+  // UI store actions
+  const resetUIStore = useReportUIStore((s) => s.reset);
+  const setFocusedCruxIdStore = useReportUIStore((s) => s.setFocusedCruxId);
+
+  // UI store state (using selector hooks for optimized subscriptions)
+  const sortMode = useSortMode();
+  const setSortMode = useReportUIStore((s) => s.setSortMode);
+  const sortByControversy = useSortByControversy();
+  const sortByBridging = useSortByBridging();
+  const activeContentTab = useActiveContentTab();
+  const setActiveContentTab = useReportUIStore((s) => s.setActiveContentTab);
+  const expandedCruxId = useExpandedCruxId();
+  const setExpandedCruxId = useReportUIStore((s) => s.setExpandedCruxId);
+  const focusedCruxId = useFocusedCruxId();
+  const isMobileOutlineOpen = useIsMobileOutlineOpen();
+  const setMobileOutlineOpen = useReportUIStore((s) => s.setMobileOutlineOpen);
+
+  // Initialize stores on mount, cleanup on unmount
+  useEffect(() => {
+    initializeStore(reportData.topics);
+    return () => {
+      resetStore();
+      resetUIStore();
+    };
+  }, [reportData.topics, initializeStore, resetStore, resetUIStore]);
+
+  // ========================================
+  // Legacy Hooks (kept for backward compatibility)
+  // Will be replaced as components are migrated
+  // ========================================
+
+  // Report State reducer (legacy - still needed for passing TopicNode to components)
   const [state, _dispatch] = useReportState(reportData.topics);
   // url hash
   const hashNav = useHashChange();
@@ -172,10 +226,9 @@ function Report({
   const [useFocusedNode, suppressFocusTracking] = _useFocusedNode(
     (id: string) => dispatch({ type: "focus", payload: { id } }),
   );
-  // Track focused crux for outline highlighting
-  const [focusedCruxId, setFocusedCruxId] = useState<string | null>(null);
+  // Track focused crux for outline highlighting (bridged to store)
   const [useFocusedNodeForCruxes] = _useFocusedNode((id: string) =>
-    setFocusedCruxId(id),
+    setFocusedCruxIdStore(id),
   );
   // Track navbar visibility for sheet positioning
   const navbarState = useNavbarVisibility();
@@ -194,9 +247,6 @@ function Report({
     if (!matchingNode) return;
     dispatch({ type: "open", payload: { id: matchingNode.data.id } });
   }, [hashNav]);
-
-  const [isMobileOutlineOpen, setIsMobileOutlineOpen] =
-    useState<boolean>(false);
 
   const [outlineState, outlineDispatch] = useOutlineState(state);
 
@@ -240,21 +290,6 @@ function Report({
     if (!outlineAction) return;
     outlineDispatch(outlineAction);
   });
-
-  // Unified sort mode state
-  const [sortMode, setSortMode] = useState<SortMode>("frequent");
-
-  // Derive booleans for backward compatibility with sorting logic
-  const sortByControversy = sortMode === "controversy";
-  const sortByBridging = sortMode === "bridging";
-
-  // State for tracking which crux should be auto-expanded
-  const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
-
-  // Active content tab ("report" or "cruxes")
-  const [activeContentTab, setActiveContentTab] = useState<"report" | "cruxes">(
-    "report",
-  );
 
   // Extract addOns to avoid rawPipelineOutput object reference changes breaking memoization
   const addOns = React.useMemo(
@@ -346,7 +381,7 @@ function Report({
       <div className="mb-36">
         <ReportLayout
           isMobileOutlineOpen={isMobileOutlineOpen}
-          setIsMobileOutlineOpen={setIsMobileOutlineOpen}
+          setIsMobileOutlineOpen={setMobileOutlineOpen}
           navbarState={navbarState}
           activeContentTab={activeContentTab}
           Report={
@@ -369,7 +404,7 @@ function Report({
           }
           ToolBar={
             <ReportToolbar
-              setIsMobileOutlineOpen={setIsMobileOutlineOpen}
+              setIsMobileOutlineOpen={setMobileOutlineOpen}
               isMobileOutlineOpen={isMobileOutlineOpen}
             />
           }
@@ -378,7 +413,7 @@ function Report({
               outlineState={outlineState}
               outlineDispatch={outlineDispatch}
               reportDispatch={dispatch}
-              onNavigate={() => setIsMobileOutlineOpen(false)}
+              onNavigate={() => setMobileOutlineOpen(false)}
             />
           }
         />
@@ -386,8 +421,6 @@ function Report({
     </ReportContext.Provider>
   );
 }
-
-type ContentTab = "report" | "cruxes";
 
 /**
  * Tabbed content section below the overview.
@@ -450,6 +483,7 @@ function ReportContentTabs({
 
   // Effect 1: Sync tab from URL hash (URL → State)
   // This handles initial load and browser back/forward navigation
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeContentTab intentionally excluded - including it causes infinite loop (effect sets tab → triggers effect)
   useEffect(() => {
     let debounceTimeout: number | null = null;
 
@@ -466,15 +500,17 @@ function ReportContentTabs({
           // Mark this update as coming from hash to prevent circular updates
           tabChangeSource.current = "hash";
 
+          // Determine the new tab value
+          let newTab: ContentTab = expectedTab;
+          // Force report tab if controversy data disappeared
+          if (!hasControversyData && activeContentTab === "cruxes") {
+            newTab = "report";
+          }
+
           // Only update if tab needs to change
-          setActiveContentTab((current) => {
-            // Force report tab if controversy data disappeared
-            if (!hasControversyData && current === "cruxes") {
-              return "report";
-            }
-            // Update tab to match hash
-            return expectedTab !== current ? expectedTab : current;
-          });
+          if (newTab !== activeContentTab) {
+            setActiveContentTab(newTab);
+          }
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
             console.error("Error syncing tab from hash:", error);
