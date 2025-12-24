@@ -3,6 +3,7 @@ import Navbar from "@/components/navbar/Navbar";
 import { nextTypography } from "@/lib/font";
 import "./global.css";
 import type { Metadata } from "next";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Talk to the City",
@@ -54,11 +55,13 @@ export default async function RootLayout({
         <link rel="stylesheet" href="/print.css" media="print" />
       </head>
       <body className={nextTypography}>
-        <div className="h-screen w-screen">
-          <Navbar />
-          {children}
-        </div>
-        <Toaster position="bottom-right" />
+        <Providers>
+          <div className="h-screen w-screen">
+            <Navbar />
+            {children}
+          </div>
+          <Toaster position="bottom-right" />
+        </Providers>
       </body>
     </html>
   );
