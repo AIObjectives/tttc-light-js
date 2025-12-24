@@ -48,7 +48,7 @@ export function ControversyTooltipContent({
         <button
           type="button"
           onClick={onClick}
-          className="text-sm text-primary hover:underline text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="text-sm text-primary hover:underline text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           View details in Cruxes tab
         </button>

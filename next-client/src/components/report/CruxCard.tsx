@@ -175,7 +175,7 @@ export function CruxCard({
   return (
     <div
       ref={mergeRefs([scrollRef, focusedRef])}
-      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
       role="button"
       tabIndex={0}
       onClick={handleClick}

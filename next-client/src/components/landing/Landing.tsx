@@ -127,7 +127,7 @@ const TestimonialCard = ({
     <Card>
       <CardContent className="sm:p-6">
         <Row gap={3}>
-          <div className="self-start flex-shrink-0 py-[5px]">
+          <div className="self-start shrink-0 py-[5px]">
             <Icons.Quote className={"h-4 w-4 fill-muted-foreground"} />
           </div>
           <Col>
@@ -272,7 +272,7 @@ const NumSignpost = ({
   num: number;
 }) => (
   <div
-    className={`h-6 w-6 rounded-sm ${borderColor} ${backgroundColor} border-[1px] flex`}
+    className={`h-6 w-6 rounded-sm ${borderColor} ${backgroundColor} border flex`}
   >
     <p className="p-medium mx-auto">{num}</p>
   </div>
@@ -334,10 +334,10 @@ const OrgCard = ({
 }) => (
   <Col
     gap={3}
-    className={`flex-1 py-4 px-[18px] ${backgroundColor} ${borderColor} border-[1px] rounded-sm`}
+    className={`flex-1 py-4 px-[18px] ${backgroundColor} ${borderColor} border rounded-sm`}
   >
     <p className="p-medium">{title}</p>
-    <ul className="list-disc pl-4 flex-grow">
+    <ul className="list-disc pl-4 grow">
       {points.map((point) => (
         <li key={point} className="text-muted-foreground">
           {point}
@@ -470,7 +470,7 @@ const DifferentiatorItem = ({
 }) => {
   return (
     <Row gap={3} className="items-start">
-      <div className="h-6 w-6 flex items-center justify-center flex-shrink-0 mt-1">
+      <div className="h-6 w-6 flex items-center justify-center shrink-0 mt-1">
         {DIFFERENTIATOR_ICONS[icon]}
       </div>
       <Col gap={1}>
@@ -565,7 +565,7 @@ const MediaCard = ({
       {/* Logo section with padding */}
       <div className="pt-2 px-3 pb-3">
         <Row className="items-center">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0">
             <div className="w-10 h-10 relative">
               <Image
                 src={sourceIcon}

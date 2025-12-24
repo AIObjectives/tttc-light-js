@@ -43,7 +43,7 @@ export default function ReportProgress({
   }, [reportState?.type]);
 
   return (
-    <Col className="w-full h-full flex-grow items-center justify-center">
+    <Col className="w-full h-full grow items-center justify-center">
       <StatusDisplay status={currentStatus} />
     </Col>
   );

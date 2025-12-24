@@ -55,8 +55,8 @@ export function CruxHoverContent({
     <HoverCardPortal>
       {/* biome-ignore lint/complexity/noUselessFragments: Fragment needed for HoverCardPortal to accept multiple children */}
       <>
-        <HoverCardOverlay className="bg-black/[0.03]" />
-        <HoverCardContent side="top" className="w-[40rem]">
+        <HoverCardOverlay className="bg-black/3" />
+        <HoverCardContent side="top" className="w-160">
           <Col gap={3} className="text-sm">
             {/* Header row - matches CruxCard format */}
             <Row

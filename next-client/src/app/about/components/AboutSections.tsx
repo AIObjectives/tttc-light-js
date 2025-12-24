@@ -162,7 +162,7 @@ export function DemoVideo() {
       <h3 id="demo-video">Demonstration video</h3>
       <Row gap={2} className="items-center">
         <Icons.Play
-          className="stroke-foreground flex-shrink-0 scale-x-[1.15]"
+          className="stroke-foreground shrink-0 scale-x-[1.15]"
           size={24}
           aria-hidden="true"
         />

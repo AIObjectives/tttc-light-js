@@ -18,7 +18,7 @@ export const ToolBarFrame = ({
       `z-40 w-full dark:bg-background bg-white pointer-events-auto`,
       className,
     )}
-    stickyClass={cn("border-b shadow-sm pointer-events-auto", stickyClass)}
+    stickyClass={cn("border-b shadow-xs pointer-events-auto", stickyClass)}
   >
     {children}
   </Sticky>
@@ -54,7 +54,7 @@ export function ReportLayout({
   return (
     <Row className="flex w-full min-h-screen">
       {/* Outline section - keep column for layout but hide content on cruxes tab */}
-      <Col className="hidden md:block min-w-[279px] basis-0 flex-grow">
+      <Col className="hidden md:block min-w-[279px] basis-0 grow">
         <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
           <div className="w-full h-14" />
         </ToolBarFrame>
@@ -73,7 +73,7 @@ export function ReportLayout({
         <Sheet open={isMobileOutlineOpen} onOpenChange={setIsMobileOutlineOpen}>
           <SheetContent side={"left"} className="px-0 pt-0 top-0 max-w-[280px]">
             <div
-              className="border-t border-l border-slate-200 h-[calc(100vh-theme(spacing.14))] transition-all duration-200 pt-4 pr-2"
+              className="border-t border-l border-slate-200 h-[calc(100vh-(--spacing(14)))] transition-all duration-200 pt-4 pr-2"
               style={{
                 marginTop: navbarState.isVisible
                   ? `${navbarState.height + 56}px`
@@ -92,13 +92,13 @@ export function ReportLayout({
       )}
 
       {/* Body section */}
-      <Col className="flex-grow max-w-[896px] mx-auto w-full">
+      <Col className="grow max-w-[896px] mx-auto w-full">
         <ToolBarFrame>{ToolBar}</ToolBarFrame>
         {Report}
       </Col>
 
       {/* Right section - spacer for balanced layout */}
-      <Col className="min-w-[279px] basis-0 flex-grow hidden sm:block">
+      <Col className="min-w-[279px] basis-0 grow hidden sm:block">
         <ToolBarFrame className="opacity-0" stickyClass="opacity-100">
           <div className="w-full h-14" />
         </ToolBarFrame>
