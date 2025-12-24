@@ -259,7 +259,7 @@ function TestItem({
         <h3 className="font-medium">{title}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
-      <div className="flex-shrink-0">{children}</div>
+      <div className="shrink-0">{children}</div>
     </div>
   );
 }
@@ -282,7 +282,7 @@ function TestItemWithPreview({
           <h3 className="font-medium">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
-        {action && <div className="flex-shrink-0">{action}</div>}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       <div className="border-t">{children}</div>
     </div>

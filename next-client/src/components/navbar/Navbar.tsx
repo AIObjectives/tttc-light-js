@@ -26,7 +26,7 @@ function Navbar() {
   return (
     <Row
       gap={6}
-      className="px-6 items-center justify-between h-16 border-b shadow-sm w-screen z-[80] relative bg-white dark:bg-background"
+      className="px-6 items-center justify-between h-16 border-b shadow-xs w-screen z-80 relative bg-white dark:bg-background"
       data-navbar
     >
       <Row className="items-center" gap={2}>

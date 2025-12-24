@@ -76,7 +76,7 @@ const ReportItemTop = ({
         <TextIcon icon={<Icons.Claim className="w-4 h-4" />}>
           {numClaims} claims
         </TextIcon>
-        <Separator orientation="vertical" className="bg-border w-[1px] h-5" />
+        <Separator orientation="vertical" className="bg-border w-px h-5" />
       </Row>
       <Row gap={4}>
         <TextIcon icon={<Icons.People size={16} />}>
