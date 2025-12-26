@@ -1,6 +1,6 @@
 import { useContext, useMemo } from "react";
-import { getQuotes } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import { getQuotes } from "tttc-common/transforms";
 import { sortQuotesByBridging } from "@/lib/bridging/utils";
 import { ScrollArea } from "../elements";
 import { Col, Row } from "../layout";

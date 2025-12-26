@@ -11,8 +11,8 @@ import {
   success,
 } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import { llmPipelineToSchema } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import { llmPipelineToSchema } from "tttc-common/transforms";
 import { CustomError } from "../error";
 import * as Firebase from "../Firebase";
 import {

@@ -3,8 +3,8 @@
 import type React from "react";
 import { createContext, forwardRef, useContext } from "react";
 import { mergeRefs } from "react-merge-refs";
-import { getNClaims, getNPeople } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import { getNClaims, getNPeople } from "tttc-common/transforms";
 import Icons from "@/assets/icons";
 import { ControversyIndicator } from "@/components/controversy";
 import { getThemeColor } from "@/lib/color";
