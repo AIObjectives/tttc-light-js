@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { getNPeople } from "tttc-common/morphisms";
+import { getNPeopleFromTopics } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 import { reportData } from "../../../stories/data/dummyData";
 import jsonData from "../../../stories/data/healMichigan.json";
@@ -73,7 +73,7 @@ export const Title = () => (
         theme.subtopics.flatMap((topic) => topic.claims),
       ).length
     }
-    nPeople={getNPeople(baseProps.topics)}
+    nPeople={getNPeopleFromTopics(baseProps.topics)}
     nThemes={baseProps.topics.length}
     nTopics={baseProps.topics.flatMap((theme) => theme.subtopics).length}
     dateStr={baseProps.date}
