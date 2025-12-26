@@ -1,2 +1,2 @@
-export { llmPipelineToSchema } from "./pipeline";
+export { getReportDataObj, llmPipelineToSchema } from "./pipeline";
 export * from "./tree-metrics";

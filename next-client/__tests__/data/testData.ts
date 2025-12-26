@@ -1,4 +1,4 @@
-import { getReportDataObj } from "tttc-common/morphisms/pipeline";
+import { getReportDataObj } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 import jsonData from "./aiAssemblies.json";
 

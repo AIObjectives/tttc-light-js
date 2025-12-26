@@ -1,4 +1,4 @@
-import { llmPipelineToSchema } from "tttc-common/morphisms/pipeline";
+import { llmPipelineToSchema } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
 import { v4 } from "uuid";
 import { z } from "zod";
