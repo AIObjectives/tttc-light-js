@@ -22,10 +22,10 @@
     "ts-node": "^10.9.2"
   },
   "dependencies": {
-    "tsx": "^4.20.6",
+    "tsx": "^4.21.0",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.17.2",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
     "effect": "^3.18.4",
     "firebase-admin": "^13.0.2",
     "ioredis": "^5.4.1",
