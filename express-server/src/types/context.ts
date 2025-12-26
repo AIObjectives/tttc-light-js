@@ -22,6 +22,60 @@ class EnvValidationError extends Error {
   }
 }
 
+/**
+ * Flag value schema with helpful error message.
+ * Only primitive types (string, boolean, number) are supported.
+ */
+const flagValueSchema = z.union([z.string(), z.boolean(), z.number()], {
+  errorMap: () => ({
+    message:
+      "LOCAL_FLAGS values must be primitives (string, boolean, or number). Arrays, objects, and null are not supported.",
+  }),
+});
+
+/**
+ * Transform and validate LOCAL_FLAGS JSON string.
+ * Returns parsed object if valid, undefined if empty/not set.
+ * Throws descriptive error if JSON is invalid.
+ */
+function transformLocalFlags(
+  val: string | undefined,
+  ctx: z.RefinementCtx,
+): Record<string, unknown> | undefined {
+  if (!val || val.trim() === "") return undefined;
+
+  try {
+    const parsed = JSON.parse(val);
+
+    // Ensure it's an object (not array, null, or primitive)
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "LOCAL_FLAGS must be a JSON object (e.g., '{\"flag\": true}'). Got: " +
+          (parsed === null
+            ? "null"
+            : Array.isArray(parsed)
+              ? "array"
+              : typeof parsed),
+      });
+      return z.NEVER;
+    }
+
+    return parsed;
+  } catch (e) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `LOCAL_FLAGS contains invalid JSON: ${e instanceof Error ? e.message : "parse error"}. Ensure proper quoting: LOCAL_FLAGS='{"flag": true}'`,
+    });
+    return z.NEVER;
+  }
+}
+
 export const env = z.object({
   OPENAI_API_KEY: z.string({ required_error: "Missing OpenAI Key" }),
   OPENAI_API_KEY_PASSWORD: z
@@ -111,11 +165,7 @@ export const env = z.object({
     .string()
     .optional()
     .transform(transformLocalFlags)
-    .pipe(
-      z
-        .record(z.string(), z.union([z.string(), z.boolean(), z.number()]))
-        .optional(),
-    ),
+    .pipe(z.record(z.string(), flagValueSchema).optional()),
 
   // Analytics Configuration
   ANALYTICS_PROVIDER: z.enum(["posthog", "local"]).default("local"),
@@ -160,15 +210,6 @@ export const env = z.object({
       message: "PYSERVER_MAX_CONCURRENCY must be between 1 and 20",
     }),
 });
-
-function transformLocalFlags(val?: string) {
-  if (!val || val.trim() === "") return undefined;
-  try {
-    return JSON.parse(val);
-  } catch {
-    return undefined;
-  }
-}
 
 export type Env = z.infer<typeof env>;
 
