@@ -1,9 +1,9 @@
 import { useState } from "react";
+import type * as schema from "tttc-common/schema";
 import {
   getNPeopleFromClaims,
   getNPeopleFromSubtopics,
-} from "tttc-common/morphisms";
-import type * as schema from "tttc-common/schema";
+} from "tttc-common/transforms";
 import Icons from "@/assets/icons";
 import {
   BarChart,

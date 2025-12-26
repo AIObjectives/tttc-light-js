@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { getNPeopleFromTopics } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
+import { getNPeopleFromTopics } from "tttc-common/transforms";
 import { reportData } from "../../../stories/data/dummyData";
 import jsonData from "../../../stories/data/healMichigan.json";
 import {

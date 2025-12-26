@@ -1,8 +1,8 @@
+import type * as schema from "tttc-common/schema";
 import {
   getNPeopleFromSubtopics,
   getNPeopleFromTopics,
-} from "tttc-common/morphisms";
-import type * as schema from "tttc-common/schema";
+} from "tttc-common/transforms";
 import { defaultSubtopicPagination, defaultTopicPagination } from "./consts";
 import type { ClaimNode, ReportState, SubtopicNode, TopicNode } from "./types";
 
