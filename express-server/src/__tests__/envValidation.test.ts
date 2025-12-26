@@ -156,4 +156,138 @@ describe("Environment Variable Validation", () => {
       });
     });
   });
+
+  describe("LOCAL_FLAGS Validation", () => {
+    beforeEach(() => {
+      // Ensure ALLOWED_ORIGINS is set to avoid unrelated errors
+      process.env.ALLOWED_ORIGINS = "http://localhost:3000";
+    });
+
+    it("should accept valid boolean flags", () => {
+      process.env.LOCAL_FLAGS = '{"testFlag": true}';
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toEqual({ testFlag: true });
+    });
+
+    it("should accept valid string flags", () => {
+      process.env.LOCAL_FLAGS = '{"testFlag": "hello"}';
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toEqual({ testFlag: "hello" });
+    });
+
+    it("should accept valid number flags", () => {
+      process.env.LOCAL_FLAGS = '{"testFlag": 42}';
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toEqual({ testFlag: 42 });
+    });
+
+    it("should accept mixed primitive types", () => {
+      process.env.LOCAL_FLAGS =
+        '{"bool": true, "str": "hello", "num": 42, "boolFalse": false}';
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toEqual({
+        bool: true,
+        str: "hello",
+        num: 42,
+        boolFalse: false,
+      });
+    });
+
+    it("should accept empty object", () => {
+      process.env.LOCAL_FLAGS = "{}";
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toEqual({});
+    });
+
+    it("should return undefined for undefined LOCAL_FLAGS", () => {
+      delete process.env.LOCAL_FLAGS;
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toBeUndefined();
+    });
+
+    it("should return undefined for empty string", () => {
+      process.env.LOCAL_FLAGS = "";
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toBeUndefined();
+    });
+
+    it("should return undefined for whitespace-only string", () => {
+      process.env.LOCAL_FLAGS = "   ";
+
+      const result = validateEnv();
+
+      expect(result.LOCAL_FLAGS).toBeUndefined();
+    });
+
+    it("should throw helpful error for invalid JSON", () => {
+      process.env.LOCAL_FLAGS = "not valid json";
+
+      // Now throws with helpful error message instead of silently failing
+      expect(() => validateEnv()).toThrow(
+        /LOCAL_FLAGS contains invalid JSON.*Ensure proper quoting/,
+      );
+    });
+
+    it("should reject null values in flags with helpful error", () => {
+      process.env.LOCAL_FLAGS = '{"testFlag": null}';
+
+      expect(() => validateEnv()).toThrow(
+        /LOCAL_FLAGS values must be primitives/,
+      );
+    });
+
+    it("should reject array values in flags with helpful error", () => {
+      process.env.LOCAL_FLAGS = '{"testFlag": [1, 2, 3]}';
+
+      expect(() => validateEnv()).toThrow(
+        /LOCAL_FLAGS values must be primitives/,
+      );
+    });
+
+    it("should reject nested object values in flags with helpful error", () => {
+      process.env.LOCAL_FLAGS = '{"testFlag": {"nested": true}}';
+
+      expect(() => validateEnv()).toThrow(
+        /LOCAL_FLAGS values must be primitives/,
+      );
+    });
+
+    it("should reject JSON array at root level", () => {
+      process.env.LOCAL_FLAGS = "[true, false]";
+
+      expect(() => validateEnv()).toThrow(
+        /LOCAL_FLAGS must be a JSON object.*Got: array/,
+      );
+    });
+
+    it("should reject JSON primitive at root level", () => {
+      process.env.LOCAL_FLAGS = '"just a string"';
+
+      expect(() => validateEnv()).toThrow(
+        /LOCAL_FLAGS must be a JSON object.*Got: string/,
+      );
+    });
+
+    it("should reject JSON null at root level", () => {
+      process.env.LOCAL_FLAGS = "null";
+
+      expect(() => validateEnv()).toThrow(
+        /LOCAL_FLAGS must be a JSON object.*Got: null/,
+      );
+    });
+  });
 });
