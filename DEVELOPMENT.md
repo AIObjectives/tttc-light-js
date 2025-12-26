@@ -111,6 +111,12 @@ Required for LLM processing in pyserver.
 2. Generate API key in API settings
 3. Save the key securely (will be used in environment variables)
 
+## Environment Variable File Format
+
+Use plain `KEY=value` format in `.env` files (no `export` prefix). This ensures compatibility with Docker Compose and dotenv libraries.
+
+To source `.env` files in your shell: `set -a; source .env; set +a`
+
 ## Local Development Setup
 
 ### 1. Install All Dependencies
