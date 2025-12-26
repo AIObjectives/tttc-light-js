@@ -92,7 +92,6 @@ const Video = ({
   startTimestamp: string;
 }) => {
   const link = formatLink(src, startTimestamp);
-  console.log(link);
   return (
     <Col>
       <iframe
