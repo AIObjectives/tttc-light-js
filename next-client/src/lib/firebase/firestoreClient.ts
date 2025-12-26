@@ -18,12 +18,10 @@ import {
   useGetCollectionName,
 } from "tttc-common/firebase";
 import { failure, type Result, success } from "tttc-common/functional-utils";
-import { z } from "zod";
 import type { FeedbackRequest } from "../types/clientRoutes";
 
-const NODE_ENV = z
-  .union([z.literal("development"), z.literal("production")])
-  .parse(process.env.NODE_ENV);
+const NODE_ENV =
+  process.env.NODE_ENV === "production" ? "production" : "development";
 // biome-ignore lint/correctness/useHookAtTopLevel: useGetCollectionName is a factory function, not a React hook despite its name
 const getCollectionName = useGetCollectionName(NODE_ENV);
 
