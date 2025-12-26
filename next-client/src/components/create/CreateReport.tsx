@@ -190,7 +190,6 @@ function CreateReportComponent({
               setFiles={setFiles}
               showErrors={submitAttempted}
             />
-            {/* <CostEstimate files={files} /> */}
             <TermsAndConditions />
             <AdvancedSettings
               systemInstructions={systemInstructions}

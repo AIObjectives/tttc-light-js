@@ -49,17 +49,6 @@ export const env = z.object({
       invalid_type_error: "Invalid input for NODE_ENV",
     },
   ),
-  // REDIS_HOST: z.string({ required_error: "Missing REDIS_HOST" }),
-  // REDIS_PORT: z
-  //   .string({ required_error: "Missing REDIS_PORT" })
-  //   .refine(
-  //     (v) => {
-  //       let n = Number(v);
-  //       return !isNaN(n) && v?.length > 0;
-  //     },
-  //     { message: "REDIS_PORT should be a numeric string" },
-  //   )
-  //   .transform((numstr) => Number(numstr)),
   REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
   ALLOWED_GCS_BUCKETS: z.string().transform((val) => val.split(",")),
   REDIS_QUEUE_NAME: z.string().default("pipeline"),
