@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { getNClaims } from "tttc-common/morphisms";
 import * as schema from "tttc-common/schema";
+import { getNClaims } from "tttc-common/transforms";
 import { reportData } from "../../../stories/data/dummyData";
 import {
   BarChart,

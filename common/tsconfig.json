@@ -28,7 +28,7 @@
     "./firebase/*",
     "./functional-utils/*",
     "./logger/*",
-    "./morphisms/**/*",
+    "./transforms/**/*",
     "./permissions/*",
     "./prompts/*",
     "./schema/*",
