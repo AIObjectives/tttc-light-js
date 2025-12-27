@@ -17,9 +17,9 @@ export const queryKeys = {
     // Future: profile, preferences, etc.
     // profile: () => [...queryKeys.user.all, "profile"] as const,
   },
-  // Future domains:
-  // report: {
-  //   all: ["report"] as const,
-  //   detail: (id: string) => [...queryKeys.report.all, id] as const,
-  // },
+  report: {
+    all: ["report"] as const,
+    detail: (identifier: string) =>
+      [...queryKeys.report.all, "detail", identifier] as const,
+  },
 } as const;
