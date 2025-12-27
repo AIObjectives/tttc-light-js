@@ -898,6 +898,38 @@ export async function scoreClaimsFromHydratedTree(
   });
 }
 
+/** Quote extraction result with full context for bridging/toxicity scoring */
+type ExtractedQuote = {
+  quoteId: string;
+  claimId: string;
+  text: string;
+  topicName: string;
+  subtopicName: string;
+  speakerId: string;
+  interview: string;
+};
+
+/**
+ * Extracts quotes from a single claim with topic/subtopic context.
+ * Includes quotes from similarClaims (deduplicated claims).
+ * Extracted for debuggability - set breakpoints here to inspect quote extraction.
+ */
+function extractQuotesFromClaim(
+  claim: schema.Claim,
+  topicName: string,
+  subtopicName: string,
+): ExtractedQuote[] {
+  return getQuotes(claim).map((quote) => ({
+    quoteId: quote.id,
+    claimId: claim.id,
+    text: quote.text,
+    topicName,
+    subtopicName,
+    speakerId: quote.reference.sourceId,
+    interview: quote.reference.interview,
+  }));
+}
+
 /**
  * Extract all quotes from the hydrated report tree.
  *
@@ -906,31 +938,20 @@ export async function scoreClaimsFromHydratedTree(
  *
  * Note: Uses schema.Topic[] (UI-facing hydrated tree), not schema.Taxonomy (LLM output).
  */
-export function extractQuotesFromTree(tree: schema.Topic[]): Array<{
-  quoteId: string;
-  claimId: string;
-  text: string;
-  topicName: string;
-  subtopicName: string;
-  speakerId: string;
-  interview: string;
-}> {
-  return tree.flatMap((topic) =>
-    topic.subtopics.flatMap((subtopic) =>
-      subtopic.claims.flatMap((claim) =>
-        // Get all quotes including from similarClaims
-        getQuotes(claim).map((quote) => ({
-          quoteId: quote.id,
-          claimId: claim.id,
-          text: quote.text,
-          topicName: topic.title,
-          subtopicName: subtopic.title,
-          speakerId: quote.reference.sourceId,
-          interview: quote.reference.interview,
-        })),
-      ),
-    ),
-  );
+export function extractQuotesFromTree(tree: schema.Topic[]): ExtractedQuote[] {
+  const quotes: ExtractedQuote[] = [];
+
+  for (const topic of tree) {
+    for (const subtopic of topic.subtopics) {
+      for (const claim of subtopic.claims) {
+        quotes.push(
+          ...extractQuotesFromClaim(claim, topic.title, subtopic.title),
+        );
+      }
+    }
+  }
+
+  return quotes;
 }
 
 /**

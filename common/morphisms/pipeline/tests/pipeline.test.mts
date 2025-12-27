@@ -6,7 +6,7 @@ import * as schema from "../../../schema";
 import { _internal, llmPipelineToSchema } from "../../pipeline";
 
 const {
-  getTopicsFromTaxonomy,
+  buildTopics,
   getReferenceEndIndex,
   getReferenceStartIndex,
   getReportDataObj,
@@ -184,7 +184,7 @@ describe("Pipeline tests", () => {
     const sourceMap = buildSourceMap(pipelineData.data);
 
     const claimMap = buildClaimsMap(pipelineData, sourceMap);
-    const themes = getTopicsFromTaxonomy(claimMap)(pipelineData.tree);
+    const themes = buildTopics(pipelineData.tree, claimMap);
     expect(schema.topic.array().safeParse(themes).success).true;
   });
 

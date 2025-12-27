@@ -57,6 +57,7 @@ import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
 import {
   type ReportStateAction,
+  type SomeNode,
   type TopicNode,
   useReportState,
 } from "./hooks/useReportState";
@@ -148,6 +149,24 @@ export const ReportContext = createContext<{
 });
 
 /**
+ * Flattens a three-level tree of TopicNode -> SubtopicNode -> ClaimNode into a single array.
+ * Extracted for debuggability - set breakpoints here to inspect tree flattening.
+ */
+function flattenTopicNodes(topics: TopicNode[]): SomeNode[] {
+  const nodes: SomeNode[] = [];
+  for (const topic of topics) {
+    nodes.push(topic);
+    for (const subtopic of topic.children) {
+      nodes.push(subtopic);
+      for (const claim of subtopic.children) {
+        nodes.push(claim);
+      }
+    }
+  }
+  return nodes;
+}
+
+/**
  * Report feature
  */
 function Report({
@@ -183,13 +202,8 @@ function Report({
   // biome-ignore lint/correctness/useExhaustiveDependencies: dispatch is stable from useReducer, state is read inside effect but shouldn't trigger re-runs
   useEffect(() => {
     if (!hashNav) return;
-    const nodes = [
-      ...state.children.map((topic) => topic),
-      ...state.children.flatMap((topic) => topic.children.map((sub) => sub)),
-      ...state.children.flatMap((topic) =>
-        topic.children.flatMap((sub) => sub.children.map((clm) => clm)),
-      ),
-    ];
+
+    const nodes = flattenTopicNodes(state.children);
     const matchingNode = nodes.find((node) => node.data.title === hashNav);
     if (!matchingNode) return;
     dispatch({ type: "open", payload: { id: matchingNode.data.id } });

@@ -28,16 +28,29 @@ const colorArr = schema.topicColors.options
 const colorPicker = (idx: number) => colorArr[idx % colorArr.length];
 
 /**
- * If the data is missing an interview attribution, assign a anonymous name.
+ * Extracts the anonymous number from an interview string if it matches "Anonymous #N" pattern.
+ * Returns the number if valid and positive, otherwise null.
+ */
+function extractAnonymousNumber(interview: string | undefined): number | null {
+  if (!interview) return null;
+  const match = interview.match(/Anonymous #(\d+)/);
+  if (!match?.[1]) return null;
+  const num = parseInt(match[1], 10);
+  return !Number.isNaN(num) && num > 0 ? num : null;
+}
+
+/**
+ * If the data is missing an interview attribution, assign an anonymous name.
  *
  * This function takes the source rows, sees if the pattern 'Anonymous #n' is used. Start from the last number.
  */
 const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
-  const usedAnonNums: number[] = sourceRows
-    .map((r) => r.interview?.match(/Anonymous #(\d+)/))
-    .map((expArr) => (expArr ? parseInt(expArr[1], 10) : null))
-    .filter((val): val is number => val !== null)
-    .map(Math.abs);
+  const usedAnonNums: number[] = [];
+
+  for (const row of sourceRows) {
+    const num = extractAnonymousNumber(row.interview);
+    if (num !== null) usedAnonNums.push(num);
+  }
 
   const maxNum = usedAnonNums.length > 0 ? Math.max(...usedAnonNums) : 0;
 
@@ -51,32 +64,35 @@ const makeAnonymousInterview = (sourceRows: schema.SourceRow[]) => {
 /**
  * Takes source rows and builds a map from row id -> Source
  */
-const buildSourceMap = (sourceRows: schema.SourceRow[]) => {
+const buildSourceMap = (sourceRows: schema.SourceRow[]): SourceMap => {
   const genAnon = makeAnonymousInterview(sourceRows);
-  return sourceRows.reduce((accum, curr) => {
-    accum[curr.id] = {
+  const sourceMap: SourceMap = {};
+
+  for (const row of sourceRows) {
+    sourceMap[row.id] = {
       id: uuid(),
-      interview: curr.interview || genAnon(),
-      data: curr.video
+      interview: row.interview || genAnon(),
+      data: row.video
         ? [
             "video",
             {
-              text: curr.comment,
-              link: curr.video,
+              text: row.comment,
+              link: row.video,
               // timestamp is optional in schema but required for video entries
               // biome-ignore lint/style/noNonNullAssertion: video entries always have timestamp
-              timestamp: curr.timestamp!,
+              timestamp: row.timestamp!,
             },
           ]
         : [
             "text",
             {
-              text: curr.comment,
+              text: row.comment,
             },
           ],
     };
-    return accum;
-  }, {} as SourceMap);
+  }
+
+  return sourceMap;
 };
 
 const llmClaimToSchemaClaim = (
@@ -145,37 +161,80 @@ const sortTax = (tax: schema.Taxonomy) =>
     return topicNumClaims(tax2) - topicNumClaims(tax1);
   });
 
+/**
+ * Collects a claim and its duplicates into a flat array.
+ * Extracted for debuggability - set breakpoints here to inspect individual claim collection.
+ */
+function collectClaimWithDuplicates(claim: schema.LLMClaim): schema.LLMClaim[] {
+  const result = [claim];
+  const duplicates = claim.duplicates ?? [];
+  for (const dup of duplicates) {
+    result.push(dup);
+  }
+  return result;
+}
+
+/**
+ * Collects all claims from a single subtopic including duplicates.
+ * Extracted for debuggability - set breakpoints here to inspect subtopic claim collection.
+ */
+function collectSubtopicClaims(
+  subtopic: schema.LLMSubtopic,
+): schema.LLMClaim[] {
+  if (!subtopic.claims) return [];
+  const result: schema.LLMClaim[] = [];
+  for (const claim of subtopic.claims) {
+    result.push(...collectClaimWithDuplicates(claim));
+  }
+  return result;
+}
+
+/**
+ * Collects all claims (including duplicates) from a sorted taxonomy tree.
+ * Extracted for debuggability - set breakpoints here to inspect claim collection.
+ */
+function collectAllClaims(sortedTree: schema.Taxonomy): schema.LLMClaim[] {
+  const allClaims: schema.LLMClaim[] = [];
+
+  for (const topic of sortedTree) {
+    for (const subtopic of topic.subtopics) {
+      allClaims.push(...collectSubtopicClaims(subtopic));
+    }
+  }
+
+  return allClaims;
+}
+
+/**
+ * Links duplicate claims to their parent's similarClaims array in the claim map.
+ * Extracted for debuggability - set breakpoints here to inspect duplicate linking.
+ */
+function linkDuplicateClaims(claim: schema.LLMClaim, claimMap: ClaimMap): void {
+  const duplicates = claim.duplicates ?? [];
+  for (let i = 0; i < duplicates.length; i++) {
+    const dup = duplicates[i];
+    if (dup.claimId && claim.claimId) {
+      claimMap[dup.claimId] = claimMap[claim.claimId]?.similarClaims[i];
+    }
+  }
+}
+
 const buildClaimsMap = (
   pipeline: schema.LLMPipelineOutput,
   sourceMap: SourceMap,
-) => {
-  const allClaims = sortTax(pipeline.tree).flatMap((topic) =>
-    topic.subtopics.flatMap((subtopic) => {
-      // Ensure subtopic.claims is an array
-      if (!subtopic.claims) return [];
-
-      // Handle the possibility of undefined values in duplicates
-      const duplicates = subtopic.claims.flatMap((claim) =>
-        claim.duplicates ? claim.duplicates : [],
-      );
-
-      return subtopic.claims.concat(duplicates);
-    }),
-  );
+): ClaimMap => {
+  const claimMap: ClaimMap = {};
   const createClaim = numberClaims();
+  const sortedTree = sortTax(pipeline.tree);
+  const allClaims = collectAllClaims(sortedTree);
 
-  return allClaims.reduce((accum, curr) => {
-    accum[curr.claimId!] = createClaim(curr, sourceMap, accum);
+  for (const claim of allClaims) {
+    // biome-ignore lint/style/noNonNullAssertion: claimId is required at this stage
+    claimMap[claim.claimId!] = createClaim(claim, sourceMap, claimMap);
+    linkDuplicateClaims(claim, claimMap);
+  }
 
-    // Updated handling of duplicates
-    curr.duplicates?.forEach((dup, i) => {
-      if (dup.claimId && curr.claimId) {
-        accum[dup.claimId] = accum[curr.claimId]?.similarClaims[i];
-      }
-    });
-
-    return accum;
-  }, {} as ClaimMap);
+  return claimMap;
 };
 
 const makeReference = (
@@ -237,36 +296,59 @@ const getReferenceStartIndex = (clm: schema.LLMClaim, fullText: string) =>
 const getReferenceEndIndex = (clm: schema.LLMClaim, fullText: string) =>
   getReferenceStartIndex(clm, fullText) + clm.quote.length;
 
-const getSubtopicsFromLLMSubTopics =
-  (claimMap: ClaimMap) =>
-  (subtopics: schema.LLMSubtopic[]): schema.Subtopic[] =>
-    subtopics
-      .map((subtopic) => ({
+function buildSubtopics(
+  subtopics: schema.LLMSubtopic[],
+  claimMap: ClaimMap,
+): schema.Subtopic[] {
+  const result: schema.Subtopic[] = [];
+
+  for (const subtopic of subtopics) {
+    const claims = subtopic.claims
+      ? // biome-ignore lint/style/noNonNullAssertion: claimId required at this stage
+        subtopic.claims.map((claim) => claimMap[claim.claimId!])
+      : [];
+
+    // Only include subtopics that have claims
+    if (claims.length > 0) {
+      result.push({
         id: uuid(),
         title: subtopic.subtopicName,
+        // biome-ignore lint/style/noNonNullAssertion: description required at this stage
         description: subtopic.subtopicShortDescription!,
-        claims: subtopic.claims
-          ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
-          : [],
-      }))
-      .filter(
-        (subtopic) =>
-          Array.isArray(subtopic.claims) && subtopic.claims.length > 0,
-      );
+        claims,
+      });
+    }
+  }
 
-const getTopicsFromTaxonomy =
-  (claimMap: ClaimMap) =>
-  (tree: schema.Taxonomy): schema.Topic[] =>
-    tree
-      .map((leaf, idx) => ({
+  return result;
+}
+
+function buildTopics(
+  tree: schema.Taxonomy,
+  claimMap: ClaimMap,
+): schema.Topic[] {
+  const result: schema.Topic[] = [];
+
+  for (let idx = 0; idx < tree.length; idx++) {
+    const leaf = tree[idx];
+    const subtopics = buildSubtopics(leaf.subtopics, claimMap);
+
+    // Only include topics that have subtopics
+    if (subtopics.length > 0) {
+      result.push({
         id: uuid(),
         title: leaf.topicName,
+        // biome-ignore lint/style/noNonNullAssertion: description required at this stage
         description: leaf.topicShortDescription!,
         summary: leaf.topicSummary,
-        subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
+        subtopics,
         topicColor: colorPicker(idx),
-      }))
-      .filter((topic) => topic.subtopics.length > 0);
+      });
+    }
+  }
+
+  return result;
+}
 
 export const getReportDataObj = (
   pipelineOutput: schema.LLMPipelineOutput,
@@ -277,7 +359,7 @@ export const getReportDataObj = (
     title: pipelineOutput.title,
     description: pipelineOutput.description,
     date: new Date().toISOString(),
-    topics: getTopicsFromTaxonomy(claimMap)(pipelineOutput.tree),
+    topics: buildTopics(pipelineOutput.tree, claimMap),
     sources: pipelineOutput.data.map((row) => sourceMap[row.id]),
     //TODO: pretty sure we need this
     addOns: pipelineOutput.addOns,
@@ -331,7 +413,7 @@ export const _internal = {
   getReportMetaData,
   getQuote,
   // getSources,
-  getTopicsFromTaxonomy,
+  buildTopics,
   llmClaimToSchemaClaim,
   numberClaims,
   // pairSourcesWithRows,
