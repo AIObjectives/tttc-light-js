@@ -1,12 +1,10 @@
 # syntax=docker.io/docker/dockerfile:1
-FROM node:24-alpine AS base
+FROM node:25-slim AS base
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN npm install -g pnpm@10
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy workspace config
@@ -51,8 +49,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 --gid nodejs --no-create-home nextjs
 
 COPY --from=builder --chown=nextjs:nodejs /app/next-client/public ./next-client/public
 COPY --from=builder --chown=nextjs:nodejs /app/next-client/next.config.js ./
@@ -61,7 +59,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/next-client/.next/static ./next-c
 COPY --from=builder --chown=nextjs:nodejs /app/common/dist ./node_modules/tttc-common/dist
 COPY --from=builder --chown=nextjs:nodejs /app/common/package.json ./node_modules/tttc-common/
 
-HEALTHCHECK CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:3000/ || exit 1
 
 EXPOSE 3000
 USER nextjs
