@@ -4,7 +4,7 @@ import { AlertCircle } from "lucide-react";
 import Form from "next/form";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
 import type * as api from "tttc-common/api";
@@ -231,15 +231,31 @@ function CreateReportComponent({
 }
 
 /**
- * Shows when the form is submitted and in loading state
+ * Shows when the form is submitted and in loading state.
+ * If reportUrl is provided (fallback after timeout), shows a manual link.
  */
-function FormLoading() {
+function FormLoading({ reportUrl }: { reportUrl?: string | null }) {
   return (
     <Col gap={2} className="w-full h-full items-center justify-center">
       <p>Processing your request, you'll be redirected shortly.</p>
       <Spinner />
+      {reportUrl && (
+        <p className="text-sm text-muted-foreground mt-4">
+          Taking too long?{" "}
+          <a href={reportUrl} className="underline">
+            Click here to view your report
+          </a>
+        </p>
+      )}
     </Col>
   );
+}
+
+/** Check if this is an auth error response */
+function isAuthError(
+  response: api.CreateReportActionResult,
+): response is { status: "error"; error: api.FormActionError } {
+  return response.status === "error" && response.error.code.startsWith("AUTH_");
 }
 
 /**
@@ -256,28 +272,37 @@ function SubmitFormControl({
 }>) {
   const { pending } = useFormStatus();
   const router = useRouter();
+  const [showFallbackLink, setShowFallbackLink] = useState(false);
 
+  // Extract URL construction to single location
+  const reportUrl = useMemo(() => {
+    if (response.status !== "success") return null;
+    return (
+      response.data.reportUrl ||
+      `/report/${encodeURIComponent(response.data.jsonUrl)}`
+    );
+  }, [response]);
+
+  // Handle success - redirect to report
   useEffect(() => {
-    // Handle success - redirect to report
-    if (response.status === "success") {
-      const url =
-        response.data.reportUrl ||
-        `/report/${encodeURIComponent(response.data.jsonUrl)}`;
-      router.replace(url);
-    }
+    if (!reportUrl) return;
 
-    // Handle auth errors - show toast and trigger sign-in modal
-    if (
-      response.status === "error" &&
-      response.error.code.startsWith("AUTH_")
-    ) {
+    router.replace(reportUrl);
+    const timeout = setTimeout(() => setShowFallbackLink(true), 5000);
+    return () => clearTimeout(timeout);
+  }, [reportUrl, router]);
+
+  // Handle auth errors - show toast and trigger sign-in modal
+  useEffect(() => {
+    if (isAuthError(response)) {
       toast.error(response.error.message);
       onAuthError?.();
     }
-  }, [response, router, onAuthError]);
+  }, [response, onAuthError]);
 
-  if (pending) {
-    return <FormLoading />;
+  // Show loading while form is submitting OR while redirecting after success
+  if (pending || reportUrl) {
+    return <FormLoading reportUrl={showFallbackLink ? reportUrl : null} />;
   }
 
   return <>{children}</>;
