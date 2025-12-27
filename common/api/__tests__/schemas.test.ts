@@ -60,9 +60,8 @@ describe("API Schema Validation", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues[0].path).toEqual(["csvSizeLimit"]);
-        expect(result.error.issues[0].message).toContain(
-          "Number must be greater than or equal to 0",
-        );
+        // Zod 4 changed error message format
+        expect(result.error.issues[0].message).toContain(">=0");
       }
     });
 

@@ -18,8 +18,7 @@ const env = z.object({
   // TODO: Rename this to something like express server url or something?
   PIPELINE_EXPRESS_URL: z
     .string({
-      required_error:
-        "PIPELINE_EXPRESS_URL env var is missing. This is a required.",
+      error: "PIPELINE_EXPRESS_URL env var is missing. This is required.",
     })
     .url("PIPELINE_EXPRESS_URL env var should be a valid url"),
 });
@@ -30,8 +29,8 @@ const result = env.safeParse({
 
 if (!result.success) {
   throw new EnvValidationError(
-    `There are error(s) with your next-js env: \n \n${result.error.errors
-      .map((e, i) => {
+    `There are error(s) with your next-js env: \n \n${result.error.issues
+      .map((e: { message: string }, i: number) => {
         return `${i}) ${e.message} \n`;
       })
       .join("")}`,
