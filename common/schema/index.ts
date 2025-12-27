@@ -83,12 +83,11 @@ const llmClaim: z.ZodType<LLMClaim> = llmClaimBase.extend({
   duplicates: z.lazy(() => llmClaim.array()).optional(),
 });
 
-export const cache = z.object({
-  get: z.function().args(z.string()).returns(z.any()),
-  set: z.function().args(z.string(), z.any()).returns(z.void()),
-});
-
-export type Cache = z.infer<typeof cache>;
+// Cache interface - plain TypeScript type (z.function() API changed in Zod 4)
+export interface Cache {
+  get: (key: string) => unknown;
+  set: (key: string, value: unknown) => void;
+}
 
 export const tracker = z.object({
   start: z.number(),
@@ -889,8 +888,7 @@ export type Claim = z.infer<typeof claimBase> & {
 };
 
 // Full schema with recursive field using z.lazy()
-// Note: Using ZodTypeDef with unknown input to handle nested defaults
-export const claim: z.ZodType<Claim, z.ZodTypeDef, unknown> = claimBase.extend({
+export const claim: z.ZodType<Claim> = claimBase.extend({
   similarClaims: z.lazy(() => claim.array()),
 });
 
@@ -1140,7 +1138,7 @@ export const auditLogEntry = z.object({
     "deduplicated",
   ]),
   reason: z.string().optional(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   timestamp: z.string(),
   // Additional tracking fields
   commentLength: z.number().optional(), // Length of comment text
