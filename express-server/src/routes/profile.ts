@@ -11,7 +11,7 @@ import { z } from "zod";
 import * as firebase from "../Firebase";
 import { createMondayItem } from "../services/monday";
 import type { RequestWithAuth } from "../types/request";
-import { sendError } from "./sendError";
+import { sendErrorByCode } from "./sendError";
 
 const profileLogger = logger.child({ module: "profile" });
 
@@ -123,21 +123,11 @@ export async function updateProfile(req: RequestWithAuth, res: Response) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       profileLogger.warn({ error: error.errors }, "Profile validation failed");
-      sendError(
-        res,
-        400,
-        `Invalid profile data: ${error.errors.map((e) => e.message).join(", ")}`,
-        "ValidationError",
-      );
+      sendErrorByCode(res, "VALIDATION_ERROR", profileLogger);
       return;
     }
 
     profileLogger.error({ error }, "Profile update failed");
-    sendError(
-      res,
-      500,
-      error instanceof Error ? error.message : "Failed to update profile",
-      "ProfileUpdateError",
-    );
+    sendErrorByCode(res, "INTERNAL_ERROR", profileLogger);
   }
 }
