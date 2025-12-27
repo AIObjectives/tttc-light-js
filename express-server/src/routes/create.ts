@@ -275,13 +275,14 @@ const buildPipelineJob = (
         ...userConfig,
         cruxInstructions: userConfig.cruxInstructions,
       },
-      api_key: "", // ! Change when we transition away from using the AOI key,
       options: {
         cruxes: updatedConfig.cruxesEnabled ?? false,
         bridging: updatedConfig.bridgingEnabled ?? false,
       },
       llm: {
-        model: "gpt-4o-mini", // ! Change when we allow different models
+        // Model is intentionally hardcoded until user model selection is implemented.
+        // See: https://linear.app/ai-objectives/issue/T3C-1014
+        model: "gpt-4o-mini",
       },
     },
     data: updatedConfig.data,
@@ -428,14 +429,6 @@ async function createNewReport(
 
   const reportUrl = new URL(`report/${reportId}`, CLIENT_BASE_URL).toString();
 
-  // ! Brandon: This config object should be phased out
-  // @ts-expect-error
-  const config: schema.OldOptions = {
-    ...userConfig,
-    ...parsedData,
-    filename,
-  };
-
   const response: api.GenerateApiResponse = {
     message: "Request received.",
     filename: filename,
@@ -443,21 +436,19 @@ async function createNewReport(
     reportUrl,
   };
 
-  // add id to comment data if not included.
-  const updatedConfig = {
-    ...config,
-    cruxesEnabled: userConfig.cruxesEnabled ?? false,
-    bridgingEnabled: userConfig.bridgingEnabled ?? false,
-    data: config.data.map((data, i) => ({
-      ...data,
-      id: data.id ? data.id : `cm${i}`,
+  // Combine user config with parsed data, adding IDs to comments if not present
+  const processedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] } = {
+    ...userConfig,
+    data: parsedData.data.map((row, i) => ({
+      ...row,
+      id: row.id ? row.id : `cm${i}`,
     })),
-  } as typeof config & { cruxesEnabled: boolean; bridgingEnabled: boolean };
+  };
 
   createLogger.debug(
     {
-      cruxesEnabled: updatedConfig.cruxesEnabled,
-      bridgingEnabled: updatedConfig.bridgingEnabled,
+      cruxesEnabled: processedConfig.cruxesEnabled,
+      bridgingEnabled: processedConfig.bridgingEnabled,
     },
     "Building pipeline job with config",
   );
@@ -468,7 +459,7 @@ async function createNewReport(
     firebaseJobId,
     reportId,
     userConfig,
-    updatedConfig,
+    processedConfig,
     jsonUrl,
   );
 

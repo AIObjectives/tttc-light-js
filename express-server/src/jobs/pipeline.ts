@@ -144,7 +144,6 @@ interface PipelineConfig {
   firebaseDetails: FirebaseDetails;
   llm: LLM;
   instructions: Instructions;
-  api_key: string;
   options: {
     cruxes: boolean;
     bridging: boolean;

@@ -60,34 +60,6 @@ export const llmUserConfig = z.object({
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
 
-export const llmSystemConfig = z.object({
-  model: z.string().optional(),
-  batchSize: z.number(),
-  filename: z.string(),
-});
-
-export type oldSystemConfig = z.infer<typeof llmSystemConfig>;
-
-export const oldOptions = z.object({
-  model: z.string(),
-  data: sourceRow.array(),
-  title: z.string(),
-  question: z.string(),
-  pieCharts: llmPieChart.array().optional(),
-  description: z.string(),
-  systemInstructions: z.string(),
-  clusteringInstructions: z.string(),
-  extractionInstructions: z.string(),
-  dedupInstructions: z.string(),
-  summariesInstructions: z.string(),
-  cruxInstructions: z.string(),
-  cruxesEnabled: z.boolean(),
-  batchSize: z.number(),
-  filename: z.string(),
-});
-
-export type OldOptions = z.infer<typeof oldOptions>;
-
 // Zod has trouble with self-referential types, so leave this be until we need to parse
 type _LLMClaim = {
   claim: string;
