@@ -115,39 +115,40 @@ export async function processBatchConcurrently<T, R>(
   let activeCount = 0;
   let currentIndex = 0;
 
-  return new Promise((resolve, reject) => {
-    const processNext = () => {
-      // If all items are queued and all processing is complete, we're done
-      if (currentIndex >= items.length && activeCount === 0) {
-        resolve(results);
-        return;
-      }
+  const { promise, resolve, reject } = Promise.withResolvers<R[]>();
 
-      // Process items while we have capacity and items remaining
-      while (activeCount < concurrency && currentIndex < items.length) {
-        const index = currentIndex++;
-        activeCount++;
+  const processNext = () => {
+    // If all items are queued and all processing is complete, we're done
+    if (currentIndex >= items.length && activeCount === 0) {
+      resolve(results);
+      return;
+    }
 
-        processor(items[index])
-          .then((result) => {
-            results[index] = result;
-          })
-          .catch((error) => {
-            utilsLogger.error(
-              { error, index, item: items[index] },
-              "Error processing item in batch",
-            );
-            reject(error);
-          })
-          .finally(() => {
-            activeCount--;
-            processNext();
-          });
-      }
-    };
+    // Process items while we have capacity and items remaining
+    while (activeCount < concurrency && currentIndex < items.length) {
+      const index = currentIndex++;
+      activeCount++;
 
-    processNext();
-  });
+      processor(items[index])
+        .then((result) => {
+          results[index] = result;
+        })
+        .catch((error) => {
+          utilsLogger.error(
+            { error, index, item: items[index] },
+            "Error processing item in batch",
+          );
+          reject(error);
+        })
+        .finally(() => {
+          activeCount--;
+          processNext();
+        });
+    }
+  };
+
+  processNext();
+  return promise;
 }
 
 /**
