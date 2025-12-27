@@ -124,30 +124,30 @@ function mapAuthoritativeStatusToApiStatus(
   switch (authoritativeStatus) {
     case "created":
     case "queued":
-      return api.reportJobStatus.Values.queued;
+      return api.reportJobStatus.enum.queued;
 
     case "processing":
       // Use sub-state if available and valid, otherwise default to clustering
       if (
         processingSubState &&
-        api.reportJobStatus.Values[
-          processingSubState as keyof typeof api.reportJobStatus.Values
+        api.reportJobStatus.enum[
+          processingSubState as keyof typeof api.reportJobStatus.enum
         ]
       ) {
-        return api.reportJobStatus.Values[
-          processingSubState as keyof typeof api.reportJobStatus.Values
+        return api.reportJobStatus.enum[
+          processingSubState as keyof typeof api.reportJobStatus.enum
         ];
       }
-      return api.reportJobStatus.Values.clustering;
+      return api.reportJobStatus.enum.clustering;
 
     case "completed":
-      return api.reportJobStatus.Values.finished;
+      return api.reportJobStatus.enum.finished;
 
     case "failed":
-      return api.reportJobStatus.Values.failed;
+      return api.reportJobStatus.enum.failed;
 
     case "cancelled":
-      return api.reportJobStatus.Values.failed; // Treat cancelled as failed for API consistency
+      return api.reportJobStatus.enum.failed; // Treat cancelled as failed for API consistency
 
     default:
       reportLogger.warn(
@@ -216,17 +216,17 @@ async function getReportJobStatus(jobId: string): Promise<string | null> {
 function mapJobStatusToApiStatus(jobStatus: string): api.ReportJobStatus {
   switch (jobStatus) {
     case "pending":
-      return api.reportJobStatus.Values.queued;
+      return api.reportJobStatus.enum.queued;
     case "finished":
-      return api.reportJobStatus.Values.finished;
+      return api.reportJobStatus.enum.finished;
     case "failed":
-      return api.reportJobStatus.Values.failed;
+      return api.reportJobStatus.enum.failed;
     default:
       reportLogger.debug(
         { jobStatus },
         "Unknown REPORT_JOB status, defaulting to failed",
       );
-      return api.reportJobStatus.Values.failed;
+      return api.reportJobStatus.enum.failed;
   }
 }
 
@@ -275,7 +275,7 @@ async function determineLegacyStatus(
       { reportId },
       "Legacy: No reportDataUri found - report likely failed or never completed",
     );
-    return api.reportJobStatus.Values.failed;
+    return api.reportJobStatus.enum.failed;
   }
 
   // Validate URI format
@@ -284,7 +284,7 @@ async function determineLegacyStatus(
       { reportId, invalidUri: reportRef.reportDataUri },
       "Legacy: Invalid URI format",
     );
-    return api.reportJobStatus.Values.failed;
+    return api.reportJobStatus.enum.failed;
   }
 
   // Parse URI
@@ -294,7 +294,7 @@ async function determineLegacyStatus(
       { reportId, invalidUri: reportRef.reportDataUri },
       "Legacy: Could not parse GCS URI",
     );
-    return api.reportJobStatus.Values.failed;
+    return api.reportJobStatus.enum.failed;
   }
 
   // Validate bucket is allowed
@@ -309,7 +309,7 @@ async function determineLegacyStatus(
       },
       "Legacy: Bucket not in allowed list",
     );
-    return api.reportJobStatus.Values.failed;
+    return api.reportJobStatus.enum.failed;
   }
 
   try {
@@ -325,7 +325,7 @@ async function determineLegacyStatus(
         { reportId },
         "Legacy: File does not exist - report likely failed",
       );
-      return api.reportJobStatus.Values.failed;
+      return api.reportJobStatus.enum.failed;
     }
 
     // File exists - validate contents to ensure it's a real report
@@ -339,7 +339,7 @@ async function determineLegacyStatus(
         { reportId },
         "Legacy: File exists but contains invalid content",
       );
-      return api.reportJobStatus.Values.failed;
+      return api.reportJobStatus.enum.failed;
     }
 
     // File exists and has valid content - report is finished
@@ -347,13 +347,13 @@ async function determineLegacyStatus(
       { reportId },
       "Legacy: Valid report file found - status is finished",
     );
-    return api.reportJobStatus.Values.finished;
+    return api.reportJobStatus.enum.finished;
   } catch (error) {
     reportLogger.error(
       { reportId, error, parsed },
       "Legacy: Error checking file existence",
     );
-    return api.reportJobStatus.Values.failed;
+    return api.reportJobStatus.enum.failed;
   }
 }
 
@@ -570,7 +570,7 @@ async function handleIdBasedReport(
         reportId,
       );
 
-      status = mappedStatus || api.reportJobStatus.Values.failed; // Default to failed if mapping fails
+      status = mappedStatus || api.reportJobStatus.enum.failed; // Default to failed if mapping fails
     } else {
       reportLogger.info(
         { reportId },
@@ -589,7 +589,7 @@ async function handleIdBasedReport(
           },
           "Legacy heuristic: Report detected as completed with validated file content",
         );
-        status = api.reportJobStatus.Values.finished;
+        status = api.reportJobStatus.enum.finished;
       } else {
         // Legacy reports without authoritative status - determine from file existence
         reportLogger.info(

@@ -7,7 +7,7 @@ import type { RefStore } from ".";
  *
  * Needs a collection name and a zod parser that defines its inputs / outputs
  */
-export class FirebaseRefStore<T extends z.ZodTypeAny>
+export class FirebaseRefStore<T extends z.ZodType>
   implements RefStore<z.infer<T>>
 {
   private collection: admin.firestore.CollectionReference;
@@ -35,7 +35,10 @@ export class FirebaseRefStore<T extends z.ZodTypeAny>
   }
 
   async create(data: z.infer<T>): Promise<string> {
-    const docRef = await this.collection.add(data);
+    // Cast needed for Zod 4 compatibility with Firestore types
+    const docRef = await this.collection.add(
+      data as admin.firestore.WithFieldValue<admin.firestore.DocumentData>,
+    );
     return docRef.id;
   }
 

@@ -122,11 +122,11 @@ export async function updateProfile(req: RequestWithAuth, res: Response) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      profileLogger.warn({ error: error.errors }, "Profile validation failed");
+      profileLogger.warn({ error: error.issues }, "Profile validation failed");
       sendError(
         res,
         400,
-        `Invalid profile data: ${error.errors.map((e) => e.message).join(", ")}`,
+        `Invalid profile data: ${error.issues.map((e) => e.message).join(", ")}`,
         "ValidationError",
       );
       return;

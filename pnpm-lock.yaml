@@ -50,7 +50,7 @@ importers:
     dependencies:
       openai:
         specifier: ^4.104.0
-        version: 4.104.0(ws@8.18.3)(zod@3.25.76)
+        version: 4.104.0(ws@8.18.3)(zod@4.2.1)
       pino:
         specifier: ^9.9.0
         version: 9.14.0
@@ -77,10 +77,10 @@ importers:
         version: 10.0.0
       weave:
         specifier: ^0.9.3
-        version: 0.9.3(ws@8.18.3)(zod@3.25.76)
+        version: 0.9.3(ws@8.18.3)(zod@4.2.1)
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.2.1
+        version: 4.2.1
     devDependencies:
       '@types/react':
         specifier: 19.2.7
@@ -141,7 +141,7 @@ importers:
         version: 3.3.2
       openai:
         specifier: ^4.28.4
-        version: 4.104.0(ws@8.18.3)(zod@3.25.76)
+        version: 4.104.0(ws@8.18.3)(zod@4.2.1)
       p-retry:
         specifier: ^6.2.1
         version: 6.2.1
@@ -164,8 +164,8 @@ importers:
         specifier: workspace:*
         version: link:../common
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.2.1
+        version: 4.2.1
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -306,8 +306,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.2.1
+        version: 4.2.1
     devDependencies:
       '@chromatic-com/storybook':
         specifier: ^4.1.3
@@ -402,7 +402,7 @@ importers:
         version: 5.8.2
       openai:
         specifier: ^6.10.0
-        version: 6.15.0(ws@8.18.3)(zod@3.25.76)
+        version: 6.15.0(ws@8.18.3)(zod@4.2.1)
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -414,10 +414,10 @@ importers:
         version: link:../common
       weave:
         specifier: ^0.11.0
-        version: 0.11.0(ws@8.18.3)(zod@3.25.76)
+        version: 0.11.0(ws@8.18.3)(zod@4.2.1)
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.2.1
+        version: 4.2.1
     devDependencies:
       ts-node:
         specifier: ^10.9.2
@@ -447,8 +447,8 @@ importers:
         specifier: ^11.0.5
         version: 11.1.0
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.2.1
+        version: 4.2.1
     devDependencies:
       '@types/csv-parse':
         specifier: ^1.1.12
@@ -8238,8 +8238,8 @@ packages:
     resolution: {integrity: sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==}
     engines: {node: '>=12.20'}
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+  zod@4.2.1:
+    resolution: {integrity: sha512-0wZ1IRqGGhMP76gLqz8EyfBXKk0J2qo2+H3fi4mcUP/KtTocoX08nmIAHl1Z2kJIZbZee8KOpBCSNPRgauucjw==}
 
 snapshots:
 
@@ -14635,7 +14635,7 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@4.104.0(ws@8.18.3)(zod@3.25.76):
+  openai@4.104.0(ws@8.18.3)(zod@4.2.1):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -14646,14 +14646,14 @@ snapshots:
       node-fetch: 2.7.0
     optionalDependencies:
       ws: 8.18.3
-      zod: 3.25.76
+      zod: 4.2.1
     transitivePeerDependencies:
       - encoding
 
-  openai@6.15.0(ws@8.18.3)(zod@3.25.76):
+  openai@6.15.0(ws@8.18.3)(zod@4.2.1):
     optionalDependencies:
       ws: 8.18.3
-      zod: 3.25.76
+      zod: 4.2.1
 
   opener@1.5.2: {}
 
@@ -16698,7 +16698,7 @@ snapshots:
 
   weak-map@1.0.8: {}
 
-  weave@0.11.0(ws@8.18.3)(zod@3.25.76):
+  weave@0.11.0(ws@8.18.3)(zod@4.2.1):
     dependencies:
       cli-progress: 3.12.0
       cross-spawn: 7.0.6
@@ -16706,7 +16706,7 @@ snapshots:
       import-in-the-middle: 1.15.0
       ini: 5.0.0
       module-details-from-path: 1.0.4
-      openai: 4.104.0(ws@8.18.3)(zod@3.25.76)
+      openai: 4.104.0(ws@8.18.3)(zod@4.2.1)
       semifies: 1.0.0
       uuidv7: 1.1.0
     transitivePeerDependencies:
@@ -16714,7 +16714,7 @@ snapshots:
       - ws
       - zod
 
-  weave@0.9.3(ws@8.18.3)(zod@3.25.76):
+  weave@0.9.3(ws@8.18.3)(zod@4.2.1):
     dependencies:
       cli-progress: 3.12.0
       cross-spawn: 7.0.6
@@ -16722,7 +16722,7 @@ snapshots:
       import-in-the-middle: 1.15.0
       ini: 5.0.0
       module-details-from-path: 1.0.4
-      openai: 4.104.0(ws@8.18.3)(zod@3.25.76)
+      openai: 4.104.0(ws@8.18.3)(zod@4.2.1)
       semifies: 1.0.0
       uuidv7: 1.1.0
     transitivePeerDependencies:
@@ -16924,4 +16924,4 @@ snapshots:
 
   yocto-queue@1.2.2: {}
 
-  zod@3.25.76: {}
+  zod@4.2.1: {}

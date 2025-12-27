@@ -77,7 +77,7 @@ export async function handlePipelineStep<T extends z.ZodTypeAny>(
         if (schemaResult.success === false) {
           pipelineStepLogger.error(
             {
-              validationErrors: schemaResult.error.errors,
+              validationErrors: schemaResult.error.issues,
               responsePreview:
                 typeof parsed === "object"
                   ? JSON.stringify(parsed).substring(0, 500)

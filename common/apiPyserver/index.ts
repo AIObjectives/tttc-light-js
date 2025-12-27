@@ -22,7 +22,7 @@ const llmConfig = z.object(
     system_prompt: z.string(),
     user_prompt: z.string(),
   },
-  { invalid_type_error: "Invalid llmConfig" },
+  { error: "Invalid llmConfig" },
 );
 
 export type LLMConfig = z.infer<typeof llmConfig>;
@@ -190,7 +190,7 @@ export const topicTreeRequest = z.object(
       .min(1, "Empty comments array for topicTreeRequest"),
     llm: llmConfig,
   },
-  { invalid_type_error: "Invalid topic tree request object" },
+  { error: "Invalid topic tree request object" },
 );
 export type TopicTreeRequest = z.infer<typeof topicTreeRequest>;
 
@@ -200,7 +200,7 @@ export const topicTreeResponse = z.object(
     usage,
     cost: z.number(),
   },
-  { invalid_type_error: "Invalid topic tree response" },
+  { error: "Invalid topic tree response" },
 );
 
 export type TopicTreeResponse = z.infer<typeof topicTreeResponse>;
@@ -217,7 +217,7 @@ export const claimsRequest = z.object(
     comments: comment.array(),
     llm: llmConfig,
   },
-  { invalid_type_error: "Invalid claims request object" },
+  { error: "Invalid claims request object" },
 );
 export type ClaimsRequest = z.infer<typeof claimsRequest>;
 
