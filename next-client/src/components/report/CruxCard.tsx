@@ -44,7 +44,7 @@ export function CruxCard({
   // Create unique ID for scroll targeting (same as in Subtopic)
   const cruxId = `${crux.topic}:${crux.subtopic}`;
   // Use Zustand hook for focus tracking
-  const focusedRef = useCruxFocusTracking(cruxId);
+  const focusedRef = useCruxFocusTracking<HTMLButtonElement>(cruxId);
 
   const handleClick = () => {
     // Ensure both subtopicId and navigation callback exist
@@ -71,13 +71,6 @@ export function CruxCard({
 
     // Scroll after state updates complete
     scrollToAfterRender(subtopicId);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
-    }
   };
 
   // Handle subtopic click: Navigate to Report tab, expand topic, and scroll to subtopic
@@ -163,14 +156,12 @@ export function CruxCard({
   );
 
   return (
-    <div
+    <button
       ref={focusedRef}
       id={cruxId}
-      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-      role="button"
-      tabIndex={0}
+      type="button"
+      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-left w-full"
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
       aria-label={`Crux: ${crux.cruxClaim}. Click to view in report.`}
     >
       <Col gap={4}>
@@ -240,6 +231,6 @@ export function CruxCard({
           topicColor={getTopicColor(crux.topic)}
         />
       </Col>
-    </div>
+    </button>
   );
 }

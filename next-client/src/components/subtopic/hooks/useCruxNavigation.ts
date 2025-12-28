@@ -55,17 +55,8 @@ export function useCruxNavigation({
     }
   };
 
-  // Handle keyboard activation for accessibility
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleCruxClick();
-    }
-  };
-
   return {
     handleCruxClick,
     handleSubtopicClick,
-    handleKeyDown,
   };
 }
