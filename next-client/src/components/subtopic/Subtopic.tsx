@@ -209,14 +209,13 @@ function CruxDisplay({
   } = useParsedSpeakers(crux);
 
   // Extract navigation handlers to hook
-  const { handleCruxClick, handleSubtopicClick, handleKeyDown } =
-    useCruxNavigation({
-      cruxId,
-      subtopicTitle,
-      activeContentTab,
-      setActiveContentTab,
-      scrollToAfterRender,
-    });
+  const { handleCruxClick, handleSubtopicClick } = useCruxNavigation({
+    cruxId,
+    subtopicTitle,
+    activeContentTab,
+    setActiveContentTab,
+    scrollToAfterRender,
+  });
 
   // Memoize explanation cleaner
   const cleanExplanation = useMemo(
@@ -239,12 +238,10 @@ function CruxDisplay({
   return (
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger asChild>
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={handleCruxClick}
-          onKeyDown={handleKeyDown}
-          className="py-3 cursor-pointer"
+          className="py-3 cursor-pointer bg-transparent border-none p-0 text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <p className="leading-6 pl-0 text-base font-medium">Crux</p>
           <Row gap={2} className="justify-between items-start">
@@ -264,7 +261,7 @@ function CruxDisplay({
               </span>
             </div>
           </Row>
-        </div>
+        </button>
       </HoverCardTrigger>
       <CruxHoverContent
         cruxClaim={crux.cruxClaim}

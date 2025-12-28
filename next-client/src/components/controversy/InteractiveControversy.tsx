@@ -50,7 +50,7 @@ export function InteractiveControversy({
   onClick,
   className,
 }: InteractiveControversyProps) {
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isPinned, setIsPinned] = useState<boolean>(false);
@@ -63,17 +63,6 @@ export function InteractiveControversy({
       setIsOpen(true);
     }
   }, [onClick]);
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      // Activate on Enter or Space key
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault(); // Prevent scrolling on Space
-        handleClick();
-      }
-    },
-    [handleClick],
-  );
 
   // Use refs for event handlers to avoid stale closures and ensure stable references
   // for addEventListener/removeEventListener pairing
@@ -133,17 +122,15 @@ export function InteractiveControversy({
       }}
     >
       <HoverCardTrigger asChild className={className}>
-        <div
+        <button
           ref={triggerRef}
-          className="cursor-pointer"
+          type="button"
+          className="cursor-pointer bg-transparent border-none p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           onClick={handleClick}
-          onKeyDown={handleKeyDown}
-          role="button"
-          tabIndex={0}
           aria-label={`${category.label} controversy indicator`}
         >
           {children}
-        </div>
+        </button>
       </HoverCardTrigger>
       <HoverCardPortal>
         <HoverCardContent
