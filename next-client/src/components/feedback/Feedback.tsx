@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { logger } from "tttc-common/logger/browser";
 import Icons from "@/assets/icons";
 import { fetchToken } from "@/lib/firebase/getIdToken";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 import { feedbackResponse } from "@/lib/types/clientRoutes";
 import { cn } from "@/lib/utils/shadcn";
 import {
@@ -74,7 +74,7 @@ function FeedbackForm() {
     feedbackDialogReducer,
     defaultFeedbackDialogState,
   );
-  const { user, loading, error, emailVerified } = useUser();
+  const { user, loading, error, emailVerified } = useUserQuery();
 
   const handleSubmit = async () => {
     // User is guaranteed to exist due to early return below,

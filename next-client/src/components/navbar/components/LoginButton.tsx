@@ -23,7 +23,7 @@ import { ProfileSetupModal } from "@/components/profile/ProfileSetupModal";
 import { AUTH_ACTIONS } from "@/lib/constants/auth";
 import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
 import { logAuthEvent } from "@/lib/firebase/authEvents";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 const loginLogger = logger.child({ module: "login-button" });
 
@@ -111,7 +111,7 @@ const recordProfileSetupComplete = () => {
 };
 
 export default function LoginButton() {
-  const { user, loading, error } = useUser();
+  const { user, loading, error } = useUserQuery();
   const [showEmailAuth, setShowEmailAuth] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(
     "signin",

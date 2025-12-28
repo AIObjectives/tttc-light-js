@@ -7,8 +7,8 @@ import {
   getUserCapabilities,
   type UserCapabilities,
 } from "@/lib/api/userLimits";
-import { useUser } from "@/lib/hooks/getUser";
 import { queryKeys } from "@/lib/query/queryKeys";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 const DEFAULT_SIZE_LIMIT = 150 * 1024; // 150KB
 
@@ -26,7 +26,7 @@ const DEFAULT_SIZE_LIMIT = 150 * 1024; // 150KB
  * The interface is intentionally backward-compatible.
  */
 export function useUserCapabilitiesQuery() {
-  const { user, loading: authLoading } = useUser();
+  const { user, loading: authLoading } = useUserQuery();
   const queryClient = useQueryClient();
 
   // Track if we've shown the error toast to avoid repeated toasts
