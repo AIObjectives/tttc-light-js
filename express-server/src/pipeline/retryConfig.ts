@@ -57,21 +57,23 @@ export function createRetryLogger(operation: string) {
 }
 
 /**
- * Wraps an operation with a total timeout to prevent indefinite hangs
+ * Wraps an operation with a total timeout to prevent indefinite hangs.
+ * Properly clears the timeout when the operation completes to prevent memory leaks.
  */
 export function withOperationTimeout<T>(
   operation: Promise<T>,
   timeoutMs: number = OPERATION_TIMEOUT,
   operationName: string = "Operation",
 ): Promise<T> {
-  return Promise.race([
-    operation,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-    }),
-  ]);
+  const { promise: timeoutPromise, reject } = Promise.withResolvers<T>();
+
+  const timeoutId = setTimeout(() => {
+    reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+  }, timeoutMs);
+
+  return Promise.race([operation, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
 }
 
 /**

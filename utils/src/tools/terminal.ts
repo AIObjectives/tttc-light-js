@@ -20,12 +20,14 @@ export const reader = (prompt: string): Promise<string> => {
     output: process.stdout,
   });
 
-  return new Promise((resolve) => {
-    rl.question(prompt, (answer) => {
-      rl.close();
-      resolve(answer);
-    });
+  const { promise, resolve } = Promise.withResolvers<string>();
+
+  rl.question(prompt, (answer) => {
+    rl.close();
+    resolve(answer);
   });
+
+  return promise;
 };
 
 /**
@@ -81,35 +83,37 @@ export async function select<SelectOption extends string>(
       console.log(`${prefix}${option}`);
     });
 
-    return new Promise((resolve) => {
-      // Handle keypress events
-      process.stdin.on("data", (data) => {
-        const key = data.toString();
+    const { promise, resolve } = Promise.withResolvers<SelectOption>();
 
-        if (key === "\u001B[A") {
-          // Up arrow
-          selectedIndex = (selectedIndex - 1 + options.length) % options.length;
-          renderMenu();
-        } else if (key === "\u001B[B") {
-          // Down arrow
-          selectedIndex = (selectedIndex + 1) % options.length;
-          renderMenu();
-        } else if (key === "\r") {
-          // Enter
-          // Clean up
-          process.stdin.removeAllListeners("data");
-          process.stdin.setRawMode(false);
-          process.stdin.pause();
+    // Handle keypress events
+    process.stdin.on("data", (data) => {
+      const key = data.toString();
 
-          // Move cursor to bottom and resolve
-          process.stdout.write(`\x1B[${options.length}B`);
-          resolve(options[selectedIndex]);
-        } else if (key === "\u0003") {
-          // Ctrl+C
-          process.exit();
-        }
-      });
+      if (key === "\u001B[A") {
+        // Up arrow
+        selectedIndex = (selectedIndex - 1 + options.length) % options.length;
+        renderMenu();
+      } else if (key === "\u001B[B") {
+        // Down arrow
+        selectedIndex = (selectedIndex + 1) % options.length;
+        renderMenu();
+      } else if (key === "\r") {
+        // Enter
+        // Clean up
+        process.stdin.removeAllListeners("data");
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+
+        // Move cursor to bottom and resolve
+        process.stdout.write(`\x1B[${options.length}B`);
+        resolve(options[selectedIndex]);
+      } else if (key === "\u0003") {
+        // Ctrl+C
+        process.exit();
+      }
     });
+
+    return promise;
   } catch (error) {
     // Ensure we clean up even if there's an error
     process.stdin.setRawMode(false);
