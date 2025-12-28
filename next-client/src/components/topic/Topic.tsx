@@ -2,7 +2,6 @@
 
 import type React from "react";
 import { createContext, forwardRef, useContext } from "react";
-import { mergeRefs } from "react-merge-refs";
 import type * as schema from "tttc-common/schema";
 import {
   getNClaims,
@@ -13,6 +12,9 @@ import Icons from "@/assets/icons";
 import { ControversyIndicator } from "@/components/controversy";
 import { getThemeColor } from "@/lib/color";
 import { getTopicControversy } from "@/lib/crux/utils";
+import { useFocusTracking } from "@/stores/hooks";
+import { useReportStore } from "@/stores/reportStore";
+import type { SubtopicNode, TopicNode } from "@/stores/types";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import {
   Button,
@@ -29,8 +31,7 @@ import {
 import { Col, Row } from "../layout";
 import useGroupHover from "../pointGraphic/hooks/useGroupHover";
 import { PointGraphicGroup } from "../pointGraphic/PointGraphic";
-import type { SubtopicNode, TopicNode } from "../report/hooks/useReportState";
-import { ReportContext } from "../report/Report";
+import { ReportDataContext } from "../report/Report";
 import { Subtopic, SubtopicHeader } from "../subtopic/Subtopic";
 
 type TopicContextType = {
@@ -45,29 +46,31 @@ export const TopicContext = createContext<TopicContextType>({
  * Highest level node in Report. Expands to show subtopics.
  */
 function Topic({ node }: { node: TopicNode }) {
-  // Get report context and use that to setup scrolling and focusing
-  const { useScrollTo, useFocusedNode } = useContext(ReportContext);
-  const scrollRef = useScrollTo(node.data.id);
-  const focusedRef = useFocusedNode(node.data.id);
+  // Use Zustand hook for focus tracking
+  const focusedRef = useFocusTracking(node.data.id);
+
   return (
     <TopicContext.Provider value={{ topicNode: node }}>
-      <TopicCard ref={mergeRefs([scrollRef, focusedRef])} />
+      {/* id attribute enables scroll targeting via useScrollEffect */}
+      <TopicCard ref={focusedRef} id={node.data.id} />
     </TopicContext.Provider>
   );
 }
-// Empty props type - component only receives ref via forwardRef
-type TopicCardProps = object;
+type TopicCardProps = {
+  /** ID for scroll targeting via useScrollEffect */
+  id: string;
+};
 /**
  * UI for Topic
  */
 const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
-  _props: TopicCardProps,
+  { id }: TopicCardProps,
   ref,
 ) {
   const { topicNode } = useContext(TopicContext);
   const { title, description, summary } = topicNode.data;
   return (
-    <Card data-testid={"topic-item"}>
+    <Card data-testid={"topic-item"} id={id}>
       <CardContent ref={ref}>
         <Col gap={3}>
           <TopicHeader
@@ -91,7 +94,7 @@ const TopicCard = forwardRef<HTMLDivElement, TopicCardProps>(function TopicCard(
 
 export function TopicHeader({ button }: { button?: React.ReactNode }) {
   const { topicNode } = useContext(TopicContext);
-  const { addOns } = useContext(ReportContext);
+  const { addOns } = useContext(ReportDataContext);
   const { title } = topicNode.data;
   const subtopics = topicNode.children.map((sub) => sub.data);
   const controversyScore = getTopicControversy(addOns, title);
@@ -161,7 +164,7 @@ export function TopicInteractiveGraphic({
 }: React.PropsWithChildren<{
   subtopics: SubtopicNode[];
 }>) {
-  const { dispatch } = useContext(ReportContext);
+  const toggleTopic = useReportStore((s) => s.toggleTopic);
   const { topicNode } = useContext(TopicContext);
   const subtopics = topicNode.children.map((sub) => sub.data);
   const [topicsHoverState, onMouseOver, onMouseExit] = useGroupHover(subtopics);
@@ -192,12 +195,7 @@ export function TopicInteractiveGraphic({
         />
         <div className="self-center">
           <Button
-            onClick={() =>
-              dispatch({
-                type: "toggleTopic",
-                payload: { id: topicNode.data.id },
-              })
-            }
+            onClick={() => toggleTopic(topicNode.data.id)}
             className={buttonBackgroundColor}
             data-testid={"open-topic-button"}
           >
@@ -257,9 +255,8 @@ export function SubtopicListItem({
   onMouseOver: () => void;
   onMouseOut: () => void;
 }) {
-  const { dispatch } = useContext(ReportContext);
-  const onClick = () =>
-    dispatch({ type: "open", payload: { id: subtopic.id } });
+  const openNode = useReportStore((s) => s.openNode);
+  const onClick = () => openNode(subtopic.id);
   return (
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
@@ -344,7 +341,7 @@ function ShowMoreButton({
   topicId: string;
   topicColor: string;
 }) {
-  const { dispatch } = useContext(ReportContext);
+  const expandPagination = useReportStore((s) => s.expandPagination);
   const bg_color = getThemeColor(topicColor, "bgAccent");
   const text_color = getThemeColor(topicColor, "text");
   const border_color = getThemeColor(topicColor, "border");
@@ -353,9 +350,7 @@ function ShowMoreButton({
       <Button
         variant={"secondary"}
         className={`${bg_color} ${text_color} ${border_color} border`}
-        onClick={() =>
-          dispatch({ type: "expandTopic", payload: { id: topicId } })
-        }
+        onClick={() => expandPagination(topicId)}
         data-testid={"show-more-subtopics-button"}
       >
         {moreLeftNum} more subtopic{moreLeftNum > 1 ? "s" : ""}

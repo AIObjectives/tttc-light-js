@@ -5,9 +5,9 @@ import { createContext, useContext } from "react";
 import type * as schema from "tttc-common/schema";
 import type { ThemeClass } from "@/lib/color";
 import { useThemeContextColor } from "@/lib/hooks/useTopicTheme";
+import { useReportStore } from "@/stores/reportStore";
 import { QuoteCard } from "../claim";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../elements";
-import { ReportContext } from "../report/Report";
 
 type CellContextType = {
   borderClass: ThemeClass | string;
@@ -76,11 +76,11 @@ interface ICell
 }
 
 export function Cell({ claim, isHighlighted }: ICell) {
-  const { dispatch } = useContext(ReportContext);
+  const openNode = useReportStore((s) => s.openNode);
   const { borderClass, backgroundClass, hoverClass, highlightedClass } =
     useContext(CellContext);
 
-  const onClick = () => dispatch({ type: "open", payload: { id: claim.id } });
+  const onClick = () => openNode(claim.id);
   return (
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
