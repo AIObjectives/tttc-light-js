@@ -266,9 +266,12 @@ async function callPerspectiveApi(
     languages: ["en"], // Bridging attributes are English-only
   };
 
-  const response = await fetch(`${PERSPECTIVE_API_URL}?key=${apiKey}`, {
+  const response = await fetch(PERSPECTIVE_API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-goog-api-key": apiKey,
+    },
     body: JSON.stringify(requestBody),
   });
 
