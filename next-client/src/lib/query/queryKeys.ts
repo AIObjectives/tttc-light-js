@@ -23,4 +23,11 @@ export const queryKeys = {
     detail: (identifier: string) =>
       [...queryKeys.report.all, "detail", identifier] as const,
   },
+  featureFlags: {
+    all: ["featureFlags"] as const,
+    enabled: (flagName: string, contextKey: string) =>
+      [...queryKeys.featureFlags.all, "enabled", flagName, contextKey] as const,
+    value: (flagName: string, contextKey: string) =>
+      [...queryKeys.featureFlags.all, "value", flagName, contextKey] as const,
+  },
 } as const;

@@ -10,14 +10,10 @@
  * Client Components:
  * ```tsx
  * "use client";
- * import { useFeatureFlag } from "@/hooks/useFeatureFlag";
- * import { initializeFeatureFlags } from "@/lib/feature-flags/featureFlags";
- *
- * // Initialize once in a top-level client component or layout
- * initializeFeatureFlags();
+ * import { useFeatureFlagQuery } from "@/lib/query/useFeatureFlagQuery";
  *
  * function MyComponent() {
- *   const { enabled, loading } = useFeatureFlag("my-feature");
+ *   const { enabled, loading } = useFeatureFlagQuery("my-feature");
  *   if (loading) return <div>Loading...</div>;
  *   return enabled ? <NewFeature /> : <OldFeature />;
  * }
