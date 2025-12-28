@@ -1,19 +1,18 @@
 "use client";
 import type React from "react";
-import { useContext } from "react";
-import type { SomeNode } from "../report/hooks/useReportState";
-import { ReportContext } from "../report/Report";
+import type { TreeNode } from "@/stores/types";
 
+/**
+ * Wrapper component that enables scroll targeting via useScrollEffect.
+ * The `id` attribute allows scrollTo(id) to find and scroll to this element.
+ */
 export function NodeWrapper({
   node,
   children,
   className,
-}: React.PropsWithChildren<{ node: SomeNode; className?: string }>) {
-  const { useScrollTo } = useContext(ReportContext);
-  const scrollRef = useScrollTo(node.id);
-
+}: React.PropsWithChildren<{ node: TreeNode; className?: string }>) {
   return (
-    <div ref={scrollRef} className={className}>
+    <div id={node.id} className={className}>
       {children}
     </div>
   );

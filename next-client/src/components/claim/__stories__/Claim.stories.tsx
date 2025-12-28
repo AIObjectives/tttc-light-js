@@ -1,11 +1,39 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useEffect } from "react";
+import { useReportStore } from "@/stores/reportStore";
+import { buildTopicNodes } from "@/stores/testUtils";
 import { reportData } from "../../../../stories/data/dummyData";
-import { stateBuilder } from "../../report/hooks/useReportState/utils";
+import { ReportDataContext } from "../../report/Report";
 import { TopicContext } from "../../topic/Topic";
 import { Claim, QuoteIcon as QuoteIconComponent } from "..";
 
-const reportState = stateBuilder(reportData.topics);
-const topicNode = reportState.children[0];
+const topicNodes = buildTopicNodes(reportData.topics);
+const topicNode = topicNodes[0];
+
+// Decorator to initialize Zustand store and provide context
+function StoryWrapper({ children }: { children: React.ReactNode }) {
+  const initialize = useReportStore((s) => s.initialize);
+  const reset = useReportStore((s) => s.reset);
+
+  useEffect(() => {
+    initialize(reportData.topics);
+    return () => reset();
+  }, [initialize, reset]);
+
+  return (
+    <ReportDataContext.Provider
+      value={{
+        addOns: reportData.addons,
+        getTopicColor: () => undefined,
+        getSubtopicId: () => null,
+      }}
+    >
+      <TopicContext.Provider value={{ topicNode }}>
+        <div>{children}</div>
+      </TopicContext.Provider>
+    </ReportDataContext.Provider>
+  );
+}
 
 const meta = {
   title: "Claim",
@@ -16,15 +44,9 @@ const meta = {
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <TopicContext.Provider
-        value={{
-          topicNode,
-        }}
-      >
-        <div>
-          <Story />
-        </div>
-      </TopicContext.Provider>
+      <StoryWrapper>
+        <Story />
+      </StoryWrapper>
     ),
   ],
 } satisfies Meta<typeof Claim>;

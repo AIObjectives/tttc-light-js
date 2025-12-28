@@ -1,9 +1,9 @@
-import { useContext } from "react";
 import Icons from "@/assets/icons";
 import { Button } from "@/components/elements";
 import { Row } from "@/components/layout";
 import { cn } from "@/lib/utils/shadcn";
-import { ReportContext } from "../Report";
+import { useReportStore } from "@/stores/reportStore";
+import { useActiveContentTab } from "@/stores/reportUIStore";
 
 /**
  * Toolbar that follows down screen. Lets user do certain actions.
@@ -16,7 +16,9 @@ export function ReportToolbar({
   setIsMobileOutlineOpen: (val: boolean) => void;
   isMobileOutlineOpen: boolean;
 }) {
-  const { dispatch, activeContentTab } = useContext(ReportContext);
+  const openAllTopics = useReportStore((s) => s.openAllTopics);
+  const closeAllTopics = useReportStore((s) => s.closeAllTopics);
+  const activeContentTab = useActiveContentTab();
 
   return (
     <Row
@@ -44,15 +46,12 @@ export function ReportToolbar({
       {/* Right side - expand/collapse buttons */}
       <Row gap={2} className={cn(activeContentTab !== "report" && "hidden")}>
         {/* Close all button */}
-        <Button
-          onClick={() => dispatch({ type: "closeAll" })}
-          variant={"outline"}
-        >
+        <Button onClick={() => closeAllTopics()} variant={"outline"}>
           Collapse all
         </Button>
         {/* Open all button */}
         <Button
-          onClick={() => dispatch({ type: "openAll" })}
+          onClick={() => openAllTopics()}
           variant={"secondary"}
           data-testid={"open-all-button"}
         >

@@ -1,16 +1,15 @@
 "use client";
 import type React from "react";
-import { useContext } from "react";
-import { ReportContext } from "../report/Report";
 
+/**
+ * ClaimItem wrapper that handles visibility and scroll targeting.
+ * The `id` prop enables scroll targeting via useScrollEffect.
+ */
 export function ClaimItem({
   show,
   id,
   children,
 }: React.PropsWithChildren<{ id: string; show: boolean }>) {
-  const { useScrollTo } = useContext(ReportContext);
-  const scrollRef = useScrollTo(id);
-
   if (!show) return null;
-  return <div ref={scrollRef}>{children}</div>;
+  return <div id={id}>{children}</div>;
 }

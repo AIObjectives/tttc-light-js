@@ -1,16 +1,7 @@
 "use client";
 
 import { ChevronsUpDown } from "lucide-react";
-import React, {
-  createContext,
-  type Dispatch,
-  type Ref,
-  type SetStateAction,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { createContext, useEffect, useRef } from "react";
 import { toast } from "sonner";
 // Default prompts for comparison
 import {
@@ -26,6 +17,17 @@ import { getSortedCruxes, getTopicControversy } from "@/lib/crux/utils";
 import { useHashChange } from "@/lib/hooks/useHashChange";
 import { downloadReportData } from "@/lib/report/downloadUtils";
 import { cn } from "@/lib/utils/shadcn";
+// Zustand stores for state management
+import { useScrollEffect } from "@/stores/hooks";
+import { useReportStore, useTopics } from "@/stores/reportStore";
+import {
+  useActiveContentTab,
+  useIsMobileOutlineOpen,
+  useReportUIStore,
+  useSortByControversy,
+  useSortMode,
+} from "@/stores/reportUIStore";
+import type { SortMode, TopicNode } from "@/stores/types";
 import {
   Button,
   CardContent,
@@ -40,10 +42,6 @@ import {
   TabsTrigger,
 } from "../elements";
 import { Col, Row } from "../layout";
-import {
-  type OutlineStateAction,
-  useOutlineState,
-} from "../outline/hooks/useOutlineState";
 import Outline from "../outline/Outline";
 import Theme from "../topic/Topic";
 import { CruxCard } from "./CruxCard";
@@ -53,98 +51,32 @@ import { ReportHeader } from "./components/ReportHeader";
 // Extracted components
 import { ReportLayout } from "./components/ReportLayout";
 import { ReportToolbar } from "./components/ReportToolbar";
-import { useFocusedNode as _useFocusedNode } from "./hooks/useFocusedNode";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
-import {
-  type ReportStateAction,
-  type TopicNode,
-  useReportState,
-} from "./hooks/useReportState";
-import useReportSubscribe from "./hooks/useReportSubscribe";
-import useScrollListener from "./hooks/useScrollListener";
 
 /**
  * Report Component
  *
  * This is the highest level component for /report/
- * This not only sets up the correct components, but initializes much of the state management for this feature.
+ * Uses Zustand stores for state management (reportStore and reportUIStore).
  */
 
 /**
- * TYPES
+ * Content tab type
  */
-type ReportActionEffectFunc = (action: ReportStateAction) => void;
-type ReportActionEffect = (func: ReportActionEffectFunc) => void;
+type ContentTab = "report" | "cruxes";
 
 /**
- * Sort mode for unified sort dropdown
- * - "frequent": Default sort by claim frequency (no special sorting)
- * - "controversy": Sort topics by controversy score
- * - "bridging": Sort claims by bridging potential
+ * Context for static/immutable data that doesn't change during the session.
+ * Provides addOns data and lookup functions for topic/subtopic information.
  */
-export type SortMode = "frequent" | "controversy" | "bridging";
-
-/**
- * Context thats passed through Report
- */
-export const ReportContext = createContext<{
-  // Dispatch for ReportState is passed so components can trigger state change
-  dispatch: Dispatch<ReportStateAction>;
-  // Used to setup scroll-to behaviors by passing a ref
-  useScrollTo: (listenForId: string) => Ref<HTMLDivElement>;
-  // Sets the page to scroll to an element based on its id
-  setScrollTo: Dispatch<SetStateAction<[string, number]>>;
-  // Allows side-effects from changes to ReportState
-  useReportEffect: ReportActionEffect;
-  // Tracks which node is being "focused"
-  useFocusedNode: (id: string, ignore?: boolean) => Ref<HTMLDivElement>;
-  // Tracks which crux is being "focused" (separate from node tracking)
-  useFocusedNodeForCruxes: (
-    id: string,
-    ignore?: boolean,
-  ) => Ref<HTMLDivElement>;
-  // Temporarily suppress scroll-based focus tracking (for programmatic navigation)
-  suppressFocusTracking: (durationMs?: number) => void;
-  // Add-ons data from pipeline (including cruxes and controversy scores)
+export const ReportDataContext = createContext<{
   addOns?: schema.AddOns;
-  // Unified sort mode (frequent, controversy, or bridging)
-  sortMode: SortMode;
-  setSortMode: Dispatch<SetStateAction<SortMode>>;
-  // Derived booleans for backward compatibility with sorting logic
-  sortByControversy: boolean;
-  sortByBridging: boolean;
-  // ID of crux that should be auto-expanded (e.g., when navigating from Cruxes tab)
-  expandedCruxId: string | null;
-  setExpandedCruxId: Dispatch<SetStateAction<string | null>>;
-  // Active content tab ("report" or "cruxes")
-  activeContentTab: "report" | "cruxes";
-  setActiveContentTab: Dispatch<SetStateAction<"report" | "cruxes">>;
-  // Get topic color by topic title
   getTopicColor: (topicTitle: string) => string | undefined;
-  // Get subtopic ID by topic and subtopic titles
   getSubtopicId: (topicTitle: string, subtopicTitle: string) => string | null;
-  // ID of currently focused/highlighted crux (for outline highlighting)
-  focusedCruxId: string | null;
 }>({
-  dispatch: () => null,
-  useScrollTo: () => ({}) as Ref<HTMLDivElement>,
-  setScrollTo: () => null,
-  useReportEffect: () => {},
-  useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
-  useFocusedNodeForCruxes: () => ({}) as Ref<HTMLDivElement>,
-  suppressFocusTracking: () => {},
   addOns: undefined,
-  sortMode: "frequent",
-  setSortMode: () => null,
-  sortByControversy: false,
-  sortByBridging: false,
-  expandedCruxId: null,
-  setExpandedCruxId: () => null,
-  activeContentTab: "report",
-  setActiveContentTab: () => null,
   getTopicColor: () => undefined,
   getSubtopicId: () => null,
-  focusedCruxId: null,
 });
 
 /**
@@ -159,102 +91,66 @@ function Report({
   reportUri: string;
   rawPipelineOutput: schema.PipelineOutput;
 }) {
-  // Report State reducer
-  const [state, _dispatch] = useReportState(reportData.topics);
-  // url hash
+  // ========================================
+  // Zustand Store Initialization
+  // ========================================
+
+  // Get store actions
+  const initializeStore = useReportStore((s) => s.initialize);
+  const resetStore = useReportStore((s) => s.reset);
+  const openNode = useReportStore((s) => s.openNode);
+
+  // UI store actions
+  const resetUIStore = useReportUIStore((s) => s.reset);
+
+  // UI store state (using selector hooks for optimized subscriptions)
+  const sortByControversy = useSortByControversy();
+  const activeContentTab = useActiveContentTab();
+  const isMobileOutlineOpen = useIsMobileOutlineOpen();
+  const setMobileOutlineOpen = useReportUIStore((s) => s.setMobileOutlineOpen);
+
+  // Initialize stores on mount, cleanup on unmount
+  useEffect(() => {
+    initializeStore(reportData.topics);
+    return () => {
+      resetStore();
+      resetUIStore();
+    };
+  }, [reportData.topics, initializeStore, resetStore, resetUIStore]);
+
+  // ========================================
+  // Zustand-based scroll effect
+  // ========================================
+  useScrollEffect();
+
+  // ========================================
+  // Other Hooks
+  // ========================================
+
+  // URL hash navigation
   const hashNav = useHashChange();
-  // Sets up useReportEffect, which can trigger side-effects when Report State dispatch is called.
-  const [dispatch, useReportEffect] = useReportSubscribe(_dispatch);
-  // Hook that sets up scrolling behavior.
-  const [useScrollTo, setScrollTo] = useScrollListener(useReportEffect);
-  // Allows us to keep track of what node is in the middle of the screen. Needs to pass hook to nodes.
-  // Also returns a suppress function to temporarily disable scroll-based tracking during programmatic navigation.
-  const [useFocusedNode, suppressFocusTracking] = _useFocusedNode(
-    (id: string) => dispatch({ type: "focus", payload: { id } }),
-  );
-  // Track focused crux for outline highlighting
-  const [focusedCruxId, setFocusedCruxId] = useState<string | null>(null);
-  const [useFocusedNodeForCruxes] = _useFocusedNode((id: string) =>
-    setFocusedCruxId(id),
-  );
+
   // Track navbar visibility for sheet positioning
   const navbarState = useNavbarVisibility();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dispatch is stable from useReducer, state is read inside effect but shouldn't trigger re-runs
+  // Get topics from Zustand store (source of truth for UI state)
+  const storeTopics = useTopics();
+
+  // Hash navigation - open the matching node when URL hash changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: openNode is stable, storeTopics is read inside effect but shouldn't trigger re-runs
   useEffect(() => {
-    if (!hashNav) return;
+    if (!hashNav || storeTopics.length === 0) return;
     const nodes = [
-      ...state.children.map((topic) => topic),
-      ...state.children.flatMap((topic) => topic.children.map((sub) => sub)),
-      ...state.children.flatMap((topic) =>
+      ...storeTopics.map((topic) => topic),
+      ...storeTopics.flatMap((topic) => topic.children.map((sub) => sub)),
+      ...storeTopics.flatMap((topic) =>
         topic.children.flatMap((sub) => sub.children.map((clm) => clm)),
       ),
     ];
     const matchingNode = nodes.find((node) => node.data.title === hashNav);
     if (!matchingNode) return;
-    dispatch({ type: "open", payload: { id: matchingNode.data.id } });
+    openNode(matchingNode.data.id);
   }, [hashNav]);
-
-  const [isMobileOutlineOpen, setIsMobileOutlineOpen] =
-    useState<boolean>(false);
-
-  const [outlineState, outlineDispatch] = useOutlineState(state);
-
-  // When Report State dispatch is called, outline state should dispatch some action
-  useReportEffect((action) => {
-    const matchAction = (
-      action: ReportStateAction,
-    ): OutlineStateAction | null => {
-      switch (action.type) {
-        case "open":
-        case "close": {
-          return {
-            type: action.type,
-            payload: action.payload,
-          };
-        }
-        case "toggleTopic": {
-          return {
-            type: "toggle",
-            payload: action.payload,
-          };
-        }
-        case "closeAll":
-        case "openAll": {
-          return {
-            type: action.type,
-          };
-        }
-        case "focus": {
-          return {
-            type: "highlight",
-            payload: action.payload,
-          };
-        }
-        default: {
-          return null;
-        }
-      }
-    };
-    const outlineAction = matchAction(action);
-    if (!outlineAction) return;
-    outlineDispatch(outlineAction);
-  });
-
-  // Unified sort mode state
-  const [sortMode, setSortMode] = useState<SortMode>("frequent");
-
-  // Derive booleans for backward compatibility with sorting logic
-  const sortByControversy = sortMode === "controversy";
-  const sortByBridging = sortMode === "bridging";
-
-  // State for tracking which crux should be auto-expanded
-  const [expandedCruxId, setExpandedCruxId] = useState<string | null>(null);
-
-  // Active content tab ("report" or "cruxes")
-  const [activeContentTab, setActiveContentTab] = useState<"report" | "cruxes">(
-    "report",
-  );
 
   // Extract addOns to avoid rawPipelineOutput object reference changes breaking memoization
   const addOns = React.useMemo(
@@ -265,27 +161,27 @@ function Report({
   // Sort topics if sortByControversy is enabled
   const sortedTopics = React.useMemo(() => {
     if (!sortByControversy) {
-      return state.children;
+      return storeTopics;
     }
 
-    return [...state.children].sort((a, b) => {
+    return [...storeTopics].sort((a, b) => {
       const scoreA = getTopicControversy(addOns, a.data?.title) ?? -1;
       const scoreB = getTopicControversy(addOns, b.data?.title) ?? -1;
       // Sort descending (highest controversy first)
       return scoreB - scoreA;
     });
-  }, [sortByControversy, state.children, addOns]);
+  }, [sortByControversy, storeTopics, addOns]);
 
   // Build topic color map for AgreeDisagreeSpectrum
   const topicColorMap = React.useMemo(() => {
     const colorMap = new Map<string, string>();
-    state.children.forEach((topic) => {
+    storeTopics.forEach((topic) => {
       if (topic.data?.topicColor) {
         colorMap.set(topic.data.title, topic.data.topicColor);
       }
     });
     return colorMap;
-  }, [state.children]);
+  }, [storeTopics]);
 
   const getTopicColor = React.useCallback(
     (topicTitle: string): string | undefined => {
@@ -298,14 +194,14 @@ function Report({
   const subtopicIdMap = React.useMemo(() => {
     const idMap = new Map<string, string>();
     const subtopicOnly = new Map<string, string>();
-    state.children.forEach((topic) => {
+    storeTopics.forEach((topic) => {
       topic.data.subtopics.forEach((subtopic) => {
         idMap.set(`${topic.data.title}::${subtopic.title}`, subtopic.id);
         subtopicOnly.set(subtopic.title, subtopic.id);
       });
     });
     return { idMap, subtopicOnly };
-  }, [state.children]);
+  }, [storeTopics]);
 
   const getSubtopicId = React.useCallback(
     (topicTitle: string, subtopicTitle: string): string | null => {
@@ -319,34 +215,18 @@ function Report({
   );
 
   return (
-    <ReportContext.Provider
+    <ReportDataContext.Provider
       value={{
-        dispatch,
-        useScrollTo,
-        setScrollTo,
-        useReportEffect,
-        useFocusedNode,
-        useFocusedNodeForCruxes,
-        suppressFocusTracking,
         addOns,
-        sortMode,
-        setSortMode,
-        sortByControversy,
-        sortByBridging,
-        expandedCruxId,
-        setExpandedCruxId,
-        activeContentTab,
-        setActiveContentTab,
         getTopicColor,
         getSubtopicId,
-        focusedCruxId,
       }}
     >
       {/* Wrapper div is here to just give some space at the bottom of the screen */}
       <div className="mb-36">
         <ReportLayout
           isMobileOutlineOpen={isMobileOutlineOpen}
-          setIsMobileOutlineOpen={setIsMobileOutlineOpen}
+          setIsMobileOutlineOpen={setMobileOutlineOpen}
           navbarState={navbarState}
           activeContentTab={activeContentTab}
           Report={
@@ -369,25 +249,16 @@ function Report({
           }
           ToolBar={
             <ReportToolbar
-              setIsMobileOutlineOpen={setIsMobileOutlineOpen}
+              setIsMobileOutlineOpen={setMobileOutlineOpen}
               isMobileOutlineOpen={isMobileOutlineOpen}
             />
           }
-          Outline={
-            <Outline
-              outlineState={outlineState}
-              outlineDispatch={outlineDispatch}
-              reportDispatch={dispatch}
-              onNavigate={() => setIsMobileOutlineOpen(false)}
-            />
-          }
+          Outline={<Outline onNavigate={() => setMobileOutlineOpen(false)} />}
         />
       </div>
-    </ReportContext.Provider>
+    </ReportDataContext.Provider>
   );
 }
-
-type ContentTab = "report" | "cruxes";
 
 /**
  * Tabbed content section below the overview.
@@ -406,13 +277,11 @@ function ReportContentTabs({
   rawPipelineOutput: schema.PipelineOutput;
   filename: string;
 }) {
-  const {
-    dispatch,
-    sortMode,
-    setSortMode,
-    activeContentTab,
-    setActiveContentTab,
-  } = useContext(ReportContext);
+  const openNode = useReportStore((s) => s.openNode);
+  const sortMode = useSortMode();
+  const setSortMode = useReportUIStore((s) => s.setSortMode);
+  const activeContentTab = useActiveContentTab();
+  const setActiveContentTab = useReportUIStore((s) => s.setActiveContentTab);
 
   // Check if we have controversy data
   const hasControversyData =
@@ -439,7 +308,7 @@ function ReportContentTabs({
     setActiveContentTab("report");
 
     // Expand the topic and subtopic
-    dispatch({ type: "open", payload: { id: subtopicId } });
+    openNode(subtopicId);
   };
 
   // Track the source of tab changes to prevent circular updates between URL and state
@@ -450,6 +319,7 @@ function ReportContentTabs({
 
   // Effect 1: Sync tab from URL hash (URL → State)
   // This handles initial load and browser back/forward navigation
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeContentTab intentionally excluded - including it causes infinite loop (effect sets tab → triggers effect)
   useEffect(() => {
     let debounceTimeout: number | null = null;
 
@@ -466,15 +336,17 @@ function ReportContentTabs({
           // Mark this update as coming from hash to prevent circular updates
           tabChangeSource.current = "hash";
 
+          // Determine the new tab value
+          let newTab: ContentTab = expectedTab;
+          // Force report tab if controversy data disappeared
+          if (!hasControversyData && activeContentTab === "cruxes") {
+            newTab = "report";
+          }
+
           // Only update if tab needs to change
-          setActiveContentTab((current) => {
-            // Force report tab if controversy data disappeared
-            if (!hasControversyData && current === "cruxes") {
-              return "report";
-            }
-            // Update tab to match hash
-            return expectedTab !== current ? expectedTab : current;
-          });
+          if (newTab !== activeContentTab) {
+            setActiveContentTab(newTab);
+          }
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
             console.error("Error syncing tab from hash:", error);

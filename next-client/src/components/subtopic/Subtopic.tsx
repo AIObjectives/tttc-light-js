@@ -1,5 +1,4 @@
 import React, { forwardRef, useContext, useMemo } from "react";
-import { mergeRefs } from "react-merge-refs";
 import { getNPeople } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
@@ -11,14 +10,21 @@ import {
   getSubtopicCrux,
 } from "@/lib/crux/utils";
 import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
+import { useFocusTracking } from "@/stores/hooks";
+import { useReportStore } from "@/stores/reportStore";
+import {
+  useActiveContentTab,
+  useReportUIStore,
+  useSortByBridging,
+} from "@/stores/reportUIStore";
+import type { ClaimNode, SubtopicNode } from "@/stores/types";
 import { Claim } from "../claim";
 import { ClaimItem } from "../claim/ClaimItem";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { ExpandableText, HoverCard, HoverCardTrigger } from "../elements";
 import { Col, Row } from "../layout";
 import PointGraphic from "../pointGraphic/PointGraphic";
-import type { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
-import { ReportContext } from "../report/Report";
+import { ReportDataContext } from "../report/Report";
 import { CruxHoverContent } from "./CruxHoverContent";
 import ClaimLoader from "./components/ClaimLoader";
 import { useCruxNavigation } from "./hooks/useCruxNavigation";
@@ -47,10 +53,9 @@ export function Subtopic({
   topicColor?: string;
   show: boolean;
 }) {
-  const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
-
-  const scrollRef = useScrollTo(subtopicNode.data.id);
-  const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
+  // Use Zustand hook for focus tracking
+  const focusedRef = useFocusTracking(subtopicNode.data.id);
+  const expandPagination = useReportStore((s) => s.expandPagination);
 
   // Conditional rendering: don't render hidden subtopics to reduce DOM nodes
   // Users should click "Expand all" before printing to show all content
@@ -61,10 +66,9 @@ export function Subtopic({
       subtopicNode={subtopicNode}
       topicTitle={topicTitle}
       topicColor={topicColor}
-      ref={mergeRefs([scrollRef, focusedRef])}
-      onExpandSubtopic={() =>
-        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
-      }
+      ref={focusedRef}
+      id={subtopicNode.data.id}
+      onExpandSubtopic={() => expandPagination(subtopicNode.id)}
     />
   );
 }
@@ -79,13 +83,15 @@ export const SubtopicCard = forwardRef<
     topicTitle: string;
     topicColor?: string;
     onExpandSubtopic: () => void;
+    /** ID for scroll targeting via useScrollEffect */
+    id: string;
   }
 >(function TopicComponent(
-  { subtopicNode, topicTitle, topicColor, onExpandSubtopic },
+  { subtopicNode, topicTitle, topicColor, onExpandSubtopic, id },
   ref,
 ) {
   return (
-    <div data-testid={"subtopic-item"}>
+    <div data-testid={"subtopic-item"} id={id}>
       <Col gap={4} className="py-3 sm:py-8 border rounded-[8px]" ref={ref}>
         <SubtopicSummary
           title={subtopicNode.data.title}
@@ -177,10 +183,12 @@ function CruxDisplay({
   subtopicTitle: string;
   topicColor?: string;
 }) {
-  const { addOns, activeContentTab, setActiveContentTab, setScrollTo } =
-    useContext(ReportContext);
+  const { addOns } = useContext(ReportDataContext);
+  const activeContentTab = useActiveContentTab();
+  const setActiveContentTab = useReportUIStore((s) => s.setActiveContentTab);
+  const scrollTo = useReportUIStore((s) => s.scrollTo);
   const crux = getSubtopicCrux(addOns, topicTitle, subtopicTitle);
-  const scrollToAfterRender = useDelayedScroll(setScrollTo);
+  const scrollToAfterRender = useDelayedScroll(scrollTo);
   const cruxId = `${topicTitle}:${subtopicTitle}`;
 
   // Extract text truncation logic to hook
@@ -288,7 +296,8 @@ export function SubtopicClaims({
   pagination: number;
   onExpandSubtopic: () => void;
 }) {
-  const { sortByBridging, addOns } = useContext(ReportContext);
+  const sortByBridging = useSortByBridging();
+  const { addOns } = useContext(ReportDataContext);
 
   // Sort claims by bridging score if enabled
   // Claims without bridging scores default to -1, placing them at the bottom

@@ -1,12 +1,14 @@
 "use client";
 
 import type React from "react";
-import { useCallback, useContext } from "react";
-import { mergeRefs } from "react-merge-refs";
+import { useCallback } from "react";
+import type { ClaimNode } from "@/stores/types";
 import { Claim } from "../claim";
-import type { ClaimNode } from "../report/hooks/useReportState";
-import { ReportContext } from "../report/Report";
 
+/**
+ * Virtualized claim item for long claim lists.
+ * The `id` attribute enables scroll targeting via useScrollEffect.
+ */
 export function VirtualClaimItem({
   claim,
   index,
@@ -18,9 +20,6 @@ export function VirtualClaimItem({
   style: React.CSSProperties;
   measureElement: (node: Element | null | undefined) => void;
 }) {
-  const { useScrollTo } = useContext(ReportContext);
-  const scrollRef = useScrollTo(claim.id);
-
   // Create a ref callback for measurement
   const measureRef = useCallback(
     (el: HTMLDivElement | null) => {
@@ -30,11 +29,7 @@ export function VirtualClaimItem({
   );
 
   return (
-    <div
-      ref={mergeRefs([scrollRef, measureRef])}
-      style={style}
-      data-index={index}
-    >
+    <div ref={measureRef} id={claim.id} style={style} data-index={index}>
       <Claim claim={claim.data} />
     </div>
   );

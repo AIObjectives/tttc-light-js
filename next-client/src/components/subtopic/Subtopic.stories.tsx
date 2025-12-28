@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import type { Ref } from "react";
+import { useEffect } from "react";
+import { useReportStore } from "@/stores/reportStore";
+import { buildTopicNodes } from "@/stores/testUtils";
 import { reportData } from "../../../stories/data/dummyData";
-import { stateBuilder } from "../report/hooks/useReportState/utils";
-import { ReportContext } from "../report/Report";
+import { ReportDataContext } from "../report/Report";
 import { TopicContext } from "../topic/Topic";
 import Subtopic from "./Subtopic";
 
@@ -16,9 +17,34 @@ const limitedTopics = reportData.topics.map((topic) => ({
   })),
 }));
 
-const reportState = stateBuilder(limitedTopics);
-const topicNode = reportState.children[0];
+const topicNodes = buildTopicNodes(limitedTopics);
+const topicNode = topicNodes[0];
 const subtopicNode = topicNode.children[0];
+
+// Decorator to initialize Zustand store and provide context
+function StoryWrapper({ children }: { children: React.ReactNode }) {
+  const initialize = useReportStore((s) => s.initialize);
+  const reset = useReportStore((s) => s.reset);
+
+  useEffect(() => {
+    initialize(limitedTopics);
+    return () => reset();
+  }, [initialize, reset]);
+
+  return (
+    <ReportDataContext.Provider
+      value={{
+        addOns: reportData.addons,
+        getTopicColor: () => undefined,
+        getSubtopicId: () => null,
+      }}
+    >
+      <TopicContext.Provider value={{ topicNode }}>
+        <div className="border">{children}</div>
+      </TopicContext.Provider>
+    </ReportDataContext.Provider>
+  );
+}
 
 const meta = {
   title: "Subtopic",
@@ -27,36 +53,9 @@ const meta = {
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <ReportContext.Provider
-        value={{
-          dispatch: () => null,
-          useScrollTo: () => ({}) as Ref<HTMLDivElement>,
-          setScrollTo: () => null,
-          useReportEffect: () => {},
-          useFocusedNode: () => ({}) as Ref<HTMLDivElement>,
-          useFocusedNodeForCruxes: () => ({}) as Ref<HTMLDivElement>,
-          addOns: reportData.addons,
-          sortByControversy: false,
-          setSortByControversy: () => null,
-          expandedCruxId: null,
-          setExpandedCruxId: () => null,
-          activeContentTab: "report",
-          setActiveContentTab: () => null,
-          getTopicColor: () => undefined,
-          getSubtopicId: () => null,
-          focusedCruxId: null,
-        }}
-      >
-        <TopicContext.Provider
-          value={{
-            topicNode,
-          }}
-        >
-          <div className="border">
-            <Story />{" "}
-          </div>
-        </TopicContext.Provider>
-      </ReportContext.Provider>
+      <StoryWrapper>
+        <Story />
+      </StoryWrapper>
     ),
   ],
 } satisfies Meta<typeof Subtopic>;

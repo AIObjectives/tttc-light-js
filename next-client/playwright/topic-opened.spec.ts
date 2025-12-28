@@ -2,7 +2,7 @@ import { test as base, expect, type Locator } from "@playwright/test";
 import {
   defaultAddTopicPagination,
   defaultTopicPagination,
-} from "@/components/report/hooks/useReportState/consts";
+} from "@/stores/consts";
 
 const baseUrl = new URL("http://localhost:3000");
 
