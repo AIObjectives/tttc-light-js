@@ -13,6 +13,7 @@
 export const queryKeys = {
   user: {
     all: ["user"] as const,
+    auth: () => [...queryKeys.user.all, "auth"] as const,
     capabilities: () => [...queryKeys.user.all, "capabilities"] as const,
     // Future: profile, preferences, etc.
     // profile: () => [...queryKeys.user.all, "profile"] as const,

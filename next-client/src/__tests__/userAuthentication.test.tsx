@@ -1,9 +1,16 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
 import type { User } from "firebase/auth";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onAuthStateChanged } from "../lib/firebase/auth";
 import { ensureUserDocumentOnClient } from "../lib/firebase/ensureUserDocument";
-import { useUser } from "../lib/hooks/getUser";
+import {
+  _testUtils,
+  cleanupAuthSubscription,
+  initAuthSubscription,
+} from "../lib/query/authSubscription";
+import { useUserQuery } from "../lib/query/useUserQuery";
 
 // Mock Firebase auth
 vi.mock("../lib/firebase/auth", () => ({
@@ -15,53 +22,66 @@ vi.mock("../lib/firebase/ensureUserDocument", () => ({
   ensureUserDocumentOnClient: vi.fn(),
 }));
 
-// Mock logger
-const { mockChildLogger } = vi.hoisted(() => ({
-  mockChildLogger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
-
-vi.mock("tttc-common/logger", () => ({
-  logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    child: vi.fn(() => mockChildLogger),
-  },
-}));
-
 describe("User Authentication Hook", () => {
-  let mockOnAuthStateChanged: any;
-  let mockEnsureUserDocument: any;
-  let unsubscribeMock: any;
+  let mockOnAuthStateChanged: ReturnType<typeof vi.fn>;
+  let mockEnsureUserDocument: ReturnType<typeof vi.fn>;
+  let unsubscribeMock: ReturnType<typeof vi.fn>;
+  let authCallback: ((user: User | null) => void) | undefined;
+  let queryClient: QueryClient;
+
+  function createWrapper() {
+    return function Wrapper({ children }: { children: ReactNode }) {
+      return (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+    };
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
+    _testUtils.resetState();
+
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          gcTime: 0,
+        },
+      },
+    });
 
     mockOnAuthStateChanged = vi.mocked(onAuthStateChanged);
     mockEnsureUserDocument = vi.mocked(ensureUserDocumentOnClient);
     unsubscribeMock = vi.fn();
 
-    mockOnAuthStateChanged.mockReturnValue(unsubscribeMock);
+    mockOnAuthStateChanged.mockImplementation((callback) => {
+      authCallback = callback;
+      return unsubscribeMock;
+    });
+
     mockEnsureUserDocument.mockResolvedValue({
       tag: "success",
       uid: "test-user",
     });
+
+    // Initialize auth subscription (simulates QueryProvider mounting)
+    initAuthSubscription(queryClient);
   });
 
   afterEach(() => {
+    cleanupAuthSubscription();
+    queryClient.clear();
     vi.restoreAllMocks();
   });
 
-  describe("useUser hook", () => {
+  describe("useUserQuery hook", () => {
     it("should initialize with loading state", () => {
       // Arrange & Act
-      const { result } = renderHook(() => useUser());
+      const { result } = renderHook(() => useUserQuery(), {
+        wrapper: createWrapper(),
+      });
 
       // Assert
       expect(result.current.user).toBeNull();
@@ -77,14 +97,10 @@ describe("User Authentication Hook", () => {
         displayName: "Test User",
       };
 
-      let authCallback: (user: User | null) => void;
-      mockOnAuthStateChanged.mockImplementation((callback) => {
-        authCallback = callback;
-        return unsubscribeMock;
-      });
-
       // Act
-      const { result } = renderHook(() => useUser());
+      const { result } = renderHook(() => useUserQuery(), {
+        wrapper: createWrapper(),
+      });
 
       // Simulate user sign in
       authCallback?.(mockUser as User);
@@ -106,14 +122,10 @@ describe("User Authentication Hook", () => {
         email: "test@example.com",
       };
 
-      let authCallback: (user: User | null) => void;
-      mockOnAuthStateChanged.mockImplementation((callback) => {
-        authCallback = callback;
-        return unsubscribeMock;
-      });
-
       // Act
-      const { result } = renderHook(() => useUser());
+      const { result } = renderHook(() => useUserQuery(), {
+        wrapper: createWrapper(),
+      });
 
       // First sign in
       authCallback?.(mockUser as User);
@@ -138,14 +150,10 @@ describe("User Authentication Hook", () => {
         email: "test@example.com",
       };
 
-      let authCallback: (user: User | null) => void;
-      mockOnAuthStateChanged.mockImplementation((callback) => {
-        authCallback = callback;
-        return unsubscribeMock;
-      });
-
       // Act
-      const { result } = renderHook(() => useUser());
+      const { result } = renderHook(() => useUserQuery(), {
+        wrapper: createWrapper(),
+      });
 
       // Sign in same user twice
       authCallback?.(mockUser as User);
@@ -169,14 +177,20 @@ describe("User Authentication Hook", () => {
     });
 
     it("should handle authentication errors gracefully", async () => {
-      // Arrange
+      // Arrange - reset and reinitialize with error
+      cleanupAuthSubscription();
+      _testUtils.resetState();
+
       const authError = new Error("Firebase auth failed");
       mockOnAuthStateChanged.mockImplementation(() => {
         throw authError;
       });
 
       // Act
-      const { result } = renderHook(() => useUser());
+      initAuthSubscription(queryClient);
+      const { result } = renderHook(() => useUserQuery(), {
+        wrapper: createWrapper(),
+      });
 
       // Assert
       await waitFor(() => {
@@ -186,10 +200,14 @@ describe("User Authentication Hook", () => {
       });
     });
 
-    it("should clean up subscription on unmount", () => {
-      // Arrange & Act
-      const { unmount } = renderHook(() => useUser());
-      unmount();
+    it("should clean up subscription on provider unmount", () => {
+      // Arrange
+      renderHook(() => useUserQuery(), {
+        wrapper: createWrapper(),
+      });
+
+      // Act - cleanup subscription (simulates provider unmount)
+      cleanupAuthSubscription();
 
       // Assert
       expect(unsubscribeMock).toHaveBeenCalled();
@@ -208,14 +226,10 @@ describe("User Authentication Hook", () => {
         retryable: false,
       });
 
-      let authCallback: (user: User | null) => void;
-      mockOnAuthStateChanged.mockImplementation((callback) => {
-        authCallback = callback;
-        return unsubscribeMock;
-      });
-
       // Act
-      const { result } = renderHook(() => useUser());
+      const { result } = renderHook(() => useUserQuery(), {
+        wrapper: createWrapper(),
+      });
       authCallback?.(mockUser as User);
 
       // Assert - User should still be set even if document creation fails
@@ -231,74 +245,8 @@ describe("User Authentication Hook", () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
 
-    it("should stop loading after timeout if auth callback never fires", async () => {
-      // Arrange - mock onAuthStateChanged that never calls callback (simulates slow Firebase init)
-      vi.useFakeTimers();
-
-      mockOnAuthStateChanged.mockImplementation(() => {
-        // Return unsubscribe but never call the callback
-        return unsubscribeMock;
-      });
-
-      // Act
-      const { result } = renderHook(() => useUser());
-
-      // Initially loading
-      expect(result.current.loading).toBe(true);
-      expect(result.current.user).toBeNull();
-
-      // Advance timer past the timeout (5 seconds) - wrap in act() for React 19
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(5000);
-      });
-
-      // Assert - should no longer be loading, no user, no error
-      expect(result.current.loading).toBe(false);
-      expect(result.current.user).toBeNull();
-      expect(result.current.error).toBeNull(); // Timeout is expected, not an error
-
-      vi.useRealTimers();
-    });
-
-    it("should handle late auth callback after timeout", async () => {
-      // Arrange - mock onAuthStateChanged that fires after timeout
-      vi.useFakeTimers();
-
-      let authCallback: (user: User | null) => void;
-      mockOnAuthStateChanged.mockImplementation((callback) => {
-        authCallback = callback;
-        return unsubscribeMock;
-      });
-
-      const mockUser: Partial<User> = {
-        uid: "late-user",
-        email: "late@example.com",
-        displayName: "Late User",
-      };
-
-      // Act
-      const { result } = renderHook(() => useUser());
-
-      // Advance timer past the timeout (5 seconds) - wrap in act() for React 19
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(5000);
-      });
-
-      // Verify timeout occurred - no longer loading, no user
-      expect(result.current.loading).toBe(false);
-      expect(result.current.user).toBeNull();
-
-      // Now fire the late callback (Firebase finally initialized) - wrap in act()
-      await act(async () => {
-        authCallback?.(mockUser as User);
-        await vi.runAllTimersAsync();
-      });
-
-      // Assert - should update with the user despite timeout having occurred
-      expect(result.current.user).toEqual(mockUser);
-      expect(result.current.loading).toBe(false);
-
-      vi.useRealTimers();
-    });
+    // Note: Timeout behavior is tested in authSubscription.test.ts at the cache level.
+    // The useUser hook is a thin wrapper that reads from React Query cache,
+    // so timeout scenarios are best tested at the subscription manager level.
   });
 });

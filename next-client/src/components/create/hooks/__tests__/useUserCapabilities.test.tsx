@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as userLimitsModule from "@/lib/api/userLimits";
-import * as getUserModule from "@/lib/hooks/getUser";
+import * as useUserQueryModule from "@/lib/query/useUserQuery";
 import { useUserCapabilities } from "../useUserCapabilities";
 
 // Mock the userLimits API module
@@ -11,9 +11,9 @@ vi.mock("@/lib/api/userLimits", () => ({
   getUserCapabilities: vi.fn(),
 }));
 
-// Mock the useUser hook
-vi.mock("@/lib/hooks/getUser", () => ({
-  useUser: vi.fn(),
+// Mock the useUserQuery hook (used by useUserCapabilitiesQuery)
+vi.mock("@/lib/query/useUserQuery", () => ({
+  useUserQuery: vi.fn(),
 }));
 
 // Mock sonner toast
@@ -44,12 +44,12 @@ describe("useUserCapabilities", () => {
   const mockGetUserCapabilities = vi.mocked(
     userLimitsModule.getUserCapabilities,
   );
-  const mockUseUser = vi.mocked(getUserModule.useUser);
+  const mockUseUserQuery = vi.mocked(useUserQueryModule.useUserQuery);
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: authenticated user, auth not loading
-    mockUseUser.mockReturnValue({
+    mockUseUserQuery.mockReturnValue({
       user: { uid: "test-user-123" } as any,
       loading: false,
       error: null,
@@ -62,7 +62,7 @@ describe("useUserCapabilities", () => {
   });
 
   it("should initialize with default values while loading", () => {
-    mockUseUser.mockReturnValue({
+    mockUseUserQuery.mockReturnValue({
       user: null,
       loading: true,
       error: null,
@@ -98,7 +98,7 @@ describe("useUserCapabilities", () => {
   });
 
   it("should keep default size when user is not authenticated", async () => {
-    mockUseUser.mockReturnValue({
+    mockUseUserQuery.mockReturnValue({
       user: null,
       loading: false,
       error: null,
