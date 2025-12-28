@@ -3,7 +3,6 @@
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import { getThemeColor } from "@/lib/color";
-import { useReportStore } from "@/stores/reportStore";
 import { useReportUIStore } from "@/stores/reportUIStore";
 import { Col, Row } from "../layout";
 
@@ -18,7 +17,6 @@ export type BarChartItemType = {
 export function BarChart({ entries }: { entries: BarChartItemType[] }) {
   const scrollTo = useReportUIStore((s) => s.scrollTo);
   const setActiveContentTab = useReportUIStore((s) => s.setActiveContentTab);
-  const openNode = useReportStore((s) => s.openNode);
   return (
     <Col>
       {entries.map((entry) => (

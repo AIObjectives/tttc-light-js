@@ -8,6 +8,7 @@ import {
   getNPeopleFromSubtopics,
   getNPeopleFromTopics,
 } from "tttc-common/transforms";
+import type { Claim, Subtopic, Topic } from "tttc-common/schema";
 import { defaultSubtopicPagination, defaultTopicPagination } from "./consts";
 import type { ClaimNode, SubtopicNode, TopicNode } from "./types";
 
