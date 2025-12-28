@@ -95,20 +95,33 @@ export class GooglePubSubQueue implements Queue {
       { subscription: this.subscription.name },
       "Pubsub now listening",
     );
-    this.subscription.on("message", (message: Message) => {
-      const jobData = JSON.parse(message.data.toString()) as PipelineJob;
-      message.ack();
-
-      processJob(jobData).catch((error: Error) => {
-        pubsubLogger.error(
-          {
-            error: error,
-            messageId: message.id,
-          },
-          "Pubsub Queue encountered and error while processing message",
-        );
-        processJobFailure(jobData, error);
-      });
+    this.subscription.on("message", async (message: Message) => {
+      let jobData: PipelineJob | undefined;
+      try {
+        jobData = JSON.parse(message.data.toString()) as PipelineJob;
+        await processJob(jobData);
+        message.ack();
+      } catch (error) {
+        message.nack();
+        if (jobData) {
+          pubsubLogger.error(
+            {
+              error,
+              messageId: message.id,
+            },
+            "Pubsub Queue encountered an error while processing message",
+          );
+          processJobFailure(
+            jobData,
+            error instanceof Error ? error : new Error(String(error)),
+          );
+        } else {
+          pubsubLogger.error(
+            { error, messageId: message.id },
+            "Failed to parse message data",
+          );
+        }
+      }
     });
 
     this.subscription.on("error", (error: Error) => {
