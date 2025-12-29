@@ -79,6 +79,22 @@
     "./test-utils": {
       "types": "./dist/test-utils/index.d.ts",
       "default": "./dist/test-utils/index.js"
+    },
+    "./test-utils/setup": {
+      "types": "./dist/test-utils/setup/index.d.ts",
+      "default": "./dist/test-utils/setup/index.js"
+    },
+    "./test-utils/setup/base": {
+      "types": "./dist/test-utils/setup/base.d.ts",
+      "default": "./dist/test-utils/setup/base.js"
+    },
+    "./test-utils/setup/browser": {
+      "types": "./dist/test-utils/setup/browser.d.ts",
+      "default": "./dist/test-utils/setup/browser.js"
+    },
+    "./test-utils/setup/server": {
+      "types": "./dist/test-utils/setup/server.d.ts",
+      "default": "./dist/test-utils/setup/server.js"
     }
   },
   "engines": {
