@@ -22,8 +22,10 @@ import ClaimSVG from "./ClaimSvg";
 import {
   ControversyHighIcon,
   ControversyIcon,
+  ControversyLightIcon,
   ControversyLowIcon,
-  ControversyModerateIcon,
+  ControversyMaxIcon,
+  ControversyMidIcon,
 } from "./ControversyIcons";
 import InfoSvg from "./InfoSvg";
 import LightbulbSvg from "./LightbulbSvg";
@@ -115,8 +117,10 @@ Icons.WhatsApp = (props: { className?: string }) => <WhatsAppSvg {...props} />;
 
 Icons.Controversy = ControversyIcon;
 Icons.ControversyLow = ControversyLowIcon;
-Icons.ControversyModerate = ControversyModerateIcon;
+Icons.ControversyLight = ControversyLightIcon;
+Icons.ControversyMid = ControversyMidIcon;
 Icons.ControversyHigh = ControversyHighIcon;
+Icons.ControversyMax = ControversyMaxIcon;
 
 Icons.Play = PlaySquare;
 
