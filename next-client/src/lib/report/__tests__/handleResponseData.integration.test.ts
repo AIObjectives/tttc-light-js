@@ -30,9 +30,12 @@ describe("handleResponseData - Integration Tests", () => {
 
       await handleResponseData(waitingMessage, legacyIdentifier, true);
 
-      // Verify the correct unified endpoint was called
+      // Verify the correct unified endpoint was called (with headers for correlation ID)
       expect(mockFetch).toHaveBeenCalledWith(
         `${TEST_EXPRESS_URL}/report/${encodeURIComponent(legacyIdentifier)}`,
+        expect.objectContaining({
+          headers: expect.any(Headers),
+        }),
       );
     });
 
@@ -50,9 +53,12 @@ describe("handleResponseData - Integration Tests", () => {
 
       await handleResponseData(waitingMessage, firebaseId, false);
 
-      // Verify the correct unified endpoint was called
+      // Verify the correct unified endpoint was called (with headers for correlation ID)
       expect(mockFetch).toHaveBeenCalledWith(
         `${TEST_EXPRESS_URL}/report/${encodeURIComponent(firebaseId)}`,
+        expect.objectContaining({
+          headers: expect.any(Headers),
+        }),
       );
     });
 

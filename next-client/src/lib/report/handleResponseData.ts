@@ -3,6 +3,7 @@ import * as api from "tttc-common/api";
 import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
 import { z } from "zod";
+import { fetchWithRequestId } from "../api/fetchWithRequestId";
 
 const waitingMessage = z.object({
   message: z.string(),
@@ -34,7 +35,7 @@ export const handleResponseData = async (
 
       const { status } = await pRetry(
         async () => {
-          const response = await fetch(statusUrl);
+          const response = await fetchWithRequestId(statusUrl);
           const json = await response.json();
           return api.getReportResponse.parse(json);
         },

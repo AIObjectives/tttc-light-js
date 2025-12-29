@@ -15,6 +15,7 @@ import {
   type SourceRow,
 } from "tttc-common/schema";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { validatedServerEnv } from "@/server-env";
 
 const submitActionLogger = logger.child({ module: "submit-action" });
@@ -133,7 +134,7 @@ export default async function submitAction(
 
     const url = new URL("create", validatedServerEnv.PIPELINE_EXPRESS_URL);
 
-    const response = await fetch(url, {
+    const response = await fetchWithRequestId(url.toString(), {
       method: "POST",
       body: JSON.stringify(body),
       headers: {

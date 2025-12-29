@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FIRESTORE_ID_REGEX, isValidReportUri } from "tttc-common/utils";
 import { Spinner } from "@/components/elements";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 
 interface LegacyReportWrapperProps {
   uri: string;
@@ -36,7 +37,7 @@ export default function LegacyReportWrapper({
       }
 
       try {
-        const response = await fetch(
+        const response = await fetchWithRequestId(
           `/api/report/${encodeURIComponent(uri)}/migrate`,
         );
         const result = await response.json();

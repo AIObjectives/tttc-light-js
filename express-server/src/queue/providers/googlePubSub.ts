@@ -7,7 +7,7 @@ import {
 import { logger } from "tttc-common/logger";
 import type { PipelineJob } from "../../jobs/pipeline";
 import { processJob, processJobFailure } from "../../workers";
-import type { Queue } from "../types";
+import type { EnqueueOptions, Queue } from "../types";
 
 const pubsubLogger = logger.child({ module: "pubsub" });
 
@@ -65,24 +65,35 @@ export class GooglePubSubQueue implements Queue {
     }
   }
 
-  async enqueue(item: PipelineJob): Promise<void> {
+  async enqueue(item: PipelineJob, options?: EnqueueOptions): Promise<void> {
     await this.ensureInitialized();
+
+    const requestId = options?.requestId;
 
     pubsubLogger.info(
       {
         reportId: item.config.firebaseDetails.reportDataUri,
         jobId: item.config.firebaseDetails.firebaseJobId,
+        requestId,
       },
       "Enqueueing pipeline job",
     );
 
     const data = Buffer.from(JSON.stringify(item));
-    await this.topic.publishMessage({ data });
+
+    // Include requestId in message attributes for distributed tracing
+    const attributes: Record<string, string> = {};
+    if (requestId) {
+      attributes.requestId = requestId;
+    }
+
+    await this.topic.publishMessage({ data, attributes });
 
     pubsubLogger.info(
       {
         reportId: item.config.firebaseDetails.reportDataUri,
         jobId: item.config.firebaseDetails.firebaseJobId,
+        requestId,
       },
       "Successfully published message to topic",
     );
@@ -95,20 +106,37 @@ export class GooglePubSubQueue implements Queue {
       { subscription: this.subscription.name },
       "Pubsub now listening",
     );
-    this.subscription.on("message", (message: Message) => {
-      const jobData = JSON.parse(message.data.toString()) as PipelineJob;
-      message.ack();
-
-      processJob(jobData).catch((error: Error) => {
-        pubsubLogger.error(
-          {
-            error: error,
-            messageId: message.id,
-          },
-          "Pubsub Queue encountered and error while processing message",
-        );
-        processJobFailure(jobData, error);
-      });
+    this.subscription.on("message", async (message: Message) => {
+      let jobData: PipelineJob | undefined;
+      // Extract requestId from message attributes for distributed tracing
+      const requestId = message.attributes?.requestId;
+      try {
+        jobData = JSON.parse(message.data.toString()) as PipelineJob;
+        await processJob(jobData, requestId);
+        message.ack();
+      } catch (error) {
+        message.nack();
+        if (jobData) {
+          pubsubLogger.error(
+            {
+              error,
+              messageId: message.id,
+              requestId,
+            },
+            "Pubsub Queue encountered an error while processing message",
+          );
+          processJobFailure(
+            jobData,
+            error instanceof Error ? error : new Error(String(error)),
+            requestId,
+          );
+        } else {
+          pubsubLogger.error(
+            { error, messageId: message.id, requestId },
+            "Failed to parse message data",
+          );
+        }
+      }
     });
 
     this.subscription.on("error", (error: Error) => {
