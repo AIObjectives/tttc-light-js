@@ -35,5 +35,5 @@
     "./types/*",
     "./utils/*"
   ],
-  "exclude": ["dist/", "**/*/*.test.*"]
+  "exclude": ["dist/", "**/*/*.test.*", "vitest.config.ts"]
 }

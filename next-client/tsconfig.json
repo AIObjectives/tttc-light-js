@@ -32,8 +32,12 @@
     ".next/types/**/*.ts",
     "./dist/types/**/*.ts",
     "env-check.js",
-    ".storybook/miscStories/Typography.stories.tsx",
-    "vitest.config.mts"
+    ".storybook/miscStories/Typography.stories.tsx"
   ],
-  "exclude": ["node_modules", "**/*/*.test.*", "**/*/*.stories.*"]
+  "exclude": [
+    "node_modules",
+    "**/*/*.test.*",
+    "**/*/*.stories.*",
+    "vitest.config.mts"
+  ]
 }
