@@ -312,10 +312,16 @@ function buildSubtopics(
         title: subtopic.subtopicName,
         // biome-ignore lint/style/noNonNullAssertion: description required at this stage
         description: subtopic.subtopicShortDescription!,
-        claims,
-      });
-    }
-  }
+        claims: subtopic.claims
+          ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
+          : [],
+      }))
+      .filter(
+        (subtopic) =>
+          subtopic.title &&
+          Array.isArray(subtopic.claims) &&
+          subtopic.claims.length > 0,
+      );
 
   return result;
 }
@@ -340,12 +346,8 @@ function buildTopics(
         summary: leaf.topicSummary,
         subtopics,
         topicColor: colorPicker(idx),
-      });
-    }
-  }
-
-  return result;
-}
+      }))
+      .filter((topic) => topic.title && topic.subtopics.length > 0);
 
 export const getReportDataObj = (
   pipelineOutput: schema.LLMPipelineOutput,
