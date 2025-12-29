@@ -1,5 +1,5 @@
 import express from "express";
-import { createMinimalTestEnv } from "../helpers";
+import { createMinimalTestEnv } from "tttc-common/test-utils";
 
 /**
  * Creates a minimal Express app instance for API contract testing

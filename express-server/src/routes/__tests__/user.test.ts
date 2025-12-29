@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
+import { createMinimalTestEnv } from "tttc-common/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createMinimalTestEnv } from "../../__tests__/helpers";
 import type { RequestWithAuth } from "../../types/request";
 import { getUserLimits } from "../user";
 

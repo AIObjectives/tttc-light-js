@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import type { ReportRef } from "tttc-common/firebase";
+import { createMinimalTestEnv } from "tttc-common/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMinimalTestEnv } from "../../__tests__/helpers";
 import * as Firebase from "../../Firebase";
 import { Bucket } from "../../storage";
 import type { RequestWithLogger } from "../../types/request";
