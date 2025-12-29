@@ -251,7 +251,9 @@ const getSubtopicsFromLLMSubTopics =
       }))
       .filter(
         (subtopic) =>
-          Array.isArray(subtopic.claims) && subtopic.claims.length > 0,
+          subtopic.title &&
+          Array.isArray(subtopic.claims) &&
+          subtopic.claims.length > 0,
       );
 
 const getTopicsFromTaxonomy =
@@ -266,7 +268,7 @@ const getTopicsFromTaxonomy =
         subtopics: getSubtopicsFromLLMSubTopics(claimMap)(leaf.subtopics),
         topicColor: colorPicker(idx),
       }))
-      .filter((topic) => topic.subtopics.length > 0);
+      .filter((topic) => topic.title && topic.subtopics.length > 0);
 
 export const getReportDataObj = (
   pipelineOutput: schema.LLMPipelineOutput,
