@@ -8,6 +8,7 @@
     "migrate-legacy": "tsx src/scripts/migrate-legacy-report.ts",
     "analyze-audit": "tsx src/scripts/analyze-audit-log.ts",
     "transfer-ownership": "tsx src/scripts/transfer-report-ownership.ts",
+    "report": "tsx src/scripts/report-tool.ts",
     "test": "vitest run"
   },
   "author": "AI Objectives Institute",

@@ -95,5 +95,171 @@ export async function initializeFirebase(env: Env): Promise<{
   return { app, db };
 }
 
+/**
+ * Get the Firestore collection name by explicit environment parameter
+ */
+export function getCollectionNameForEnv(
+  targetEnv: "development" | "production",
+): string {
+  return targetEnv === "production"
+    ? REPORT_REF_COLLECTION
+    : `${REPORT_REF_COLLECTION}_dev`;
+}
+
+/**
+ * ReportRef document structure (minimal version for scripts)
+ */
+export interface ReportRefDoc {
+  id: string;
+  userId: string;
+  reportDataUri: string;
+  title: string;
+  description: string;
+  numTopics: number;
+  numSubtopics: number;
+  numClaims: number;
+  numPeople: number;
+  createdDate: admin.firestore.Timestamp;
+  status?: string;
+  processingSubState?: string | null;
+  lastStatusUpdate?: admin.firestore.Timestamp;
+  schemaVersion?: number;
+  jobId?: string;
+  _previousUri?: string;
+}
+
+/**
+ * Find all ReportRefs pointing to a specific bucket
+ * Uses range query since Firestore doesn't support startsWith
+ */
+export async function findReportRefsForBucket(
+  db: admin.firestore.Firestore,
+  bucketName: string,
+  collectionName: string,
+): Promise<Array<{ id: string; data: ReportRefDoc }>> {
+  const uriPrefix = `https://storage.googleapis.com/${bucketName}/`;
+
+  const snapshot = await db
+    .collection(collectionName)
+    .where("reportDataUri", ">=", uriPrefix)
+    .where("reportDataUri", "<", `${uriPrefix}\uf8ff`)
+    .get();
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    data: doc.data() as ReportRefDoc,
+  }));
+}
+
+/**
+ * Find a ReportRef by its reportDataUri
+ */
+export async function findReportRefByUri(
+  db: admin.firestore.Firestore,
+  reportDataUri: string,
+  collectionName: string,
+): Promise<{ id: string; data: ReportRefDoc } | null> {
+  const snapshot = await db
+    .collection(collectionName)
+    .where("reportDataUri", "==", reportDataUri)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const doc = snapshot.docs[0];
+  return { id: doc.id, data: doc.data() as ReportRefDoc };
+}
+
+/**
+ * Update the reportDataUri for a ReportRef
+ * Uses a transaction for atomicity and tracks previous URI for rollback
+ */
+export async function updateReportDataUri(
+  db: admin.firestore.Firestore,
+  collectionName: string,
+  oldUri: string,
+  newUri: string,
+): Promise<{ id: string } | null> {
+  return db.runTransaction(async (tx) => {
+    const query = await db
+      .collection(collectionName)
+      .where("reportDataUri", "==", oldUri)
+      .limit(1)
+      .get();
+
+    if (query.empty) {
+      return null;
+    }
+
+    const doc = query.docs[0];
+    tx.update(doc.ref, {
+      reportDataUri: newUri,
+      lastStatusUpdate: admin.firestore.Timestamp.now(),
+      _previousUri: oldUri,
+    });
+
+    return { id: doc.id };
+  });
+}
+
+/**
+ * Copy a ReportRef from one collection to another (for cross-env transfers)
+ * Creates a new document in the target collection with an updated reportDataUri
+ *
+ * Returns null if source not found, throws if target already exists (duplicate prevention)
+ */
+export async function copyReportRefToCollection(
+  db: admin.firestore.Firestore,
+  sourceCollection: string,
+  targetCollection: string,
+  sourceUri: string,
+  newUri: string,
+  newOwnerId?: string,
+): Promise<{ sourceId: string; targetId: string } | null> {
+  // Find source document
+  const source = await findReportRefByUri(db, sourceUri, sourceCollection);
+  if (!source) {
+    return null;
+  }
+
+  // Check if target already exists (duplicate prevention)
+  const existingTarget = await findReportRefByUri(db, newUri, targetCollection);
+  if (existingTarget) {
+    throw new Error(
+      `Target already exists in ${targetCollection}: ${existingTarget.id}. ` +
+        "Use --skip-copy with same-env migration to update existing entries.",
+    );
+  }
+
+  // Create new document in target collection
+  const targetRef = db.collection(targetCollection).doc();
+  const newData: ReportRefDoc = {
+    ...source.data,
+    id: targetRef.id,
+    reportDataUri: newUri,
+    userId: newOwnerId || source.data.userId,
+    lastStatusUpdate: admin.firestore.Timestamp.now(),
+    _previousUri: sourceUri,
+  };
+
+  await targetRef.set(newData);
+
+  return { sourceId: source.id, targetId: targetRef.id };
+}
+
+/**
+ * Delete a ReportRef by ID
+ */
+export async function deleteReportRef(
+  db: admin.firestore.Firestore,
+  collectionName: string,
+  docId: string,
+): Promise<void> {
+  await db.collection(collectionName).doc(docId).delete();
+}
+
 // Re-export firebase-admin for scripts that need additional functionality
 export { admin };
