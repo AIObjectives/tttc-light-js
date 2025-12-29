@@ -21,6 +21,8 @@ export default mergeConfig(
       name: "express-server",
       // Extended timeout for integration tests with external services
       testTimeout: 1000000,
+      // Shared setup: console interception, mock cleanup, env defaults
+      setupFiles: ["tttc-common/test-utils/setup/server"],
     },
     resolve: {
       alias: {

@@ -34,7 +34,7 @@
     "./schema/*",
     "./types/*",
     "./utils/*",
-    "./test-utils/*"
+    "./test-utils/**/*"
   ],
   "exclude": ["dist/", "**/*/*.test.*", "vitest.config.ts"]
 }
