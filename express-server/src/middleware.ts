@@ -3,7 +3,12 @@ import { ERROR_CODES } from "tttc-common/errors";
 import { verifyUser } from "./Firebase";
 import { sendErrorByCode } from "./routes/sendError";
 import type { Env } from "./types/context";
-import type { RequestWithAuth, RequestWithLogger } from "./types/request";
+import {
+  getRequestId,
+  REQUEST_ID_HEADER,
+  type RequestWithAuth,
+  type RequestWithLogger,
+} from "./types/request";
 
 /**
  * Adds context to the request object
@@ -214,3 +219,29 @@ export const authMiddleware = () => {
     }
   };
 };
+
+/**
+ * Middleware to propagate request correlation ID in the response.
+ *
+ * This middleware:
+ * 1. Reads the X-Request-ID from the incoming request (or falls back to pino-http's req.id)
+ * 2. Sets the X-Request-ID header on the response so clients can correlate responses
+ *
+ * The correlation ID is used for distributed tracing across:
+ * - Next.js client → Express server → Pipeline worker
+ *
+ * Should be applied after pino-http middleware (which generates req.id as fallback).
+ */
+export function correlationIdMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const requestId = getRequestId(req);
+
+  if (requestId) {
+    res.setHeader(REQUEST_ID_HEADER, requestId);
+  }
+
+  next();
+}
