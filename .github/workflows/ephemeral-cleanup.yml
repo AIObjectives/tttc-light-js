@@ -41,7 +41,9 @@ jobs:
           echo "Finding orphaned ephemeral environments..."
 
           # Get list of open PR numbers (with error handling)
-          if ! OPEN_PRS=$(gh pr list --state=open --json number --jq '.[].number' | sort -n); then
+          # Note: --limit 500 is required because gh pr list defaults to 30 results,
+          # which can cause older but still-open PRs to be incorrectly identified as orphaned
+          if ! OPEN_PRS=$(gh pr list --state=open --limit 500 --json number --jq '.[].number' | sort -n); then
             echo "ERROR: Failed to fetch open PRs from GitHub. Aborting to prevent accidental deletion."
             exit 1
           fi
