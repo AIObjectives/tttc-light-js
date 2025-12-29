@@ -242,6 +242,17 @@ export function FormDataInput({
             : `File is too large - ${formatBytes(userSizeLimit)} limit`;
         setInlineError(errorMessage);
         handleReset(inputRef);
+      } else if (result.error.tag === "Oversized Comments") {
+        // Oversized comments - show inline error with details
+        const { count, maxLength, affectedIds } = result.error;
+        const MAX_ID_DISPLAY = 3;
+        const idsPreview = affectedIds.slice(0, MAX_ID_DISPLAY).join(", ");
+        const moreText = affectedIds.length > MAX_ID_DISPLAY ? "..." : "";
+        const errorMessage =
+          `${count} comment${count > 1 ? "s" : ""} exceed${count === 1 ? "s" : ""} the ${maxLength.toLocaleString()} character limit. ` +
+          `Please segment your data. Affected: ${idsPreview}${moreText}`;
+        setInlineError(errorMessage);
+        handleReset(inputRef);
       } else if (result.error.tag === "Invalid CSV") {
         // Invalid CSV - show error modal and reset file
         setErrorModalState({

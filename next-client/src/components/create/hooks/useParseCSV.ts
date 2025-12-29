@@ -63,6 +63,19 @@ const nonStandardFormat = z.object({
 type NonStandardFormat = z.infer<typeof nonStandardFormat>;
 
 /**
+ * Oversized comments - one or more comments exceed the character limit
+ */
+const oversizedComments = z.object({
+  tag: z.literal("Oversized Comments"),
+  count: z.number(),
+  maxLength: z.number(),
+  affectedIds: z.array(z.string()),
+  totalComments: z.number(),
+});
+
+type OversizedComments = z.infer<typeof oversizedComments>;
+
+/**
  * Union of possible errors
  */
 const CsvErrors = z.union([
@@ -70,6 +83,7 @@ const CsvErrors = z.union([
   nonStandardFormat,
   brokenFile,
   sizeError,
+  oversizedComments,
 ]);
 
 type CSVErrors = z.infer<typeof CsvErrors>;
@@ -125,11 +139,14 @@ const papaParse = async (
 
 /**
  * Validates CSV structure using the new validation module
- * Returns success, warning (non-standard but mappable), or error (invalid)
+ * Returns success, warning (non-standard but mappable), or error (invalid/oversized)
  */
 const validateCsvStructure = (
   data: unknown,
-): Result<schema.SourceRow[], InvalidCSV | NonStandardFormat> => {
+): Result<
+  schema.SourceRow[],
+  InvalidCSV | NonStandardFormat | OversizedComments
+> => {
   // Validate that data is an array of records
   if (!Array.isArray(data)) {
     return failure({
@@ -158,6 +175,16 @@ const validateCsvStructure = (
       missingColumns: result.missingColumns,
       suggestions: result.suggestions,
       detectedHeaders: result.detectedHeaders,
+    });
+  }
+
+  if (result.status === "oversized") {
+    return failure({
+      tag: "Oversized Comments",
+      count: result.count,
+      maxLength: result.maxLength,
+      affectedIds: result.affectedIds,
+      totalComments: result.totalComments,
     });
   }
 

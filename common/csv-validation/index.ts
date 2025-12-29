@@ -1,6 +1,19 @@
 import type { SourceRow } from "../schema";
 
 /**
+ * Maximum allowed comment length (matches pipeline sanitizer limit)
+ * Comments exceeding this will be rejected at upload time
+ */
+export const MAX_COMMENT_LENGTH = 10000;
+
+/**
+ * Warning threshold for comment length
+ * Comments above this will trigger a soft warning suggesting segmentation
+ * Research shows 2000-2500 chars (~500-700 tokens) is optimal for LLM claim extraction
+ */
+export const LONG_COMMENT_WARNING_LENGTH = 5000;
+
+/**
  * Column name mapping configurations
  * First match in each array wins (precedence order)
  */
@@ -95,12 +108,29 @@ export interface ValidationError {
 }
 
 /**
+ * Oversized comments error (cannot proceed)
+ * Returned when one or more comments exceed MAX_COMMENT_LENGTH
+ */
+export interface OversizedCommentsError {
+  status: "oversized";
+  /** Number of comments that exceed the limit */
+  count: number;
+  /** Maximum allowed length */
+  maxLength: number;
+  /** IDs of affected comments (first 5 for display) */
+  affectedIds: string[];
+  /** Total number of comments in the CSV */
+  totalComments: number;
+}
+
+/**
  * Union type for all validation results
  */
 export type ValidationResult =
   | ValidationSuccess
   | ValidationWarning
-  | ValidationError;
+  | ValidationError
+  | OversizedCommentsError;
 
 /**
  * Detects which column mapping was used for a given field
@@ -288,8 +318,41 @@ export function validateCSVFormat(
     };
   }
 
+  // Check for oversized comments BEFORE proceeding
+  const oversizedComments = formattedData.filter(
+    (row) => row.comment.length > MAX_COMMENT_LENGTH,
+  );
+
+  if (oversizedComments.length > 0) {
+    return {
+      status: "oversized",
+      count: oversizedComments.length,
+      maxLength: MAX_COMMENT_LENGTH,
+      affectedIds: oversizedComments.slice(0, 5).map((row) => row.id),
+      totalComments: formattedData.length,
+    };
+  }
+
   // Generate warnings for non-standard format
   const warnings: string[] = [];
+
+  // Check for long comments (soft warning, not blocking)
+  const longComments = formattedData.filter(
+    (row) => row.comment.length > LONG_COMMENT_WARNING_LENGTH,
+  );
+
+  if (longComments.length > 0) {
+    const idsPreview = longComments
+      .slice(0, 3)
+      .map((row) => row.id)
+      .join(", ");
+    const moreText = longComments.length > 3 ? "..." : "";
+    warnings.push(
+      `${longComments.length} comment${longComments.length > 1 ? "s" : ""} exceed${longComments.length === 1 ? "s" : ""} ` +
+        `${LONG_COMMENT_WARNING_LENGTH.toLocaleString()} characters. For better quality, consider segmenting long responses. ` +
+        `Affected: ${idsPreview}${moreText}`,
+    );
+  }
 
   if (!commentMapping.isStandard) {
     warnings.push(
@@ -368,7 +431,7 @@ function formatDataWithMappings(
 
 /**
  * Formats raw CSV data with flexible column name mapping
- * @throws Error if comment column is missing, data is empty, or comments are empty
+ * @throws Error if comment column is missing, data is empty, comments are empty, or comments are oversized
  */
 export function formatData(data: Record<string, unknown>[]): SourceRow[] {
   if (!data || !data.length) {
@@ -385,6 +448,20 @@ export function formatData(data: Record<string, unknown>[]): SourceRow[] {
     }
     throw Error(
       `The csv file must contain a comment column (valid column names: ${result.suggestions.join(", ")})`,
+    );
+  }
+
+  const MAX_ID_DISPLAY = 5;
+  if (result.status === "oversized") {
+    const idsPreview = result.affectedIds.join(", ");
+    const moreText =
+      result.count > MAX_ID_DISPLAY
+        ? ` and ${result.count - MAX_ID_DISPLAY} more`
+        : "";
+    throw Error(
+      `${result.count} comment(s) exceed the ${result.maxLength.toLocaleString()} character limit. ` +
+        `Please segment your data into smaller chunks. ` +
+        `Affected IDs: ${idsPreview}${moreText}`,
     );
   }
 
