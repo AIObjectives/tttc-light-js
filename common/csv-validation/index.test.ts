@@ -160,6 +160,7 @@ describe("csv-validation module", () => {
         const result = validateCSVFormat(data) as ValidationError;
 
         expect(result.status).toBe("error");
+        expect(result.errorType).toBe("MISSING_COLUMNS");
         expect(result.missingColumns).toContain("comment");
         expect(result.suggestions).toEqual(COLUMN_MAPPINGS.COMMENT);
         expect(result.detectedHeaders).toContain("id");
@@ -242,13 +243,30 @@ describe("csv-validation module", () => {
         expect(result.data[0].interview).toBe("789");
       });
 
-      it("should handle empty string values", () => {
-        const data = [{ id: "", comment: "", interview: "" }];
+      it("should reject rows with empty comment values", () => {
+        const data = [
+          { id: "1", comment: "Valid comment", interview: "Alice" },
+          { id: "2", comment: "", interview: "Bob" }, // Empty
+          { id: "3", comment: "   ", interview: "Carol" }, // Whitespace only
+        ];
+
+        const result = validateCSVFormat(data) as ValidationError;
+
+        expect(result.status).toBe("error");
+        expect(result.errorType).toBe("EMPTY_COMMENTS");
+        expect(result.invalidRows).toEqual([2, 3]); // 1-based row numbers
+        expect(result.suggestions).toContain(
+          "All rows must have non-empty comment values",
+        );
+      });
+
+      it("should allow empty id and interview values", () => {
+        const data = [{ id: "", comment: "Valid comment", interview: "" }];
 
         const result = validateCSVFormat(data) as ValidationSuccess;
 
+        expect(result.status).not.toBe("error");
         expect(result.data[0].id).toBe("");
-        expect(result.data[0].comment).toBe("");
         expect(result.data[0].interview).toBe("");
       });
 
@@ -289,6 +307,17 @@ describe("csv-validation module", () => {
 
     it("should throw error for empty data", () => {
       expect(() => formatData([])).toThrow(/Invalid or empty data file/);
+    });
+
+    it("should throw error for empty comment values", () => {
+      const data = [
+        { id: "1", comment: "Valid" },
+        { id: "2", comment: "" },
+        { id: "3", comment: "   " },
+      ];
+
+      expect(() => formatData(data)).toThrow(/Empty comment fields/);
+      expect(() => formatData(data)).toThrow(/rows: 2, 3/);
     });
 
     it("should handle WhatsApp format", () => {

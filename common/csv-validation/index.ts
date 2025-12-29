@@ -88,6 +88,10 @@ export interface ValidationError {
   suggestions: string[];
   /** Actual columns detected in the CSV */
   detectedHeaders: string[];
+  /** Row numbers (1-based) with validation issues */
+  invalidRows?: number[];
+  /** Specific error type for programmatic handling */
+  errorType?: "MISSING_COLUMNS" | "EMPTY_COMMENTS";
 }
 
 /**
@@ -235,6 +239,7 @@ export function validateCSVFormat(
       missingColumns: ["comment"],
       suggestions: [...COLUMN_MAPPINGS.COMMENT],
       detectedHeaders: keys,
+      errorType: "MISSING_COLUMNS",
     };
   }
 
@@ -265,6 +270,23 @@ export function validateCSVFormat(
     videoMapping.detected,
     timestampMapping.detected,
   );
+
+  // Validate no empty comments (row numbers are 1-based for user display)
+  const emptyCommentRows = formattedData
+    .map((row, index) => ({ rowNumber: index + 1, comment: row.comment }))
+    .filter(({ comment }) => !comment || comment.trim() === "")
+    .map(({ rowNumber }) => rowNumber);
+
+  if (emptyCommentRows.length > 0) {
+    return {
+      status: "error",
+      missingColumns: [],
+      suggestions: ["All rows must have non-empty comment values"],
+      detectedHeaders: keys,
+      invalidRows: emptyCommentRows,
+      errorType: "EMPTY_COMMENTS",
+    };
+  }
 
   // Generate warnings for non-standard format
   const warnings: string[] = [];
@@ -346,7 +368,7 @@ function formatDataWithMappings(
 
 /**
  * Formats raw CSV data with flexible column name mapping
- * @throws Error if comment column is missing or data is empty
+ * @throws Error if comment column is missing, data is empty, or comments are empty
  */
 export function formatData(data: Record<string, unknown>[]): SourceRow[] {
   if (!data || !data.length) {
@@ -356,6 +378,11 @@ export function formatData(data: Record<string, unknown>[]): SourceRow[] {
   const result = validateCSVFormat(data);
 
   if (result.status === "error") {
+    if (result.errorType === "EMPTY_COMMENTS" && result.invalidRows) {
+      throw Error(
+        `Empty comment fields found in rows: ${result.invalidRows.join(", ")}. All rows must have non-empty comment values.`,
+      );
+    }
     throw Error(
       `The csv file must contain a comment column (valid column names: ${result.suggestions.join(", ")})`,
     );
