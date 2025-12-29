@@ -7,6 +7,7 @@ import {
   userCapabilitiesResponse,
 } from "tttc-common/api";
 import { getFirebaseAuth } from "@/lib/firebase/clientApp";
+import { fetchWithRequestId } from "./fetchWithRequestId";
 
 export type UserCapabilities = UserCapabilitiesResponse;
 
@@ -23,7 +24,7 @@ export async function getUserCapabilities(): Promise<UserCapabilities | null> {
     }
 
     const token = await user.getIdToken();
-    const response = await fetch("/api/user/limits", {
+    const response = await fetchWithRequestId("/api/user/limits", {
       headers: {
         Authorization: `Bearer ${token}`,
       },

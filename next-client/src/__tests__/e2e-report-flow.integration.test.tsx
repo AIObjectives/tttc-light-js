@@ -124,9 +124,12 @@ describe("End-to-End Report Loading Flow", () => {
         { timeout: 5000 },
       );
 
-      // Verify the complete flow - should call unified endpoint
+      // Verify the complete flow - should call unified endpoint (with headers for correlation ID)
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/report/${encodeURIComponent(firebaseId)}`,
+        expect.objectContaining({
+          headers: expect.any(Headers),
+        }),
       );
 
       // Verify final state
@@ -213,10 +216,13 @@ describe("End-to-End Report Loading Flow", () => {
         expect(result.current.type).toBe("ready");
       });
 
-      // Verify unified endpoint was called for legacy URL
+      // Verify unified endpoint was called for legacy URL (with headers for correlation ID)
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
         `/api/report/${encodeURIComponent(legacyUrl)}`,
+        expect.objectContaining({
+          headers: expect.any(Headers),
+        }),
       );
 
       if (result.current.type === "ready") {
@@ -379,8 +385,12 @@ describe("End-to-End Report Loading Flow", () => {
       ); // Longer timeout for polling
 
       // Should have made multiple calls due to polling (at least 3: processing -> clustering -> finished)
+      // Verify the endpoint was called with headers for correlation ID
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/report/${encodeURIComponent(processingId)}`,
+        expect.objectContaining({
+          headers: expect.any(Headers),
+        }),
       );
       expect(mockFetch.mock.calls.length).toBeGreaterThanOrEqual(3);
 

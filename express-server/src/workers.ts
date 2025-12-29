@@ -1,68 +1,116 @@
+import type { Logger } from "pino";
 import { logger } from "tttc-common/logger";
 import * as firebase from "./Firebase";
 import { type PipelineJob, pipelineJob } from "./jobs/pipeline";
 
 const workersLogger = logger.child({ module: "workers" });
 
-export async function processJob(job: PipelineJob) {
-  await pipelineJob(job);
+/**
+ * Create a logger with optional requestId for distributed tracing
+ */
+function createJobLogger(requestId?: string): Logger {
+  if (requestId) {
+    return workersLogger.child({ requestId });
+  }
+  return workersLogger;
 }
 
-export async function processJobFailure(job: PipelineJob, err: any) {
-  // Update REPORT_REF collection to failed status
+/**
+ * Extract error message from unknown error type
+ */
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Extract error stack from unknown error type
+ */
+function getErrorStack(err: unknown): string | undefined {
+  return err instanceof Error ? err.stack : undefined;
+}
+
+/**
+ * Build debug info object for error logging
+ */
+function buildDebugInfo(job: PipelineJob | null) {
+  if (!job) {
+    return undefined;
+  }
+  return {
+    firebaseJobId: job.config?.firebaseDetails?.firebaseJobId,
+    reportId: job.config?.firebaseDetails?.reportId,
+    hasData: !!job.data,
+    dataRowCount: job.data?.length,
+  };
+}
+
+export async function processJob(job: PipelineJob, requestId?: string) {
+  const jobLogger = createJobLogger(requestId);
+
+  jobLogger.info(
+    {
+      reportId: job.config.firebaseDetails.reportId,
+      firebaseJobId: job.config.firebaseDetails.firebaseJobId,
+    },
+    "Processing pipeline job",
+  );
+
+  await pipelineJob(job, requestId);
+}
+
+/**
+ * Update Firebase status to failed when job processing fails
+ */
+async function updateFirebaseFailedStatus(
+  job: PipelineJob,
+  errorMessage: string,
+  jobLogger: Logger,
+): Promise<void> {
+  if (!job?.config.firebaseDetails) {
+    throw new firebase.JobNotFoundError();
+  }
+
+  const { firebaseJobId, reportId } = job.config.firebaseDetails;
+  const reportIdentifier = reportId || firebaseJobId;
+
+  await firebase.updateReportRefStatusWithRetry(reportIdentifier, "failed", {
+    errorMessage,
+  });
+
+  jobLogger.info(
+    { firebaseJobId, reportId: reportIdentifier, errorMessage },
+    "Updated REPORT_REF collection to failed status",
+  );
+}
+
+export async function processJobFailure(
+  job: PipelineJob,
+  err: unknown,
+  requestId?: string,
+) {
+  const jobLogger = createJobLogger(requestId);
+  const errorMessage = getErrorMessage(err);
+
   try {
-    if (!job?.config.firebaseDetails) {
-      throw new firebase.JobNotFoundError();
-    }
-
-    const { firebaseJobId, reportId } = job.config.firebaseDetails;
-    const errorMessage = err instanceof Error ? err.message : String(err);
-
-    // Update REPORT_REF collection only (REPORT_JOB no longer tracks status)
-    await firebase.updateReportRefStatusWithRetry(
-      reportId || firebaseJobId, // Use reportId if available, fallback to firebaseJobId
-      "failed",
-      { errorMessage },
-    );
-
-    workersLogger.info(
-      {
-        firebaseJobId,
-        reportId: reportId || firebaseJobId,
-        errorMessage,
-      },
-      "Updated REPORT_REF collection to failed status",
-    );
+    await updateFirebaseFailedStatus(job, errorMessage, jobLogger);
   } catch (updateError) {
-    // if job not found, don't throw a fit
     if (updateError instanceof firebase.JobNotFoundError) {
       return;
-    } else if (updateError instanceof Error) {
-      workersLogger.error(
-        {
-          error: updateError,
-          originalJobError: err,
-        },
+    }
+    if (updateError instanceof Error) {
+      jobLogger.error(
+        { error: updateError, originalJobError: err },
         "Failed to update Firebase REPORT_REF to failed status",
       );
-      // TODO: do we want to throw an error here?
-      // throw new Error("Could not update Firestore REPORT_REF to failed status: " + updateError.message)
     }
   }
-  workersLogger.error(
+
+  jobLogger.error(
     {
       error: err,
-      // Only log minimal, non-sensitive debugging info
-      debugInfo: job
-        ? {
-            firebaseJobId: job.config?.firebaseDetails?.firebaseJobId,
-            reportId: job.config?.firebaseDetails?.reportId,
-            hasData: !!job.data,
-            dataRowCount: job.data?.length,
-          }
-        : undefined,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      errorStack: err instanceof Error ? err.stack : undefined,
+      debugInfo: buildDebugInfo(job),
+      errorMessage,
+      errorStack: getErrorStack(err),
     },
     "Pipeline worker failed",
   );

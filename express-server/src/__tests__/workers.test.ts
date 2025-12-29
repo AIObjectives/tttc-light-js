@@ -19,16 +19,20 @@ vi.mock("../Firebase", () => ({
   },
 }));
 
-vi.mock("tttc-common/logger", () => ({
-  logger: {
-    child: vi.fn(() => ({
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-    })),
-  },
-}));
+vi.mock("tttc-common/logger", () => {
+  // Create a mock logger that supports nested child() calls
+  // Using a function for child() that always returns the mockLogger
+  // This is more resilient to clearAllMocks() calls
+  const mockLogger: Record<string, any> = {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  };
+  // Use a stable function that always returns mockLogger
+  mockLogger.child = vi.fn(() => mockLogger);
+  return { logger: mockLogger };
+});
 
 describe("Workers", () => {
   beforeEach(() => {
@@ -75,7 +79,47 @@ describe("Workers", () => {
 
       await processJob(mockJob);
 
-      expect(pipelineJob).toHaveBeenCalledWith(mockJob);
+      // requestId is undefined when not provided
+      expect(pipelineJob).toHaveBeenCalledWith(mockJob, undefined);
+    });
+
+    it("should pass requestId to pipelineJob when provided", async () => {
+      const mockJob: PipelineJob = {
+        config: {
+          env: "test" as any,
+          auth: "public",
+          firebaseDetails: {
+            reportDataUri: "test-uri",
+            userId: "test-user",
+            firebaseJobId: "test-job",
+            reportId: "report-123",
+          },
+          llm: { model: "test-model" },
+          instructions: {
+            systemInstructions: "test",
+            clusteringInstructions: "test",
+            extractionInstructions: "test",
+            dedupInstructions: "test",
+            cruxInstructions: "test",
+            summariesInstructions: "test",
+          },
+          options: { cruxes: false, bridging: false },
+        },
+        data: [],
+        reportDetails: {
+          title: "test",
+          description: "test",
+          question: "test",
+          filename: "test.json",
+        },
+      };
+
+      const requestId = "test-request-id-123";
+      vi.mocked(pipelineJob).mockResolvedValue(undefined);
+
+      await processJob(mockJob, requestId);
+
+      expect(pipelineJob).toHaveBeenCalledWith(mockJob, requestId);
     });
 
     it("should propagate errors from pipelineJob", async () => {
