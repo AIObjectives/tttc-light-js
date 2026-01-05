@@ -34,11 +34,11 @@ This guide covers setting up a local development environment for Talk to the Cit
 
 Before starting setup, ensure you have:
 
-- **Node.js 24+** and **pnpm**
+- **Node.js 25+** and **pnpm**
   - **New to Node.js?** Use [nvm](https://github.com/nvm-sh/nvm) to easily install and switch between Node.js versions:
     ```bash
-    # Install Node.js 24, then use .nvmrc for automatic version selection
-    nvm install 24
+    # Install Node.js 25, then use .nvmrc for automatic version selection
+    nvm install 25
     nvm use  # Reads version from .nvmrc file
     ```
   - **Install pnpm:**
