@@ -9,6 +9,16 @@ git update-index --again
 
 echo "Biome check complete!"
 
+# Run CodeScene if installed
+if command -v cs &> /dev/null; then
+  echo "Running CodeScene delta analysis..."
+  if ! cs delta --staged; then
+    echo ""
+    echo "⚠️  CodeScene found code health issues (warning only, not blocking commit)"
+  fi
+  echo "CodeScene check complete!"
+fi
+
 # TypeScript check for changed packages
 echo "Running TypeScript check on changed packages..."
 
