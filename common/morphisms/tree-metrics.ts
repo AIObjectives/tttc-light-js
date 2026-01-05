@@ -1,89 +1,100 @@
-import type { z } from "zod";
-import * as schema from "../schema/";
+import type * as schema from "../schema/";
 
-// ! these functions haven't been tested thoroughly yet
-// TODO: Review this file - add comments and make more readable.
+/**
+ * Tree Metrics
+ *
+ * Utility functions for computing metrics across the report tree structure.
+ * The report tree hierarchy is: Report -> Topics -> Subtopics -> Claims -> Quotes -> References
+ *
+ * These functions traverse the tree to extract and count unique participants (interviews).
+ */
 
-const fromSources = (arg: schema.Source[]): string[] =>
-  Array.from(
-    new Set(arg.map((src, i) => src.interview ?? `${Date.now()} #${i}`)),
-  );
+// ============================================================================
+// Internal helpers - collect data from tree levels
+// ============================================================================
 
-const fromReferences = (arg: schema.Reference[]): string[] =>
-  Array.from(
-    new Set(arg.map((ref, i) => ref.interview ?? `${Date.now()} #${i}`)),
-  );
+function collectReferencesFromQuotes(
+  quotes: schema.Quote[],
+): schema.Reference[] {
+  return quotes.flatMap((q) => q.reference);
+}
 
-const fromQuotes = (arg: schema.Quote[]): string[] =>
-  fromReferences(arg.flatMap((claim) => claim.reference));
+function collectQuotesFromClaims(claims: schema.Claim[]): schema.Quote[] {
+  return [
+    ...claims.flatMap((c) => c.quotes),
+    ...claims.flatMap((c) => c.similarClaims.flatMap((sc) => sc.quotes)),
+  ];
+}
 
-const fromClaims = (arg: schema.Claim[]): string[] =>
-  fromQuotes([
-    ...arg.flatMap((claim) => claim.quotes),
-    ...arg.flatMap((claim) => claim.similarClaims.flatMap((c) => c.quotes)),
-  ]);
+function collectClaimsFromSubtopics(
+  subtopics: schema.Subtopic[],
+): schema.Claim[] {
+  return subtopics.flatMap((s) => s.claims);
+}
 
-const fromSubtopics = (arg: schema.Subtopic[]): string[] =>
-  fromClaims(arg.flatMap((topic) => topic.claims));
+function collectSubtopicsFromTopics(topics: schema.Topic[]): schema.Subtopic[] {
+  return topics.flatMap((t) => t.subtopics);
+}
 
-const fromTopics = (arg: schema.Topic[]): string[] =>
-  fromSubtopics(arg.flatMap((theme) => theme.subtopics));
+/**
+ * Extract unique interview identifiers from references.
+ * Falls back to generating unique IDs if interview field is missing.
+ */
+function countUniqueInterviews(references: schema.Reference[]): number {
+  return new Set(references.map((ref, i) => ref.interview ?? `ref-${i}`)).size;
+}
 
-const fromReport = (arg: schema.ReportDataObj): string[] =>
-  fromTopics(arg.topics);
+// ============================================================================
+// Public API - explicit functions for each tree level
+// ============================================================================
 
-const chainMatch =
-  <S extends z.Schema, T>(
-    zSchema: S,
-    func: (some: z.TypeOf<S>) => T,
-    passFunc: (unknown: unknown) => T,
-  ) =>
-  (val: unknown): T => {
-    if (zSchema.safeParse(val).success) return func(zSchema.parse(val));
-    else return passFunc(val);
-  };
+/**
+ * Count unique participants from an array of claims.
+ */
+export function getNPeopleFromClaims(claims: schema.Claim[]): number {
+  if (claims.length === 0) return 0;
+  const quotes = collectQuotesFromClaims(claims);
+  const references = collectReferencesFromQuotes(quotes);
+  return countUniqueInterviews(references);
+}
 
-const chainSources = chainMatch(schema.source.array(), fromSources, () => {
-  throw new Error("Invalid input for chain function. Not matches.");
-});
+/**
+ * Count unique participants from an array of subtopics.
+ */
+export function getNPeopleFromSubtopics(subtopics: schema.Subtopic[]): number {
+  if (subtopics.length === 0) return 0;
+  return getNPeopleFromClaims(collectClaimsFromSubtopics(subtopics));
+}
 
-const chainReferences = chainMatch(
-  schema.reference.array(),
-  fromReferences,
-  chainSources,
-);
+/**
+ * Count unique participants from an array of topics.
+ */
+export function getNPeopleFromTopics(topics: schema.Topic[]): number {
+  if (topics.length === 0) return 0;
+  return getNPeopleFromSubtopics(collectSubtopicsFromTopics(topics));
+}
 
-const chainQuotes = chainMatch(
-  schema.quote.array(),
-  fromQuotes,
-  chainReferences,
-);
+/**
+ * Count unique participants from a report.
+ */
+export function getNPeopleFromReport(report: schema.ReportDataObj): number {
+  return getNPeopleFromTopics(report.topics);
+}
 
-const chainClaims = chainMatch(schema.claim.array(), fromClaims, chainQuotes);
+// ============================================================================
+// Other utilities
+// ============================================================================
 
-const chainTopics = chainMatch(
-  schema.subtopic.array(),
-  fromSubtopics,
-  chainClaims,
-);
+/**
+ * Count total claims across subtopics.
+ */
+export function getNClaims(subtopics: schema.Subtopic[]): number {
+  return subtopics.flatMap((s) => s.claims).length;
+}
 
-const chainTheme = chainMatch(schema.topic.array(), fromTopics, chainTopics);
-
-const chainReport = chainMatch(schema.reportDataObj, fromReport, chainTheme);
-
-export const getNPeople = (
-  arg:
-    | schema.ReportDataObj
-    | schema.Topic[]
-    | schema.Subtopic[]
-    | schema.Claim[]
-    | schema.Quote[]
-    | schema.Reference[]
-    | schema.Source[],
-) => chainReport(arg).length;
-
-export const getNClaims = (arg: schema.Subtopic[]) =>
-  arg.flatMap((s) => s.claims).length;
-
-export const getQuotes = (claim: schema.Claim): schema.Quote[] =>
-  claim.quotes.concat(claim.similarClaims.flatMap((clm) => clm.quotes));
+/**
+ * Get all quotes from a claim, including quotes from similar claims.
+ */
+export function getQuotes(claim: schema.Claim): schema.Quote[] {
+  return claim.quotes.concat(claim.similarClaims.flatMap((c) => c.quotes));
+}
