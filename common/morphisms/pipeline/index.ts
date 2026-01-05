@@ -241,9 +241,6 @@ const makeReference = (
   source: schema.Source,
   claim: schema.LLMClaim,
 ): schema.Reference => {
-  if (source.data[0] === "video" && source.data[1].timestamp === undefined) {
-    console.log("HERE", source);
-  }
   switch (source.data[0]) {
     case "text":
       return {
