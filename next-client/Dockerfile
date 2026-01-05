@@ -1,8 +1,7 @@
 # syntax=docker.io/docker/dockerfile:1
-FROM node:24-slim AS base
+FROM node:25-slim AS base
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN npm install -g pnpm@10
 
 # Install dependencies only when needed
 FROM base AS deps
