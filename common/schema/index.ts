@@ -55,6 +55,8 @@ export const llmUserConfig = z.object({
   cruxInstructions: z.string(),
   cruxesEnabled: z.boolean(),
   bridgingEnabled: z.boolean().default(false),
+  // Visibility: false = private (default for new reports), true = public
+  isPublic: z.boolean().default(false),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;

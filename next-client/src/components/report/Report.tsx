@@ -173,10 +173,13 @@ function Report({
   reportData,
   reportUri: _reportUri,
   rawPipelineOutput,
+  reportId,
 }: {
   reportData: schema.UIReportData;
   reportUri: string;
   rawPipelineOutput: schema.PipelineOutput;
+  /** The Firebase document ID (route parameter) - used for ownership checks and visibility controls */
+  reportId: string;
 }) {
   // Report State reducer
   const [state, _dispatch] = useReportState(reportData.topics);
@@ -385,6 +388,7 @@ function Report({
             <ReportToolbar
               setIsMobileOutlineOpen={setIsMobileOutlineOpen}
               isMobileOutlineOpen={isMobileOutlineOpen}
+              reportId={reportId}
             />
           }
           Outline={

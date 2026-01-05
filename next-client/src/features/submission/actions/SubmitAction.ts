@@ -114,6 +114,8 @@ export default async function submitAction(
       // Checkbox inputs use 'on' | undefined, not true | false
       cruxesEnabled: formData.get("cruxesEnabled") === "on",
       bridgingEnabled: formData.get("bridgingEnabled") === "on",
+      // Visibility: 'on' = public, undefined = private (default)
+      isPublic: formData.get("isPublic") === "on",
     });
 
     const dataPayload: DataPayload = ["csv", data];
