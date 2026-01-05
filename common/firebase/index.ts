@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+/**
+ * Branded type for Report IDs (Firebase document IDs).
+ * Provides type safety to distinguish report IDs from other string parameters.
+ */
+export type ReportId = string & { readonly __brand: "ReportId" };
+
+/**
+ * Type guard to create a ReportId from a validated string.
+ * Use after validating the string is a valid Firebase document ID.
+ */
+export function asReportId(id: string): ReportId {
+  return id as ReportId;
+}
+
 // Schema for report data URIs that allows placeholder values during processing
 const reportDataUriSchema = z.union([
   z.literal("about:blank"),
@@ -18,6 +32,9 @@ const reportStatus = z.enum([
 
 export type ReportStatus = z.infer<typeof reportStatus>;
 export { reportStatus };
+
+// Export ProcessingSubState type for use in status mapping
+export type ProcessingSubState = z.infer<typeof processingSubState>;
 
 // Processing sub-states for detailed progress tracking
 const processingSubState = z
