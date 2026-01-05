@@ -88,6 +88,9 @@ const reportRefSchema = z.object({
 
   // Language the report was generated in (for T3C-616 translation feature compatibility)
   outputLanguage: z.string().optional(), // Default: "English" if not set
+  // Visibility: undefined = legacy (public), true = public, false = private
+  // New reports default to private. Existing reports without this field are grandfathered as public.
+  isPublic: z.boolean().optional(),
 });
 
 export const reportRef = reportRefSchema;

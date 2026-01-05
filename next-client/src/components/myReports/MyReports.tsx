@@ -1,4 +1,5 @@
 "use client";
+import { Globe, Lock } from "lucide-react";
 import Link from "next/link";
 import type { ReportRef } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
@@ -59,10 +60,14 @@ const ReportItemTop = ({
   numClaims,
   numPeople,
   createdDate,
+  isPublic,
 }: ReportRef) => (
   <Col gap={2}>
     <Row className="justify-between">
-      <h4 className="line-clamp-1">{title}</h4>
+      <Row gap={2} className="items-center min-w-0">
+        <VisibilityIndicator isPublic={isPublic} />
+        <h4 className="line-clamp-1">{title}</h4>
+      </Row>
       <div className="self-center shrink-0">
         <Icons.ChevronRight className="w-6 h-6 stroke-muted-foreground" />
       </div>
@@ -89,3 +94,25 @@ const ReportItemTop = ({
     </Col>
   </Col>
 );
+
+/**
+ * Visibility indicator showing lock (private) or globe (public) icon.
+ * Legacy reports (isPublic === undefined) are shown as public since they're grandfathered.
+ */
+function VisibilityIndicator({ isPublic }: { isPublic: boolean | undefined }) {
+  // undefined = legacy report (grandfathered as public), true = public, false = private
+  const isPrivate = isPublic === false;
+  const label = isPrivate
+    ? "Private - only you can view"
+    : "Shared - anyone with the link can view";
+
+  return (
+    <div className="shrink-0" role="img" aria-label={label} title={label}>
+      {isPrivate ? (
+        <Lock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      ) : (
+        <Globe className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      )}
+    </div>
+  );
+}

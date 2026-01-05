@@ -5,6 +5,7 @@ import * as schema from "tttc-common/schema";
 import * as utils from "tttc-common/utils";
 import Feedback from "@/components/feedback/Feedback";
 import LegacyReportWrapper from "@/components/report/LegacyReportWrapper";
+import { PrivateReportGuard } from "@/components/report/PrivateReportGuard";
 import Report from "@/components/report/Report";
 import { ReportErrorState } from "@/components/report/ReportErrorState";
 import ReportProgress from "@/components/reportProgress/ReportProgress";
@@ -160,7 +161,9 @@ async function ReportPageContent({ encodedUri }: { encodedUri: string }) {
 
   switch (state.type) {
     case "notFound":
-      return <ReportErrorState type="notFound" />;
+      // SSR returned notFound - could be a private report accessible to owner
+      // Use client component to retry with auth
+      return <PrivateReportGuard reportId={encodedUri} />;
     case "progress":
       return <ReportProgress status={state.status} identifier={encodedUri} />;
     case "error":
@@ -172,6 +175,7 @@ async function ReportPageContent({ encodedUri }: { encodedUri: string }) {
             reportData={state.data}
             reportUri={state.url}
             rawPipelineOutput={state.rawPipelineOutput}
+            reportId={encodedUri}
           />
           <Feedback className="hidden lg:block" />
         </div>

@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import type { Response } from "express";
-import type { DecodedIdToken } from "firebase-admin/auth";
 import { getAnalytics } from "tttc-common/analytics";
 import * as api from "tttc-common/api";
 import { ERROR_CODES } from "tttc-common/errors";
@@ -20,9 +19,13 @@ import {
   getCollectionName,
   getReportRefById,
 } from "../Firebase";
+import { checkReportAccess } from "../lib/reportPermissions";
 import { Bucket } from "../storage";
 import type { Env } from "../types/context";
-import type { RequestWithLogger } from "../types/request";
+import type {
+  RequestWithLogger,
+  RequestWithOptionalAuth,
+} from "../types/request";
 import { sendErrorByCode } from "./sendError";
 
 // Simple validation helpers
@@ -618,7 +621,7 @@ function getBucketAndFileName(
  * @returns JSON response with migration result or error
  */
 export async function migrateReportUrlHandler(
-  req: RequestWithLogger,
+  req: RequestWithOptionalAuth,
   res: Response,
 ) {
   // Add deprecation signaling - this migration endpoint is temporary
@@ -641,6 +644,20 @@ export async function migrateReportUrlHandler(
     const reportRef = await findReportRefByUri(reportDataUri);
 
     if (reportRef) {
+      // Check if user has permission to view this report
+      const requestingUserId = req.auth?.uid;
+      const access = checkReportAccess(reportRef.data, requestingUserId);
+
+      if (!access.allowed) {
+        // Return "not found" to not reveal existence of private reports
+        const response: api.MigrationApiResponse = {
+          success: false,
+          message: "No document found for this legacy URL",
+        };
+        res.set("Cache-Control", "private, max-age=1800");
+        return res.json(response);
+      }
+
       reportLogger.info({ reportId: reportRef.id }, "URL migration successful");
 
       const response: api.MigrationApiResponse = {
@@ -690,7 +707,7 @@ export async function migrateReportUrlHandler(
  * @returns JSON response with report status, dataUrl (when available), and metadata (for Firebase IDs)
  */
 export async function getUnifiedReportHandler(
-  req: RequestWithLogger & { auth?: DecodedIdToken },
+  req: RequestWithOptionalAuth,
   res: Response,
 ) {
   const identifier = req.params.identifier;
@@ -746,7 +763,7 @@ export async function getUnifiedReportHandler(
 
 async function handleIdBasedReport(
   reportId: ReportId,
-  req: RequestWithLogger,
+  req: RequestWithOptionalAuth,
   res: Response,
 ) {
   try {
@@ -754,6 +771,18 @@ async function handleIdBasedReport(
     if (!reportRef) {
       return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
     }
+
+    // Check if user has permission to view this report
+    const requestingUserId = req.auth?.uid;
+    const access = checkReportAccess(reportRef, requestingUserId);
+
+    if (!access.allowed) {
+      // Return 404 to not reveal existence of private reports
+      return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
+    }
+
+    // Determine if the requesting user is the owner (for UI controls)
+    const isOwner = requestingUserId === reportRef.userId;
 
     const status = await resolveReportStatus(reportRef, reportId, req);
 
@@ -769,11 +798,11 @@ async function handleIdBasedReport(
       }
 
       res.set("Cache-Control", "private, max-age=60");
-      return res.json(result.value);
+      return res.json({ ...result.value, isOwner });
     }
 
     res.set("Cache-Control", "no-cache");
-    return res.json(buildInProgressResponse(status, reportRef));
+    return res.json({ ...buildInProgressResponse(status, reportRef), isOwner });
   } catch (error) {
     reportLogger.error({ error, reportId }, "Error getting ID-based report");
     return sendErrorByCode(res, ERROR_CODES.SERVICE_UNAVAILABLE, reportLogger);

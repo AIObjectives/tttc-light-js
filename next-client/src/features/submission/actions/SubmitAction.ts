@@ -87,6 +87,8 @@ const parseUserConfig = (formData: FormData): LLMUserConfig => {
     cruxesEnabled: formData.get("cruxesEnabled") === "on",
     bridgingEnabled: formData.get("bridgingEnabled") === "on",
     outputLanguage: formData.get("outputLanguage") || "English",
+    // Visibility: 'on' = public, undefined = private (default)
+    isPublic: formData.get("isPublic") === "on",
   });
 };
 

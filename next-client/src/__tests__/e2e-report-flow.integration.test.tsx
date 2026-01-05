@@ -2,6 +2,23 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Mock useUser hook to avoid Firebase initialization
+vi.mock("@/lib/hooks/getUser", () => ({
+  useUser: vi.fn(() => ({ user: null, loading: false })),
+}));
+
+// Mock logger to suppress output during tests
+vi.mock("tttc-common/logger/browser", () => ({
+  logger: {
+    child: () => ({
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    }),
+  },
+}));
+
 import { useUnifiedReport } from "../hooks/useUnifiedReport";
 
 // Mock the browser logger
