@@ -45,3 +45,11 @@ export function getRequestId(req: Request): string | undefined {
 export interface RequestWithAuth extends RequestWithLogger {
   auth: DecodedIdToken;
 }
+
+/**
+ * Extended Express Request interface that includes optional authentication context.
+ * Used for endpoints that work with or without authentication.
+ */
+export interface RequestWithOptionalAuth extends RequestWithLogger {
+  auth: DecodedIdToken | undefined;
+}

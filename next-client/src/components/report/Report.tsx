@@ -47,6 +47,7 @@ import { ReportToolbar } from "./components/ReportToolbar";
 import { SortDropdown } from "./components/SortDropdown";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
 import { useTabHashSync } from "./hooks/useTabHashSync";
+import { useTopicLookups } from "./hooks/useTopicLookups";
 
 /**
  * Report Component
@@ -84,10 +85,13 @@ function Report({
   reportData,
   reportUri: _reportUri,
   rawPipelineOutput,
+  reportId,
 }: {
   reportData: schema.UIReportData;
   reportUri: string;
   rawPipelineOutput: schema.PipelineOutput;
+  /** The Firebase document ID (route parameter) - used for ownership checks and visibility controls */
+  reportId: string;
 }) {
   // ========================================
   // Zustand Store Initialization
@@ -170,47 +174,8 @@ function Report({
     });
   }, [sortByControversy, storeTopics, addOns]);
 
-  // Build topic color map for AgreeDisagreeSpectrum
-  const topicColorMap = React.useMemo(() => {
-    const colorMap = new Map<string, string>();
-    storeTopics.forEach((topic) => {
-      if (topic.data?.topicColor) {
-        colorMap.set(topic.data.title, topic.data.topicColor);
-      }
-    });
-    return colorMap;
-  }, [storeTopics]);
-
-  const getTopicColor = React.useCallback(
-    (topicTitle: string): string | undefined => {
-      return topicColorMap.get(topicTitle);
-    },
-    [topicColorMap],
-  );
-
-  // Build subtopic ID map for navigation from cruxes outline
-  const subtopicIdMap = React.useMemo(() => {
-    const idMap = new Map<string, string>();
-    const subtopicOnly = new Map<string, string>();
-    storeTopics.forEach((topic) => {
-      topic.data.subtopics.forEach((subtopic) => {
-        idMap.set(`${topic.data.title}::${subtopic.title}`, subtopic.id);
-        subtopicOnly.set(subtopic.title, subtopic.id);
-      });
-    });
-    return { idMap, subtopicOnly };
-  }, [storeTopics]);
-
-  const getSubtopicId = React.useCallback(
-    (topicTitle: string, subtopicTitle: string): string | null => {
-      const exactMatch = subtopicIdMap.idMap.get(
-        `${topicTitle}::${subtopicTitle}`,
-      );
-      if (exactMatch) return exactMatch;
-      return subtopicIdMap.subtopicOnly.get(subtopicTitle) ?? null;
-    },
-    [subtopicIdMap],
-  );
+  // Get topic color and subtopic ID lookup functions
+  const { getTopicColor, getSubtopicId } = useTopicLookups(storeTopics);
 
   return (
     <ReportDataContext.Provider
@@ -249,6 +214,7 @@ function Report({
             <ReportToolbar
               setIsMobileOutlineOpen={setMobileOutlineOpen}
               isMobileOutlineOpen={isMobileOutlineOpen}
+              reportId={reportId}
             />
           }
           Outline={<Outline onNavigate={() => setMobileOutlineOpen(false)} />}

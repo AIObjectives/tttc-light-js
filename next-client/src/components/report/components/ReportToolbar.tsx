@@ -4,6 +4,7 @@ import { Row } from "@/components/layout";
 import { cn } from "@/lib/utils/shadcn";
 import { useReportStore } from "@/stores/reportStore";
 import { useActiveContentTab } from "@/stores/reportUIStore";
+import { ShareDropdown } from "./ShareDropdown";
 
 /**
  * Toolbar that follows down screen. Lets user do certain actions.
@@ -12,9 +13,11 @@ import { useActiveContentTab } from "@/stores/reportUIStore";
 export function ReportToolbar({
   setIsMobileOutlineOpen,
   isMobileOutlineOpen,
+  reportId,
 }: {
   setIsMobileOutlineOpen: (val: boolean) => void;
   isMobileOutlineOpen: boolean;
+  reportId: string;
 }) {
   const openAllTopics = useReportStore((s) => s.openAllTopics);
   const closeAllTopics = useReportStore((s) => s.closeAllTopics);
@@ -43,7 +46,7 @@ export function ReportToolbar({
         </div>
       </Row>
 
-      {/* Right side - expand/collapse buttons */}
+      {/* Right side - expand/collapse buttons + share */}
       <Row gap={2} className={cn(activeContentTab !== "report" && "hidden")}>
         {/* Close all button */}
         <Button onClick={() => closeAllTopics()} variant={"outline"}>
@@ -57,6 +60,8 @@ export function ReportToolbar({
         >
           Expand all
         </Button>
+        {/* Share dropdown - only shown to authenticated owners */}
+        <ShareDropdown reportId={reportId} />
       </Row>
     </Row>
   );

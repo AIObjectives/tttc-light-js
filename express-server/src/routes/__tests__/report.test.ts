@@ -4,7 +4,7 @@ import { createMinimalTestEnv } from "tttc-common/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as Firebase from "../../Firebase";
 import { Bucket } from "../../storage";
-import type { RequestWithLogger } from "../../types/request";
+import type { RequestWithOptionalAuth } from "../../types/request";
 import { getUnifiedReportHandler, migrateReportUrlHandler } from "../report";
 import { sendErrorByCode } from "../sendError";
 
@@ -67,7 +67,7 @@ vi.mock("../../server", () => ({
 // Create a focused mock request factory for testing
 const createMockRequest = (
   params: Record<string, string> = {},
-): RequestWithLogger => {
+): RequestWithOptionalAuth => {
   const mockLogger: MockLogger = {
     info: vi.fn(),
     warn: vi.fn(),
@@ -103,7 +103,8 @@ const createMockRequest = (
     context: {
       env: createMinimalTestEnv(),
     },
-  } as unknown as RequestWithLogger;
+    auth: undefined,
+  } as unknown as RequestWithOptionalAuth;
 
   return mockRequest;
 };
@@ -186,13 +187,13 @@ const setupStorageMock = (storage: MockStorage) => {
 
 const setupRequestParams = (
   params: Record<string, string>,
-  req: RequestWithLogger,
+  req: RequestWithOptionalAuth,
 ) => {
   req.params = { ...req.params, ...params };
 };
 
 describe("Report Routes", () => {
-  let mockReq: RequestWithLogger;
+  let mockReq: RequestWithOptionalAuth;
   let mockRes: ReturnType<typeof createMockResponse>;
 
   beforeEach(() => {
@@ -247,6 +248,7 @@ describe("Report Routes", () => {
         status: "finished",
         dataUrl: TEST_CONSTANTS.SIGNED_URL,
         metadata: testReportRef,
+        isOwner: false,
       });
     });
 
@@ -288,6 +290,7 @@ describe("Report Routes", () => {
       expect(mockRes.json).toHaveBeenCalledWith({
         status: "clustering",
         metadata: testReportRef,
+        isOwner: false,
       });
     });
 

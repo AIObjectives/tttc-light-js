@@ -239,6 +239,7 @@ const createUserDocuments = async (
       numPeople: 0, // Placeholder, will be updated
       createdDate: new Date(),
       outputLanguage: userConfig.outputLanguage, // Language for generated content
+      isPublic: userConfig.isPublic ?? false, // Use user's choice, default to private
     },
     preGeneratedReportId, // Use the same reportId as storage filename
   );
