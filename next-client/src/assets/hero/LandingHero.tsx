@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import heroImage from "@/../public/images/t3c-product-desktop-mobile.png";
 import { cn } from "@/lib/utils/shadcn";

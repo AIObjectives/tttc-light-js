@@ -3,7 +3,11 @@
 import type React from "react";
 import { createContext, forwardRef, useContext } from "react";
 import { mergeRefs } from "react-merge-refs";
-import { getNClaims, getNPeople } from "tttc-common/morphisms";
+import {
+  getNClaims,
+  getNPeopleFromClaims,
+  getNPeopleFromSubtopics,
+} from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import { ControversyIndicator } from "@/components/controversy";
@@ -107,7 +111,8 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
           <Icons.Claim className="h-4 w-4" />
         </div>
         <p className="p2 text-muted-foreground flex gap-2 items-center ">
-          {getNClaims(subtopics)} claims by {getNPeople(subtopics)} people
+          {getNClaims(subtopics)} claims by {getNPeopleFromSubtopics(subtopics)}{" "}
+          people
         </p>
         {shouldShowControversy && controversyScore !== undefined && (
           <ControversyIndicator score={controversyScore} showLabel={true} />
@@ -278,7 +283,7 @@ export function SubtopicListItem({
           <SubtopicHeader
             title={subtopic.title}
             numClaims={subtopic.claims.length}
-            numPeople={getNPeople(subtopic.claims)}
+            numPeople={getNPeopleFromClaims(subtopic.claims)}
           />
           <p className="text-muted-foreground line-clamp-4">
             {subtopic.description}

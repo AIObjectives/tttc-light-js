@@ -24,6 +24,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -41,18 +44,19 @@ jobs:
           docker build \
             --build-arg TURBO_TOKEN=${{ secrets.TURBO_TOKEN }} \
             --build-arg TURBO_TEAM=${{ secrets.TURBO_TEAM }} \
-            -t gcr.io/tttc-light-js/t3c-express-server \
+            -t gcr.io/tttc-light-js/t3c-express-server:${{ env.SHORT_SHA }} \
             -f express-server/Dockerfile .
 
       - name: Push Docker image
         run: |
-          gcloud auth configure-docker
-          docker push gcr.io/tttc-light-js/t3c-express-server
+          gcloud auth configure-docker --quiet
+          docker push gcr.io/tttc-light-js/t3c-express-server:${{ env.SHORT_SHA }}
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ts-server-brandon \
-            --image gcr.io/tttc-light-js/t3c-express-server \
+            --image gcr.io/tttc-light-js/t3c-express-server:${{ env.SHORT_SHA }} \
             --platform managed \
             --region us-central1 \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --quiet
