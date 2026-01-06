@@ -41,7 +41,8 @@
     "deps:fix": "syncpack fix-mismatches",
     "deps:lint": "syncpack lint",
     "deps:unused": "bash scripts/check-unused-deps.sh",
-    "spell": "git ls-files -z '*.md' '*.ts' '*.tsx' '*.py' | xargs -0 cspell --no-progress"
+    "spell": "git ls-files -z '*.md' '*.ts' '*.tsx' '*.py' | xargs -0 cspell --no-progress",
+    "logs": "node scripts/get-cloud-logs.js"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
