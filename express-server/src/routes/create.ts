@@ -238,6 +238,7 @@ const createUserDocuments = async (
       numClaims: 0, // Placeholder, will be updated
       numPeople: 0, // Placeholder, will be updated
       createdDate: new Date(),
+      isPublic: userConfig.isPublic ?? false, // Use user's choice, default to private
     },
     preGeneratedReportId, // Use the same reportId as storage filename
   );

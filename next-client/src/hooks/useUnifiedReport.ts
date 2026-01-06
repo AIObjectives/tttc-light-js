@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type * as api from "tttc-common/api";
 import type { ReportRef } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger/browser";
+import { useUser } from "@/lib/hooks/getUser";
 
 const unifiedReportLogger = logger.child({ module: "unified-report-hook" });
 
@@ -19,13 +20,29 @@ type ReportState =
   | { type: "ready"; dataUrl: string; metadata?: ReportRef };
 
 export function useUnifiedReport(identifier: string) {
+  const { user } = useUser();
   const [state, setState] = useState<ReportState>({ type: "loading" });
 
   const fetchReport = useCallback(async () => {
     try {
+      // Build headers - include auth if user is logged in (required for private reports)
+      const headers: Record<string, string> = {};
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          headers.Authorization = `Bearer ${token}`;
+        } catch (tokenError) {
+          unifiedReportLogger.warn(
+            { error: tokenError },
+            "Failed to get auth token for polling",
+          );
+        }
+      }
+
       // Use Next.js API route which proxies to Express server
       const response = await fetch(
         `/api/report/${encodeURIComponent(identifier)}`,
+        { headers },
       );
 
       if (!response.ok) {
@@ -71,7 +88,7 @@ export function useUnifiedReport(identifier: string) {
           error instanceof Error ? error.message : "Failed to fetch report",
       });
     }
-  }, [identifier]);
+  }, [identifier, user]);
 
   // Initial fetch on mount
   useEffect(() => {

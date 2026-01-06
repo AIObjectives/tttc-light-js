@@ -10,6 +10,14 @@ jobs:
   chromatic:
     name: Run Chromatic
     runs-on: ubuntu-latest
+    env:
+      # Dummy Firebase config for Storybook builds (not used for real auth)
+      NEXT_PUBLIC_FIREBASE_API_KEY: "storybook-dummy-key"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "storybook.firebaseapp.com"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "storybook-dummy"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "storybook-dummy.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

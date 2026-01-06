@@ -3,7 +3,11 @@ import { ERROR_CODES } from "tttc-common/errors";
 import { verifyUser } from "./Firebase";
 import { sendErrorByCode } from "./routes/sendError";
 import type { Env } from "./types/context";
-import type { RequestWithAuth, RequestWithLogger } from "./types/request";
+import type {
+  RequestWithAuth,
+  RequestWithLogger,
+  RequestWithOptionalAuth,
+} from "./types/request";
 
 /**
  * Adds context to the request object
@@ -211,6 +215,40 @@ export const authMiddleware = () => {
     } catch (error) {
       req.log.warn({ error }, "Token verification failed");
       return sendErrorByCode(res, ERROR_CODES.AUTH_TOKEN_INVALID, req.log);
+    }
+  };
+};
+
+/**
+ * Optional authentication middleware that validates Firebase ID tokens if present.
+ *
+ * Unlike authMiddleware, this allows unauthenticated requests to proceed.
+ * If a token is present and valid, attaches decoded user to req.auth.
+ * If no token or invalid token, sets req.auth to undefined and continues.
+ *
+ * Use this for endpoints that work with or without authentication,
+ * such as public report viewing where owners get extra capabilities.
+ */
+export const optionalAuthMiddleware = () => {
+  return async (req: RequestWithLogger, _res: Response, next: NextFunction) => {
+    const token = extractBearerToken(req.headers.authorization);
+
+    if (!token) {
+      (req as RequestWithOptionalAuth).auth = undefined;
+      return next();
+    }
+
+    try {
+      const decodedUser = await verifyUser(token);
+      (req as RequestWithOptionalAuth).auth = decodedUser;
+      next();
+    } catch (error) {
+      req.log.debug(
+        { error },
+        "Optional auth token invalid, continuing without auth",
+      );
+      (req as RequestWithOptionalAuth).auth = undefined;
+      next();
     }
   };
 };

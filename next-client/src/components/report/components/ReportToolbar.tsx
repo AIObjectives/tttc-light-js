@@ -4,6 +4,7 @@ import { Button } from "@/components/elements";
 import { Row } from "@/components/layout";
 import { cn } from "@/lib/utils/shadcn";
 import { ReportContext } from "../Report";
+import { ShareDropdown } from "./ShareDropdown";
 
 /**
  * Toolbar that follows down screen. Lets user do certain actions.
@@ -12,9 +13,11 @@ import { ReportContext } from "../Report";
 export function ReportToolbar({
   setIsMobileOutlineOpen,
   isMobileOutlineOpen,
+  reportId,
 }: {
   setIsMobileOutlineOpen: (val: boolean) => void;
   isMobileOutlineOpen: boolean;
+  reportId: string;
 }) {
   const { dispatch, activeContentTab } = useContext(ReportContext);
 
@@ -41,7 +44,7 @@ export function ReportToolbar({
         </div>
       </Row>
 
-      {/* Right side - expand/collapse buttons */}
+      {/* Right side - expand/collapse buttons + share */}
       <Row gap={2} className={cn(activeContentTab !== "report" && "hidden")}>
         {/* Close all button */}
         <Button
@@ -58,6 +61,8 @@ export function ReportToolbar({
         >
           Expand all
         </Button>
+        {/* Share dropdown - only shown to authenticated owners */}
+        <ShareDropdown reportId={reportId} />
       </Row>
     </Row>
   );

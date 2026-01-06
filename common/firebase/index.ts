@@ -85,6 +85,10 @@ const reportRefSchema = z.object({
     )
     .optional(),
   errorMessage: z.string().optional(), // Details when status is "failed"
+
+  // Visibility: undefined = legacy (public), true = public, false = private
+  // New reports default to private. Existing reports without this field are grandfathered as public.
+  isPublic: z.boolean().optional(),
 });
 
 export const reportRef = reportRefSchema;

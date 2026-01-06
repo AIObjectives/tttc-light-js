@@ -1,5 +1,22 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Mock useUser hook to avoid Firebase initialization
+vi.mock("@/lib/hooks/getUser", () => ({
+  useUser: vi.fn(() => ({ user: null, loading: false })),
+}));
+
+// Mock logger to suppress output during tests
+vi.mock("tttc-common/logger/browser", () => ({
+  logger: {
+    child: () => ({
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    }),
+  },
+}));
+
 import { useUnifiedReport } from "../hooks/useUnifiedReport";
 
 /**
@@ -95,6 +112,7 @@ describe("End-to-End Report Loading Flow", () => {
       // Verify the complete flow - should call unified endpoint
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/report/${encodeURIComponent(firebaseId)}`,
+        expect.objectContaining({ headers: expect.any(Object) }),
       );
 
       // Verify final state
@@ -181,6 +199,7 @@ describe("End-to-End Report Loading Flow", () => {
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
         `/api/report/${encodeURIComponent(legacyUrl)}`,
+        expect.objectContaining({ headers: expect.any(Object) }),
       );
 
       if (result.current.type === "ready") {
@@ -325,6 +344,7 @@ describe("End-to-End Report Loading Flow", () => {
       // Should have made multiple calls due to polling (at least 3: processing -> clustering -> finished)
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/report/${encodeURIComponent(processingId)}`,
+        expect.objectContaining({ headers: expect.any(Object) }),
       );
       expect(mockFetch.mock.calls.length).toBeGreaterThanOrEqual(3);
 
