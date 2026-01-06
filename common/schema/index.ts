@@ -59,21 +59,29 @@ export const llmUserConfig = z.object({
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
 
-// Zod has trouble with self-referential types, so leave this be until we need to parse
-type _LLMClaim = {
-  claim: string;
-  quote: string;
-  claimId?: string;
-  topicName: string;
-  subtopicName?: string;
-  commentId?: string;
+/**
+ * LLMClaim - Claims extracted by LLM from source material
+ * Uses z.lazy() for the recursive `duplicates` field
+ */
+const llmClaimBase = z.object({
+  claim: z.string(),
+  quote: z.string(),
+  claimId: z.string().optional(),
+  topicName: z.string(),
+  subtopicName: z.string().optional(),
+  commentId: z.string().optional(),
+  duplicated: z.boolean().optional(),
+});
+
+// Recursive type: base fields + optional array of self
+export type LLMClaim = z.infer<typeof llmClaimBase> & {
   duplicates?: LLMClaim[];
-  duplicated?: boolean;
 };
 
-const oldclaim = z.custom<_LLMClaim>();
-
-export type LLMClaim = z.infer<typeof oldclaim>;
+// Full schema with recursive field using z.lazy()
+const llmClaim: z.ZodType<LLMClaim> = llmClaimBase.extend({
+  duplicates: z.lazy(() => llmClaim.array()).optional(),
+});
 
 export const cache = z.object({
   get: z.function().args(z.string()).returns(z.any()),
@@ -88,7 +96,7 @@ export const tracker = z.object({
   prompt_tokens: z.number(),
   completion_tokens: z.number(),
   total_tokens: z.number(),
-  unmatchedClaims: z.array(oldclaim),
+  unmatchedClaims: z.array(llmClaim),
   end: z.number().optional(),
   duration: z.string().optional(),
 });
@@ -107,7 +115,7 @@ export const llmSubtopic = z.object({
   subtopicShortDescription: z.string().optional(),
   subtopicId: z.string().optional(),
   claimsCount: z.number().optional(),
-  claims: z.array(oldclaim).optional(),
+  claims: z.array(llmClaim).optional(),
 });
 
 export type LLMSubtopic = z.infer<typeof llmSubtopic>;
@@ -866,17 +874,25 @@ export type Quote = z.infer<typeof quote>;
  * Claim
  * Claims are specific points made that are derived from the source material
  * They also contain an array of similarly made claims
+ * Uses z.lazy() for the recursive `similarClaims` field
  ********************************/
-// Zod has trouble with self-referential types, so leave this be until we need to parse
-export type Claim = {
-  id: string;
-  title: string;
-  quotes: Quote[];
+const claimBase = z.object({
+  id: z.string(),
+  title: z.string(),
+  quotes: z.array(quote),
+  number: z.number(),
+});
+
+// Recursive type: base fields + array of self
+export type Claim = z.infer<typeof claimBase> & {
   similarClaims: Claim[];
-  number: number;
 };
 
-export const claim = z.custom<Claim>();
+// Full schema with recursive field using z.lazy()
+// Note: Using ZodTypeDef with unknown input to handle nested defaults
+export const claim: z.ZodType<Claim, z.ZodTypeDef, unknown> = claimBase.extend({
+  similarClaims: z.lazy(() => claim.array()),
+});
 
 /********************************
  * Subtopic
