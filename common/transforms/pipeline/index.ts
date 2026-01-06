@@ -315,15 +315,16 @@ function buildSubtopics(
         claims: subtopic.claims
           ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
           : [],
-      }))
-      .filter(
-        (subtopic) =>
-          subtopic.title &&
-          Array.isArray(subtopic.claims) &&
-          subtopic.claims.length > 0,
-      );
+      });
+    }
+  }
 
-  return result;
+  return result.filter(
+    (subtopic) =>
+      subtopic.title &&
+      Array.isArray(subtopic.claims) &&
+      subtopic.claims.length > 0,
+  );
 }
 
 function buildTopics(
@@ -346,8 +347,12 @@ function buildTopics(
         summary: leaf.topicSummary,
         subtopics,
         topicColor: colorPicker(idx),
-      }))
-      .filter((topic) => topic.title && topic.subtopics.length > 0);
+      });
+    }
+  }
+
+  return result.filter((topic) => topic.title && topic.subtopics.length > 0);
+}
 
 export const getReportDataObj = (
   pipelineOutput: schema.LLMPipelineOutput,
