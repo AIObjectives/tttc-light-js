@@ -4,7 +4,7 @@ import { logger } from "tttc-common/logger/browser";
 const unifiedReportApiLogger = logger.child({ module: "unified-report-api" });
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ uri: string }> },
 ) {
   try {
@@ -27,14 +27,21 @@ export async function GET(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
+    // Forward Authorization header if present (for ownership checks)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader) {
+      headers.Authorization = authHeader;
+    }
+
     try {
       const expressResponse = await fetch(
         `${expressUrl}/report/${encodeURIComponent(identifier)}`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           signal: controller.signal,
         },
       );
@@ -69,14 +76,22 @@ export async function GET(
       );
 
       // Set appropriate cache headers based on status
-      const headers: Record<string, string> = {};
-      if (result.status === "finished") {
-        headers["Cache-Control"] = "private, max-age=3600";
+      // IMPORTANT: Vary by Authorization so authenticated and unauthenticated
+      // requests are cached separately (isOwner differs based on auth)
+      const responseHeaders: Record<string, string> = {
+        Vary: "Authorization",
+      };
+      if (authHeader) {
+        // Authenticated requests should never be cached - ownership status is user-specific
+        responseHeaders["Cache-Control"] = "no-store";
+      } else if (result.status === "finished") {
+        responseHeaders["Cache-Control"] = "private, max-age=3600";
       } else {
-        headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        responseHeaders["Cache-Control"] =
+          "no-cache, no-store, must-revalidate";
       }
 
-      return NextResponse.json(result, { headers });
+      return NextResponse.json(result, { headers: responseHeaders });
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError instanceof Error && fetchError.name === "AbortError") {
