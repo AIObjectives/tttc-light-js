@@ -16,9 +16,11 @@ import {
 const LoginButton = dynamic(() => import("./components/LoginButton"), {
   ssr: false,
   loading: () => (
-    <Button disabled className="min-w-[80px]">
-      ...
-    </Button>
+    <div>
+      <Button disabled className="min-w-[80px]">
+        ...
+      </Button>
+    </div>
   ),
 });
 
