@@ -68,6 +68,27 @@ const parseCSV = async (file: File): Promise<SourceRow[]> => {
   return formatData(parseResult.data as Record<string, unknown>[]);
 };
 
+/**
+ * Extract and parse LLM user config from form data.
+ * Separated to reduce cyclomatic complexity in submitAction.
+ */
+const parseUserConfig = (formData: FormData): LLMUserConfig => {
+  return llmUserConfig.parse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    clusteringInstructions: formData.get("clusteringInstructions"),
+    systemInstructions: formData.get("systemInstructions"),
+    extractionInstructions: formData.get("extractionInstructions"),
+    dedupInstructions: formData.get("dedupInstructions"),
+    summariesInstructions: formData.get("summariesInstructions"),
+    cruxInstructions: formData.get("cruxInstructions"),
+    // Checkbox inputs use 'on' | undefined, not true | false
+    cruxesEnabled: formData.get("cruxesEnabled") === "on",
+    bridgingEnabled: formData.get("bridgingEnabled") === "on",
+    outputLanguage: formData.get("outputLanguage") || "English",
+  });
+};
+
 export default async function submitAction(
   firebaseAuthToken: string | null,
   formData: FormData,
@@ -102,19 +123,7 @@ export default async function submitAction(
       };
     }
 
-    const config: LLMUserConfig = llmUserConfig.parse({
-      title: formData.get("title"),
-      description: formData.get("description"),
-      clusteringInstructions: formData.get("clusteringInstructions"),
-      systemInstructions: formData.get("systemInstructions"),
-      extractionInstructions: formData.get("extractionInstructions"),
-      dedupInstructions: formData.get("dedupInstructions"),
-      summariesInstructions: formData.get("summariesInstructions"),
-      cruxInstructions: formData.get("cruxInstructions"),
-      // Checkbox inputs use 'on' | undefined, not true | false
-      cruxesEnabled: formData.get("cruxesEnabled") === "on",
-      bridgingEnabled: formData.get("bridgingEnabled") === "on",
-    });
+    const config = parseUserConfig(formData);
 
     const dataPayload: DataPayload = ["csv", data];
     submitActionLogger.debug(
