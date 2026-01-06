@@ -1,9 +1,61 @@
 "use client";
+import { Check, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import type { ReportRef } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
-import { Card, CardContent, Separator, TextIcon } from "../elements";
+import { cn } from "@/lib/utils/shadcn";
+import {
+  Button,
+  Card,
+  CardContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Separator,
+  TextIcon,
+} from "../elements";
 import { Col, Row } from "../layout";
+
+// Sort mode types and helpers
+type MyReportsSortMode =
+  | "date-newest"
+  | "date-oldest"
+  | "title-asc"
+  | "title-desc";
+
+const MY_REPORTS_SORT_KEY = "myReportsSortPreference";
+
+const isValidSortMode = (value: string): value is MyReportsSortMode =>
+  ["date-newest", "date-oldest", "title-asc", "title-desc"].includes(value);
+
+const getStoredSortMode = (): MyReportsSortMode => {
+  if (typeof window === "undefined") return "date-newest";
+  try {
+    const stored = localStorage.getItem(MY_REPORTS_SORT_KEY);
+    if (stored && isValidSortMode(stored)) return stored;
+  } catch {
+    // Ignore storage errors (SSR, private mode)
+  }
+  return "date-newest";
+};
+
+const setSortPreference = (mode: MyReportsSortMode) => {
+  try {
+    localStorage.setItem(MY_REPORTS_SORT_KEY, mode);
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+const getSortLabel = (mode: MyReportsSortMode): string =>
+  ({
+    "date-newest": "Newest first",
+    "date-oldest": "Oldest first",
+    "title-asc": "Title A-Z",
+    "title-desc": "Title Z-A",
+  })[mode];
 
 const reportLink = (id: string) =>
   `${location.protocol}//${location.host}/report/${id}`;
@@ -13,11 +65,43 @@ interface MyReportsProps {
 }
 
 export default function MyReports({ reports }: MyReportsProps) {
+  const [sortMode, setSortMode] = useState<MyReportsSortMode>("date-newest");
+
+  // Hydrate from localStorage after mount (SSR-safe)
+  useEffect(() => {
+    setSortMode(getStoredSortMode());
+  }, []);
+
+  const handleSortChange = (mode: MyReportsSortMode) => {
+    setSortMode(mode);
+    setSortPreference(mode);
+  };
+
+  const sortedReports = useMemo(() => {
+    const sorted = [...reports];
+    switch (sortMode) {
+      case "date-newest":
+        return sorted.sort(
+          (a, b) => b.createdDate.getTime() - a.createdDate.getTime(),
+        );
+      case "date-oldest":
+        return sorted.sort(
+          (a, b) => a.createdDate.getTime() - b.createdDate.getTime(),
+        );
+      case "title-asc":
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case "title-desc":
+        return sorted.sort((a, b) => b.title.localeCompare(a.title));
+      default:
+        return sorted;
+    }
+  }, [reports, sortMode]);
+
   return (
-    <Col gap={8} className="items-center">
-      <YourReportsHeader />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px]">
-        {reports.map((report) => (
+    <Col gap={8} className="items-center px-4">
+      <YourReportsHeader sortMode={sortMode} onSortChange={handleSortChange} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px] w-full">
+        {sortedReports.map((report) => (
           <ReportItem {...report} key={report.id} />
         ))}
       </div>
@@ -25,12 +109,97 @@ export default function MyReports({ reports }: MyReportsProps) {
   );
 }
 
-function YourReportsHeader() {
+interface YourReportsHeaderProps {
+  sortMode: MyReportsSortMode;
+  onSortChange: (mode: MyReportsSortMode) => void;
+}
+
+function YourReportsHeader({ sortMode, onSortChange }: YourReportsHeaderProps) {
   return (
-    <Row gap={4} className="pt-8">
+    <Row
+      gap={4}
+      className="pt-8 w-full max-w-[896px] justify-between items-center"
+    >
       <Col gap={2} className="justify-center">
         <h3>My reports</h3>
       </Col>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Sort by</span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={`Sort reports: ${getSortLabel(sortMode)}`}
+            >
+              {getSortLabel(sortMode)}
+              <ChevronsUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => onSortChange("date-newest")}
+              className={cn(
+                "cursor-pointer",
+                sortMode === "date-newest" && "bg-accent",
+              )}
+            >
+              <Check
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  sortMode === "date-newest" ? "opacity-100" : "opacity-0",
+                )}
+              />
+              Newest first
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onSortChange("date-oldest")}
+              className={cn(
+                "cursor-pointer",
+                sortMode === "date-oldest" && "bg-accent",
+              )}
+            >
+              <Check
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  sortMode === "date-oldest" ? "opacity-100" : "opacity-0",
+                )}
+              />
+              Oldest first
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onSortChange("title-asc")}
+              className={cn(
+                "cursor-pointer",
+                sortMode === "title-asc" && "bg-accent",
+              )}
+            >
+              <Check
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  sortMode === "title-asc" ? "opacity-100" : "opacity-0",
+                )}
+              />
+              Title A-Z
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onSortChange("title-desc")}
+              className={cn(
+                "cursor-pointer",
+                sortMode === "title-desc" && "bg-accent",
+              )}
+            >
+              <Check
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  sortMode === "title-desc" ? "opacity-100" : "opacity-0",
+                )}
+              />
+              Title Z-A
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </Row>
   );
 }
