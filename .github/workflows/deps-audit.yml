@@ -1,0 +1,121 @@
+name: Dependency Audit
+
+on:
+  schedule:
+    # Run at 9am UTC on the 1st of each month
+    - cron: "0 9 1 * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-unused-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for unused dependencies
+        id: depcheck
+        run: |
+          echo "## Dependency Audit Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Checking for potentially unused dependencies..." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Known false positives (framework configs, dynamic imports, peer deps)
+          IGNORE_LIST=(
+            # Dynamic imports / runtime loaded
+            "@anthropic-ai/sdk"
+            "openai"
+            "bullmq"
+            "csv-parser"
+            "posthog-node"
+            "dotenv"
+            # Storybook addons (loaded via config)
+            "@chromatic-com/storybook"
+            "@storybook/addon-docs"
+            "@storybook/addon-onboarding"
+            # Build tool configs (postcss.config, tailwind.config)
+            "autoprefixer"
+            "postcss"
+            "esbuild"
+            # Type definitions used by TypeScript
+            "@types/cors"
+            "@types/express"
+            "@types/jsdom"
+            # Used in config files
+            "pino-pretty"
+            "ts-node"
+            # Server deps used in API routes
+            "cors"
+            "http-errors"
+          )
+
+          UNEXPECTED_DEPS=""
+          HAS_UNEXPECTED=false
+
+          for pkg in common express-server next-client pipeline-worker utils; do
+            echo "### $pkg" >> $GITHUB_STEP_SUMMARY
+
+            cd $pkg
+            DEPS=$(npx depcheck --json 2>/dev/null | node -e "
+              const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+              const deps=[...d.dependencies||[],...d.devDependencies||[]];
+              console.log(deps.join('\n'));
+            ")
+            cd ..
+
+            if [ -z "$DEPS" ]; then
+              echo "No unused dependencies detected." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Dependency | Status |" >> $GITHUB_STEP_SUMMARY
+              echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+
+              while IFS= read -r dep; do
+                if [ -n "$dep" ]; then
+                  # Check if dep is in ignore list
+                  IS_IGNORED=false
+                  for ignored in "${IGNORE_LIST[@]}"; do
+                    if [ "$dep" = "$ignored" ]; then
+                      IS_IGNORED=true
+                      break
+                    fi
+                  done
+
+                  if [ "$IS_IGNORED" = true ]; then
+                    echo "| \`$dep\` | Ignored (known false positive) |" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "| \`$dep\` | **Review needed** |" >> $GITHUB_STEP_SUMMARY
+                    UNEXPECTED_DEPS="$UNEXPECTED_DEPS\n- $pkg: $dep"
+                    HAS_UNEXPECTED=true
+                  fi
+                fi
+              done <<< "$DEPS"
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+
+          if [ "$HAS_UNEXPECTED" = true ]; then
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "### Action Required" >> $GITHUB_STEP_SUMMARY
+            echo "The following dependencies may be unused and should be reviewed:" >> $GITHUB_STEP_SUMMARY
+            echo -e "$UNEXPECTED_DEPS" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`pnpm deps:unused\` locally to investigate." >> $GITHUB_STEP_SUMMARY
+            echo "If these are false positives, add them to the ignore list in \`.github/workflows/deps-audit.yml\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "All detected unused dependencies are known false positives." >> $GITHUB_STEP_SUMMARY
+          fi
