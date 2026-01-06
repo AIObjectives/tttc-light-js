@@ -173,10 +173,15 @@ type PipelineErrors =
   | Pyserver.PyserverUnresponsiveError
   | Pyserver.PyserverHungError;
 
-export async function pipelineJob(job: PipelineJob) {
+export async function pipelineJob(job: PipelineJob, requestId?: string) {
   const { data, config, reportDetails } = job;
   const { env } = config;
   const { title, description, question, filename } = reportDetails;
+
+  // Create child logger with requestId for distributed tracing
+  const jobLogger = requestId
+    ? pipelineLogger.child({ requestId })
+    : pipelineLogger;
 
   // Get analytics client
   const analytics = getAnalytics();
@@ -188,7 +193,7 @@ export async function pipelineJob(job: PipelineJob) {
   const actualDataSize = JSON.stringify(data).length;
   const reportId = config.firebaseDetails?.reportId;
 
-  pipelineLogger.info(
+  jobLogger.info(
     {
       reportId: reportId,
       userId: config.firebaseDetails.userId,

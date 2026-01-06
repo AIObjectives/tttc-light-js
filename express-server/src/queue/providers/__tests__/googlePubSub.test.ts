@@ -120,11 +120,55 @@ vi.mock("../../../jobs/pipeline", () => ({
   PipelineJob: {},
 }));
 
+// Mock workers module for message handler tests
+const mockProcessJob = vi.fn();
+const mockProcessJobFailure = vi.fn();
+vi.mock("../../../workers", () => ({
+  processJob: (job: PipelineJob) => mockProcessJob(job),
+  processJobFailure: (job: PipelineJob, error: Error) =>
+    mockProcessJobFailure(job, error),
+}));
+
+// Helper to create a mock PipelineJob
+function createMockPipelineJob(): PipelineJob {
+  return {
+    config: {
+      env: "test" as unknown as PipelineJob["config"]["env"],
+      auth: "public",
+      firebaseDetails: {
+        reportDataUri: "test-uri",
+        userId: "test-user",
+        firebaseJobId: "test-job",
+      },
+      llm: { model: "test-model" },
+      instructions: {
+        systemInstructions: "test",
+        clusteringInstructions: "test",
+        extractionInstructions: "test",
+        dedupInstructions: "test",
+        cruxInstructions: "test",
+        summariesInstructions: "test",
+      },
+      api_key: "test-key",
+      options: { cruxes: false, bridging: false },
+    },
+    data: [],
+    reportDetails: {
+      title: "test",
+      description: "test",
+      question: "test",
+      filename: "test.json",
+    },
+  };
+}
+
 describe("GooglePubSubQueue", () => {
   let queue: GooglePubSubQueue;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockProcessJob.mockReset();
+    mockProcessJobFailure.mockReset();
     queue = new GooglePubSubQueue(
       "test-topic",
       "test-subscription",
@@ -187,5 +231,166 @@ describe("GooglePubSubQueue", () => {
       // This will test that the method executes without throwing
       await expect(queue.close()).resolves.toBeUndefined();
     });
+  });
+});
+
+describe("GooglePubSubQueue message handling", () => {
+  // These tests require a more detailed mock setup to capture and invoke
+  // the message handler callback
+
+  let messageHandler:
+    | ((message: {
+        id: string;
+        data: Buffer;
+        ack: () => void;
+        nack: () => void;
+      }) => Promise<void>)
+    | undefined;
+  let mockAck: ReturnType<typeof vi.fn>;
+  let mockNack: ReturnType<typeof vi.fn>;
+  let mockSubscriptionOn: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    mockProcessJob.mockReset();
+    mockProcessJobFailure.mockReset();
+
+    mockAck = vi.fn();
+    mockNack = vi.fn();
+    messageHandler = undefined;
+
+    // Create a mock that captures the message handler
+    mockSubscriptionOn = vi.fn((event: string, handler: unknown) => {
+      if (event === "message") {
+        messageHandler = handler as typeof messageHandler;
+      }
+    });
+
+    // Override the PubSub mock to use our handler-capturing mock
+    const { PubSub } = await import("@google-cloud/pubsub");
+    vi.mocked(PubSub).mockImplementation(
+      () =>
+        ({
+          topic: vi.fn().mockImplementation(() => ({
+            publishMessage: vi.fn().mockResolvedValue(undefined),
+            get: vi.fn().mockResolvedValue([{ name: "test-topic" }]),
+            name: "test-topic",
+            subscription: vi.fn().mockImplementation(() => ({
+              on: mockSubscriptionOn,
+              close: vi.fn().mockResolvedValue(undefined),
+              get: vi.fn().mockResolvedValue([{ name: "test-subscription" }]),
+              name: "test-subscription",
+            })),
+          })),
+        }) as unknown as InstanceType<typeof PubSub>,
+    );
+  });
+
+  async function createQueueAndListen(): Promise<GooglePubSubQueue> {
+    const queue = new GooglePubSubQueue(
+      "test-topic",
+      "test-subscription",
+      "test-project",
+    );
+    await queue.listen();
+    return queue;
+  }
+
+  function createMockMessage(jobData: PipelineJob): {
+    id: string;
+    data: Buffer;
+    ack: ReturnType<typeof vi.fn>;
+    nack: ReturnType<typeof vi.fn>;
+  } {
+    return {
+      id: "test-message-id",
+      data: Buffer.from(JSON.stringify(jobData)),
+      ack: mockAck,
+      nack: mockNack,
+    };
+  }
+
+  it("should ACK message only after successful processing", async () => {
+    mockProcessJob.mockResolvedValue(undefined);
+
+    await createQueueAndListen();
+
+    expect(messageHandler).toBeDefined();
+
+    const jobData = createMockPipelineJob();
+    const mockMessage = createMockMessage(jobData);
+
+    await messageHandler!(mockMessage);
+
+    expect(mockProcessJob).toHaveBeenCalledWith(jobData);
+    expect(mockAck).toHaveBeenCalledTimes(1);
+    expect(mockNack).not.toHaveBeenCalled();
+    expect(mockProcessJobFailure).not.toHaveBeenCalled();
+  });
+
+  it("should NACK message on processing failure", async () => {
+    const processingError = new Error("Processing failed");
+    mockProcessJob.mockRejectedValue(processingError);
+
+    await createQueueAndListen();
+
+    expect(messageHandler).toBeDefined();
+
+    const jobData = createMockPipelineJob();
+    const mockMessage = createMockMessage(jobData);
+
+    await messageHandler!(mockMessage);
+
+    expect(mockProcessJob).toHaveBeenCalledWith(jobData);
+    expect(mockNack).toHaveBeenCalledTimes(1);
+    expect(mockAck).not.toHaveBeenCalled();
+    expect(mockProcessJobFailure).toHaveBeenCalledWith(
+      jobData,
+      processingError,
+    );
+  });
+
+  it("should NACK and log error on JSON parse failure", async () => {
+    await createQueueAndListen();
+
+    expect(messageHandler).toBeDefined();
+
+    const mockMessage = {
+      id: "test-message-id",
+      data: Buffer.from("invalid json {{{"),
+      ack: mockAck,
+      nack: mockNack,
+    };
+
+    await messageHandler!(mockMessage);
+
+    expect(mockProcessJob).not.toHaveBeenCalled();
+    expect(mockNack).toHaveBeenCalledTimes(1);
+    expect(mockAck).not.toHaveBeenCalled();
+    // processJobFailure should not be called when we can't parse the job
+    expect(mockProcessJobFailure).not.toHaveBeenCalled();
+  });
+
+  it("should convert non-Error objects to Error in processJobFailure", async () => {
+    const nonErrorObject = "string error message";
+    mockProcessJob.mockRejectedValue(nonErrorObject);
+
+    await createQueueAndListen();
+
+    expect(messageHandler).toBeDefined();
+
+    const jobData = createMockPipelineJob();
+    const mockMessage = createMockMessage(jobData);
+
+    await messageHandler!(mockMessage);
+
+    expect(mockNack).toHaveBeenCalledTimes(1);
+    expect(mockProcessJobFailure).toHaveBeenCalledWith(
+      jobData,
+      expect.any(Error),
+    );
+
+    const passedError = mockProcessJobFailure.mock.calls[0][1];
+    expect(passedError.message).toBe("string error message");
   });
 });

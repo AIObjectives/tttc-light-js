@@ -1,6 +1,7 @@
 import type { User } from "firebase/auth";
 import pRetry, { AbortError } from "p-retry";
 import { logger } from "tttc-common/logger/browser";
+import { fetchWithRequestId } from "../api/fetchWithRequestId";
 import { type APIError, isAPIError } from "../types/api";
 import { fetchToken } from "./getIdToken";
 
@@ -40,7 +41,7 @@ async function callUserEnsureAPI(token: string): Promise<{
   user: UserDocument;
   message: string;
 }> {
-  const response = await fetch("/api/user/ensure", {
+  const response = await fetchWithRequestId("/api/user/ensure", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

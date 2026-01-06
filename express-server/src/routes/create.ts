@@ -504,7 +504,7 @@ export default async function create(req: RequestWithAuth, res: Response) {
     }
     // Queue the pipeline job before sending response
     // This ensures the user only gets success if the job was actually queued
-    await pipelineQueue.enqueue(result.value.pipelineJob);
+    await pipelineQueue.enqueue(result.value.pipelineJob, { requestId });
     res.json(result.value.response);
   } catch (e) {
     req.log.error(

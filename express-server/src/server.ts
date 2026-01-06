@@ -17,7 +17,11 @@ import {
   shutdownAnalyticsClient,
 } from "./analytics";
 import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
-import { authMiddleware, contextMiddleware } from "./middleware";
+import {
+  authMiddleware,
+  contextMiddleware,
+  correlationIdMiddleware,
+} from "./middleware";
 import { createQueue } from "./queue";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
@@ -92,6 +96,9 @@ app.use(express.static("public"));
 
 // HTTP request logging with pino
 app.use(pinoHttp({ logger }));
+
+// Propagate request correlation ID in response headers
+app.use(correlationIdMiddleware);
 
 // Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));

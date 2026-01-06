@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type * as api from "tttc-common/api";
 import type { ReportRef } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger/browser";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 
 const unifiedReportLogger = logger.child({ module: "unified-report-hook" });
 
@@ -24,7 +25,7 @@ export function useUnifiedReport(identifier: string) {
   const fetchReport = useCallback(async () => {
     try {
       // Use Next.js API route which proxies to Express server
-      const response = await fetch(
+      const response = await fetchWithRequestId(
         `/api/report/${encodeURIComponent(identifier)}`,
       );
 
