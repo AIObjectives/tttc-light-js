@@ -159,6 +159,14 @@ export function useFormState() {
     },
   });
 
+  const outputLanguage = useFormItem({
+    initialValue: "English",
+    statusEval: (val) => {
+      // Dropdown with fixed options - always valid
+      return success(val);
+    },
+  });
+
   /**
    * Returns a list of validation error messages for required fields.
    * Used to show error count on submit attempt.
@@ -192,6 +200,7 @@ export function useFormState() {
     cruxInstructions,
     cruxesEnabled,
     bridgingEnabled,
+    outputLanguage,
     getValidationErrors,
   };
 }

@@ -238,6 +238,7 @@ const createUserDocuments = async (
       numClaims: 0, // Placeholder, will be updated
       numPeople: 0, // Placeholder, will be updated
       createdDate: new Date(),
+      outputLanguage: userConfig.outputLanguage, // Language for generated content
     },
     preGeneratedReportId, // Use the same reportId as storage filename
   );

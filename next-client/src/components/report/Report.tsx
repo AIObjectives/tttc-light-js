@@ -764,6 +764,12 @@ function Appendix({
 
       {prompts && (
         <Col gap={2}>
+          {prompts.outputLanguage && prompts.outputLanguage !== "English" && (
+            <p className="text-muted-foreground">
+              Generated in:{" "}
+              <span className="font-medium">{prompts.outputLanguage}</span>
+            </p>
+          )}
           <p className="text-muted-foreground">
             AI Prompts used to generate this report:
           </p>

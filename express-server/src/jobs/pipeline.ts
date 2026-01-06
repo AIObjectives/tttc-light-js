@@ -12,6 +12,7 @@ import {
 } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { llmPipelineToSchema } from "tttc-common/morphisms";
+import { SUPPORTED_LANGUAGES } from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
 import { CustomError } from "../error";
 import * as Firebase from "../Firebase";
@@ -136,6 +137,7 @@ interface Instructions {
   dedupInstructions: string;
   summariesInstructions: string;
   cruxInstructions: string;
+  outputLanguage?: string; // Default: "English"
 }
 
 interface PipelineConfig {
@@ -423,6 +425,7 @@ export async function pipelineJob(job: PipelineJob) {
         dedupInstructions: pipelineOutput.dedupInstructions,
         summariesInstructions: pipelineOutput.summariesInstructions,
         cruxInstructions: pipelineOutput.cruxInstructions,
+        outputLanguage: pipelineOutput.outputLanguage,
       };
 
       // Claim scoring happens after this, once IDs are assigned
@@ -1065,7 +1068,47 @@ const PipelineOutputToProps = {
 };
 
 /**
- * This builds each of the step functions called in doPipelineSteps
+ * Get language instructions for system and user prompts.
+ * Returns empty strings for English (default behavior unchanged).
+ * For other languages, injects instructions into both prompts for reliability.
+ *
+ * User instruction is a PREFIX (goes at START of prompt) to ensure the LLM
+ * sees it before detailed format instructions and data, which is critical
+ * for the clustering step where lots of English data follows.
+ */
+function getLanguageInstructions(outputLanguage?: string): {
+  system: string;
+  userPrefix: string;
+} {
+  // Treat undefined/empty as English (default)
+  if (!outputLanguage || outputLanguage === "English") {
+    return { system: "", userPrefix: "" };
+  }
+
+  // Validate language is in supported list (warn but don't block)
+  if (
+    !SUPPORTED_LANGUAGES.includes(
+      outputLanguage as (typeof SUPPORTED_LANGUAGES)[number],
+    )
+  ) {
+    pipelineLogger.warn(
+      { outputLanguage, supportedLanguages: SUPPORTED_LANGUAGES },
+      "Output language not in supported list - LLM output quality may vary",
+    );
+  }
+
+  return {
+    system: `\n\nIMPORTANT: Generate all text output in ${outputLanguage}.`,
+    userPrefix: `OUTPUT LANGUAGE: ${outputLanguage}
+All generated text (topic names, subtopic names, descriptions, claims, summaries, explanations) MUST be written in ${outputLanguage}.
+Keep only original participant quotes verbatim in their source language.
+
+`,
+  };
+}
+
+/**
+ * Builds each of the step functions called in doPipelineSteps.
  */
 const makePyserverFuncs = (
   config: PipelineConfig,
@@ -1074,7 +1117,14 @@ const makePyserverFuncs = (
   reportId?: string,
 ) => {
   const { instructions, llm, env } = config;
-  // Make each config object for each call
+
+  // Get language instructions for non-English output
+  const langInstr = getLanguageInstructions(instructions.outputLanguage);
+  const systemPromptWithLanguage =
+    instructions.systemInstructions + langInstr.system;
+
+  // Make each config object for each call, injecting language into both system and user prompts
+  // Language prefix goes at START of user prompt so LLM sees it before format instructions and data
   const [
     topicTreeLLMConfig,
     claimsLLMConfig,
@@ -1088,24 +1138,27 @@ const makePyserverFuncs = (
     instructions.summariesInstructions,
     instructions.cruxInstructions,
   ].map((prompt) => ({
-    system_prompt: instructions.systemInstructions,
-    user_prompt: prompt,
+    system_prompt: systemPromptWithLanguage,
+    user_prompt: langInstr.userPrefix + prompt,
     model_name: llm.model,
   }));
 
   /**
    * Calls the topic tree step on the pyserver, and then reshapes the response to the next step's props
-   * Uses Redis cache to reuse taxonomy for identical comment sets (based on SHA256 hash)
+   * Uses Redis cache to reuse taxonomy for identical comment sets (based on SHA256 hash + language)
    */
   const doTopicTreeStep = async (comments: apiPyserver.PipelineComment[]) => {
-    // Generate cache key from comments content
+    // Generate cache key from comments content + output language
     // Use JSON.stringify to avoid edge cases with newlines or other separators
     // This ensures deterministic serialization regardless of comment content
     const commentsText = JSON.stringify(comments.map((c) => c.text));
     const commentsHash = createHash("sha256")
       .update(commentsText)
       .digest("hex");
-    const cacheKey = `taxonomy:v1:${commentsHash}`;
+    // Include language in cache key to prevent cross-language cache pollution
+    // (same comments in Spanish vs English need different taxonomies)
+    const outputLang = instructions.outputLanguage || "English";
+    const cacheKey = `taxonomy:v1:${commentsHash}:${outputLang}`;
 
     pipelineLogger.info(
       {
