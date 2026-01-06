@@ -1,5 +1,8 @@
-import { getNPeople } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import {
+  getNPeopleFromSubtopics,
+  getNPeopleFromTopics,
+} from "tttc-common/transforms";
 import { defaultSubtopicPagination, defaultTopicPagination } from "./consts";
 import type { ClaimNode, ReportState, SubtopicNode, TopicNode } from "./types";
 
@@ -13,7 +16,9 @@ import type { ClaimNode, ReportState, SubtopicNode, TopicNode } from "./types";
 export const stateBuilder = (topics: schema.Topic[]): ReportState => ({
   children: topics
     .map(makeTopicNode)
-    .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data])),
+    .sort(
+      (a, b) => getNPeopleFromTopics([b.data]) - getNPeopleFromTopics([a.data]),
+    ),
   focusedId: null,
   error: null,
 });
@@ -26,7 +31,10 @@ const makeTopicNode = (topic: schema.Topic): TopicNode => ({
   pagination: Math.min(topic.subtopics.length - 1, defaultTopicPagination),
   children: topic.subtopics
     .map(makeSubtopicNode)
-    .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data])),
+    .sort(
+      (a, b) =>
+        getNPeopleFromSubtopics([b.data]) - getNPeopleFromSubtopics([a.data]),
+    ),
 });
 
 const makeSubtopicNode = (subtopic: schema.Subtopic): SubtopicNode => ({

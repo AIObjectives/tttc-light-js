@@ -1,5 +1,5 @@
-import { getReportDataObj } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
+import { getReportDataObj } from "tttc-common/transforms";
 import jsonData from "./aiAssemblies.json";
 
 export const reportData: schema.ReportDataObj = (() => {
