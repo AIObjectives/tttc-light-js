@@ -312,12 +312,19 @@ function buildSubtopics(
         title: subtopic.subtopicName,
         // biome-ignore lint/style/noNonNullAssertion: description required at this stage
         description: subtopic.subtopicShortDescription!,
-        claims,
+        claims: subtopic.claims
+          ? subtopic.claims.map((claim) => claimMap[claim.claimId!])
+          : [],
       });
     }
   }
 
-  return result;
+  return result.filter(
+    (subtopic) =>
+      subtopic.title &&
+      Array.isArray(subtopic.claims) &&
+      subtopic.claims.length > 0,
+  );
 }
 
 function buildTopics(
@@ -344,7 +351,7 @@ function buildTopics(
     }
   }
 
-  return result;
+  return result.filter((topic) => topic.title && topic.subtopics.length > 0);
 }
 
 export const getReportDataObj = (
