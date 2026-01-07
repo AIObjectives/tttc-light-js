@@ -32,6 +32,7 @@
     "test:common": "pnpm -F tttc-common run test",
     "test:server": "pnpm -F express-server run test",
     "test:client": "pnpm -F next-client run test",
+    "test:workspace": "vitest",
     "prepare": "husky",
     "quality:check": "cs delta --staged",
     "codescene:local": "cs delta --staged",
@@ -40,12 +41,13 @@
     "deps:check": "syncpack list-mismatches",
     "deps:fix": "syncpack fix-mismatches",
     "deps:lint": "syncpack lint",
+    "deps:unused": "bash scripts/check-unused-deps.sh",
     "spell": "git ls-files -z '*.md' '*.ts' '*.tsx' '*.py' | xargs -0 cspell --no-progress"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=24"
+    "node": ">=25"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.10",
@@ -65,8 +67,8 @@
       "color-normalize": "^2.0.0",
       "color-space": "^2.0.0",
       "flat-cache": "^4.0.1",
-      "@types/react": "19.2.7",
-      "@types/react-dom": "19.2.3"
+      "@types/react": "^19.2.7",
+      "@types/react-dom": "^19.2.3"
     }
   }
 }

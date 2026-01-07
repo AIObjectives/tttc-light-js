@@ -8,6 +8,7 @@
     "migrate-legacy": "tsx src/scripts/migrate-legacy-report.ts",
     "analyze-audit": "tsx src/scripts/analyze-audit-log.ts",
     "transfer-ownership": "tsx src/scripts/transfer-report-ownership.ts",
+    "report": "tsx src/scripts/report-tool.ts",
     "test": "vitest run"
   },
   "author": "AI Objectives Institute",
@@ -19,13 +20,13 @@
     "tsx": "^4.21.0"
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.14.0",
+    "@google-cloud/storage": "^7.17.2",
     "csv-parse": "^5.6.0",
     "dotenv": "^16.4.7",
-    "firebase-admin": "^13.0.1",
+    "firebase-admin": "^13.0.2",
     "fs-extra": "^11.3.0",
     "tttc-common": "workspace:*",
     "uuid": "^11.0.5",
-    "zod": "^3.23.8"
+    "zod": "^4.2.1"
   }
 }

@@ -1,8 +1,7 @@
 # Stage 1: Install dependencies and build
-FROM node:24-slim AS build
+FROM node:25-slim AS build
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN npm install -g pnpm@10
 
 WORKDIR /usr/src/app
 
@@ -26,9 +25,9 @@ COPY pipeline-worker/ ./pipeline-worker/
 RUN pnpm turbo run build --filter=pipeline-worker
 
 # Stage 2: Production image
-FROM node:24-slim
+FROM node:25-slim
 
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN npm install -g pnpm@10
 
 WORKDIR /usr/src/app
 
