@@ -62,6 +62,8 @@ jobs:
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
+            --startup-probe="httpGet.path=/api/health,initialDelaySeconds=5,periodSeconds=10,timeoutSeconds=10,failureThreshold=3" \
+            --liveness-probe="httpGet.path=/api/health,periodSeconds=30,timeoutSeconds=5,failureThreshold=3" \
             --quiet
 
       - name: Remove .env file
