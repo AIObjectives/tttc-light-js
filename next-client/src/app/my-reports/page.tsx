@@ -6,12 +6,12 @@ import { Center } from "@/components/layout";
 import MyReports from "@/components/myReports/MyReports";
 import { getFirebaseDb } from "@/lib/firebase/clientApp";
 import { getUsersReports } from "@/lib/firebase/firestoreClient";
-import { useUser } from "@/lib/hooks/getUser";
 import { useAsyncState } from "@/lib/hooks/useAsyncState";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 export default function MyReportsPage() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
-  const { user, loading } = useUser();
+  const { user, loading } = useUserQuery();
 
   useEffect(() => {
     if (!loading) {
@@ -36,7 +36,7 @@ export default function MyReportsPage() {
 }
 
 function MyReportsUI({ userId }: { userId: string }) {
-  const { user } = useUser();
+  const { user } = useUserQuery();
 
   const { isLoading, result } = useAsyncState(async () => {
     const db = getFirebaseDb();

@@ -2,7 +2,11 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
+import {
+  cleanupAuthSubscription,
+  initAuthSubscription,
+} from "./authSubscription";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -39,6 +43,12 @@ function getQueryClient() {
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();
+
+  // Initialize auth subscription when provider mounts
+  useEffect(() => {
+    initAuthSubscription(queryClient);
+    return () => cleanupAuthSubscription();
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

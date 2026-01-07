@@ -12,7 +12,7 @@ import {
   Input,
   TextArea,
 } from "@/components/elements";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 interface ProfileSetupModalProps {
   isOpen: boolean;
@@ -45,7 +45,7 @@ export function ProfileSetupModal({
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUser();
+  const { user } = useUserQuery();
 
   const handleSubmit = async () => {
     if (!user) {
