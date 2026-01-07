@@ -70,6 +70,9 @@ user-invocable: true
 ---
 # Skill instructions here
 ```
+1. `.claude/CLAUDE.team.md`
+2. All files in `.claude/rules/` (numbered for load order)
+3. Package-specific rules when working in those directories
 
 ## Memory Hierarchy
 
