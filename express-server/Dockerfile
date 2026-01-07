@@ -51,7 +51,7 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-HEALTHCHECK CMD curl --fail http://localhost:8080/ || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:8080/health || exit 1
 
 RUN useradd --user-group --create-home --shell /bin/false appuser
 USER appuser

@@ -59,7 +59,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/next-client/.next/static ./next-c
 COPY --from=builder --chown=nextjs:nodejs /app/common/dist ./node_modules/tttc-common/dist
 COPY --from=builder --chown=nextjs:nodejs /app/common/package.json ./node_modules/tttc-common/
 
-HEALTHCHECK CMD curl --fail http://localhost:3000/ || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:3000/api/health || exit 1
 
 EXPOSE 3000
 USER nextjs
