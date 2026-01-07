@@ -7,6 +7,18 @@ import {
   shutdownFeatureFlags,
 } from "../featureFlags";
 
+// Mock posthog-js to avoid localStorage issues in test environment
+vi.mock("posthog-js", () => ({
+  default: {
+    __loaded: false,
+    init: vi.fn(),
+    identify: vi.fn(),
+    isFeatureEnabled: vi.fn(() => false),
+    getFeatureFlag: vi.fn(() => undefined),
+    reset: vi.fn(),
+  },
+}));
+
 // Mock logger to avoid console output during tests
 vi.mock("tttc-common/logger", () => ({
   logger: {

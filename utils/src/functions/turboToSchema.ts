@@ -1,5 +1,5 @@
-import { llmPipelineToSchema } from "tttc-common/morphisms/pipeline";
 import * as schema from "tttc-common/schema";
+import { llmPipelineToSchema } from "tttc-common/transforms";
 import { v4 } from "uuid";
 import { z } from "zod";
 
