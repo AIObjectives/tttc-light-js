@@ -47,7 +47,7 @@
     "sanitize-html": "^2.17.0",
     "uuid": "^11.0.5",
     "weave": "^0.11.0",
-    "zod": "^3.23.8"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/sanitize-html": "^2.16.0",

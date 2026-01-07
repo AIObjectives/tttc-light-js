@@ -482,7 +482,7 @@ const pyserverClaimSchema = z.object({
 });
 
 const pyserverSubtopicDataSchema = z.object({
-  counts: z.record(z.unknown()).optional(),
+  counts: z.record(z.string(), z.unknown()).optional(),
   claims: z.array(pyserverClaimSchema),
 });
 
@@ -492,7 +492,7 @@ const pyserverSubtopicTupleSchema = z.tuple([
 ]);
 
 const pyserverTopicDataSchema = z.object({
-  counts: z.record(z.unknown()).optional(),
+  counts: z.record(z.string(), z.unknown()).optional(),
   topics: z.array(pyserverSubtopicTupleSchema),
 });
 
