@@ -27,10 +27,8 @@ class EnvValidationError extends Error {
  * Only primitive types (string, boolean, number) are supported.
  */
 const flagValueSchema = z.union([z.string(), z.boolean(), z.number()], {
-  errorMap: () => ({
-    message:
-      "LOCAL_FLAGS values must be primitives (string, boolean, or number). Arrays, objects, and null are not supported.",
-  }),
+  message:
+    "LOCAL_FLAGS values must be primitives (string, boolean, or number). Arrays, objects, and null are not supported.",
 });
 
 /**
