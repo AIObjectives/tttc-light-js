@@ -103,7 +103,9 @@ interface UpdateItemData {
  * Sleep for specified milliseconds
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, ms);
+  return promise;
 }
 
 /**
@@ -283,7 +285,7 @@ function getColumnIds(): ColumnIds {
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new Error(
-        `Invalid MONDAY_COLUMN_IDS format: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
+        `Invalid MONDAY_COLUMN_IDS format: ${error.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
       );
     }
     throw new Error(

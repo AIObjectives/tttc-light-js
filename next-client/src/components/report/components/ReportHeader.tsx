@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { getNPeople } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import {
+  getNPeopleFromClaims,
+  getNPeopleFromSubtopics,
+} from "tttc-common/transforms";
 import Icons from "@/assets/icons";
 import {
   BarChart,
@@ -43,7 +46,7 @@ export function ReportHeader({
 }) {
   const topics = themes.flatMap((theme) => theme.subtopics);
   const claims = topics.flatMap((topic) => topic.claims);
-  const nPeople = getNPeople(claims);
+  const nPeople = getNPeopleFromClaims(claims);
   const dateStr = date;
   return (
     <CardContent className="print:pb-0" data-report-header>
@@ -204,15 +207,15 @@ export function ReportSummary({
 export function ReportOverview({ topics }: { topics: schema.Topic[] }) {
   const getBarChartEntries = (topics: schema.Topic[]): BarChartItemType[] => {
     const largestN = topics.reduce((accum, curr) => {
-      const nClaims = getNPeople(curr.subtopics);
+      const nClaims = getNPeopleFromSubtopics(curr.subtopics);
       return Math.max(nClaims, accum);
     }, 0);
 
     return topics.map((topic) => ({
       id: topic.id,
       title: topic.title,
-      percentFill: getNPeople(topic.subtopics) / largestN,
-      subtitle: `${getNPeople(topic.subtopics)} people`,
+      percentFill: getNPeopleFromSubtopics(topic.subtopics) / largestN,
+      subtitle: `${getNPeopleFromSubtopics(topic.subtopics)} people`,
       color: topic.topicColor,
     }));
   };

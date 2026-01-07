@@ -6,7 +6,7 @@ import * as Firebase from "../../Firebase";
 import { Bucket } from "../../storage";
 import type { RequestWithLogger } from "../../types/request";
 import { getUnifiedReportHandler, migrateReportUrlHandler } from "../report";
-import { sendError, sendErrorByCode } from "../sendError";
+import { sendErrorByCode } from "../sendError";
 
 const testReportId = "A1B2C3D4E5F6G7H8I9J0";
 
@@ -140,7 +140,6 @@ vi.mock("tttc-common/utils", () => ({
 
 // Mock sendError functions
 vi.mock("../sendError", () => ({
-  sendError: vi.fn(),
   sendErrorByCode: vi.fn(),
 }));
 
@@ -200,18 +199,6 @@ describe("Report Routes", () => {
     mockReq = createMockRequest();
     mockRes = createMockResponse();
     vi.clearAllMocks();
-
-    // Setup sendError mock to behave like the real function
-    vi.mocked(sendError).mockImplementation(
-      (res, status, message, errorCode) => {
-        res.status(status).json({
-          error: {
-            message,
-            ...(errorCode ? { code: errorCode } : {}),
-          },
-        });
-      },
-    );
 
     // Setup sendErrorByCode mock to behave like the real function
     vi.mocked(sendErrorByCode).mockImplementation((res, code) => {

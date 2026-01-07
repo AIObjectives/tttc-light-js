@@ -1,4 +1,3 @@
-// import { getNClaims } from "./morphisms";
 import { z } from "zod";
 import { logger as browserLogger } from "../logger/browser";
 
@@ -60,56 +59,35 @@ export const llmUserConfig = z.object({
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
 
-export const llmSystemConfig = z.object({
-  model: z.string().optional(),
-  batchSize: z.number(),
-  filename: z.string(),
+/**
+ * LLMClaim - Claims extracted by LLM from source material
+ * Uses z.lazy() for the recursive `duplicates` field
+ */
+const llmClaimBase = z.object({
+  claim: z.string(),
+  quote: z.string(),
+  claimId: z.string().optional(),
+  topicName: z.string(),
+  subtopicName: z.string().optional(),
+  commentId: z.string().optional(),
+  duplicated: z.boolean().optional(),
 });
 
-export type oldSystemConfig = z.infer<typeof llmSystemConfig>;
-
-export const oldOptions = z.object({
-  model: z.string(),
-  data: sourceRow.array(),
-  title: z.string(),
-  question: z.string(),
-  pieCharts: llmPieChart.array().optional(),
-  description: z.string(),
-  systemInstructions: z.string(),
-  clusteringInstructions: z.string(),
-  extractionInstructions: z.string(),
-  dedupInstructions: z.string(),
-  summariesInstructions: z.string(),
-  cruxInstructions: z.string(),
-  cruxesEnabled: z.boolean(),
-  batchSize: z.number(),
-  filename: z.string(),
-});
-
-export type OldOptions = z.infer<typeof oldOptions>;
-
-// Zod has trouble with self-referential types, so leave this be until we need to parse
-type _LLMClaim = {
-  claim: string;
-  quote: string;
-  claimId?: string;
-  topicName: string;
-  subtopicName?: string;
-  commentId?: string;
+// Recursive type: base fields + optional array of self
+export type LLMClaim = z.infer<typeof llmClaimBase> & {
   duplicates?: LLMClaim[];
-  duplicated?: boolean;
 };
 
-const oldclaim = z.custom<_LLMClaim>();
-
-export type LLMClaim = z.infer<typeof oldclaim>;
-
-export const cache = z.object({
-  get: z.function().args(z.string()).returns(z.any()),
-  set: z.function().args(z.string(), z.any()).returns(z.void()),
+// Full schema with recursive field using z.lazy()
+const llmClaim: z.ZodType<LLMClaim> = llmClaimBase.extend({
+  duplicates: z.lazy(() => llmClaim.array()).optional(),
 });
 
-export type Cache = z.infer<typeof cache>;
+// Cache interface - plain TypeScript type (z.function() API changed in Zod 4)
+export interface Cache {
+  get: (key: string) => unknown;
+  set: (key: string, value: unknown) => void;
+}
 
 export const tracker = z.object({
   start: z.number(),
@@ -117,7 +95,7 @@ export const tracker = z.object({
   prompt_tokens: z.number(),
   completion_tokens: z.number(),
   total_tokens: z.number(),
-  unmatchedClaims: z.array(oldclaim),
+  unmatchedClaims: z.array(llmClaim),
   end: z.number().optional(),
   duration: z.string().optional(),
 });
@@ -136,7 +114,7 @@ export const llmSubtopic = z.object({
   subtopicShortDescription: z.string().optional(),
   subtopicId: z.string().optional(),
   claimsCount: z.number().optional(),
-  claims: z.array(oldclaim).optional(),
+  claims: z.array(llmClaim).optional(),
 });
 
 export type LLMSubtopic = z.infer<typeof llmSubtopic>;
@@ -895,17 +873,24 @@ export type Quote = z.infer<typeof quote>;
  * Claim
  * Claims are specific points made that are derived from the source material
  * They also contain an array of similarly made claims
+ * Uses z.lazy() for the recursive `similarClaims` field
  ********************************/
-// Zod has trouble with self-referential types, so leave this be until we need to parse
-export type Claim = {
-  id: string;
-  title: string;
-  quotes: Quote[];
+const claimBase = z.object({
+  id: z.string(),
+  title: z.string(),
+  quotes: z.array(quote),
+  number: z.number(),
+});
+
+// Recursive type: base fields + array of self
+export type Claim = z.infer<typeof claimBase> & {
   similarClaims: Claim[];
-  number: number;
 };
 
-export const claim = z.custom<Claim>();
+// Full schema with recursive field using z.lazy()
+export const claim: z.ZodType<Claim> = claimBase.extend({
+  similarClaims: z.lazy(() => claim.array()),
+});
 
 /********************************
  * Subtopic
@@ -1153,7 +1138,7 @@ export const auditLogEntry = z.object({
     "deduplicated",
   ]),
   reason: z.string().optional(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   timestamp: z.string(),
   // Additional tracking fields
   commentLength: z.number().optional(), // Length of comment text
