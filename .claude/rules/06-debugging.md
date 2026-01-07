@@ -82,6 +82,44 @@ pnpm -F utils migrate-legacy -- "bucket/file.json"
 1. Create owner user in Firebase Console
 2. Add `LEGACY_REPORT_USER_ID=<uid>` to `express-server/.env`
 
+## Firestore Debugging
+
+General-purpose Firestore CLI (JSON output by default, optimized for Claude Code):
+
+```bash
+# Report lookup (includes GCS check, format detection)
+pnpm -F utils firestore report <reportId>
+pnpm -F utils firestore report <reportId> --env prod
+
+# Download report JSON from GCS
+pnpm -F utils firestore download <reportId>
+pnpm -F utils firestore download <reportId> --out /tmp/report.json
+
+# Any document by collection/id
+pnpm -F utils firestore doc <collection> <docId>
+
+# User lookup
+pnpm -F utils firestore user <userId>
+
+# Job lookup
+pnpm -F utils firestore job <jobId>
+
+# List documents in collection
+pnpm -F utils firestore list reportRef --limit 20
+```
+
+**Options:**
+- `--env prod|dev` - Target environment (default: dev)
+- `--pretty` - Human-readable output instead of JSON
+- `--out <path>` - Save download to file instead of stdout
+- `--limit N` - Limit results for list command
+
+**Exit codes:** 0=success, 1=not found, 2=error
+
+**Prerequisites:**
+- `FIREBASE_CREDENTIALS_ENCODED` in `express-server/.env`
+- `GOOGLE_CREDENTIALS_ENCODED` in `express-server/.env` (for GCS checks)
+
 ## Direct gcloud Logging
 
 For complex queries:
