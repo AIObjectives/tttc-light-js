@@ -41,12 +41,13 @@
     "deps:check": "syncpack list-mismatches",
     "deps:fix": "syncpack fix-mismatches",
     "deps:lint": "syncpack lint",
+    "deps:unused": "bash scripts/check-unused-deps.sh",
     "spell": "git ls-files -z '*.md' '*.ts' '*.tsx' '*.py' | xargs -0 cspell --no-progress"
   },
   "author": "AI Objectives Institute",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=24"
+    "node": ">=25"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.10",
@@ -66,8 +67,8 @@
       "color-normalize": "^2.0.0",
       "color-space": "^2.0.0",
       "flat-cache": "^4.0.1",
-      "@types/react": "19.2.7",
-      "@types/react-dom": "19.2.3"
+      "@types/react": "^19.2.7",
+      "@types/react-dom": "^19.2.3"
     }
   }
 }

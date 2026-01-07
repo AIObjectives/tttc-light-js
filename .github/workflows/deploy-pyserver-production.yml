@@ -25,6 +25,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -37,18 +40,19 @@ jobs:
       ####
       - name: Build Docker image
         run: |
-          docker build -t gcr.io/tttc-light-js/pyserver-brandon -f pyserver/Dockerfile .
+          docker build -t gcr.io/tttc-light-js/pyserver-brandon:${{ env.SHORT_SHA }} -f pyserver/Dockerfile .
 
       - name: Push Docker image
         run: |
-          gcloud auth configure-docker
-          docker push gcr.io/tttc-light-js/pyserver-brandon
+          gcloud auth configure-docker --quiet
+          docker push gcr.io/tttc-light-js/pyserver-brandon:${{ env.SHORT_SHA }}
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy pyserver-brandon \
-            --image gcr.io/tttc-light-js/pyserver-brandon \
+            --image gcr.io/tttc-light-js/pyserver-brandon:${{ env.SHORT_SHA }} \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated \
-            --vpc-connector projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con
+            --vpc-connector projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con \
+            --quiet

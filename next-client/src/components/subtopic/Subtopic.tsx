@@ -1,7 +1,7 @@
 import React, { forwardRef, useContext, useMemo } from "react";
 import { mergeRefs } from "react-merge-refs";
-import { getNPeople } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import { getNPeopleFromClaims } from "tttc-common/transforms";
 import Icons from "@/assets/icons";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 import { getThemeColor } from "@/lib/color";
@@ -153,7 +153,7 @@ export function SubtopicSummary({
       <SubtopicHeader
         title={title}
         numClaims={claims.length}
-        numPeople={getNPeople(claims)}
+        numPeople={getNPeopleFromClaims(claims)}
       />
       <div className="print:hidden">
         <PointGraphic claims={claims} />

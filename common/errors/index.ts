@@ -23,6 +23,7 @@ export const ERROR_CODES = {
   CSV_TOO_LARGE: "CSV_TOO_LARGE",
   CSV_INVALID_FORMAT: "CSV_INVALID_FORMAT",
   CSV_SECURITY_VIOLATION: "CSV_SECURITY_VIOLATION",
+  CSV_EMPTY_COMMENTS: "CSV_EMPTY_COMMENTS",
   INVALID_REPORT_URI: "INVALID_REPORT_URI",
 
   // Resource errors (404)
@@ -68,6 +69,8 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     "The file format isn't recognized. Please ensure it's a valid CSV file.",
   [ERROR_CODES.CSV_SECURITY_VIOLATION]:
     "The file contains content that can't be processed. Please check the file and try again.",
+  [ERROR_CODES.CSV_EMPTY_COMMENTS]:
+    "Some rows have empty comment fields. Please ensure all comments contain text.",
   [ERROR_CODES.INVALID_REPORT_URI]: "The report address is invalid.",
 
   // Resources
@@ -108,6 +111,7 @@ export const ERROR_STATUS_CODES: Record<ErrorCode, number> = {
   [ERROR_CODES.CSV_TOO_LARGE]: 400,
   [ERROR_CODES.CSV_INVALID_FORMAT]: 400,
   [ERROR_CODES.CSV_SECURITY_VIOLATION]: 400,
+  [ERROR_CODES.CSV_EMPTY_COMMENTS]: 400,
   [ERROR_CODES.INVALID_REPORT_URI]: 400,
 
   // Resources - 404

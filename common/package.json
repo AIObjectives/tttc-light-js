@@ -4,77 +4,17 @@
   "type": "module",
   "description": "Shares common code across monorepo",
   "exports": {
-    "./api": {
-      "types": "./dist/api/index.d.ts",
-      "default": "./dist/api/index.js"
-    },
-    "./apiPyserver": {
-      "types": "./dist/apiPyserver/index.d.ts",
-      "default": "./dist/apiPyserver/index.js"
-    },
-    "./firebase": {
-      "types": "./dist/firebase/index.d.ts",
-      "default": "./dist/firebase/index.js"
-    },
-    "./functional-utils": {
-      "types": "./dist/functional-utils/index.d.ts",
-      "default": "./dist/functional-utils/index.js"
-    },
-    "./logger": {
-      "types": "./dist/logger/index.d.ts",
-      "default": "./dist/logger/index.js"
+    "./*": {
+      "types": "./dist/*/index.d.ts",
+      "default": "./dist/*/index.js"
     },
     "./logger/browser": {
       "types": "./dist/logger/browser.d.ts",
       "default": "./dist/logger/browser.js"
     },
-    "./morphisms": {
-      "types": "./dist/morphisms/index.d.ts",
-      "default": "./dist/morphisms/index.js"
-    },
-    "./morphisms/pipeline": {
-      "types": "./dist/morphisms/pipeline/index.d.ts",
-      "default": "./dist/morphisms/pipeline/index.js"
-    },
-    "./prompts": {
-      "types": "./dist/prompts/index.d.ts",
-      "default": "./dist/prompts/index.js"
-    },
-    "./schema": {
-      "types": "./dist/schema/index.d.ts",
-      "default": "./dist/schema/index.js"
-    },
-    "./utils": {
-      "types": "./dist/utils/index.d.ts",
-      "default": "./dist/utils/index.js"
-    },
-    "./csv-security": {
-      "types": "./dist/csv-security/index.d.ts",
-      "default": "./dist/csv-security/index.js"
-    },
-    "./csv-validation": {
-      "types": "./dist/csv-validation/index.d.ts",
-      "default": "./dist/csv-validation/index.js"
-    },
-    "./permissions": {
-      "types": "./dist/permissions/index.d.ts",
-      "default": "./dist/permissions/index.js"
-    },
-    "./analytics": {
-      "types": "./dist/analytics/index.d.ts",
-      "default": "./dist/analytics/index.js"
-    },
-    "./feature-flags": {
-      "types": "./dist/feature-flags/index.d.ts",
-      "default": "./dist/feature-flags/index.js"
-    },
     "./evaluations/*/scorers": {
       "types": "./dist/evaluations/*/scorers.d.ts",
       "default": "./dist/evaluations/*/scorers.js"
-    },
-    "./errors": {
-      "types": "./dist/errors/index.d.ts",
-      "default": "./dist/errors/index.js"
     },
     "./test-utils": {
       "types": "./dist/test-utils/index.d.ts",
@@ -104,21 +44,18 @@
   "license": "Apache-2.0",
   "dependencies": {
     "openai": "^4.104.0",
-    "pino": "^9.9.0",
+    "pino": "^10.1.0",
     "pino-pretty": "^13.1.1",
-    "posthog-js": "^1.260.1",
+    "posthog-js": "^1.301.2",
     "posthog-node": "^4.18.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "sanitize-html": "^2.17.0",
-    "uuid": "^10.0.0",
-    "weave": "^0.9.3",
-    "zod": "^3.23.8"
+    "uuid": "^11.0.5",
+    "weave": "^0.11.0",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.67",
     "@types/sanitize-html": "^2.16.0",
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.20.6"
+    "tsx": "^4.21.0"
   }
 }

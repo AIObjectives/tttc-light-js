@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "25"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -35,6 +35,9 @@ jobs:
 
       - name: Check formatting and lint
         run: pnpm exec biome check .
+
+      - name: Check dependency versions
+        run: pnpm deps:lint
 
       - name: Build, typecheck, and test all packages
         env:
