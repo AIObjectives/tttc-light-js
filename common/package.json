@@ -15,6 +15,10 @@
     "./evaluations/*/scorers": {
       "types": "./dist/evaluations/*/scorers.d.ts",
       "default": "./dist/evaluations/*/scorers.js"
+    },
+    "./test-utils": {
+      "types": "./dist/test-utils/index.d.ts",
+      "default": "./dist/test-utils/index.js"
     }
   },
   "engines": {
