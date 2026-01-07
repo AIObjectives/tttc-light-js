@@ -6,7 +6,7 @@ import * as schema from "../../../schema";
 import { _internal, llmPipelineToSchema } from "../../pipeline";
 
 const {
-  getTopicsFromTaxonomy,
+  buildTopics,
   getReferenceEndIndex,
   getReferenceStartIndex,
   getReportDataObj,
@@ -184,7 +184,7 @@ describe("Pipeline tests", () => {
     const sourceMap = buildSourceMap(pipelineData.data);
 
     const claimMap = buildClaimsMap(pipelineData, sourceMap);
-    const themes = getTopicsFromTaxonomy(claimMap)(pipelineData.tree);
+    const themes = buildTopics(pipelineData.tree, claimMap);
     expect(schema.topic.array().safeParse(themes).success).true;
   });
 
@@ -328,5 +328,83 @@ describe("Pipeline tests", () => {
     const topicTitles = reportData.topics.map((topic) => topic.title);
     expect(topicTitles).not.toContain("Topic with only empty subtopics");
     expect(topicTitles).not.toContain("Topic with no subtopics at all");
+  });
+
+  test("Topics and subtopics with empty titles are filtered out", () => {
+    const mockPipelineData: schema.LLMPipelineOutput = {
+      ...pipelineData,
+      tree: [
+        {
+          topicName: "", // Empty topic title
+          topicShortDescription: "Topic with empty title",
+          subtopics: [
+            {
+              subtopicName: "Valid subtopic under empty topic",
+              subtopicShortDescription: "Has claims",
+              claims: [
+                {
+                  claim: "Test claim",
+                  claimId: "claim-1",
+                  quote: "Test quote",
+                  commentId: pipelineData.data[0].id,
+                  topicName: "",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          topicName: "Valid Topic",
+          topicShortDescription: "Has valid subtopics",
+          subtopics: [
+            {
+              subtopicName: "", // Empty subtopic title
+              subtopicShortDescription: "Subtopic with empty title",
+              claims: [
+                {
+                  claim: "Test claim 2",
+                  claimId: "claim-2",
+                  quote: "Test quote 2",
+                  commentId: pipelineData.data[0].id,
+                  topicName: "Valid Topic",
+                },
+              ],
+            },
+            {
+              subtopicName: "Valid Subtopic",
+              subtopicShortDescription: "Has claims",
+              claims: [
+                {
+                  claim: "Test claim 3",
+                  claimId: "claim-3",
+                  quote: "Test quote 3",
+                  commentId: pipelineData.data[0].id,
+                  topicName: "Valid Topic",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const reportData = getReportDataObj(mockPipelineData);
+
+    // Should only have the topic with valid title
+    expect(reportData.topics.length).toBe(1);
+    expect(reportData.topics[0].title).toBe("Valid Topic");
+
+    // Should only have the subtopic with valid title
+    expect(reportData.topics[0].subtopics.length).toBe(1);
+    expect(reportData.topics[0].subtopics[0].title).toBe("Valid Subtopic");
+
+    // Explicitly assert empty-titled items are filtered
+    const topicTitles = reportData.topics.map((topic) => topic.title);
+    expect(topicTitles).not.toContain("");
+
+    const subtopicTitles = reportData.topics[0].subtopics.map(
+      (subtopic) => subtopic.title,
+    );
+    expect(subtopicTitles).not.toContain("");
   });
 }); // Close describe block

@@ -34,11 +34,11 @@ This guide covers setting up a local development environment for Talk to the Cit
 
 Before starting setup, ensure you have:
 
-- **Node.js 24+** and **pnpm**
+- **Node.js 25+** and **pnpm**
   - **New to Node.js?** Use [nvm](https://github.com/nvm-sh/nvm) to easily install and switch between Node.js versions:
     ```bash
-    # Install Node.js 24, then use .nvmrc for automatic version selection
-    nvm install 24
+    # Install Node.js 25, then use .nvmrc for automatic version selection
+    nvm install 25
     nvm use  # Reads version from .nvmrc file
     ```
   - **Install pnpm:**
@@ -110,6 +110,12 @@ Required for LLM processing in pyserver.
 1. Create account at [OpenAI](https://platform.openai.com/)
 2. Generate API key in API settings
 3. Save the key securely (will be used in environment variables)
+
+## Environment Variable File Format
+
+Use plain `KEY=value` format in `.env` files (no `export` prefix). This ensures compatibility with Docker Compose and dotenv libraries.
+
+To source `.env` files in your shell: `set -a; source .env; set +a`
 
 ## Local Development Setup
 
