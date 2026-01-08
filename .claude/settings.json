@@ -1,0 +1,28 @@
+{
+  "allowedTools": [
+    "Bash(pnpm *)",
+    "Bash(git status)",
+    "Bash(git diff *)",
+    "Bash(git log *)",
+    "Bash(git branch)",
+    "Bash(git branch -a)",
+    "Bash(git branch -v)",
+    "Bash(git branch --all)",
+    "Bash(git branch --verbose)",
+    "Bash(git checkout *)",
+    "Bash(git fetch *)",
+    "Bash(git show *)",
+    "Bash(gcloud logging read *)",
+    "Bash(gcloud run services list *)",
+    "Bash(gcloud run services describe *)",
+    "Bash(gcloud run revisions list *)",
+    "mcp__playwright__*"
+  ],
+  "disallowedTools": [
+    "Bash(git add -A)",
+    "Bash(git add .)",
+    "Bash(git add --all)",
+    "Bash(git stash -u)",
+    "Bash(git stash --include-untracked)"
+  ]
+}
