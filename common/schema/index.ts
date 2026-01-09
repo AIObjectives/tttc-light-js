@@ -570,16 +570,13 @@ export const subtopicCrux = z
     explanation: z.string(), // LLM's reasoning for why this divides participants
     agreementScore: z
       .number()
-      .min(0, "Agreement score must be between 0 and 1")
-      .max(1, "Agreement score must be between 0 and 1"), // 0-1: ratio of speakers who agree
+      .transform((val) => Math.max(0, Math.min(1, val))), // Clamp to 0-1 range
     disagreementScore: z
       .number()
-      .min(0, "Disagreement score must be between 0 and 1")
-      .max(1, "Disagreement score must be between 0 and 1"), // 0-1: ratio of speakers who disagree
+      .transform((val) => Math.max(0, Math.min(1, val))), // Clamp to 0-1 range
     controversyScore: z
       .number()
-      .min(0, "Controversy score must be between 0 and 1")
-      .max(1, "Controversy score must be between 0 and 1"), // 0-1: how evenly split (1.0 = perfect 50/50 split)
+      .transform((val) => Math.max(0, Math.min(1, val))), // Clamp to 0-1 range
     speakersInvolved: z.number().int().nonnegative().optional(), // Total speakers who took a position (agree + disagree)
     totalSpeakersInSubtopic: z.number().int().nonnegative().optional(), // Total speakers with claims in this subtopic
   })

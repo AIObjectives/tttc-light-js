@@ -351,3 +351,62 @@ describe("SubtopicCrux Speaker Deduplication", () => {
     });
   });
 });
+
+describe("SubtopicCrux Score Clamping", () => {
+  const baseValidCrux = {
+    topic: "AI Safety",
+    subtopic: "Regulation",
+    cruxClaim: "Government should regulate AI development",
+    agree: ["1:Alice"],
+    disagree: ["2:Bob"],
+    no_clear_position: [],
+    explanation: "Test explanation",
+    speakersInvolved: 2,
+    totalSpeakersInSubtopic: 5,
+  };
+
+  it("clamps scores above 1.0 to 1.0", () => {
+    const input = {
+      ...baseValidCrux,
+      agreementScore: 1.5,
+      disagreementScore: 2.0,
+      controversyScore: 1.2,
+    };
+
+    const result = subtopicCrux.parse(input);
+
+    expect(result.agreementScore).toBe(1.0);
+    expect(result.disagreementScore).toBe(1.0);
+    expect(result.controversyScore).toBe(1.0);
+  });
+
+  it("clamps scores below 0.0 to 0.0", () => {
+    const input = {
+      ...baseValidCrux,
+      agreementScore: -0.1,
+      disagreementScore: -0.5,
+      controversyScore: -1.0,
+    };
+
+    const result = subtopicCrux.parse(input);
+
+    expect(result.agreementScore).toBe(0.0);
+    expect(result.disagreementScore).toBe(0.0);
+    expect(result.controversyScore).toBe(0.0);
+  });
+
+  it("preserves valid scores within [0, 1] range", () => {
+    const input = {
+      ...baseValidCrux,
+      agreementScore: 0.0,
+      disagreementScore: 0.5,
+      controversyScore: 1.0,
+    };
+
+    const result = subtopicCrux.parse(input);
+
+    expect(result.agreementScore).toBe(0.0);
+    expect(result.disagreementScore).toBe(0.5);
+    expect(result.controversyScore).toBe(1.0);
+  });
+});
