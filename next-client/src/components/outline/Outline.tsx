@@ -50,13 +50,9 @@ function Outline({
     setScrollTo,
     dispatch,
     activeContentTab,
-    setActiveContentTab,
     addOns,
-    focusedCruxId,
-    getSubtopicId,
     suppressFocusTracking,
   } = useContext(ReportContext);
-  const sortedCruxes = getSortedCruxes(addOns);
 
   // For mobile outline navigation, we need to scroll AFTER closing the sheet.
   // The useDelayedScroll hook has cleanup that aborts on unmount, which cancels
@@ -74,104 +70,106 @@ function Outline({
     [onNavigate, setScrollTo],
   );
 
+  /** Handle topic click: expand, focus, and scroll */
+  const handleTopicClick = useCallback(
+    (nodeId: string) => {
+      suppressFocusTracking();
+      reportDispatch({ type: "open", payload: { id: nodeId } });
+      dispatch({ type: "focus", payload: { id: nodeId } });
+      navigateAndScroll(nodeId);
+    },
+    [suppressFocusTracking, reportDispatch, dispatch, navigateAndScroll],
+  );
+
   return (
     <OutlineContext.Provider value={{ dispatch: outlineDispatch }}>
       <nav aria-label="Report outline" className="h-full flex flex-col gap-2">
-        {/* Top icon */}
         <TextIcon icon={<Icons.Outline size={16} />} className="pl-7">
           Outline
         </TextIcon>
-        {/* Scrolly part */}
         <Col gap={outlineSpacing} className="overflow-y-scroll no-scrollbar">
-          {activeContentTab === "cruxes"
-            ? sortedCruxes.map((crux) => {
-                const cruxId = `${crux.topic}:${crux.subtopic}`;
-                const category = getControversyCategory(crux.controversyScore);
-                const colors = getControversyColors(crux.controversyScore);
-                const isHighlighted = focusedCruxId === cruxId;
-                const subtopicId = getSubtopicId(crux.topic, crux.subtopic);
-                return (
-                  <CruxOutlineItem
-                    key={cruxId}
-                    cruxClaim={crux.cruxClaim}
-                    subtopic={crux.subtopic}
-                    category={category}
-                    colors={colors}
-                    isHighlighted={isHighlighted}
-                    onClick={() => {
-                      if (!subtopicId) {
-                        console.warn(
-                          `[Outline] Cannot navigate: subtopic "${crux.subtopic}" not found in topic "${crux.topic}"`,
-                        );
-                        return;
-                      }
-                      // Switch to report tab and expand the subtopic
-                      setActiveContentTab("report");
-                      reportDispatch({
-                        type: "open",
-                        payload: { id: subtopicId },
-                      });
-                      // Close sheet and scroll
-                      navigateAndScroll(subtopicId);
-                    }}
+          {activeContentTab === "cruxes" ? (
+            <CruxOutlineList
+              addOns={addOns}
+              reportDispatch={reportDispatch}
+              navigateAndScroll={navigateAndScroll}
+            />
+          ) : (
+            outlineState.tree.map((node) => (
+              <OutlineItem
+                key={node.id}
+                node={node}
+                title={node.title}
+                onBodyClick={() => handleTopicClick(node.id)}
+                onIconClick={() =>
+                  reportDispatch({
+                    type: "toggleTopic",
+                    payload: { id: node.id },
+                  })
+                }
+              >
+                {node?.children?.map((subnode) => (
+                  <OutlineItem
+                    key={subnode.id}
+                    node={subnode}
+                    title={subnode.title}
+                    hierarchyDepth={1}
+                    isLeafNode={true}
+                    parentId={node.id}
+                    onBodyClick={() => handleTopicClick(subnode.id)}
                   />
-                );
-              })
-            : outlineState.tree.map((node) => (
-                <OutlineItem
-                  key={node.id}
-                  node={node}
-                  title={node.title}
-                  onBodyClick={() => {
-                    // Suppress scroll-based focus tracking during programmatic navigation
-                    suppressFocusTracking();
-                    // Explicitly set the focus to highlight the clicked item
-                    dispatch({
-                      type: "focus",
-                      payload: { id: node.id },
-                    });
-                    // Close sheet and scroll (in that order to avoid abort on unmount)
-                    navigateAndScroll(node.id);
-                  }}
-                  onIconClick={() =>
-                    reportDispatch({
-                      type: "toggleTopic",
-                      payload: { id: node.id },
-                    })
-                  }
-                >
-                  {/* Since we're only going two levels deep, directly call the render for the subnodes here. */}
-                  {node?.children?.map((subnode) => (
-                    <OutlineItem
-                      key={subnode.id}
-                      node={subnode}
-                      title={subnode.title}
-                      hierarchyDepth={1}
-                      isLeafNode={true}
-                      parentId={node.id}
-                      onBodyClick={() => {
-                        // Suppress scroll-based focus tracking during programmatic navigation
-                        suppressFocusTracking();
-                        // Open the subtopic to ensure it's visible
-                        reportDispatch({
-                          type: "open",
-                          payload: { id: subnode.id },
-                        });
-                        // Explicitly set the focus to highlight the clicked item
-                        dispatch({
-                          type: "focus",
-                          payload: { id: subnode.id },
-                        });
-                        // Close sheet and scroll (in that order to avoid abort on unmount)
-                        navigateAndScroll(subnode.id);
-                      }}
-                    />
-                  ))}
-                </OutlineItem>
-              ))}
+                ))}
+              </OutlineItem>
+            ))
+          )}
         </Col>
       </nav>
     </OutlineContext.Provider>
+  );
+}
+
+/** Renders the list of crux outline items when on the cruxes tab */
+function CruxOutlineList({
+  addOns,
+  reportDispatch,
+  navigateAndScroll,
+}: {
+  addOns?: Parameters<typeof getSortedCruxes>[0];
+  reportDispatch: Dispatch<ReportStateAction>;
+  navigateAndScroll: (targetId: string) => void;
+}) {
+  const { focusedCruxId, getSubtopicId, setActiveContentTab } =
+    useContext(ReportContext);
+  const sortedCruxes = getSortedCruxes(addOns);
+
+  return (
+    <>
+      {sortedCruxes.map((crux) => {
+        const cruxId = `${crux.topic}:${crux.subtopic}`;
+        const subtopicId = getSubtopicId(crux.topic, crux.subtopic);
+        return (
+          <CruxOutlineItem
+            key={cruxId}
+            cruxClaim={crux.cruxClaim}
+            subtopic={crux.subtopic}
+            category={getControversyCategory(crux.controversyScore)}
+            colors={getControversyColors(crux.controversyScore)}
+            isHighlighted={focusedCruxId === cruxId}
+            onClick={() => {
+              if (!subtopicId) {
+                console.warn(
+                  `[Outline] Cannot navigate: subtopic "${crux.subtopic}" not found in topic "${crux.topic}"`,
+                );
+                return;
+              }
+              setActiveContentTab("report");
+              reportDispatch({ type: "open", payload: { id: subtopicId } });
+              navigateAndScroll(subtopicId);
+            }}
+          />
+        );
+      })}
+    </>
   );
 }
 

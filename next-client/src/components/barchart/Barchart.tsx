@@ -15,7 +15,8 @@ export type BarChartItemType = {
 };
 
 export function BarChart({ entries }: { entries: BarChartItemType[] }) {
-  const { setScrollTo, setActiveContentTab } = useContext(ReportContext);
+  const { setScrollTo, setActiveContentTab, dispatch } =
+    useContext(ReportContext);
   return (
     <Col>
       {entries.map((entry) => (
@@ -25,6 +26,8 @@ export function BarChart({ entries }: { entries: BarChartItemType[] }) {
           onClick={() => {
             // Switch to report tab first (in case we're on cruxes tab)
             setActiveContentTab("report");
+            // Open/expand the topic so it's visible
+            dispatch({ type: "open", payload: { id: entry.id } });
             // Then scroll to the topic
             setScrollTo([entry.id, Date.now()]);
           }}
