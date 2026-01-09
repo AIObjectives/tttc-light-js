@@ -105,7 +105,10 @@ const papaParse = async (
   // Dynamic import - only loads when function is called
   const Papa = (await import("papaparse")).default;
 
-  const parseResult = Papa.parse(Buffer.from(buffer).toString(), {
+  // Normalize line endings to LF - mixed CRLF/LF can confuse PapaParse quote handling
+  const content = Buffer.from(buffer).toString().replace(/\r\n/g, "\n");
+
+  const parseResult = Papa.parse(content, {
     header: true,
     skipEmptyLines: true,
   });
