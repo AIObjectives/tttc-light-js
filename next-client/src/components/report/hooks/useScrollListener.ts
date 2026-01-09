@@ -40,6 +40,7 @@ function useScrollListener(
     const ref = useRef<HTMLDivElement>(null);
 
     // When scrollState changes, see if new state is this node's id. If so, scroll to it.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToState from outer closure is intentional - effect must re-run when scroll target changes
     useEffect(() => {
       const [currId] = scrollToState;
       const element = ref.current;
@@ -71,7 +72,7 @@ function useScrollListener(
         element.removeEventListener("animationend", handleAnimationEnd);
         element.classList.remove("scroll-target-highlight");
       };
-    }, [listenForId]);
+    }, [listenForId, scrollToState]);
 
     return ref;
   };
