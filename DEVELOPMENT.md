@@ -482,3 +482,13 @@ id,interview,comment
 
 - `reddit_climate_change_posts_500.csv`: 500 Reddit posts (uses `id,comment` format)
 - `tiny.csv`, `pets.csv`: Small test files for development
+
+## Claude Code Configuration
+
+This project includes shared Claude Code configuration in the `.claude/` directory:
+
+- **`.claude/CLAUDE.team.md`**: Main team configuration entry point
+- **`.claude/rules/`**: Auto-loaded rules organized by topic
+- **`.claude/README.md`**: Full documentation on configuration structure and integration options
+
+If you use Claude Code, see `.claude/README.md` for how to integrate team configuration with any existing personal `CLAUDE.md` you may have.
