@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronsUpDown } from "lucide-react";
 import React, { createContext, useEffect } from "react";
 import { toast } from "sonner";
 // Default prompts for comparison
@@ -16,7 +15,6 @@ import type * as schema from "tttc-common/schema";
 import { getSortedCruxes, getTopicControversy } from "@/lib/crux/utils";
 import { useHashChange } from "@/lib/hooks/useHashChange";
 import { downloadReportData } from "@/lib/report/downloadUtils";
-import { cn } from "@/lib/utils/shadcn";
 // Zustand stores for state management
 import { useScrollEffect } from "@/stores/hooks";
 import { useReportStore, useTopics } from "@/stores/reportStore";
@@ -25,16 +23,11 @@ import {
   useIsMobileOutlineOpen,
   useReportUIStore,
   useSortByControversy,
-  useSortMode,
 } from "@/stores/reportUIStore";
-import type { SortMode, TopicNode, TreeNode } from "@/stores/types";
+import type { TopicNode, TreeNode } from "@/stores/types";
 import {
   Button,
   CardContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   ErrorBoundary,
   Tabs,
   TabsContent,
@@ -51,6 +44,7 @@ import { ReportHeader } from "./components/ReportHeader";
 // Extracted components
 import { ReportLayout } from "./components/ReportLayout";
 import { ReportToolbar } from "./components/ReportToolbar";
+import { SortDropdown } from "./components/SortDropdown";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
 import { useTabHashSync } from "./hooks/useTabHashSync";
 
@@ -297,8 +291,6 @@ function ReportContentTabs({
   filename: string;
 }) {
   const openNode = useReportStore((s) => s.openNode);
-  const sortMode = useSortMode();
-  const setSortMode = useReportUIStore((s) => s.setSortMode);
   const activeContentTab = useActiveContentTab();
   const setActiveContentTab = useReportUIStore((s) => s.setActiveContentTab);
 
@@ -310,18 +302,6 @@ function ReportContentTabs({
   const hasBridgingData =
     addOns?.claimBridgingScores && addOns.claimBridgingScores.length > 0;
 
-  // Helper to get sort label for button
-  const getSortLabel = (mode: SortMode): string => {
-    switch (mode) {
-      case "controversy":
-        return "Controversy";
-      case "bridging":
-        return "Bridging statements";
-      default:
-        return "Frequent claims";
-    }
-  };
-
   const handleNavigateToSubtopic = (subtopicId: string) => {
     // Switch to report tab
     setActiveContentTab("report");
@@ -332,6 +312,9 @@ function ReportContentTabs({
 
   // Sync URL hash with tab state
   useTabHashSync(activeContentTab, setActiveContentTab, !!hasControversyData);
+
+  const showSortDropdown =
+    activeContentTab === "report" && (hasControversyData || hasBridgingData);
 
   return (
     <CardContent className="px-0 -mt-6">
@@ -350,53 +333,12 @@ function ReportContentTabs({
           )}
 
           {/* Sort dropdown - show when on Report tab and at least one sort feature is available */}
-          {activeContentTab === "report" &&
-            (hasControversyData || hasBridgingData) && (
-              <div className="flex items-center gap-2 ml-auto">
-                <span className="text-sm text-muted-foreground">Sort by</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      {getSortLabel(sortMode)}
-                      <ChevronsUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setSortMode("frequent")}
-                      className={cn(
-                        "cursor-pointer",
-                        sortMode === "frequent" && "bg-accent",
-                      )}
-                    >
-                      Frequent claims
-                    </DropdownMenuItem>
-                    {hasControversyData && (
-                      <DropdownMenuItem
-                        onClick={() => setSortMode("controversy")}
-                        className={cn(
-                          "cursor-pointer",
-                          sortMode === "controversy" && "bg-accent",
-                        )}
-                      >
-                        Controversy
-                      </DropdownMenuItem>
-                    )}
-                    {hasBridgingData && (
-                      <DropdownMenuItem
-                        onClick={() => setSortMode("bridging")}
-                        className={cn(
-                          "cursor-pointer",
-                          sortMode === "bridging" && "bg-accent",
-                        )}
-                      >
-                        Bridging statements
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
+          {showSortDropdown && (
+            <SortDropdown
+              hasControversyData={!!hasControversyData}
+              hasBridgingData={!!hasBridgingData}
+            />
+          )}
         </Row>
 
         {/* Tab content */}
