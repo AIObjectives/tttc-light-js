@@ -69,6 +69,7 @@
     "effect": "^3.18.4",
     "firebase": "^11.1.0",
     "http-errors": "^2.0.0",
+    "immer": "^11.1.0",
     "lucide-react": "^0.562.0",
     "next": "^16.1.0",
     "next-themes": "^0.4.6",
@@ -84,7 +85,8 @@
     "tailwindcss-animate": "^1.0.7",
     "tttc-common": "workspace:*",
     "vaul": "^1.1.2",
-    "zod": "^4.2.1"
+    "zod": "^4.2.1",
+    "zustand": "^5.0.9"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.40.1"
