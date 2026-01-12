@@ -6,6 +6,12 @@ import {
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
+import {
+  defaultAddSubtopicPagination,
+  defaultAddTopicPagination,
+  defaultSubtopicPagination,
+  defaultTopicPagination,
+} from "./consts";
 import { DEVTOOLS_ENABLED } from "./middleware";
 import type {
   ClaimNode,
@@ -15,20 +21,6 @@ import type {
   TopicNode,
   TreeNode,
 } from "./types";
-
-// ============================================
-// Constants (matching existing useReportState behavior)
-// ============================================
-
-/** Initial subtopics shown per topic (0-indexed, so 1 = show 2) */
-const DEFAULT_TOPIC_PAGINATION = 1;
-/** Additional subtopics shown on expand */
-const TOPIC_PAGINATION_INCREMENT = 2;
-
-/** Initial claims shown per subtopic (0-indexed, so 7 = show 8) */
-const DEFAULT_SUBTOPIC_PAGINATION = 7;
-/** Additional claims shown on expand */
-const SUBTOPIC_PAGINATION_INCREMENT = 9;
 
 // ============================================
 // Tree Building Helpers
@@ -48,10 +40,7 @@ function makeSubtopicNode(subtopic: Subtopic): SubtopicNode {
     _tag: "SubtopicNode",
     id: subtopic.id,
     data: subtopic,
-    pagination: Math.min(
-      subtopic.claims.length - 1,
-      DEFAULT_SUBTOPIC_PAGINATION,
-    ),
+    pagination: Math.min(subtopic.claims.length - 1, defaultSubtopicPagination),
     children: subtopic.claims.map(makeClaimNode),
   };
 }
@@ -70,7 +59,7 @@ function makeTopicNode(topic: Topic): TopicNode {
     id: topic.id,
     data: topic,
     isOpen: false,
-    pagination: Math.min(topic.subtopics.length - 1, DEFAULT_TOPIC_PAGINATION),
+    pagination: Math.min(topic.subtopics.length - 1, defaultTopicPagination),
     children: subtopicNodes,
   };
 }
@@ -229,7 +218,7 @@ export const useReportStore = create<ReportStore>()(
           set((state) => {
             const topic = state.topics[path.topicIdx];
             topic.pagination = Math.min(
-              topic.pagination + TOPIC_PAGINATION_INCREMENT,
+              topic.pagination + defaultAddTopicPagination,
               topic.children.length - 1,
             );
           });
@@ -238,7 +227,7 @@ export const useReportStore = create<ReportStore>()(
             const subtopic =
               state.topics[path.topicIdx].children[path.subtopicIdx];
             subtopic.pagination = Math.min(
-              subtopic.pagination + SUBTOPIC_PAGINATION_INCREMENT,
+              subtopic.pagination + defaultAddSubtopicPagination,
               subtopic.children.length - 1,
             );
           });

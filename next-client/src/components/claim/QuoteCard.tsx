@@ -2,13 +2,15 @@ import { useContext, useMemo } from "react";
 import type * as schema from "tttc-common/schema";
 import { getQuotes } from "tttc-common/transforms";
 import { sortQuotesByBridging } from "@/lib/bridging/utils";
+import { useSortByBridging } from "@/stores/reportUIStore";
 import { ScrollArea } from "../elements";
 import { Col, Row } from "../layout";
 import { Quote } from "../quote/Quote";
-import { ReportContext } from "../report/Report";
+import { ReportDataContext } from "../report/Report";
 
 export function QuoteCard({ claim }: { claim: schema.Claim }) {
-  const { addOns, sortByBridging } = useContext(ReportContext);
+  const { addOns } = useContext(ReportDataContext);
+  const sortByBridging = useSortByBridging();
 
   // Get quotes and optionally sort by bridging score
   const quotes = useMemo(() => {
