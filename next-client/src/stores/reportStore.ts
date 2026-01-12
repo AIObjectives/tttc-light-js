@@ -1,5 +1,8 @@
-import { getNPeople } from "tttc-common/morphisms";
 import type { Claim, Subtopic, Topic } from "tttc-common/schema";
+import {
+  getNPeopleFromSubtopics,
+  getNPeopleFromTopics,
+} from "tttc-common/transforms";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -57,7 +60,10 @@ function makeTopicNode(topic: Topic): TopicNode {
   const subtopicNodes = topic.subtopics
     .map(makeSubtopicNode)
     // Sort subtopics by number of people (most first)
-    .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data]));
+    .sort(
+      (a, b) =>
+        getNPeopleFromSubtopics([b.data]) - getNPeopleFromSubtopics([a.data]),
+    );
 
   return {
     _tag: "TopicNode",
@@ -82,7 +88,9 @@ function buildTree(topics: Topic[]): {
   // Build topic nodes and sort by number of people (most first)
   const nodes: TopicNode[] = topics
     .map(makeTopicNode)
-    .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data]));
+    .sort(
+      (a, b) => getNPeopleFromTopics([b.data]) - getNPeopleFromTopics([a.data]),
+    );
 
   // Build the idMap for O(1) lookups
   nodes.forEach((topic, topicIdx) => {
