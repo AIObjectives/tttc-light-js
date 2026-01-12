@@ -3,8 +3,11 @@
  * These functions mirror the internal store builders for creating
  * topic/subtopic/claim nodes without actually using the store.
  */
-import { getNPeople } from "tttc-common/morphisms";
 import type { Claim, Subtopic, Topic } from "tttc-common/schema";
+import {
+  getNPeopleFromSubtopics,
+  getNPeopleFromTopics,
+} from "tttc-common/transforms";
 import { defaultSubtopicPagination, defaultTopicPagination } from "./consts";
 import type { ClaimNode, SubtopicNode, TopicNode } from "./types";
 
@@ -29,7 +32,10 @@ function makeSubtopicNode(subtopic: Subtopic): SubtopicNode {
 function makeTopicNode(topic: Topic): TopicNode {
   const subtopicNodes = topic.subtopics
     .map(makeSubtopicNode)
-    .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data]));
+    .sort(
+      (a, b) =>
+        getNPeopleFromSubtopics([b.data]) - getNPeopleFromSubtopics([a.data]),
+    );
 
   return {
     _tag: "TopicNode",
@@ -48,7 +54,9 @@ function makeTopicNode(topic: Topic): TopicNode {
 export function buildTopicNodes(topics: Topic[]): TopicNode[] {
   return topics
     .map(makeTopicNode)
-    .sort((a, b) => getNPeople([b.data]) - getNPeople([a.data]));
+    .sort(
+      (a, b) => getNPeopleFromTopics([b.data]) - getNPeopleFromTopics([a.data]),
+    );
 }
 
 /**

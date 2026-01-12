@@ -3,8 +3,8 @@
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import { getThemeColor } from "@/lib/color";
-import { useReportUIStore } from "@/stores/reportUIStore";
 import { useReportStore } from "@/stores/reportStore";
+import { useReportUIStore } from "@/stores/reportUIStore";
 import { Col, Row } from "../layout";
 
 export type BarChartItemType = {

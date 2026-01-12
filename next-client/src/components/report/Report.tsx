@@ -27,7 +27,7 @@ import {
   useSortByControversy,
   useSortMode,
 } from "@/stores/reportUIStore";
-import type { SortMode, TopicNode } from "@/stores/types";
+import type { SortMode, TopicNode, TreeNode } from "@/stores/types";
 import {
   Button,
   CardContent,
@@ -83,8 +83,8 @@ export const ReportDataContext = createContext<{
  * Flattens a three-level tree of TopicNode -> SubtopicNode -> ClaimNode into a single array.
  * Extracted for debuggability - set breakpoints here to inspect tree flattening.
  */
-function flattenTopicNodes(topics: TopicNode[]): SomeNode[] {
-  const nodes: SomeNode[] = [];
+function flattenTopicNodes(topics: TopicNode[]): TreeNode[] {
+  const nodes: TreeNode[] = [];
   for (const topic of topics) {
     nodes.push(topic);
     for (const subtopic of topic.children) {
@@ -429,6 +429,55 @@ function ReportContentTabs({
             </TabsList>
           )}
 
+          {/* Sort dropdown - show when on Report tab and at least one sort feature is available */}
+          {activeContentTab === "report" &&
+            (hasControversyData || hasBridgingData) && (
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm text-muted-foreground">Sort by</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      {getSortLabel(sortMode)}
+                      <ChevronsUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setSortMode("frequent")}
+                      className={cn(
+                        "cursor-pointer",
+                        sortMode === "frequent" && "bg-accent",
+                      )}
+                    >
+                      Frequent claims
+                    </DropdownMenuItem>
+                    {hasControversyData && (
+                      <DropdownMenuItem
+                        onClick={() => setSortMode("controversy")}
+                        className={cn(
+                          "cursor-pointer",
+                          sortMode === "controversy" && "bg-accent",
+                        )}
+                      >
+                        Controversy
+                      </DropdownMenuItem>
+                    )}
+                    {hasBridgingData && (
+                      <DropdownMenuItem
+                        onClick={() => setSortMode("bridging")}
+                        className={cn(
+                          "cursor-pointer",
+                          sortMode === "bridging" && "bg-accent",
+                        )}
+                      >
+                        Bridging statements
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+        </Row>
 
         {/* Tab content */}
         <TabsContent value="report" className="mt-0">
