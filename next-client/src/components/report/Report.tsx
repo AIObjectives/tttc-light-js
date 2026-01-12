@@ -24,7 +24,7 @@ import {
   useReportUIStore,
   useSortByControversy,
 } from "@/stores/reportUIStore";
-import type { TopicNode, TreeNode } from "@/stores/types";
+import type { TopicNode } from "@/stores/types";
 import {
   Button,
   CardContent,
@@ -73,24 +73,6 @@ export const ReportDataContext = createContext<{
   getTopicColor: () => undefined,
   getSubtopicId: () => null,
 });
-
-/**
- * Flattens a three-level tree of TopicNode -> SubtopicNode -> ClaimNode into a single array.
- * Extracted for debuggability - set breakpoints here to inspect tree flattening.
- */
-function flattenTopicNodes(topics: TopicNode[]): TreeNode[] {
-  const nodes: TreeNode[] = [];
-  for (const topic of topics) {
-    nodes.push(topic);
-    for (const subtopic of topic.children) {
-      nodes.push(subtopic);
-      for (const claim of subtopic.children) {
-        nodes.push(claim);
-      }
-    }
-  }
-  return nodes;
-}
 
 /**
  * Report feature
