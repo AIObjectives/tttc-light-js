@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronsUpDown } from "lucide-react";
-import React, { createContext, useEffect, useRef } from "react";
+import React, { createContext, useEffect } from "react";
 import { toast } from "sonner";
 // Default prompts for comparison
 import {
@@ -16,7 +15,6 @@ import type * as schema from "tttc-common/schema";
 import { getSortedCruxes, getTopicControversy } from "@/lib/crux/utils";
 import { useHashChange } from "@/lib/hooks/useHashChange";
 import { downloadReportData } from "@/lib/report/downloadUtils";
-import { cn } from "@/lib/utils/shadcn";
 // Zustand stores for state management
 import { useScrollEffect } from "@/stores/hooks";
 import { useReportStore, useTopics } from "@/stores/reportStore";
@@ -25,9 +23,8 @@ import {
   useIsMobileOutlineOpen,
   useReportUIStore,
   useSortByControversy,
-  useSortMode,
 } from "@/stores/reportUIStore";
-import type { SortMode, TopicNode } from "@/stores/types";
+import type { TopicNode } from "@/stores/types";
 import {
   Button,
   CardContent,
@@ -47,8 +44,9 @@ import { ReportHeader } from "./components/ReportHeader";
 // Extracted components
 import { ReportLayout } from "./components/ReportLayout";
 import { ReportToolbar } from "./components/ReportToolbar";
-import { useTabHashSync } from "./hooks/useTabHashSync";
+import { SortDropdown } from "./components/SortDropdown";
 import { useNavbarVisibility } from "./hooks/useNavbarVisibility";
+import { useTabHashSync } from "./hooks/useTabHashSync";
 
 /**
  * Report Component
@@ -275,8 +273,6 @@ function ReportContentTabs({
   filename: string;
 }) {
   const openNode = useReportStore((s) => s.openNode);
-  const sortMode = useSortMode();
-  const setSortMode = useReportUIStore((s) => s.setSortMode);
   const activeContentTab = useActiveContentTab();
   const setActiveContentTab = useReportUIStore((s) => s.setActiveContentTab);
 
