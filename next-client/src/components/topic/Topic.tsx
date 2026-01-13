@@ -260,10 +260,9 @@ export function SubtopicListItem({
   return (
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger onClick={onClick}>
-        <span
-          role="button"
-          tabIndex={0}
-          className="cursor-pointer text-muted-foreground text-sm  inline"
+        <button
+          type="button"
+          className="cursor-pointer text-muted-foreground text-sm inline bg-transparent border-none p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
           onFocus={onMouseOver}
@@ -273,7 +272,7 @@ export function SubtopicListItem({
             {subtopic.title}
           </span>
           {withComma ? `,\u00A0\u00A0` : ""}
-        </span>
+        </button>
       </HoverCardTrigger>
       <HoverCardContent>
         <Col gap={4}>

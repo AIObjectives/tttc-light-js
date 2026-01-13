@@ -51,11 +51,11 @@ export function useFocusTracking(
  * Hook that tracks which crux is currently in the viewport.
  * Separate from node tracking for cruxes tab.
  */
-export function useCruxFocusTracking(
+export function useCruxFocusTracking<T extends HTMLElement = HTMLDivElement>(
   cruxId: string,
-): React.RefObject<HTMLDivElement | null> {
+): React.RefObject<T | null> {
   const setFocusedCruxId = useReportUIStore((state) => state.setFocusedCruxId);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<T>(null);
 
   useEffect(() => {
     const element = ref.current;
