@@ -129,6 +129,19 @@ vi.mock("../../../workers", () => ({
     mockProcessJobFailure(job, error),
 }));
 
+// Mock Firebase getReportRefById for idempotency checks
+const mockGetReportRefById = vi.fn();
+vi.mock("../../../Firebase", async () => {
+  const actual =
+    await vi.importActual<typeof import("../../../Firebase")>(
+      "../../../Firebase",
+    );
+  return {
+    ...actual,
+    getReportRefById: (reportId: string) => mockGetReportRefById(reportId),
+  };
+});
+
 // Helper to create a mock PipelineJob
 function createMockPipelineJob(): PipelineJob {
   return {
@@ -149,7 +162,6 @@ function createMockPipelineJob(): PipelineJob {
         cruxInstructions: "test",
         summariesInstructions: "test",
       },
-      api_key: "test-key",
       options: { cruxes: false, bridging: false },
     },
     data: [],
@@ -254,6 +266,7 @@ describe("GooglePubSubQueue message handling", () => {
     vi.clearAllMocks();
     mockProcessJob.mockReset();
     mockProcessJobFailure.mockReset();
+    mockGetReportRefById.mockReset();
 
     mockAck = vi.fn();
     mockNack = vi.fn();
@@ -320,7 +333,7 @@ describe("GooglePubSubQueue message handling", () => {
     const jobData = createMockPipelineJob();
     const mockMessage = createMockMessage(jobData);
 
-    await messageHandler!(mockMessage);
+    await messageHandler?.(mockMessage);
 
     expect(mockProcessJob).toHaveBeenCalledWith(jobData);
     expect(mockAck).toHaveBeenCalledTimes(1);
@@ -339,7 +352,7 @@ describe("GooglePubSubQueue message handling", () => {
     const jobData = createMockPipelineJob();
     const mockMessage = createMockMessage(jobData);
 
-    await messageHandler!(mockMessage);
+    await messageHandler?.(mockMessage);
 
     expect(mockProcessJob).toHaveBeenCalledWith(jobData);
     expect(mockNack).toHaveBeenCalledTimes(1);
@@ -362,7 +375,7 @@ describe("GooglePubSubQueue message handling", () => {
       nack: mockNack,
     };
 
-    await messageHandler!(mockMessage);
+    await messageHandler?.(mockMessage);
 
     expect(mockProcessJob).not.toHaveBeenCalled();
     expect(mockNack).toHaveBeenCalledTimes(1);
@@ -382,7 +395,7 @@ describe("GooglePubSubQueue message handling", () => {
     const jobData = createMockPipelineJob();
     const mockMessage = createMockMessage(jobData);
 
-    await messageHandler!(mockMessage);
+    await messageHandler?.(mockMessage);
 
     expect(mockNack).toHaveBeenCalledTimes(1);
     expect(mockProcessJobFailure).toHaveBeenCalledWith(
@@ -392,5 +405,132 @@ describe("GooglePubSubQueue message handling", () => {
 
     const passedError = mockProcessJobFailure.mock.calls[0][1];
     expect(passedError.message).toBe("string error message");
+  });
+
+  describe("idempotency checks", () => {
+    it("should ACK and skip processing when job is already completed", async () => {
+      mockGetReportRefById.mockResolvedValue({
+        status: "completed",
+        id: "test-job",
+      });
+
+      await createQueueAndListen();
+
+      expect(messageHandler).toBeDefined();
+
+      const jobData = createMockPipelineJob();
+      const mockMessage = createMockMessage(jobData);
+
+      await messageHandler?.(mockMessage);
+
+      expect(mockGetReportRefById).toHaveBeenCalledWith("test-job");
+      expect(mockProcessJob).not.toHaveBeenCalled();
+      expect(mockAck).toHaveBeenCalledTimes(1);
+      expect(mockNack).not.toHaveBeenCalled();
+    });
+
+    it("should skip without ACK when job is still processing", async () => {
+      mockGetReportRefById.mockResolvedValue({
+        status: "processing",
+        id: "test-job",
+      });
+
+      await createQueueAndListen();
+
+      expect(messageHandler).toBeDefined();
+
+      const jobData = createMockPipelineJob();
+      const mockMessage = createMockMessage(jobData);
+
+      await messageHandler?.(mockMessage);
+
+      expect(mockGetReportRefById).toHaveBeenCalledWith("test-job");
+      expect(mockProcessJob).not.toHaveBeenCalled();
+      expect(mockAck).not.toHaveBeenCalled();
+      expect(mockNack).not.toHaveBeenCalled();
+    });
+
+    it("should process normally when job status is queued", async () => {
+      mockGetReportRefById.mockResolvedValue({
+        status: "queued",
+        id: "test-job",
+      });
+      mockProcessJob.mockResolvedValue(undefined);
+
+      await createQueueAndListen();
+
+      expect(messageHandler).toBeDefined();
+
+      const jobData = createMockPipelineJob();
+      const mockMessage = createMockMessage(jobData);
+
+      await messageHandler?.(mockMessage);
+
+      expect(mockGetReportRefById).toHaveBeenCalledWith("test-job");
+      expect(mockProcessJob).toHaveBeenCalledWith(jobData);
+      expect(mockAck).toHaveBeenCalledTimes(1);
+      expect(mockNack).not.toHaveBeenCalled();
+    });
+
+    it("should process normally when job status is failed", async () => {
+      mockGetReportRefById.mockResolvedValue({
+        status: "failed",
+        id: "test-job",
+      });
+      mockProcessJob.mockResolvedValue(undefined);
+
+      await createQueueAndListen();
+
+      expect(messageHandler).toBeDefined();
+
+      const jobData = createMockPipelineJob();
+      const mockMessage = createMockMessage(jobData);
+
+      await messageHandler?.(mockMessage);
+
+      expect(mockGetReportRefById).toHaveBeenCalledWith("test-job");
+      expect(mockProcessJob).toHaveBeenCalledWith(jobData);
+      expect(mockAck).toHaveBeenCalledTimes(1);
+      expect(mockNack).not.toHaveBeenCalled();
+    });
+
+    it("should process normally when reportRef is not found", async () => {
+      mockGetReportRefById.mockResolvedValue(null);
+      mockProcessJob.mockResolvedValue(undefined);
+
+      await createQueueAndListen();
+
+      expect(messageHandler).toBeDefined();
+
+      const jobData = createMockPipelineJob();
+      const mockMessage = createMockMessage(jobData);
+
+      await messageHandler?.(mockMessage);
+
+      expect(mockGetReportRefById).toHaveBeenCalledWith("test-job");
+      expect(mockProcessJob).toHaveBeenCalledWith(jobData);
+      expect(mockAck).toHaveBeenCalledTimes(1);
+      expect(mockNack).not.toHaveBeenCalled();
+    });
+
+    it("should use reportId over firebaseJobId when available", async () => {
+      mockGetReportRefById.mockResolvedValue({
+        status: "completed",
+        id: "test-report-id",
+      });
+
+      await createQueueAndListen();
+
+      expect(messageHandler).toBeDefined();
+
+      const jobData = createMockPipelineJob();
+      jobData.config.firebaseDetails.reportId = "test-report-id";
+      const mockMessage = createMockMessage(jobData);
+
+      await messageHandler?.(mockMessage);
+
+      expect(mockGetReportRefById).toHaveBeenCalledWith("test-report-id");
+      expect(mockAck).toHaveBeenCalledTimes(1);
+    });
   });
 });

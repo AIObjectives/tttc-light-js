@@ -5,6 +5,7 @@ import {
   type Topic,
 } from "@google-cloud/pubsub";
 import { logger } from "tttc-common/logger";
+import { getReportRefById } from "../../Firebase";
 import type { PipelineJob } from "../../jobs/pipeline";
 import { processJob, processJobFailure } from "../../workers";
 import type { Queue } from "../types";
@@ -99,6 +100,46 @@ export class GooglePubSubQueue implements Queue {
       let jobData: PipelineJob | undefined;
       try {
         jobData = JSON.parse(message.data.toString()) as PipelineJob;
+
+        // Check if job is already processing or completed (idempotency check)
+        const reportId =
+          jobData.config.firebaseDetails.reportId ||
+          jobData.config.firebaseDetails.firebaseJobId;
+        const reportRef = await getReportRefById(reportId);
+
+        if (reportRef) {
+          const status = reportRef.status;
+
+          // If completed, ack and skip (idempotent - already done)
+          if (status === "completed") {
+            pubsubLogger.info(
+              {
+                reportId,
+                jobId: jobData.config.firebaseDetails.firebaseJobId,
+                status,
+                messageId: message.id,
+              },
+              "Message already completed, acknowledging duplicate",
+            );
+            message.ack();
+            return;
+          }
+
+          // If still processing, ignore without ack (let it redeliver later)
+          if (status === "processing") {
+            pubsubLogger.info(
+              {
+                reportId,
+                jobId: jobData.config.firebaseDetails.firebaseJobId,
+                status,
+                messageId: message.id,
+              },
+              "Message still being processed elsewhere, ignoring without ack",
+            );
+            return;
+          }
+        }
+
         await processJob(jobData);
         message.ack();
       } catch (error) {
@@ -111,7 +152,7 @@ export class GooglePubSubQueue implements Queue {
             },
             "Pubsub Queue encountered an error while processing message",
           );
-          processJobFailure(
+          await processJobFailure(
             jobData,
             error instanceof Error ? error : new Error(String(error)),
           );
