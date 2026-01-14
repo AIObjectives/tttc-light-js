@@ -5,6 +5,7 @@ import {
   type Topic,
 } from "@google-cloud/pubsub";
 import { logger } from "tttc-common/logger";
+import { getReportRefById } from "../../Firebase";
 import type { PipelineJob } from "../../jobs/pipeline";
 import { processJob, processJobFailure } from "../../workers";
 import type { Queue } from "../types";
@@ -95,20 +96,73 @@ export class GooglePubSubQueue implements Queue {
       { subscription: this.subscription.name },
       "Pubsub now listening",
     );
-    this.subscription.on("message", (message: Message) => {
-      const jobData = JSON.parse(message.data.toString()) as PipelineJob;
-      message.ack();
+    this.subscription.on("message", async (message: Message) => {
+      let jobData: PipelineJob | undefined;
+      try {
+        jobData = JSON.parse(message.data.toString()) as PipelineJob;
 
-      processJob(jobData).catch((error: Error) => {
-        pubsubLogger.error(
-          {
-            error: error,
-            messageId: message.id,
-          },
-          "Pubsub Queue encountered and error while processing message",
-        );
-        processJobFailure(jobData, error);
-      });
+        // Check if job is already processing or completed (idempotency check)
+        const reportId =
+          jobData.config.firebaseDetails.reportId ||
+          jobData.config.firebaseDetails.firebaseJobId;
+        const reportRef = await getReportRefById(reportId);
+
+        if (reportRef) {
+          const status = reportRef.status;
+
+          // If completed, ack and skip (idempotent - already done)
+          if (status === "completed") {
+            pubsubLogger.info(
+              {
+                reportId,
+                jobId: jobData.config.firebaseDetails.firebaseJobId,
+                status,
+                messageId: message.id,
+              },
+              "Message already completed, acknowledging duplicate",
+            );
+            message.ack();
+            return;
+          }
+
+          // If still processing, ignore without ack (let it redeliver later)
+          if (status === "processing") {
+            pubsubLogger.info(
+              {
+                reportId,
+                jobId: jobData.config.firebaseDetails.firebaseJobId,
+                status,
+                messageId: message.id,
+              },
+              "Message still being processed elsewhere, ignoring without ack",
+            );
+            return;
+          }
+        }
+
+        await processJob(jobData);
+        message.ack();
+      } catch (error) {
+        message.nack();
+        if (jobData) {
+          pubsubLogger.error(
+            {
+              error,
+              messageId: message.id,
+            },
+            "Pubsub Queue encountered an error while processing message",
+          );
+          await processJobFailure(
+            jobData,
+            error instanceof Error ? error : new Error(String(error)),
+          );
+        } else {
+          pubsubLogger.error(
+            { error, messageId: message.id },
+            "Failed to parse message data",
+          );
+        }
+      }
     });
 
     this.subscription.on("error", (error: Error) => {
