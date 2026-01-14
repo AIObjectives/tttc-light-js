@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type * as api from "tttc-common/api";
 import type { ReportRef } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger/browser";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { queryKeys } from "@/lib/query/queryKeys";
 
 const unifiedReportLogger = logger.child({ module: "unified-report-query" });
@@ -50,7 +51,9 @@ function isTerminalStatus(status: api.ReportJobStatus): boolean {
 export async function fetchReport(
   identifier: string,
 ): Promise<UnifiedReportResponse> {
-  const response = await fetch(`/api/report/${encodeURIComponent(identifier)}`);
+  const response = await fetchWithRequestId(
+    `/api/report/${encodeURIComponent(identifier)}`,
+  );
 
   if (!response.ok) {
     if (response.status === 404) {

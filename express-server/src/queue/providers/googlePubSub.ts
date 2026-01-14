@@ -8,7 +8,7 @@ import { logger } from "tttc-common/logger";
 import { getReportRefById } from "../../Firebase";
 import type { PipelineJob } from "../../jobs/pipeline";
 import { processJob, processJobFailure } from "../../workers";
-import type { Queue } from "../types";
+import type { EnqueueOptions, Queue } from "../types";
 
 const pubsubLogger = logger.child({ module: "pubsub" });
 
@@ -66,24 +66,35 @@ export class GooglePubSubQueue implements Queue {
     }
   }
 
-  async enqueue(item: PipelineJob): Promise<void> {
+  async enqueue(item: PipelineJob, options?: EnqueueOptions): Promise<void> {
     await this.ensureInitialized();
+
+    const requestId = options?.requestId;
 
     pubsubLogger.info(
       {
         reportId: item.config.firebaseDetails.reportDataUri,
         jobId: item.config.firebaseDetails.firebaseJobId,
+        requestId,
       },
       "Enqueueing pipeline job",
     );
 
     const data = Buffer.from(JSON.stringify(item));
-    await this.topic.publishMessage({ data });
+
+    // Include requestId in message attributes for distributed tracing
+    const attributes: Record<string, string> = {};
+    if (requestId) {
+      attributes.requestId = requestId;
+    }
+
+    await this.topic.publishMessage({ data, attributes });
 
     pubsubLogger.info(
       {
         reportId: item.config.firebaseDetails.reportDataUri,
         jobId: item.config.firebaseDetails.firebaseJobId,
+        requestId,
       },
       "Successfully published message to topic",
     );
@@ -98,6 +109,8 @@ export class GooglePubSubQueue implements Queue {
     );
     this.subscription.on("message", async (message: Message) => {
       let jobData: PipelineJob | undefined;
+      // Extract requestId from message attributes for distributed tracing
+      const requestId = message.attributes?.requestId;
       try {
         jobData = JSON.parse(message.data.toString()) as PipelineJob;
 
@@ -140,7 +153,7 @@ export class GooglePubSubQueue implements Queue {
           }
         }
 
-        await processJob(jobData);
+        await processJob(jobData, requestId);
         message.ack();
       } catch (error) {
         message.nack();
@@ -149,16 +162,18 @@ export class GooglePubSubQueue implements Queue {
             {
               error,
               messageId: message.id,
+              requestId,
             },
             "Pubsub Queue encountered an error while processing message",
           );
           await processJobFailure(
             jobData,
             error instanceof Error ? error : new Error(String(error)),
+            requestId,
           );
         } else {
           pubsubLogger.error(
-            { error, messageId: message.id },
+            { error, messageId: message.id, requestId },
             "Failed to parse message data",
           );
         }

@@ -12,6 +12,7 @@ import {
   Input,
   TextArea,
 } from "@/components/elements";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 
 interface ProfileSetupModalProps {
@@ -64,7 +65,7 @@ export function ProfileSetupModal({
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch("/api/profile/update", {
+      const response = await fetchWithRequestId("/api/profile/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
