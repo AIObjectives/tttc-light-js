@@ -168,6 +168,9 @@ describe("useUnifiedReportQuery", () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/report/bucket%2Fpath%2Freport.json",
+        expect.objectContaining({
+          headers: expect.any(Headers),
+        }),
       );
     });
   });
@@ -270,7 +273,12 @@ describe("fetchReport", () => {
       status: "finished",
       dataUrl: "https://example.com/report.json",
     });
-    expect(mockFetch).toHaveBeenCalledWith("/api/report/test-id");
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/report/test-id",
+      expect.objectContaining({
+        headers: expect.any(Headers),
+      }),
+    );
   });
 
   it("should return notFound status on 404", async () => {
@@ -319,6 +327,9 @@ describe("fetchReport", () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/report/bucket%2Fpath%2Freport.json",
+      expect.objectContaining({
+        headers: expect.any(Headers),
+      }),
     );
   });
 });
