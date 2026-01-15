@@ -121,11 +121,13 @@ describe("Clustering Pipeline Step", () => {
         }
       });
 
-      it("should truncate oversized comments", () => {
+      it("should reject oversized comments (defense-in-depth)", () => {
         const longText = "a".repeat(15000);
         const { sanitizedText, isSafe } = basicSanitize(longText, "test");
-        expect(isSafe).toBe(true);
-        expect(sanitizedText.length).toBeLessThanOrEqual(10000);
+        // Client-side validation should catch oversized comments
+        // If they reach the sanitizer, reject them as a safety net
+        expect(isSafe).toBe(false);
+        expect(sanitizedText).toBe("");
       });
     });
 

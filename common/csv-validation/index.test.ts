@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   COLUMN_MAPPINGS,
   formatData,
+  LONG_COMMENT_WARNING_LENGTH,
+  MAX_COMMENT_LENGTH,
+  type OversizedCommentsError,
   type ValidationError,
   type ValidationSuccess,
   type ValidationWarning,
@@ -189,6 +192,189 @@ describe("csv-validation module", () => {
       });
     });
 
+    describe("OVERSIZED cases - comments exceed character limit", () => {
+      it("should return oversized when a single comment exceeds limit", () => {
+        const oversizedComment = "x".repeat(MAX_COMMENT_LENGTH + 1);
+        const data = [
+          { id: "1", comment: "Normal comment", interview: "Alice" },
+          { id: "2", comment: oversizedComment, interview: "Bob" },
+        ];
+
+        const result = validateCSVFormat(data) as OversizedCommentsError;
+
+        expect(result.status).toBe("oversized");
+        expect(result.count).toBe(1);
+        expect(result.maxLength).toBe(MAX_COMMENT_LENGTH);
+        expect(result.affectedIds).toContain("2");
+        expect(result.totalComments).toBe(2);
+      });
+
+      it("should return oversized when multiple comments exceed limit", () => {
+        const oversizedComment = "x".repeat(MAX_COMMENT_LENGTH + 100);
+        const data = [
+          { id: "1", comment: oversizedComment, interview: "Alice" },
+          { id: "2", comment: "Normal", interview: "Bob" },
+          { id: "3", comment: oversizedComment, interview: "Charlie" },
+          { id: "4", comment: oversizedComment, interview: "Diana" },
+        ];
+
+        const result = validateCSVFormat(data) as OversizedCommentsError;
+
+        expect(result.status).toBe("oversized");
+        expect(result.count).toBe(3);
+        expect(result.affectedIds).toEqual(["1", "3", "4"]);
+        expect(result.totalComments).toBe(4);
+      });
+
+      it("should limit affectedIds to first 5 comments", () => {
+        const oversizedComment = "x".repeat(MAX_COMMENT_LENGTH + 1);
+        const data = Array.from({ length: 10 }, (_, i) => ({
+          id: String(i),
+          comment: oversizedComment,
+          interview: `Speaker ${i}`,
+        }));
+
+        const result = validateCSVFormat(data) as OversizedCommentsError;
+
+        expect(result.status).toBe("oversized");
+        expect(result.count).toBe(10);
+        expect(result.affectedIds).toHaveLength(5);
+        expect(result.affectedIds).toEqual(["0", "1", "2", "3", "4"]);
+      });
+
+      it("should return warning (not error) when comment is exactly at the max limit", () => {
+        // Comment at exactly 10000 chars should NOT trigger oversized error
+        // but WILL trigger long comment warning since 10000 > 5000
+        const exactLimitComment = "x".repeat(MAX_COMMENT_LENGTH);
+        const data = [
+          { id: "1", comment: exactLimitComment, interview: "Alice" },
+        ];
+
+        const result = validateCSVFormat(data) as ValidationWarning;
+
+        expect(result.status).toBe("warning"); // Long comment warning, not oversized error
+        expect(result.data).toHaveLength(1);
+        expect(
+          result.warnings.some((w) => w.includes("5,000 characters")),
+        ).toBe(true);
+      });
+
+      it("should check comment length before other validations like column mapping", () => {
+        // Even with non-standard columns, oversized should be caught
+        const oversizedComment = "x".repeat(MAX_COMMENT_LENGTH + 1);
+        const data = [{ "comment-body": oversizedComment, name: "Speaker" }];
+
+        const result = validateCSVFormat(data) as OversizedCommentsError;
+
+        expect(result.status).toBe("oversized");
+        expect(result.count).toBe(1);
+      });
+    });
+
+    describe("LONG COMMENTS warning cases - comments exceed soft warning threshold", () => {
+      it("should return warning when a comment exceeds soft warning threshold", () => {
+        const longComment = "x".repeat(LONG_COMMENT_WARNING_LENGTH + 1);
+        const data = [
+          { id: "1", comment: "Short comment", interview: "Alice" },
+          { id: "2", comment: longComment, interview: "Bob" },
+        ];
+
+        const result = validateCSVFormat(data) as ValidationWarning;
+
+        expect(result.status).toBe("warning");
+        expect(result.data).toHaveLength(2);
+        expect(
+          result.warnings.some((w) => w.includes("5,000 characters")),
+        ).toBe(true);
+        expect(result.warnings.some((w) => w.includes("Affected: 2"))).toBe(
+          true,
+        );
+      });
+
+      it("should return warning with multiple affected IDs for long comments", () => {
+        const longComment = "x".repeat(LONG_COMMENT_WARNING_LENGTH + 100);
+        const data = [
+          { id: "1", comment: longComment, interview: "Alice" },
+          { id: "2", comment: "Normal", interview: "Bob" },
+          { id: "3", comment: longComment, interview: "Charlie" },
+          { id: "4", comment: longComment, interview: "Diana" },
+          { id: "5", comment: longComment, interview: "Eve" },
+        ];
+
+        const result = validateCSVFormat(data) as ValidationWarning;
+
+        expect(result.status).toBe("warning");
+        expect(result.warnings.some((w) => w.includes("4 comments"))).toBe(
+          true,
+        );
+        expect(
+          result.warnings.some((w) => w.includes("Affected: 1, 3, 4")),
+        ).toBe(true);
+        expect(result.warnings.some((w) => w.includes("..."))).toBe(true); // More than 3
+      });
+
+      it("should return success when comment is exactly at warning threshold", () => {
+        const exactThresholdComment = "x".repeat(LONG_COMMENT_WARNING_LENGTH);
+        const data = [
+          { id: "1", comment: exactThresholdComment, interview: "Alice" },
+        ];
+
+        const result = validateCSVFormat(data) as ValidationSuccess;
+
+        expect(result.status).toBe("success");
+        expect(result.data).toHaveLength(1);
+      });
+
+      it("should combine long comment warning with other non-standard format warnings", () => {
+        const longComment = "x".repeat(LONG_COMMENT_WARNING_LENGTH + 1);
+        const data = [{ "comment-body": longComment, name: "Speaker" }];
+
+        const result = validateCSVFormat(data) as ValidationWarning;
+
+        expect(result.status).toBe("warning");
+        // Should have both long comment warning and non-standard column warnings
+        expect(result.warnings.length).toBeGreaterThanOrEqual(2);
+        expect(
+          result.warnings.some((w) => w.includes("5,000 characters")),
+        ).toBe(true);
+        expect(result.warnings.some((w) => w.includes("comment-body"))).toBe(
+          true,
+        );
+      });
+
+      it("should still block oversized comments even with long comment warning threshold", () => {
+        // Verify that comments between 5K-10K trigger warning, but >10K triggers error
+        const longComment = "x".repeat(LONG_COMMENT_WARNING_LENGTH + 1); // 5001 chars - warning
+        const oversizedComment = "x".repeat(MAX_COMMENT_LENGTH + 1); // 10001 chars - error
+        const data = [
+          { id: "1", comment: longComment, interview: "Alice" },
+          { id: "2", comment: oversizedComment, interview: "Bob" },
+        ];
+
+        const result = validateCSVFormat(data) as OversizedCommentsError;
+
+        // Oversized error takes precedence
+        expect(result.status).toBe("oversized");
+        expect(result.count).toBe(1);
+        expect(result.affectedIds).toContain("2");
+      });
+
+      it("should include quality suggestion in long comment warning message", () => {
+        const longComment = "x".repeat(LONG_COMMENT_WARNING_LENGTH + 1);
+        const data = [{ id: "1", comment: longComment, interview: "Alice" }];
+
+        const result = validateCSVFormat(data) as ValidationWarning;
+
+        expect(result.status).toBe("warning");
+        expect(
+          result.warnings.some((w) => w.includes("For better quality")),
+        ).toBe(true);
+        expect(
+          result.warnings.some((w) => w.includes("consider segmenting")),
+        ).toBe(true);
+      });
+    });
+
     describe("Column precedence", () => {
       it("should use first matching column name in precedence order", () => {
         // "comment" has higher precedence than "response"
@@ -318,6 +504,24 @@ describe("csv-validation module", () => {
 
       expect(() => formatData(data)).toThrow(/Empty comment fields/);
       expect(() => formatData(data)).toThrow(/rows: 2, 3/);
+    });
+
+    it("should throw error when comments exceed character limit", () => {
+      const oversizedComment = "x".repeat(MAX_COMMENT_LENGTH + 1);
+      const data = [{ id: "1", comment: oversizedComment, interview: "Alice" }];
+
+      expect(() => formatData(data)).toThrow(/exceed.*10,000 character limit/);
+      expect(() => formatData(data)).toThrow(/segment your data/);
+    });
+
+    it("should include affected IDs in oversized error message", () => {
+      const oversizedComment = "x".repeat(MAX_COMMENT_LENGTH + 1);
+      const data = [
+        { id: "abc123", comment: oversizedComment, interview: "Alice" },
+        { id: "def456", comment: oversizedComment, interview: "Bob" },
+      ];
+
+      expect(() => formatData(data)).toThrow(/abc123/);
     });
 
     it("should handle WhatsApp format", () => {

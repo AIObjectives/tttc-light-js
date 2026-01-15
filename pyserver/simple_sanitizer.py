@@ -69,10 +69,10 @@ def basic_sanitize(text: str, context: str = "", filter_pii_flag: bool = True) -
     if not isinstance(text, str):
         return "", False
     
-    # Basic length check
+    # Basic length check - reject oversized content (defense-in-depth)
     if len(text) > MAX_COMMENT_LENGTH:
-        logger.warning(f"Oversized input in {context}: {len(text)} chars")
-        text = text[:MAX_COMMENT_LENGTH]
+        logger.error(f"Oversized input rejected in {context}: {len(text)} chars - client validation bypassed")
+        return "", False
     
     # Empty or too short
     if len(text.strip()) < 3:
