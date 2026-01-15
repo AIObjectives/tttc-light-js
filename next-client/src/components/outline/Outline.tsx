@@ -163,6 +163,8 @@ function Outline({
                 onBodyClick={() => {
                   // Suppress scroll-based focus tracking during programmatic navigation
                   suppressFocusTracking();
+                  // Open the topic to ensure it's visible
+                  openNode(node.id);
                   // Explicitly set the focus to highlight the clicked item
                   setFocusedNodeId(node.id);
                   // Close sheet and scroll (in that order to avoid abort on unmount)
