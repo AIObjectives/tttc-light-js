@@ -130,18 +130,32 @@ describe("formatControversyScore", () => {
 });
 
 describe("getControversyColors", () => {
-  it("returns orange colors for high controversy (>=0.50)", () => {
-    const colors = getControversyColors(0.8);
+  it("returns red colors for max controversy (>=0.80)", () => {
+    const colors = getControversyColors(0.9);
+    expect(colors.bg).toBe("bg-red-100");
+    expect(colors.text).toBe("text-red-800");
+    expect(colors.border).toBe("border-red-300");
+  });
+
+  it("returns orange colors for high controversy (>=0.60 and <0.80)", () => {
+    const colors = getControversyColors(0.7);
     expect(colors.bg).toBe("bg-orange-100");
     expect(colors.text).toBe("text-orange-800");
     expect(colors.border).toBe("border-orange-300");
   });
 
-  it("returns yellow colors for moderate controversy (>=0.20 and <0.50)", () => {
-    const colors = getControversyColors(0.35);
+  it("returns yellow colors for mid controversy (>=0.40 and <0.60)", () => {
+    const colors = getControversyColors(0.5);
     expect(colors.bg).toBe("bg-yellow-100");
     expect(colors.text).toBe("text-yellow-800");
     expect(colors.border).toBe("border-yellow-300");
+  });
+
+  it("returns lime colors for light controversy (>=0.20 and <0.40)", () => {
+    const colors = getControversyColors(0.3);
+    expect(colors.bg).toBe("bg-lime-100");
+    expect(colors.text).toBe("text-lime-800");
+    expect(colors.border).toBe("border-lime-300");
   });
 
   it("returns green colors for low controversy (<0.20)", () => {
@@ -381,15 +395,25 @@ describe("findSubtopicId", () => {
 
 describe("getControversyCategory", () => {
   it("categorizes scores correctly at boundaries", () => {
-    // High: >= 0.50
-    expect(getControversyCategory(0.5).level).toBe("high");
-    expect(getControversyCategory(1.0).level).toBe("high");
-    expect(getControversyCategory(0.85).level).toBe("high");
+    // Max: >= 0.80
+    expect(getControversyCategory(0.8).level).toBe("max");
+    expect(getControversyCategory(1.0).level).toBe("max");
+    expect(getControversyCategory(0.95).level).toBe("max");
 
-    // Moderate: >= 0.20 and < 0.50
-    expect(getControversyCategory(0.2).level).toBe("moderate");
-    expect(getControversyCategory(0.49).level).toBe("moderate");
-    expect(getControversyCategory(0.35).level).toBe("moderate");
+    // High: >= 0.60 and < 0.80
+    expect(getControversyCategory(0.6).level).toBe("high");
+    expect(getControversyCategory(0.79).level).toBe("high");
+    expect(getControversyCategory(0.7).level).toBe("high");
+
+    // Mid: >= 0.40 and < 0.60
+    expect(getControversyCategory(0.4).level).toBe("mid");
+    expect(getControversyCategory(0.59).level).toBe("mid");
+    expect(getControversyCategory(0.5).level).toBe("mid");
+
+    // Light: >= 0.20 and < 0.40
+    expect(getControversyCategory(0.2).level).toBe("light");
+    expect(getControversyCategory(0.39).level).toBe("light");
+    expect(getControversyCategory(0.3).level).toBe("light");
 
     // Low: < 0.20
     expect(getControversyCategory(0.19).level).toBe("low");
@@ -398,15 +422,25 @@ describe("getControversyCategory", () => {
   });
 
   it("includes correct labels and descriptions", () => {
-    const high = getControversyCategory(0.8);
+    const max = getControversyCategory(0.9);
+    expect(max.label).toBe("Max");
+    expect(max.description).toBe(
+      "Maximum controversy - opinions are nearly evenly split",
+    );
+
+    const high = getControversyCategory(0.7);
     expect(high.label).toBe("High");
     expect(high.description).toBe(
       "Significant disagreement among participants",
     );
 
-    const moderate = getControversyCategory(0.35);
-    expect(moderate.label).toBe("Moderate");
-    expect(moderate.description).toBe("Some disagreement among participants");
+    const mid = getControversyCategory(0.5);
+    expect(mid.label).toBe("Mid");
+    expect(mid.description).toBe("Mixed opinions among participants");
+
+    const light = getControversyCategory(0.3);
+    expect(light.label).toBe("Light");
+    expect(light.description).toBe("Some disagreement among participants");
 
     const low = getControversyCategory(0.1);
     expect(low.label).toBe("Low");
@@ -446,9 +480,11 @@ describe("getControversyCategory", () => {
   it("handles exact threshold boundary values correctly", () => {
     // Test exact boundary values don't cause category errors
     expect(getControversyCategory(0.0).level).toBe("low");
-    expect(getControversyCategory(0.34).level).toBe("moderate");
-    expect(getControversyCategory(0.67).level).toBe("high");
-    expect(getControversyCategory(1.0).level).toBe("high");
+    expect(getControversyCategory(0.2).level).toBe("light");
+    expect(getControversyCategory(0.4).level).toBe("mid");
+    expect(getControversyCategory(0.6).level).toBe("high");
+    expect(getControversyCategory(0.8).level).toBe("max");
+    expect(getControversyCategory(1.0).level).toBe("max");
   });
 });
 
