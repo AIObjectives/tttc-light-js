@@ -84,12 +84,12 @@ export function Bar({
   const fillColor = getThemeColor(color, "bg");
 
   return (
-    <Row className="flex-grow bg-secondary items-center">
+    <Row className="grow bg-secondary items-center">
       <div
         className={`${fillColor} h-[2px]`}
         style={{ width: `${percent * 100}%` }}
       />
-      <div className="bg-gray-300 h-[2px] flex-grow" />
+      <div className="bg-gray-300 h-[2px] grow" />
     </Row>
   );
 }

@@ -231,8 +231,8 @@ export default function LoginButton() {
             }}
           >
             <DialogContent
-              className="gap-2 p-6 z-[100] max-w-[400px]"
-              overlayProps={{ className: "opacity-20 z-[90]" }}
+              className="gap-2 p-6 z-100 max-w-[400px]"
+              overlayProps={{ className: "opacity-20 z-90" }}
             >
               <DialogTitle className="text-2xl font-semibold tracking-tight">
                 {authMode === "reset"

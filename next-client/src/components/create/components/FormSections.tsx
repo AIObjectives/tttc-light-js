@@ -36,7 +36,7 @@ export const FormHeader = () => (
       <div>
         <Icons.WhatsApp />
       </div>
-      <p className="p2 text-muted-foreground flex-grow">
+      <p className="p2 text-muted-foreground grow">
         Gather report responses using our survey tool directly from
         participants' devices.
       </p>
@@ -374,7 +374,7 @@ export function FormDataInput({
         {/* Inline error banner for broken/empty files */}
         {inlineError && (
           <div className="flex items-start gap-2 p-4 rounded-lg border border-destructive bg-background">
-            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive mt-0.5" />
+            <AlertCircle className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
             <div className="flex flex-col">
               <span className="text-sm font-medium text-destructive">
                 Error

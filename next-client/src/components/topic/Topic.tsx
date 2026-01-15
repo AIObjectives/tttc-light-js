@@ -104,7 +104,7 @@ export function TopicHeader({ button }: { button?: React.ReactNode }) {
     <Row gap={2}>
       <CardTitle
         id={`${title}`}
-        className="self-center flex-grow"
+        className="self-center grow"
         data-testid="topic-title"
       >
         {title}
@@ -222,7 +222,7 @@ export function SubtopicList({
   const subtopics = topicNode.children.map((sub) => sub.data);
 
   return (
-    <div className="flex items-center flex-grow">
+    <div className="flex items-center grow">
       <span className="line-clamp-2 gap-2 leading-6 p2 text-muted-foreground">
         <Icons.Topic className="inline mr-[6px]" />
         {subtopics.length} subtopics
