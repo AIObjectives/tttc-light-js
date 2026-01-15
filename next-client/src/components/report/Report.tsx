@@ -60,6 +60,9 @@ import { useTabHashSync } from "./hooks/useTabHashSync";
  */
 type ContentTab = "report" | "cruxes";
 
+// Re-export SortMode from stores for backward compatibility
+export type { SortMode } from "@/stores/types";
+
 /**
  * Context for static/immutable data that doesn't change during the session.
  * Provides addOns data and lookup functions for topic/subtopic information.
