@@ -2099,6 +2099,23 @@ def calculate_controversy_scores(agree_speakers: list, disagree_speakers: list, 
     # min() gives us the smaller group, *2 normalizes to 0-1 range
     controversy_score = min(agreement_score, disagreement_score) * 2
 
+    # Clamp all scores to [0, 1] range to handle edge cases where
+    # agree/disagree counts exceed total_speakers due to data inconsistencies
+    needs_clamping = (
+        agreement_score < 0.0 or agreement_score > 1.0 or
+        disagreement_score < 0.0 or disagreement_score > 1.0 or
+        controversy_score < 0.0 or controversy_score > 1.0
+    )
+    if needs_clamping:
+        logger.warning(
+            f"Clamping out-of-range scores: agreement={agreement_score:.3f}, "
+            f"disagreement={disagreement_score:.3f}, controversy={controversy_score:.3f} "
+            f"(agree={num_agree}, disagree={num_disagree}, total={total_speakers})"
+        )
+    agreement_score = max(0.0, min(1.0, agreement_score))
+    disagreement_score = max(0.0, min(1.0, disagreement_score))
+    controversy_score = max(0.0, min(1.0, controversy_score))
+
     return {
         "agreementScore": agreement_score,
         "disagreementScore": disagreement_score,

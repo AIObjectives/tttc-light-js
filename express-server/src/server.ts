@@ -16,8 +16,13 @@ import {
   initializeAnalyticsClient,
   shutdownAnalyticsClient,
 } from "./analytics";
+import { db } from "./Firebase";
 import { initializeFeatureFlags, shutdownFeatureFlags } from "./featureFlags";
-import { authMiddleware, contextMiddleware } from "./middleware";
+import {
+  authMiddleware,
+  contextMiddleware,
+  correlationIdMiddleware,
+} from "./middleware";
 import { createQueue } from "./queue";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
@@ -93,6 +98,9 @@ app.use(express.static("public"));
 // HTTP request logging with pino
 app.use(pinoHttp({ logger }));
 
+// Propagate request correlation ID in response headers
+app.use(correlationIdMiddleware);
+
 // Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));
 
@@ -131,6 +139,8 @@ const rateLimitLogger = logger.child({ module: "rate-limiter" });
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const REPORT_LIMIT_MAX = 2000; // requests per window
 const AUTH_LIMIT_MAX = 5000; // requests per window
+const HEALTH_LIMIT_MAX = 300; // 300 requests per minute (5/second) - generous for monitoring tools while preventing abuse
+const HEALTH_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
 // Helper function to create rate limit handler
 const createRateLimitHandler = (
@@ -231,6 +241,25 @@ const authRateLimiter = rateLimit({
   handler: createRateLimitHandler("auth", AUTH_LIMIT_MAX, RATE_LIMIT_WINDOW_MS),
 });
 
+// Rate limiter for health check endpoints
+// Permissive limit (300/min = 5/second) - generous for monitoring tools while preventing abuse
+// Prepares for future API product exposure
+const healthRateLimiter = rateLimit({
+  windowMs: HEALTH_LIMIT_WINDOW_MS,
+  max: HEALTH_LIMIT_MAX,
+  message: {
+    error: {
+      message: ERROR_MESSAGES[ERROR_CODES.RATE_LIMIT_EXCEEDED],
+      code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
+    },
+  },
+  store: new RedisStore({
+    sendCommand: (command: string, ...args: string[]) =>
+      redisConnection.call(command, ...args) as Promise<RedisReply>,
+    prefix: `${rateLimitPrefix}-rate-limit-health`,
+  }),
+});
+
 // Skip rate limiting in development
 const _rateLimiter =
   process.env.NODE_ENV === "production"
@@ -245,6 +274,11 @@ const reportLimiter =
 const authLimiter =
   process.env.NODE_ENV === "production"
     ? authRateLimiter
+    : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
+
+const healthLimiter =
+  process.env.NODE_ENV === "production"
+    ? healthRateLimiter
     : (_req: RequestWithLogger, _res: Response, next: NextFunction) => next();
 
 /**
@@ -320,6 +354,114 @@ app.get("/report/:identifier", reportLimiter, getUnifiedReportHandler);
 
 app.get("/test", async (_req, res) => {
   return res.send("hi");
+});
+
+// Health check timeout (5 seconds)
+const HEALTH_CHECK_TIMEOUT_MS = 5000;
+
+// Health check logger (module-level to avoid per-request allocation)
+const healthLogger = logger.child({ module: "health" });
+
+/**
+ * Wraps a promise with a timeout, clearing the timer on completion
+ */
+const withTimeout = <T>(
+  promise: Promise<T>,
+  ms: number,
+  name: string,
+): Promise<T> => {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`${name} health check timed out`)),
+      ms,
+    );
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() =>
+    clearTimeout(timeoutId),
+  );
+};
+
+/**
+ * Liveness probe - returns 200 if server is running
+ * No dependency checks - if the server responds, it's alive
+ * Uses healthLimiter (300 req/min per IP) to prevent abuse
+ */
+app.get("/health", healthLimiter, (_req, res) => {
+  res.json({ status: "ok" });
+});
+
+/**
+ * Readiness probe - returns 200 only if dependencies are reachable
+ * Checks Redis and Firestore connectivity in parallel
+ * Returns 503 with details if any dependency is down
+ * Uses healthLimiter (300 req/min per IP) to prevent abuse
+ *
+ * Security note: Error messages are sanitized to avoid leaking internal details.
+ * Full error details are logged server-side only.
+ */
+app.get("/ready", healthLimiter, async (_req, res) => {
+  const unhealthyServices: string[] = [];
+
+  // Check dependencies in parallel for faster response
+  const redisStart = Date.now();
+  const firestoreStart = Date.now();
+
+  const [redisResult, firestoreResult] = await Promise.allSettled([
+    withTimeout(redisConnection.ping(), HEALTH_CHECK_TIMEOUT_MS, "Redis"),
+    withTimeout(
+      db.collection("_health_check").limit(1).get(),
+      HEALTH_CHECK_TIMEOUT_MS,
+      "Firestore",
+    ),
+  ]);
+
+  // Process Redis result
+  const redisHealthy = redisResult.status === "fulfilled";
+  const redisLatency = Date.now() - redisStart;
+  if (!redisHealthy) {
+    unhealthyServices.push("redis");
+    healthLogger.warn(
+      {
+        error:
+          redisResult.status === "rejected"
+            ? redisResult.reason?.message
+            : "Unknown error",
+        latencyMs: redisLatency,
+      },
+      "Redis health check failed",
+    );
+  }
+
+  // Process Firestore result
+  const firestoreHealthy = firestoreResult.status === "fulfilled";
+  const firestoreLatency = Date.now() - firestoreStart;
+  if (!firestoreHealthy) {
+    unhealthyServices.push("firestore");
+    healthLogger.warn(
+      {
+        error:
+          firestoreResult.status === "rejected"
+            ? firestoreResult.reason?.message
+            : "Unknown error",
+        latencyMs: firestoreLatency,
+      },
+      "Firestore health check failed",
+    );
+  }
+
+  const results = {
+    redis: { healthy: redisHealthy, latencyMs: redisLatency },
+    firestore: { healthy: firestoreHealthy, latencyMs: firestoreLatency },
+  };
+
+  const allHealthy = redisHealthy && firestoreHealthy;
+
+  res.status(allHealthy ? 200 : 503).json({
+    status: allHealthy ? "ready" : "not_ready",
+    services: results,
+    ...(unhealthyServices.length > 0 && { unhealthyServices }),
+  });
 });
 
 const server = app.listen(port, (err?: Error) => {

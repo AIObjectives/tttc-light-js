@@ -46,7 +46,7 @@ function HoverQuoteCard({
   claim,
   className,
 }: React.PropsWithChildren<{ claim: schema.Claim; className?: string }>) {
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isPinned, setIsPinned] = useState<boolean>(false);
@@ -85,25 +85,17 @@ function HoverQuoteCard({
       }}
     >
       <HoverCardTrigger asChild className={className}>
-        <div
+        <button
           ref={triggerRef}
-          className="cursor-pointer"
-          role="button"
-          tabIndex={0}
+          type="button"
+          className="cursor-pointer bg-transparent border-none p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           onClick={() => {
             setIsPinned(true);
             setIsOpen(true);
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setIsPinned(true);
-              setIsOpen(true);
-            }
-          }}
         >
           {children}
-        </div>
+        </button>
       </HoverCardTrigger>
       <HoverCardPortal>
         <HoverCardContent

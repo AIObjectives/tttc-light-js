@@ -11,13 +11,13 @@ import { useCallback, useEffect, useRef } from "react";
  * Includes AbortController cleanup to prevent stale scroll attempts
  * when component unmounts or multiple scrolls are triggered rapidly.
  *
- * @param setScrollTo - Function to set the scroll target in ReportContext
+ * @param scrollTo - Function to trigger scroll to an ID
  * @returns scrollToAfterRender - Function to trigger delayed scroll to a target ID
  *
  * @example
  * ```tsx
- * const { setScrollTo } = useContext(ReportContext);
- * const scrollToAfterRender = useDelayedScroll(setScrollTo);
+ * const scrollTo = useReportUIStore((s) => s.scrollTo);
+ * const scrollToAfterRender = useDelayedScroll(scrollTo);
  *
  * const handleClick = () => {
  *   setActiveContentTab("report");
@@ -26,9 +26,7 @@ import { useCallback, useEffect, useRef } from "react";
  * };
  * ```
  */
-export function useDelayedScroll(
-  setScrollTo: (value: [string, number]) => void,
-) {
+export function useDelayedScroll(scrollTo: (id: string) => void) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup on unmount - abort any pending RAF callbacks
@@ -61,12 +59,12 @@ export function useDelayedScroll(
         requestAnimationFrame(() => {
           // Only trigger scroll if not aborted (component still mounted)
           if (!signal.aborted) {
-            setScrollTo([targetId, Date.now()]);
+            scrollTo(targetId);
           }
         });
       });
     },
-    [setScrollTo],
+    [scrollTo],
   );
 
   return scrollToAfterRender;

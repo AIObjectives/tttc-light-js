@@ -4,8 +4,9 @@ import { useReducer, useState } from "react";
 import { toast } from "sonner";
 import { logger } from "tttc-common/logger/browser";
 import Icons from "@/assets/icons";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { fetchToken } from "@/lib/firebase/getIdToken";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 import { feedbackResponse } from "@/lib/types/clientRoutes";
 import { cn } from "@/lib/utils/shadcn";
 import {
@@ -74,7 +75,7 @@ function FeedbackForm() {
     feedbackDialogReducer,
     defaultFeedbackDialogState,
   );
-  const { user, loading, error, emailVerified } = useUser();
+  const { user, loading, error, emailVerified } = useUserQuery();
 
   const handleSubmit = async () => {
     // User is guaranteed to exist due to early return below,
@@ -102,7 +103,7 @@ function FeedbackForm() {
         return;
       }
 
-      const httpResponse = await fetch("/api/feedback", {
+      const httpResponse = await fetchWithRequestId("/api/feedback", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

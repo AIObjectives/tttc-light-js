@@ -12,7 +12,8 @@ import {
   Input,
   TextArea,
 } from "@/components/elements";
-import { useUser } from "@/lib/hooks/getUser";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 interface ProfileSetupModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export function ProfileSetupModal({
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUser();
+  const { user } = useUserQuery();
 
   const handleSubmit = async () => {
     if (!user) {
@@ -64,7 +65,7 @@ export function ProfileSetupModal({
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch("/api/profile/update", {
+      const response = await fetchWithRequestId("/api/profile/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -105,8 +106,8 @@ export function ProfileSetupModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleSkip()}>
       <DialogContent
-        className="gap-8 p-6 max-w-sm z-[100]"
-        overlayProps={{ className: "z-[90]" }}
+        className="gap-8 p-6 max-w-sm z-100"
+        overlayProps={{ className: "z-90" }}
       >
         <DialogHeader className="space-y-2">
           <DialogTitle className="text-xl">What are your needs</DialogTitle>

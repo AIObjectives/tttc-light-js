@@ -16,8 +16,8 @@ import "dotenv/config";
 import { createHash } from "node:crypto";
 import type Redis from "ioredis";
 import { logger } from "tttc-common/logger";
-import { getQuotes } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import { getQuotes } from "tttc-common/transforms";
 import { z } from "zod";
 
 const perspectiveLogger = logger.child({ module: "perspective-api" });
@@ -482,7 +482,7 @@ const pyserverClaimSchema = z.object({
 });
 
 const pyserverSubtopicDataSchema = z.object({
-  counts: z.record(z.unknown()).optional(),
+  counts: z.record(z.string(), z.unknown()).optional(),
   claims: z.array(pyserverClaimSchema),
 });
 
@@ -492,7 +492,7 @@ const pyserverSubtopicTupleSchema = z.tuple([
 ]);
 
 const pyserverTopicDataSchema = z.object({
-  counts: z.record(z.unknown()).optional(),
+  counts: z.record(z.string(), z.unknown()).optional(),
   topics: z.array(pyserverSubtopicTupleSchema),
 });
 

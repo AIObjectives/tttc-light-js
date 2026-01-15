@@ -27,10 +27,8 @@ class EnvValidationError extends Error {
  * Only primitive types (string, boolean, number) are supported.
  */
 const flagValueSchema = z.union([z.string(), z.boolean(), z.number()], {
-  errorMap: () => ({
-    message:
-      "LOCAL_FLAGS values must be primitives (string, boolean, or number). Arrays, objects, and null are not supported.",
-  }),
+  message:
+    "LOCAL_FLAGS values must be primitives (string, boolean, or number). Arrays, objects, and null are not supported.",
 });
 
 /**
@@ -77,33 +75,32 @@ function transformLocalFlags(
 }
 
 export const env = z.object({
-  OPENAI_API_KEY: z.string({ required_error: "Missing OpenAI Key" }),
+  OPENAI_API_KEY: z.string({ error: "Missing OpenAI Key" }),
   OPENAI_API_KEY_PASSWORD: z
-    .string({ invalid_type_error: "Invalid type for openapi key password" })
+    .string({ error: "Invalid type for openapi key password" })
     .optional(),
   GCLOUD_STORAGE_BUCKET: z.string({
-    required_error: "Missing GCloud storage bucket",
+    error: "Missing GCloud storage bucket",
   }),
   GOOGLE_CREDENTIALS_ENCODED: z.string({
-    required_error: "Missing encoded GCloud credentials",
+    error: "Missing encoded GCloud credentials",
   }),
   FIREBASE_CREDENTIALS_ENCODED: z.string({
-    required_error: "Missing encoded Firebase credentials",
+    error: "Missing encoded Firebase credentials",
   }),
   CLIENT_BASE_URL: z
-    .string({ required_error: "Missing CLIENT_BASE_URL" })
+    .string({ error: "Missing CLIENT_BASE_URL" })
     .url({ message: "PYSERVER_URL in env should be a valid url" }),
   PYSERVER_URL: z
-    .string({ required_error: "Missing PYSERVER_URL" })
+    .string({ error: "Missing PYSERVER_URL" })
     .url({ message: "PYSERVER_URL in env should be a valid url" }),
   NODE_ENV: z.union(
     [z.literal("development"), z.literal("production"), z.literal("test")],
     {
-      required_error: "Missing NODE_ENV (production | development | test)",
-      invalid_type_error: "Invalid input for NODE_ENV",
+      error: "Missing or invalid NODE_ENV (production | development | test)",
     },
   ),
-  REDIS_URL: z.string({ required_error: "Missing REDIS_URL" }),
+  REDIS_URL: z.string({ error: "Missing REDIS_URL" }),
   ALLOWED_GCS_BUCKETS: z.string().transform((val) => val.split(",")),
   REDIS_QUEUE_NAME: z.string().default("pipeline"),
   // Queue system configuration (optional in test environment)
@@ -112,7 +109,7 @@ export const env = z.object({
   GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
   ALLOWED_ORIGINS: z
     .string({
-      required_error: "ALLOWED_ORIGINS is required in all environments",
+      error: "ALLOWED_ORIGINS is required in all environments",
     })
     .transform((val, ctx) => {
       const origins = val
@@ -209,7 +206,7 @@ export function validateEnv(): Env {
   const parsed = env.safeParse(process.env);
   if (parsed.success === false) {
     throw new EnvValidationError(
-      `❌ Invalid environment variables: \n\n${parsed.error.errors
+      `❌ Invalid environment variables: \n\n${parsed.error.issues
         .map((e, i) => {
           return `${i}) ${e.message} \n`;
         })

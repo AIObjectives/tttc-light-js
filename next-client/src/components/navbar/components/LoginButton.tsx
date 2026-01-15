@@ -23,7 +23,7 @@ import { ProfileSetupModal } from "@/components/profile/ProfileSetupModal";
 import { AUTH_ACTIONS } from "@/lib/constants/auth";
 import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
 import { logAuthEvent } from "@/lib/firebase/authEvents";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 const loginLogger = logger.child({ module: "login-button" });
 
@@ -111,7 +111,7 @@ const recordProfileSetupComplete = () => {
 };
 
 export default function LoginButton() {
-  const { user, loading, error } = useUser();
+  const { user, loading, error } = useUserQuery();
   const [showEmailAuth, setShowEmailAuth] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(
     "signin",
@@ -231,8 +231,8 @@ export default function LoginButton() {
             }}
           >
             <DialogContent
-              className="gap-2 p-6 z-[100] max-w-[400px]"
-              overlayProps={{ className: "opacity-20 z-[90]" }}
+              className="gap-2 p-6 z-100 max-w-[400px]"
+              overlayProps={{ className: "opacity-20 z-90" }}
             >
               <DialogTitle className="text-2xl font-semibold tracking-tight">
                 {authMode === "reset"

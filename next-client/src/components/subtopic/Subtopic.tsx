@@ -1,7 +1,6 @@
 import React, { forwardRef, useContext, useMemo } from "react";
-import { mergeRefs } from "react-merge-refs";
-import { getNPeopleFromClaims } from "tttc-common/morphisms";
 import type * as schema from "tttc-common/schema";
+import { getNPeopleFromClaims } from "tttc-common/transforms";
 import Icons from "@/assets/icons";
 import { ControversyIcon } from "@/assets/icons/ControversyIcons";
 import { getThemeColor } from "@/lib/color";
@@ -11,14 +10,21 @@ import {
   getSubtopicCrux,
 } from "@/lib/crux/utils";
 import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
+import { useFocusTracking } from "@/stores/hooks";
+import { useReportStore } from "@/stores/reportStore";
+import {
+  useActiveContentTab,
+  useReportUIStore,
+  useSortByBridging,
+} from "@/stores/reportUIStore";
+import type { ClaimNode, SubtopicNode } from "@/stores/types";
 import { Claim } from "../claim";
 import { ClaimItem } from "../claim/ClaimItem";
 import { CopyLinkButton } from "../copyButton/CopyButton";
 import { ExpandableText, HoverCard, HoverCardTrigger } from "../elements";
 import { Col, Row } from "../layout";
 import PointGraphic from "../pointGraphic/PointGraphic";
-import type { ClaimNode, SubtopicNode } from "../report/hooks/useReportState";
-import { ReportContext } from "../report/Report";
+import { ReportDataContext } from "../report/Report";
 import { CruxHoverContent } from "./CruxHoverContent";
 import ClaimLoader from "./components/ClaimLoader";
 import { useCruxNavigation } from "./hooks/useCruxNavigation";
@@ -47,10 +53,9 @@ export function Subtopic({
   topicColor?: string;
   show: boolean;
 }) {
-  const { useScrollTo, useFocusedNode, dispatch } = useContext(ReportContext);
-
-  const scrollRef = useScrollTo(subtopicNode.data.id);
-  const focusedRef = useFocusedNode(subtopicNode.data.id, !show);
+  // Use Zustand hook for focus tracking
+  const focusedRef = useFocusTracking(subtopicNode.data.id);
+  const expandPagination = useReportStore((s) => s.expandPagination);
 
   // Conditional rendering: don't render hidden subtopics to reduce DOM nodes
   // Users should click "Expand all" before printing to show all content
@@ -61,10 +66,9 @@ export function Subtopic({
       subtopicNode={subtopicNode}
       topicTitle={topicTitle}
       topicColor={topicColor}
-      ref={mergeRefs([scrollRef, focusedRef])}
-      onExpandSubtopic={() =>
-        dispatch({ type: "expandSubtopic", payload: { id: subtopicNode.id } })
-      }
+      ref={focusedRef}
+      id={subtopicNode.data.id}
+      onExpandSubtopic={() => expandPagination(subtopicNode.id)}
     />
   );
 }
@@ -79,13 +83,15 @@ export const SubtopicCard = forwardRef<
     topicTitle: string;
     topicColor?: string;
     onExpandSubtopic: () => void;
+    /** ID for scroll targeting via useScrollEffect */
+    id: string;
   }
 >(function TopicComponent(
-  { subtopicNode, topicTitle, topicColor, onExpandSubtopic },
+  { subtopicNode, topicTitle, topicColor, onExpandSubtopic, id },
   ref,
 ) {
   return (
-    <div data-testid={"subtopic-item"}>
+    <div data-testid={"subtopic-item"} id={id}>
       <Col gap={4} className="py-3 sm:py-8 border rounded-[8px]" ref={ref}>
         <SubtopicSummary
           title={subtopicNode.data.title}
@@ -115,7 +121,7 @@ export function SubtopicHeader({
 }) {
   return (
     <Row gap={4} className="justify-between items-center">
-      <div className="flex flex-grow">
+      <div className="flex grow">
         <h5 id={`${title}`}>{title}</h5>
       </div>
       <div className="flex items-center gap-2">
@@ -177,10 +183,12 @@ function CruxDisplay({
   subtopicTitle: string;
   topicColor?: string;
 }) {
-  const { addOns, activeContentTab, setActiveContentTab, setScrollTo } =
-    useContext(ReportContext);
+  const { addOns } = useContext(ReportDataContext);
+  const activeContentTab = useActiveContentTab();
+  const setActiveContentTab = useReportUIStore((s) => s.setActiveContentTab);
+  const scrollTo = useReportUIStore((s) => s.scrollTo);
   const crux = getSubtopicCrux(addOns, topicTitle, subtopicTitle);
-  const scrollToAfterRender = useDelayedScroll(setScrollTo);
+  const scrollToAfterRender = useDelayedScroll(scrollTo);
   const cruxId = `${topicTitle}:${subtopicTitle}`;
 
   // Extract text truncation logic to hook
@@ -201,14 +209,13 @@ function CruxDisplay({
   } = useParsedSpeakers(crux);
 
   // Extract navigation handlers to hook
-  const { handleCruxClick, handleSubtopicClick, handleKeyDown } =
-    useCruxNavigation({
-      cruxId,
-      subtopicTitle,
-      activeContentTab,
-      setActiveContentTab,
-      scrollToAfterRender,
-    });
+  const { handleCruxClick, handleSubtopicClick } = useCruxNavigation({
+    cruxId,
+    subtopicTitle,
+    activeContentTab,
+    setActiveContentTab,
+    scrollToAfterRender,
+  });
 
   // Memoize explanation cleaner
   const cleanExplanation = useMemo(
@@ -231,12 +238,10 @@ function CruxDisplay({
   return (
     <HoverCard openDelay={0} closeDelay={0}>
       <HoverCardTrigger asChild>
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={handleCruxClick}
-          onKeyDown={handleKeyDown}
-          className="py-3 cursor-pointer"
+          className="py-3 cursor-pointer bg-transparent border-none p-0 text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <p className="leading-6 pl-0 text-base font-medium">Crux</p>
           <Row gap={2} className="justify-between items-start">
@@ -256,7 +261,7 @@ function CruxDisplay({
               </span>
             </div>
           </Row>
-        </div>
+        </button>
       </HoverCardTrigger>
       <CruxHoverContent
         cruxClaim={crux.cruxClaim}
@@ -288,7 +293,8 @@ export function SubtopicClaims({
   pagination: number;
   onExpandSubtopic: () => void;
 }) {
-  const { sortByBridging, addOns } = useContext(ReportContext);
+  const sortByBridging = useSortByBridging();
+  const { addOns } = useContext(ReportDataContext);
 
   // Sort claims by bridging score if enabled
   // Claims without bridging scores default to -1, placing them at the bottom

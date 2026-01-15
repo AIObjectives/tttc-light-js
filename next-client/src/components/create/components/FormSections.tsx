@@ -47,7 +47,7 @@ export const FormHeader = () => (
       <div>
         <Icons.WhatsApp />
       </div>
-      <p className="p2 text-muted-foreground flex-grow">
+      <p className="p2 text-muted-foreground grow">
         Gather report responses using our survey tool directly from
         participants' devices.
       </p>
@@ -253,6 +253,17 @@ export function FormDataInput({
             : `File is too large - ${formatBytes(userSizeLimit)} limit`;
         setInlineError(errorMessage);
         handleReset(inputRef);
+      } else if (result.error.tag === "Oversized Comments") {
+        // Oversized comments - show inline error with details
+        const { count, maxLength, affectedIds } = result.error;
+        const MAX_ID_DISPLAY = 3;
+        const idsPreview = affectedIds.slice(0, MAX_ID_DISPLAY).join(", ");
+        const moreText = affectedIds.length > MAX_ID_DISPLAY ? "..." : "";
+        const errorMessage =
+          `${count} comment${count > 1 ? "s" : ""} exceed${count === 1 ? "s" : ""} the ${maxLength.toLocaleString()} character limit. ` +
+          `Please segment your data. Affected: ${idsPreview}${moreText}`;
+        setInlineError(errorMessage);
+        handleReset(inputRef);
       } else if (result.error.tag === "Invalid CSV") {
         // Invalid CSV - show error modal and reset file
         setErrorModalState({
@@ -385,7 +396,7 @@ export function FormDataInput({
         {/* Inline error banner for broken/empty files */}
         {inlineError && (
           <div className="flex items-start gap-2 p-4 rounded-lg border border-destructive bg-background">
-            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive mt-0.5" />
+            <AlertCircle className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
             <div className="flex flex-col">
               <span className="text-sm font-medium text-destructive">
                 Error

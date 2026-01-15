@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import Icons from "@/assets/icons";
-import { Col, Row } from "@/components/layout";
+import { Col } from "@/components/layout";
 
 interface IToggleContext {
   isOpen: boolean;
@@ -33,20 +33,11 @@ export function ToggleText({ children }: React.PropsWithChildren) {
 function Title({ children }: React.PropsWithChildren) {
   const { setIsOpen, isOpen } = useContext(ToggleContext);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      setIsOpen((state) => !state);
-    }
-  };
-
   return (
-    <Row
+    <button
+      type="button"
       onClick={() => setIsOpen((state) => !state)}
-      onKeyDown={handleKeyDown}
-      className="cursor-pointer select-none"
-      role="button"
-      tabIndex={0}
+      className="flex flex-row cursor-pointer select-none bg-transparent border-none p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       aria-expanded={isOpen}
     >
       <div className="h-4 w-5 self-center justify-items-start">
@@ -57,7 +48,7 @@ function Title({ children }: React.PropsWithChildren) {
         )}
       </div>
       <p>{children}</p>
-    </Row>
+    </button>
   );
 }
 
