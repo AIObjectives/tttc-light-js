@@ -84,10 +84,13 @@ function Report({
   reportData,
   reportUri: _reportUri,
   rawPipelineOutput,
+  reportId,
 }: {
   reportData: schema.UIReportData;
   reportUri: string;
   rawPipelineOutput: schema.PipelineOutput;
+  /** The Firebase document ID (route parameter) - used for ownership checks and visibility controls */
+  reportId: string;
 }) {
   // ========================================
   // Zustand Store Initialization
@@ -249,6 +252,7 @@ function Report({
             <ReportToolbar
               setIsMobileOutlineOpen={setMobileOutlineOpen}
               isMobileOutlineOpen={isMobileOutlineOpen}
+              reportId={reportId}
             />
           }
           Outline={<Outline onNavigate={() => setMobileOutlineOpen(false)} />}

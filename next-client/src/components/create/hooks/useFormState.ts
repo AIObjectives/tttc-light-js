@@ -159,10 +159,18 @@ export function useFormState() {
     },
   });
 
+  // Dropdown with fixed options - always valid
   const outputLanguage = useFormItem({
     initialValue: "English",
     statusEval: (val) => {
-      // Dropdown with fixed options - always valid
+      return success(val);
+    },
+  });
+
+  // Visibility: false = private (default), true = public
+  const visibility = useFormItem({
+    initialValue: false,
+    statusEval: (val) => {
       return success(val);
     },
   });
@@ -201,6 +209,7 @@ export function useFormState() {
     cruxesEnabled,
     bridgingEnabled,
     outputLanguage,
+    visibility,
     getValidationErrors,
   };
 }

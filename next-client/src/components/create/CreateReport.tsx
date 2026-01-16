@@ -30,6 +30,7 @@ import {
 } from "./components/FormSections";
 import { SigninModal } from "./components/Modals";
 import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
+import { FormVisibility } from "./components/VisibilitySelector";
 import { useFormState } from "./hooks/useFormState";
 import { useSignInModal } from "./hooks/useSignInModal";
 import { useSubmitValidation } from "./hooks/useSubmitValidation";
@@ -155,6 +156,7 @@ function CreateReportComponent({
     cruxesEnabled,
     bridgingEnabled,
     outputLanguage,
+    visibility,
   } = formState;
 
   const { submitAttempted, errorCount, handleSubmit } = useSubmitValidation(
@@ -186,6 +188,7 @@ function CreateReportComponent({
               description={description}
               showErrors={submitAttempted}
             />
+            <FormVisibility visibility={visibility} />
             <FormDataInput
               files={files}
               setFiles={setFiles}
