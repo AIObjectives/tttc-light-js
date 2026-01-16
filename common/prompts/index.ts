@@ -1,3 +1,30 @@
+/**
+ * Supported languages for report output.
+ * These languages are verified to work with:
+ * - LLM generation (GPT-4o-mini)
+ * - Perspective API (for bridging feature)
+ *
+ * Note: Chinese (Traditional) is excluded due to Perspective API limitations.
+ * For uncommon language support, see T3C-1038.
+ */
+export const SUPPORTED_LANGUAGES = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Portuguese",
+  "Chinese (Simplified)",
+  "Japanese",
+  "Korean",
+  "Arabic",
+  "Hindi",
+  "Russian",
+  "Italian",
+  "Dutch",
+] as const;
+
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
 export const defaultSystemPrompt = `You are a professional research assistant. You have helped run many public consultations, surveys and citizen assemblies. You have good instincts when it comes to extracting interesting insights. You are familiar with public consultation tools like Pol.is and you understand the benefits for working with very clear, concise claims that other people would be able to vote on.`;
 
 export const defaultClusteringPrompt = `I will give you a list of comments. I want you to propose a way to break down the information contained in these comments into topics and subtopics of interest.

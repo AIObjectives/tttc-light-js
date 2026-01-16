@@ -55,6 +55,7 @@ export const llmUserConfig = z.object({
   cruxInstructions: z.string(),
   cruxesEnabled: z.boolean(),
   bridgingEnabled: z.boolean().default(false),
+  outputLanguage: z.string().default("English"),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
@@ -742,6 +743,7 @@ export const llmPipelineOutput = z.object({
   dedupInstructions: z.string(),
   summariesInstructions: z.string(),
   cruxInstructions: z.string().optional(),
+  outputLanguage: z.string().optional(), // Language for generated content
   batchSize: z.number(),
   tree: taxonomy,
   start: z.number(),
@@ -1183,6 +1185,7 @@ export const promptsUsed = z.object({
   dedupInstructions: z.string(),
   summariesInstructions: z.string(),
   cruxInstructions: z.string().optional(),
+  outputLanguage: z.string().optional(), // Language for generated content (defaults to "English")
 });
 
 export type PromptsUsed = z.infer<typeof promptsUsed>;

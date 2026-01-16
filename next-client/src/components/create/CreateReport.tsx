@@ -154,6 +154,7 @@ function CreateReportComponent({
     cruxInstructions,
     cruxesEnabled,
     bridgingEnabled,
+    outputLanguage,
   } = formState;
 
   const { submitAttempted, errorCount, handleSubmit } = useSubmitValidation(
@@ -200,6 +201,7 @@ function CreateReportComponent({
               cruxInstructions={cruxInstructions}
               cruxesEnabled={cruxesEnabled}
               bridgingEnabled={bridgingEnabled}
+              outputLanguage={outputLanguage}
             />
             {/* Show inline error banner for non-auth errors */}
             {state.status === "error" &&
