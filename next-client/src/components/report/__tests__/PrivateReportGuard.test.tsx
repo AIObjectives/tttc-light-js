@@ -21,13 +21,13 @@ const mockUser = {
   uid: "test-user-123",
 };
 
-vi.mock("@/lib/hooks/getUser", () => ({
-  useUser: vi.fn(() => ({ user: null, loading: true })),
+vi.mock("@/lib/query/useUserQuery", () => ({
+  useUserQuery: vi.fn(() => ({ user: null, loading: true })),
 }));
 
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
-const mockedUseUser = vi.mocked(useUser);
+const mockedUseUser = vi.mocked(useUserQuery);
 
 // Mock fetch globally
 const mockFetch = vi.fn();

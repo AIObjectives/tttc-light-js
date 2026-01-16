@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { logger } from "tttc-common/logger/browser";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 const visibilityLogger = logger.child({ module: "report-visibility" });
 
@@ -28,7 +28,7 @@ export function useReportVisibility(
   initialIsPublic?: boolean,
   initialIsOwner?: boolean,
 ) {
-  const { user, loading: authLoading } = useUser();
+  const { user, loading: authLoading } = useUserQuery();
 
   const [state, setState] = useState<VisibilityState>({
     isPublic: initialIsPublic ?? null,

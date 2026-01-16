@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type * as api from "tttc-common/api";
 import * as schema from "tttc-common/schema";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 import { handleResponseData } from "@/lib/report/handleResponseData";
 import Feedback from "../feedback/Feedback";
 import ReportProgress from "../reportProgress/ReportProgress";
@@ -90,7 +90,7 @@ async function processReportResponse(
  * accessible to the authenticated owner.
  */
 export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
-  const { user, loading: authLoading } = useUser();
+  const { user, loading: authLoading } = useUserQuery();
   const [state, setState] = useState<State>({ type: "loading" });
   const [hasTriedAuth, setHasTriedAuth] = useState(false);
   const retryCountRef = useRef(0);

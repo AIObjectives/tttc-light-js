@@ -38,7 +38,7 @@ export async function updateReportVisibility(
   const parseResult = updateVisibilitySchema.safeParse(req.body);
   if (!parseResult.success) {
     visibilityLogger.warn(
-      { errors: parseResult.error.errors },
+      { errors: parseResult.error.issues },
       "Invalid visibility update request body",
     );
     return sendErrorByCode(res, ERROR_CODES.VALIDATION_ERROR, visibilityLogger);
