@@ -483,6 +483,38 @@ id,interview,comment
 - `reddit_climate_change_posts_500.csv`: 500 Reddit posts (uses `id,comment` format)
 - `tiny.csv`, `pets.csv`: Small test files for development
 
+## Debugging
+
+### Cloud Run Logs
+
+Fetch logs from deployed Cloud Run services using the `pnpm logs` utility:
+
+```bash
+# Get last 30 minutes of staging server logs
+pnpm logs server staging
+
+# Get last 2 hours of production pyserver errors
+pnpm logs pyserver prod --errors --since 2h
+
+# Trace a request across services by correlation ID
+pnpm logs server prod --request-id "abc123-def456"
+
+# Get ephemeral environment logs for PR #123
+pnpm logs server ephemeral --pr 123
+```
+
+**Services:** `server`, `pyserver`, `client`
+**Environments:** `staging`, `prod`, `ephemeral` (requires `--pr`)
+
+**Options:**
+- `--since <duration>` - Time window (e.g., `30m`, `2h`, `1d`). Default: `30m`
+- `--errors` - Only show ERROR and higher severity
+- `--request-id <id>` - Filter by correlation ID for distributed tracing
+- `--limit <n>` - Max entries. Default: 500
+- `--help` - Full documentation
+
+**Prerequisites:** Requires `gcloud auth login` and access to `tttc-light-js` project.
+
 ## Claude Code Configuration
 
 This project includes shared Claude Code configuration in the `.claude/` directory:
