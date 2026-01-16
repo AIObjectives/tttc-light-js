@@ -165,7 +165,7 @@ export function useFormState() {
     statusEval: (val) => {
       return success(val);
     },
-  }); 
+  });
 
   // Visibility: false = private (default), true = public
   const visibility = useFormItem({
