@@ -85,6 +85,9 @@ const reportRefSchema = z.object({
     )
     .optional(),
   errorMessage: z.string().optional(), // Details when status is "failed"
+
+  // Language the report was generated in (for T3C-616 translation feature compatibility)
+  outputLanguage: z.string().optional(), // Default: "English" if not set
 });
 
 export const reportRef = reportRefSchema;
@@ -97,6 +100,7 @@ export const reportRefWithDefaults = reportRefSchema.extend({
   numSubtopics: z.number().default(0),
   numClaims: z.number().default(0),
   numPeople: z.number().default(0),
+  outputLanguage: z.string().default("English"),
 });
 
 export type ReportRef = z.infer<typeof reportRef>;

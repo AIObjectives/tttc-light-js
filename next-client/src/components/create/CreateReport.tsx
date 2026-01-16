@@ -19,7 +19,7 @@ import {
 } from "@/components/elements";
 import { Center, Col } from "@/components/layout";
 import submitAction from "@/features/submission/actions/SubmitAction";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   AdvancedSettings,
   FormAbout,
@@ -38,7 +38,7 @@ const createReportLogger = logger.child({ module: "create-report" });
 
 /** Check if user needs email verification (email/password users only, not Google) */
 function checkNeedsEmailVerification(
-  user: ReturnType<typeof useUser>["user"],
+  user: ReturnType<typeof useUserQuery>["user"],
   emailVerified: boolean,
 ): boolean {
   const isEmailPasswordUser =
@@ -52,11 +52,11 @@ function checkNeedsEmailVerification(
  * Token is fetched fresh at submission time, not at component mount.
  */
 function useAuthState(): {
-  user: ReturnType<typeof useUser>["user"];
+  user: ReturnType<typeof useUserQuery>["user"];
   emailVerified: boolean;
   isLoading: boolean;
 } {
-  const { user, loading, emailVerified } = useUser();
+  const { user, loading, emailVerified } = useUserQuery();
   return { user, emailVerified, isLoading: loading };
 }
 
@@ -132,7 +132,7 @@ function CreateReportComponent({
   user,
   emailVerified,
 }: {
-  user: ReturnType<typeof useUser>["user"];
+  user: ReturnType<typeof useUserQuery>["user"];
   emailVerified: boolean;
 }) {
   const submitActionWithUser = bindTokenToAction(user, submitAction);
@@ -154,6 +154,7 @@ function CreateReportComponent({
     cruxInstructions,
     cruxesEnabled,
     bridgingEnabled,
+    outputLanguage,
   } = formState;
 
   const { submitAttempted, errorCount, handleSubmit } = useSubmitValidation(
@@ -200,6 +201,7 @@ function CreateReportComponent({
               cruxInstructions={cruxInstructions}
               cruxesEnabled={cruxesEnabled}
               bridgingEnabled={bridgingEnabled}
+              outputLanguage={outputLanguage}
             />
             {/* Show inline error banner for non-auth errors */}
             {state.status === "error" &&

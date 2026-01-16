@@ -32,6 +32,7 @@
     "test:common": "pnpm -F tttc-common run test",
     "test:server": "pnpm -F express-server run test",
     "test:client": "pnpm -F next-client run test",
+    "test:workspace": "vitest",
     "prepare": "husky",
     "quality:check": "cs delta --staged",
     "codescene:local": "cs delta --staged",

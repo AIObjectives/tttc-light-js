@@ -33,7 +33,8 @@
     "./prompts/*",
     "./schema/*",
     "./types/*",
-    "./utils/*"
+    "./utils/*",
+    "./test-utils/**/*"
   ],
-  "exclude": ["dist/", "**/*/*.test.*"]
+  "exclude": ["dist/", "**/*/*.test.*", "vitest.config.ts"]
 }

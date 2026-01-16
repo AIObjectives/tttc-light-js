@@ -63,6 +63,19 @@ const nonStandardFormat = z.object({
 type NonStandardFormat = z.infer<typeof nonStandardFormat>;
 
 /**
+ * Oversized comments - one or more comments exceed the character limit
+ */
+const oversizedComments = z.object({
+  tag: z.literal("Oversized Comments"),
+  count: z.number(),
+  maxLength: z.number(),
+  affectedIds: z.array(z.string()),
+  totalComments: z.number(),
+});
+
+type OversizedComments = z.infer<typeof oversizedComments>;
+
+/**
  * Union of possible errors
  */
 const CsvErrors = z.union([
@@ -70,6 +83,7 @@ const CsvErrors = z.union([
   nonStandardFormat,
   brokenFile,
   sizeError,
+  oversizedComments,
 ]);
 
 type CSVErrors = z.infer<typeof CsvErrors>;
@@ -105,7 +119,10 @@ const papaParse = async (
   // Dynamic import - only loads when function is called
   const Papa = (await import("papaparse")).default;
 
-  const parseResult = Papa.parse(Buffer.from(buffer).toString(), {
+  // Normalize line endings to LF - mixed CRLF/LF can confuse PapaParse quote handling
+  const content = Buffer.from(buffer).toString().replace(/\r\n/g, "\n");
+
+  const parseResult = Papa.parse(content, {
     header: true,
     skipEmptyLines: true,
   });
@@ -122,11 +139,14 @@ const papaParse = async (
 
 /**
  * Validates CSV structure using the new validation module
- * Returns success, warning (non-standard but mappable), or error (invalid)
+ * Returns success, warning (non-standard but mappable), or error (invalid/oversized)
  */
 const validateCsvStructure = (
   data: unknown,
-): Result<schema.SourceRow[], InvalidCSV | NonStandardFormat> => {
+): Result<
+  schema.SourceRow[],
+  InvalidCSV | NonStandardFormat | OversizedComments
+> => {
   // Validate that data is an array of records
   if (!Array.isArray(data)) {
     return failure({
@@ -155,6 +175,16 @@ const validateCsvStructure = (
       missingColumns: result.missingColumns,
       suggestions: result.suggestions,
       detectedHeaders: result.detectedHeaders,
+    });
+  }
+
+  if (result.status === "oversized") {
+    return failure({
+      tag: "Oversized Comments",
+      count: result.count,
+      maxLength: result.maxLength,
+      affectedIds: result.affectedIds,
+      totalComments: result.totalComments,
     });
   }
 

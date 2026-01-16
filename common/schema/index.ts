@@ -55,32 +55,40 @@ export const llmUserConfig = z.object({
   cruxInstructions: z.string(),
   cruxesEnabled: z.boolean(),
   bridgingEnabled: z.boolean().default(false),
+  outputLanguage: z.string().default("English"),
 });
 
 export type LLMUserConfig = z.infer<typeof llmUserConfig>;
 
-// Zod has trouble with self-referential types, so leave this be until we need to parse
-type _LLMClaim = {
-  claim: string;
-  quote: string;
-  claimId?: string;
-  topicName: string;
-  subtopicName?: string;
-  commentId?: string;
-  duplicates?: LLMClaim[];
-  duplicated?: boolean;
-};
-
-const oldclaim = z.custom<_LLMClaim>();
-
-export type LLMClaim = z.infer<typeof oldclaim>;
-
-export const cache = z.object({
-  get: z.function().args(z.string()).returns(z.any()),
-  set: z.function().args(z.string(), z.any()).returns(z.void()),
+/**
+ * LLMClaim - Claims extracted by LLM from source material
+ * Uses z.lazy() for the recursive `duplicates` field
+ */
+const llmClaimBase = z.object({
+  claim: z.string(),
+  quote: z.string(),
+  claimId: z.string().optional(),
+  topicName: z.string(),
+  subtopicName: z.string().optional(),
+  commentId: z.string().optional(),
+  duplicated: z.boolean().optional(),
 });
 
-export type Cache = z.infer<typeof cache>;
+// Recursive type: base fields + optional array of self
+export type LLMClaim = z.infer<typeof llmClaimBase> & {
+  duplicates?: LLMClaim[];
+};
+
+// Full schema with recursive field using z.lazy()
+const llmClaim: z.ZodType<LLMClaim> = llmClaimBase.extend({
+  duplicates: z.lazy(() => llmClaim.array()).optional(),
+});
+
+// Cache interface - plain TypeScript type (z.function() API changed in Zod 4)
+export interface Cache {
+  get: (key: string) => unknown;
+  set: (key: string, value: unknown) => void;
+}
 
 export const tracker = z.object({
   start: z.number(),
@@ -88,7 +96,7 @@ export const tracker = z.object({
   prompt_tokens: z.number(),
   completion_tokens: z.number(),
   total_tokens: z.number(),
-  unmatchedClaims: z.array(oldclaim),
+  unmatchedClaims: z.array(llmClaim),
   end: z.number().optional(),
   duration: z.string().optional(),
 });
@@ -107,7 +115,7 @@ export const llmSubtopic = z.object({
   subtopicShortDescription: z.string().optional(),
   subtopicId: z.string().optional(),
   claimsCount: z.number().optional(),
-  claims: z.array(oldclaim).optional(),
+  claims: z.array(llmClaim).optional(),
 });
 
 export type LLMSubtopic = z.infer<typeof llmSubtopic>;
@@ -563,16 +571,13 @@ export const subtopicCrux = z
     explanation: z.string(), // LLM's reasoning for why this divides participants
     agreementScore: z
       .number()
-      .min(0, "Agreement score must be between 0 and 1")
-      .max(1, "Agreement score must be between 0 and 1"), // 0-1: ratio of speakers who agree
+      .transform((val) => Math.max(0, Math.min(1, val))), // Clamp to 0-1 range
     disagreementScore: z
       .number()
-      .min(0, "Disagreement score must be between 0 and 1")
-      .max(1, "Disagreement score must be between 0 and 1"), // 0-1: ratio of speakers who disagree
+      .transform((val) => Math.max(0, Math.min(1, val))), // Clamp to 0-1 range
     controversyScore: z
       .number()
-      .min(0, "Controversy score must be between 0 and 1")
-      .max(1, "Controversy score must be between 0 and 1"), // 0-1: how evenly split (1.0 = perfect 50/50 split)
+      .transform((val) => Math.max(0, Math.min(1, val))), // Clamp to 0-1 range
     speakersInvolved: z.number().int().nonnegative().optional(), // Total speakers who took a position (agree + disagree)
     totalSpeakersInSubtopic: z.number().int().nonnegative().optional(), // Total speakers with claims in this subtopic
   })
@@ -738,6 +743,7 @@ export const llmPipelineOutput = z.object({
   dedupInstructions: z.string(),
   summariesInstructions: z.string(),
   cruxInstructions: z.string().optional(),
+  outputLanguage: z.string().optional(), // Language for generated content
   batchSize: z.number(),
   tree: taxonomy,
   start: z.number(),
@@ -866,17 +872,24 @@ export type Quote = z.infer<typeof quote>;
  * Claim
  * Claims are specific points made that are derived from the source material
  * They also contain an array of similarly made claims
+ * Uses z.lazy() for the recursive `similarClaims` field
  ********************************/
-// Zod has trouble with self-referential types, so leave this be until we need to parse
-export type Claim = {
-  id: string;
-  title: string;
-  quotes: Quote[];
+const claimBase = z.object({
+  id: z.string(),
+  title: z.string(),
+  quotes: z.array(quote),
+  number: z.number(),
+});
+
+// Recursive type: base fields + array of self
+export type Claim = z.infer<typeof claimBase> & {
   similarClaims: Claim[];
-  number: number;
 };
 
-export const claim = z.custom<Claim>();
+// Full schema with recursive field using z.lazy()
+export const claim: z.ZodType<Claim> = claimBase.extend({
+  similarClaims: z.lazy(() => claim.array()),
+});
 
 /********************************
  * Subtopic
@@ -1124,7 +1137,7 @@ export const auditLogEntry = z.object({
     "deduplicated",
   ]),
   reason: z.string().optional(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   timestamp: z.string(),
   // Additional tracking fields
   commentLength: z.number().optional(), // Length of comment text
@@ -1172,6 +1185,7 @@ export const promptsUsed = z.object({
   dedupInstructions: z.string(),
   summariesInstructions: z.string(),
   cruxInstructions: z.string().optional(),
+  outputLanguage: z.string().optional(), // Language for generated content (defaults to "English")
 });
 
 export type PromptsUsed = z.infer<typeof promptsUsed>;

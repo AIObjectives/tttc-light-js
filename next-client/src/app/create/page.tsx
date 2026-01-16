@@ -14,10 +14,10 @@ import {
   EmptyTitle,
 } from "@/components/elements/empty";
 import { Center } from "@/components/layout";
-import { useUser } from "@/lib/hooks/getUser";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 export default function ReportCreationPage() {
-  const { user, loading } = useUser();
+  const { user, loading } = useUserQuery();
   const [showSignInModal, setShowSignInModal] = useState(false);
 
   if (loading) {

@@ -30,6 +30,6 @@
     "pino": "^10.1.0",
     "tttc-common": "workspace:*",
     "weave": "^0.11.0",
-    "zod": "^3.23.8"
+    "zod": "^4.2.1"
   }
 }

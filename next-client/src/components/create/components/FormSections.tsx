@@ -10,8 +10,19 @@ import {
   useState,
 } from "react";
 import type { ColumnMappings } from "tttc-common/csv-validation";
+import { SUPPORTED_LANGUAGES } from "tttc-common/prompts";
 import Icons from "@/assets/icons";
-import { Button, Input, Separator, Switch } from "@/components/elements";
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
+  Switch,
+} from "@/components/elements";
 import { Col, Row } from "@/components/layout";
 import { formatBytes } from "@/lib/api/userLimits";
 import { useReactiveValue } from "@/lib/hooks/useReactiveValue";
@@ -36,7 +47,7 @@ export const FormHeader = () => (
       <div>
         <Icons.WhatsApp />
       </div>
-      <p className="p2 text-muted-foreground flex-grow">
+      <p className="p2 text-muted-foreground grow">
         Gather report responses using our survey tool directly from
         participants' devices.
       </p>
@@ -242,6 +253,17 @@ export function FormDataInput({
             : `File is too large - ${formatBytes(userSizeLimit)} limit`;
         setInlineError(errorMessage);
         handleReset(inputRef);
+      } else if (result.error.tag === "Oversized Comments") {
+        // Oversized comments - show inline error with details
+        const { count, maxLength, affectedIds } = result.error;
+        const MAX_ID_DISPLAY = 3;
+        const idsPreview = affectedIds.slice(0, MAX_ID_DISPLAY).join(", ");
+        const moreText = affectedIds.length > MAX_ID_DISPLAY ? "..." : "";
+        const errorMessage =
+          `${count} comment${count > 1 ? "s" : ""} exceed${count === 1 ? "s" : ""} the ${maxLength.toLocaleString()} character limit. ` +
+          `Please segment your data. Affected: ${idsPreview}${moreText}`;
+        setInlineError(errorMessage);
+        handleReset(inputRef);
       } else if (result.error.tag === "Invalid CSV") {
         // Invalid CSV - show error modal and reset file
         setErrorModalState({
@@ -374,7 +396,7 @@ export function FormDataInput({
         {/* Inline error banner for broken/empty files */}
         {inlineError && (
           <div className="flex items-start gap-2 p-4 rounded-lg border border-destructive bg-background">
-            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive mt-0.5" />
+            <AlertCircle className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
             <div className="flex flex-col">
               <span className="text-sm font-medium text-destructive">
                 Error
@@ -409,6 +431,53 @@ export function CostEstimate({ files }: { files: FileList | undefined }) {
     </Col>
   );
 }
+
+/**
+ * Language selector for report output.
+ * Controls what language the LLM generates topics, claims, and summaries in.
+ */
+const OutputLanguageSelector = ({
+  show,
+  outputLanguage,
+}: {
+  show: boolean;
+  outputLanguage: FormItemState<string>;
+}) => {
+  return (
+    <Col gap={4} className={show ? "" : "hidden"}>
+      <Col gap={2}>
+        <label htmlFor="outputLanguage" className="font-medium">
+          Output language
+        </label>
+        <p id="outputLanguage-description" className="p2 text-muted-foreground">
+          Language for generated topics, claims, and summaries. Original quotes
+          from your data remain unchanged.
+        </p>
+      </Col>
+      <Select
+        value={outputLanguage.state}
+        onValueChange={(val) => outputLanguage.setState(val)}
+      >
+        <SelectTrigger
+          className="w-full max-w-[250px]"
+          id="outputLanguage"
+          aria-describedby="outputLanguage-description"
+        >
+          <SelectValue placeholder="Select language" />
+        </SelectTrigger>
+        <SelectContent>
+          {SUPPORTED_LANGUAGES.map((lang) => (
+            <SelectItem key={lang} value={lang}>
+              {lang}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {/* Hidden input to ensure value is submitted with form */}
+      <input type="hidden" name="outputLanguage" value={outputLanguage.state} />
+    </Col>
+  );
+};
 
 /**
  * Contains all of our prompt inputs
@@ -562,6 +631,7 @@ export function AdvancedSettings({
   cruxInstructions,
   cruxesEnabled,
   bridgingEnabled,
+  outputLanguage,
 }: {
   systemInstructions: FormItemState<string>;
   clusteringInstructions: FormItemState<string>;
@@ -571,6 +641,7 @@ export function AdvancedSettings({
   cruxInstructions: FormItemState<string>;
   cruxesEnabled: FormItemState<boolean>;
   bridgingEnabled: FormItemState<boolean>;
+  outputLanguage: FormItemState<string>;
 }) {
   const [show, setShow] = useState<boolean>(false);
 
@@ -586,6 +657,7 @@ export function AdvancedSettings({
           {show ? "Hide advanced settings" : "Show advanced settings"}
         </Button>
       </div>
+      <OutputLanguageSelector show={show} outputLanguage={outputLanguage} />
       <CustomizePrompts
         show={show}
         systemInstructions={systemInstructions}

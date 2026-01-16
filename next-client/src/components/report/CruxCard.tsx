@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-import { mergeRefs } from "react-merge-refs";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { logger } from "tttc-common/logger/browser";
 import type * as schema from "tttc-common/schema";
 import Icons from "@/assets/icons";
@@ -17,8 +10,9 @@ import {
 } from "@/components/controversy";
 import { getControversyCategory, parseSpeaker } from "@/lib/crux/utils";
 import { useDelayedScroll } from "@/lib/hooks/useDelayedScroll";
+import { useCruxFocusTracking } from "@/stores/hooks";
+import { useReportUIStore } from "@/stores/reportUIStore";
 import { Col, Row } from "../layout";
-import { ReportContext } from "./Report";
 
 // Suppress useLayoutEffect warning in SSR
 const useIsomorphicLayoutEffect =
@@ -40,21 +34,17 @@ export function CruxCard({
   getTopicColor,
   onNavigateToSubtopic,
 }: CruxCardProps) {
-  const {
-    setScrollTo,
-    setExpandedCruxId,
-    useScrollTo,
-    useFocusedNodeForCruxes,
-  } = useContext(ReportContext);
+  const scrollTo = useReportUIStore((s) => s.scrollTo);
+  const setExpandedCruxId = useReportUIStore((s) => s.setExpandedCruxId);
   const subtopicId = getSubtopicId(crux.topic, crux.subtopic);
 
   // Use shared hook for delayed scroll with cleanup
-  const scrollToAfterRender = useDelayedScroll(setScrollTo);
+  const scrollToAfterRender = useDelayedScroll(scrollTo);
 
   // Create unique ID for scroll targeting (same as in Subtopic)
   const cruxId = `${crux.topic}:${crux.subtopic}`;
-  const scrollRef = useScrollTo(cruxId);
-  const focusedRef = useFocusedNodeForCruxes(cruxId);
+  // Use Zustand hook for focus tracking
+  const focusedRef = useCruxFocusTracking<HTMLButtonElement>(cruxId);
 
   const handleClick = () => {
     // Ensure both subtopicId and navigation callback exist
@@ -81,13 +71,6 @@ export function CruxCard({
 
     // Scroll after state updates complete
     scrollToAfterRender(subtopicId);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
-    }
   };
 
   // Handle subtopic click: Navigate to Report tab, expand topic, and scroll to subtopic
@@ -173,13 +156,12 @@ export function CruxCard({
   );
 
   return (
-    <div
-      ref={mergeRefs([scrollRef, focusedRef])}
-      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-      role="button"
-      tabIndex={0}
+    <button
+      ref={focusedRef}
+      id={cruxId}
+      type="button"
+      className="p-4 rounded-lg border border-border bg-card cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
       aria-label={`Crux: ${crux.cruxClaim}. Click to view in report.`}
     >
       <Col gap={4}>
@@ -249,6 +231,6 @@ export function CruxCard({
           topicColor={getTopicColor(crux.topic)}
         />
       </Col>
-    </div>
+    </button>
   );
 }

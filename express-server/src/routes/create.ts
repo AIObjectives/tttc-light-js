@@ -238,6 +238,7 @@ const createUserDocuments = async (
       numClaims: 0, // Placeholder, will be updated
       numPeople: 0, // Placeholder, will be updated
       createdDate: new Date(),
+      outputLanguage: userConfig.outputLanguage, // Language for generated content
     },
     preGeneratedReportId, // Use the same reportId as storage filename
   );
@@ -504,7 +505,7 @@ export default async function create(req: RequestWithAuth, res: Response) {
     }
     // Queue the pipeline job before sending response
     // This ensures the user only gets success if the job was actually queued
-    await pipelineQueue.enqueue(result.value.pipelineJob);
+    await pipelineQueue.enqueue(result.value.pipelineJob, { requestId });
     res.json(result.value.response);
   } catch (e) {
     req.log.error(

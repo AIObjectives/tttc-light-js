@@ -93,13 +93,13 @@ export function basicSanitize(
 
   let sanitizedText = text;
 
-  // Basic length check
+  // Basic length check - reject oversized content (defense-in-depth)
   if (text.length > MAX_COMMENT_LENGTH) {
-    sanitizerLogger.warn(
+    sanitizerLogger.error(
       { context, length: text.length, maxLength: MAX_COMMENT_LENGTH },
-      "Oversized input detected",
+      "Oversized input rejected - client-side validation bypassed",
     );
-    sanitizedText = text.substring(0, MAX_COMMENT_LENGTH);
+    return { sanitizedText: "", isSafe: false };
   }
 
   // Empty or too short

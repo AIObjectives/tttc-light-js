@@ -285,7 +285,7 @@ function getColumnIds(): ColumnIds {
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new Error(
-        `Invalid MONDAY_COLUMN_IDS format: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
+        `Invalid MONDAY_COLUMN_IDS format: ${error.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
       );
     }
     throw new Error(

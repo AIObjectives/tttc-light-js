@@ -1,5 +1,6 @@
 import type { User } from "firebase/auth";
 import { logger } from "tttc-common/logger/browser";
+import { fetchWithRequestId } from "../api/fetchWithRequestId";
 import { fetchToken } from "./getIdToken";
 
 const authEventsLogger = logger.child({ module: "auth-events-client" });
@@ -28,7 +29,7 @@ export async function logAuthEvent(
     };
 
     // Call our Next.js API route which will proxy to the express server
-    const response = await fetch("/api/auth-events", {
+    const response = await fetchWithRequestId("/api/auth-events", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

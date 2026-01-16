@@ -17,7 +17,7 @@ import {
 } from "../elements";
 import { Col, Row } from "../layout";
 import { Quote } from "../quote/Quote";
-import { ReportContext } from "../report/Report";
+import { ReportDataContext } from "../report/Report";
 import { InteractiveQuoteCard } from "./HoverQuoteCard";
 
 /**
@@ -65,7 +65,7 @@ export function Claim({ claim }: { claim: schema.Claim }) {
 function ClaimHeader({ claim }: { claim: schema.Claim }) {
   const { title, number, id } = claim;
   const quoteNum = getQuotes(claim).length;
-  const { addOns } = useContext(ReportContext);
+  const { addOns } = useContext(ReportDataContext);
 
   // Get bridging score for this claim
   const bridgingScore = getClaimBridgingScore(id, addOns);

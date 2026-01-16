@@ -514,3 +514,13 @@ pnpm logs server ephemeral --pr 123
 - `--help` - Full documentation
 
 **Prerequisites:** Requires `gcloud auth login` and access to `tttc-light-js` project.
+
+## Claude Code Configuration
+
+This project includes shared Claude Code configuration in the `.claude/` directory:
+
+- **`.claude/CLAUDE.team.md`**: Main team configuration entry point
+- **`.claude/rules/`**: Auto-loaded rules organized by topic
+- **`.claude/README.md`**: Full documentation on configuration structure and integration options
+
+If you use Claude Code, see `.claude/README.md` for how to integrate team configuration with any existing personal `CLAUDE.md` you may have.

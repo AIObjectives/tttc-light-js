@@ -216,7 +216,7 @@ export function InvalidCSVErrorModal({
 }) {
   return (
     <AlertDialog open={isOpen}>
-      <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg gap-4 p-0 shadow-sm">
+      <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg gap-4 p-0 shadow-xs">
         {/* Card Header */}
         <AlertDialogHeader className="gap-2 px-6 pt-6">
           <AlertDialogTitle className="text-xl font-semibold leading-7 tracking-[-0.1px]">
