@@ -19,26 +19,25 @@ import {
 import { Col, Row } from "../layout";
 
 // Sort mode types and helpers
-type MyReportsSortMode =
-  | "date-newest"
-  | "date-oldest"
-  | "title-asc"
-  | "title-desc";
+const SortModes = ["date-newest", "date-oldest", "title-asc", "title-desc"];
+type MyReportsSortMode = (typeof SortModes)[number];
+
+const defaultSortMode: MyReportsSortMode = "date-newest";
 
 const MY_REPORTS_SORT_KEY = "myReportsSortPreference";
 
 const isValidSortMode = (value: string): value is MyReportsSortMode =>
-  ["date-newest", "date-oldest", "title-asc", "title-desc"].includes(value);
+  SortModes.includes(value as MyReportsSortMode);
 
 const getStoredSortMode = (): MyReportsSortMode => {
-  if (typeof window === "undefined") return "date-newest";
+  if (typeof window === "undefined") return defaultSortMode;
   try {
     const stored = localStorage.getItem(MY_REPORTS_SORT_KEY);
     if (stored && isValidSortMode(stored)) return stored;
   } catch {
     // Ignore storage errors (SSR, private mode)
   }
-  return "date-newest";
+  return defaultSortMode;
 };
 
 const setSortPreference = (mode: MyReportsSortMode) => {
@@ -49,13 +48,15 @@ const setSortPreference = (mode: MyReportsSortMode) => {
   }
 };
 
-const getSortLabel = (mode: MyReportsSortMode): string =>
-  ({
+const getSortLabel = (mode: MyReportsSortMode): string => {
+  const labels: Record<MyReportsSortMode, string> = {
     "date-newest": "Newest first",
     "date-oldest": "Oldest first",
     "title-asc": "Title A-Z",
     "title-desc": "Title Z-A",
-  })[mode];
+  };
+  return labels[mode];
+};
 
 const reportLink = (id: string) =>
   `${location.protocol}//${location.host}/report/${id}`;
