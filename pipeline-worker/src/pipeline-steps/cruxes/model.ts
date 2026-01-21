@@ -58,24 +58,27 @@ function buildAnonymizedClaims(
 }
 
 /**
- * Validate and sanitize topic information
+ * Validate and sanitize subtopic information
  */
-function validateTopicInfo(
-  topic: string,
-  topicDesc: string,
+function validateSubtopicInfo(
+  subtopicIdentifier: string,
+  subtopicDesc: string,
 ): Result<SanitizedTopicInfo, ClusteringError> {
   const { sanitizedText: sanitizedTopic, isSafe: topicSafe } = basicSanitize(
-    topic,
+    subtopicIdentifier,
     "cruxes_topic",
   );
   const { sanitizedText: sanitizedTopicDesc, isSafe: descSafe } = basicSanitize(
-    topicDesc,
+    subtopicDesc,
     "cruxes_desc",
   );
 
   if (!topicSafe || !descSafe) {
     return failure(
-      new ParseFailedError(topic, "Unsafe topic/description in cruxes"),
+      new ParseFailedError(
+        subtopicIdentifier,
+        "Unsafe subtopic identifier/description in cruxes",
+      ),
     );
   }
 
@@ -174,8 +177,8 @@ export async function generateCruxForSubtopic(
     modelName,
     systemPrompt,
     userPrompt,
-    topic,
-    topicDesc,
+    subtopicIdentifier,
+    subtopicDesc,
     claims,
     speakerMap,
     subtopicIndex,
@@ -187,7 +190,7 @@ export async function generateCruxForSubtopic(
     options;
 
   const context = {
-    topic,
+    subtopicIdentifier,
     subtopicIndex,
     reportId,
   };
@@ -204,19 +207,25 @@ export async function generateCruxForSubtopic(
     );
     return failure(
       new ParseFailedError(
-        topic,
+        subtopicIdentifier,
         `Fewer than 2 speakers in subtopic: ${speakerCount}`,
       ),
     );
   }
 
-  const topicInfoResult = validateTopicInfo(topic, topicDesc);
-  if (topicInfoResult.tag === "failure") {
-    cruxesLogger.warn(context, "Rejecting unsafe topic/description in cruxes");
-    return topicInfoResult;
+  const subtopicInfoResult = validateSubtopicInfo(
+    subtopicIdentifier,
+    subtopicDesc,
+  );
+  if (subtopicInfoResult.tag === "failure") {
+    cruxesLogger.warn(
+      context,
+      "Rejecting unsafe subtopic identifier/description in cruxes",
+    );
+    return subtopicInfoResult;
   }
 
-  const { sanitizedTopic, sanitizedTopicDesc } = topicInfoResult.value;
+  const { sanitizedTopic, sanitizedTopicDesc } = subtopicInfoResult.value;
   const fullPrompt = buildPrompt(
     userPrompt,
     sanitizedTopic,
@@ -305,7 +314,7 @@ export async function generateCruxForSubtopic(
       cruxResponse: cruxObj,
       claims: claimsAnon,
       totalSpeakers: speakerCount,
-      topic,
+      subtopicIdentifier,
     });
   }
 
@@ -317,7 +326,7 @@ export async function generateCruxForSubtopic(
  * Scores are sent to Weave for tracking
  */
 function runCruxesEvaluation(params: CruxEvaluationParams): void {
-  const { openaiClient, cruxResponse, claims, topic } = params;
+  const { openaiClient, cruxResponse, claims, subtopicIdentifier } = params;
   // Type assertion needed temporarily until T3C-853 is completed
   // (https://linear.app/ai-objectives/issue/T3C-853/update-openai-sdk-version-in-eval-suite)
   // The eval suite uses OpenAI v4 while pipeline-worker uses v6
@@ -336,13 +345,13 @@ function runCruxesEvaluation(params: CruxEvaluationParams): void {
     },
   };
 
-  // Build dataset row format with claims for evaluation
-  // Note: For the simple scorers that don't use datasetRow fields,
-  // we provide a minimal dataset row. The LLM judge scorer expects
-  // full topic info which we don't have in this context, so it may
-  // produce less accurate results.
+  // Build dataset row format with claims for evaluation.
+  // Simple scorers (cruxJsonStructureScorer, explanationQualityScorer) don't use
+  // datasetRow topic fields, so minimal data is sufficient.
+  // TODO(T3C-XXX): Consider passing full topic/subtopic info to improve LLM judge
+  // accuracy, or evaluate whether the LLM judge scorer is effective without it.
   const datasetRow = {
-    topic,
+    topic: subtopicIdentifier,
     topicDescription: "",
     subtopic: "",
     subtopicDescription: "",
@@ -371,7 +380,7 @@ function runCruxesEvaluation(params: CruxEvaluationParams): void {
     .then((scores) => {
       cruxesLogger.info(
         {
-          topic,
+          subtopicIdentifier,
           jsonStructure: scores[0],
           explanationQuality: scores[1],
           llmJudge: scores[2],
@@ -380,6 +389,9 @@ function runCruxesEvaluation(params: CruxEvaluationParams): void {
       );
     })
     .catch((error) => {
-      cruxesLogger.error({ error, topic }, "Background scoring failed");
+      cruxesLogger.error(
+        { error, subtopicIdentifier },
+        "Background scoring failed",
+      );
     });
 }

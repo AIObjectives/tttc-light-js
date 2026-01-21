@@ -23,7 +23,7 @@ vi.mock("../model", () => ({
     value: {
       crux: {
         crux: {
-          cruxClaim: `Test crux for ${input.topic}`,
+          cruxClaim: `Test crux for ${input.subtopicIdentifier}`,
           agree: ["0", "1"],
           disagree: ["2"],
           no_clear_position: ["3"],
@@ -61,6 +61,7 @@ vi.mock("../../utils", async () => {
 
 import { extractCruxes } from "../index";
 import type { Claim, ClaimsTree, LLMConfig, Topic } from "../types";
+import { calculateControversyScores } from "../utils";
 
 /** Input parameters for creating a sample claim */
 interface ClaimInput {
@@ -554,7 +555,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
           value: {
             crux: {
               crux: {
-                cruxClaim: `Test crux for ${input.topic}`,
+                cruxClaim: `Test crux for ${input.subtopicIdentifier}`,
                 agree: ["0"],
                 disagree: ["1"],
                 no_clear_position: [],
@@ -649,5 +650,57 @@ describe("Cruxes Extraction Pipeline Step", () => {
         expect(crux.disagree[0]).toContain("Speaker2");
       }
     });
+  });
+});
+
+describe("calculateControversyScores", () => {
+  it("should return all zeros when totalSpeakers is 0", () => {
+    const scores = calculateControversyScores([], [], 0);
+    expect(scores.agreementScore).toBe(0);
+    expect(scores.disagreementScore).toBe(0);
+    expect(scores.controversyScore).toBe(0);
+  });
+
+  it("should return all zeros when both arrays are empty", () => {
+    const scores = calculateControversyScores([], [], 10);
+    expect(scores.agreementScore).toBe(0);
+    expect(scores.disagreementScore).toBe(0);
+    expect(scores.controversyScore).toBe(0);
+  });
+
+  it("should calculate maximum controversy for 50/50 split", () => {
+    const agree = ["1", "2", "3", "4", "5"];
+    const disagree = ["6", "7", "8", "9", "10"];
+    const scores = calculateControversyScores(agree, disagree, 10);
+    expect(scores.agreementScore).toBe(0.5);
+    expect(scores.disagreementScore).toBe(0.5);
+    expect(scores.controversyScore).toBe(1.0);
+  });
+
+  it("should calculate low controversy for 80/20 split", () => {
+    const agree = ["1", "2", "3", "4", "5", "6", "7", "8"];
+    const disagree = ["9", "10"];
+    const scores = calculateControversyScores(agree, disagree, 10);
+    expect(scores.agreementScore).toBe(0.8);
+    expect(scores.disagreementScore).toBe(0.2);
+    expect(scores.controversyScore).toBe(0.4);
+  });
+
+  it("should return zero controversy when all speakers agree", () => {
+    const agree = ["1", "2", "3", "4", "5"];
+    const disagree: string[] = [];
+    const scores = calculateControversyScores(agree, disagree, 5);
+    expect(scores.agreementScore).toBe(1.0);
+    expect(scores.disagreementScore).toBe(0);
+    expect(scores.controversyScore).toBe(0);
+  });
+
+  it("should return zero controversy when all speakers disagree", () => {
+    const agree: string[] = [];
+    const disagree = ["1", "2", "3", "4", "5"];
+    const scores = calculateControversyScores(agree, disagree, 5);
+    expect(scores.agreementScore).toBe(0);
+    expect(scores.disagreementScore).toBe(1.0);
+    expect(scores.controversyScore).toBe(0);
   });
 });

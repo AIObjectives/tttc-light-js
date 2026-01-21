@@ -609,10 +609,10 @@ export interface GenerateCruxInput {
   systemPrompt: string;
   /** User prompt template */
   userPrompt: string;
-  /** Topic identifier (format: "Topic, Subtopic") */
-  topic: string;
+  /** Subtopic identifier (format: "Topic, Subtopic") */
+  subtopicIdentifier: string;
   /** Description of the subtopic */
-  topicDesc: string;
+  subtopicDesc: string;
   /** Array of claims for this subtopic */
   claims: Claim[];
   /** Speaker map (name -> numeric ID) */
@@ -648,7 +648,7 @@ export interface CruxEvaluationParams {
   cruxResponse: RawCruxResponse;
   claims: string[];
   totalSpeakers: number;
-  topic: string;
+  subtopicIdentifier: string;
 }
 
 /**

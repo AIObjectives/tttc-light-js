@@ -10,13 +10,12 @@ import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { sanitizeForOutput } from "../sanitizer";
-import { ParseFailedError } from "../types";
+import { ClusteringError, ParseFailedError } from "../types";
 import { getReportLogger, processBatchConcurrently, tokenCost } from "../utils";
 import { generateCruxForSubtopic } from "./model";
 import type {
   Claim,
   ClaimsTree,
-  ClusteringError,
   CruxesOptions,
   CruxesResult,
   LLMConfig,
@@ -381,7 +380,8 @@ function processSubtopicResult(
     );
   }
 
-  const crux = llmResponse.crux as Record<string, unknown>;
+  // Type guard above ensures llmResponse.crux exists
+  const crux = llmResponse.crux;
 
   // Validate required properties
   if (!hasRequiredCruxProperties(crux)) {
@@ -512,17 +512,13 @@ export async function extractCruxes(
   // Validate inputs
   if (totalSubtopics === 0) {
     return failure(
-      new Error(
-        "Claims tree cannot be empty for cruxes extraction",
-      ) as ClusteringError,
+      new ClusteringError("Claims tree cannot be empty for cruxes extraction"),
     );
   }
 
   if (topics.length === 0) {
     return failure(
-      new Error(
-        "Topics cannot be empty for cruxes extraction",
-      ) as ClusteringError,
+      new ClusteringError("Topics cannot be empty for cruxes extraction"),
     );
   }
 
@@ -545,8 +541,8 @@ export async function extractCruxes(
         modelName: llmConfig.model_name,
         systemPrompt: llmConfig.system_prompt,
         userPrompt: llmConfig.user_prompt,
-        topic: item.cruxIdentifier,
-        topicDesc: item.subtopicDesc,
+        subtopicIdentifier: item.cruxIdentifier,
+        subtopicDesc: item.subtopicDesc,
         claims: item.claims,
         speakerMap,
         subtopicIndex: item.subtopicIndex,
