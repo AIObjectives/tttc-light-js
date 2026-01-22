@@ -21,7 +21,10 @@ export default mergeConfig(
       // Extended timeout for pipeline processing tests
       testTimeout: 1000000,
       // Shared setup: console interception, mock cleanup, env defaults
-      setupFiles: ["tttc-common/test-utils/setup/server"],
+      // Use absolute path to avoid alias resolution issues
+      setupFiles: [
+        path.resolve(__dirname, "../common/test-utils/setup/server"),
+      ],
     },
     resolve: {
       alias: {
