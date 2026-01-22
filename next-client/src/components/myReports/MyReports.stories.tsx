@@ -15,6 +15,7 @@ type Story = StoryObj<typeof meta>;
 
 const reports = [
   {
+    id: "storybook-report-1",
     reportDataUri: "",
     userId: "",
     numTopics: 1,
@@ -24,8 +25,10 @@ const reports = [
     description: "A very testy report",
     title: "test report",
     createdDate: new Date(),
+    isPublic: false,
   },
   {
+    id: "storybook-report-2",
     reportDataUri: "",
     userId: "",
     numTopics: 4,
@@ -36,8 +39,10 @@ const reports = [
       "Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset, accusamus laboramus id duo. Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans. Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans deterruisset, accusamus laboramus id duo. Lorem ipsum dolor sit amet, in eum erat constituam, ius ut justo reformidans.",
     title: "A lorem ipsum report",
     createdDate: new Date(),
+    isPublic: true,
   },
   {
+    id: "storybook-report-3",
     reportDataUri: "",
     userId: "",
     numTopics: 10,
@@ -47,6 +52,7 @@ const reports = [
     description: "Just another report",
     title: "Another report",
     createdDate: new Date(),
+    // isPublic not set - shows as public (legacy behavior)
   },
 ];
 
