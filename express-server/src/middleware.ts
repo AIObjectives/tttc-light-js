@@ -269,9 +269,13 @@ export const optionalAuthMiddleware = () => {
     try {
       const decodedUser = await verifyUser(token);
       (req as RequestWithOptionalAuth).auth = decodedUser;
+      req.log.info(
+        { userId: decodedUser.uid },
+        "Optional auth token verified successfully",
+      );
       next();
     } catch (error) {
-      req.log.debug(
+      req.log.warn(
         { error },
         "Optional auth token invalid, continuing without auth",
       );

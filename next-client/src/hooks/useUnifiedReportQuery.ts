@@ -7,6 +7,7 @@ import type { ReportRef } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger/browser";
 import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { queryKeys } from "@/lib/query/queryKeys";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 const unifiedReportLogger = logger.child({ module: "unified-report-query" });
 
@@ -46,13 +47,22 @@ function isTerminalStatus(status: api.ReportJobStatus): boolean {
  * Returns a special response for 404 instead of throwing to allow
  * graceful handling of not-found reports.
  *
+ * @param identifier - The report identifier (Firebase ID or legacy bucket path)
+ * @param authToken - Optional Firebase auth token for authenticated requests
  * @internal Exported for testing
  */
 export async function fetchReport(
   identifier: string,
+  authToken?: string,
 ): Promise<UnifiedReportResponse> {
+  const headers: Record<string, string> = {};
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
+
   const response = await fetchWithRequestId(
     `/api/report/${encodeURIComponent(identifier)}`,
+    { headers },
   );
 
   if (!response.ok) {
@@ -136,19 +146,24 @@ const FINISHED_STALE_TIME = 10 * 60 * 1000;
  * - Polling stops automatically when terminal state is reached
  * - Caching with appropriate stale times for different states
  * - Automatic retries with exponential backoff (except for 404s)
+ * - Authenticated requests when user is logged in (enables viewing private reports)
  *
  * @param identifier - Firebase document ID or legacy bucket-style URI
  * @returns ReportState discriminated union (backward compatible with original useUnifiedReport)
  */
 export function useUnifiedReportQuery(identifier: string): ReportState {
+  const { user } = useUserQuery();
+
   const { data, isLoading, isError, error } = useQuery<
     UnifiedReportResponse,
     Error
   >({
     queryKey: queryKeys.report.detail(identifier),
-    queryFn: () => {
+    queryFn: async () => {
       unifiedReportLogger.debug({ identifier }, "Fetching report status");
-      return fetchReport(identifier);
+      // Get fresh auth token if user is logged in
+      const authToken = user ? await user.getIdToken() : undefined;
+      return fetchReport(identifier, authToken);
     },
 
     // Dynamic polling: 4s when processing, stop on terminal states or errors

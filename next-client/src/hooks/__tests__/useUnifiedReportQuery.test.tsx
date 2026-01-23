@@ -21,6 +21,16 @@ vi.mock("tttc-common/logger/browser", () => ({
   },
 }));
 
+// Mock useUserQuery to avoid Firebase initialization
+vi.mock("@/lib/query/useUserQuery", () => ({
+  useUserQuery: () => ({
+    user: null,
+    loading: false,
+    error: null,
+    emailVerified: false,
+  }),
+}));
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {

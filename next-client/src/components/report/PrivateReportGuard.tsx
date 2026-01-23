@@ -61,24 +61,55 @@ async function processReportResponse(
     return { type: "progress", status: status as api.ReportJobStatus };
   }
 
-  // Handle finished report with data
-  if (status === "finished" && reportResponse.reportData) {
-    const reportData = reportResponse.reportData;
-    const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
-    const result = await handleResponseData(reportData, reportId, true);
+  // Handle finished report
+  if (status === "finished") {
+    // Check if report data is already included (server-side fetch to avoid CORS)
+    if (reportResponse.reportData) {
+      const reportData = reportResponse.reportData;
+      const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
+      const result = await handleResponseData(reportData, reportId, true);
 
-    if (result.tag === "report") {
-      return {
-        type: "reportData",
-        data: result.data,
-        rawPipelineOutput,
-        url: reportResponse.dataUrl ?? "",
-      };
+      if (result.tag === "report") {
+        return {
+          type: "reportData",
+          data: result.data,
+          rawPipelineOutput,
+          url: reportResponse.dataUrl ?? "",
+        };
+      }
+      if (result.tag === "error") {
+        return { type: "error", message: result.message };
+      }
+      return { type: "progress", status: result.status };
     }
-    if (result.tag === "error") {
-      return { type: "error", message: result.message };
+
+    // Fallback: fetch from dataUrl (may encounter CORS issues)
+    if (reportResponse.dataUrl) {
+      const reportDataResponse = await fetch(reportResponse.dataUrl);
+      if (!reportDataResponse.ok) {
+        return {
+          type: "error",
+          message: `Failed to fetch report data: ${reportDataResponse.status}`,
+        };
+      }
+
+      const reportData = await reportDataResponse.json();
+      const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
+      const result = await handleResponseData(reportData, reportId, true);
+
+      if (result.tag === "report") {
+        return {
+          type: "reportData",
+          data: result.data,
+          rawPipelineOutput,
+          url: reportResponse.dataUrl,
+        };
+      }
+      if (result.tag === "error") {
+        return { type: "error", message: result.message };
+      }
+      return { type: "progress", status: result.status };
     }
-    return { type: "progress", status: result.status };
   }
 
   return { type: "notFound" };
@@ -100,12 +131,14 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
     async (currentUser: NonNullable<typeof user>) => {
       try {
         const token = await currentUser.getIdToken();
-        const response = await fetch(`/api/report/${reportId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-Include-Report-Data": "true",
+        const response = await fetch(
+          `/api/report/${reportId}?includeData=true`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           // On 404, retry up to MAX_RETRIES times for transient failures
@@ -127,6 +160,11 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
         }
 
         const reportResponse = await response.json();
+        console.log("[PrivateReportGuard] Received response:", {
+          hasReportData: !!reportResponse.reportData,
+          hasDataUrl: !!reportResponse.dataUrl,
+          status: reportResponse.status,
+        });
         const newState = await processReportResponse(reportResponse, reportId);
         setState(newState);
       } catch (error) {

@@ -132,12 +132,14 @@ describe("PrivateReportGuard", () => {
       render(<PrivateReportGuard reportId="test-123" />);
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith("/api/report/test-123", {
-          headers: {
-            Authorization: "Bearer mock-token",
-            "X-Include-Report-Data": "true",
+        expect(mockFetch).toHaveBeenCalledWith(
+          "/api/report/test-123?includeData=true",
+          {
+            headers: {
+              Authorization: "Bearer mock-token",
+            },
           },
-        });
+        );
       });
     });
 
@@ -281,13 +283,14 @@ describe("PrivateReportGuard", () => {
         user: mockUser as any,
         loading: false,
       });
+      // Single fetch: Server returns report with included data (includeData=true)
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () =>
           Promise.resolve({
             status: "finished",
-            reportData: { title: "Test Report" },
             dataUrl: "https://storage.example.com/report.json",
+            reportData: { title: "Test Report" },
           }),
       });
 
@@ -309,11 +312,13 @@ describe("PrivateReportGuard", () => {
         user: mockUser as any,
         loading: false,
       });
+      // Single fetch: Server returns report with included data (includeData=true)
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () =>
           Promise.resolve({
             status: "finished",
+            dataUrl: "https://storage.example.com/report.json",
             reportData: { invalid: "data" },
           }),
       });

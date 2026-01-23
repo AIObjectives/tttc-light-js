@@ -8,6 +8,16 @@ vi.mock("@/lib/hooks/getUser", () => ({
   useUser: vi.fn(() => ({ user: null, loading: false })),
 }));
 
+// Mock useUserQuery to avoid Firebase initialization
+vi.mock("@/lib/query/useUserQuery", () => ({
+  useUserQuery: () => ({
+    user: null,
+    loading: false,
+    error: null,
+    emailVerified: false,
+  }),
+}));
+
 // Mock logger to suppress output during tests
 vi.mock("tttc-common/logger/browser", () => ({
   logger: {

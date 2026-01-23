@@ -445,6 +445,51 @@ interface InProgressReportResponse {
  * @param reportId - Report ID for logging
  * @returns Success with response data, or failure with error code
  */
+/**
+ * Fetches the actual report data from GCS.
+ * Used when client requests includeData=true to avoid CORS issues.
+ */
+async function fetchReportData(
+  reportDataUri: string | undefined,
+  env: Env,
+  reportId: ReportId,
+): Promise<Result<unknown, (typeof ERROR_CODES)[keyof typeof ERROR_CODES]>> {
+  if (!reportDataUri) {
+    return { tag: "failure", error: ERROR_CODES.STORAGE_ERROR };
+  }
+
+  const uriResult = validateGcsUri(
+    reportDataUri,
+    env.ALLOWED_GCS_BUCKETS,
+    reportId,
+  );
+
+  if (uriResult.tag === "failure") {
+    reportLogger.error({ error: uriResult.error }, "URI validation failed");
+    return { tag: "failure", error: ERROR_CODES.STORAGE_ERROR };
+  }
+
+  const storage = new Bucket(
+    env.GOOGLE_CREDENTIALS_ENCODED,
+    uriResult.value.bucket,
+  );
+  const dataResult = await storage.get(uriResult.value.fileName);
+
+  if (dataResult.tag === "failure") {
+    reportLogger.error(
+      {
+        error: dataResult.error,
+        bucket: uriResult.value.bucket,
+        fileName: uriResult.value.fileName,
+      },
+      "Failed to fetch report data from GCS",
+    );
+    return { tag: "failure", error: ERROR_CODES.STORAGE_ERROR };
+  }
+
+  return { tag: "success", value: dataResult.value };
+}
+
 async function buildFinishedReportResponse(
   reportRef: ReportRef,
   env: Env,
@@ -767,6 +812,16 @@ async function handleIdBasedReport(
   res: Response,
 ) {
   try {
+    reportLogger.info(
+      {
+        reportId,
+        queryParams: req.query,
+        includeDataParam: req.query.includeData,
+        url: req.url,
+      },
+      "handleIdBasedReport called",
+    );
+
     const reportRef = await getReportRefById(reportId);
     if (!reportRef) {
       return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
@@ -775,6 +830,18 @@ async function handleIdBasedReport(
     // Check if user has permission to view this report
     const requestingUserId = req.auth?.uid;
     const access = checkReportAccess(reportRef, requestingUserId);
+
+    reportLogger.info(
+      {
+        reportId,
+        requestingUserId,
+        reportOwnerId: reportRef.userId,
+        isPublic: reportRef.isPublic,
+        accessAllowed: access.allowed,
+        accessReason: access.reason,
+      },
+      "Report access check",
+    );
 
     if (!access.allowed) {
       // Return 404 to not reveal existence of private reports
@@ -795,6 +862,42 @@ async function handleIdBasedReport(
 
       if (result.tag === "failure") {
         return sendErrorByCode(res, result.error, reportLogger);
+      }
+
+      // Check if client wants the actual report data included (to avoid CORS issues)
+      const includeData = req.query.includeData === "true";
+      reportLogger.info(
+        { includeData, queryParam: req.query.includeData, reportId },
+        "Checking includeData query parameter",
+      );
+
+      if (includeData) {
+        // Fetch and include the actual report data
+        reportLogger.info({ reportId }, "Fetching report data from GCS");
+        const reportDataResult = await fetchReportData(
+          reportRef.reportDataUri,
+          req.context.env,
+          reportId,
+        );
+
+        if (reportDataResult.tag === "failure") {
+          reportLogger.error(
+            { reportId, error: reportDataResult.error },
+            "Failed to fetch report data",
+          );
+          return sendErrorByCode(res, reportDataResult.error, reportLogger);
+        }
+
+        reportLogger.info(
+          { reportId, hasData: !!reportDataResult.value },
+          "Successfully fetched report data, returning with reportData field",
+        );
+        res.set("Cache-Control", "private, max-age=60");
+        return res.json({
+          ...result.value,
+          isOwner,
+          reportData: reportDataResult.value,
+        });
       }
 
       res.set("Cache-Control", "private, max-age=60");
