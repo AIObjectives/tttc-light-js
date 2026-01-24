@@ -263,22 +263,28 @@ async function executeCruxesStep(
   );
 }
 
-/**
- * Save step result to state
- */
-async function saveStepResult(
-  stateStore: RedisPipelineStateStore,
-  state: PipelineState,
-  stepName: PipelineStepName,
-  result: unknown,
+interface StepResultContext {
+  stateStore: RedisPipelineStateStore;
+  state: PipelineState;
+  stepName: PipelineStepName;
+  result: unknown;
   analytics: {
     durationMs: number;
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
     cost: number;
-  },
+  };
+}
+
+/**
+ * Save step result to state
+ */
+async function saveStepResult(
+  context: StepResultContext,
 ): Promise<PipelineState> {
+  const { stateStore, state, stepName, result, analytics } = context;
+
   // Mark step as completed with analytics
   let updatedState = markStepCompleted(state, stepName, analytics);
 
@@ -296,6 +302,80 @@ async function saveStepResult(
   await stateStore.save(updatedState);
 
   return updatedState;
+}
+
+interface StepExecutionContext {
+  stepName: PipelineStepName;
+  state: PipelineState;
+  stateStore: RedisPipelineStateStore;
+  config: PipelineRunnerConfig;
+  totalSteps: number;
+  completedSteps: number;
+  executor: () => Promise<Result<StepExecutionResult<unknown>, Error>>;
+}
+
+/**
+ * Execute a pipeline step with full error handling and state management
+ */
+async function executeAndHandleStep(
+  context: StepExecutionContext,
+): Promise<
+  Result<{ state: PipelineState; result: unknown }, PipelineStepError>
+> {
+  const {
+    stepName,
+    state,
+    stateStore,
+    config,
+    totalSteps,
+    completedSteps,
+    executor,
+  } = context;
+
+  // Mark step as started
+  let updatedState = markStepStarted(state, stepName);
+  updatedState.currentStep = stepName;
+  await stateStore.save(updatedState);
+  config.onStepUpdate?.(stepName, "in_progress");
+
+  // Execute the step
+  const result = await executor();
+
+  // Handle failure
+  if (result.tag === "failure") {
+    updatedState = markStepFailed(updatedState, stepName, result.error);
+    await stateStore.save(updatedState);
+    config.onStepUpdate?.(stepName, "failed");
+    return failure(new PipelineStepError(stepName, result.error, updatedState));
+  }
+
+  // Save successful result
+  const stepResult = result.value.result;
+  updatedState = await saveStepResult({
+    stateStore,
+    state: updatedState,
+    stepName,
+    result: stepResult,
+    analytics: {
+      durationMs: result.value.durationMs,
+      inputTokens: result.value.inputTokens,
+      outputTokens: result.value.outputTokens,
+      totalTokens: result.value.totalTokens,
+      cost: result.value.cost,
+    },
+  });
+
+  // Notify completion
+  config.onStepUpdate?.(stepName, "completed");
+  const percentComplete = Math.round((completedSteps / totalSteps) * 100);
+  config.onProgress?.({
+    currentStep: stepName,
+    totalSteps,
+    completedSteps,
+    percentComplete,
+  });
+
+  return success({ state: updatedState, result: stepResult });
 }
 
 /**
@@ -372,234 +452,146 @@ export async function runPipeline(
   try {
     // Execute steps in order, skipping completed ones
     const nextStep = getNextStep(state);
+    const totalSteps = input.enableCruxes ? 5 : 4;
 
     // Step 1: Clustering
     if (nextStep === "clustering" || !clusteringResult) {
-      state = markStepStarted(state, "clustering");
-      state.currentStep = "clustering";
-      await stateStore.save(state);
-      config.onStepUpdate?.("clustering", "in_progress");
-
-      const result = await executeClusteringStep(input, config, reportLogger);
+      const result = await executeAndHandleStep({
+        stepName: "clustering",
+        state,
+        stateStore,
+        config,
+        totalSteps,
+        completedSteps: 1,
+        executor: () => executeClusteringStep(input, config, reportLogger),
+      });
 
       if (result.tag === "failure") {
-        state = markStepFailed(state, "clustering", result.error);
-        await stateStore.save(state);
-        config.onStepUpdate?.("clustering", "failed");
-
         return {
           success: false,
-          state,
-          error: new PipelineStepError("clustering", result.error),
+          state: result.error.state,
+          error: result.error,
         };
       }
 
-      clusteringResult = result.value.result;
-      state = await saveStepResult(
-        stateStore,
-        state,
-        "clustering",
-        clusteringResult,
-        {
-          durationMs: result.value.durationMs,
-          inputTokens: result.value.inputTokens,
-          outputTokens: result.value.outputTokens,
-          totalTokens: result.value.totalTokens,
-          cost: result.value.cost,
-        },
-      );
-      config.onStepUpdate?.("clustering", "completed");
-      config.onProgress?.({
-        currentStep: "clustering",
-        totalSteps: input.enableCruxes ? 5 : 4,
-        completedSteps: 1,
-        percentComplete: input.enableCruxes ? 20 : 25,
-      });
+      state = result.value.state;
+      clusteringResult = result.value.result as TopicTreeResult;
     }
 
     // Step 2: Claims extraction
     if (!claimsResult) {
-      state = markStepStarted(state, "claims");
-      state.currentStep = "claims";
-      await stateStore.save(state);
-      config.onStepUpdate?.("claims", "in_progress");
-
-      const result = await executeClaimsStep(
-        input,
-        clusteringResult!.data,
+      const result = await executeAndHandleStep({
+        stepName: "claims",
+        state,
+        stateStore,
         config,
-        reportLogger,
-      );
+        totalSteps,
+        completedSteps: 2,
+        executor: () =>
+          executeClaimsStep(
+            input,
+            clusteringResult!.data,
+            config,
+            reportLogger,
+          ),
+      });
 
       if (result.tag === "failure") {
-        state = markStepFailed(state, "claims", result.error);
-        await stateStore.save(state);
-        config.onStepUpdate?.("claims", "failed");
-
         return {
           success: false,
-          state,
-          error: new PipelineStepError("claims", result.error),
+          state: result.error.state,
+          error: result.error,
         };
       }
 
-      claimsResult = result.value.result;
-      state = await saveStepResult(stateStore, state, "claims", claimsResult, {
-        durationMs: result.value.durationMs,
-        inputTokens: result.value.inputTokens,
-        outputTokens: result.value.outputTokens,
-        totalTokens: result.value.totalTokens,
-        cost: result.value.cost,
-      });
-      config.onStepUpdate?.("claims", "completed");
-      config.onProgress?.({
-        currentStep: "claims",
-        totalSteps: input.enableCruxes ? 5 : 4,
-        completedSteps: 2,
-        percentComplete: input.enableCruxes ? 40 : 50,
-      });
+      state = result.value.state;
+      claimsResult = result.value.result as ClaimsResult;
     }
 
     // Step 3: Sort and deduplicate
     if (!sortedResult) {
-      state = markStepStarted(state, "sort_and_deduplicate");
-      state.currentStep = "sort_and_deduplicate";
-      await stateStore.save(state);
-      config.onStepUpdate?.("sort_and_deduplicate", "in_progress");
-
-      const result = await executeSortAndDeduplicateStep(
-        input,
-        claimsResult!.data,
+      const result = await executeAndHandleStep({
+        stepName: "sort_and_deduplicate",
+        state,
+        stateStore,
         config,
-        reportLogger,
-      );
+        totalSteps,
+        completedSteps: 3,
+        executor: () =>
+          executeSortAndDeduplicateStep(
+            input,
+            claimsResult!.data,
+            config,
+            reportLogger,
+          ),
+      });
 
       if (result.tag === "failure") {
-        state = markStepFailed(state, "sort_and_deduplicate", result.error);
-        await stateStore.save(state);
-        config.onStepUpdate?.("sort_and_deduplicate", "failed");
-
         return {
           success: false,
-          state,
-          error: new PipelineStepError("sort_and_deduplicate", result.error),
+          state: result.error.state,
+          error: result.error,
         };
       }
 
-      sortedResult = result.value.result;
-      state = await saveStepResult(
-        stateStore,
-        state,
-        "sort_and_deduplicate",
-        sortedResult,
-        {
-          durationMs: result.value.durationMs,
-          inputTokens: result.value.inputTokens,
-          outputTokens: result.value.outputTokens,
-          totalTokens: result.value.totalTokens,
-          cost: result.value.cost,
-        },
-      );
-      config.onStepUpdate?.("sort_and_deduplicate", "completed");
-      config.onProgress?.({
-        currentStep: "sort_and_deduplicate",
-        totalSteps: input.enableCruxes ? 5 : 4,
-        completedSteps: 3,
-        percentComplete: input.enableCruxes ? 60 : 75,
-      });
+      state = result.value.state;
+      sortedResult = result.value.result as SortAndDeduplicateResult;
     }
 
     // Step 4: Summaries
     if (!summariesResult) {
-      state = markStepStarted(state, "summaries");
-      state.currentStep = "summaries";
-      await stateStore.save(state);
-      config.onStepUpdate?.("summaries", "in_progress");
-
-      const result = await executeSummariesStep(
-        input,
-        sortedResult!,
+      const result = await executeAndHandleStep({
+        stepName: "summaries",
+        state,
+        stateStore,
         config,
-        reportLogger,
-      );
+        totalSteps,
+        completedSteps: 4,
+        executor: () =>
+          executeSummariesStep(input, sortedResult!, config, reportLogger),
+      });
 
       if (result.tag === "failure") {
-        state = markStepFailed(state, "summaries", result.error);
-        await stateStore.save(state);
-        config.onStepUpdate?.("summaries", "failed");
-
         return {
           success: false,
-          state,
-          error: new PipelineStepError("summaries", result.error),
+          state: result.error.state,
+          error: result.error,
         };
       }
 
-      summariesResult = result.value.result;
-      state = await saveStepResult(
-        stateStore,
-        state,
-        "summaries",
-        summariesResult,
-        {
-          durationMs: result.value.durationMs,
-          inputTokens: result.value.inputTokens,
-          outputTokens: result.value.outputTokens,
-          totalTokens: result.value.totalTokens,
-          cost: result.value.cost,
-        },
-      );
-      config.onStepUpdate?.("summaries", "completed");
-      config.onProgress?.({
-        currentStep: "summaries",
-        totalSteps: input.enableCruxes ? 5 : 4,
-        completedSteps: 4,
-        percentComplete: input.enableCruxes ? 80 : 100,
-      });
+      state = result.value.state;
+      summariesResult = result.value.result as SummariesResult;
     }
 
     // Step 5: Cruxes (optional)
     if (input.enableCruxes && !cruxesResult) {
-      state = markStepStarted(state, "cruxes");
-      state.currentStep = "cruxes";
-      await stateStore.save(state);
-      config.onStepUpdate?.("cruxes", "in_progress");
-
-      const result = await executeCruxesStep(
-        input,
-        claimsResult!.data,
-        clusteringResult!.data,
+      const result = await executeAndHandleStep({
+        stepName: "cruxes",
+        state,
+        stateStore,
         config,
-        reportLogger,
-      );
+        totalSteps,
+        completedSteps: 5,
+        executor: () =>
+          executeCruxesStep(
+            input,
+            claimsResult!.data,
+            clusteringResult!.data,
+            config,
+            reportLogger,
+          ),
+      });
 
       if (result.tag === "failure") {
-        state = markStepFailed(state, "cruxes", result.error);
-        await stateStore.save(state);
-        config.onStepUpdate?.("cruxes", "failed");
-
         return {
           success: false,
-          state,
-          error: new PipelineStepError("cruxes", result.error),
+          state: result.error.state,
+          error: result.error,
         };
       }
 
-      cruxesResult = result.value.result;
-      state = await saveStepResult(stateStore, state, "cruxes", cruxesResult, {
-        durationMs: result.value.durationMs,
-        inputTokens: result.value.inputTokens,
-        outputTokens: result.value.outputTokens,
-        totalTokens: result.value.totalTokens,
-        cost: result.value.cost,
-      });
-      config.onStepUpdate?.("cruxes", "completed");
-      config.onProgress?.({
-        currentStep: "cruxes",
-        totalSteps: 5,
-        completedSteps: 5,
-        percentComplete: 100,
-      });
+      state = result.value.state;
+      cruxesResult = result.value.result as CruxesResult;
     } else if (!input.enableCruxes) {
       // Mark cruxes as skipped
       state = markStepSkipped(state, "cruxes");

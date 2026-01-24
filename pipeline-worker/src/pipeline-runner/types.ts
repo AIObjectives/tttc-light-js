@@ -242,6 +242,7 @@ export class PipelineStepError extends Error {
   constructor(
     public stepName: PipelineStepName,
     public cause: Error,
+    public state: PipelineState,
   ) {
     super(`Pipeline step '${stepName}' failed: ${cause.message}`);
     this.name = "PipelineStepError";
