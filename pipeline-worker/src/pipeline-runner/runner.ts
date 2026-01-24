@@ -379,6 +379,218 @@ async function executeAndHandleStep(
 }
 
 /**
+ * Get or create pipeline state with validation
+ */
+async function initializePipelineState(
+  config: PipelineRunnerConfig,
+  stateStore: RedisPipelineStateStore,
+  reportLogger: typeof runnerLogger,
+): Promise<PipelineState> {
+  if (config.resumeFromState) {
+    const existingState = await stateStore.get(config.reportId);
+
+    if (!existingState) {
+      throw new PipelineResumeError(config.reportId, "No existing state found");
+    }
+
+    if (existingState.status === "completed") {
+      throw new PipelineResumeError(
+        config.reportId,
+        "Pipeline already completed",
+      );
+    }
+
+    reportLogger.info(
+      {
+        currentStep: existingState.currentStep,
+        status: existingState.status,
+      },
+      "Resuming pipeline from existing state",
+    );
+
+    return existingState;
+  }
+
+  const state = createInitialState(config.reportId, config.userId);
+  state.status = "running";
+  await stateStore.save(state);
+  return state;
+}
+
+interface PipelineStepResults {
+  clusteringResult?: TopicTreeResult;
+  claimsResult?: ClaimsResult;
+  sortedResult?: SortAndDeduplicateResult;
+  summariesResult?: SummariesResult;
+  cruxesResult?: CruxesResult;
+}
+
+/**
+ * Execute all pipeline steps in sequence
+ */
+async function executeAllSteps(
+  input: PipelineInput,
+  config: PipelineRunnerConfig,
+  state: PipelineState,
+  stateStore: RedisPipelineStateStore,
+  reportLogger: typeof runnerLogger,
+): Promise<
+  Result<
+    { state: PipelineState; results: PipelineStepResults },
+    PipelineStepError
+  >
+> {
+  let currentState = state;
+  const results: PipelineStepResults = {
+    clusteringResult: state.completedResults.clustering as
+      | TopicTreeResult
+      | undefined,
+    claimsResult: state.completedResults.claims as ClaimsResult | undefined,
+    sortedResult: state.completedResults.sort_and_deduplicate as
+      | SortAndDeduplicateResult
+      | undefined,
+    summariesResult: state.completedResults.summaries as
+      | SummariesResult
+      | undefined,
+    cruxesResult: state.completedResults.cruxes as CruxesResult | undefined,
+  };
+
+  const nextStep = getNextStep(currentState);
+  const totalSteps = input.enableCruxes ? 5 : 4;
+
+  // Step 1: Clustering
+  if (nextStep === "clustering" || !results.clusteringResult) {
+    const result = await executeAndHandleStep({
+      stepName: "clustering",
+      state: currentState,
+      stateStore,
+      config,
+      totalSteps,
+      completedSteps: 1,
+      executor: () => executeClusteringStep(input, config, reportLogger),
+    });
+
+    if (result.tag === "failure") {
+      return failure(result.error);
+    }
+
+    currentState = result.value.state;
+    results.clusteringResult = result.value.result as TopicTreeResult;
+  }
+
+  // Step 2: Claims extraction
+  if (!results.claimsResult) {
+    const result = await executeAndHandleStep({
+      stepName: "claims",
+      state: currentState,
+      stateStore,
+      config,
+      totalSteps,
+      completedSteps: 2,
+      executor: () =>
+        executeClaimsStep(
+          input,
+          results.clusteringResult!.data,
+          config,
+          reportLogger,
+        ),
+    });
+
+    if (result.tag === "failure") {
+      return failure(result.error);
+    }
+
+    currentState = result.value.state;
+    results.claimsResult = result.value.result as ClaimsResult;
+  }
+
+  // Step 3: Sort and deduplicate
+  if (!results.sortedResult) {
+    const result = await executeAndHandleStep({
+      stepName: "sort_and_deduplicate",
+      state: currentState,
+      stateStore,
+      config,
+      totalSteps,
+      completedSteps: 3,
+      executor: () =>
+        executeSortAndDeduplicateStep(
+          input,
+          results.claimsResult!.data,
+          config,
+          reportLogger,
+        ),
+    });
+
+    if (result.tag === "failure") {
+      return failure(result.error);
+    }
+
+    currentState = result.value.state;
+    results.sortedResult = result.value.result as SortAndDeduplicateResult;
+  }
+
+  // Step 4: Summaries
+  if (!results.summariesResult) {
+    const result = await executeAndHandleStep({
+      stepName: "summaries",
+      state: currentState,
+      stateStore,
+      config,
+      totalSteps,
+      completedSteps: 4,
+      executor: () =>
+        executeSummariesStep(
+          input,
+          results.sortedResult!,
+          config,
+          reportLogger,
+        ),
+    });
+
+    if (result.tag === "failure") {
+      return failure(result.error);
+    }
+
+    currentState = result.value.state;
+    results.summariesResult = result.value.result as SummariesResult;
+  }
+
+  // Step 5: Cruxes (optional)
+  if (input.enableCruxes && !results.cruxesResult) {
+    const result = await executeAndHandleStep({
+      stepName: "cruxes",
+      state: currentState,
+      stateStore,
+      config,
+      totalSteps,
+      completedSteps: 5,
+      executor: () =>
+        executeCruxesStep(
+          input,
+          results.claimsResult!.data,
+          results.clusteringResult!.data,
+          config,
+          reportLogger,
+        ),
+    });
+
+    if (result.tag === "failure") {
+      return failure(result.error);
+    }
+
+    currentState = result.value.state;
+    results.cruxesResult = result.value.result as CruxesResult;
+  } else if (!input.enableCruxes) {
+    currentState = markStepSkipped(currentState, "cruxes");
+    await stateStore.save(currentState);
+    config.onStepUpdate?.("cruxes", "skipped");
+  }
+
+  return success({ state: currentState, results });
+}
+
+/**
  * Main pipeline runner function
  */
 export async function runPipeline(
@@ -400,204 +612,36 @@ export async function runPipeline(
     "Starting pipeline execution",
   );
 
-  // Get or create pipeline state
-  let state: PipelineState;
-
-  if (config.resumeFromState) {
-    const existingState = await stateStore.get(config.reportId);
-
-    if (!existingState) {
-      throw new PipelineResumeError(config.reportId, "No existing state found");
-    }
-
-    if (existingState.status === "completed") {
-      throw new PipelineResumeError(
-        config.reportId,
-        "Pipeline already completed",
-      );
-    }
-
-    state = existingState;
-    reportLogger.info(
-      {
-        currentStep: state.currentStep,
-        status: state.status,
-      },
-      "Resuming pipeline from existing state",
-    );
-  } else {
-    state = createInitialState(config.reportId, config.userId);
-    state.status = "running";
-    await stateStore.save(state);
-  }
-
-  // Track intermediate results
-  let clusteringResult: TopicTreeResult | undefined = state.completedResults
-    .clustering as TopicTreeResult | undefined;
-  let claimsResult: ClaimsResult | undefined = state.completedResults.claims as
-    | ClaimsResult
-    | undefined;
-  let sortedResult: SortAndDeduplicateResult | undefined = state
-    .completedResults.sort_and_deduplicate as
-    | SortAndDeduplicateResult
-    | undefined;
-  let summariesResult: SummariesResult | undefined = state.completedResults
-    .summaries as SummariesResult | undefined;
-  let cruxesResult: CruxesResult | undefined = state.completedResults.cruxes as
-    | CruxesResult
-    | undefined;
-
+  // Initialize state
+  let state = await initializePipelineState(config, stateStore, reportLogger);
   const pipelineStartTime = Date.now();
 
   try {
-    // Execute steps in order, skipping completed ones
-    const nextStep = getNextStep(state);
-    const totalSteps = input.enableCruxes ? 5 : 4;
+    // Execute all steps
+    const stepsResult = await executeAllSteps(
+      input,
+      config,
+      state,
+      stateStore,
+      reportLogger,
+    );
 
-    // Step 1: Clustering
-    if (nextStep === "clustering" || !clusteringResult) {
-      const result = await executeAndHandleStep({
-        stepName: "clustering",
-        state,
-        stateStore,
-        config,
-        totalSteps,
-        completedSteps: 1,
-        executor: () => executeClusteringStep(input, config, reportLogger),
-      });
-
-      if (result.tag === "failure") {
-        return {
-          success: false,
-          state: result.error.state,
-          error: result.error,
-        };
-      }
-
-      state = result.value.state;
-      clusteringResult = result.value.result as TopicTreeResult;
+    if (stepsResult.tag === "failure") {
+      return {
+        success: false,
+        state: stepsResult.error.state,
+        error: stepsResult.error,
+      };
     }
 
-    // Step 2: Claims extraction
-    if (!claimsResult) {
-      const result = await executeAndHandleStep({
-        stepName: "claims",
-        state,
-        stateStore,
-        config,
-        totalSteps,
-        completedSteps: 2,
-        executor: () =>
-          executeClaimsStep(
-            input,
-            clusteringResult!.data,
-            config,
-            reportLogger,
-          ),
-      });
-
-      if (result.tag === "failure") {
-        return {
-          success: false,
-          state: result.error.state,
-          error: result.error,
-        };
-      }
-
-      state = result.value.state;
-      claimsResult = result.value.result as ClaimsResult;
-    }
-
-    // Step 3: Sort and deduplicate
-    if (!sortedResult) {
-      const result = await executeAndHandleStep({
-        stepName: "sort_and_deduplicate",
-        state,
-        stateStore,
-        config,
-        totalSteps,
-        completedSteps: 3,
-        executor: () =>
-          executeSortAndDeduplicateStep(
-            input,
-            claimsResult!.data,
-            config,
-            reportLogger,
-          ),
-      });
-
-      if (result.tag === "failure") {
-        return {
-          success: false,
-          state: result.error.state,
-          error: result.error,
-        };
-      }
-
-      state = result.value.state;
-      sortedResult = result.value.result as SortAndDeduplicateResult;
-    }
-
-    // Step 4: Summaries
-    if (!summariesResult) {
-      const result = await executeAndHandleStep({
-        stepName: "summaries",
-        state,
-        stateStore,
-        config,
-        totalSteps,
-        completedSteps: 4,
-        executor: () =>
-          executeSummariesStep(input, sortedResult!, config, reportLogger),
-      });
-
-      if (result.tag === "failure") {
-        return {
-          success: false,
-          state: result.error.state,
-          error: result.error,
-        };
-      }
-
-      state = result.value.state;
-      summariesResult = result.value.result as SummariesResult;
-    }
-
-    // Step 5: Cruxes (optional)
-    if (input.enableCruxes && !cruxesResult) {
-      const result = await executeAndHandleStep({
-        stepName: "cruxes",
-        state,
-        stateStore,
-        config,
-        totalSteps,
-        completedSteps: 5,
-        executor: () =>
-          executeCruxesStep(
-            input,
-            claimsResult!.data,
-            clusteringResult!.data,
-            config,
-            reportLogger,
-          ),
-      });
-
-      if (result.tag === "failure") {
-        return {
-          success: false,
-          state: result.error.state,
-          error: result.error,
-        };
-      }
-
-      state = result.value.state;
-      cruxesResult = result.value.result as CruxesResult;
-    } else if (!input.enableCruxes) {
-      // Mark cruxes as skipped
-      state = markStepSkipped(state, "cruxes");
-      await stateStore.save(state);
-      config.onStepUpdate?.("cruxes", "skipped");
-    }
+    state = stepsResult.value.state;
+    const {
+      clusteringResult,
+      claimsResult,
+      sortedResult,
+      summariesResult,
+      cruxesResult,
+    } = stepsResult.value.results;
 
     // Mark pipeline as completed
     const totalDurationMs = Date.now() - pipelineStartTime;
