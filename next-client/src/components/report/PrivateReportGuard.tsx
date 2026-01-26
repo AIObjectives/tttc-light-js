@@ -182,6 +182,44 @@ function shouldRetry(status: number, retryCount: number): boolean {
 }
 
 /**
+ * Perform a single fetch attempt with auth token.
+ */
+async function attemptFetch(
+  reportId: string,
+  token: string,
+): Promise<Response> {
+  return fetch(`/api/report/${reportId}?includeData=true`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/**
+ * Handle a successful fetch response by processing and setting state.
+ */
+async function handleSuccessfulFetch(
+  response: Response,
+  reportId: string,
+  setState: (state: State) => void,
+): Promise<void> {
+  const reportResponse = await response.json();
+  const newState = await processReportResponse(reportResponse, reportId);
+  setState(newState);
+}
+
+/**
+ * Wait for retry delay and check if component is still mounted.
+ * Returns true if should continue, false if unmounted.
+ */
+async function waitForRetry(isMountedRef: {
+  current: boolean;
+}): Promise<boolean> {
+  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+  return isMountedRef.current;
+}
+
+/**
  * Render the appropriate UI based on the current state.
  */
 function renderStateUI(
@@ -249,41 +287,27 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
         // Retry loop instead of recursion to avoid premature finally block execution
         let attempt = 0;
         while (attempt <= MAX_RETRIES) {
-          const response = await fetch(
-            `/api/report/${reportId}?includeData=true`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
-          );
+          const response = await attemptFetch(reportId, token);
 
           if (!response.ok) {
             // On 404, retry up to MAX_RETRIES times for transient failures
             if (shouldRetry(response.status, attempt)) {
               attempt += 1;
               retryCountRef.current = attempt;
-              await new Promise((resolve) =>
-                setTimeout(resolve, RETRY_DELAY_MS),
-              );
-              // Check if component is still mounted before retrying
-              if (!isMountedRef.current) return;
+              const shouldContinue = await waitForRetry(isMountedRef);
+              if (!shouldContinue) return;
               continue; // Retry
             }
 
+            // Non-retryable error
             if (!isMountedRef.current) return;
             handleFailedResponse(response.status, setState);
             return;
           }
 
           // Success - process the response
-          const reportResponse = await response.json();
-          const newState = await processReportResponse(
-            reportResponse,
-            reportId,
-          );
           if (!isMountedRef.current) return;
-          setState(newState);
+          await handleSuccessfulFetch(response, reportId, setState);
           return;
         }
       } catch (error) {
