@@ -3,7 +3,7 @@
  */
 
 import { logger } from "tttc-common/logger";
-import { type PipelineJobMessage, pipelineJobSchema } from "tttc-common/schema";
+import type { PipelineJobMessage } from "tttc-common/schema";
 import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
 import type { PipelineInput } from "../pipeline-runner/types.js";
@@ -19,7 +19,7 @@ function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
   const { instructions, llm, options, env } = config;
 
   // Convert comments to pipeline-worker format
-  const comments = data.map((comment) => ({
+  const comments = data.map((comment: (typeof data)[0]) => ({
     id: comment.comment_id,
     text: comment.comment_text,
     speaker: "participant", // Default speaker since express-server doesn't provide this

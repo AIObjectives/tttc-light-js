@@ -47,6 +47,55 @@ import {
 const runnerLogger = logger.child({ module: "pipeline-runner" });
 
 /**
+ * Interface for step results that include usage analytics.
+ * All pipeline step results (TopicTreeResult, ClaimsResult, SortAndDeduplicateResult,
+ * SummariesResult, CruxesResult) implement this pattern with usage and cost properties.
+ */
+interface StepResultWithAnalytics {
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
+  cost?: number;
+}
+
+/**
+ * Type guard to check if a value has analytics properties
+ */
+function hasAnalytics(value: unknown): value is StepResultWithAnalytics {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+
+  // Check for usage object
+  if (obj.usage !== undefined) {
+    const usage = obj.usage;
+    if (typeof usage !== "object" || usage === null) {
+      return false;
+    }
+
+    const usageObj = usage as Record<string, unknown>;
+    if (
+      typeof usageObj.input_tokens !== "number" ||
+      typeof usageObj.output_tokens !== "number" ||
+      typeof usageObj.total_tokens !== "number"
+    ) {
+      return false;
+    }
+  }
+
+  // Check for cost
+  if (obj.cost !== undefined && typeof obj.cost !== "number") {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Step execution result with analytics
  */
 interface StepExecutionResult<T> {
@@ -87,20 +136,26 @@ async function executeStep<T>(
       return failure(result.error);
     }
 
-    // Extract usage from result (all steps return usage and cost)
-    const value = result.value as {
-      usage?: {
-        input_tokens: number;
-        output_tokens: number;
-        total_tokens: number;
-      };
-      cost?: number;
-    };
+    // Validate and extract analytics from result
+    if (!hasAnalytics(result.value)) {
+      const error = new Error(
+        `Step ${stepName} returned invalid result: missing or malformed analytics`,
+      );
+      reportLogger.error(
+        {
+          step: stepName,
+          error,
+          durationMs,
+        },
+        `Pipeline step returned invalid result: ${stepName}`,
+      );
+      return failure(error);
+    }
 
-    const inputTokens = value.usage?.input_tokens ?? 0;
-    const outputTokens = value.usage?.output_tokens ?? 0;
-    const totalTokens = value.usage?.total_tokens ?? 0;
-    const cost = value.cost ?? 0;
+    const inputTokens = result.value.usage?.input_tokens ?? 0;
+    const outputTokens = result.value.usage?.output_tokens ?? 0;
+    const totalTokens = result.value.usage?.total_tokens ?? 0;
+    const cost = result.value.cost ?? 0;
 
     reportLogger.info(
       {
@@ -251,10 +306,12 @@ async function executeCruxesStep(
     return failure(new Error("Cruxes config is required for cruxes step"));
   }
 
+  const cruxesConfig = input.cruxesConfig;
+
   return executeStep(
     "cruxes",
     () =>
-      extractCruxes(claimsTree, topics, input.cruxesConfig!, input.apiKey, {
+      extractCruxes(claimsTree, topics, cruxesConfig, input.apiKey, {
         reportId: config.reportId,
         userId: config.userId,
         ...config.options,
@@ -426,6 +483,47 @@ interface PipelineStepResults {
 }
 
 /**
+ * Helper to execute a step if not already completed
+ * Returns updated state and result, or failure
+ */
+async function executeStepIfNeeded<T>(
+  stepName: PipelineStepName,
+  shouldExecute: boolean,
+  currentState: PipelineState,
+  stateStore: RedisPipelineStateStore,
+  config: PipelineRunnerConfig,
+  totalSteps: number,
+  completedSteps: number,
+  executor: () => Promise<Result<StepExecutionResult<T>, Error>>,
+): Promise<Result<
+  { state: PipelineState; result: T },
+  PipelineStepError
+> | null> {
+  if (!shouldExecute) {
+    return null;
+  }
+
+  const result = await executeAndHandleStep({
+    stepName,
+    state: currentState,
+    stateStore,
+    config,
+    totalSteps,
+    completedSteps,
+    executor,
+  });
+
+  if (result.tag === "failure") {
+    return failure(result.error);
+  }
+
+  return success({
+    state: result.value.state,
+    result: result.value.result as T,
+  });
+}
+
+/**
  * Execute all pipeline steps in sequence
  */
 async function executeAllSteps(
@@ -459,129 +557,169 @@ async function executeAllSteps(
   const totalSteps = input.enableCruxes ? 5 : 4;
 
   // Step 1: Clustering
-  if (nextStep === "clustering" || !results.clusteringResult) {
-    const result = await executeAndHandleStep({
-      stepName: "clustering",
-      state: currentState,
-      stateStore,
-      config,
-      totalSteps,
-      completedSteps: 1,
-      executor: () => executeClusteringStep(input, config, reportLogger),
-    });
+  const clusteringResult = await executeStepIfNeeded(
+    "clustering",
+    nextStep === "clustering" || !results.clusteringResult,
+    currentState,
+    stateStore,
+    config,
+    totalSteps,
+    1,
+    () => executeClusteringStep(input, config, reportLogger),
+  );
 
-    if (result.tag === "failure") {
-      return failure(result.error);
-    }
+  if (clusteringResult?.tag === "failure") {
+    return failure(clusteringResult.error);
+  }
 
-    currentState = result.value.state;
-    results.clusteringResult = result.value.result as TopicTreeResult;
+  if (clusteringResult) {
+    currentState = clusteringResult.value.state;
+    results.clusteringResult = clusteringResult.value.result;
   }
 
   // Step 2: Claims extraction
-  if (!results.claimsResult) {
-    const result = await executeAndHandleStep({
-      stepName: "claims",
-      state: currentState,
-      stateStore,
-      config,
-      totalSteps,
-      completedSteps: 2,
-      executor: () =>
-        executeClaimsStep(
-          input,
-          results.clusteringResult!.data,
-          config,
-          reportLogger,
-        ),
-    });
+  if (!results.clusteringResult) {
+    return failure(
+      new PipelineStepError(
+        "claims",
+        new Error("Clustering result is required for claims extraction"),
+        currentState,
+      ),
+    );
+  }
 
-    if (result.tag === "failure") {
-      return failure(result.error);
-    }
+  const clusteringTopics = results.clusteringResult.data;
+  const claimsResult = await executeStepIfNeeded(
+    "claims",
+    !results.claimsResult,
+    currentState,
+    stateStore,
+    config,
+    totalSteps,
+    2,
+    () => executeClaimsStep(input, clusteringTopics, config, reportLogger),
+  );
 
-    currentState = result.value.state;
-    results.claimsResult = result.value.result as ClaimsResult;
+  if (claimsResult?.tag === "failure") {
+    return failure(claimsResult.error);
+  }
+
+  if (claimsResult) {
+    currentState = claimsResult.value.state;
+    results.claimsResult = claimsResult.value.result;
   }
 
   // Step 3: Sort and deduplicate
-  if (!results.sortedResult) {
-    const result = await executeAndHandleStep({
-      stepName: "sort_and_deduplicate",
-      state: currentState,
-      stateStore,
-      config,
-      totalSteps,
-      completedSteps: 3,
-      executor: () =>
-        executeSortAndDeduplicateStep(
-          input,
-          results.claimsResult!.data,
-          config,
-          reportLogger,
-        ),
-    });
+  if (!results.claimsResult) {
+    return failure(
+      new PipelineStepError(
+        "sort_and_deduplicate",
+        new Error("Claims result is required for sort and deduplicate"),
+        currentState,
+      ),
+    );
+  }
 
-    if (result.tag === "failure") {
-      return failure(result.error);
-    }
+  const claimsTreeData = results.claimsResult.data;
+  const sortedResult = await executeStepIfNeeded(
+    "sort_and_deduplicate",
+    !results.sortedResult,
+    currentState,
+    stateStore,
+    config,
+    totalSteps,
+    3,
+    () =>
+      executeSortAndDeduplicateStep(
+        input,
+        claimsTreeData,
+        config,
+        reportLogger,
+      ),
+  );
 
-    currentState = result.value.state;
-    results.sortedResult = result.value.result as SortAndDeduplicateResult;
+  if (sortedResult?.tag === "failure") {
+    return failure(sortedResult.error);
+  }
+
+  if (sortedResult) {
+    currentState = sortedResult.value.state;
+    results.sortedResult = sortedResult.value.result;
   }
 
   // Step 4: Summaries
-  if (!results.summariesResult) {
-    const result = await executeAndHandleStep({
-      stepName: "summaries",
-      state: currentState,
-      stateStore,
-      config,
-      totalSteps,
-      completedSteps: 4,
-      executor: () =>
-        executeSummariesStep(
-          input,
-          results.sortedResult!,
-          config,
-          reportLogger,
-        ),
-    });
+  if (!results.sortedResult) {
+    return failure(
+      new PipelineStepError(
+        "summaries",
+        new Error("Sorted result is required for summaries"),
+        currentState,
+      ),
+    );
+  }
 
-    if (result.tag === "failure") {
-      return failure(result.error);
-    }
+  const sortedData = results.sortedResult;
+  const summariesResult = await executeStepIfNeeded(
+    "summaries",
+    !results.summariesResult,
+    currentState,
+    stateStore,
+    config,
+    totalSteps,
+    4,
+    () => executeSummariesStep(input, sortedData, config, reportLogger),
+  );
 
-    currentState = result.value.state;
-    results.summariesResult = result.value.result as SummariesResult;
+  if (summariesResult?.tag === "failure") {
+    return failure(summariesResult.error);
+  }
+
+  if (summariesResult) {
+    currentState = summariesResult.value.state;
+    results.summariesResult = summariesResult.value.result;
   }
 
   // Step 5: Cruxes (optional)
-  if (input.enableCruxes && !results.cruxesResult) {
-    const result = await executeAndHandleStep({
-      stepName: "cruxes",
-      state: currentState,
+  if (input.enableCruxes) {
+    if (!results.claimsResult || !results.clusteringResult) {
+      return failure(
+        new PipelineStepError(
+          "cruxes",
+          new Error("Claims and clustering results are required for cruxes"),
+          currentState,
+        ),
+      );
+    }
+
+    const cruxesClaimsTree = results.claimsResult.data;
+    const cruxesTopics = results.clusteringResult.data;
+    const cruxesResult = await executeStepIfNeeded(
+      "cruxes",
+      !results.cruxesResult,
+      currentState,
       stateStore,
       config,
       totalSteps,
-      completedSteps: 5,
-      executor: () =>
+      5,
+      () =>
         executeCruxesStep(
           input,
-          results.claimsResult!.data,
-          results.clusteringResult!.data,
+          cruxesClaimsTree,
+          cruxesTopics,
           config,
           reportLogger,
         ),
-    });
+    );
 
-    if (result.tag === "failure") {
-      return failure(result.error);
+    if (cruxesResult?.tag === "failure") {
+      return failure(cruxesResult.error);
     }
 
-    currentState = result.value.state;
-    results.cruxesResult = result.value.result as CruxesResult;
-  } else if (!input.enableCruxes) {
+    if (cruxesResult) {
+      currentState = cruxesResult.value.state;
+      results.cruxesResult = cruxesResult.value.result;
+    }
+  } else {
     currentState = markStepSkipped(currentState, "cruxes");
     await stateStore.save(currentState);
     config.onStepUpdate?.("cruxes", "skipped");
@@ -614,7 +752,6 @@ export async function runPipeline(
 
   // Initialize state
   let state = await initializePipelineState(config, stateStore, reportLogger);
-  const pipelineStartTime = Date.now();
 
   try {
     // Execute all steps
@@ -644,12 +781,10 @@ export async function runPipeline(
     } = stepsResult.value.results;
 
     // Mark pipeline as completed
-    const totalDurationMs = Date.now() - pipelineStartTime;
     state = {
       ...state,
       status: "completed",
       currentStep: undefined,
-      totalDurationMs: state.totalDurationMs + totalDurationMs,
     };
     await stateStore.save(state);
 
@@ -662,14 +797,26 @@ export async function runPipeline(
       "Pipeline completed successfully",
     );
 
+    // Validate required results exist (they must if we got here)
+    if (
+      !clusteringResult ||
+      !claimsResult ||
+      !sortedResult ||
+      !summariesResult
+    ) {
+      throw new Error(
+        "Pipeline completed but required results are missing. This should never happen.",
+      );
+    }
+
     return {
       success: true,
       state,
       outputs: {
-        topicTree: clusteringResult!.data,
-        claimsTree: claimsResult!.data,
-        sortedTree: sortedResult!.data,
-        summaries: summariesResult!.data,
+        topicTree: clusteringResult.data,
+        claimsTree: claimsResult.data,
+        sortedTree: sortedResult.data,
+        summaries: summariesResult.data,
         cruxes: cruxesResult,
       },
     };
