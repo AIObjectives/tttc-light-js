@@ -66,6 +66,115 @@ function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
 }
 
 /**
+ * Save successful pipeline result to storage and update Firestore
+ */
+async function saveSuccessfulPipeline(
+  result: Awaited<ReturnType<typeof runPipeline>>,
+  data: PipelineJobMessage,
+  reportId: string,
+  storage: BucketStore,
+  refStore: RefStoreServices,
+  jobLogger: typeof queueLogger,
+): Promise<void> {
+  // Format pipeline output for storage
+  const pipelineOutput = formatPipelineOutput(result, data);
+  const reportJson = JSON.stringify(pipelineOutput);
+  const filename = `${reportId}.json`;
+
+  jobLogger.info(
+    {
+      filename,
+      reportJsonSize: reportJson.length,
+    },
+    "Saving report to GCS",
+  );
+
+  // Save to GCS
+  const reportUrl = await storage.storeFile(filename, reportJson);
+
+  jobLogger.info(
+    {
+      reportUrl,
+      reportJsonSize: reportJson.length,
+    },
+    "Report saved to GCS successfully",
+  );
+
+  // Extract statistics from sortedTree
+  const sortedTree = pipelineOutput.sortedTree;
+  const numTopics = sortedTree.length;
+  const numSubtopics = sortedTree.reduce(
+    (sum, [, topicData]) => sum + topicData.topics.length,
+    0,
+  );
+  const numClaims = sortedTree.reduce(
+    (sum, [, topicData]) => sum + topicData.counts.claims,
+    0,
+  );
+
+  // Update ReportRef in Firestore
+  const reportRef = await refStore.Report.get(reportId);
+  if (!reportRef) {
+    throw new Error(`ReportRef ${reportId} not found`);
+  }
+
+  const updatedReportRef: ReportRef = {
+    ...reportRef,
+    reportDataUri: reportUrl,
+    status: "completed",
+    lastStatusUpdate: new Date(),
+    title: data.reportDetails.title,
+    description: data.reportDetails.description,
+    numTopics,
+    numSubtopics,
+    numClaims,
+    numPeople: 0, // Not tracked in pipeline-worker yet
+    createdDate: new Date(pipelineOutput.completedAt),
+  };
+
+  await refStore.Report.modify(reportId, updatedReportRef);
+
+  jobLogger.info(
+    {
+      reportId,
+      numTopics,
+      numSubtopics,
+      numClaims,
+    },
+    "Firestore updated successfully",
+  );
+}
+
+/**
+ * Update Firestore with error status
+ */
+async function updateFirestoreWithError(
+  reportId: string,
+  errorMessage: string,
+  refStore: RefStoreServices,
+  jobLogger: typeof queueLogger,
+): Promise<void> {
+  try {
+    const reportRef = await refStore.Report.get(reportId);
+    if (reportRef) {
+      await refStore.Report.modify(reportId, {
+        ...reportRef,
+        status: "failed",
+        errorMessage,
+        lastStatusUpdate: new Date(),
+      });
+
+      jobLogger.info({ reportId }, "Firestore updated with failure status");
+    }
+  } catch (updateError) {
+    jobLogger.error(
+      { error: updateError },
+      "Failed to update Firestore with error status",
+    );
+  }
+}
+
+/**
  * Handle incoming pipeline job message
  */
 export async function handlePipelineJob(
@@ -144,73 +253,13 @@ export async function handlePipelineJob(
       );
 
       try {
-        // Format pipeline output for storage
-        const pipelineOutput = formatPipelineOutput(result, data);
-        const reportJson = JSON.stringify(pipelineOutput);
-        const filename = `${reportId}.json`;
-
-        jobLogger.info(
-          {
-            filename,
-            reportJsonSize: reportJson.length,
-          },
-          "Saving report to GCS",
-        );
-
-        // Save to GCS
-        const reportUrl = await storage.storeFile(filename, reportJson);
-
-        jobLogger.info(
-          {
-            reportUrl,
-            reportJsonSize: reportJson.length,
-          },
-          "Report saved to GCS successfully",
-        );
-
-        // Extract statistics from sortedTree
-        const sortedTree = pipelineOutput.sortedTree;
-
-        const numTopics = sortedTree.length;
-        const numSubtopics = sortedTree.reduce(
-          (sum, [, topicData]) => sum + topicData.topics.length,
-          0,
-        );
-        const numClaims = sortedTree.reduce(
-          (sum, [, topicData]) => sum + topicData.counts.claims,
-          0,
-        );
-
-        // Update ReportRef in Firestore
-        const reportRef = await refStore.Report.get(reportId);
-        if (!reportRef) {
-          throw new Error(`ReportRef ${reportId} not found`);
-        }
-
-        const updatedReportRef: ReportRef = {
-          ...reportRef,
-          reportDataUri: reportUrl,
-          status: "completed",
-          lastStatusUpdate: new Date(),
-          title: data.reportDetails.title,
-          description: data.reportDetails.description,
-          numTopics,
-          numSubtopics,
-          numClaims,
-          numPeople: 0, // Not tracked in pipeline-worker yet
-          createdDate: new Date(pipelineOutput.completedAt),
-        };
-
-        await refStore.Report.modify(reportId, updatedReportRef);
-
-        jobLogger.info(
-          {
-            reportId,
-            numTopics,
-            numSubtopics,
-            numClaims,
-          },
-          "Firestore updated successfully",
+        await saveSuccessfulPipeline(
+          result,
+          data,
+          reportId,
+          storage,
+          refStore,
+          jobLogger,
         );
       } catch (storageError) {
         jobLogger.error(
@@ -223,23 +272,13 @@ export async function handlePipelineJob(
           "Failed to save report or update Firestore",
         );
 
-        // Update status to failed
-        try {
-          const reportRef = await refStore.Report.get(reportId);
-          if (reportRef) {
-            await refStore.Report.modify(reportId, {
-              ...reportRef,
-              status: "failed",
-              errorMessage: `Storage error: ${storageError instanceof Error ? storageError.message : String(storageError)}`,
-              lastStatusUpdate: new Date(),
-            });
-          }
-        } catch (updateError) {
-          jobLogger.error(
-            { error: updateError },
-            "Failed to update Firestore with error status",
-          );
-        }
+        const errorMessage = `Storage error: ${storageError instanceof Error ? storageError.message : String(storageError)}`;
+        await updateFirestoreWithError(
+          reportId,
+          errorMessage,
+          refStore,
+          jobLogger,
+        );
 
         throw storageError;
       }
@@ -252,26 +291,13 @@ export async function handlePipelineJob(
         "Pipeline job failed",
       );
 
-      // Update Firestore with error status
-      try {
-        const reportRef = await refStore.Report.get(reportId);
-        if (reportRef) {
-          const errorMessage = result.error?.message ?? "Unknown error";
-          await refStore.Report.modify(reportId, {
-            ...reportRef,
-            status: "failed",
-            errorMessage,
-            lastStatusUpdate: new Date(),
-          });
-
-          jobLogger.info({ reportId }, "Firestore updated with failure status");
-        }
-      } catch (updateError) {
-        jobLogger.error(
-          { error: updateError },
-          "Failed to update Firestore with error status",
-        );
-      }
+      const errorMessage = result.error?.message ?? "Unknown error";
+      await updateFirestoreWithError(
+        reportId,
+        errorMessage,
+        refStore,
+        jobLogger,
+      );
 
       throw result.error ?? new Error("Pipeline failed with unknown error");
     }
