@@ -167,60 +167,88 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
   const [state, setState] = useState<State>({ type: "loading" });
   const [hasTriedAuth, setHasTriedAuth] = useState(false);
   const retryCountRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   // Fetch with retry logic for transient 404s
   const fetchWithRetry = useCallback(
-    async (currentUser: NonNullable<typeof user>) => {
+    async (
+      currentUser: NonNullable<typeof user>,
+      isMountedRef: { current: boolean },
+    ) => {
       try {
         const token = await currentUser.getIdToken();
-        const response = await fetch(
-          `/api/report/${reportId}?includeData=true`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
 
-        if (!response.ok) {
-          // On 404, retry up to MAX_RETRIES times for transient failures
-          if (response.status === 404 && retryCountRef.current < MAX_RETRIES) {
-            retryCountRef.current += 1;
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-            return fetchWithRetry(currentUser);
+        // Retry loop instead of recursion to avoid premature finally block execution
+        let attempt = 0;
+        while (attempt <= MAX_RETRIES) {
+          const response = await fetch(
+            `/api/report/${reportId}?includeData=true`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          if (!response.ok) {
+            // On 404, retry up to MAX_RETRIES times for transient failures
+            if (response.status === 404 && attempt < MAX_RETRIES) {
+              attempt += 1;
+              retryCountRef.current = attempt;
+              await new Promise((resolve) =>
+                setTimeout(resolve, RETRY_DELAY_MS),
+              );
+              // Check if component is still mounted before retrying
+              if (!isMountedRef.current) return;
+              continue; // Retry
+            }
+
+            if (!isMountedRef.current) return;
+            setState(
+              response.status === 404
+                ? { type: "notFound" }
+                : {
+                    type: "error",
+                    message: `Failed to fetch report: ${response.status}`,
+                  },
+            );
+            return;
           }
 
-          setState(
-            response.status === 404
-              ? { type: "notFound" }
-              : {
-                  type: "error",
-                  message: `Failed to fetch report: ${response.status}`,
-                },
+          // Success - process the response
+          const reportResponse = await response.json();
+          const newState = await processReportResponse(
+            reportResponse,
+            reportId,
           );
+          if (!isMountedRef.current) return;
+          setState(newState);
           return;
         }
-
-        const reportResponse = await response.json();
-        console.log("[PrivateReportGuard] Received response:", {
-          hasReportData: !!reportResponse.reportData,
-          hasDataUrl: !!reportResponse.dataUrl,
-          status: reportResponse.status,
-        });
-        const newState = await processReportResponse(reportResponse, reportId);
-        setState(newState);
       } catch (error) {
+        if (!isMountedRef.current) return;
         setState({
           type: "error",
           message:
             error instanceof Error ? error.message : "Failed to fetch report",
         });
       } finally {
-        setHasTriedAuth(true);
+        if (isMountedRef.current) {
+          setHasTriedAuth(true);
+        }
       }
     },
     [reportId],
   );
+
+  useEffect(() => {
+    // Track mounted state for cleanup
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     // Reset retry counter when user changes to prevent stale retry state
@@ -239,7 +267,7 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
       return;
     }
 
-    fetchWithRetry(user);
+    fetchWithRetry(user, isMountedRef);
   }, [user, authLoading, hasTriedAuth, fetchWithRetry]);
 
   switch (state.type) {
