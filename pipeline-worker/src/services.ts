@@ -1,5 +1,6 @@
 import { PubSub } from "@google-cloud/pubsub";
 import { logger } from "tttc-common/logger";
+import { pipelineJobSchema } from "tttc-common/schema";
 import type { Cache } from "./cache";
 import { CacheServicesLive } from "./cache/services";
 import {
@@ -8,7 +9,7 @@ import {
 } from "./datastore/refstore";
 import { RedisPipelineStateStore } from "./pipeline-runner/state-store";
 import { GooglePubSub } from "./queue/googlepubsub";
-import { handlePipelineJob, pipelineJobSchema } from "./queue/handler";
+import { handlePipelineJob } from "./queue/handler";
 
 const servicesLogger = logger.child({ module: "services" });
 

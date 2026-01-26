@@ -3,69 +3,13 @@
  */
 
 import { logger } from "tttc-common/logger";
-import { z } from "zod";
+import { type PipelineJobMessage, pipelineJobSchema } from "tttc-common/schema";
 import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
 import type { PipelineInput } from "../pipeline-runner/types.js";
 import type { PubSubMessage } from "./index.js";
 
 const queueLogger = logger.child({ module: "queue-handler" });
-
-/**
- * Schema for comment in pipeline job
- */
-const commentSchema = z.object({
-  comment_id: z.string(),
-  comment_text: z.string(),
-  votes: z.number().optional(),
-  agrees: z.number().optional(),
-  disagrees: z.number().optional(),
-});
-
-/**
- * Schema for Firebase details in pipeline job
- */
-const firebaseDetailsSchema = z.object({
-  reportId: z.string(),
-  userId: z.string(),
-});
-
-/**
- * Schema for pipeline job message from express-server
- */
-export const pipelineJobSchema = z.object({
-  config: z.object({
-    firebaseDetails: firebaseDetailsSchema,
-    llm: z.object({
-      model: z.string(),
-    }),
-    instructions: z.object({
-      systemInstructions: z.string(),
-      clusteringInstructions: z.string(),
-      extractionInstructions: z.string(),
-      dedupInstructions: z.string(),
-      summariesInstructions: z.string(),
-      cruxInstructions: z.string(),
-      outputLanguage: z.string().optional(),
-    }),
-    options: z.object({
-      cruxes: z.boolean(),
-      bridging: z.boolean().optional(),
-    }),
-    env: z.object({
-      OPENAI_API_KEY: z.string(),
-    }),
-  }),
-  data: z.array(commentSchema),
-  reportDetails: z.object({
-    title: z.string(),
-    description: z.string(),
-    question: z.string(),
-    filename: z.string(),
-  }),
-});
-
-export type PipelineJobMessage = z.infer<typeof pipelineJobSchema>;
 
 /**
  * Convert express-server PipelineJob to pipeline-worker PipelineInput
