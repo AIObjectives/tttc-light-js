@@ -554,6 +554,11 @@ function buildInProgressResponse(
 /**
  * Resolves the status of a report using authoritative status or legacy heuristics.
  *
+ * Resolution Strategy (optimized for performance):
+ * 1. Modern reports (fastest): Check authoritative `status` field in ReportRef
+ * 2. Legacy complete (fast): Check metadata indicators (numTopics, numClaims, reportDataUri)
+ * 3. Legacy incomplete (slow): Query job status or validate file existence in GCS
+ *
  * @param reportRef - The report reference from Firestore
  * @param reportId - Report ID for logging
  * @param req - Request with logger and environment context
@@ -573,7 +578,8 @@ async function resolveReportStatus(
     "Determining report status",
   );
 
-  // Use authoritative status from ReportRef (single source of truth)
+  // Strategy 1: Use authoritative status from ReportRef (single source of truth)
+  // This is the fast path for all new reports
   if (hasAuthoritativeStatus(reportRef)) {
     reportLogger.debug(
       { reportId, authoritativeStatus: reportRef.status },
@@ -593,7 +599,8 @@ async function resolveReportStatus(
     "No authoritative status field - falling back to legacy report heuristics",
   );
 
-  // Check if report is completed based on metadata indicators
+  // Strategy 2: Fast metadata heuristic for completed legacy reports
+  // Checks in-memory fields only, avoids I/O
   if (isReportCompletedByMetadata(reportRef)) {
     reportLogger.info(
       {
@@ -607,7 +614,8 @@ async function resolveReportStatus(
     return api.reportJobStatus.enum.finished;
   }
 
-  // Fall back to legacy status determination
+  // Strategy 3: Slow path for incomplete legacy reports
+  // Queries job status or validates file existence (may involve I/O)
   reportLogger.info(
     { reportId },
     "Legacy heuristic: Metadata incomplete - checking file existence status",
@@ -898,7 +906,7 @@ async function handleIdBasedReport(
       return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
     }
 
-    // Check if user has permission to view this report
+    // Check if user has permission to view this report (synchronous check on in-memory data)
     const requestingUserId = req.auth?.uid;
     const access = checkReportAccess(reportRef, requestingUserId);
 
@@ -922,6 +930,9 @@ async function handleIdBasedReport(
     // Determine if the requesting user is the owner (for UI controls)
     const isOwner = requestingUserId === reportRef.userId;
 
+    // Resolve report status (fast for modern reports with authoritative status,
+    // slower for legacy reports requiring file validation)
+    // Note: Must run sequentially after permission check - cannot parallelize
     const status = await resolveReportStatus(reportRef, reportId, req);
 
     // Check if client wants the actual report data included (to avoid CORS issues)

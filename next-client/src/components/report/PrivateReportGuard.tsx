@@ -13,7 +13,25 @@ interface PrivateReportGuardProps {
   reportId: string;
 }
 
-// Max retries for transient 404s (e.g., network glitches, Firestore replication delay)
+/**
+ * Retry configuration for handling transient 404 responses.
+ *
+ * Rationale:
+ * - MAX_RETRIES = 2: Allows up to 2 retry attempts after the initial request
+ *   Total attempts = 3 (initial + 2 retries)
+ * - RETRY_DELAY_MS = 1000: 1 second delay between retries
+ *   Total max wait time = 2 seconds (2 retries × 1 second)
+ *
+ * Why we need retries:
+ * 1. SSR race condition: Server-side renders may return 404 before client auth is available
+ * 2. Firestore eventual consistency: Newly created reports may not be immediately readable
+ * 3. Network glitches: Transient network issues that resolve quickly
+ *
+ * Why these specific values:
+ * - 2 retries is sufficient for most transient issues without excessive delay
+ * - 1 second delay balances responsiveness with giving systems time to converge
+ * - Total 2-second max wait is acceptable UX for private report access
+ */
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 
@@ -205,6 +223,9 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
   );
 
   useEffect(() => {
+    // Reset retry counter when user changes to prevent stale retry state
+    retryCountRef.current = 0;
+
     if (authLoading) {
       return;
     }

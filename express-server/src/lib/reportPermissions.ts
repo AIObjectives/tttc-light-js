@@ -41,10 +41,14 @@ export function checkReportAccess(
   }
 
   // Explicitly private (isPublic === false)
-  permissionLogger.info(
-    { reportId: reportRef.id, requestingUserId },
-    "Access denied to private report",
-  );
+  // Log asynchronously to avoid timing side-channel that could reveal
+  // existence of private reports vs non-existent reports
+  setImmediate(() => {
+    permissionLogger.info(
+      { reportId: reportRef.id, requestingUserId },
+      "Access denied to private report",
+    );
+  });
   return { allowed: false, reason: "denied" };
 }
 

@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 // Mock useUser hook to avoid Firebase initialization
+const mockUseUser = vi.fn(() => ({ user: null, loading: false }));
 vi.mock("@/lib/hooks/getUser", () => ({
-  useUser: vi.fn(() => ({ user: null, loading: false })),
+  useUser: mockUseUser,
 }));
 
 // Mock useUserQuery to avoid Firebase initialization
@@ -466,6 +467,167 @@ describe("End-to-End Report Loading Flow", () => {
         expect(callUrl).not.toContain("/data");
         expect(callUrl).not.toContain("/metadata");
         expect(callUrl).not.toContain("/report/id/");
+      }
+    });
+  });
+
+  describe("Private Report Access Control", () => {
+    it("should handle private report with isPublic=false metadata", async () => {
+      const privateReportId = "PrivateReport123";
+
+      // Mock unauthenticated user for this test
+      mockUseUser.mockReturnValue({
+        user: null,
+        loading: false,
+      });
+
+      const mockFetch = vi.fn().mockImplementation((_url, _options) => {
+        // Server returns the report (in real system, permission check happens server-side)
+        // This test verifies the client can handle private report metadata
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              status: "finished",
+              dataUrl: "https://report-data.com/private-report.json",
+              metadata: {
+                id: privateReportId,
+                title: "Private Report",
+                isPublic: false,
+              },
+            }),
+        });
+      });
+
+      global.fetch = mockFetch;
+
+      const { result } = renderHook(() => useUnifiedReport(privateReportId), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.type).toBe("ready");
+      });
+
+      if (result.current.type === "ready") {
+        expect(result.current.metadata?.isPublic).toBe(false);
+      }
+    });
+
+    it("should return not-found for private report accessed without auth", async () => {
+      const privateReportId = "PrivateReport456";
+
+      // Mock unauthenticated user
+      mockUseUser.mockReturnValue({
+        user: null,
+        loading: false,
+      });
+
+      const mockFetch = vi.fn().mockImplementation((_url, _options) => {
+        // No auth = 404 for private reports (security through obscurity)
+        return Promise.resolve({
+          ok: false,
+          status: 404,
+          text: () => Promise.resolve("Report not found"),
+        });
+      });
+
+      global.fetch = mockFetch;
+
+      const { result } = renderHook(() => useUnifiedReport(privateReportId), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.type).toBe("not-found");
+      });
+
+      expect(result.current.type).toBe("not-found");
+    });
+
+    it("should handle public report accessed without auth", async () => {
+      const publicReportId = "PublicReport789";
+
+      // Mock unauthenticated user
+      mockUseUser.mockReturnValue({
+        user: null,
+        loading: false,
+      });
+
+      const mockFetch = vi.fn().mockImplementation((_url, _options) => {
+        // Public reports work without auth
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              status: "finished",
+              dataUrl: "https://report-data.com/public-report.json",
+              metadata: {
+                id: publicReportId,
+                title: "Public Report",
+                isPublic: true,
+              },
+            }),
+        });
+      });
+
+      global.fetch = mockFetch;
+
+      const { result } = renderHook(() => useUnifiedReport(publicReportId), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.type).toBe("ready");
+      });
+
+      if (result.current.type === "ready") {
+        expect(result.current.metadata?.isPublic).toBe(true);
+      }
+    });
+
+    it("should handle legacy report grandfathered as public", async () => {
+      const legacyReportId = "LegacyReport999";
+
+      // Mock unauthenticated user
+      mockUseUser.mockReturnValue({
+        user: null,
+        loading: false,
+      });
+
+      const mockFetch = vi.fn().mockImplementation((_url, _options) => {
+        // Legacy reports (isPublic: undefined) are accessible
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              status: "finished",
+              dataUrl: "https://report-data.com/legacy-report.json",
+              metadata: {
+                id: legacyReportId,
+                title: "Legacy Report",
+                // isPublic: undefined (not set)
+              },
+            }),
+        });
+      });
+
+      global.fetch = mockFetch;
+
+      const { result } = renderHook(() => useUnifiedReport(legacyReportId), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.type).toBe("ready");
+      });
+
+      if (result.current.type === "ready") {
+        // Legacy reports don't have isPublic field
+        expect(result.current.metadata?.isPublic).toBeUndefined();
       }
     });
   });

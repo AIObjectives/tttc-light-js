@@ -23,6 +23,7 @@ import {
   contextMiddleware,
   correlationIdMiddleware,
   optionalAuthMiddleware,
+  visibilityRateLimitMiddleware,
 } from "./middleware";
 import { createQueue } from "./queue";
 import authEvents from "./routes/authEvents";
@@ -369,11 +370,13 @@ app.get(
 /**
  * Update report visibility (private/public toggle)
  * Requires authentication - only report owner can change visibility
+ * Rate limited to 10 updates per report per user per hour
  */
 app.patch(
   "/report/:reportId/visibility",
   reportLimiter,
   authMiddleware(),
+  visibilityRateLimitMiddleware() as unknown as express.RequestHandler,
   updateReportVisibility as unknown as express.RequestHandler,
 );
 

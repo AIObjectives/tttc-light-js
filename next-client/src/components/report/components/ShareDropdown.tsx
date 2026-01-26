@@ -40,8 +40,11 @@ export function ShareDropdown({ reportId }: ShareDropdownProps) {
     async (value: string) => {
       const newIsPublic = value === "public";
 
-      // Skip if no actual change or already updating
-      if (newIsPublic === isPublic || isUpdating) return;
+      // Early return if already updating to prevent race condition
+      if (isUpdating) return;
+
+      // Skip if no actual change
+      if (newIsPublic === isPublic) return;
 
       setIsUpdating(true);
       try {
