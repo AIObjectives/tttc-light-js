@@ -61,6 +61,22 @@ interface StepResultWithAnalytics {
 }
 
 /**
+ * Validate usage object structure
+ */
+function isValidUsageObject(usage: unknown): boolean {
+  if (typeof usage !== "object" || usage === null) {
+    return false;
+  }
+
+  const usageObj = usage as Record<string, unknown>;
+  return (
+    typeof usageObj.input_tokens === "number" &&
+    typeof usageObj.output_tokens === "number" &&
+    typeof usageObj.total_tokens === "number"
+  );
+}
+
+/**
  * Type guard to check if a value has analytics properties
  */
 function hasAnalytics(value: unknown): value is StepResultWithAnalytics {
@@ -70,24 +86,12 @@ function hasAnalytics(value: unknown): value is StepResultWithAnalytics {
 
   const obj = value as Record<string, unknown>;
 
-  // Check for usage object
-  if (obj.usage !== undefined) {
-    const usage = obj.usage;
-    if (typeof usage !== "object" || usage === null) {
-      return false;
-    }
-
-    const usageObj = usage as Record<string, unknown>;
-    if (
-      typeof usageObj.input_tokens !== "number" ||
-      typeof usageObj.output_tokens !== "number" ||
-      typeof usageObj.total_tokens !== "number"
-    ) {
-      return false;
-    }
+  // Check for valid usage object if present
+  if (obj.usage !== undefined && !isValidUsageObject(obj.usage)) {
+    return false;
   }
 
-  // Check for cost
+  // Check for valid cost if present
   if (obj.cost !== undefined && typeof obj.cost !== "number") {
     return false;
   }
@@ -729,6 +733,78 @@ async function executeAllSteps(
 }
 
 /**
+ * Build successful pipeline result from completed steps
+ */
+function buildSuccessResult(
+  state: PipelineState,
+  results: PipelineStepResults,
+): PipelineResult {
+  const {
+    clusteringResult,
+    claimsResult,
+    sortedResult,
+    summariesResult,
+    cruxesResult,
+  } = results;
+
+  // Validate required results exist
+  if (!clusteringResult || !claimsResult || !sortedResult || !summariesResult) {
+    throw new Error(
+      "Pipeline completed but required results are missing. This should never happen.",
+    );
+  }
+
+  return {
+    success: true,
+    state,
+    outputs: {
+      topicTree: clusteringResult.data,
+      claimsTree: claimsResult.data,
+      sortedTree: sortedResult.data,
+      summaries: summariesResult.data,
+      cruxes: cruxesResult,
+    },
+  };
+}
+
+/**
+ * Handle pipeline failure and update state
+ */
+async function handlePipelineFailure(
+  error: unknown,
+  state: PipelineState,
+  stateStore: RedisPipelineStateStore,
+  reportLogger: typeof runnerLogger,
+): Promise<PipelineResult> {
+  const err = error instanceof Error ? error : new Error(String(error));
+
+  reportLogger.error(
+    {
+      error: err,
+      currentStep: state.currentStep,
+    },
+    "Pipeline failed with unexpected error",
+  );
+
+  const updatedState: PipelineState = {
+    ...state,
+    status: "failed",
+    error: {
+      message: err.message,
+      name: err.name,
+      step: state.currentStep,
+    },
+  };
+  await stateStore.save(updatedState);
+
+  return {
+    success: false,
+    state: updatedState,
+    error: err,
+  };
+}
+
+/**
  * Main pipeline runner function
  */
 export async function runPipeline(
@@ -771,18 +847,9 @@ export async function runPipeline(
       };
     }
 
-    state = stepsResult.value.state;
-    const {
-      clusteringResult,
-      claimsResult,
-      sortedResult,
-      summariesResult,
-      cruxesResult,
-    } = stepsResult.value.results;
-
     // Mark pipeline as completed
     state = {
-      ...state,
+      ...stepsResult.value.state,
       status: "completed",
       currentStep: undefined,
     };
@@ -797,57 +864,9 @@ export async function runPipeline(
       "Pipeline completed successfully",
     );
 
-    // Validate required results exist (they must if we got here)
-    if (
-      !clusteringResult ||
-      !claimsResult ||
-      !sortedResult ||
-      !summariesResult
-    ) {
-      throw new Error(
-        "Pipeline completed but required results are missing. This should never happen.",
-      );
-    }
-
-    return {
-      success: true,
-      state,
-      outputs: {
-        topicTree: clusteringResult.data,
-        claimsTree: claimsResult.data,
-        sortedTree: sortedResult.data,
-        summaries: summariesResult.data,
-        cruxes: cruxesResult,
-      },
-    };
+    return buildSuccessResult(state, stepsResult.value.results);
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-
-    reportLogger.error(
-      {
-        error: err,
-        currentStep: state.currentStep,
-      },
-      "Pipeline failed with unexpected error",
-    );
-
-    // Update state with error
-    state = {
-      ...state,
-      status: "failed",
-      error: {
-        message: err.message,
-        name: err.name,
-        step: state.currentStep,
-      },
-    };
-    await stateStore.save(state);
-
-    return {
-      success: false,
-      state,
-      error: err,
-    };
+    return handlePipelineFailure(error, state, stateStore, reportLogger);
   }
 }
 
