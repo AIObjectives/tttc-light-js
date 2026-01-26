@@ -28,7 +28,10 @@ vi.mock("tttc-common/logger", () => {
 });
 
 // Mock pipeline steps with controllable delays to simulate real execution
-const mockWithDelay = <T>(result: T, delayMs: number = 50) => {
+// Simulate realistic step execution time for integration tests
+const MOCK_STEP_DELAY_MS = 50;
+
+const mockWithDelay = <T>(result: T, delayMs: number = MOCK_STEP_DELAY_MS) => {
   return async () => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
     return success(result);

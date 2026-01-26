@@ -96,7 +96,8 @@ function hasAnalytics(value: unknown): value is StepResultWithAnalytics {
     return false;
   }
 
-  return true;
+  // At least one analytics field must be present
+  return obj.usage !== undefined || obj.cost !== undefined;
 }
 
 /**
@@ -523,6 +524,9 @@ async function executeStepIfNeeded<T>(
 
   return success({
     state: result.value.state,
+    // Type cast is safe here because the executor function is provided by the caller
+    // and always returns the correct type for the step. The type system cannot track
+    // this relationship due to the generic nature of executeStep.
     result: result.value.result as T,
   });
 }
@@ -543,6 +547,9 @@ async function executeAllSteps(
   >
 > {
   let currentState = state;
+  // Type casts here are necessary because state.completedResults stores unknown types
+  // (since Redis can't preserve TypeScript types). These results are validated incrementally
+  // before use - each step checks that its dependencies exist before executing.
   const results: PipelineStepResults = {
     clusteringResult: state.completedResults.clustering as
       | TopicTreeResult

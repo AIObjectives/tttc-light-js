@@ -11,7 +11,7 @@
  */
 
 import type { PipelineJobMessage } from "tttc-common/schema";
-import type { PipelineResult } from "./types";
+import { PipelineFormatError, type PipelineResult } from "./types";
 
 export interface SimplifiedPipelineOutput {
   version: "pipeline-worker-v1.0";
@@ -49,7 +49,7 @@ export function formatPipelineOutput(
   jobConfig: PipelineJobMessage,
 ): SimplifiedPipelineOutput {
   if (!result.success || !result.outputs) {
-    throw new Error("Cannot format output for failed pipeline");
+    throw new PipelineFormatError("Cannot format output for failed pipeline");
   }
 
   const { instructions } = jobConfig.config;

@@ -46,4 +46,18 @@ export class GCPBucketStore implements BucketStore {
       throw new UploadFailedError(fileName, formatError(error));
     }
   }
+
+  async fileExists(fileName: string): Promise<boolean> {
+    try {
+      const bucketRef = this.storage.bucket(this.bucketName);
+      const file = bucketRef.file(fileName);
+      const [exists] = await file.exists();
+      return exists;
+    } catch (error) {
+      throw new UploadFailedError(
+        fileName,
+        `Failed to check file existence: ${formatError(error)}`,
+      );
+    }
+  }
 }

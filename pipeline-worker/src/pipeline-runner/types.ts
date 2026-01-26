@@ -271,3 +271,13 @@ export class PipelineResumeError extends Error {
     this.name = "PipelineResumeError";
   }
 }
+
+/**
+ * Error thrown when pipeline output cannot be formatted
+ */
+export class PipelineFormatError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PipelineFormatError";
+  }
+}

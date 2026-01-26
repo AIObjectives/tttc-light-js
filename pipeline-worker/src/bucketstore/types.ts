@@ -73,6 +73,15 @@ export interface BucketStore {
    * @throws {AccessDeniedError} When access is denied
    */
   storeFile(fileName: string, fileContent: string): Promise<string>;
+
+  /**
+   * Check if a file exists in the configured bucket.
+   *
+   * @param fileName - The name of the file to check
+   * @returns A Promise that resolves to true if the file exists, false otherwise
+   * @throws {BucketStoreError} When the check fails due to infrastructure issues
+   */
+  fileExists(fileName: string): Promise<boolean>;
 }
 
 /**

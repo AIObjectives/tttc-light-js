@@ -11,8 +11,10 @@ import { GCPBucketStore } from "../gcp";
  */
 vi.mock("@google-cloud/storage", () => {
   const mockSave = vi.fn();
+  const mockExists = vi.fn();
   const mockFile = vi.fn(() => ({
     save: mockSave,
+    exists: mockExists,
   }));
   const mockBucket = vi.fn(() => ({
     file: mockFile,
@@ -32,6 +34,7 @@ describe("GCPBucketStore", () => {
   let mockBucket: Mock;
   let mockFile: Mock;
   let mockSave: Mock;
+  let mockExists: Mock;
 
   /**
    * Before each test, we need to:
@@ -50,6 +53,7 @@ describe("GCPBucketStore", () => {
     mockFile = bucketInstance.file;
     const fileInstance = mockFile();
     mockSave = fileInstance.save;
+    mockExists = fileInstance.exists;
 
     // Create a new instance for each test
     bucketStore = new GCPBucketStore("test-bucket");
@@ -652,6 +656,75 @@ describe("GCPBucketStore", () => {
       } catch (error) {
         if (error instanceof UploadFailedError) {
           expect(error.reason).toBe("Main message");
+        }
+      }
+    });
+  });
+
+  describe("fileExists - Success Scenarios", () => {
+    it("should return true when file exists", async () => {
+      mockExists.mockResolvedValue([true]);
+
+      const exists = await bucketStore.fileExists("test-file.json");
+
+      expect(exists).toBe(true);
+      expect(mockBucket).toHaveBeenCalledWith("test-bucket");
+      expect(mockFile).toHaveBeenCalledWith("test-file.json");
+      expect(mockExists).toHaveBeenCalled();
+    });
+
+    it("should return false when file does not exist", async () => {
+      mockExists.mockResolvedValue([false]);
+
+      const exists = await bucketStore.fileExists("missing-file.json");
+
+      expect(exists).toBe(false);
+      expect(mockBucket).toHaveBeenCalledWith("test-bucket");
+      expect(mockFile).toHaveBeenCalledWith("missing-file.json");
+      expect(mockExists).toHaveBeenCalled();
+    });
+
+    it("should handle different file paths", async () => {
+      mockExists.mockResolvedValue([true]);
+
+      await bucketStore.fileExists("folder/subfolder/file.json");
+
+      expect(mockFile).toHaveBeenCalledWith("folder/subfolder/file.json");
+    });
+  });
+
+  describe("fileExists - Error Scenarios", () => {
+    it("should throw UploadFailedError when check fails", async () => {
+      mockExists.mockRejectedValue(new Error("Permission denied"));
+
+      await expect(bucketStore.fileExists("test.json")).rejects.toThrow(
+        UploadFailedError,
+      );
+      await expect(bucketStore.fileExists("test.json")).rejects.toThrow(
+        "Failed to check file existence: Permission denied",
+      );
+    });
+
+    it("should handle network errors", async () => {
+      mockExists.mockRejectedValue(new Error("Network timeout"));
+
+      await expect(bucketStore.fileExists("test.json")).rejects.toThrow(
+        UploadFailedError,
+      );
+    });
+
+    it("should handle bucket access errors", async () => {
+      mockExists.mockRejectedValue({
+        code: 403,
+        message: "Access denied",
+      });
+
+      try {
+        await bucketStore.fileExists("test.json");
+      } catch (error) {
+        if (error instanceof UploadFailedError) {
+          expect(error.fileName).toBe("test.json");
+          expect(error.reason).toContain("Failed to check file existence");
         }
       }
     });

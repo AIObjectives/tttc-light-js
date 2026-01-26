@@ -212,13 +212,35 @@ export async function handlePipelineJob(
       (existingState.status === "running" || existingState.status === "failed");
 
     if (existingState && existingState.status === "completed") {
-      jobLogger.info(
-        {
-          totalDurationMs: existingState.totalDurationMs,
-        },
-        "Pipeline already completed, skipping duplicate message",
-      );
-      return; // Ack the message without re-processing
+      // Verify storage actually has the report to prevent data loss
+      // If pipeline completed but storage failed, we need to re-process
+      try {
+        const filename = `${reportId}.json`;
+        const fileExists = await storage.fileExists(filename);
+
+        if (fileExists) {
+          jobLogger.info(
+            {
+              totalDurationMs: existingState.totalDurationMs,
+            },
+            "Pipeline and storage both complete, skipping duplicate message",
+          );
+          return; // Ack the message without re-processing
+        }
+
+        jobLogger.info(
+          "Pipeline marked completed but storage missing, re-attempting save",
+        );
+        // Continue to re-process the pipeline
+      } catch (storageCheckError) {
+        jobLogger.warn(
+          {
+            error: storageCheckError,
+          },
+          "Failed to verify storage, continuing with pipeline processing",
+        );
+        // Continue to re-process to be safe
+      }
     }
 
     if (shouldResume) {
@@ -308,6 +330,10 @@ export async function handlePipelineJob(
       },
       "Unhandled error processing pipeline job",
     );
+
+    // Update Firestore with error status if not already handled
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    await updateFirestoreWithError(reportId, errorMessage, refStore, jobLogger);
 
     // Re-throw to trigger message nack
     throw error;
