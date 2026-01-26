@@ -11,6 +11,7 @@ import { z } from "zod";
 const commentSchema = z.object({
   comment_id: z.string(),
   comment_text: z.string(),
+  speaker: z.string().default("participant"),
   votes: z.number().optional(),
   agrees: z.number().optional(),
   disagrees: z.number().optional(),
@@ -45,6 +46,7 @@ export const pipelineJobSchema = z.object({
     options: z.object({
       cruxes: z.boolean(),
       bridging: z.boolean().optional(),
+      sortStrategy: z.enum(["numPeople", "numClaims"]).default("numPeople"),
     }),
     env: z.object({
       OPENAI_API_KEY: z.string(),

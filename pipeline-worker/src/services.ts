@@ -1,6 +1,8 @@
 import { PubSub } from "@google-cloud/pubsub";
 import { logger } from "tttc-common/logger";
 import { pipelineJobSchema } from "tttc-common/schema";
+import type { BucketStore } from "./bucketstore";
+import { createBucketStore } from "./bucketstore";
 import type { Cache } from "./cache";
 import { CacheServicesLive } from "./cache/services";
 import {
@@ -18,6 +20,7 @@ export interface Services {
   Cache: Cache;
   PipelineStateStore: RedisPipelineStateStore;
   Queue: GooglePubSub<typeof pipelineJobSchema>;
+  Storage: BucketStore;
 }
 
 export function initServices(): Services {
@@ -26,6 +29,20 @@ export function initServices(): Services {
 
   // Initialize pipeline state store
   const PipelineStateStore = new RedisPipelineStateStore(Cache);
+
+  // Initialize GCS storage
+  const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+
+  if (!bucketName) {
+    throw new Error("Missing GCLOUD_STORAGE_BUCKET environment variable");
+  }
+
+  const Storage = createBucketStore({
+    provider: "gcp",
+    bucketName,
+    projectId,
+  });
 
   // Initialize PubSub queue
   const pubsubClient = new PubSub({
@@ -45,7 +62,7 @@ export function initServices(): Services {
   // Start listening for messages
   Queue.subscribe(subscriptionName, async (message) => {
     try {
-      await handlePipelineJob(message, PipelineStateStore);
+      await handlePipelineJob(message, PipelineStateStore, Storage, RefStore);
     } catch (error) {
       servicesLogger.error(
         {
@@ -74,5 +91,6 @@ export function initServices(): Services {
     Cache,
     PipelineStateStore,
     Queue,
+    Storage,
   };
 }
