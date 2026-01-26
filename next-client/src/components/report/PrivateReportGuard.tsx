@@ -158,6 +158,74 @@ async function processReportResponse(
 }
 
 /**
+ * Handle failed fetch response by setting appropriate error state.
+ */
+function handleFailedResponse(
+  status: number,
+  setState: (state: State) => void,
+): void {
+  setState(
+    status === 404
+      ? { type: "notFound" }
+      : {
+          type: "error",
+          message: `Failed to fetch report: ${status}`,
+        },
+  );
+}
+
+/**
+ * Check if retry should be attempted for a 404 response.
+ */
+function shouldRetry(status: number, retryCount: number): boolean {
+  return status === 404 && retryCount < MAX_RETRIES;
+}
+
+/**
+ * Render the appropriate UI based on the current state.
+ */
+function renderStateUI(
+  state: State,
+  reportId: string,
+): React.ReactElement | null {
+  if (state.type === "loading") {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="text-muted-foreground">Checking access...</div>
+      </div>
+    );
+  }
+
+  if (state.type === "notFound") {
+    return <ReportErrorState type="notFound" />;
+  }
+
+  if (state.type === "progress") {
+    return <ReportProgress status={state.status} identifier={reportId} />;
+  }
+
+  if (state.type === "error") {
+    return <ReportErrorState type="loadError" message={state.message} />;
+  }
+
+  if (state.type === "reportData") {
+    return (
+      <div>
+        <Report
+          reportData={state.data}
+          reportUri={state.url}
+          rawPipelineOutput={state.rawPipelineOutput}
+          reportId={reportId}
+        />
+        <Feedback className="hidden lg:block" />
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/**
  * Client-side guard that retries fetching a report with authentication.
  * Used when SSR returns "notFound" - the report might be private and
  * accessible to the authenticated owner.
@@ -192,7 +260,7 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
 
           if (!response.ok) {
             // On 404, retry up to MAX_RETRIES times for transient failures
-            if (response.status === 404 && attempt < MAX_RETRIES) {
+            if (shouldRetry(response.status, attempt)) {
               attempt += 1;
               retryCountRef.current = attempt;
               await new Promise((resolve) =>
@@ -204,14 +272,7 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
             }
 
             if (!isMountedRef.current) return;
-            setState(
-              response.status === 404
-                ? { type: "notFound" }
-                : {
-                    type: "error",
-                    message: `Failed to fetch report: ${response.status}`,
-                  },
-            );
+            handleFailedResponse(response.status, setState);
             return;
           }
 
@@ -270,30 +331,5 @@ export function PrivateReportGuard({ reportId }: PrivateReportGuardProps) {
     fetchWithRetry(user, isMountedRef);
   }, [user, authLoading, hasTriedAuth, fetchWithRetry]);
 
-  switch (state.type) {
-    case "loading":
-      return (
-        <div className="flex h-[50vh] items-center justify-center">
-          <div className="text-muted-foreground">Checking access...</div>
-        </div>
-      );
-    case "notFound":
-      return <ReportErrorState type="notFound" />;
-    case "progress":
-      return <ReportProgress status={state.status} identifier={reportId} />;
-    case "error":
-      return <ReportErrorState type="loadError" message={state.message} />;
-    case "reportData":
-      return (
-        <div>
-          <Report
-            reportData={state.data}
-            reportUri={state.url}
-            rawPipelineOutput={state.rawPipelineOutput}
-            reportId={reportId}
-          />
-          <Feedback className="hidden lg:block" />
-        </div>
-      );
-  }
+  return renderStateUI(state, reportId);
 }
