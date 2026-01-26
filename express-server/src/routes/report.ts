@@ -806,6 +806,77 @@ export async function getUnifiedReportHandler(
   }
 }
 
+/**
+ * Handle fetching and returning report data when requested via includeData param.
+ */
+async function handleReportDataInclusion(
+  reportRef: ReportRef,
+  env: Env,
+  reportId: ReportId,
+  isOwner: boolean,
+  res: Response,
+): Promise<void> {
+  reportLogger.info({ reportId }, "Fetching report data from GCS");
+  const reportDataResult = await fetchReportData(
+    reportRef.reportDataUri,
+    env,
+    reportId,
+  );
+
+  if (reportDataResult.tag === "failure") {
+    reportLogger.error(
+      { reportId, error: reportDataResult.error },
+      "Failed to fetch report data",
+    );
+    sendErrorByCode(res, reportDataResult.error, reportLogger);
+    return;
+  }
+
+  const result = await buildFinishedReportResponse(reportRef, env, reportId);
+  if (result.tag === "failure") {
+    sendErrorByCode(res, result.error, reportLogger);
+    return;
+  }
+
+  reportLogger.info(
+    { reportId, hasData: !!reportDataResult.value },
+    "Successfully fetched report data, returning with reportData field",
+  );
+  res.set("Cache-Control", "private, max-age=60");
+  res.json({
+    ...result.value,
+    isOwner,
+    reportData: reportDataResult.value,
+  });
+}
+
+/**
+ * Handle returning finished report response.
+ */
+async function handleFinishedReport(
+  reportRef: ReportRef,
+  env: Env,
+  reportId: ReportId,
+  isOwner: boolean,
+  includeData: boolean,
+  res: Response,
+): Promise<void> {
+  const result = await buildFinishedReportResponse(reportRef, env, reportId);
+
+  if (result.tag === "failure") {
+    sendErrorByCode(res, result.error, reportLogger);
+    return;
+  }
+
+  if (includeData) {
+    await handleReportDataInclusion(reportRef, env, reportId, isOwner, res);
+    return;
+  }
+
+  res.set("Cache-Control", "private, max-age=60");
+  res.json({ ...result.value, isOwner });
+}
+
 async function handleIdBasedReport(
   reportId: ReportId,
   req: RequestWithOptionalAuth,
@@ -853,55 +924,22 @@ async function handleIdBasedReport(
 
     const status = await resolveReportStatus(reportRef, reportId, req);
 
+    // Check if client wants the actual report data included (to avoid CORS issues)
+    const includeData = req.query.includeData === "true";
+    reportLogger.info(
+      { includeData, queryParam: req.query.includeData, reportId },
+      "Checking includeData query parameter",
+    );
+
     if (isReportDataReady(status, reportRef.reportDataUri)) {
-      const result = await buildFinishedReportResponse(
+      return handleFinishedReport(
         reportRef,
         req.context.env,
         reportId,
+        isOwner,
+        includeData,
+        res,
       );
-
-      if (result.tag === "failure") {
-        return sendErrorByCode(res, result.error, reportLogger);
-      }
-
-      // Check if client wants the actual report data included (to avoid CORS issues)
-      const includeData = req.query.includeData === "true";
-      reportLogger.info(
-        { includeData, queryParam: req.query.includeData, reportId },
-        "Checking includeData query parameter",
-      );
-
-      if (includeData) {
-        // Fetch and include the actual report data
-        reportLogger.info({ reportId }, "Fetching report data from GCS");
-        const reportDataResult = await fetchReportData(
-          reportRef.reportDataUri,
-          req.context.env,
-          reportId,
-        );
-
-        if (reportDataResult.tag === "failure") {
-          reportLogger.error(
-            { reportId, error: reportDataResult.error },
-            "Failed to fetch report data",
-          );
-          return sendErrorByCode(res, reportDataResult.error, reportLogger);
-        }
-
-        reportLogger.info(
-          { reportId, hasData: !!reportDataResult.value },
-          "Successfully fetched report data, returning with reportData field",
-        );
-        res.set("Cache-Control", "private, max-age=60");
-        return res.json({
-          ...result.value,
-          isOwner,
-          reportData: reportDataResult.value,
-        });
-      }
-
-      res.set("Cache-Control", "private, max-age=60");
-      return res.json({ ...result.value, isOwner });
     }
 
     res.set("Cache-Control", "no-cache");

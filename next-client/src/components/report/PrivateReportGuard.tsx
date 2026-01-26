@@ -44,6 +44,62 @@ function isInProgressStatus(status: api.ReportJobStatus | undefined): boolean {
 }
 
 /**
+ * Convert handleResponseData result to component state.
+ */
+function convertResultToState(
+  result: Awaited<ReturnType<typeof handleResponseData>>,
+  rawPipelineOutput: schema.PipelineOutput,
+  url: string,
+): State {
+  if (result.tag === "report") {
+    return {
+      type: "reportData",
+      data: result.data,
+      rawPipelineOutput,
+      url,
+    };
+  }
+  if (result.tag === "error") {
+    return { type: "error", message: result.message };
+  }
+  return { type: "progress", status: result.status };
+}
+
+/**
+ * Process report data that's already included in the response.
+ */
+async function processIncludedReportData(
+  reportData: unknown,
+  reportId: string,
+  dataUrl: string,
+): Promise<State> {
+  const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
+  const result = await handleResponseData(reportData, reportId, true);
+  return convertResultToState(result, rawPipelineOutput, dataUrl);
+}
+
+/**
+ * Fetch and process report data from a URL.
+ */
+async function fetchAndProcessReportData(
+  dataUrl: string,
+  reportId: string,
+): Promise<State> {
+  const reportDataResponse = await fetch(dataUrl);
+  if (!reportDataResponse.ok) {
+    return {
+      type: "error",
+      message: `Failed to fetch report data: ${reportDataResponse.status}`,
+    };
+  }
+
+  const reportData = await reportDataResponse.json();
+  const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
+  const result = await handleResponseData(reportData, reportId, true);
+  return convertResultToState(result, rawPipelineOutput, dataUrl);
+}
+
+/**
  * Process the report response and convert to component state.
  */
 async function processReportResponse(
@@ -61,55 +117,23 @@ async function processReportResponse(
     return { type: "progress", status: status as api.ReportJobStatus };
   }
 
-  // Handle finished report
-  if (status === "finished") {
-    // Check if report data is already included (server-side fetch to avoid CORS)
-    if (reportResponse.reportData) {
-      const reportData = reportResponse.reportData;
-      const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
-      const result = await handleResponseData(reportData, reportId, true);
+  // Handle finished report - return early if not finished
+  if (status !== "finished") {
+    return { type: "notFound" };
+  }
 
-      if (result.tag === "report") {
-        return {
-          type: "reportData",
-          data: result.data,
-          rawPipelineOutput,
-          url: reportResponse.dataUrl ?? "",
-        };
-      }
-      if (result.tag === "error") {
-        return { type: "error", message: result.message };
-      }
-      return { type: "progress", status: result.status };
-    }
+  // Try to use included report data first (server-side fetch avoids CORS)
+  if (reportResponse.reportData) {
+    return processIncludedReportData(
+      reportResponse.reportData,
+      reportId,
+      reportResponse.dataUrl ?? "",
+    );
+  }
 
-    // Fallback: fetch from dataUrl (may encounter CORS issues)
-    if (reportResponse.dataUrl) {
-      const reportDataResponse = await fetch(reportResponse.dataUrl);
-      if (!reportDataResponse.ok) {
-        return {
-          type: "error",
-          message: `Failed to fetch report data: ${reportDataResponse.status}`,
-        };
-      }
-
-      const reportData = await reportDataResponse.json();
-      const rawPipelineOutput = schema.pipelineOutput.parse(reportData);
-      const result = await handleResponseData(reportData, reportId, true);
-
-      if (result.tag === "report") {
-        return {
-          type: "reportData",
-          data: result.data,
-          rawPipelineOutput,
-          url: reportResponse.dataUrl,
-        };
-      }
-      if (result.tag === "error") {
-        return { type: "error", message: result.message };
-      }
-      return { type: "progress", status: result.status };
-    }
+  // Fallback: fetch from dataUrl (may encounter CORS issues)
+  if (reportResponse.dataUrl) {
+    return fetchAndProcessReportData(reportResponse.dataUrl, reportId);
   }
 
   return { type: "notFound" };
