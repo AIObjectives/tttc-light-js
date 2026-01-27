@@ -58,18 +58,26 @@ function validateResultStructure(
 ): result is { data: unknown; usage: unknown; cost: number } {
   if (!result || typeof result !== "object") {
     runnerLogger.warn(
-      { stepName },
+      { stepName, resultType: typeof result, isNull: result === null },
       "Recovered result is not an object, cannot resume from this step",
     );
     return false;
   }
 
-  const hasRequiredFields =
-    "data" in result && "usage" in result && "cost" in result;
+  const hasData = "data" in result;
+  const hasUsage = "usage" in result;
+  const hasCost = "cost" in result;
+  const hasRequiredFields = hasData && hasUsage && hasCost;
 
   if (!hasRequiredFields) {
     runnerLogger.warn(
-      { stepName, result },
+      {
+        stepName,
+        hasData,
+        hasUsage,
+        hasCost,
+        actualKeys: Object.keys(result),
+      },
       "Recovered result missing required fields (data, usage, cost)",
     );
     return false;
@@ -670,6 +678,15 @@ async function executeAllSteps(
     if (!result) return undefined;
     if (!validateResultStructure(result, stepName)) {
       // If validation fails, we cannot use this result and must re-run the step
+      reportLogger.error(
+        {
+          stepName,
+          reportId: state.reportId,
+          hasResult: !!result,
+          resultType: typeof result,
+        },
+        `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed`,
+      );
       return undefined;
     }
     return result as T;
@@ -697,6 +714,29 @@ async function executeAllSteps(
       "cruxes",
     ),
   };
+
+  // Log summary of recovered vs corrupted results
+  const stepsInState = Object.keys(state.completedResults).filter(
+    (key) => state.completedResults[key as PipelineStepName] != null,
+  );
+  const recoveredSteps = Object.entries(results)
+    .filter(([_, value]) => value !== undefined)
+    .map(([key]) => key.replace("Result", ""));
+  const corruptedSteps = stepsInState.filter(
+    (step) => !recoveredSteps.includes(step),
+  );
+
+  if (stepsInState.length > 0) {
+    reportLogger.info(
+      {
+        totalStepsInState: stepsInState.length,
+        recoveredSteps: recoveredSteps.length,
+        corruptedSteps: corruptedSteps.length,
+        corruptedStepNames: corruptedSteps,
+      },
+      `State recovery: ${recoveredSteps.length}/${stepsInState.length} steps recovered successfully`,
+    );
+  }
 
   const nextStep = getNextStep(currentState);
 
