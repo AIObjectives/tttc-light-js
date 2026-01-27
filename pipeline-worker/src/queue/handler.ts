@@ -241,13 +241,30 @@ async function updateFirestoreWithError(
 }
 
 /**
+ * Custom error for storage-related failures
+ */
+class StorageCheckError extends Error {
+  constructor(
+    message: string,
+    public readonly isTransient: boolean,
+  ) {
+    super(message);
+    this.name = "StorageCheckError";
+  }
+}
+
+/**
  * Check if file exists in storage, handling errors
+ *
+ * Throws on permanent errors (permissions, config) to fail fast and avoid
+ * wasting compute/LLM resources on a pipeline that cannot save results.
+ * Throws on transient errors (network) to trigger message retry.
  */
 async function checkStorageExists(
   reportId: string,
   storage: BucketStore,
   jobLogger: typeof queueLogger,
-): Promise<{ exists: boolean; hasTransientError: boolean }> {
+): Promise<{ exists: boolean }> {
   const filename = `${reportId}.json`;
   const fileExistsResult = await storage.fileExists(filename);
 
@@ -255,24 +272,42 @@ async function checkStorageExists(
     jobLogger.info(
       "Report file already exists in storage, skipping duplicate message",
     );
-    return { exists: true, hasTransientError: false };
+    return { exists: true };
   }
 
   if (fileExistsResult.error) {
-    jobLogger.warn(
+    const isTransient = fileExistsResult.errorType === "transient";
+
+    if (isTransient) {
+      // Transient errors (network blips) - throw to trigger message retry
+      jobLogger.warn(
+        {
+          error: fileExistsResult.error,
+          errorType: fileExistsResult.errorType,
+        },
+        "Transient storage error checking file existence - message will be retried",
+      );
+      throw new StorageCheckError(
+        `Transient storage error: ${fileExistsResult.error}`,
+        true,
+      );
+    }
+
+    // Permanent errors (permissions, bucket not found, etc.) - fail fast
+    jobLogger.error(
       {
         error: fileExistsResult.error,
         errorType: fileExistsResult.errorType,
       },
-      "Failed to check storage existence, will attempt to acquire lock and process",
+      "Permanent storage error - cannot proceed with pipeline (would fail on save)",
     );
-    return {
-      exists: false,
-      hasTransientError: fileExistsResult.errorType === "transient",
-    };
+    throw new StorageCheckError(
+      `Storage configuration error: ${fileExistsResult.error}`,
+      false,
+    );
   }
 
-  return { exists: false, hasTransientError: false };
+  return { exists: false };
 }
 
 /**
@@ -286,7 +321,11 @@ function shouldResumeFromState(
 }
 
 /**
- * Check if pipeline should be skipped due to existing completion
+ * Check if pipeline should be skipped due to existing completion.
+ *
+ * Note: Storage errors (both transient and permanent) are thrown by
+ * checkStorageExists before reaching this point. If we get here,
+ * the storage check succeeded.
  */
 async function shouldSkipPipeline(
   reportId: string,
@@ -298,6 +337,7 @@ async function shouldSkipPipeline(
   shouldResume: boolean;
   existingState: Awaited<ReturnType<typeof stateStore.get>>;
 }> {
+  // This will throw on any storage errors (transient or permanent)
   const storageCheck = await checkStorageExists(reportId, storage, jobLogger);
 
   if (storageCheck.exists) {
@@ -308,12 +348,8 @@ async function shouldSkipPipeline(
   const shouldResume = shouldResumeFromState(existingState);
 
   if (existingState?.status === "completed") {
-    if (storageCheck.hasTransientError) {
-      throw new Error(
-        "Pipeline marked completed but unable to verify storage due to transient error",
-      );
-    }
-
+    // If we reach here, storage check succeeded but file doesn't exist
+    // This means the pipeline completed but the file was deleted or never saved
     jobLogger.info(
       "Pipeline marked completed but storage missing, re-attempting save only (not re-running pipeline)",
     );
