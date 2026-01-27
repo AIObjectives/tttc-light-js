@@ -1157,9 +1157,10 @@ export async function runPipeline(
     "Starting pipeline execution",
   );
 
-  // Create timeout promise
+  // Create timeout promise with cleanup capability
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<PipelineResult>((_, reject) => {
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       reject(
         new Error(
           `Pipeline execution exceeded timeout of ${PIPELINE_TIMEOUT_MS / 1000}s`,
@@ -1203,6 +1204,11 @@ export async function runPipeline(
       state: createInitialState(config.reportId, config.userId),
       error: error instanceof Error ? error : new Error(String(error)),
     };
+  } finally {
+    // Clear timeout to prevent memory leak when pipeline completes before timeout
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
