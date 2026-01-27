@@ -98,6 +98,21 @@ const pipelineStateSchema = z.object({
     summaries: z.unknown().optional(),
     cruxes: z.unknown().optional(),
   }),
+  validationFailures: z
+    .object({
+      clustering: z.number(),
+      claims: z.number(),
+      sort_and_deduplicate: z.number(),
+      summaries: z.number(),
+      cruxes: z.number(),
+    })
+    .default({
+      clustering: 0,
+      claims: 0,
+      sort_and_deduplicate: 0,
+      summaries: 0,
+      cruxes: 0,
+    }),
   error: z
     .object({
       message: z.string(),
@@ -180,6 +195,13 @@ export function createInitialState(
     status: "pending",
     stepAnalytics: createInitialStepAnalytics(),
     completedResults: {},
+    validationFailures: {
+      clustering: 0,
+      claims: 0,
+      sort_and_deduplicate: 0,
+      summaries: 0,
+      cruxes: 0,
+    },
     totalTokens: 0,
     totalCost: 0,
     totalDurationMs: 0,

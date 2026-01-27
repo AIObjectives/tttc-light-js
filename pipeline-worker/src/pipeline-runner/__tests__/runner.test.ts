@@ -629,4 +629,87 @@ describe("Pipeline Runner", () => {
       });
     });
   });
+
+  describe("validation failure retry limit", () => {
+    it("should fail pipeline after max validation failures for corrupted state", async () => {
+      // Create state with corrupted clustering result (missing required 'cost' field)
+      const existingState = createInitialState("report-123", "user-456");
+      existingState.status = "failed";
+      existingState.stepAnalytics.clustering.status = "completed";
+      existingState.completedResults.clustering = {
+        data: mockClusteringResult.data,
+        usage: mockClusteringResult.usage,
+        // Missing 'cost' field - will fail validation
+      } as typeof mockClusteringResult;
+      existingState.validationFailures.clustering = 3; // Already at max retries
+      await stateStore.save(existingState);
+
+      const config: PipelineRunnerConfig = {
+        ...defaultConfig,
+        resumeFromState: true,
+      };
+
+      const result = await runPipeline(defaultInput, config, stateStore);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeInstanceOf(PipelineStepError);
+      expect(result.error?.message).toContain("validation failed 3 times");
+      expect(result.error?.message).toContain("permanently corrupted");
+    });
+
+    it("should increment validation failure counter on corrupted state", async () => {
+      // Create state with corrupted clustering result
+      const existingState = createInitialState("report-123", "user-456");
+      existingState.status = "failed";
+      existingState.stepAnalytics.clustering.status = "completed";
+      existingState.completedResults.clustering = {
+        data: mockClusteringResult.data,
+        usage: mockClusteringResult.usage,
+        // Missing 'cost' field
+      } as typeof mockClusteringResult;
+      existingState.validationFailures.clustering = 0;
+      await stateStore.save(existingState);
+
+      const config: PipelineRunnerConfig = {
+        ...defaultConfig,
+        resumeFromState: true,
+      };
+
+      const result = await runPipeline(defaultInput, config, stateStore);
+
+      // Pipeline should succeed after re-running clustering step
+      expect(result.success).toBe(true);
+
+      // Check that validation failure was tracked in state
+      const savedState = await stateStore.get("report-123");
+      expect(savedState?.validationFailures.clustering).toBe(0); // Reset on successful completion
+    });
+
+    it("should reset validation failure counter when step re-runs and succeeds", async () => {
+      // Create state with corrupted result and previous validation failures
+      const existingState = createInitialState("report-123", "user-456");
+      existingState.status = "failed";
+      existingState.stepAnalytics.clustering.status = "completed";
+      existingState.completedResults.clustering = {
+        data: mockClusteringResult.data,
+        usage: mockClusteringResult.usage,
+        // Missing 'cost' field - will fail validation and trigger re-run
+      } as typeof mockClusteringResult;
+      existingState.validationFailures.clustering = 2; // Had previous failures
+      await stateStore.save(existingState);
+
+      const config: PipelineRunnerConfig = {
+        ...defaultConfig,
+        resumeFromState: true,
+      };
+
+      const result = await runPipeline(defaultInput, config, stateStore);
+
+      expect(result.success).toBe(true);
+
+      // Failure counter should be reset to 0 after successful re-run
+      const savedState = await stateStore.get("report-123");
+      expect(savedState?.validationFailures.clustering).toBe(0);
+    });
+  });
 });

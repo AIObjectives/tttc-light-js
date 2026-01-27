@@ -49,6 +49,9 @@ const runnerLogger = logger.child({ module: "pipeline-runner" });
 /** Maximum pipeline execution time: 30 minutes */
 const PIPELINE_TIMEOUT_MS = 30 * 60 * 1000;
 
+/** Maximum validation failures before considering state permanently corrupted */
+const MAX_VALIDATION_FAILURES = 3;
+
 /**
  * Validate that a recovered result has the expected structure.
  * Most steps return { data, usage, cost }, but cruxes returns
@@ -432,12 +435,16 @@ async function saveStepResult(
   // Mark step as completed with analytics
   let updatedState = markStepCompleted(state, stepName, analytics);
 
-  // Save result
+  // Save result and reset validation failure counter on successful completion
   updatedState = {
     ...updatedState,
     completedResults: {
       ...updatedState.completedResults,
       [stepName]: result,
+    },
+    validationFailures: {
+      ...updatedState.validationFailures,
+      [stepName]: 0, // Reset failure counter on successful completion
     },
     totalDurationMs: updatedState.totalDurationMs + analytics.durationMs,
   };
@@ -736,6 +743,24 @@ async function executeAllSteps(
   ): T | undefined => {
     if (!result) return undefined;
     if (!validateResultStructure(result, stepName)) {
+      // Track validation failure
+      const failureCount = currentState.validationFailures[stepName];
+
+      // If we've exceeded the retry limit, fail the pipeline permanently
+      if (failureCount >= MAX_VALIDATION_FAILURES) {
+        throw new PipelineStepError(
+          stepName,
+          new Error(
+            `Step result validation failed ${failureCount} times - state is permanently corrupted. ` +
+              `This may indicate a schema version mismatch or data serialization issue.`,
+          ),
+          currentState,
+        );
+      }
+
+      // Increment failure counter and update state
+      currentState.validationFailures[stepName] = failureCount + 1;
+
       // If validation fails, we cannot use this result and must re-run the step
       reportLogger.error(
         {
@@ -743,8 +768,10 @@ async function executeAllSteps(
           reportId: state.reportId,
           hasResult: !!result,
           resultType: typeof result,
+          failureCount: currentState.validationFailures[stepName],
+          maxFailures: MAX_VALIDATION_FAILURES,
         },
-        `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed`,
+        `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed (attempt ${currentState.validationFailures[stepName]}/${MAX_VALIDATION_FAILURES})`,
       );
       return undefined;
     }
@@ -794,6 +821,16 @@ async function executeAllSteps(
         corruptedStepNames: corruptedSteps,
       },
       `State recovery: ${recoveredSteps.length}/${stepsInState.length} steps recovered successfully`,
+    );
+  }
+
+  // Save updated state with incremented validation failure counters
+  // This ensures the counters persist across restarts
+  if (corruptedSteps.length > 0) {
+    await stateStore.save(currentState);
+    reportLogger.info(
+      { validationFailures: currentState.validationFailures },
+      "Updated validation failure counters persisted to Redis",
     );
   }
 

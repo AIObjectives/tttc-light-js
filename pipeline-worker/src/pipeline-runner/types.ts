@@ -95,6 +95,8 @@ export interface PipelineState {
     summaries?: SummariesResult;
     cruxes?: CruxesResult;
   };
+  /** Track validation failures to prevent infinite retry loops */
+  validationFailures: Record<PipelineStepName, number>;
   /** Pipeline-level error if failed */
   error?: {
     message: string;
