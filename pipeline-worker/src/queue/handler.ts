@@ -61,6 +61,35 @@ function validatePipelineJobConfig(job: PipelineJobMessage): void {
 }
 
 /**
+ * Validate that the data array contains valid, non-empty comments.
+ * This prevents the pipeline from consuming resources on malformed entries.
+ * @internal Exported for testing
+ */
+export function validateDataArray(data: PipelineJobMessage["data"]): void {
+  if (data.length === 0) {
+    throw new Error("Data array is empty - no comments to process");
+  }
+
+  const emptyComments: string[] = [];
+
+  for (const comment of data) {
+    if (!comment.comment_text || comment.comment_text.trim().length === 0) {
+      emptyComments.push(comment.comment_id);
+    }
+  }
+
+  if (emptyComments.length > 0) {
+    const displayIds =
+      emptyComments.length <= 5
+        ? emptyComments.join(", ")
+        : `${emptyComments.slice(0, 5).join(", ")} and ${emptyComments.length - 5} more`;
+    throw new Error(
+      `Found ${emptyComments.length} comment(s) with empty or whitespace-only text: ${displayIds}`,
+    );
+  }
+}
+
+/**
  * Convert express-server PipelineJob to pipeline-worker PipelineInput
  * Validates all required fields to prevent undefined values from reaching the pipeline
  */
@@ -69,6 +98,7 @@ function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
   const { instructions, llm, options, env } = config;
 
   validatePipelineJobConfig(job);
+  validateDataArray(data);
 
   // Convert comments to pipeline-worker format
   const comments = data.map((comment: (typeof data)[0]) => ({
