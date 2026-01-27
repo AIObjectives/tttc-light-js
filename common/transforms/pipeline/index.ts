@@ -1,10 +1,6 @@
 import { v4 } from "uuid";
 import * as schema from "../../schema";
 
-// type SourcePair = [schema.SourceRow, schema.Source];
-
-const uuid = (): string => v4();
-
 type ClaimMap = Record<string, schema.Claim>;
 type SourceMap = Record<string, schema.Source>;
 
@@ -70,7 +66,7 @@ const buildSourceMap = (sourceRows: schema.SourceRow[]): SourceMap => {
 
   for (const row of sourceRows) {
     sourceMap[row.id] = {
-      id: uuid(),
+      id: v4(),
       interview: row.interview || genAnon(),
       data: row.video
         ? [
@@ -100,7 +96,7 @@ const llmClaimToSchemaClaim = (
   sourceMap: SourceMap,
   number: number,
 ): schema.Claim => ({
-  id: uuid(),
+  id: v4(),
   title: llmClaim.claim,
   quotes: [getQuote(llmClaim, sourceMap)],
   number,
@@ -125,7 +121,7 @@ const numberClaims = () => {
     }
     i++;
     return {
-      id: uuid(),
+      id: v4(),
       title: clm.claim,
       quotes: [getQuote(clm, sourceMap)],
       number: i,
@@ -244,7 +240,7 @@ const makeReference = (
   switch (source.data[0]) {
     case "text":
       return {
-        id: uuid(),
+        id: v4(),
         sourceId: source.id,
         interview: source.interview,
         data: [
@@ -257,7 +253,7 @@ const makeReference = (
       };
     case "video":
       return {
-        id: uuid(),
+        id: v4(),
         sourceId: source.id,
         interview: source.interview,
         data: [
@@ -282,7 +278,7 @@ const getQuote = (
   claim: schema.LLMClaim,
   sourceMap: SourceMap,
 ): schema.Quote => ({
-  id: uuid(),
+  id: v4(),
   text: claim.quote,
   reference: makeReference(sourceMap[claim.commentId!], claim),
 });
@@ -308,7 +304,7 @@ function buildSubtopics(
     // Only include subtopics that have claims
     if (claims.length > 0) {
       result.push({
-        id: uuid(),
+        id: v4(),
         title: subtopic.subtopicName,
         // biome-ignore lint/style/noNonNullAssertion: description required at this stage
         description: subtopic.subtopicShortDescription!,
@@ -340,7 +336,7 @@ function buildTopics(
     // Only include topics that have subtopics
     if (subtopics.length > 0) {
       result.push({
-        id: uuid(),
+        id: v4(),
         title: leaf.topicName,
         // biome-ignore lint/style/noNonNullAssertion: description required at this stage
         description: leaf.topicShortDescription!,
