@@ -250,6 +250,93 @@ describe("Pipeline State Store", () => {
         );
       });
     });
+
+    describe("lock management", () => {
+      it("should acquire lock successfully", async () => {
+        const acquired = await stateStore.acquirePipelineLock(
+          "report-123",
+          "worker-1",
+        );
+
+        expect(acquired).toBe(true);
+      });
+
+      it("should prevent duplicate lock acquisition", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+
+        const acquired = await stateStore.acquirePipelineLock(
+          "report-123",
+          "worker-2",
+        );
+
+        expect(acquired).toBe(false);
+      });
+
+      it("should release lock successfully", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+
+        const released = await stateStore.releasePipelineLock(
+          "report-123",
+          "worker-1",
+        );
+
+        expect(released).toBe(true);
+      });
+
+      it("should fail to release lock with wrong value", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+
+        const released = await stateStore.releasePipelineLock(
+          "report-123",
+          "worker-2",
+        );
+
+        expect(released).toBe(false);
+      });
+
+      it("should verify lock is held by correct value", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+
+        const verified = await stateStore.verifyPipelineLock(
+          "report-123",
+          "worker-1",
+        );
+
+        expect(verified).toBe(true);
+      });
+
+      it("should fail verification with wrong value", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+
+        const verified = await stateStore.verifyPipelineLock(
+          "report-123",
+          "worker-2",
+        );
+
+        expect(verified).toBe(false);
+      });
+
+      it("should fail verification when lock does not exist", async () => {
+        const verified = await stateStore.verifyPipelineLock(
+          "report-123",
+          "worker-1",
+        );
+
+        expect(verified).toBe(false);
+      });
+
+      it("should allow re-acquiring lock after release", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+        await stateStore.releasePipelineLock("report-123", "worker-1");
+
+        const acquired = await stateStore.acquirePipelineLock(
+          "report-123",
+          "worker-2",
+        );
+
+        expect(acquired).toBe(true);
+      });
+    });
   });
 
   describe("updateStepAnalytics", () => {

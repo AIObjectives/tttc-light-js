@@ -438,6 +438,22 @@ async function executePipelineWithLock(
       stateStore,
     );
 
+    // Verify we still hold the lock before processing results
+    // This prevents race conditions if the lock expired during execution
+    const stillHoldsLock = await stateStore.verifyPipelineLock(
+      reportId,
+      lockValue,
+    );
+
+    if (!stillHoldsLock) {
+      jobLogger.error(
+        "Lost pipeline lock during execution - another worker may have started duplicate processing",
+      );
+      throw new Error(
+        "Pipeline lock expired during execution - potential duplicate processing detected",
+      );
+    }
+
     if (result.success) {
       await handlePipelineSuccess(
         result,
@@ -456,7 +472,9 @@ async function executePipelineWithLock(
       lockValue,
     );
     if (!lockReleased) {
-      jobLogger.warn("Failed to release pipeline lock (may have expired)");
+      jobLogger.warn(
+        "Failed to release pipeline lock - it may have already expired or been released",
+      );
     }
   }
 }

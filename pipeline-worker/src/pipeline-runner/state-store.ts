@@ -28,8 +28,13 @@ const STATE_KEY_PREFIX = "pipeline_state:";
 /** Redis key prefix for pipeline execution locks */
 const LOCK_KEY_PREFIX = "pipeline_lock:";
 
-/** Lock TTL: 10 minutes (should be longer than typical step execution) */
-const LOCK_TTL_SECONDS = 10 * 60;
+/**
+ * Lock TTL: 35 minutes
+ * Must exceed PIPELINE_TIMEOUT_MS (30 minutes) to prevent lock expiration
+ * during normal execution. If a pipeline times out, the lock will still be
+ * held to prevent duplicate execution until it naturally expires.
+ */
+const LOCK_TTL_SECONDS = 35 * 60;
 
 /**
  * Zod schema for validating step analytics
@@ -216,6 +221,27 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   ): Promise<boolean> {
     const lockKey = getLockKey(reportId);
     return this.cache.releaseLock(lockKey, lockValue);
+  }
+
+  /**
+   * Checks if we still hold the pipeline execution lock.
+   * Use this before critical state updates to prevent race conditions.
+   *
+   * @param reportId - Report identifier
+   * @param lockValue - Unique identifier that acquired the lock
+   * @returns true if we still hold the lock, false otherwise
+   */
+  async verifyPipelineLock(
+    reportId: string,
+    lockValue: string,
+  ): Promise<boolean> {
+    const lockKey = getLockKey(reportId);
+    try {
+      const currentValue = await this.cache.get(lockKey);
+      return currentValue === lockValue;
+    } catch {
+      return false;
+    }
   }
 
   /**
