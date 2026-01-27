@@ -16,6 +16,51 @@ import type { PubSubMessage } from "./index.js";
 const queueLogger = logger.child({ module: "queue-handler" });
 
 /**
+ * Validate required fields in pipeline job config
+ */
+function validatePipelineJobConfig(job: PipelineJobMessage): void {
+  const { config } = job;
+  const { instructions, llm, options, env } = config;
+
+  const requiredFields = [
+    { value: llm.model, name: "config.llm.model" },
+    {
+      value: instructions.systemInstructions,
+      name: "config.instructions.systemInstructions",
+    },
+    {
+      value: instructions.clusteringInstructions,
+      name: "config.instructions.clusteringInstructions",
+    },
+    {
+      value: instructions.extractionInstructions,
+      name: "config.instructions.extractionInstructions",
+    },
+    {
+      value: instructions.dedupInstructions,
+      name: "config.instructions.dedupInstructions",
+    },
+    {
+      value: instructions.summariesInstructions,
+      name: "config.instructions.summariesInstructions",
+    },
+    { value: env.OPENAI_API_KEY, name: "config.env.OPENAI_API_KEY" },
+  ];
+
+  for (const field of requiredFields) {
+    if (!field.value) {
+      throw new Error(`Missing required field: ${field.name}`);
+    }
+  }
+
+  if (options.cruxes && !instructions.cruxInstructions) {
+    throw new Error(
+      "Missing required field: config.instructions.cruxInstructions (required when cruxes are enabled)",
+    );
+  }
+}
+
+/**
  * Convert express-server PipelineJob to pipeline-worker PipelineInput
  * Validates all required fields to prevent undefined values from reaching the pipeline
  */
@@ -23,45 +68,7 @@ function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
   const { config, data } = job;
   const { instructions, llm, options, env } = config;
 
-  // Validate required fields
-  if (!llm.model) {
-    throw new Error("Missing required field: config.llm.model");
-  }
-  if (!instructions.systemInstructions) {
-    throw new Error(
-      "Missing required field: config.instructions.systemInstructions",
-    );
-  }
-  if (!instructions.clusteringInstructions) {
-    throw new Error(
-      "Missing required field: config.instructions.clusteringInstructions",
-    );
-  }
-  if (!instructions.extractionInstructions) {
-    throw new Error(
-      "Missing required field: config.instructions.extractionInstructions",
-    );
-  }
-  if (!instructions.dedupInstructions) {
-    throw new Error(
-      "Missing required field: config.instructions.dedupInstructions",
-    );
-  }
-  if (!instructions.summariesInstructions) {
-    throw new Error(
-      "Missing required field: config.instructions.summariesInstructions",
-    );
-  }
-  if (!env.OPENAI_API_KEY) {
-    throw new Error("Missing required field: config.env.OPENAI_API_KEY");
-  }
-
-  // Validate cruxes config if enabled
-  if (options.cruxes && !instructions.cruxInstructions) {
-    throw new Error(
-      "Missing required field: config.instructions.cruxInstructions (required when cruxes are enabled)",
-    );
-  }
+  validatePipelineJobConfig(job);
 
   // Convert comments to pipeline-worker format
   const comments = data.map((comment: (typeof data)[0]) => ({
@@ -234,6 +241,227 @@ async function updateFirestoreWithError(
 }
 
 /**
+ * Check if file exists in storage, handling errors
+ */
+async function checkStorageExists(
+  reportId: string,
+  storage: BucketStore,
+  jobLogger: typeof queueLogger,
+): Promise<{ exists: boolean; hasTransientError: boolean }> {
+  const filename = `${reportId}.json`;
+  const fileExistsResult = await storage.fileExists(filename);
+
+  if (fileExistsResult.exists) {
+    jobLogger.info(
+      "Report file already exists in storage, skipping duplicate message",
+    );
+    return { exists: true, hasTransientError: false };
+  }
+
+  if (fileExistsResult.error) {
+    jobLogger.warn(
+      {
+        error: fileExistsResult.error,
+        errorType: fileExistsResult.errorType,
+      },
+      "Failed to check storage existence, will attempt to acquire lock and process",
+    );
+    return {
+      exists: false,
+      hasTransientError: fileExistsResult.errorType === "transient",
+    };
+  }
+
+  return { exists: false, hasTransientError: false };
+}
+
+/**
+ * Determine if pipeline should resume from existing state
+ */
+function shouldResumeFromState(
+  state: Awaited<ReturnType<RedisPipelineStateStore["get"]>>,
+): boolean {
+  if (!state) return false;
+  return state.status === "running" || state.status === "failed";
+}
+
+/**
+ * Check if pipeline should be skipped due to existing completion
+ */
+async function shouldSkipPipeline(
+  reportId: string,
+  storage: BucketStore,
+  stateStore: RedisPipelineStateStore,
+  jobLogger: typeof queueLogger,
+): Promise<{
+  skip: boolean;
+  shouldResume: boolean;
+  existingState: Awaited<ReturnType<typeof stateStore.get>>;
+}> {
+  const storageCheck = await checkStorageExists(reportId, storage, jobLogger);
+
+  if (storageCheck.exists) {
+    return { skip: true, shouldResume: false, existingState: null };
+  }
+
+  const existingState = await stateStore.get(reportId);
+  const shouldResume = shouldResumeFromState(existingState);
+
+  if (existingState?.status === "completed") {
+    if (storageCheck.hasTransientError) {
+      throw new Error(
+        "Pipeline marked completed but unable to verify storage due to transient error",
+      );
+    }
+
+    jobLogger.info(
+      "Pipeline marked completed but storage missing, re-attempting save only (not re-running pipeline)",
+    );
+  }
+
+  return { skip: false, shouldResume, existingState };
+}
+
+/**
+ * Handle successful pipeline result
+ */
+async function handlePipelineSuccess(
+  result: Awaited<ReturnType<typeof runPipeline>>,
+  data: PipelineJobMessage,
+  reportId: string,
+  storage: BucketStore,
+  refStore: RefStoreServices,
+  jobLogger: typeof queueLogger,
+): Promise<void> {
+  jobLogger.info(
+    {
+      totalDurationMs: result.state.totalDurationMs,
+      totalTokens: result.state.totalTokens,
+      totalCost: result.state.totalCost,
+    },
+    "Pipeline job completed successfully",
+  );
+
+  try {
+    await saveSuccessfulPipeline(
+      result,
+      data,
+      reportId,
+      storage,
+      refStore,
+      jobLogger,
+    );
+  } catch (storageError) {
+    const error =
+      storageError instanceof Error
+        ? storageError
+        : new Error(String(storageError));
+
+    jobLogger.error({ error }, "Failed to save report or update Firestore");
+
+    const errorMessage = `Storage error: ${error.message}`;
+    await updateFirestoreWithError(reportId, errorMessage, refStore, jobLogger);
+
+    throw storageError;
+  }
+}
+
+/**
+ * Handle failed pipeline result
+ */
+async function handlePipelineFailureResult(
+  result: Awaited<ReturnType<typeof runPipeline>>,
+  reportId: string,
+  refStore: RefStoreServices,
+  jobLogger: typeof queueLogger,
+): Promise<never> {
+  jobLogger.error(
+    {
+      error: result.error,
+      currentStep: result.state.currentStep,
+    },
+    "Pipeline job failed",
+  );
+
+  const errorMessage = result.error?.message ?? "Unknown error";
+  await updateFirestoreWithError(reportId, errorMessage, refStore, jobLogger);
+
+  throw result.error ?? new Error("Pipeline failed with unknown error");
+}
+
+/**
+ * Execute pipeline with locking to prevent concurrent execution
+ */
+async function executePipelineWithLock(
+  reportId: string,
+  userId: string,
+  lockValue: string,
+  shouldResume: boolean,
+  existingState: Awaited<ReturnType<RedisPipelineStateStore["get"]>>,
+  pipelineInput: PipelineInput,
+  stateStore: RedisPipelineStateStore,
+  storage: BucketStore,
+  refStore: RefStoreServices,
+  data: PipelineJobMessage,
+  jobLogger: typeof queueLogger,
+): Promise<void> {
+  const lockAcquired = await stateStore.acquirePipelineLock(
+    reportId,
+    lockValue,
+  );
+
+  if (!lockAcquired) {
+    jobLogger.info(
+      "Pipeline execution already in progress by another worker, skipping",
+    );
+    return;
+  }
+
+  try {
+    if (shouldResume && existingState) {
+      jobLogger.info(
+        {
+          currentStep: existingState.currentStep,
+          status: existingState.status,
+        },
+        "Resuming existing pipeline from saved state",
+      );
+    }
+
+    const result = await runPipeline(
+      pipelineInput,
+      {
+        reportId,
+        userId,
+        resumeFromState: shouldResume,
+      },
+      stateStore,
+    );
+
+    if (result.success) {
+      await handlePipelineSuccess(
+        result,
+        data,
+        reportId,
+        storage,
+        refStore,
+        jobLogger,
+      );
+    } else {
+      await handlePipelineFailureResult(result, reportId, refStore, jobLogger);
+    }
+  } finally {
+    const lockReleased = await stateStore.releasePipelineLock(
+      reportId,
+      lockValue,
+    );
+    if (!lockReleased) {
+      jobLogger.warn("Failed to release pipeline lock (may have expired)");
+    }
+  }
+}
+
+/**
  * Handle incoming pipeline job message
  */
 export async function handlePipelineJob(
@@ -261,163 +489,32 @@ export async function handlePipelineJob(
   );
 
   try {
-    // Convert job to pipeline input
     const pipelineInput = convertToPipelineInput(data);
 
-    // Check for existing pipeline state to handle idempotent retries
-    // First check if file exists in storage to avoid race conditions
-    const filename = `${reportId}.json`;
-    const fileExistsResult = await storage.fileExists(filename);
-
-    if (fileExistsResult.exists) {
-      jobLogger.info(
-        "Report file already exists in storage, skipping duplicate message",
-      );
-      return; // Ack the message without re-processing
-    }
-
-    // If storage check failed, log warning but continue with caution
-    if (fileExistsResult.error) {
-      jobLogger.warn(
-        {
-          error: fileExistsResult.error,
-          errorType: fileExistsResult.errorType,
-        },
-        "Failed to check storage existence, will attempt to acquire lock and process",
-      );
-    }
-
-    // Now check Redis state
-    const existingState = await stateStore.get(reportId);
-    const shouldResume =
-      existingState &&
-      (existingState.status === "running" || existingState.status === "failed");
-
-    if (existingState && existingState.status === "completed") {
-      // This is the edge case: Redis says completed but storage doesn't have the file
-      // This could mean storage upload failed after pipeline completion
-      if (
-        fileExistsResult.error &&
-        fileExistsResult.errorType === "transient"
-      ) {
-        // If we had a transient error checking storage, don't re-run the expensive pipeline
-        // Instead, throw an error to retry the entire job (including the storage check)
-        throw new Error(
-          `Pipeline marked completed but unable to verify storage due to transient error: ${fileExistsResult.error.message}`,
-        );
-      }
-
-      jobLogger.info(
-        "Pipeline marked completed but storage missing, re-attempting save only (not re-running pipeline)",
-      );
-      // Continue to re-save from existing state
-    }
-
-    // Acquire lock to prevent concurrent execution of the same pipeline
-    const lockValue = message.id; // Use message ID as unique lock identifier
-    const lockAcquired = await stateStore.acquirePipelineLock(
+    const { skip, shouldResume, existingState } = await shouldSkipPipeline(
       reportId,
-      lockValue,
+      storage,
+      stateStore,
+      jobLogger,
     );
 
-    if (!lockAcquired) {
-      jobLogger.info(
-        "Pipeline execution already in progress by another worker, skipping",
-      );
-      return; // Another worker is processing this pipeline, safe to skip
+    if (skip) {
+      return;
     }
 
-    try {
-      if (shouldResume) {
-        jobLogger.info(
-          {
-            currentStep: existingState.currentStep,
-            status: existingState.status,
-          },
-          "Resuming existing pipeline from saved state",
-        );
-      }
-
-      // Run the pipeline (will resume from state if exists)
-      const result = await runPipeline(
-        pipelineInput,
-        {
-          reportId,
-          userId,
-          resumeFromState: shouldResume ?? false,
-        },
-        stateStore,
-      );
-
-      if (result.success) {
-        jobLogger.info(
-          {
-            totalDurationMs: result.state.totalDurationMs,
-            totalTokens: result.state.totalTokens,
-            totalCost: result.state.totalCost,
-          },
-          "Pipeline job completed successfully",
-        );
-
-        try {
-          await saveSuccessfulPipeline(
-            result,
-            data,
-            reportId,
-            storage,
-            refStore,
-            jobLogger,
-          );
-        } catch (storageError) {
-          jobLogger.error(
-            {
-              error:
-                storageError instanceof Error
-                  ? storageError
-                  : new Error(String(storageError)),
-            },
-            "Failed to save report or update Firestore",
-          );
-
-          const errorMessage = `Storage error: ${storageError instanceof Error ? storageError.message : String(storageError)}`;
-          await updateFirestoreWithError(
-            reportId,
-            errorMessage,
-            refStore,
-            jobLogger,
-          );
-
-          throw storageError;
-        }
-      } else {
-        jobLogger.error(
-          {
-            error: result.error,
-            currentStep: result.state.currentStep,
-          },
-          "Pipeline job failed",
-        );
-
-        const errorMessage = result.error?.message ?? "Unknown error";
-        await updateFirestoreWithError(
-          reportId,
-          errorMessage,
-          refStore,
-          jobLogger,
-        );
-
-        throw result.error ?? new Error("Pipeline failed with unknown error");
-      }
-    } finally {
-      // Always release the lock when done (success or failure)
-      const lockReleased = await stateStore.releasePipelineLock(
-        reportId,
-        lockValue,
-      );
-      if (!lockReleased) {
-        jobLogger.warn("Failed to release pipeline lock (may have expired)");
-      }
-    }
+    await executePipelineWithLock(
+      reportId,
+      userId,
+      message.id,
+      shouldResume,
+      existingState,
+      pipelineInput,
+      stateStore,
+      storage,
+      refStore,
+      data,
+      jobLogger,
+    );
   } catch (error) {
     jobLogger.error(
       {
