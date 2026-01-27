@@ -105,7 +105,6 @@ function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
     id: comment.comment_id,
     text: comment.comment_text,
     speaker: comment.speaker,
-    vote_count: comment.votes ?? 0,
   }));
 
   return {
