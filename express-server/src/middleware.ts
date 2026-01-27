@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { ERROR_CODES } from "tttc-common/errors";
+import { logger } from "tttc-common/logger";
 import { verifyUser } from "./Firebase";
 import { sendErrorByCode } from "./routes/sendError";
 import type { Env } from "./types/context";
@@ -8,7 +9,10 @@ import {
   REQUEST_ID_HEADER,
   type RequestWithAuth,
   type RequestWithLogger,
+  type RequestWithOptionalAuth,
 } from "./types/request";
+
+const rateLimitLogger = logger.child({ module: "rate-limit" });
 
 /**
  * Adds context to the request object
@@ -245,3 +249,114 @@ export function correlationIdMiddleware(
 
   next();
 }
+
+/**
+ * Optional authentication middleware that validates Firebase ID tokens if present.
+ *
+ * Unlike authMiddleware, this allows unauthenticated requests to proceed.
+ * If a token is present and valid, attaches decoded user to req.auth.
+ * If no token or invalid token, sets req.auth to undefined and continues.
+ *
+ * Use this for endpoints that work with or without authentication,
+ * such as public report viewing where owners get extra capabilities.
+ */
+export const optionalAuthMiddleware = () => {
+  return async (req: RequestWithLogger, _res: Response, next: NextFunction) => {
+    const token = extractBearerToken(req.headers.authorization);
+
+    if (!token) {
+      (req as RequestWithOptionalAuth).auth = undefined;
+      return next();
+    }
+
+    try {
+      const decodedUser = await verifyUser(token);
+      (req as RequestWithOptionalAuth).auth = decodedUser;
+      req.log.info(
+        { userId: decodedUser.uid },
+        "Optional auth token verified successfully",
+      );
+      next();
+    } catch (error) {
+      req.log.warn(
+        { error },
+        "Optional auth token invalid, continuing without auth",
+      );
+      (req as RequestWithOptionalAuth).auth = undefined;
+      next();
+    }
+  };
+};
+
+/**
+ * In-memory rate limit tracker for visibility updates.
+ * Maps "reportId:userId" -> array of timestamps
+ */
+const visibilityUpdateTracker = new Map<string, number[]>();
+
+/**
+ * Rate limiting middleware for report visibility updates.
+ *
+ * Limits:
+ * - 10 visibility updates per report per user per hour
+ * - Prevents abuse scenarios: toggle spam, cost attacks, audit log noise
+ *
+ * Implementation:
+ * - Uses in-memory sliding window tracker
+ * - Key format: "reportId:userId"
+ * - Cleans up old entries automatically (60min window)
+ *
+ * Note: This is an in-memory implementation suitable for single-instance deployments.
+ * For multi-instance deployments, use Redis or similar distributed cache.
+ */
+export const visibilityRateLimitMiddleware = () => {
+  const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+  const MAX_UPDATES_PER_WINDOW = 10;
+
+  return (req: RequestWithAuth, res: Response, next: NextFunction) => {
+    const { reportId } = req.params;
+    const userId = req.auth.uid;
+    const key = `${reportId}:${userId}`;
+    const now = Date.now();
+
+    // Get or create entry for this user+report
+    let timestamps = visibilityUpdateTracker.get(key) || [];
+
+    // Remove timestamps outside the window (automatic cleanup)
+    timestamps = timestamps.filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
+
+    // Check if limit exceeded
+    if (timestamps.length >= MAX_UPDATES_PER_WINDOW) {
+      rateLimitLogger.warn(
+        { reportId, userId, attemptCount: timestamps.length },
+        "Visibility update rate limit exceeded",
+      );
+
+      return res.status(429).json({
+        error: {
+          message: "Too many visibility updates. Please try again later.",
+          code: "RATE_LIMIT_EXCEEDED",
+          retryAfter: Math.ceil(
+            (timestamps[0] + RATE_LIMIT_WINDOW_MS - now) / 1000,
+          ), // seconds until oldest entry expires
+        },
+      });
+    }
+
+    // Record this request
+    timestamps.push(now);
+    visibilityUpdateTracker.set(key, timestamps);
+
+    // Periodic cleanup: remove stale entries (keys with no recent activity)
+    // Run cleanup 1% of requests to avoid overhead
+    if (Math.random() < 0.01) {
+      for (const [k, ts] of visibilityUpdateTracker.entries()) {
+        if (ts.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) {
+          visibilityUpdateTracker.delete(k);
+        }
+      }
+    }
+
+    next();
+  };
+};

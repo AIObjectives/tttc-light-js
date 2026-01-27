@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import type { Response } from "express";
-import type { DecodedIdToken } from "firebase-admin/auth";
 import { getAnalytics } from "tttc-common/analytics";
 import * as api from "tttc-common/api";
 import { ERROR_CODES } from "tttc-common/errors";
@@ -20,9 +19,13 @@ import {
   getCollectionName,
   getReportRefById,
 } from "../Firebase";
+import { checkReportAccess } from "../lib/reportPermissions";
 import { Bucket } from "../storage";
 import type { Env } from "../types/context";
-import type { RequestWithLogger } from "../types/request";
+import type {
+  RequestWithLogger,
+  RequestWithOptionalAuth,
+} from "../types/request";
 import { sendErrorByCode } from "./sendError";
 
 // Simple validation helpers
@@ -442,6 +445,51 @@ interface InProgressReportResponse {
  * @param reportId - Report ID for logging
  * @returns Success with response data, or failure with error code
  */
+/**
+ * Fetches the actual report data from GCS.
+ * Used when client requests includeData=true to avoid CORS issues.
+ */
+async function fetchReportData(
+  reportDataUri: string | undefined,
+  env: Env,
+  reportId: ReportId,
+): Promise<Result<unknown, (typeof ERROR_CODES)[keyof typeof ERROR_CODES]>> {
+  if (!reportDataUri) {
+    return { tag: "failure", error: ERROR_CODES.STORAGE_ERROR };
+  }
+
+  const uriResult = validateGcsUri(
+    reportDataUri,
+    env.ALLOWED_GCS_BUCKETS,
+    reportId,
+  );
+
+  if (uriResult.tag === "failure") {
+    reportLogger.error({ error: uriResult.error }, "URI validation failed");
+    return { tag: "failure", error: ERROR_CODES.STORAGE_ERROR };
+  }
+
+  const storage = new Bucket(
+    env.GOOGLE_CREDENTIALS_ENCODED,
+    uriResult.value.bucket,
+  );
+  const dataResult = await storage.get(uriResult.value.fileName);
+
+  if (dataResult.tag === "failure") {
+    reportLogger.error(
+      {
+        error: dataResult.error,
+        bucket: uriResult.value.bucket,
+        fileName: uriResult.value.fileName,
+      },
+      "Failed to fetch report data from GCS",
+    );
+    return { tag: "failure", error: ERROR_CODES.STORAGE_ERROR };
+  }
+
+  return { tag: "success", value: dataResult.value };
+}
+
 async function buildFinishedReportResponse(
   reportRef: ReportRef,
   env: Env,
@@ -506,6 +554,11 @@ function buildInProgressResponse(
 /**
  * Resolves the status of a report using authoritative status or legacy heuristics.
  *
+ * Resolution Strategy (optimized for performance):
+ * 1. Modern reports (fastest): Check authoritative `status` field in ReportRef
+ * 2. Legacy complete (fast): Check metadata indicators (numTopics, numClaims, reportDataUri)
+ * 3. Legacy incomplete (slow): Query job status or validate file existence in GCS
+ *
  * @param reportRef - The report reference from Firestore
  * @param reportId - Report ID for logging
  * @param req - Request with logger and environment context
@@ -525,7 +578,8 @@ async function resolveReportStatus(
     "Determining report status",
   );
 
-  // Use authoritative status from ReportRef (single source of truth)
+  // Strategy 1: Use authoritative status from ReportRef (single source of truth)
+  // This is the fast path for all new reports
   if (hasAuthoritativeStatus(reportRef)) {
     reportLogger.debug(
       { reportId, authoritativeStatus: reportRef.status },
@@ -545,7 +599,8 @@ async function resolveReportStatus(
     "No authoritative status field - falling back to legacy report heuristics",
   );
 
-  // Check if report is completed based on metadata indicators
+  // Strategy 2: Fast metadata heuristic for completed legacy reports
+  // Checks in-memory fields only, avoids I/O
   if (isReportCompletedByMetadata(reportRef)) {
     reportLogger.info(
       {
@@ -559,7 +614,8 @@ async function resolveReportStatus(
     return api.reportJobStatus.enum.finished;
   }
 
-  // Fall back to legacy status determination
+  // Strategy 3: Slow path for incomplete legacy reports
+  // Queries job status or validates file existence (may involve I/O)
   reportLogger.info(
     { reportId },
     "Legacy heuristic: Metadata incomplete - checking file existence status",
@@ -618,7 +674,7 @@ function getBucketAndFileName(
  * @returns JSON response with migration result or error
  */
 export async function migrateReportUrlHandler(
-  req: RequestWithLogger,
+  req: RequestWithOptionalAuth,
   res: Response,
 ) {
   // Add deprecation signaling - this migration endpoint is temporary
@@ -641,6 +697,20 @@ export async function migrateReportUrlHandler(
     const reportRef = await findReportRefByUri(reportDataUri);
 
     if (reportRef) {
+      // Check if user has permission to view this report
+      const requestingUserId = req.auth?.uid;
+      const access = checkReportAccess(reportRef.data, requestingUserId);
+
+      if (!access.allowed) {
+        // Return "not found" to not reveal existence of private reports
+        const response: api.MigrationApiResponse = {
+          success: false,
+          message: "No document found for this legacy URL",
+        };
+        res.set("Cache-Control", "private, max-age=1800");
+        return res.json(response);
+      }
+
       reportLogger.info({ reportId: reportRef.id }, "URL migration successful");
 
       const response: api.MigrationApiResponse = {
@@ -690,7 +760,7 @@ export async function migrateReportUrlHandler(
  * @returns JSON response with report status, dataUrl (when available), and metadata (for Firebase IDs)
  */
 export async function getUnifiedReportHandler(
-  req: RequestWithLogger & { auth?: DecodedIdToken },
+  req: RequestWithOptionalAuth,
   res: Response,
 ) {
   const identifier = req.params.identifier;
@@ -744,36 +814,147 @@ export async function getUnifiedReportHandler(
   }
 }
 
+/**
+ * Handle fetching and returning report data when requested via includeData param.
+ */
+async function handleReportDataInclusion(
+  reportRef: ReportRef,
+  env: Env,
+  reportId: ReportId,
+  isOwner: boolean,
+  res: Response,
+): Promise<void> {
+  reportLogger.info({ reportId }, "Fetching report data from GCS");
+  const reportDataResult = await fetchReportData(
+    reportRef.reportDataUri,
+    env,
+    reportId,
+  );
+
+  if (reportDataResult.tag === "failure") {
+    reportLogger.error(
+      { reportId, error: reportDataResult.error },
+      "Failed to fetch report data",
+    );
+    sendErrorByCode(res, reportDataResult.error, reportLogger);
+    return;
+  }
+
+  const result = await buildFinishedReportResponse(reportRef, env, reportId);
+  if (result.tag === "failure") {
+    sendErrorByCode(res, result.error, reportLogger);
+    return;
+  }
+
+  reportLogger.info(
+    { reportId, hasData: !!reportDataResult.value },
+    "Successfully fetched report data, returning with reportData field",
+  );
+  res.set("Cache-Control", "private, max-age=60");
+  res.json({
+    ...result.value,
+    isOwner,
+    reportData: reportDataResult.value,
+  });
+}
+
+/**
+ * Handle returning finished report response.
+ */
+async function handleFinishedReport(
+  reportRef: ReportRef,
+  env: Env,
+  reportId: ReportId,
+  isOwner: boolean,
+  includeData: boolean,
+  res: Response,
+): Promise<void> {
+  const result = await buildFinishedReportResponse(reportRef, env, reportId);
+
+  if (result.tag === "failure") {
+    sendErrorByCode(res, result.error, reportLogger);
+    return;
+  }
+
+  if (includeData) {
+    await handleReportDataInclusion(reportRef, env, reportId, isOwner, res);
+    return;
+  }
+
+  res.set("Cache-Control", "private, max-age=60");
+  res.json({ ...result.value, isOwner });
+}
+
 async function handleIdBasedReport(
   reportId: ReportId,
-  req: RequestWithLogger,
+  req: RequestWithOptionalAuth,
   res: Response,
 ) {
   try {
+    reportLogger.info(
+      {
+        reportId,
+        queryParams: req.query,
+        includeDataParam: req.query.includeData,
+        url: req.url,
+      },
+      "handleIdBasedReport called",
+    );
+
     const reportRef = await getReportRefById(reportId);
     if (!reportRef) {
       return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
     }
 
+    // Check if user has permission to view this report (synchronous check on in-memory data)
+    const requestingUserId = req.auth?.uid;
+    const access = checkReportAccess(reportRef, requestingUserId);
+
+    reportLogger.info(
+      {
+        reportId,
+        requestingUserId,
+        reportOwnerId: reportRef.userId,
+        isPublic: reportRef.isPublic,
+        accessAllowed: access.allowed,
+        accessReason: access.reason,
+      },
+      "Report access check",
+    );
+
+    if (!access.allowed) {
+      // Return 404 to not reveal existence of private reports
+      return sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, reportLogger);
+    }
+
+    // Determine if the requesting user is the owner (for UI controls)
+    const isOwner = requestingUserId === reportRef.userId;
+
+    // Resolve report status (fast for modern reports with authoritative status,
+    // slower for legacy reports requiring file validation)
+    // Note: Must run sequentially after permission check - cannot parallelize
     const status = await resolveReportStatus(reportRef, reportId, req);
 
+    // Check if client wants the actual report data included (to avoid CORS issues)
+    const includeData = req.query.includeData === "true";
+    reportLogger.info(
+      { includeData, queryParam: req.query.includeData, reportId },
+      "Checking includeData query parameter",
+    );
+
     if (isReportDataReady(status, reportRef.reportDataUri)) {
-      const result = await buildFinishedReportResponse(
+      return handleFinishedReport(
         reportRef,
         req.context.env,
         reportId,
+        isOwner,
+        includeData,
+        res,
       );
-
-      if (result.tag === "failure") {
-        return sendErrorByCode(res, result.error, reportLogger);
-      }
-
-      res.set("Cache-Control", "private, max-age=60");
-      return res.json(result.value);
     }
 
     res.set("Cache-Control", "no-cache");
-    return res.json(buildInProgressResponse(status, reportRef));
+    return res.json({ ...buildInProgressResponse(status, reportRef), isOwner });
   } catch (error) {
     reportLogger.error({ error, reportId }, "Error getting ID-based report");
     return sendErrorByCode(res, ERROR_CODES.SERVICE_UNAVAILABLE, reportLogger);

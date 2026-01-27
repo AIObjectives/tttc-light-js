@@ -66,11 +66,13 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  const targetUrl = `${expressUrl}${targetPath}`;
+  // Include query string from original request
+  const queryString = request.nextUrl.search;
+  const targetUrl = `${expressUrl}${targetPath}${queryString}`;
 
   try {
     // Forward the request to Express
-    // Headers (including Authorization) are forwarded automatically
+    // Headers (including Authorization) and query parameters are forwarded
     const response = await fetch(targetUrl, {
       method: request.method,
       headers: request.headers,

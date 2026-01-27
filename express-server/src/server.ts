@@ -22,6 +22,8 @@ import {
   authMiddleware,
   contextMiddleware,
   correlationIdMiddleware,
+  optionalAuthMiddleware,
+  visibilityRateLimitMiddleware,
 } from "./middleware";
 import { createQueue } from "./queue";
 import authEvents from "./routes/authEvents";
@@ -33,6 +35,7 @@ import {
   getUnifiedReportHandler,
   migrateReportUrlHandler,
 } from "./routes/report";
+import { updateReportVisibility } from "./routes/reportVisibility";
 import { getUserLimits } from "./routes/user";
 import { validateEnv } from "./types/context";
 import type { RequestWithLogger } from "./types/request";
@@ -322,8 +325,14 @@ app.post("/auth-events", authLimiter, authEvents);
 
 /**
  * Migrates legacy report URL to new ID-based URL
+ * Uses optionalAuth to check permissions for private reports
  */
-app.get("/report/:reportUri/migrate", reportLimiter, migrateReportUrlHandler);
+app.get(
+  "/report/:reportUri/migrate",
+  reportLimiter,
+  optionalAuthMiddleware(),
+  migrateReportUrlHandler as unknown as express.RequestHandler,
+);
 
 /**
  * Get the current user's capabilities and limits
@@ -349,8 +358,27 @@ app.post(
 
 /**
  * Unified report endpoint - handles both Firebase IDs and legacy bucket URLs
+ * Uses optionalAuth to check permissions for private reports
  */
-app.get("/report/:identifier", reportLimiter, getUnifiedReportHandler);
+app.get(
+  "/report/:identifier",
+  reportLimiter,
+  optionalAuthMiddleware(),
+  getUnifiedReportHandler as unknown as express.RequestHandler,
+);
+
+/**
+ * Update report visibility (private/public toggle)
+ * Requires authentication - only report owner can change visibility
+ * Rate limited to 10 updates per report per user per hour
+ */
+app.patch(
+  "/report/:reportId/visibility",
+  reportLimiter,
+  authMiddleware(),
+  visibilityRateLimitMiddleware() as unknown as express.RequestHandler,
+  updateReportVisibility as unknown as express.RequestHandler,
+);
 
 app.get("/test", async (_req, res) => {
   return res.send("hi");

@@ -60,6 +60,7 @@ export const Main: Story = {
     reportData: baseProps,
     reportUri: "",
     rawPipelineOutput,
+    reportId: "storybook-test-report",
   },
 };
 

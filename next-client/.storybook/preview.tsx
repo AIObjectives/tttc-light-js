@@ -1,6 +1,18 @@
 import type { Preview } from "@storybook/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ThemeProvider from "./ThemeProvider";
 import "../src/app/global.css";
+
+// Create a simple QueryClient for Storybook - no retries, short cache times
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      staleTime: 0,
+      gcTime: 0,
+    },
+  },
+});
 
 const preview: Preview = {
   parameters: {
@@ -42,9 +54,11 @@ const preview: Preview = {
   decorators: [
     (Story, context) => {
       return (
-        <ThemeProvider theme={context.globals.theme}>
-          <Story />
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider theme={context.globals.theme}>
+            <Story />
+          </ThemeProvider>
+        </QueryClientProvider>
       );
     },
   ],
