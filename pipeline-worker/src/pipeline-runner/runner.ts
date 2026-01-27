@@ -50,7 +50,9 @@ const runnerLogger = logger.child({ module: "pipeline-runner" });
 const PIPELINE_TIMEOUT_MS = 30 * 60 * 1000;
 
 /**
- * Validate that a recovered result has the expected structure
+ * Validate that a recovered result has the expected structure.
+ * Most steps return { data, usage, cost }, but cruxes returns
+ * { subtopicCruxes, topicScores, speakerCruxMatrix, usage, cost }
  */
 function validateResultStructure(
   result: unknown,
@@ -64,23 +66,57 @@ function validateResultStructure(
     return false;
   }
 
-  const hasData = "data" in result;
   const hasUsage = "usage" in result;
   const hasCost = "cost" in result;
-  const hasRequiredFields = hasData && hasUsage && hasCost;
 
-  if (!hasRequiredFields) {
+  // All results must have usage and cost
+  if (!hasUsage || !hasCost) {
     runnerLogger.warn(
       {
         stepName,
-        hasData,
         hasUsage,
         hasCost,
         actualKeys: Object.keys(result),
       },
-      "Recovered result missing required fields (data, usage, cost)",
+      "Recovered result missing required fields (usage, cost)",
     );
     return false;
+  }
+
+  // Validate step-specific required fields
+  if (stepName === "cruxes") {
+    const hasCruxFields =
+      "subtopicCruxes" in result &&
+      "topicScores" in result &&
+      "speakerCruxMatrix" in result;
+
+    if (!hasCruxFields) {
+      runnerLogger.warn(
+        {
+          stepName,
+          hasSubtopicCruxes: "subtopicCruxes" in result,
+          hasTopicScores: "topicScores" in result,
+          hasSpeakerCruxMatrix: "speakerCruxMatrix" in result,
+          actualKeys: Object.keys(result),
+        },
+        "Cruxes result missing required fields (subtopicCruxes, topicScores, speakerCruxMatrix)",
+      );
+      return false;
+    }
+  } else {
+    // All other steps must have a 'data' field
+    const hasData = "data" in result;
+    if (!hasData) {
+      runnerLogger.warn(
+        {
+          stepName,
+          hasData,
+          actualKeys: Object.keys(result),
+        },
+        "Result missing required 'data' field",
+      );
+      return false;
+    }
   }
 
   return true;
@@ -643,12 +679,35 @@ async function executeStepIfNeeded<T>(
     return failure(result.error);
   }
 
+  // Validate the result has the expected structure before casting
+  // This provides runtime safety that the executor returned a valid result
+  const stepResult = result.value.result;
+  if (!validateResultStructure(stepResult, stepName)) {
+    runnerLogger.error(
+      {
+        stepName,
+        resultType: typeof stepResult,
+        actualKeys:
+          stepResult && typeof stepResult === "object"
+            ? Object.keys(stepResult)
+            : [],
+      },
+      `Step executor returned invalid result structure for step '${stepName}'`,
+    );
+    return failure(
+      new PipelineStepError(
+        stepName,
+        new Error(
+          `Step executor returned invalid result structure - missing required fields (data, usage, cost)`,
+        ),
+        result.value.state,
+      ),
+    );
+  }
+
   return success({
     state: result.value.state,
-    // Type cast is safe here because the executor function is provided by the caller
-    // and always returns the correct type for the step. The type system cannot track
-    // this relationship due to the generic nature of executeStep.
-    result: result.value.result as T,
+    result: stepResult as T,
   });
 }
 
