@@ -415,6 +415,74 @@ interface StepExecutionContext {
 }
 
 /**
+ * Safely invoke a callback without breaking pipeline execution
+ */
+function safelyInvokeCallback(
+  callback: (() => void) | undefined,
+  callbackName: string,
+  stepName: PipelineStepName,
+): void {
+  if (!callback) return;
+
+  try {
+    callback();
+  } catch (callbackError) {
+    runnerLogger.warn(
+      { error: callbackError, stepName },
+      `${callbackName} callback threw an error`,
+    );
+  }
+}
+
+/**
+ * Notify progress callbacks
+ */
+function notifyProgress(
+  config: PipelineRunnerConfig,
+  stepName: PipelineStepName,
+  completedSteps: number,
+  totalSteps: number,
+): void {
+  const percentComplete = Math.round((completedSteps / totalSteps) * 100);
+
+  safelyInvokeCallback(
+    config.onProgress
+      ? () =>
+          config.onProgress?.({
+            currentStep: stepName,
+            totalSteps,
+            completedSteps,
+            percentComplete,
+          })
+      : undefined,
+    "onProgress",
+    stepName,
+  );
+}
+
+/**
+ * Handle step failure
+ */
+async function handleStepFailure(
+  stepName: PipelineStepName,
+  error: Error,
+  state: PipelineState,
+  stateStore: RedisPipelineStateStore,
+  config: PipelineRunnerConfig,
+): Promise<Result<never, PipelineStepError>> {
+  const updatedState = markStepFailed(state, stepName, error);
+  await stateStore.save(updatedState);
+
+  safelyInvokeCallback(
+    () => config.onStepUpdate?.(stepName, "failed"),
+    "onStepUpdate",
+    stepName,
+  );
+
+  return failure(new PipelineStepError(stepName, error, updatedState));
+}
+
+/**
  * Execute a pipeline step with full error handling and state management
  */
 async function executeAndHandleStep(
@@ -437,35 +505,24 @@ async function executeAndHandleStep(
   updatedState.currentStep = stepName;
   await stateStore.save(updatedState);
 
-  // Safely invoke callback (don't let callback errors break pipeline)
-  try {
-    config.onStepUpdate?.(stepName, "in_progress");
-  } catch (callbackError) {
-    runnerLogger.warn(
-      { error: callbackError, stepName },
-      "onStepUpdate callback threw an error",
-    );
-  }
+  safelyInvokeCallback(
+    () => config.onStepUpdate?.(stepName, "in_progress"),
+    "onStepUpdate",
+    stepName,
+  );
 
   // Execute the step
   const result = await executor();
 
   // Handle failure
   if (result.tag === "failure") {
-    updatedState = markStepFailed(updatedState, stepName, result.error);
-    await stateStore.save(updatedState);
-
-    // Safely invoke callback
-    try {
-      config.onStepUpdate?.(stepName, "failed");
-    } catch (callbackError) {
-      runnerLogger.warn(
-        { error: callbackError, stepName },
-        "onStepUpdate callback threw an error",
-      );
-    }
-
-    return failure(new PipelineStepError(stepName, result.error, updatedState));
+    return handleStepFailure(
+      stepName,
+      result.error,
+      updatedState,
+      stateStore,
+      config,
+    );
   }
 
   // Save successful result
@@ -485,30 +542,13 @@ async function executeAndHandleStep(
   });
 
   // Notify completion
-  try {
-    config.onStepUpdate?.(stepName, "completed");
-  } catch (callbackError) {
-    runnerLogger.warn(
-      { error: callbackError, stepName },
-      "onStepUpdate callback threw an error",
-    );
-  }
+  safelyInvokeCallback(
+    () => config.onStepUpdate?.(stepName, "completed"),
+    "onStepUpdate",
+    stepName,
+  );
 
-  const percentComplete = Math.round((completedSteps / totalSteps) * 100);
-
-  try {
-    config.onProgress?.({
-      currentStep: stepName,
-      totalSteps,
-      completedSteps,
-      percentComplete,
-    });
-  } catch (callbackError) {
-    runnerLogger.warn(
-      { error: callbackError, stepName },
-      "onProgress callback threw an error",
-    );
-  }
+  notifyProgress(config, stepName, completedSteps, totalSteps);
 
   return success({ state: updatedState, result: stepResult });
 }
@@ -852,36 +892,55 @@ async function executeAllSteps(
 }
 
 /**
+ * Validate that all required pipeline results are present
+ */
+function validateRequiredResults(
+  results: PipelineStepResults,
+): asserts results is Required<
+  Pick<
+    PipelineStepResults,
+    "clusteringResult" | "claimsResult" | "sortedResult" | "summariesResult"
+  >
+> &
+  PipelineStepResults {
+  const { clusteringResult, claimsResult, sortedResult, summariesResult } =
+    results;
+
+  if (!clusteringResult) {
+    throw new Error("Pipeline completed but clustering result is missing");
+  }
+
+  if (!claimsResult) {
+    throw new Error("Pipeline completed but claims result is missing");
+  }
+
+  if (!sortedResult) {
+    throw new Error("Pipeline completed but sorted result is missing");
+  }
+
+  if (!summariesResult) {
+    throw new Error("Pipeline completed but summaries result is missing");
+  }
+}
+
+/**
  * Build successful pipeline result from completed steps
  */
 function buildSuccessResult(
   state: PipelineState,
   results: PipelineStepResults,
 ): PipelineResult {
-  const {
-    clusteringResult,
-    claimsResult,
-    sortedResult,
-    summariesResult,
-    cruxesResult,
-  } = results;
-
-  // Validate required results exist
-  if (!clusteringResult || !claimsResult || !sortedResult || !summariesResult) {
-    throw new Error(
-      "Pipeline completed but required results are missing. This should never happen.",
-    );
-  }
+  validateRequiredResults(results);
 
   return {
     success: true,
     state,
     outputs: {
-      topicTree: clusteringResult.data,
-      claimsTree: claimsResult.data,
-      sortedTree: sortedResult.data,
-      summaries: summariesResult.data,
-      cruxes: cruxesResult,
+      topicTree: results.clusteringResult.data,
+      claimsTree: results.claimsResult.data,
+      sortedTree: results.sortedResult.data,
+      summaries: results.summariesResult.data,
+      cruxes: results.cruxesResult,
     },
   };
 }
