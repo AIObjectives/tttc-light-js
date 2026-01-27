@@ -232,6 +232,38 @@ interface FetchRetryContext {
 }
 
 /**
+ * Handle successful fetch response.
+ */
+async function handleSuccess(
+  response: Response,
+  context: FetchRetryContext,
+): Promise<boolean> {
+  if (!context.isMountedRef.current) return false;
+  await handleSuccessfulFetch(response, context.reportId, context.setState);
+  return false;
+}
+
+/**
+ * Handle non-retryable error response.
+ */
+function handleError(response: Response, context: FetchRetryContext): boolean {
+  if (!context.isMountedRef.current) return false;
+  handleFailedResponse(response.status, context.setState);
+  return false;
+}
+
+/**
+ * Handle retryable error response.
+ */
+async function handleRetry(
+  attempt: number,
+  context: FetchRetryContext,
+): Promise<boolean> {
+  context.retryCountRef.current = attempt + 1;
+  return await waitForRetry(context.isMountedRef);
+}
+
+/**
  * Handle a single fetch attempt, returning true if should retry.
  */
 async function handleFetchAttempt(
@@ -239,24 +271,18 @@ async function handleFetchAttempt(
   attempt: number,
   context: FetchRetryContext,
 ): Promise<boolean> {
+  // Success path
   if (response.ok) {
-    // Success path
-    if (!context.isMountedRef.current) return false;
-    await handleSuccessfulFetch(response, context.reportId, context.setState);
-    return false;
+    return await handleSuccess(response, context);
   }
 
-  // Check if retryable error
+  // Non-retryable error path
   if (!shouldRetry(response.status, attempt)) {
-    if (!context.isMountedRef.current) return false;
-    handleFailedResponse(response.status, context.setState);
-    return false;
+    return handleError(response, context);
   }
 
-  // Retry path
-  context.retryCountRef.current = attempt + 1;
-  const shouldContinue = await waitForRetry(context.isMountedRef);
-  return shouldContinue;
+  // Retryable error path
+  return await handleRetry(attempt, context);
 }
 
 /**
