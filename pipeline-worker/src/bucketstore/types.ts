@@ -63,7 +63,7 @@ export type FileExistsResult =
   | {
       exists: false;
       error: Error;
-      errorType: "permission" | "transient" | "not_found";
+      errorType: "permission" | "transient" | "not_found" | "permanent";
     };
 
 /**

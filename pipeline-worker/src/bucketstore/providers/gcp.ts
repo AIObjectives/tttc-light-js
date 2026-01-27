@@ -7,16 +7,72 @@ import {
 } from "../types";
 
 /**
- * Categorize storage error based on error message patterns
+ * Type guard to check if an error is a GCS ApiError with a code property
+ */
+interface ApiError extends Error {
+  code?: number;
+  errors?: unknown[];
+}
+
+/**
+ * Type guard for ApiError
+ */
+function isApiError(error: unknown): error is ApiError {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    typeof (error as ApiError).code === "number"
+  );
+}
+
+/**
+ * Categorize storage error based on HTTP status codes and error patterns.
+ * Prefers structured error codes from ApiError over string matching.
  */
 function categorizeStorageError(
-  errorMessage: string,
-): "permission" | "transient" | "not_found" {
+  error: unknown,
+): "permission" | "transient" | "not_found" | "permanent" {
+  // First try to get the HTTP status code from ApiError
+  if (isApiError(error) && error.code !== undefined) {
+    const code = error.code;
+
+    // Permission errors (403, 401)
+    if (code === 403 || code === 401) {
+      return "permission";
+    }
+
+    // Not found errors (404, 410 Gone)
+    if (code === 404 || code === 410) {
+      return "not_found";
+    }
+
+    // Transient errors that can be retried
+    if (
+      code === 429 || // Too Many Requests
+      code === 503 || // Service Unavailable
+      code === 504 || // Gateway Timeout
+      code === 408 || // Request Timeout
+      (code >= 500 && code < 600) // Other 5xx errors
+    ) {
+      return "transient";
+    }
+
+    // 4xx client errors (except those handled above) are permanent
+    if (code >= 400 && code < 500) {
+      return "permanent";
+    }
+  }
+
+  // Fallback to string matching for non-ApiError cases
+  const errorMessage = formatError(error);
+
   // Check for permission errors
   if (
     errorMessage.includes("403") ||
-    errorMessage.includes("permission") ||
-    errorMessage.includes("Access denied")
+    errorMessage.includes("401") ||
+    errorMessage.toLowerCase().includes("permission") ||
+    errorMessage.toLowerCase().includes("access denied") ||
+    errorMessage.toLowerCase().includes("unauthorized")
   ) {
     return "permission";
   }
@@ -24,8 +80,9 @@ function categorizeStorageError(
   // Check for not found errors
   if (
     errorMessage.includes("404") ||
-    errorMessage.includes("not found") ||
-    errorMessage.includes("No such object")
+    errorMessage.includes("410") ||
+    errorMessage.toLowerCase().includes("not found") ||
+    errorMessage.toLowerCase().includes("no such object")
   ) {
     return "not_found";
   }
@@ -35,14 +92,16 @@ function categorizeStorageError(
     errorMessage.includes("timeout") ||
     errorMessage.includes("ETIMEDOUT") ||
     errorMessage.includes("ECONNREFUSED") ||
+    errorMessage.includes("ECONNRESET") ||
     errorMessage.includes("503") ||
+    errorMessage.includes("504") ||
     errorMessage.includes("429")
   ) {
     return "transient";
   }
 
-  // Default to transient for unknown errors
-  return "transient";
+  // Unknown errors default to permanent to avoid infinite retries
+  return "permanent";
 }
 
 /**
@@ -106,8 +165,8 @@ export class GCPBucketStore implements BucketStore {
         `Failed to check file existence: ${errorMessage}`,
       );
 
-      // Categorize the error type based on error message or code
-      const errorType = categorizeStorageError(errorMessage);
+      // Categorize the error type based on error object (prefers structured codes)
+      const errorType = categorizeStorageError(error);
 
       return {
         exists: false,
