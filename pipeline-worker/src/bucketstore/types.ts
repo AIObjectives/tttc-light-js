@@ -55,6 +55,18 @@ export class UrlGenerationFailedError extends BucketStoreError {
 }
 
 /**
+ * Result of checking file existence
+ */
+export type FileExistsResult =
+  | { exists: true; error?: never; errorType?: never }
+  | { exists: false; error?: never; errorType?: never }
+  | {
+      exists: false;
+      error: Error;
+      errorType: "permission" | "transient" | "not_found";
+    };
+
+/**
  * Generic interface for bucket storage operations.
  *
  * This interface provides a cloud-agnostic abstraction for storing
@@ -67,21 +79,25 @@ export interface BucketStore {
    *
    * @param fileName - The name of the file to store
    * @param fileContent - The file content as a string
+   * @param contentType - Optional MIME type (e.g., "application/json"). Defaults to "application/json".
    * @returns A Promise containing the URL to retrieve the file
    * @throws {UploadFailedError} When the upload fails
    * @throws {BucketNotFoundError} When the bucket is not found
    * @throws {AccessDeniedError} When access is denied
    */
-  storeFile(fileName: string, fileContent: string): Promise<string>;
+  storeFile(
+    fileName: string,
+    fileContent: string,
+    contentType?: string,
+  ): Promise<string>;
 
   /**
    * Check if a file exists in the configured bucket.
    *
    * @param fileName - The name of the file to check
-   * @returns A Promise that resolves to true if the file exists, false otherwise
-   * @throws {BucketStoreError} When the check fails due to infrastructure issues
+   * @returns A result object indicating existence and any errors encountered
    */
-  fileExists(fileName: string): Promise<boolean>;
+  fileExists(fileName: string): Promise<FileExistsResult>;
 }
 
 /**

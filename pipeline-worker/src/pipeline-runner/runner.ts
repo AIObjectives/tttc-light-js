@@ -46,6 +46,38 @@ import {
 
 const runnerLogger = logger.child({ module: "pipeline-runner" });
 
+/** Maximum pipeline execution time: 30 minutes */
+const PIPELINE_TIMEOUT_MS = 30 * 60 * 1000;
+
+/**
+ * Validate that a recovered result has the expected structure
+ */
+function validateResultStructure(
+  result: unknown,
+  stepName: PipelineStepName,
+): result is { data: unknown; usage: unknown; cost: number } {
+  if (!result || typeof result !== "object") {
+    runnerLogger.warn(
+      { stepName },
+      "Recovered result is not an object, cannot resume from this step",
+    );
+    return false;
+  }
+
+  const hasRequiredFields =
+    "data" in result && "usage" in result && "cost" in result;
+
+  if (!hasRequiredFields) {
+    runnerLogger.warn(
+      { stepName, result },
+      "Recovered result missing required fields (data, usage, cost)",
+    );
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * Interface for step results that include usage analytics.
  * All pipeline step results (TopicTreeResult, ClaimsResult, SortAndDeduplicateResult,
@@ -141,20 +173,26 @@ async function executeStep<T>(
       return failure(result.error);
     }
 
-    // Validate and extract analytics from result
+    // Validate analytics - log warning but don't fail pipeline
     if (!hasAnalytics(result.value)) {
-      const error = new Error(
-        `Step ${stepName} returned invalid result: missing or malformed analytics`,
-      );
-      reportLogger.error(
+      reportLogger.warn(
         {
           step: stepName,
-          error,
           durationMs,
+          resultKeys: Object.keys(result.value as object),
         },
-        `Pipeline step returned invalid result: ${stepName}`,
+        `Step ${stepName} returned result without analytics (usage/cost) - analytics tracking will be incomplete`,
       );
-      return failure(error);
+
+      // Continue with default analytics to avoid breaking the pipeline
+      return success({
+        result: result.value,
+        durationMs,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+      });
     }
 
     const inputTokens = result.value.usage?.input_tokens ?? 0;
@@ -398,7 +436,16 @@ async function executeAndHandleStep(
   let updatedState = markStepStarted(state, stepName);
   updatedState.currentStep = stepName;
   await stateStore.save(updatedState);
-  config.onStepUpdate?.(stepName, "in_progress");
+
+  // Safely invoke callback (don't let callback errors break pipeline)
+  try {
+    config.onStepUpdate?.(stepName, "in_progress");
+  } catch (callbackError) {
+    runnerLogger.warn(
+      { error: callbackError, stepName },
+      "onStepUpdate callback threw an error",
+    );
+  }
 
   // Execute the step
   const result = await executor();
@@ -407,7 +454,17 @@ async function executeAndHandleStep(
   if (result.tag === "failure") {
     updatedState = markStepFailed(updatedState, stepName, result.error);
     await stateStore.save(updatedState);
-    config.onStepUpdate?.(stepName, "failed");
+
+    // Safely invoke callback
+    try {
+      config.onStepUpdate?.(stepName, "failed");
+    } catch (callbackError) {
+      runnerLogger.warn(
+        { error: callbackError, stepName },
+        "onStepUpdate callback threw an error",
+      );
+    }
+
     return failure(new PipelineStepError(stepName, result.error, updatedState));
   }
 
@@ -428,14 +485,30 @@ async function executeAndHandleStep(
   });
 
   // Notify completion
-  config.onStepUpdate?.(stepName, "completed");
+  try {
+    config.onStepUpdate?.(stepName, "completed");
+  } catch (callbackError) {
+    runnerLogger.warn(
+      { error: callbackError, stepName },
+      "onStepUpdate callback threw an error",
+    );
+  }
+
   const percentComplete = Math.round((completedSteps / totalSteps) * 100);
-  config.onProgress?.({
-    currentStep: stepName,
-    totalSteps,
-    completedSteps,
-    percentComplete,
-  });
+
+  try {
+    config.onProgress?.({
+      currentStep: stepName,
+      totalSteps,
+      completedSteps,
+      percentComplete,
+    });
+  } catch (callbackError) {
+    runnerLogger.warn(
+      { error: callbackError, stepName },
+      "onProgress callback threw an error",
+    );
+  }
 
   return success({ state: updatedState, result: stepResult });
 }
@@ -547,25 +620,56 @@ async function executeAllSteps(
   >
 > {
   let currentState = state;
-  // Type casts here are necessary because state.completedResults stores unknown types
-  // (since Redis can't preserve TypeScript types). These results are validated incrementally
-  // before use - each step checks that its dependencies exist before executing.
+
+  // Validate and recover results from Redis state
+  // Each result must have the required structure (data, usage, cost)
+  const validateAndCast = <T>(
+    result: unknown,
+    stepName: PipelineStepName,
+  ): T | undefined => {
+    if (!result) return undefined;
+    if (!validateResultStructure(result, stepName)) {
+      // If validation fails, we cannot use this result and must re-run the step
+      return undefined;
+    }
+    return result as T;
+  };
+
   const results: PipelineStepResults = {
-    clusteringResult: state.completedResults.clustering as
-      | TopicTreeResult
-      | undefined,
-    claimsResult: state.completedResults.claims as ClaimsResult | undefined,
-    sortedResult: state.completedResults.sort_and_deduplicate as
-      | SortAndDeduplicateResult
-      | undefined,
-    summariesResult: state.completedResults.summaries as
-      | SummariesResult
-      | undefined,
-    cruxesResult: state.completedResults.cruxes as CruxesResult | undefined,
+    clusteringResult: validateAndCast<TopicTreeResult>(
+      state.completedResults.clustering,
+      "clustering",
+    ),
+    claimsResult: validateAndCast<ClaimsResult>(
+      state.completedResults.claims,
+      "claims",
+    ),
+    sortedResult: validateAndCast<SortAndDeduplicateResult>(
+      state.completedResults.sort_and_deduplicate,
+      "sort_and_deduplicate",
+    ),
+    summariesResult: validateAndCast<SummariesResult>(
+      state.completedResults.summaries,
+      "summaries",
+    ),
+    cruxesResult: validateAndCast<CruxesResult>(
+      state.completedResults.cruxes,
+      "cruxes",
+    ),
   };
 
   const nextStep = getNextStep(currentState);
-  const totalSteps = input.enableCruxes ? 5 : 4;
+
+  // Calculate total steps based on what will actually run
+  // Steps: clustering, claims, sort_and_deduplicate, summaries, [cruxes if enabled]
+  const allSteps: PipelineStepName[] = [
+    "clustering",
+    "claims",
+    "sort_and_deduplicate",
+    "summaries",
+    "cruxes",
+  ];
+  const totalSteps = input.enableCruxes ? allSteps.length : allSteps.length - 1;
 
   // Step 1: Clustering
   const clusteringResult = await executeStepIfNeeded(
@@ -733,7 +837,15 @@ async function executeAllSteps(
   } else {
     currentState = markStepSkipped(currentState, "cruxes");
     await stateStore.save(currentState);
-    config.onStepUpdate?.("cruxes", "skipped");
+
+    try {
+      config.onStepUpdate?.("cruxes", "skipped");
+    } catch (callbackError) {
+      reportLogger.warn(
+        { error: callbackError },
+        "onStepUpdate callback threw an error",
+      );
+    }
   }
 
   return success({ state: currentState, results });
@@ -812,27 +924,14 @@ async function handlePipelineFailure(
 }
 
 /**
- * Main pipeline runner function
+ * Internal pipeline execution (without timeout wrapper)
  */
-export async function runPipeline(
+async function executePipelineInternal(
   input: PipelineInput,
   config: PipelineRunnerConfig,
   stateStore: RedisPipelineStateStore,
+  reportLogger: typeof runnerLogger,
 ): Promise<PipelineResult> {
-  const reportLogger = runnerLogger.child({
-    reportId: config.reportId,
-    userId: config.userId,
-  });
-
-  reportLogger.info(
-    {
-      commentCount: input.comments.length,
-      enableCruxes: input.enableCruxes,
-      resumeFromState: config.resumeFromState,
-    },
-    "Starting pipeline execution",
-  );
-
   // Initialize state
   let state = await initializePipelineState(config, stateStore, reportLogger);
 
@@ -874,6 +973,78 @@ export async function runPipeline(
     return buildSuccessResult(state, stepsResult.value.results);
   } catch (error) {
     return handlePipelineFailure(error, state, stateStore, reportLogger);
+  }
+}
+
+/**
+ * Main pipeline runner function with timeout protection
+ */
+export async function runPipeline(
+  input: PipelineInput,
+  config: PipelineRunnerConfig,
+  stateStore: RedisPipelineStateStore,
+): Promise<PipelineResult> {
+  const reportLogger = runnerLogger.child({
+    reportId: config.reportId,
+    userId: config.userId,
+  });
+
+  reportLogger.info(
+    {
+      commentCount: input.comments.length,
+      enableCruxes: input.enableCruxes,
+      resumeFromState: config.resumeFromState,
+      timeoutMs: PIPELINE_TIMEOUT_MS,
+    },
+    "Starting pipeline execution",
+  );
+
+  // Create timeout promise
+  const timeoutPromise = new Promise<PipelineResult>((_, reject) => {
+    setTimeout(() => {
+      reject(
+        new Error(
+          `Pipeline execution exceeded timeout of ${PIPELINE_TIMEOUT_MS / 1000}s`,
+        ),
+      );
+    }, PIPELINE_TIMEOUT_MS);
+  });
+
+  // Race between pipeline execution and timeout
+  try {
+    return await Promise.race([
+      executePipelineInternal(input, config, stateStore, reportLogger),
+      timeoutPromise,
+    ]);
+  } catch (error) {
+    // Re-throw PipelineResumeError without converting to result
+    // This is a validation error that should propagate to the caller
+    if (error instanceof PipelineResumeError) {
+      throw error;
+    }
+
+    reportLogger.error(
+      { error, timeoutMs: PIPELINE_TIMEOUT_MS },
+      "Pipeline execution timed out or failed",
+    );
+
+    // Try to get current state to save timeout error
+    const currentState = await stateStore.get(config.reportId);
+    if (currentState) {
+      return handlePipelineFailure(
+        error,
+        currentState,
+        stateStore,
+        reportLogger,
+      );
+    }
+
+    // If we can't get state, create a minimal error result
+    return {
+      success: false,
+      state: createInitialState(config.reportId, config.userId),
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
   }
 }
 

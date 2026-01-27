@@ -16,11 +16,20 @@ import {
   type StepAnalytics,
 } from "./types.js";
 
-/** Default TTL for pipeline state: 24 hours */
+/** Default TTL for successful/running pipeline state: 24 hours */
 const DEFAULT_STATE_TTL = 24 * 60 * 60;
+
+/** TTL for failed pipeline state: 1 hour (to prevent Redis memory leaks during outages) */
+const FAILED_STATE_TTL = 60 * 60;
 
 /** Redis key prefix for pipeline state */
 const STATE_KEY_PREFIX = "pipeline_state:";
+
+/** Redis key prefix for pipeline execution locks */
+const LOCK_KEY_PREFIX = "pipeline_lock:";
+
+/** Lock TTL: 10 minutes (should be longer than typical step execution) */
+const LOCK_TTL_SECONDS = 10 * 60;
 
 /**
  * Zod schema for validating step analytics
@@ -112,6 +121,13 @@ function getStateKey(reportId: string): string {
 }
 
 /**
+ * Get the Redis key for a pipeline execution lock
+ */
+function getLockKey(reportId: string): string {
+  return `${LOCK_KEY_PREFIX}${reportId}`;
+}
+
+/**
  * Create initial step analytics for all steps
  */
 export function createInitialStepAnalytics(): Record<
@@ -172,6 +188,37 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   constructor(private cache: Cache) {}
 
   /**
+   * Attempts to acquire a lock for pipeline execution.
+   * Use this before resuming a pipeline to prevent concurrent execution.
+   *
+   * @param reportId - Report identifier
+   * @param lockValue - Unique identifier for this lock holder (e.g., message ID)
+   * @returns true if lock was acquired, false if already held by another process
+   */
+  async acquirePipelineLock(
+    reportId: string,
+    lockValue: string,
+  ): Promise<boolean> {
+    const lockKey = getLockKey(reportId);
+    return this.cache.acquireLock(lockKey, lockValue, LOCK_TTL_SECONDS);
+  }
+
+  /**
+   * Releases the pipeline execution lock.
+   *
+   * @param reportId - Report identifier
+   * @param lockValue - Unique identifier that acquired the lock
+   * @returns true if lock was released, false if not held or held by different value
+   */
+  async releasePipelineLock(
+    reportId: string,
+    lockValue: string,
+  ): Promise<boolean> {
+    const lockKey = getLockKey(reportId);
+    return this.cache.releaseLock(lockKey, lockValue);
+  }
+
+  /**
    * Get pipeline state from Redis
    */
   async get(reportId: string): Promise<PipelineState | null> {
@@ -203,7 +250,11 @@ export class RedisPipelineStateStore implements PipelineStateStore {
    */
   async save(state: PipelineState, options?: StateOptions): Promise<void> {
     const key = getStateKey(state.reportId);
-    const ttl = options?.ttl ?? DEFAULT_STATE_TTL;
+
+    // Use shorter TTL for failed states to prevent memory buildup during outages
+    const defaultTtl =
+      state.status === "failed" ? FAILED_STATE_TTL : DEFAULT_STATE_TTL;
+    const ttl = options?.ttl ?? defaultTtl;
 
     // Update timestamp
     const updatedState: PipelineState = {

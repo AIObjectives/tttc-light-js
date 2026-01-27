@@ -30,6 +30,7 @@ vi.mock("@google-cloud/storage", () => {
 
 describe("GCPBucketStore", () => {
   let bucketStore: GCPBucketStore;
+  // biome-ignore lint/suspicious/noExplicitAny: Mocking Google Cloud Storage instance
   let mockStorage: any;
   let mockBucket: Mock;
   let mockFile: Mock;
@@ -271,6 +272,7 @@ describe("GCPBucketStore", () => {
 
     it("should handle error with null message", async () => {
       const errorWithNull = new Error();
+      // biome-ignore lint/suspicious/noExplicitAny: Testing edge case with malformed error
       errorWithNull.message = null as any;
       mockSave.mockRejectedValue(errorWithNull);
 
@@ -665,9 +667,10 @@ describe("GCPBucketStore", () => {
     it("should return true when file exists", async () => {
       mockExists.mockResolvedValue([true]);
 
-      const exists = await bucketStore.fileExists("test-file.json");
+      const result = await bucketStore.fileExists("test-file.json");
 
-      expect(exists).toBe(true);
+      expect(result.exists).toBe(true);
+      expect(result.error).toBeUndefined();
       expect(mockBucket).toHaveBeenCalledWith("test-bucket");
       expect(mockFile).toHaveBeenCalledWith("test-file.json");
       expect(mockExists).toHaveBeenCalled();
@@ -676,9 +679,10 @@ describe("GCPBucketStore", () => {
     it("should return false when file does not exist", async () => {
       mockExists.mockResolvedValue([false]);
 
-      const exists = await bucketStore.fileExists("missing-file.json");
+      const result = await bucketStore.fileExists("missing-file.json");
 
-      expect(exists).toBe(false);
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeUndefined();
       expect(mockBucket).toHaveBeenCalledWith("test-bucket");
       expect(mockFile).toHaveBeenCalledWith("missing-file.json");
       expect(mockExists).toHaveBeenCalled();
@@ -687,46 +691,47 @@ describe("GCPBucketStore", () => {
     it("should handle different file paths", async () => {
       mockExists.mockResolvedValue([true]);
 
-      await bucketStore.fileExists("folder/subfolder/file.json");
+      const result = await bucketStore.fileExists("folder/subfolder/file.json");
 
+      expect(result.exists).toBe(true);
       expect(mockFile).toHaveBeenCalledWith("folder/subfolder/file.json");
     });
   });
 
   describe("fileExists - Error Scenarios", () => {
-    it("should throw UploadFailedError when check fails", async () => {
+    it("should return error result for permission errors", async () => {
       mockExists.mockRejectedValue(new Error("Permission denied"));
 
-      await expect(bucketStore.fileExists("test.json")).rejects.toThrow(
-        UploadFailedError,
-      );
-      await expect(bucketStore.fileExists("test.json")).rejects.toThrow(
-        "Failed to check file existence: Permission denied",
-      );
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toContain("Failed to check file existence");
+      expect(result.error?.message).toContain("Permission denied");
+      expect(result.errorType).toBe("transient");
     });
 
-    it("should handle network errors", async () => {
+    it("should categorize network errors as transient", async () => {
       mockExists.mockRejectedValue(new Error("Network timeout"));
 
-      await expect(bucketStore.fileExists("test.json")).rejects.toThrow(
-        UploadFailedError,
-      );
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("transient");
     });
 
-    it("should handle bucket access errors", async () => {
+    it("should categorize bucket access errors correctly", async () => {
       mockExists.mockRejectedValue({
         code: 403,
         message: "Access denied",
       });
 
-      try {
-        await bucketStore.fileExists("test.json");
-      } catch (error) {
-        if (error instanceof UploadFailedError) {
-          expect(error.fileName).toBe("test.json");
-          expect(error.reason).toContain("Failed to check file existence");
-        }
-      }
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("permission");
     });
   });
 });

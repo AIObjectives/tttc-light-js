@@ -282,6 +282,22 @@ function createInMemoryCache(): Cache {
     async delete(key: string): Promise<void> {
       storage.delete(key);
     },
+    async acquireLock(
+      key: string,
+      value: string,
+      _ttlSeconds: number,
+    ): Promise<boolean> {
+      const lockEntry = storage.get(key);
+      if (lockEntry) return false;
+      storage.set(key, { value });
+      return true;
+    },
+    async releaseLock(key: string, value: string): Promise<boolean> {
+      const lockEntry = storage.get(key);
+      if (!lockEntry || lockEntry.value !== value) return false;
+      storage.delete(key);
+      return true;
+    },
   };
 }
 
@@ -644,19 +660,20 @@ describe("Pipeline Runner Integration Tests", () => {
 
       const result = await runPipeline(input, config, stateStore);
 
-      // Verify each step has a duration
+      // Verify each step has a duration (with tolerance for timing imprecision)
+      // Allow 5ms tolerance to account for system load and JavaScript timing
       expect(
         result.state.stepAnalytics.clustering.durationMs,
-      ).toBeGreaterThanOrEqual(stepDelays.clustering);
+      ).toBeGreaterThanOrEqual(stepDelays.clustering - 5);
       expect(
         result.state.stepAnalytics.claims.durationMs,
-      ).toBeGreaterThanOrEqual(stepDelays.claims);
+      ).toBeGreaterThanOrEqual(stepDelays.claims - 5);
       expect(
         result.state.stepAnalytics.sort_and_deduplicate.durationMs,
-      ).toBeGreaterThanOrEqual(stepDelays.sort);
+      ).toBeGreaterThanOrEqual(stepDelays.sort - 5);
       expect(
         result.state.stepAnalytics.summaries.durationMs,
-      ).toBeGreaterThanOrEqual(stepDelays.summaries);
+      ).toBeGreaterThanOrEqual(stepDelays.summaries - 5);
     });
   });
 

@@ -160,6 +160,21 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
     async delete(key: string): Promise<void> {
       storage.delete(key);
     },
+    async acquireLock(
+      key: string,
+      value: string,
+      _ttlSeconds: number,
+    ): Promise<boolean> {
+      if (storage.has(key)) return false;
+      storage.set(key, value);
+      return true;
+    },
+    async releaseLock(key: string, value: string): Promise<boolean> {
+      const lockValue = storage.get(key);
+      if (!lockValue || lockValue !== value) return false;
+      storage.delete(key);
+      return true;
+    },
   };
 }
 
