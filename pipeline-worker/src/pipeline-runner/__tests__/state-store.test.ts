@@ -63,6 +63,16 @@ function createMockCache(): Cache & {
       storage.delete(key);
       return true;
     },
+    async extendLock(
+      key: string,
+      value: string,
+      ttlSeconds: number,
+    ): Promise<boolean> {
+      const lockValue = storage.get(key);
+      if (!lockValue || lockValue !== value) return false;
+      ttls.set(key, ttlSeconds);
+      return true;
+    },
   };
 }
 
@@ -335,6 +345,49 @@ describe("Pipeline State Store", () => {
         );
 
         expect(acquired).toBe(true);
+      });
+
+      it("should extend lock TTL when held by correct value", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+
+        const extended = await stateStore.extendPipelineLock(
+          "report-123",
+          "worker-1",
+        );
+
+        expect(extended).toBe(true);
+      });
+
+      it("should fail to extend lock with wrong value", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+
+        const extended = await stateStore.extendPipelineLock(
+          "report-123",
+          "worker-2",
+        );
+
+        expect(extended).toBe(false);
+      });
+
+      it("should fail to extend lock when lock does not exist", async () => {
+        const extended = await stateStore.extendPipelineLock(
+          "report-123",
+          "worker-1",
+        );
+
+        expect(extended).toBe(false);
+      });
+
+      it("should still hold lock after extension", async () => {
+        await stateStore.acquirePipelineLock("report-123", "worker-1");
+        await stateStore.extendPipelineLock("report-123", "worker-1");
+
+        const verified = await stateStore.verifyPipelineLock(
+          "report-123",
+          "worker-1",
+        );
+
+        expect(verified).toBe(true);
       });
     });
   });

@@ -298,6 +298,17 @@ function createInMemoryCache(): Cache {
       storage.delete(key);
       return true;
     },
+    async extendLock(
+      key: string,
+      value: string,
+      ttlSeconds: number,
+    ): Promise<boolean> {
+      const lockEntry = storage.get(key);
+      if (!lockEntry || lockEntry.value !== value) return false;
+      const expiresAt = Date.now() + ttlSeconds * 1000;
+      storage.set(key, { value, expiresAt });
+      return true;
+    },
   };
 }
 

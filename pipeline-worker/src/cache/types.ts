@@ -126,6 +126,17 @@ export interface Cache {
    * @throws {CacheDeleteError} When the operation fails
    */
   releaseLock(key: string, value: string): Promise<boolean>;
+
+  /**
+   * Extends the TTL of a distributed lock (only if held by this value).
+   *
+   * @param key - The lock key
+   * @param value - Unique identifier that acquired the lock
+   * @param ttlSeconds - New expiration time in seconds
+   * @returns true if lock TTL was extended, false if not held or held by different value
+   * @throws {CacheSetError} When the operation fails
+   */
+  extendLock(key: string, value: string, ttlSeconds: number): Promise<boolean>;
 }
 
 /**

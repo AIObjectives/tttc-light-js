@@ -205,6 +205,41 @@ export class RedisCache implements Cache {
   }
 
   /**
+   * Extends the TTL of a distributed lock (only if held by this value).
+   *
+   * @param key - The lock key
+   * @param value - Unique identifier that acquired the lock
+   * @param ttlSeconds - New expiration time in seconds
+   * @returns true if lock TTL was extended, false if not held or held by different value
+   * @throws {CacheSetError} When the operation fails
+   */
+  async extendLock(
+    key: string,
+    value: string,
+    ttlSeconds: number,
+  ): Promise<boolean> {
+    try {
+      // Lua script to atomically check value and extend TTL if it matches
+      // This ensures we only extend our own lock
+      const script = `
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+          return redis.call("expire", KEYS[1], ARGV[2])
+        else
+          return 0
+        end
+      `;
+
+      const result = await this.client.eval(script, 1, key, value, ttlSeconds);
+      return result === 1;
+    } catch (error) {
+      throw new CacheSetError(
+        key,
+        `Lock extension failed: ${formatError(error)}`,
+      );
+    }
+  }
+
+  /**
    * Disconnects from Redis gracefully.
    * Should be called when shutting down the application or in test cleanup.
    */

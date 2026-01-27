@@ -405,4 +405,114 @@ describe("Redis Integration Tests", () => {
       await cache.delete(testKey);
     });
   });
+
+  describe("Lock Operations", () => {
+    it("should acquire lock successfully", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:acquire`;
+      const lockValue = "worker-1";
+
+      const acquired = await cache.acquireLock(lockKey, lockValue, 10);
+
+      expect(acquired).toBe(true);
+
+      await cache.releaseLock(lockKey, lockValue);
+    });
+
+    it("should fail to acquire lock when already held", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:already-held`;
+
+      await cache.acquireLock(lockKey, "worker-1", 10);
+      const acquired = await cache.acquireLock(lockKey, "worker-2", 10);
+
+      expect(acquired).toBe(false);
+
+      await cache.releaseLock(lockKey, "worker-1");
+    });
+
+    it("should release lock successfully", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:release`;
+      const lockValue = "worker-1";
+
+      await cache.acquireLock(lockKey, lockValue, 10);
+      const released = await cache.releaseLock(lockKey, lockValue);
+
+      expect(released).toBe(true);
+    });
+
+    it("should fail to release lock with wrong value", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:wrong-value`;
+
+      await cache.acquireLock(lockKey, "worker-1", 10);
+      const released = await cache.releaseLock(lockKey, "worker-2");
+
+      expect(released).toBe(false);
+
+      await cache.releaseLock(lockKey, "worker-1");
+    });
+
+    it("should extend lock TTL successfully", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:extend`;
+      const lockValue = "worker-1";
+
+      await cache.acquireLock(lockKey, lockValue, 2);
+      const extended = await cache.extendLock(lockKey, lockValue, 10);
+
+      expect(extended).toBe(true);
+
+      // Verify lock still exists after original TTL would have expired
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      const value = await cache.get(lockKey);
+      expect(value).toBe(lockValue);
+
+      await cache.releaseLock(lockKey, lockValue);
+    });
+
+    it("should fail to extend lock with wrong value", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:extend-wrong`;
+
+      await cache.acquireLock(lockKey, "worker-1", 10);
+      const extended = await cache.extendLock(lockKey, "worker-2", 10);
+
+      expect(extended).toBe(false);
+
+      await cache.releaseLock(lockKey, "worker-1");
+    });
+
+    it("should fail to extend non-existent lock", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:extend-nonexistent`;
+      const extended = await cache.extendLock(lockKey, "worker-1", 10);
+
+      expect(extended).toBe(false);
+    });
+
+    it("should allow re-acquiring lock after expiry", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:reacquire`;
+
+      await cache.acquireLock(lockKey, "worker-1", 1);
+
+      // Wait for lock to expire
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const acquired = await cache.acquireLock(lockKey, "worker-2", 10);
+      expect(acquired).toBe(true);
+
+      await cache.releaseLock(lockKey, "worker-2");
+    });
+  });
 });

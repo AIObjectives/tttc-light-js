@@ -520,6 +520,24 @@ async function executePipelineWithLock(
       );
     }
 
+    // Extend the lock to protect result processing operations (GCS upload, Firestore updates)
+    // This prevents lock expiration during the critical post-execution window
+    const lockExtended = await stateStore.extendPipelineLock(
+      reportId,
+      lockValue,
+    );
+
+    if (!lockExtended) {
+      jobLogger.error(
+        "Failed to extend pipeline lock after verification - lock may have expired",
+      );
+      throw new Error(
+        "Pipeline lock extension failed - cannot safely process results",
+      );
+    }
+
+    jobLogger.info("Pipeline lock extended for result processing");
+
     if (result.success) {
       await handlePipelineSuccess(
         result,

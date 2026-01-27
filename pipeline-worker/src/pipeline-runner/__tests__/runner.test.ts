@@ -175,6 +175,15 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
       storage.delete(key);
       return true;
     },
+    async extendLock(
+      key: string,
+      value: string,
+      _ttlSeconds: number,
+    ): Promise<boolean> {
+      const lockValue = storage.get(key);
+      if (!lockValue || lockValue !== value) return false;
+      return true;
+    },
   };
 }
 

@@ -37,6 +37,14 @@ const LOCK_KEY_PREFIX = "pipeline_lock:";
 const LOCK_TTL_SECONDS = 35 * 60;
 
 /**
+ * Lock extension TTL: 10 minutes
+ * Used to extend the lock after pipeline execution completes but before
+ * result processing (GCS upload, Firestore updates). Provides protection
+ * against race conditions during the critical post-execution window.
+ */
+const LOCK_EXTENSION_SECONDS = 10 * 60;
+
+/**
  * Zod schema for validating step analytics
  */
 const stepAnalyticsSchema = z.object({
@@ -264,6 +272,22 @@ export class RedisPipelineStateStore implements PipelineStateStore {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Extends the TTL of the pipeline execution lock.
+   * Use this after pipeline completion to protect result processing operations.
+   *
+   * @param reportId - Report identifier
+   * @param lockValue - Unique identifier that acquired the lock
+   * @returns true if lock was extended, false if not held or held by different value
+   */
+  async extendPipelineLock(
+    reportId: string,
+    lockValue: string,
+  ): Promise<boolean> {
+    const lockKey = getLockKey(reportId);
+    return this.cache.extendLock(lockKey, lockValue, LOCK_EXTENSION_SECONDS);
   }
 
   /**
