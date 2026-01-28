@@ -122,7 +122,7 @@ function convertToPipelineInput(
   const { instructions, llm, options, env } = config;
 
   // Convert comments to pipeline-worker format
-  const comments = data.map((comment: (typeof data)[0]) => ({
+  const comments = data.map((comment: PipelineJobMessage["data"][number]) => ({
     id: comment.comment_id,
     text: comment.comment_text,
     speaker: comment.speaker,
