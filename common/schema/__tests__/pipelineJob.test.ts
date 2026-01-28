@@ -44,6 +44,21 @@ describe("pipelineJobSchema validation", () => {
     },
   };
 
+  function testEmptyStringRejection(
+    testName: string,
+    createInvalidData: (base: typeof validPipelineJob) => unknown,
+    expectedErrorMessage: string,
+  ) {
+    it(testName, () => {
+      const invalid = createInvalidData(validPipelineJob);
+      const result = pipelineJobSchema.safeParse(invalid);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe(expectedErrorMessage);
+      }
+    });
+  }
+
   describe("valid data", () => {
     it("should accept valid pipeline job data", () => {
       const result = pipelineJobSchema.safeParse(validPipelineJob);
@@ -52,269 +67,210 @@ describe("pipelineJobSchema validation", () => {
   });
 
   describe("empty string validation for instructions", () => {
-    it("should reject empty systemInstructions", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty systemInstructions",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           instructions: {
-            ...validPipelineJob.config.instructions,
+            ...base.config.instructions,
             systemInstructions: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "System instructions cannot be empty",
-        );
-      }
-    });
+      }),
+      "System instructions cannot be empty",
+    );
 
-    it("should reject empty clusteringInstructions", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty clusteringInstructions",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           instructions: {
-            ...validPipelineJob.config.instructions,
+            ...base.config.instructions,
             clusteringInstructions: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Clustering instructions cannot be empty",
-        );
-      }
-    });
+      }),
+      "Clustering instructions cannot be empty",
+    );
 
-    it("should reject empty extractionInstructions", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty extractionInstructions",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           instructions: {
-            ...validPipelineJob.config.instructions,
+            ...base.config.instructions,
             extractionInstructions: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Extraction instructions cannot be empty",
-        );
-      }
-    });
+      }),
+      "Extraction instructions cannot be empty",
+    );
 
-    it("should reject empty dedupInstructions", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty dedupInstructions",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           instructions: {
-            ...validPipelineJob.config.instructions,
+            ...base.config.instructions,
             dedupInstructions: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Dedup instructions cannot be empty",
-        );
-      }
-    });
+      }),
+      "Dedup instructions cannot be empty",
+    );
 
-    it("should reject empty summariesInstructions", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty summariesInstructions",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           instructions: {
-            ...validPipelineJob.config.instructions,
+            ...base.config.instructions,
             summariesInstructions: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Summaries instructions cannot be empty",
-        );
-      }
-    });
+      }),
+      "Summaries instructions cannot be empty",
+    );
 
-    it("should reject empty cruxInstructions", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty cruxInstructions",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           instructions: {
-            ...validPipelineJob.config.instructions,
+            ...base.config.instructions,
             cruxInstructions: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Crux instructions cannot be empty",
-        );
-      }
-    });
+      }),
+      "Crux instructions cannot be empty",
+    );
   });
 
   describe("empty string validation for other fields", () => {
-    it("should reject empty model name", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty model name",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           llm: {
             model: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Model name cannot be empty",
-        );
-      }
-    });
+      }),
+      "Model name cannot be empty",
+    );
 
-    it("should reject empty API key", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty API key",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           env: {
             OPENAI_API_KEY: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe("API key cannot be empty");
-      }
-    });
+      }),
+      "API key cannot be empty",
+    );
 
-    it("should reject empty reportId", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty reportId",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           firebaseDetails: {
-            ...validPipelineJob.config.firebaseDetails,
+            ...base.config.firebaseDetails,
             reportId: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Report ID cannot be empty",
-        );
-      }
-    });
+      }),
+      "Report ID cannot be empty",
+    );
 
-    it("should reject empty userId", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty userId",
+      (base) => ({
+        ...base,
         config: {
-          ...validPipelineJob.config,
+          ...base.config,
           firebaseDetails: {
-            ...validPipelineJob.config.firebaseDetails,
+            ...base.config.firebaseDetails,
             userId: "",
           },
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe("User ID cannot be empty");
-      }
-    });
+      }),
+      "User ID cannot be empty",
+    );
 
-    it("should reject empty title", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty title",
+      (base) => ({
+        ...base,
         reportDetails: {
-          ...validPipelineJob.reportDetails,
+          ...base.reportDetails,
           title: "",
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe("Title cannot be empty");
-      }
-    });
+      }),
+      "Title cannot be empty",
+    );
 
-    it("should reject empty description", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty description",
+      (base) => ({
+        ...base,
         reportDetails: {
-          ...validPipelineJob.reportDetails,
+          ...base.reportDetails,
           description: "",
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Description cannot be empty",
-        );
-      }
-    });
+      }),
+      "Description cannot be empty",
+    );
 
-    it("should reject empty question", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty question",
+      (base) => ({
+        ...base,
         reportDetails: {
-          ...validPipelineJob.reportDetails,
+          ...base.reportDetails,
           question: "",
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe("Question cannot be empty");
-      }
-    });
+      }),
+      "Question cannot be empty",
+    );
 
-    it("should reject empty filename", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty filename",
+      (base) => ({
+        ...base,
         reportDetails: {
-          ...validPipelineJob.reportDetails,
+          ...base.reportDetails,
           filename: "",
         },
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe("Filename cannot be empty");
-      }
-    });
+      }),
+      "Filename cannot be empty",
+    );
   });
 
   describe("empty string validation for comment data", () => {
-    it("should reject empty comment_id", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty comment_id",
+      (base) => ({
+        ...base,
         data: [
           {
             comment_id: "",
@@ -322,19 +278,14 @@ describe("pipelineJobSchema validation", () => {
             speaker: "participant",
           },
         ],
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Comment ID cannot be empty",
-        );
-      }
-    });
+      }),
+      "Comment ID cannot be empty",
+    );
 
-    it("should reject empty comment_text", () => {
-      const invalid = {
-        ...validPipelineJob,
+    testEmptyStringRejection(
+      "should reject empty comment_text",
+      (base) => ({
+        ...base,
         data: [
           {
             comment_id: "comment-1",
@@ -342,14 +293,8 @@ describe("pipelineJobSchema validation", () => {
             speaker: "participant",
           },
         ],
-      };
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          "Comment text cannot be empty",
-        );
-      }
-    });
+      }),
+      "Comment text cannot be empty",
+    );
   });
 });
