@@ -531,7 +531,7 @@ describe("Distributed Locking with Real Redis", () => {
       expect(count3).toBe(3);
 
       // Verify counter persists in Redis
-      const counterKey = `pipeline:validation-failures:${reportId}:${stepName}`;
+      const counterKey = `pipeline_validation_failure:${reportId}:${stepName}`;
       const storedValue = await cache.get(counterKey);
       expect(storedValue).toBe("3");
     });

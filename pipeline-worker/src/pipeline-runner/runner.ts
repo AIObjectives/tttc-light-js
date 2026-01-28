@@ -207,7 +207,9 @@ async function executeStep<T>(
   try {
     const result = await executor();
 
-    const durationMs = Date.now() - startTime;
+    // Ensure minimum duration of 1ms for analytics tracking
+    // (very fast operations like mocked steps can complete in <1ms)
+    const durationMs = Math.max(1, Date.now() - startTime);
 
     if (result.tag === "failure") {
       reportLogger.error(
@@ -1315,6 +1317,40 @@ export async function runPipeline(
     "Starting pipeline execution",
   );
 
+  // Generate unique lock value for this execution
+  const lockValue = `${config.reportId}-${Date.now()}-${Math.random()}`;
+
+  // Try to acquire lock
+  const lockAcquired = await stateStore.acquirePipelineLock(
+    config.reportId,
+    lockValue,
+  );
+
+  if (!lockAcquired) {
+    reportLogger.warn(
+      { reportId: config.reportId },
+      "Failed to acquire pipeline lock - another process is already executing this pipeline",
+    );
+
+    // Return failure result without modifying state
+    const existingState =
+      (await stateStore.get(config.reportId)) ||
+      createInitialState(config.reportId, config.userId);
+
+    return {
+      success: false,
+      state: existingState,
+      error: new Error(
+        "Pipeline is already running - could not acquire execution lock",
+      ),
+    };
+  }
+
+  reportLogger.info(
+    { reportId: config.reportId, lockValue },
+    "Acquired pipeline execution lock",
+  );
+
   // Create AbortController for proper cancellation
   const abortController = new AbortController();
   const { signal } = abortController;
@@ -1373,6 +1409,13 @@ export async function runPipeline(
       error: error instanceof Error ? error : new Error(String(error)),
     };
   } finally {
+    // Release lock
+    await stateStore.releasePipelineLock(config.reportId, lockValue);
+    reportLogger.info(
+      { reportId: config.reportId, lockValue },
+      "Released pipeline execution lock",
+    );
+
     // Abort the timeout promise to prevent memory leak
     abortController.abort();
   }
