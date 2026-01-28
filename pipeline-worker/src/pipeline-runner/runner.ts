@@ -468,15 +468,16 @@ interface StepExecutionContext {
 /**
  * Safely invoke a callback without breaking pipeline execution
  */
-function safelyInvokeCallback(
-  callback: (() => void) | undefined,
+function safelyInvokeCallback<TArgs extends unknown[]>(
+  callback: ((...args: TArgs) => void) | undefined,
   callbackName: string,
   stepName: PipelineStepName,
+  ...args: TArgs
 ): void {
   if (!callback) return;
 
   try {
-    callback();
+    callback(...args);
   } catch (callbackError) {
     runnerLogger.warn(
       { error: callbackError, stepName },
@@ -496,19 +497,12 @@ function notifyProgress(
 ): void {
   const percentComplete = Math.round((completedSteps / totalSteps) * 100);
 
-  safelyInvokeCallback(
-    config.onProgress
-      ? () =>
-          config.onProgress?.({
-            currentStep: stepName,
-            totalSteps,
-            completedSteps,
-            percentComplete,
-          })
-      : undefined,
-    "onProgress",
-    stepName,
-  );
+  safelyInvokeCallback(config.onProgress, "onProgress", stepName, {
+    currentStep: stepName,
+    totalSteps,
+    completedSteps,
+    percentComplete,
+  });
 }
 
 /**
@@ -525,9 +519,11 @@ async function handleStepFailure(
   await stateStore.save(updatedState);
 
   safelyInvokeCallback(
-    () => config.onStepUpdate?.(stepName, "failed"),
+    config.onStepUpdate,
     "onStepUpdate",
     stepName,
+    stepName,
+    "failed",
   );
 
   return failure(new PipelineStepError(stepName, error, updatedState));
@@ -557,9 +553,11 @@ async function executeAndHandleStep(
   await stateStore.save(updatedState);
 
   safelyInvokeCallback(
-    () => config.onStepUpdate?.(stepName, "in_progress"),
+    config.onStepUpdate,
     "onStepUpdate",
     stepName,
+    stepName,
+    "in_progress",
   );
 
   // Execute the step
@@ -594,9 +592,11 @@ async function executeAndHandleStep(
 
   // Notify completion
   safelyInvokeCallback(
-    () => config.onStepUpdate?.(stepName, "completed"),
+    config.onStepUpdate,
     "onStepUpdate",
     stepName,
+    stepName,
+    "completed",
   );
 
   notifyProgress(config, stepName, completedSteps, totalSteps);
@@ -1014,14 +1014,13 @@ async function executeAllSteps(
     currentState = markStepSkipped(currentState, "cruxes");
     await stateStore.save(currentState);
 
-    try {
-      config.onStepUpdate?.("cruxes", "skipped");
-    } catch (callbackError) {
-      reportLogger.warn(
-        { error: callbackError },
-        "onStepUpdate callback threw an error",
-      );
-    }
+    safelyInvokeCallback(
+      config.onStepUpdate,
+      "onStepUpdate",
+      "cruxes",
+      "cruxes",
+      "skipped",
+    );
   }
 
   return success({ state: currentState, results });
