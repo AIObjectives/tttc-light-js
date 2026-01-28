@@ -515,15 +515,13 @@ function notifyProgress(
 /**
  * Handle step failure
  */
-async function handleStepFailure(
+function handleStepFailure(
   stepName: PipelineStepName,
   error: Error,
   state: PipelineState,
-  stateStore: RedisPipelineStateStore,
   config: PipelineRunnerConfig,
-): Promise<Result<never, PipelineStepError>> {
+): Result<never, PipelineStepError> {
   const updatedState = markStepFailed(state, stepName, error);
-  await stateStore.save(updatedState);
 
   safelyInvokeCallback(
     config.onStepUpdate,
@@ -572,13 +570,18 @@ async function executeAndHandleStep(
 
   // Handle failure
   if (result.tag === "failure") {
-    return handleStepFailure(
+    const failureResult = handleStepFailure(
       stepName,
       result.error,
       updatedState,
-      stateStore,
       config,
     );
+    // handleStepFailure always returns failure, so we can safely access error
+    if (failureResult.tag === "failure") {
+      // Save the updated state with failure information
+      await stateStore.save(failureResult.error.state);
+    }
+    return failureResult;
   }
 
   // Save successful result
@@ -747,8 +750,8 @@ async function executeAllSteps(
   const validateAndCast = async <T>(
     result: unknown,
     stepName: PipelineStepName,
-  ): Promise<T | undefined> => {
-    if (!result) return undefined;
+  ): Promise<Result<T | undefined, PipelineStepError>> => {
+    if (!result) return success(undefined);
     if (!validateResultStructure(result, stepName)) {
       // Get current failure count atomically from Redis
       const failureCount = await stateStore.getValidationFailureCount(
@@ -758,13 +761,15 @@ async function executeAllSteps(
 
       // If we've exceeded the retry limit, fail the pipeline permanently
       if (failureCount >= MAX_VALIDATION_FAILURES) {
-        throw new PipelineStepError(
-          stepName,
-          new Error(
-            `Step result validation failed ${failureCount} times - state is permanently corrupted. ` +
-              `This may indicate a schema version mismatch or data serialization issue.`,
+        return failure(
+          new PipelineStepError(
+            stepName,
+            new Error(
+              `Step result validation failed ${failureCount} times - state is permanently corrupted. ` +
+                `This may indicate a schema version mismatch or data serialization issue.`,
+            ),
+            currentState,
           ),
-          currentState,
         );
       }
 
@@ -790,32 +795,58 @@ async function executeAllSteps(
         },
         `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed (attempt ${newFailureCount}/${MAX_VALIDATION_FAILURES})`,
       );
-      return undefined;
+      return success(undefined);
     }
-    return result as T;
+    return success(result as T);
   };
 
+  // Validate each result and collect any errors
+  const clusteringValidation = await validateAndCast<TopicTreeResult>(
+    state.completedResults.clustering,
+    "clustering",
+  );
+  if (clusteringValidation.tag === "failure") {
+    return failure(clusteringValidation.error);
+  }
+
+  const claimsValidation = await validateAndCast<ClaimsResult>(
+    state.completedResults.claims,
+    "claims",
+  );
+  if (claimsValidation.tag === "failure") {
+    return failure(claimsValidation.error);
+  }
+
+  const sortedValidation = await validateAndCast<SortAndDeduplicateResult>(
+    state.completedResults.sort_and_deduplicate,
+    "sort_and_deduplicate",
+  );
+  if (sortedValidation.tag === "failure") {
+    return failure(sortedValidation.error);
+  }
+
+  const summariesValidation = await validateAndCast<SummariesResult>(
+    state.completedResults.summaries,
+    "summaries",
+  );
+  if (summariesValidation.tag === "failure") {
+    return failure(summariesValidation.error);
+  }
+
+  const cruxesValidation = await validateAndCast<CruxesResult>(
+    state.completedResults.cruxes,
+    "cruxes",
+  );
+  if (cruxesValidation.tag === "failure") {
+    return failure(cruxesValidation.error);
+  }
+
   const results: PipelineStepResults = {
-    clusteringResult: await validateAndCast<TopicTreeResult>(
-      state.completedResults.clustering,
-      "clustering",
-    ),
-    claimsResult: await validateAndCast<ClaimsResult>(
-      state.completedResults.claims,
-      "claims",
-    ),
-    sortedResult: await validateAndCast<SortAndDeduplicateResult>(
-      state.completedResults.sort_and_deduplicate,
-      "sort_and_deduplicate",
-    ),
-    summariesResult: await validateAndCast<SummariesResult>(
-      state.completedResults.summaries,
-      "summaries",
-    ),
-    cruxesResult: await validateAndCast<CruxesResult>(
-      state.completedResults.cruxes,
-      "cruxes",
-    ),
+    clusteringResult: clusteringValidation.value,
+    claimsResult: claimsValidation.value,
+    sortedResult: sortedValidation.value,
+    summariesResult: summariesValidation.value,
+    cruxesResult: cruxesValidation.value,
   };
 
   // Log summary of recovered vs corrupted results
@@ -1038,31 +1069,52 @@ async function executeAllSteps(
  */
 function validateRequiredResults(
   results: PipelineStepResults,
-): asserts results is Required<
-  Pick<
+): Result<
+  Required<
+    Pick<
+      PipelineStepResults,
+      "clusteringResult" | "claimsResult" | "sortedResult" | "summariesResult"
+    >
+  > &
     PipelineStepResults,
-    "clusteringResult" | "claimsResult" | "sortedResult" | "summariesResult"
-  >
-> &
-  PipelineStepResults {
+  Error
+> {
   const { clusteringResult, claimsResult, sortedResult, summariesResult } =
     results;
 
   if (!clusteringResult) {
-    throw new Error("Pipeline completed but clustering result is missing");
+    return failure(
+      new Error("Pipeline completed but clustering result is missing"),
+    );
   }
 
   if (!claimsResult) {
-    throw new Error("Pipeline completed but claims result is missing");
+    return failure(
+      new Error("Pipeline completed but claims result is missing"),
+    );
   }
 
   if (!sortedResult) {
-    throw new Error("Pipeline completed but sorted result is missing");
+    return failure(
+      new Error("Pipeline completed but sorted result is missing"),
+    );
   }
 
   if (!summariesResult) {
-    throw new Error("Pipeline completed but summaries result is missing");
+    return failure(
+      new Error("Pipeline completed but summaries result is missing"),
+    );
   }
+
+  return success(
+    results as Required<
+      Pick<
+        PipelineStepResults,
+        "clusteringResult" | "claimsResult" | "sortedResult" | "summariesResult"
+      >
+    > &
+      PipelineStepResults,
+  );
 }
 
 /**
@@ -1071,20 +1123,25 @@ function validateRequiredResults(
 function buildSuccessResult(
   state: PipelineState,
   results: PipelineStepResults,
-): PipelineResult {
-  validateRequiredResults(results);
+): Result<PipelineResult, Error> {
+  const validation = validateRequiredResults(results);
+  if (validation.tag === "failure") {
+    return failure(validation.error);
+  }
 
-  return {
+  const validatedResults = validation.value;
+
+  return success({
     success: true,
     state,
     outputs: {
-      topicTree: results.clusteringResult.data,
-      claimsTree: results.claimsResult.data,
-      sortedTree: results.sortedResult.data,
-      summaries: results.summariesResult.data,
-      cruxes: results.cruxesResult,
+      topicTree: validatedResults.clusteringResult.data,
+      claimsTree: validatedResults.claimsResult.data,
+      sortedTree: validatedResults.sortedResult.data,
+      summaries: validatedResults.summariesResult.data,
+      cruxes: validatedResults.cruxesResult,
     },
-  };
+  });
 }
 
 /**
@@ -1171,7 +1228,17 @@ async function executePipelineInternal(
       "Pipeline completed successfully",
     );
 
-    return buildSuccessResult(state, stepsResult.value.results);
+    const successResult = buildSuccessResult(state, stepsResult.value.results);
+    if (successResult.tag === "failure") {
+      return handlePipelineFailure(
+        successResult.error,
+        state,
+        stateStore,
+        reportLogger,
+      );
+    }
+
+    return successResult.value;
   } catch (error) {
     return handlePipelineFailure(error, state, stateStore, reportLogger);
   }
