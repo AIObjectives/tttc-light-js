@@ -262,10 +262,14 @@ const ReportItemTop = ({
   numPeople,
   createdDate,
   isPublic,
-}: ReportRef) => (
-  <Col gap={2}>
-    <Row className="justify-between">
+}: ReportRef) => {
+  const badgeProps = getStatusBadgeProps(status);
+
+  return (
+    <Col gap={2}>
+      <Row className="justify-between">
         <Row gap={2} className="items-center min-w-0 flex-1">
+          <VisibilityIndicator isPublic={isPublic} />
           <h4 className="line-clamp-1">{title}</h4>
           {badgeProps && (
             <Badge variant={badgeProps.variant} className="shrink-0">
@@ -273,32 +277,9 @@ const ReportItemTop = ({
             </Badge>
           )}
         </Row>
-      <Row gap={2} className="items-center min-w-0">
-        <VisibilityIndicator isPublic={isPublic} />
-        <h4 className="line-clamp-1">{title}</h4>
-      </Row>
-      <div className="self-center shrink-0">
-        <Icons.ChevronRight className="w-6 h-6 stroke-muted-foreground" />
-      </div>
-    </Row>
-    <Col gap={2} className="flex-wrap">
-      <Row gap={4}>
-        <TextIcon icon={<Icons.Theme size={16} />}>{numTopics} topics</TextIcon>
-        <TextIcon icon={<Icons.Topic className="w-4 h-4" />}>
-          {numSubtopics} subtopics
-        </TextIcon>
-        <TextIcon icon={<Icons.Claim className="w-4 h-4" />}>
-          {numClaims} claims
-        </TextIcon>
-        <Separator orientation="vertical" className="bg-border w-px h-5" />
-      </Row>
-      <Row gap={4}>
-        <TextIcon icon={<Icons.People size={16} />}>
-          {numPeople} people
-        </TextIcon>
-        <TextIcon icon={<Icons.Date size={16} />}>
-          {createdDate.toDateString().split(" ").slice(1).join(" ")}
-        </TextIcon>
+        <div className="self-center shrink-0">
+          <Icons.ChevronRight className="w-6 h-6 stroke-muted-foreground" />
+        </div>
       </Row>
       <Col gap={2} className="flex-wrap">
         <Row gap={4}>
@@ -323,8 +304,8 @@ const ReportItemTop = ({
         </Row>
       </Col>
     </Col>
-  </Col>
-);
+  );
+};
 
 /**
  * Visibility indicator showing lock (private) or globe (public) icon.
