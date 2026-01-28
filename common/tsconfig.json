@@ -16,7 +16,7 @@
     "lib": ["ES2024", "DOM"]
   },
   "include": [
-    "*",
+    "src/*",
     "./analytics/**/*",
     "./api/*",
     "./apiPyserver/*",
@@ -31,7 +31,7 @@
     "./transforms/**/*",
     "./permissions/*",
     "./prompts/*",
-    "./schema/*",
+    "./schema/**/*",
     "./types/*",
     "./utils/*",
     "./test-utils/**/*"
