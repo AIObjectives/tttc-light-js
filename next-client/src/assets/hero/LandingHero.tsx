@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils/shadcn";
-import heroImage from "../../../public/images/t3c-product-desktop-mobile.png";
 
 export default function LandingHero({ className }: { className?: string }) {
   return (
@@ -9,13 +8,14 @@ export default function LandingHero({ className }: { className?: string }) {
       style={{ aspectRatio: "1764/1218" }}
     >
       <Image
-        src={heroImage}
+        src="/images/t3c-product-desktop-mobile.png"
         alt="Talk to the City product interface dashboard"
         priority
         quality={85}
+        width={1764}
+        height={1218}
         className="w-full h-auto"
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1764px"
-        placeholder="blur"
       />
     </div>
   );
