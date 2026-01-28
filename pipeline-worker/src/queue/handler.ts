@@ -167,12 +167,11 @@ function convertToPipelineInput(
  * Save successful pipeline result to storage and update Firestore
  *
  * Saves in this order to ensure consistency:
- * 1. Mark Firestore as "processing_upload" (transient state)
- * 2. Upload to GCS
- * 3. Update Firestore with final "completed" status and reportDataUri
+ * 1. Upload to GCS
+ * 2. Update Firestore with final "completed" status and reportDataUri
  *
- * This ensures that if GCS upload fails, Firestore correctly shows "processing_upload"
- * and can be retried, rather than being stuck in "completed" without a file.
+ * The report is already in "processing" status from pipeline execution.
+ * If GCS upload fails, the error is caught and status is set to "failed".
  */
 async function saveSuccessfulPipeline(
   result: Awaited<ReturnType<typeof runPipeline>>,
@@ -200,19 +199,13 @@ async function saveSuccessfulPipeline(
       0,
     );
 
-    // Step 1: Mark in Firestore that we're uploading (transient state)
+    // Get ReportRef to verify it exists before upload
     const reportRef = await refStore.Report.get(reportId);
     if (!reportRef) {
       return failure(
         new StorageError(`ReportRef ${reportId} not found`, false),
       );
     }
-
-    await refStore.Report.modify(reportId, {
-      ...reportRef,
-      status: "processing",
-      lastStatusUpdate: new Date(),
-    });
 
     jobLogger.info(
       {
@@ -222,7 +215,7 @@ async function saveSuccessfulPipeline(
       "Uploading report to GCS",
     );
 
-    // Step 2: Upload to GCS
+    // Upload to GCS
     const reportUrl = await storage.storeFile(filename, reportJson);
 
     jobLogger.info(
@@ -233,7 +226,7 @@ async function saveSuccessfulPipeline(
       "Report saved to GCS successfully",
     );
 
-    // Step 3: Update ReportRef in Firestore with final status
+    // Update ReportRef in Firestore with final status
     const updatedReportRef: ReportRef = {
       ...reportRef,
       reportDataUri: reportUrl,
