@@ -198,6 +198,11 @@ async function saveSuccessfulPipeline(
       (sum, [, topicData]) => sum + topicData.counts.claims,
       0,
     );
+    const numPeople = new Set(
+      data.data
+        .map((comment: (typeof data.data)[0]) => comment.speaker)
+        .filter(Boolean),
+    ).size;
 
     // Get ReportRef to verify it exists before upload
     const reportRef = await refStore.Report.get(reportId);
@@ -237,10 +242,7 @@ async function saveSuccessfulPipeline(
       numTopics,
       numSubtopics,
       numClaims,
-      // numPeople is not currently tracked by pipeline-worker
-      // This would require analyzing unique speakers across all comments
-      // For now, set to 0 to indicate "unknown" rather than implementing incorrectly
-      numPeople: 0,
+      numPeople,
       createdDate: new Date(pipelineOutput.completedAt),
     };
 
@@ -252,6 +254,7 @@ async function saveSuccessfulPipeline(
         numTopics,
         numSubtopics,
         numClaims,
+        numPeople,
       },
       "Firestore updated with completed status",
     );
