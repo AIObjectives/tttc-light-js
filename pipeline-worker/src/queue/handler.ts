@@ -463,7 +463,7 @@ async function handlePipelineSuccess(
 /**
  * Handle failed pipeline result
  */
-async function handlePipelineFailureResult(
+async function handlePipelineFailure(
   result: Awaited<ReturnType<typeof runPipeline>>,
   reportId: string,
   refStore: RefStoreServices,
@@ -565,7 +565,7 @@ async function executePipelineWithLock(
         jobLogger,
       );
     }
-    return handlePipelineFailureResult(result, reportId, refStore, jobLogger);
+    return handlePipelineFailure(result, reportId, refStore, jobLogger);
   } finally {
     const lockReleased = await stateStore.releasePipelineLock(
       reportId,
