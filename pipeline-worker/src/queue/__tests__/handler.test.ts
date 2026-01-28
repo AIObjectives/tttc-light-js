@@ -11,43 +11,56 @@ describe("validateDataArray", () => {
     speaker: "participant",
   });
 
-  it("should pass validation with valid non-empty comments", () => {
+  it("should return success for valid non-empty comments", () => {
     const data = [
       createComment("1", "This is a valid comment"),
       createComment("2", "Another valid comment"),
     ];
 
-    expect(() => validateDataArray(data)).not.toThrow();
+    const result = validateDataArray(data);
+    expect(result.tag).toBe("success");
   });
 
-  it("should throw error for empty data array", () => {
-    expect(() => validateDataArray([])).toThrow(
-      "Data array is empty - no comments to process",
-    );
+  it("should return failure for empty data array", () => {
+    const result = validateDataArray([]);
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toBe(
+        "Data array is empty - no comments to process",
+      );
+    }
   });
 
-  it("should throw error for empty comment text", () => {
+  it("should return failure for empty comment text", () => {
     const data = [
       createComment("1", "Valid comment"),
       createComment("2", ""),
       createComment("3", "Another valid comment"),
     ];
 
-    expect(() => validateDataArray(data)).toThrow(
-      "Found 1 comment(s) with empty or whitespace-only text: 2",
-    );
+    const result = validateDataArray(data);
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toBe(
+        "Found 1 comment(s) with empty or whitespace-only text: 2",
+      );
+    }
   });
 
-  it("should throw error for whitespace-only comment text", () => {
+  it("should return failure for whitespace-only comment text", () => {
     const data = [
       createComment("1", "Valid comment"),
       createComment("2", "   "),
       createComment("3", "\t\n"),
     ];
 
-    expect(() => validateDataArray(data)).toThrow(
-      "Found 2 comment(s) with empty or whitespace-only text: 2, 3",
-    );
+    const result = validateDataArray(data);
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toBe(
+        "Found 2 comment(s) with empty or whitespace-only text: 2, 3",
+      );
+    }
   });
 
   it("should list up to 5 IDs when multiple empty comments exist", () => {
@@ -61,24 +74,30 @@ describe("validateDataArray", () => {
       createComment("id7", ""),
     ];
 
-    expect(() => validateDataArray(data)).toThrow(
-      "Found 7 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5 and 2 more",
-    );
+    const result = validateDataArray(data);
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toBe(
+        "Found 7 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5 and 2 more",
+      );
+    }
   });
 
-  it("should pass validation with comments that have leading/trailing whitespace but content", () => {
+  it("should return success for comments with leading/trailing whitespace but content", () => {
     const data = [
       createComment("1", "  Valid comment with spaces  "),
       createComment("2", "\tTabbed comment\t"),
     ];
 
-    expect(() => validateDataArray(data)).not.toThrow();
+    const result = validateDataArray(data);
+    expect(result.tag).toBe("success");
   });
 
-  it("should handle single valid comment", () => {
+  it("should return success for single valid comment", () => {
     const data = [createComment("1", "Single valid comment")];
 
-    expect(() => validateDataArray(data)).not.toThrow();
+    const result = validateDataArray(data);
+    expect(result.tag).toBe("success");
   });
 
   it("should handle exactly 5 empty comments without 'and more' suffix", () => {
@@ -90,8 +109,12 @@ describe("validateDataArray", () => {
       createComment("id5", ""),
     ];
 
-    expect(() => validateDataArray(data)).toThrow(
-      "Found 5 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5",
-    );
+    const result = validateDataArray(data);
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toBe(
+        "Found 5 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5",
+      );
+    }
   });
 });

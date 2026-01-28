@@ -3,6 +3,7 @@
  */
 
 import type { ReportRef } from "tttc-common/firebase";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import type { PipelineJobMessage } from "tttc-common/schema";
 import type { BucketStore } from "../bucketstore/index.js";
@@ -11,6 +12,11 @@ import { formatPipelineOutput } from "../pipeline-runner/format-output.js";
 import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
 import type { PipelineInput } from "../pipeline-runner/types.js";
+import {
+  HandlerError,
+  StorageError,
+  ValidationError,
+} from "./handler-errors.js";
 import type { PubSubMessage } from "./index.js";
 
 const queueLogger = logger.child({ module: "queue-handler" });
@@ -18,7 +24,9 @@ const queueLogger = logger.child({ module: "queue-handler" });
 /**
  * Validate required fields in pipeline job config
  */
-function validatePipelineJobConfig(job: PipelineJobMessage): void {
+function validatePipelineJobConfig(
+  job: PipelineJobMessage,
+): Result<void, ValidationError> {
   const { config } = job;
   const { instructions, llm, options, env } = config;
 
@@ -49,15 +57,21 @@ function validatePipelineJobConfig(job: PipelineJobMessage): void {
 
   for (const field of requiredFields) {
     if (!field.value) {
-      throw new Error(`Missing required field: ${field.name}`);
+      return failure(
+        new ValidationError(`Missing required field: ${field.name}`),
+      );
     }
   }
 
   if (options.cruxes && !instructions.cruxInstructions) {
-    throw new Error(
-      "Missing required field: config.instructions.cruxInstructions (required when cruxes are enabled)",
+    return failure(
+      new ValidationError(
+        "Missing required field: config.instructions.cruxInstructions (required when cruxes are enabled)",
+      ),
     );
   }
+
+  return success(undefined);
 }
 
 /**
@@ -65,9 +79,13 @@ function validatePipelineJobConfig(job: PipelineJobMessage): void {
  * This prevents the pipeline from consuming resources on malformed entries.
  * @internal Exported for testing
  */
-export function validateDataArray(data: PipelineJobMessage["data"]): void {
+export function validateDataArray(
+  data: PipelineJobMessage["data"],
+): Result<void, ValidationError> {
   if (data.length === 0) {
-    throw new Error("Data array is empty - no comments to process");
+    return failure(
+      new ValidationError("Data array is empty - no comments to process"),
+    );
   }
 
   const emptyComments: string[] = [];
@@ -83,22 +101,25 @@ export function validateDataArray(data: PipelineJobMessage["data"]): void {
       emptyComments.length <= 5
         ? emptyComments.join(", ")
         : `${emptyComments.slice(0, 5).join(", ")} and ${emptyComments.length - 5} more`;
-    throw new Error(
-      `Found ${emptyComments.length} comment(s) with empty or whitespace-only text: ${displayIds}`,
+    return failure(
+      new ValidationError(
+        `Found ${emptyComments.length} comment(s) with empty or whitespace-only text: ${displayIds}`,
+      ),
     );
   }
+
+  return success(undefined);
 }
 
 /**
  * Convert express-server PipelineJob to pipeline-worker PipelineInput
- * Validates all required fields to prevent undefined values from reaching the pipeline
+ * Assumes validation has already been performed
  */
-function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
+function convertToPipelineInput(
+  job: PipelineJobMessage,
+): Result<PipelineInput, ValidationError> {
   const { config, data } = job;
   const { instructions, llm, options, env } = config;
-
-  validatePipelineJobConfig(job);
-  validateDataArray(data);
 
   // Convert comments to pipeline-worker format
   const comments = data.map((comment: (typeof data)[0]) => ({
@@ -107,7 +128,7 @@ function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
     speaker: comment.speaker,
   }));
 
-  return {
+  return success({
     comments,
     clusteringConfig: {
       model_name: llm.model,
@@ -139,7 +160,7 @@ function convertToPipelineInput(job: PipelineJobMessage): PipelineInput {
     apiKey: env.OPENAI_API_KEY,
     enableCruxes: options.cruxes,
     sortStrategy: options.sortStrategy,
-  };
+  });
 }
 
 /**
@@ -160,95 +181,107 @@ async function saveSuccessfulPipeline(
   storage: BucketStore,
   refStore: RefStoreServices,
   jobLogger: typeof queueLogger,
-): Promise<void> {
-  // Format pipeline output for storage
-  const pipelineOutput = formatPipelineOutput(result, data);
-  const reportJson = JSON.stringify(pipelineOutput);
-  const filename = `${reportId}.json`;
+): Promise<Result<void, StorageError>> {
+  try {
+    // Format pipeline output for storage
+    const pipelineOutput = formatPipelineOutput(result, data);
+    const reportJson = JSON.stringify(pipelineOutput);
+    const filename = `${reportId}.json`;
 
-  // Extract statistics from sortedTree
-  const sortedTree = pipelineOutput.sortedTree;
-  const numTopics = sortedTree.length;
-  const numSubtopics = sortedTree.reduce(
-    (sum, [, topicData]) => sum + topicData.topics.length,
-    0,
-  );
-  const numClaims = sortedTree.reduce(
-    (sum, [, topicData]) => sum + topicData.counts.claims,
-    0,
-  );
+    // Extract statistics from sortedTree
+    const sortedTree = pipelineOutput.sortedTree;
+    const numTopics = sortedTree.length;
+    const numSubtopics = sortedTree.reduce(
+      (sum, [, topicData]) => sum + topicData.topics.length,
+      0,
+    );
+    const numClaims = sortedTree.reduce(
+      (sum, [, topicData]) => sum + topicData.counts.claims,
+      0,
+    );
 
-  // Step 1: Mark in Firestore that we're uploading (transient state)
-  const reportRef = await refStore.Report.get(reportId);
-  if (!reportRef) {
-    throw new Error(`ReportRef ${reportId} not found`);
-  }
+    // Step 1: Mark in Firestore that we're uploading (transient state)
+    const reportRef = await refStore.Report.get(reportId);
+    if (!reportRef) {
+      return failure(
+        new StorageError(`ReportRef ${reportId} not found`, false),
+      );
+    }
 
-  await refStore.Report.modify(reportId, {
-    ...reportRef,
-    status: "processing",
-    lastStatusUpdate: new Date(),
-  });
+    await refStore.Report.modify(reportId, {
+      ...reportRef,
+      status: "processing",
+      lastStatusUpdate: new Date(),
+    });
 
-  jobLogger.info(
-    {
-      filename,
-      reportJsonSize: reportJson.length,
-    },
-    "Uploading report to GCS",
-  );
+    jobLogger.info(
+      {
+        filename,
+        reportJsonSize: reportJson.length,
+      },
+      "Uploading report to GCS",
+    );
 
-  // Step 2: Upload to GCS
-  const reportUrl = await storage.storeFile(filename, reportJson);
+    // Step 2: Upload to GCS
+    const reportUrl = await storage.storeFile(filename, reportJson);
 
-  jobLogger.info(
-    {
-      reportUrl,
-      reportJsonSize: reportJson.length,
-    },
-    "Report saved to GCS successfully",
-  );
+    jobLogger.info(
+      {
+        reportUrl,
+        reportJsonSize: reportJson.length,
+      },
+      "Report saved to GCS successfully",
+    );
 
-  // Step 3: Update ReportRef in Firestore with final status
-  const updatedReportRef: ReportRef = {
-    ...reportRef,
-    reportDataUri: reportUrl,
-    status: "completed",
-    lastStatusUpdate: new Date(),
-    title: data.reportDetails.title,
-    description: data.reportDetails.description,
-    numTopics,
-    numSubtopics,
-    numClaims,
-    // numPeople is not currently tracked by pipeline-worker
-    // This would require analyzing unique speakers across all comments
-    // For now, set to 0 to indicate "unknown" rather than implementing incorrectly
-    numPeople: 0,
-    createdDate: new Date(pipelineOutput.completedAt),
-  };
-
-  await refStore.Report.modify(reportId, updatedReportRef);
-
-  jobLogger.info(
-    {
-      reportId,
+    // Step 3: Update ReportRef in Firestore with final status
+    const updatedReportRef: ReportRef = {
+      ...reportRef,
+      reportDataUri: reportUrl,
+      status: "completed",
+      lastStatusUpdate: new Date(),
+      title: data.reportDetails.title,
+      description: data.reportDetails.description,
       numTopics,
       numSubtopics,
       numClaims,
-    },
-    "Firestore updated with completed status",
-  );
+      // numPeople is not currently tracked by pipeline-worker
+      // This would require analyzing unique speakers across all comments
+      // For now, set to 0 to indicate "unknown" rather than implementing incorrectly
+      numPeople: 0,
+      createdDate: new Date(pipelineOutput.completedAt),
+    };
+
+    await refStore.Report.modify(reportId, updatedReportRef);
+
+    jobLogger.info(
+      {
+        reportId,
+        numTopics,
+        numSubtopics,
+        numClaims,
+      },
+      "Firestore updated with completed status",
+    );
+
+    return success(undefined);
+  } catch (error) {
+    const cause = error instanceof Error ? error : new Error(String(error));
+    // Storage operations are generally transient (network issues)
+    // unless they're permission errors, which would have been caught in checkStorageExists
+    return failure(new StorageError(cause.message, true, cause));
+  }
 }
 
 /**
  * Update Firestore with error status
+ * Errors here are logged but not propagated since we're already in error handling
  */
 async function updateFirestoreWithError(
   reportId: string,
   errorMessage: string,
   refStore: RefStoreServices,
   jobLogger: typeof queueLogger,
-): Promise<void> {
+): Promise<Result<void, Error>> {
   try {
     const reportRef = await refStore.Report.get(reportId);
     if (reportRef) {
@@ -260,40 +293,31 @@ async function updateFirestoreWithError(
       });
 
       jobLogger.info({ reportId }, "Firestore updated with failure status");
+      return success(undefined);
     }
+    return failure(new Error(`ReportRef ${reportId} not found`));
   } catch (updateError) {
-    jobLogger.error(
-      { error: updateError },
-      "Failed to update Firestore with error status",
-    );
-  }
-}
-
-/**
- * Custom error for storage-related failures
- */
-class StorageCheckError extends Error {
-  constructor(
-    message: string,
-    public readonly isTransient: boolean,
-  ) {
-    super(message);
-    this.name = "StorageCheckError";
+    const error =
+      updateError instanceof Error
+        ? updateError
+        : new Error(String(updateError));
+    jobLogger.error({ error }, "Failed to update Firestore with error status");
+    return failure(error);
   }
 }
 
 /**
  * Check if file exists in storage, handling errors
  *
- * Throws on permanent errors (permissions, config) to fail fast and avoid
+ * Returns failure on permanent errors (permissions, config) to fail fast and avoid
  * wasting compute/LLM resources on a pipeline that cannot save results.
- * Throws on transient errors (network) to trigger message retry.
+ * Returns failure on transient errors (network) with isTransient flag to trigger message retry.
  */
 async function checkStorageExists(
   reportId: string,
   storage: BucketStore,
   jobLogger: typeof queueLogger,
-): Promise<{ exists: boolean }> {
+): Promise<Result<{ exists: boolean }, StorageError>> {
   const filename = `${reportId}.json`;
   const fileExistsResult = await storage.fileExists(filename);
 
@@ -301,14 +325,14 @@ async function checkStorageExists(
     jobLogger.info(
       "Report file already exists in storage, skipping duplicate message",
     );
-    return { exists: true };
+    return success({ exists: true });
   }
 
   if (fileExistsResult.error) {
     const isTransient = fileExistsResult.errorType === "transient";
 
     if (isTransient) {
-      // Transient errors (network blips) - throw to trigger message retry
+      // Transient errors (network blips) - return failure with isTransient flag
       jobLogger.warn(
         {
           error: fileExistsResult.error,
@@ -316,9 +340,12 @@ async function checkStorageExists(
         },
         "Transient storage error checking file existence - message will be retried",
       );
-      throw new StorageCheckError(
-        `Transient storage error: ${fileExistsResult.error}`,
-        true,
+      return failure(
+        new StorageError(
+          `Transient storage error: ${fileExistsResult.error}`,
+          true,
+          fileExistsResult.error,
+        ),
       );
     }
 
@@ -330,13 +357,16 @@ async function checkStorageExists(
       },
       "Permanent storage error - cannot proceed with pipeline (would fail on save)",
     );
-    throw new StorageCheckError(
-      `Storage configuration error: ${fileExistsResult.error}`,
-      false,
+    return failure(
+      new StorageError(
+        `Storage configuration error: ${fileExistsResult.error}`,
+        false,
+        fileExistsResult.error,
+      ),
     );
   }
 
-  return { exists: false };
+  return success({ exists: false });
 }
 
 /**
@@ -352,25 +382,31 @@ function shouldResumeFromState(
 /**
  * Check if pipeline should be skipped due to existing completion.
  *
- * Note: Storage errors (both transient and permanent) are thrown by
- * checkStorageExists before reaching this point. If we get here,
- * the storage check succeeded.
+ * Storage errors (both transient and permanent) are returned as failures.
  */
 async function shouldSkipPipeline(
   reportId: string,
   storage: BucketStore,
   stateStore: RedisPipelineStateStore,
   jobLogger: typeof queueLogger,
-): Promise<{
-  skip: boolean;
-  shouldResume: boolean;
-  existingState: Awaited<ReturnType<typeof stateStore.get>>;
-}> {
-  // This will throw on any storage errors (transient or permanent)
+): Promise<
+  Result<
+    {
+      skip: boolean;
+      shouldResume: boolean;
+      existingState: Awaited<ReturnType<typeof stateStore.get>>;
+    },
+    StorageError
+  >
+> {
   const storageCheck = await checkStorageExists(reportId, storage, jobLogger);
 
-  if (storageCheck.exists) {
-    return { skip: true, shouldResume: false, existingState: null };
+  if (storageCheck.tag === "failure") {
+    return storageCheck;
+  }
+
+  if (storageCheck.value.exists) {
+    return success({ skip: true, shouldResume: false, existingState: null });
   }
 
   const existingState = await stateStore.get(reportId);
@@ -384,7 +420,7 @@ async function shouldSkipPipeline(
     );
   }
 
-  return { skip: false, shouldResume, existingState };
+  return success({ skip: false, shouldResume, existingState });
 }
 
 /**
@@ -397,7 +433,7 @@ async function handlePipelineSuccess(
   storage: BucketStore,
   refStore: RefStoreServices,
   jobLogger: typeof queueLogger,
-): Promise<void> {
+): Promise<Result<void, StorageError>> {
   jobLogger.info(
     {
       totalDurationMs: result.state.totalDurationMs,
@@ -407,28 +443,28 @@ async function handlePipelineSuccess(
     "Pipeline job completed successfully",
   );
 
-  try {
-    await saveSuccessfulPipeline(
-      result,
-      data,
-      reportId,
-      storage,
-      refStore,
-      jobLogger,
+  const saveResult = await saveSuccessfulPipeline(
+    result,
+    data,
+    reportId,
+    storage,
+    refStore,
+    jobLogger,
+  );
+
+  if (saveResult.tag === "failure") {
+    jobLogger.error(
+      { error: saveResult.error },
+      "Failed to save report or update Firestore",
     );
-  } catch (storageError) {
-    const error =
-      storageError instanceof Error
-        ? storageError
-        : new Error(String(storageError));
 
-    jobLogger.error({ error }, "Failed to save report or update Firestore");
-
-    const errorMessage = `Storage error: ${error.message}`;
+    const errorMessage = `Storage error: ${saveResult.error.message}`;
     await updateFirestoreWithError(reportId, errorMessage, refStore, jobLogger);
 
-    throw storageError;
+    return saveResult;
   }
+
+  return success(undefined);
 }
 
 /**
@@ -439,7 +475,7 @@ async function handlePipelineFailureResult(
   reportId: string,
   refStore: RefStoreServices,
   jobLogger: typeof queueLogger,
-): Promise<never> {
+): Promise<Result<never, HandlerError>> {
   jobLogger.error(
     {
       error: result.error,
@@ -451,7 +487,9 @@ async function handlePipelineFailureResult(
   const errorMessage = result.error?.message ?? "Unknown error";
   await updateFirestoreWithError(reportId, errorMessage, refStore, jobLogger);
 
-  throw result.error ?? new Error("Pipeline failed with unknown error");
+  return failure(
+    new HandlerError(`Pipeline failed: ${errorMessage}`, false, result.error),
+  );
 }
 
 /**
@@ -469,7 +507,7 @@ async function executePipelineWithLock(
   refStore: RefStoreServices,
   data: PipelineJobMessage,
   jobLogger: typeof queueLogger,
-): Promise<void> {
+): Promise<Result<void, HandlerError | StorageError>> {
   const lockAcquired = await stateStore.acquirePipelineLock(
     reportId,
     lockValue,
@@ -479,7 +517,7 @@ async function executePipelineWithLock(
     jobLogger.info(
       "Pipeline execution already in progress by another worker, skipping",
     );
-    return;
+    return success(undefined);
   }
 
   try {
@@ -514,8 +552,11 @@ async function executePipelineWithLock(
       jobLogger.error(
         "Lost pipeline lock during execution - another worker may have started duplicate processing",
       );
-      throw new Error(
-        "Pipeline lock expired during execution - potential duplicate processing detected",
+      return failure(
+        new HandlerError(
+          "Pipeline lock expired during execution - potential duplicate processing detected",
+          false,
+        ),
       );
     }
 
@@ -530,15 +571,18 @@ async function executePipelineWithLock(
       jobLogger.error(
         "Failed to extend pipeline lock after verification - lock may have expired",
       );
-      throw new Error(
-        "Pipeline lock extension failed - cannot safely process results",
+      return failure(
+        new HandlerError(
+          "Pipeline lock extension failed - cannot safely process results",
+          false,
+        ),
       );
     }
 
     jobLogger.info("Pipeline lock extended for result processing");
 
     if (result.success) {
-      await handlePipelineSuccess(
+      return handlePipelineSuccess(
         result,
         data,
         reportId,
@@ -546,9 +590,8 @@ async function executePipelineWithLock(
         refStore,
         jobLogger,
       );
-    } else {
-      await handlePipelineFailureResult(result, reportId, refStore, jobLogger);
     }
+    return handlePipelineFailureResult(result, reportId, refStore, jobLogger);
   } finally {
     const lockReleased = await stateStore.releasePipelineLock(
       reportId,
@@ -570,7 +613,7 @@ export async function handlePipelineJob(
   stateStore: RedisPipelineStateStore,
   storage: BucketStore,
   refStore: RefStoreServices,
-): Promise<void> {
+): Promise<Result<void, HandlerError | ValidationError | StorageError>> {
   const { data } = message;
   const { reportId, userId } = data.config.firebaseDetails;
 
@@ -589,46 +632,90 @@ export async function handlePipelineJob(
     "Processing pipeline job from queue",
   );
 
-  try {
-    const pipelineInput = convertToPipelineInput(data);
-
-    const { skip, shouldResume, existingState } = await shouldSkipPipeline(
-      reportId,
-      storage,
-      stateStore,
-      jobLogger,
-    );
-
-    if (skip) {
-      return;
-    }
-
-    await executePipelineWithLock(
-      reportId,
-      userId,
-      message.id,
-      shouldResume,
-      existingState,
-      pipelineInput,
-      stateStore,
-      storage,
-      refStore,
-      data,
-      jobLogger,
-    );
-  } catch (error) {
+  // Validate config
+  const configResult = validatePipelineJobConfig(data);
+  if (configResult.tag === "failure") {
     jobLogger.error(
-      {
-        error: error instanceof Error ? error : new Error(String(error)),
-      },
-      "Unhandled error processing pipeline job",
+      { error: configResult.error },
+      "Pipeline job config validation failed",
     );
-
-    // Update Firestore with error status if not already handled
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    await updateFirestoreWithError(reportId, errorMessage, refStore, jobLogger);
-
-    // Re-throw to trigger message nack
-    throw error;
+    await updateFirestoreWithError(
+      reportId,
+      configResult.error.message,
+      refStore,
+      jobLogger,
+    );
+    return configResult;
   }
+
+  // Validate data
+  const dataResult = validateDataArray(data.data);
+  if (dataResult.tag === "failure") {
+    jobLogger.error(
+      { error: dataResult.error },
+      "Pipeline job data validation failed",
+    );
+    await updateFirestoreWithError(
+      reportId,
+      dataResult.error.message,
+      refStore,
+      jobLogger,
+    );
+    return dataResult;
+  }
+
+  // Convert to pipeline input
+  const inputResult = convertToPipelineInput(data);
+  if (inputResult.tag === "failure") {
+    jobLogger.error(
+      { error: inputResult.error },
+      "Failed to convert pipeline input",
+    );
+    await updateFirestoreWithError(
+      reportId,
+      inputResult.error.message,
+      refStore,
+      jobLogger,
+    );
+    return inputResult;
+  }
+
+  // Check if we should skip
+  const skipResult = await shouldSkipPipeline(
+    reportId,
+    storage,
+    stateStore,
+    jobLogger,
+  );
+
+  if (skipResult.tag === "failure") {
+    jobLogger.error({ error: skipResult.error }, "Storage check failed");
+    await updateFirestoreWithError(
+      reportId,
+      skipResult.error.message,
+      refStore,
+      jobLogger,
+    );
+    return skipResult;
+  }
+
+  if (skipResult.value.skip) {
+    jobLogger.info("Pipeline already completed, skipping");
+    return success(undefined);
+  }
+
+  // Execute pipeline
+  return executePipelineWithLock(
+    reportId,
+    userId,
+    message.id,
+    skipResult.value.shouldResume,
+    skipResult.value.existingState,
+    inputResult.value,
+    stateStore,
+    storage,
+    refStore,
+    data,
+    jobLogger,
+  );
 }

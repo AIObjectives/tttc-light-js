@@ -61,17 +61,26 @@ export function initServices(): Services {
 
   // Start listening for messages
   Queue.subscribe(subscriptionName, async (message) => {
-    try {
-      await handlePipelineJob(message, PipelineStateStore, Storage, RefStore);
-    } catch (error) {
+    const result = await handlePipelineJob(
+      message,
+      PipelineStateStore,
+      Storage,
+      RefStore,
+    );
+
+    if (result.tag === "failure") {
+      const error = result.error;
       servicesLogger.error(
-        {
-          error: error instanceof Error ? error : new Error(String(error)),
-          messageId: message.id,
-        },
+        { error, messageId: message.id },
         "Failed to process pipeline job",
       );
-      throw error; // Re-throw to trigger nack
+
+      // Only throw for transient errors to trigger message retry
+      if (error.isTransient) {
+        throw error; // Nack message for retry
+      }
+      // For permanent errors: log but don't throw (let message ack)
+      // Firestore already updated with error status by handlePipelineJob
     }
   }).catch((error) => {
     servicesLogger.error({ error }, "Failed to start queue subscription");
