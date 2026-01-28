@@ -201,7 +201,10 @@ async function executeStep<T>(
 ): Promise<Result<StepExecutionResult<T>, Error>> {
   const startTime = Date.now();
 
-  reportLogger.info({ step: stepName }, `Starting pipeline step: ${stepName}`);
+  reportLogger.info(
+    { step: stepName, status: "started" },
+    "Pipeline step started",
+  );
 
   try {
     const result = await executor();
@@ -214,8 +217,9 @@ async function executeStep<T>(
           step: stepName,
           error: result.error,
           durationMs,
+          status: "failed",
         },
-        `Pipeline step failed: ${stepName}`,
+        "Pipeline step failed",
       );
       return failure(result.error);
     }
@@ -227,8 +231,9 @@ async function executeStep<T>(
           step: stepName,
           durationMs,
           resultKeys: Object.keys(result.value as object),
+          missingFields: ["usage", "cost"],
         },
-        `Step ${stepName} returned result without analytics (usage/cost) - analytics tracking will be incomplete`,
+        "Step returned result without analytics - analytics tracking will be incomplete",
       );
 
       // Continue with default analytics to avoid breaking the pipeline
@@ -255,8 +260,9 @@ async function executeStep<T>(
         outputTokens,
         totalTokens,
         cost,
+        status: "completed",
       },
-      `Pipeline step completed: ${stepName}`,
+      "Pipeline step completed",
     );
 
     return success({
@@ -276,8 +282,9 @@ async function executeStep<T>(
         step: stepName,
         error: err,
         durationMs,
+        status: "exception",
       },
-      `Pipeline step threw exception: ${stepName}`,
+      "Pipeline step threw exception",
     );
 
     return failure(err);
