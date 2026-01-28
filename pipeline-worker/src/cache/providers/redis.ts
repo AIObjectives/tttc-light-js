@@ -240,6 +240,40 @@ export class RedisCache implements Cache {
   }
 
   /**
+   * Atomically increments a counter by 1 and returns the new value.
+   * Optionally sets a TTL on the key after incrementing.
+   *
+   * @param key - The counter key
+   * @param ttlSeconds - Optional TTL to set on the key after incrementing
+   * @returns The new value after incrementing
+   * @throws {CacheSetError} When the operation fails
+   */
+  async increment(key: string, ttlSeconds?: number): Promise<number> {
+    try {
+      // Use a Lua script to atomically increment and set TTL
+      // This ensures both operations happen atomically
+      if (ttlSeconds !== undefined) {
+        const script = `
+          local count = redis.call("incr", KEYS[1])
+          redis.call("expire", KEYS[1], ARGV[1])
+          return count
+        `;
+        const newValue = await this.client.eval(script, 1, key, ttlSeconds);
+        return newValue as number;
+      } else {
+        // Simple INCR when no TTL is needed
+        const newValue = await this.client.incr(key);
+        return newValue;
+      }
+    } catch (error) {
+      throw new CacheSetError(
+        key,
+        `Counter increment failed: ${formatError(error)}`,
+      );
+    }
+  }
+
+  /**
    * Disconnects from Redis gracefully.
    * Should be called when shutting down the application or in test cleanup.
    */

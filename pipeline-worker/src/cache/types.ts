@@ -137,6 +137,16 @@ export interface Cache {
    * @throws {CacheSetError} When the operation fails
    */
   extendLock(key: string, value: string, ttlSeconds: number): Promise<boolean>;
+
+  /**
+   * Atomically increments a counter by 1 and returns the new value.
+   *
+   * @param key - The counter key
+   * @param ttlSeconds - Optional TTL to set on the key after incrementing
+   * @returns The new value after incrementing
+   * @throws {CacheSetError} When the operation fails
+   */
+  increment(key: string, ttlSeconds?: number): Promise<number>;
 }
 
 /**

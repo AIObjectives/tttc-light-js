@@ -184,6 +184,12 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
       if (!lockValue || lockValue !== value) return false;
       return true;
     },
+    async increment(key: string, _ttlSeconds?: number): Promise<number> {
+      const currentValue = storage.get(key);
+      const newValue = currentValue ? parseInt(currentValue, 10) + 1 : 1;
+      storage.set(key, String(newValue));
+      return newValue;
+    },
   };
 }
 

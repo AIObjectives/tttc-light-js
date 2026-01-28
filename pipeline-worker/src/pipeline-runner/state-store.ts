@@ -28,6 +28,9 @@ const STATE_KEY_PREFIX = "pipeline_state:";
 /** Redis key prefix for pipeline execution locks */
 const LOCK_KEY_PREFIX = "pipeline_lock:";
 
+/** Redis key prefix for validation failure counters */
+const VALIDATION_FAILURE_KEY_PREFIX = "pipeline_validation_failure:";
+
 /**
  * Lock TTL: 35 minutes
  * Must exceed PIPELINE_TIMEOUT_MS (30 minutes) to prevent lock expiration
@@ -153,6 +156,16 @@ function getStateKey(reportId: string): string {
  */
 function getLockKey(reportId: string): string {
   return `${LOCK_KEY_PREFIX}${reportId}`;
+}
+
+/**
+ * Get the Redis key for a validation failure counter
+ */
+function getValidationFailureKey(
+  reportId: string,
+  stepName: PipelineStepName,
+): string {
+  return `${VALIDATION_FAILURE_KEY_PREFIX}${reportId}:${stepName}`;
 }
 
 /**
@@ -318,7 +331,8 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   }
 
   /**
-   * Save pipeline state to Redis
+   * Save pipeline state to Redis.
+   * Also persists validation failure counters to separate keys for atomic operations.
    */
   async save(state: PipelineState, options?: StateOptions): Promise<void> {
     const key = getStateKey(state.reportId);
@@ -335,6 +349,24 @@ export class RedisPipelineStateStore implements PipelineStateStore {
     };
 
     await this.cache.set(key, JSON.stringify(updatedState), { ttl });
+
+    // Persist validation failure counters to separate keys
+    // This enables atomic increment operations while maintaining consistency
+    const steps: PipelineStepName[] = [
+      "clustering",
+      "claims",
+      "sort_and_deduplicate",
+      "summaries",
+      "cruxes",
+    ];
+
+    for (const step of steps) {
+      const count = state.validationFailures[step];
+      if (count > 0) {
+        const counterKey = getValidationFailureKey(state.reportId, step);
+        await this.cache.set(counterKey, String(count), { ttl });
+      }
+    }
   }
 
   /**
@@ -366,6 +398,53 @@ export class RedisPipelineStateStore implements PipelineStateStore {
 
     await this.save(updatedState);
     return updatedState;
+  }
+
+  /**
+   * Atomically increment a validation failure counter for a step.
+   * Uses Redis INCR to ensure the counter is incremented atomically,
+   * preventing race conditions and ensuring counts persist across crashes.
+   *
+   * The counter is stored in a separate Redis key to enable atomic operations
+   * without parsing/serializing the entire state JSON.
+   *
+   * @param reportId - Report identifier
+   * @param stepName - Step name to increment failure counter for
+   * @returns The new failure count after incrementing
+   */
+  async incrementValidationFailure(
+    reportId: string,
+    stepName: PipelineStepName,
+  ): Promise<number> {
+    const key = getValidationFailureKey(reportId, stepName);
+
+    // Atomically increment and set TTL in a single operation
+    // TTL matches state TTL (24 hours) to prevent orphaned counters
+    const newCount = await this.cache.increment(key, DEFAULT_STATE_TTL);
+
+    return newCount;
+  }
+
+  /**
+   * Get the current validation failure count for a step.
+   *
+   * @param reportId - Report identifier
+   * @param stepName - Step name to get failure count for
+   * @returns The current failure count (0 if not set)
+   */
+  async getValidationFailureCount(
+    reportId: string,
+    stepName: PipelineStepName,
+  ): Promise<number> {
+    const key = getValidationFailureKey(reportId, stepName);
+    const value = await this.cache.get(key);
+
+    if (!value) {
+      return 0;
+    }
+
+    const count = parseInt(value, 10);
+    return Number.isNaN(count) ? 0 : count;
   }
 }
 

@@ -309,6 +309,14 @@ function createInMemoryCache(): Cache {
       storage.set(key, { value, expiresAt });
       return true;
     },
+    async increment(key: string, ttlSeconds?: number): Promise<number> {
+      const entry = storage.get(key);
+      const currentValue = entry?.value;
+      const newValue = currentValue ? parseInt(currentValue, 10) + 1 : 1;
+      const expiresAt = ttlSeconds ? Date.now() + ttlSeconds * 1000 : undefined;
+      storage.set(key, { value: String(newValue), expiresAt });
+      return newValue;
+    },
   };
 }
 

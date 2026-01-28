@@ -737,14 +737,17 @@ async function executeAllSteps(
 
   // Validate and recover results from Redis state
   // Each result must have the required structure (data, usage, cost)
-  const validateAndCast = <T>(
+  const validateAndCast = async <T>(
     result: unknown,
     stepName: PipelineStepName,
-  ): T | undefined => {
+  ): Promise<T | undefined> => {
     if (!result) return undefined;
     if (!validateResultStructure(result, stepName)) {
-      // Track validation failure
-      const failureCount = currentState.validationFailures[stepName];
+      // Get current failure count atomically from Redis
+      const failureCount = await stateStore.getValidationFailureCount(
+        state.reportId,
+        stepName,
+      );
 
       // If we've exceeded the retry limit, fail the pipeline permanently
       if (failureCount >= MAX_VALIDATION_FAILURES) {
@@ -758,8 +761,15 @@ async function executeAllSteps(
         );
       }
 
-      // Increment failure counter and update state
-      currentState.validationFailures[stepName] = failureCount + 1;
+      // Atomically increment failure counter in Redis
+      // This ensures the counter persists across crashes and prevents race conditions
+      const newFailureCount = await stateStore.incrementValidationFailure(
+        state.reportId,
+        stepName,
+      );
+
+      // Update in-memory state to reflect new count
+      currentState.validationFailures[stepName] = newFailureCount;
 
       // If validation fails, we cannot use this result and must re-run the step
       reportLogger.error(
@@ -768,10 +778,10 @@ async function executeAllSteps(
           reportId: state.reportId,
           hasResult: !!result,
           resultType: typeof result,
-          failureCount: currentState.validationFailures[stepName],
+          failureCount: newFailureCount,
           maxFailures: MAX_VALIDATION_FAILURES,
         },
-        `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed (attempt ${currentState.validationFailures[stepName]}/${MAX_VALIDATION_FAILURES})`,
+        `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed (attempt ${newFailureCount}/${MAX_VALIDATION_FAILURES})`,
       );
       return undefined;
     }
@@ -779,23 +789,23 @@ async function executeAllSteps(
   };
 
   const results: PipelineStepResults = {
-    clusteringResult: validateAndCast<TopicTreeResult>(
+    clusteringResult: await validateAndCast<TopicTreeResult>(
       state.completedResults.clustering,
       "clustering",
     ),
-    claimsResult: validateAndCast<ClaimsResult>(
+    claimsResult: await validateAndCast<ClaimsResult>(
       state.completedResults.claims,
       "claims",
     ),
-    sortedResult: validateAndCast<SortAndDeduplicateResult>(
+    sortedResult: await validateAndCast<SortAndDeduplicateResult>(
       state.completedResults.sort_and_deduplicate,
       "sort_and_deduplicate",
     ),
-    summariesResult: validateAndCast<SummariesResult>(
+    summariesResult: await validateAndCast<SummariesResult>(
       state.completedResults.summaries,
       "summaries",
     ),
-    cruxesResult: validateAndCast<CruxesResult>(
+    cruxesResult: await validateAndCast<CruxesResult>(
       state.completedResults.cruxes,
       "cruxes",
     ),
@@ -821,16 +831,6 @@ async function executeAllSteps(
         corruptedStepNames: corruptedSteps,
       },
       `State recovery: ${recoveredSteps.length}/${stepsInState.length} steps recovered successfully`,
-    );
-  }
-
-  // Save updated state with incremented validation failure counters
-  // This ensures the counters persist across restarts
-  if (corruptedSteps.length > 0) {
-    await stateStore.save(currentState);
-    reportLogger.info(
-      { validationFailures: currentState.validationFailures },
-      "Updated validation failure counters persisted to Redis",
     );
   }
 

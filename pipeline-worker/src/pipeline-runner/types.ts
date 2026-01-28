@@ -235,6 +235,28 @@ export interface PipelineStateStore {
     reportId: string,
     updates: Partial<PipelineState>,
   ): Promise<PipelineState | null>;
+
+  /**
+   * Atomically increment a validation failure counter for a step
+   * @param reportId - Report identifier
+   * @param stepName - Step name to increment failure counter for
+   * @returns The new failure count after incrementing
+   */
+  incrementValidationFailure(
+    reportId: string,
+    stepName: PipelineStepName,
+  ): Promise<number>;
+
+  /**
+   * Get the current validation failure count for a step
+   * @param reportId - Report identifier
+   * @param stepName - Step name to get failure count for
+   * @returns The current failure count (0 if not set)
+   */
+  getValidationFailureCount(
+    reportId: string,
+    stepName: PipelineStepName,
+  ): Promise<number>;
 }
 
 /**
