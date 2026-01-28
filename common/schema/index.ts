@@ -1231,3 +1231,6 @@ const downloadReportSchema_v1 = z.tuple([
 export const downloadReportSchema = downloadReportSchema_v1;
 
 export type DownloadDataReportSchema = z.infer<typeof downloadReportSchema>;
+
+// Pipeline job message schema for queue communication
+export { type PipelineJobMessage, pipelineJobSchema } from "./pipelineJob.js";
