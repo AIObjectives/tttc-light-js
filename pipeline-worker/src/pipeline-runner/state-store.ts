@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import type { Cache } from "../cache/types.js";
+import { LOCK_EXTENSION_SECONDS, LOCK_TTL_SECONDS } from "./constants.js";
 import {
   type PipelineState,
   PipelineStateError,
@@ -30,22 +31,6 @@ const LOCK_KEY_PREFIX = "pipeline_lock:";
 
 /** Redis key prefix for validation failure counters */
 const VALIDATION_FAILURE_KEY_PREFIX = "pipeline_validation_failure:";
-
-/**
- * Lock TTL: 35 minutes
- * Must exceed PIPELINE_TIMEOUT_MS (30 minutes) to prevent lock expiration
- * during normal execution. If a pipeline times out, the lock will still be
- * held to prevent duplicate execution until it naturally expires.
- */
-const LOCK_TTL_SECONDS = 35 * 60;
-
-/**
- * Lock extension TTL: 10 minutes
- * Used to extend the lock after pipeline execution completes but before
- * result processing (GCS upload, Firestore updates). Provides protection
- * against race conditions during the critical post-execution window.
- */
-const LOCK_EXTENSION_SECONDS = 10 * 60;
 
 /**
  * Zod schema for validating step analytics

@@ -25,6 +25,7 @@ import type {
   Topic,
   TopicTreeResult,
 } from "../pipeline-steps/types.js";
+import { PIPELINE_TIMEOUT_MS } from "./constants.js";
 import {
   createInitialState,
   getNextStep,
@@ -45,9 +46,6 @@ import {
 } from "./types.js";
 
 const runnerLogger = logger.child({ module: "pipeline-runner" });
-
-/** Maximum pipeline execution time: 30 minutes */
-const PIPELINE_TIMEOUT_MS = 30 * 60 * 1000;
 
 /** Maximum validation failures before considering state permanently corrupted */
 const MAX_VALIDATION_FAILURES = 3;
