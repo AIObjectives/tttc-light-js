@@ -630,9 +630,26 @@ export async function pipelineJob(job: PipelineJob, requestId?: string) {
 
       // Update reportDataUri to point to the final report file
       const finalReportUri = saveResult.value;
-      await Firebase.updateReportRefDataUri(reportId, finalReportUri);
+      const updateUriResult = await Firebase.updateReportRefDataUri(
+        reportId,
+        finalReportUri,
+      );
 
-      await Firebase.updateReportRefWithStats(
+      if (updateUriResult.tag === "failure") {
+        pipelineLogger.error(
+          {
+            error: updateUriResult.error,
+            reportId,
+            finalReportUri,
+          },
+          "Failed to update report URI in Firestore",
+        );
+        throw new Error(
+          `Failed to update report URI: ${updateUriResult.error.message}`,
+        );
+      }
+
+      const updateStatsResult = await Firebase.updateReportRefWithStats(
         reportId,
         firebaseDetails.firebaseJobId,
         {
@@ -648,6 +665,19 @@ export async function pipelineJob(job: PipelineJob, requestId?: string) {
           createdDate: new Date(date),
         },
       );
+
+      if (updateStatsResult.tag === "failure") {
+        pipelineLogger.error(
+          {
+            error: updateStatsResult.error,
+            reportId,
+          },
+          "Failed to update report statistics in Firestore",
+        );
+        throw new Error(
+          `Failed to update report statistics: ${updateStatsResult.error.message}`,
+        );
+      }
 
       // Set ReportRef status to completed
       await updatePipelineStatus(reportId, "completed");
