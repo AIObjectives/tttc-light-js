@@ -2,10 +2,11 @@
 import { Check, ChevronsUpDown, Globe, Lock } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { ReportRef } from "tttc-common/firebase";
+import type { ReportRef, ReportStatus } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
 import { cn } from "@/lib/utils/shadcn";
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -57,6 +58,36 @@ const getSortLabel = (mode: MyReportsSortMode): string => {
   };
   return labels[mode];
 };
+
+/**
+ * Maps report status to badge variant and display label.
+ * Uses subtle status variants with tinted backgrounds matching codebase patterns.
+ * Legacy reports without status field default to no badge (assumed completed).
+ */
+function getStatusBadgeProps(status: ReportStatus | undefined): {
+  variant: "status-warning" | "status-info" | "status-error";
+  label: string;
+} | null {
+  switch (status) {
+    case "created":
+    case "queued":
+      return { variant: "status-warning", label: "Queued" };
+    case "processing":
+      return { variant: "status-info", label: "Processing" };
+    case "failed":
+      return { variant: "status-error", label: "Failed" };
+    case "cancelled":
+      return { variant: "status-error", label: "Cancelled" };
+    case "completed":
+    case undefined:
+      // Completed or legacy reports without status - don't show badge
+      return null;
+    default:
+      // Exhaustive check - log unexpected values
+      console.warn(`[my-reports] Unexpected report status: ${status}`);
+      return null;
+  }
+}
 
 const reportLink = (id: string) =>
   `${location.protocol}//${location.host}/report/${id}`;
@@ -224,45 +255,57 @@ export function ReportItem(props: ReportRef) {
 
 const ReportItemTop = ({
   title,
+  status,
   numTopics,
   numSubtopics,
   numClaims,
   numPeople,
   createdDate,
   isPublic,
-}: ReportRef) => (
-  <Col gap={2}>
-    <Row className="justify-between">
-      <Row gap={2} className="items-center min-w-0">
-        <VisibilityIndicator isPublic={isPublic} />
-        <h4 className="line-clamp-1">{title}</h4>
+}: ReportRef) => {
+  const badgeProps = getStatusBadgeProps(status);
+
+  return (
+    <Col gap={2}>
+      <Row className="justify-between">
+        <Row gap={2} className="items-center min-w-0 flex-1">
+          <VisibilityIndicator isPublic={isPublic} />
+          <h4 className="line-clamp-1">{title}</h4>
+          {badgeProps && (
+            <Badge variant={badgeProps.variant} className="shrink-0">
+              {badgeProps.label}
+            </Badge>
+          )}
+        </Row>
+        <div className="self-center shrink-0">
+          <Icons.ChevronRight className="w-6 h-6 stroke-muted-foreground" />
+        </div>
       </Row>
-      <div className="self-center shrink-0">
-        <Icons.ChevronRight className="w-6 h-6 stroke-muted-foreground" />
-      </div>
-    </Row>
-    <Col gap={2} className="flex-wrap">
-      <Row gap={4}>
-        <TextIcon icon={<Icons.Theme size={16} />}>{numTopics} topics</TextIcon>
-        <TextIcon icon={<Icons.Topic className="w-4 h-4" />}>
-          {numSubtopics} subtopics
-        </TextIcon>
-        <TextIcon icon={<Icons.Claim className="w-4 h-4" />}>
-          {numClaims} claims
-        </TextIcon>
-        <Separator orientation="vertical" className="bg-border w-px h-5" />
-      </Row>
-      <Row gap={4}>
-        <TextIcon icon={<Icons.People size={16} />}>
-          {numPeople} people
-        </TextIcon>
-        <TextIcon icon={<Icons.Date size={16} />}>
-          {createdDate.toDateString().split(" ").slice(1).join(" ")}
-        </TextIcon>
-      </Row>
+      <Col gap={2} className="flex-wrap">
+        <Row gap={4}>
+          <TextIcon icon={<Icons.Theme size={16} />}>
+            {numTopics} topics
+          </TextIcon>
+          <TextIcon icon={<Icons.Topic className="w-4 h-4" />}>
+            {numSubtopics} subtopics
+          </TextIcon>
+          <TextIcon icon={<Icons.Claim className="w-4 h-4" />}>
+            {numClaims} claims
+          </TextIcon>
+          <Separator orientation="vertical" className="bg-border w-[1px] h-5" />
+        </Row>
+        <Row gap={4}>
+          <TextIcon icon={<Icons.People size={16} />}>
+            {numPeople} people
+          </TextIcon>
+          <TextIcon icon={<Icons.Date size={16} />}>
+            {createdDate.toDateString().split(" ").slice(1).join(" ")}
+          </TextIcon>
+        </Row>
+      </Col>
     </Col>
-  </Col>
-);
+  );
+};
 
 /**
  * Visibility indicator showing lock (private) or globe (public) icon.
