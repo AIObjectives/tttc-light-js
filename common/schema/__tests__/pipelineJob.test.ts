@@ -44,21 +44,6 @@ describe("pipelineJobSchema validation", () => {
     },
   };
 
-  function testEmptyStringRejection(
-    testName: string,
-    createInvalidData: (base: typeof validPipelineJob) => unknown,
-    expectedErrorMessage: string,
-  ) {
-    it(testName, () => {
-      const invalid = createInvalidData(validPipelineJob);
-      const result = pipelineJobSchema.safeParse(invalid);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(expectedErrorMessage);
-      }
-    });
-  }
-
   describe("valid data", () => {
     it("should accept valid pipeline job data", () => {
       const result = pipelineJobSchema.safeParse(validPipelineJob);
@@ -66,235 +51,234 @@ describe("pipelineJobSchema validation", () => {
     });
   });
 
-  describe("empty string validation for instructions", () => {
-    testEmptyStringRejection(
-      "should reject empty systemInstructions",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          instructions: {
-            ...base.config.instructions,
-            systemInstructions: "",
+  describe("empty string validation", () => {
+    const emptyStringTestCases: Array<{
+      name: string;
+      createInvalidData: (base: typeof validPipelineJob) => unknown;
+      expectedError: string;
+    }> = [
+      {
+        name: "systemInstructions",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            instructions: {
+              ...base.config.instructions,
+              systemInstructions: "",
+            },
           },
-        },
-      }),
-      "System instructions cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty clusteringInstructions",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          instructions: {
-            ...base.config.instructions,
-            clusteringInstructions: "",
+        }),
+        expectedError: "System instructions cannot be empty",
+      },
+      {
+        name: "clusteringInstructions",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            instructions: {
+              ...base.config.instructions,
+              clusteringInstructions: "",
+            },
           },
-        },
-      }),
-      "Clustering instructions cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty extractionInstructions",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          instructions: {
-            ...base.config.instructions,
-            extractionInstructions: "",
+        }),
+        expectedError: "Clustering instructions cannot be empty",
+      },
+      {
+        name: "extractionInstructions",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            instructions: {
+              ...base.config.instructions,
+              extractionInstructions: "",
+            },
           },
-        },
-      }),
-      "Extraction instructions cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty dedupInstructions",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          instructions: {
-            ...base.config.instructions,
-            dedupInstructions: "",
+        }),
+        expectedError: "Extraction instructions cannot be empty",
+      },
+      {
+        name: "dedupInstructions",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            instructions: {
+              ...base.config.instructions,
+              dedupInstructions: "",
+            },
           },
-        },
-      }),
-      "Dedup instructions cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty summariesInstructions",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          instructions: {
-            ...base.config.instructions,
-            summariesInstructions: "",
+        }),
+        expectedError: "Dedup instructions cannot be empty",
+      },
+      {
+        name: "summariesInstructions",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            instructions: {
+              ...base.config.instructions,
+              summariesInstructions: "",
+            },
           },
-        },
-      }),
-      "Summaries instructions cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty cruxInstructions",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          instructions: {
-            ...base.config.instructions,
-            cruxInstructions: "",
+        }),
+        expectedError: "Summaries instructions cannot be empty",
+      },
+      {
+        name: "cruxInstructions",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            instructions: {
+              ...base.config.instructions,
+              cruxInstructions: "",
+            },
           },
-        },
-      }),
-      "Crux instructions cannot be empty",
-    );
-  });
-
-  describe("empty string validation for other fields", () => {
-    testEmptyStringRejection(
-      "should reject empty model name",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          llm: {
-            model: "",
+        }),
+        expectedError: "Crux instructions cannot be empty",
+      },
+      {
+        name: "model name",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            llm: {
+              model: "",
+            },
           },
-        },
-      }),
-      "Model name cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty API key",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          env: {
-            OPENAI_API_KEY: "",
+        }),
+        expectedError: "Model name cannot be empty",
+      },
+      {
+        name: "API key",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            env: {
+              OPENAI_API_KEY: "",
+            },
           },
-        },
-      }),
-      "API key cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty reportId",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          firebaseDetails: {
-            ...base.config.firebaseDetails,
-            reportId: "",
+        }),
+        expectedError: "API key cannot be empty",
+      },
+      {
+        name: "reportId",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            firebaseDetails: {
+              ...base.config.firebaseDetails,
+              reportId: "",
+            },
           },
-        },
-      }),
-      "Report ID cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty userId",
-      (base) => ({
-        ...base,
-        config: {
-          ...base.config,
-          firebaseDetails: {
-            ...base.config.firebaseDetails,
-            userId: "",
+        }),
+        expectedError: "Report ID cannot be empty",
+      },
+      {
+        name: "userId",
+        createInvalidData: (base) => ({
+          ...base,
+          config: {
+            ...base.config,
+            firebaseDetails: {
+              ...base.config.firebaseDetails,
+              userId: "",
+            },
           },
-        },
-      }),
-      "User ID cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty title",
-      (base) => ({
-        ...base,
-        reportDetails: {
-          ...base.reportDetails,
-          title: "",
-        },
-      }),
-      "Title cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty description",
-      (base) => ({
-        ...base,
-        reportDetails: {
-          ...base.reportDetails,
-          description: "",
-        },
-      }),
-      "Description cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty question",
-      (base) => ({
-        ...base,
-        reportDetails: {
-          ...base.reportDetails,
-          question: "",
-        },
-      }),
-      "Question cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty filename",
-      (base) => ({
-        ...base,
-        reportDetails: {
-          ...base.reportDetails,
-          filename: "",
-        },
-      }),
-      "Filename cannot be empty",
-    );
-  });
-
-  describe("empty string validation for comment data", () => {
-    testEmptyStringRejection(
-      "should reject empty comment_id",
-      (base) => ({
-        ...base,
-        data: [
-          {
-            comment_id: "",
-            comment_text: "Valid text",
-            speaker: "participant",
+        }),
+        expectedError: "User ID cannot be empty",
+      },
+      {
+        name: "title",
+        createInvalidData: (base) => ({
+          ...base,
+          reportDetails: {
+            ...base.reportDetails,
+            title: "",
           },
-        ],
-      }),
-      "Comment ID cannot be empty",
-    );
-
-    testEmptyStringRejection(
-      "should reject empty comment_text",
-      (base) => ({
-        ...base,
-        data: [
-          {
-            comment_id: "comment-1",
-            comment_text: "",
-            speaker: "participant",
+        }),
+        expectedError: "Title cannot be empty",
+      },
+      {
+        name: "description",
+        createInvalidData: (base) => ({
+          ...base,
+          reportDetails: {
+            ...base.reportDetails,
+            description: "",
           },
-        ],
-      }),
-      "Comment text cannot be empty",
-    );
+        }),
+        expectedError: "Description cannot be empty",
+      },
+      {
+        name: "question",
+        createInvalidData: (base) => ({
+          ...base,
+          reportDetails: {
+            ...base.reportDetails,
+            question: "",
+          },
+        }),
+        expectedError: "Question cannot be empty",
+      },
+      {
+        name: "filename",
+        createInvalidData: (base) => ({
+          ...base,
+          reportDetails: {
+            ...base.reportDetails,
+            filename: "",
+          },
+        }),
+        expectedError: "Filename cannot be empty",
+      },
+      {
+        name: "comment_id",
+        createInvalidData: (base) => ({
+          ...base,
+          data: [
+            {
+              comment_id: "",
+              comment_text: "Valid text",
+              speaker: "participant",
+            },
+          ],
+        }),
+        expectedError: "Comment ID cannot be empty",
+      },
+      {
+        name: "comment_text",
+        createInvalidData: (base) => ({
+          ...base,
+          data: [
+            {
+              comment_id: "comment-1",
+              comment_text: "",
+              speaker: "participant",
+            },
+          ],
+        }),
+        expectedError: "Comment text cannot be empty",
+      },
+    ];
+
+    it.each(emptyStringTestCases)("should reject empty $name", ({
+      createInvalidData,
+      expectedError,
+    }) => {
+      const invalid = createInvalidData(validPipelineJob);
+      const result = pipelineJobSchema.safeParse(invalid);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe(expectedError);
+      }
+    });
   });
 });
