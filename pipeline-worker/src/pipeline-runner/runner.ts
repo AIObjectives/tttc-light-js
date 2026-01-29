@@ -923,7 +923,7 @@ async function executeAllSteps(
       // If we've exceeded the retry limit, fail the pipeline permanently
       // Check AFTER incrementing to avoid race condition where two workers
       // both read count=2, both pass check, both increment → count=4 when MAX=3
-      if (newFailureCount > MAX_VALIDATION_FAILURES) {
+      if (newFailureCount >= MAX_VALIDATION_FAILURES) {
         return failure(
           new PipelineStepError(
             stepName,

@@ -745,7 +745,7 @@ describe("Pipeline Runner", () => {
         usage: mockClusteringResult.usage,
         // Missing 'cost' field - will fail validation
       } as typeof mockClusteringResult;
-      existingState.validationFailures.clustering = 3; // Already at max retries
+      existingState.validationFailures.clustering = 2; // At max-1 retries
       await stateStore.save(existingState);
 
       const config: PipelineRunnerConfig = {
@@ -757,7 +757,7 @@ describe("Pipeline Runner", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeInstanceOf(PipelineStepError);
-      expect(result.error?.message).toContain("validation failed 4 times");
+      expect(result.error?.message).toContain("validation failed 3 times");
       expect(result.error?.message).toContain("permanently corrupted");
     });
 
@@ -799,7 +799,7 @@ describe("Pipeline Runner", () => {
         usage: mockClusteringResult.usage,
         // Missing 'cost' field - will fail validation and trigger re-run
       } as typeof mockClusteringResult;
-      existingState.validationFailures.clustering = 2; // Had previous failures
+      existingState.validationFailures.clustering = 1; // Had previous failures
       await stateStore.save(existingState);
 
       const config: PipelineRunnerConfig = {

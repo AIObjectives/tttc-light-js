@@ -606,15 +606,15 @@ describe("Distributed Locking with Real Redis", () => {
           // Missing 'cost' field - will fail validation
         } as typeof mockClusteringResult;
 
-        // Set validation counter to 3 (at the limit)
+        // Set validation counter to 2 (one below the limit)
         await stateStore.save(state);
         await cache.set(
           `pipeline_validation_failure:${reportId}:clustering`,
-          "3",
+          "2",
         );
       }
 
-      // Try to resume - should fail permanently after incrementing to 4
+      // Try to resume - should fail permanently after incrementing to 3
       const resumeConfig = createTestConfig({
         reportId,
         resumeFromState: true,
@@ -623,7 +623,7 @@ describe("Distributed Locking with Real Redis", () => {
       const result = await runPipeline(input, resumeConfig, stateStore);
 
       expect(result.success).toBe(false);
-      expect(result.error?.message).toContain("validation failed 4 times");
+      expect(result.error?.message).toContain("validation failed 3 times");
       expect(result.error?.message).toContain("permanently corrupted");
     });
   });
