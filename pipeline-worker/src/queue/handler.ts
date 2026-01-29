@@ -604,7 +604,7 @@ async function executePipelineWithLock(
   refStore: RefStoreServices,
   data: PipelineJobMessage,
   jobLogger: typeof queueLogger,
-): Promise<Result<void, HandlerError | StorageError>> {
+): Promise<Result<void, HandlerError | StorageError | ValidationError>> {
   const lockAcquired = await stateStore.acquirePipelineLock(
     reportId,
     lockValue,
@@ -647,6 +647,22 @@ async function executePipelineWithLock(
           jobLogger,
         );
       } catch (error) {
+        // Preserve ValidationError type information for proper error handling
+        if (error instanceof ValidationError) {
+          jobLogger.error(
+            { error: error.message },
+            "Failed to reconstruct pipeline output from completed state",
+          );
+          await updateFirestoreWithError(
+            reportId,
+            error.message,
+            refStore,
+            jobLogger,
+          );
+          return failure(error);
+        }
+
+        // Handle other error types
         const cause = error instanceof Error ? error : new Error(String(error));
         jobLogger.error(
           { error: cause.message },
