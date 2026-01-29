@@ -696,7 +696,7 @@ async function executePipelineWithLock(
       return failure(
         new HandlerError(
           "Pipeline lock lost during execution - cannot safely process results to prevent duplicate processing",
-          false,
+          true,
         ),
       );
     }
