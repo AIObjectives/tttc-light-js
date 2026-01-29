@@ -173,7 +173,7 @@ type MockData = {
 
 const saveSuccessfulPipeline = async (
   result: MockPipelineResult,
-  data: MockData,
+  _data: MockData,
   reportId: string,
   storage: MockStorage,
   refStore: MockRefStore,
@@ -193,7 +193,7 @@ const saveSuccessfulPipeline = async (
   } catch (firestoreError) {
     try {
       await storage.deleteFile(`${reportId}.json`);
-    } catch (deleteError) {
+    } catch (_deleteError) {
       // Log but don't throw - deletion failure shouldn't mask original error
     }
     throw firestoreError;
@@ -533,6 +533,7 @@ describe("handlePipelineJob - save-only retry", () => {
     mockStorage = {
       storeFile: vi.fn(),
       fileExists: vi.fn(),
+      deleteFile: vi.fn(),
     } as unknown as BucketStore;
 
     mockRefStore = {
@@ -685,5 +686,350 @@ describe("handlePipelineJob - save-only retry", () => {
       expect(savedOutput.analytics.totalCost).toBe(0.0063);
       expect(savedOutput.reportDetails.title).toBe("Test Report");
     }
+  });
+});
+
+describe("handlePipelineJob - running state staleness check", () => {
+  const createRunningState = (updatedAt: string): PipelineState => ({
+    version: "1.0",
+    reportId: "test-report-123",
+    userId: "test-user-123",
+    createdAt: new Date("2026-01-01T00:00:00Z").toISOString(),
+    updatedAt,
+    status: "running",
+    currentStep: "claims",
+    stepAnalytics: {
+      clustering: {
+        stepName: "clustering",
+        status: "completed",
+        startedAt: new Date("2026-01-01T00:00:00Z").toISOString(),
+        completedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
+        durationMs: 900000,
+        totalTokens: 150,
+        cost: 0.001,
+      },
+      claims: {
+        stepName: "claims",
+        status: "in_progress",
+        startedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
+      },
+      sort_and_deduplicate: {
+        stepName: "sort_and_deduplicate",
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
+      },
+      summaries: {
+        stepName: "summaries",
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
+      },
+      cruxes: {
+        stepName: "cruxes",
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
+      },
+    },
+    completedResults: {
+      clustering: {
+        data: [
+          {
+            topicName: "Test Topic",
+            topicShortDescription: "A test topic",
+            subtopics: [
+              {
+                subtopicName: "Test Subtopic",
+                subtopicShortDescription: "A test subtopic",
+              },
+            ],
+          },
+        ],
+        usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+        cost: 0.001,
+      },
+    },
+    validationFailures: {
+      clustering: 0,
+      claims: 0,
+      sort_and_deduplicate: 0,
+      summaries: 0,
+      cruxes: 0,
+    },
+    totalTokens: 150,
+    totalCost: 0.001,
+    totalDurationMs: 900000,
+  });
+
+  const createMockMessage = (): PubSubMessage<{
+    data: Array<{ comment_id: string; comment_text: string; speaker: string }>;
+    config: {
+      instructions: {
+        systemInstructions: string;
+        clusteringInstructions: string;
+        extractionInstructions: string;
+        dedupInstructions: string;
+        summariesInstructions: string;
+        cruxInstructions: string;
+        outputLanguage?: string;
+      };
+      llm: { model: string; temperature: number; max_tokens: number };
+      options: { cruxes: boolean; sortStrategy: "numPeople" | "numClaims" };
+      env: { OPENAI_API_KEY: string };
+      firebaseDetails: { reportId: string; userId: string };
+    };
+    reportDetails: {
+      title: string;
+      description: string;
+      question: string;
+      filename: string;
+    };
+  }> => ({
+    id: "msg-123",
+    data: {
+      data: [
+        { comment_id: "c1", comment_text: "Test comment", speaker: "Speaker1" },
+      ],
+      config: {
+        instructions: {
+          systemInstructions: "System instructions",
+          clusteringInstructions: "Clustering instructions",
+          extractionInstructions: "Extraction instructions",
+          dedupInstructions: "Dedup instructions",
+          summariesInstructions: "Summaries instructions",
+          cruxInstructions: "Crux instructions",
+        },
+        llm: { model: "gpt-4", temperature: 0.7, max_tokens: 1000 },
+        options: { cruxes: false, sortStrategy: "numPeople" },
+        env: { OPENAI_API_KEY: "test-api-key" },
+        firebaseDetails: {
+          reportId: "test-report-123",
+          userId: "test-user-123",
+        },
+      },
+      reportDetails: {
+        title: "Test Report",
+        description: "Test Description",
+        question: "Test Question",
+        filename: "test.csv",
+      },
+    },
+    attributes: { requestId: "req-123" },
+    publishTime: new Date(),
+  });
+
+  let mockStateStore: RedisPipelineStateStore;
+  let mockStorage: BucketStore;
+  let mockRefStore: RefStoreServices;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockStateStore = {
+      get: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
+      update: vi.fn(),
+      acquirePipelineLock: vi.fn(),
+      extendPipelineLock: vi.fn(),
+      releasePipelineLock: vi.fn(),
+      incrementValidationFailure: vi.fn(),
+    } as unknown as RedisPipelineStateStore;
+
+    mockStorage = {
+      storeFile: vi.fn(),
+      fileExists: vi.fn(),
+      deleteFile: vi.fn(),
+    } as unknown as BucketStore;
+
+    mockRefStore = {
+      Report: {
+        get: vi.fn(),
+        modify: vi.fn(),
+        create: vi.fn(),
+        delete: vi.fn(),
+      },
+    } as unknown as RefStoreServices;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should skip resuming a fresh 'running' state (< lock TTL)", async () => {
+    // State updated 5 minutes ago (well within 35 minute lock TTL)
+    const recentTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const runningState = createRunningState(recentTime);
+    const message = createMockMessage();
+
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: false });
+    vi.mocked(mockStateStore.get).mockResolvedValue(runningState);
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should succeed but not resume - just skip
+    expect(result.tag).toBe("success");
+
+    // Pipeline should NOT have been run (would have been called if resuming)
+    const { runPipeline } = await import("../../pipeline-runner/index.js");
+    expect(runPipeline).not.toHaveBeenCalled();
+  });
+
+  it("should resume a stale 'running' state (> lock TTL)", async () => {
+    // State updated 40 minutes ago (exceeds 35 minute lock TTL)
+    const staleTime = new Date(Date.now() - 40 * 60 * 1000).toISOString();
+    const runningState = createRunningState(staleTime);
+    const message = createMockMessage();
+
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: false });
+    vi.mocked(mockStateStore.get).mockResolvedValue(runningState);
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStateStore.extendPipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStateStore.releasePipelineLock).mockResolvedValue(true);
+
+    // Mock runPipeline to return success with proper PipelineResult shape
+    const { runPipeline } = await import("../../pipeline-runner/index.js");
+    const mockCompletedState = {
+      ...runningState,
+      status: "completed" as const,
+      totalTokens: 0,
+      totalCost: 0,
+      totalDurationMs: 1000,
+    };
+    vi.mocked(runPipeline).mockResolvedValue({
+      success: true,
+      state: mockCompletedState,
+      outputs: {
+        topicTree: [],
+        claimsTree: {},
+        sortedTree: [],
+        summaries: [],
+      },
+    });
+
+    vi.mocked(mockStorage.storeFile).mockResolvedValue(
+      "gs://bucket/test-report-123.json",
+    );
+    vi.mocked(mockRefStore.Report.get).mockResolvedValue({
+      id: "test-report-123",
+      userId: "test-user-123",
+      reportDataUri: "gs://bucket/test-report-123.json",
+      title: "Test Report",
+      description: "Test Description",
+      numTopics: 0,
+      numSubtopics: 0,
+      numClaims: 0,
+      numPeople: 0,
+      status: "processing",
+      createdDate: new Date(),
+      lastStatusUpdate: new Date(),
+    });
+    vi.mocked(mockRefStore.Report.modify).mockResolvedValue(undefined);
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should succeed and resume
+    expect(result.tag).toBe("success");
+
+    // Pipeline SHOULD have been run with resume flag
+    expect(runPipeline).toHaveBeenCalledWith(
+      expect.anything(), // pipelineInput
+      expect.objectContaining({
+        resumeFromState: true,
+      }),
+      expect.anything(), // stateStore
+    );
+  });
+
+  it("should always resume 'failed' state regardless of staleness", async () => {
+    // State updated just 1 minute ago but status is failed
+    const recentTime = new Date(Date.now() - 1 * 60 * 1000).toISOString();
+    const failedState: PipelineState = {
+      ...createRunningState(recentTime),
+      status: "failed",
+      error: {
+        message: "Test error",
+        name: "Error",
+        step: "claims",
+      },
+    };
+    const message = createMockMessage();
+
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: false });
+    vi.mocked(mockStateStore.get).mockResolvedValue(failedState);
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStateStore.extendPipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStateStore.releasePipelineLock).mockResolvedValue(true);
+
+    // Mock runPipeline to return success with proper PipelineResult shape
+    const { runPipeline } = await import("../../pipeline-runner/index.js");
+    const mockCompletedState = {
+      ...failedState,
+      status: "completed" as const,
+      totalTokens: 0,
+      totalCost: 0,
+      totalDurationMs: 1000,
+      error: undefined,
+    };
+    vi.mocked(runPipeline).mockResolvedValue({
+      success: true,
+      state: mockCompletedState,
+      outputs: {
+        topicTree: [],
+        claimsTree: {},
+        sortedTree: [],
+        summaries: [],
+      },
+    });
+
+    vi.mocked(mockStorage.storeFile).mockResolvedValue(
+      "gs://bucket/test-report-123.json",
+    );
+    vi.mocked(mockRefStore.Report.get).mockResolvedValue({
+      id: "test-report-123",
+      userId: "test-user-123",
+      reportDataUri: "gs://bucket/test-report-123.json",
+      title: "Test Report",
+      description: "Test Description",
+      numTopics: 0,
+      numSubtopics: 0,
+      numClaims: 0,
+      numPeople: 0,
+      status: "processing",
+      createdDate: new Date(),
+      lastStatusUpdate: new Date(),
+    });
+    vi.mocked(mockRefStore.Report.modify).mockResolvedValue(undefined);
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should succeed and resume even though recently updated
+    expect(result.tag).toBe("success");
+
+    // Pipeline SHOULD have been run with resume from state
+    expect(runPipeline).toHaveBeenCalled();
   });
 });

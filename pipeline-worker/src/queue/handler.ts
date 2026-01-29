@@ -8,6 +8,7 @@ import { logger } from "tttc-common/logger";
 import type { PipelineJobMessage } from "tttc-common/schema";
 import type { BucketStore } from "../bucketstore/index.js";
 import type { RefStoreServices } from "../datastore/refstore/index.js";
+import { STATE_STALENESS_THRESHOLD_MS } from "../pipeline-runner/constants.js";
 import {
   formatPipelineOutput,
   type SimplifiedPipelineOutput,
@@ -424,12 +425,30 @@ async function checkStorageExists(
 
 /**
  * Determine if pipeline should resume from existing state
+ *
+ * For "running" states, checks staleness to prevent resuming pipelines
+ * that might still be actively processing by another worker.
  */
 function shouldResumeFromState(
   state: Awaited<ReturnType<RedisPipelineStateStore["get"]>>,
 ): boolean {
   if (!state) return false;
-  return state.status === "running" || state.status === "failed";
+
+  // Always resume failed states
+  if (state.status === "failed") return true;
+
+  // For running states, check staleness to prevent unsafe resume
+  if (state.status === "running") {
+    const updatedAt = new Date(state.updatedAt).getTime();
+    const now = Date.now();
+    const ageMs = now - updatedAt;
+
+    // Only resume if state is stale (older than lock TTL)
+    // This indicates the previous worker's lock has expired
+    return ageMs >= STATE_STALENESS_THRESHOLD_MS;
+  }
+
+  return false;
 }
 
 /**
@@ -689,6 +708,18 @@ async function executePipelineWithLock(
           ),
         );
       }
+    }
+
+    // Skip if state is "running" but not stale (another worker is actively processing)
+    if (existingState?.status === "running" && !shouldResume) {
+      jobLogger.info(
+        {
+          currentStep: existingState.currentStep,
+          updatedAt: existingState.updatedAt,
+        },
+        "Pipeline state is running but not stale - another worker is actively processing, skipping",
+      );
+      return success(undefined);
     }
 
     // Normal pipeline execution path

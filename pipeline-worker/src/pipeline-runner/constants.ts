@@ -42,3 +42,16 @@ export const LOCK_EXTENSION_SECONDS = Math.ceil(
  * This provides multiple refresh opportunities before expiration.
  */
 export const LOCK_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * State staleness threshold: equal to LOCK_TTL_SECONDS (35 minutes)
+ * Used to determine if a "running" state is stale and safe to resume.
+ * If a state hasn't been updated within this threshold, we consider the
+ * lock to have expired and the pipeline to be abandoned.
+ *
+ * This prevents resuming pipelines that might still be actively processing
+ * by another worker (e.g., lock expired during a very long step).
+ *
+ * Example: 35 minutes (matches lock TTL)
+ */
+export const STATE_STALENESS_THRESHOLD_MS = LOCK_TTL_SECONDS * 1000;
