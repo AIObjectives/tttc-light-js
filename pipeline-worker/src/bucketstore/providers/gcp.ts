@@ -136,14 +136,22 @@ export class GCPBucketStore implements BucketStore {
   ): Promise<string> {
     try {
       const bucketRef = this.storage.bucket(this.bucketName);
-      const file = bucketRef.file(fileName);
 
-      // Save the file with specified content type
-      await file.save(fileContent, {
+      // Use temporary filename to prevent serving corrupted files on partial upload
+      const tempFileName = `${fileName}.tmp.${Date.now()}`;
+      const tempFile = bucketRef.file(tempFileName);
+      const finalFile = bucketRef.file(fileName);
+
+      // Save to temporary file first
+      await tempFile.save(fileContent, {
         metadata: {
           contentType,
         },
       });
+
+      // Atomically rename to final filename (overwrites existing file if present)
+      // This ensures that either the complete file is available or no file exists
+      await tempFile.move(finalFile);
 
       // Generate the public URL for the file
       const url = `https://storage.googleapis.com/${this.bucketName}/${fileName}`;
