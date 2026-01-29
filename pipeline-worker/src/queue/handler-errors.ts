@@ -11,7 +11,7 @@
 export class HandlerError extends Error {
   constructor(
     message: string,
-    public readonly isTransient: boolean = false,
+    public readonly isTransient: boolean,
     public readonly cause?: Error,
   ) {
     super(message);
