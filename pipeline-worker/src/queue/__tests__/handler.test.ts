@@ -1059,6 +1059,66 @@ describe("handlePipelineJob - save-only retry", () => {
 });
 
 describe("handlePipelineJob - running state staleness check", () => {
+  // Helper to create step analytics for running state tests
+  const createRunningStepAnalytics = () => ({
+    clustering: {
+      stepName: "clustering" as const,
+      status: "completed" as const,
+      startedAt: new Date("2026-01-01T00:00:00Z").toISOString(),
+      completedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
+      durationMs: 900000,
+      totalTokens: 150,
+      cost: 0.001,
+    },
+    claims: {
+      stepName: "claims" as const,
+      status: "in_progress" as const,
+      startedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
+      durationMs: 0,
+      totalTokens: 0,
+      cost: 0,
+    },
+    sort_and_deduplicate: {
+      stepName: "sort_and_deduplicate" as const,
+      status: "pending" as const,
+      durationMs: 0,
+      totalTokens: 0,
+      cost: 0,
+    },
+    summaries: {
+      stepName: "summaries" as const,
+      status: "pending" as const,
+      durationMs: 0,
+      totalTokens: 0,
+      cost: 0,
+    },
+    cruxes: {
+      stepName: "cruxes" as const,
+      status: "pending" as const,
+      durationMs: 0,
+      totalTokens: 0,
+      cost: 0,
+    },
+  });
+
+  // Helper to create completed clustering result
+  const createClusteringResult = () => ({
+    data: [
+      {
+        topicName: "Test Topic",
+        topicShortDescription: "A test topic",
+        subtopics: [
+          {
+            subtopicName: "Test Subtopic",
+            subtopicShortDescription: "A test subtopic",
+          },
+        ],
+      },
+    ],
+    usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+    cost: 0.001,
+  });
+
   const createRunningState = (updatedAt: string): PipelineState => ({
     version: "1.0",
     reportId: "test-report-123",
@@ -1067,63 +1127,9 @@ describe("handlePipelineJob - running state staleness check", () => {
     updatedAt,
     status: "running",
     currentStep: "claims",
-    stepAnalytics: {
-      clustering: {
-        stepName: "clustering",
-        status: "completed",
-        startedAt: new Date("2026-01-01T00:00:00Z").toISOString(),
-        completedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
-        durationMs: 900000,
-        totalTokens: 150,
-        cost: 0.001,
-      },
-      claims: {
-        stepName: "claims",
-        status: "in_progress",
-        startedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
-        durationMs: 0,
-        totalTokens: 0,
-        cost: 0,
-      },
-      sort_and_deduplicate: {
-        stepName: "sort_and_deduplicate",
-        status: "pending",
-        durationMs: 0,
-        totalTokens: 0,
-        cost: 0,
-      },
-      summaries: {
-        stepName: "summaries",
-        status: "pending",
-        durationMs: 0,
-        totalTokens: 0,
-        cost: 0,
-      },
-      cruxes: {
-        stepName: "cruxes",
-        status: "pending",
-        durationMs: 0,
-        totalTokens: 0,
-        cost: 0,
-      },
-    },
+    stepAnalytics: createRunningStepAnalytics(),
     completedResults: {
-      clustering: {
-        data: [
-          {
-            topicName: "Test Topic",
-            topicShortDescription: "A test topic",
-            subtopics: [
-              {
-                subtopicName: "Test Subtopic",
-                subtopicShortDescription: "A test subtopic",
-              },
-            ],
-          },
-        ],
-        usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-        cost: 0.001,
-      },
+      clustering: createClusteringResult(),
     },
     validationFailures: {
       clustering: 0,
