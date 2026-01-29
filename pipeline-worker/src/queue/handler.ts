@@ -431,25 +431,16 @@ function shouldResumeFromState(
 }
 
 /**
- * Check if pipeline should be skipped due to existing completion.
+ * Check if pipeline should be skipped due to existing storage file.
  *
  * Storage errors (both transient and permanent) are returned as failures.
+ * State checks are deferred until after lock acquisition to prevent race conditions.
  */
-async function shouldSkipPipeline(
+async function checkStorageForSkip(
   reportId: string,
   storage: BucketStore,
-  stateStore: RedisPipelineStateStore,
   jobLogger: typeof queueLogger,
-): Promise<
-  Result<
-    {
-      skip: boolean;
-      shouldResume: boolean;
-      existingState: Awaited<ReturnType<typeof stateStore.get>>;
-    },
-    StorageError
-  >
-> {
+): Promise<Result<{ skip: boolean }, StorageError>> {
   const storageCheck = await checkStorageExists(reportId, storage, jobLogger);
 
   if (storageCheck.tag === "failure") {
@@ -457,22 +448,10 @@ async function shouldSkipPipeline(
   }
 
   if (storageCheck.value.exists) {
-    return success({ skip: true, shouldResume: false, existingState: null });
+    return success({ skip: true });
   }
 
-  const existingState = await stateStore.get(reportId);
-  const shouldResume = shouldResumeFromState(existingState);
-
-  if (existingState?.status === "completed") {
-    // If we reach here, storage check succeeded but file doesn't exist
-    // This means the pipeline completed but the file was deleted or never saved
-    // The save-only retry will be handled in executePipelineWithLock
-    jobLogger.info(
-      "Pipeline marked completed but storage missing, will retry save operations",
-    );
-  }
-
-  return success({ skip: false, shouldResume, existingState });
+  return success({ skip: false });
 }
 
 /**
@@ -593,14 +572,13 @@ async function handlePipelineFailure(
 }
 
 /**
- * Execute pipeline with locking to prevent concurrent execution
+ * Execute pipeline with locking to prevent concurrent execution.
+ * State is read AFTER lock acquisition to prevent TOCTOU race conditions.
  */
 async function executePipelineWithLock(
   reportId: string,
   userId: string,
   lockValue: string,
-  shouldResume: boolean,
-  existingState: Awaited<ReturnType<RedisPipelineStateStore["get"]>>,
   pipelineInput: PipelineInput,
   stateStore: RedisPipelineStateStore,
   storage: BucketStore,
@@ -621,6 +599,10 @@ async function executePipelineWithLock(
   }
 
   try {
+    // Read state AFTER acquiring lock to prevent race conditions
+    const existingState = await stateStore.get(reportId);
+    const shouldResume = shouldResumeFromState(existingState);
+
     // Handle save-only path: pipeline completed but save operations failed
     if (existingState?.status === "completed") {
       jobLogger.info(
@@ -802,13 +784,8 @@ export async function handlePipelineJob(
     return inputResult;
   }
 
-  // Check if we should skip
-  const skipResult = await shouldSkipPipeline(
-    reportId,
-    storage,
-    stateStore,
-    jobLogger,
-  );
+  // Check if storage file already exists (quick optimization before acquiring lock)
+  const skipResult = await checkStorageForSkip(reportId, storage, jobLogger);
 
   if (skipResult.tag === "failure") {
     jobLogger.error({ error: skipResult.error }, "Storage check failed");
@@ -826,13 +803,11 @@ export async function handlePipelineJob(
     return success(undefined);
   }
 
-  // Execute pipeline
+  // Execute pipeline - state will be read after lock acquisition to prevent race conditions
   return executePipelineWithLock(
     reportId,
     userId,
     message.id,
-    skipResult.value.shouldResume,
-    skipResult.value.existingState,
     inputResult.value,
     stateStore,
     storage,
