@@ -1,3 +1,4 @@
+// @codescene(disable:"Code Duplication") <-- reason:"Validation test cases require similar structure for comprehensive coverage"
 import { describe, expect, it } from "vitest";
 import { pipelineJobSchema } from "../pipelineJob";
 
