@@ -35,28 +35,28 @@ function validatePipelineJobConfig(
   const { instructions, llm, options, env } = config;
 
   const requiredFields = [
-    { value: llm.model, name: "config.llm.model" },
+    { value: llm.model, name: "LLM model" },
     {
       value: instructions.systemInstructions,
-      name: "config.instructions.systemInstructions",
+      name: "system instructions",
     },
     {
       value: instructions.clusteringInstructions,
-      name: "config.instructions.clusteringInstructions",
+      name: "clustering instructions",
     },
     {
       value: instructions.extractionInstructions,
-      name: "config.instructions.extractionInstructions",
+      name: "extraction instructions",
     },
     {
       value: instructions.dedupInstructions,
-      name: "config.instructions.dedupInstructions",
+      name: "deduplication instructions",
     },
     {
       value: instructions.summariesInstructions,
-      name: "config.instructions.summariesInstructions",
+      name: "summaries instructions",
     },
-    { value: env.OPENAI_API_KEY, name: "config.env.OPENAI_API_KEY" },
+    { value: env.OPENAI_API_KEY, name: "API key" },
   ];
 
   for (const field of requiredFields) {
@@ -74,7 +74,7 @@ function validatePipelineJobConfig(
   ) {
     return failure(
       new ValidationError(
-        "Missing required field: config.instructions.cruxInstructions (required when cruxes are enabled)",
+        "Missing required field: crux instructions (required when cruxes are enabled)",
       ),
     );
   }
