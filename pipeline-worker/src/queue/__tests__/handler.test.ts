@@ -700,20 +700,20 @@ describe("handlePipelineJob - save-only retry", () => {
   };
 
   // Helper to create step analytics with completed status
-  const createStepAnalytics = (
-    stepName: PipelineStepName,
-    startTime: string,
-    endTime: string,
-    tokens: number,
-    cost: number,
-  ) => ({
-    stepName,
+  const createStepAnalytics = (options: {
+    stepName: PipelineStepName;
+    startTime: string;
+    endTime: string;
+    tokens: number;
+    cost: number;
+  }) => ({
+    stepName: options.stepName,
     status: "completed" as const,
-    startedAt: startTime,
-    completedAt: endTime,
+    startedAt: options.startTime,
+    completedAt: options.endTime,
     durationMs: 900000,
-    totalTokens: tokens,
-    cost,
+    totalTokens: options.tokens,
+    cost: options.cost,
   });
 
   // Helper to create completed results for all pipeline steps
@@ -788,34 +788,34 @@ describe("handlePipelineJob - save-only retry", () => {
     updatedAt: new Date("2026-01-01T01:00:00Z").toISOString(),
     status: "completed",
     stepAnalytics: {
-      clustering: createStepAnalytics(
-        "clustering",
-        new Date("2026-01-01T00:00:00Z").toISOString(),
-        new Date("2026-01-01T00:15:00Z").toISOString(),
-        150,
-        0.001,
-      ),
-      claims: createStepAnalytics(
-        "claims",
-        new Date("2026-01-01T00:15:00Z").toISOString(),
-        new Date("2026-01-01T00:30:00Z").toISOString(),
-        300,
-        0.002,
-      ),
-      sort_and_deduplicate: createStepAnalytics(
-        "sort_and_deduplicate",
-        new Date("2026-01-01T00:30:00Z").toISOString(),
-        new Date("2026-01-01T00:45:00Z").toISOString(),
-        200,
-        0.0015,
-      ),
-      summaries: createStepAnalytics(
-        "summaries",
-        new Date("2026-01-01T00:45:00Z").toISOString(),
-        new Date("2026-01-01T01:00:00Z").toISOString(),
-        250,
-        0.0018,
-      ),
+      clustering: createStepAnalytics({
+        stepName: "clustering",
+        startTime: new Date("2026-01-01T00:00:00Z").toISOString(),
+        endTime: new Date("2026-01-01T00:15:00Z").toISOString(),
+        tokens: 150,
+        cost: 0.001,
+      }),
+      claims: createStepAnalytics({
+        stepName: "claims",
+        startTime: new Date("2026-01-01T00:15:00Z").toISOString(),
+        endTime: new Date("2026-01-01T00:30:00Z").toISOString(),
+        tokens: 300,
+        cost: 0.002,
+      }),
+      sort_and_deduplicate: createStepAnalytics({
+        stepName: "sort_and_deduplicate",
+        startTime: new Date("2026-01-01T00:30:00Z").toISOString(),
+        endTime: new Date("2026-01-01T00:45:00Z").toISOString(),
+        tokens: 200,
+        cost: 0.0015,
+      }),
+      summaries: createStepAnalytics({
+        stepName: "summaries",
+        startTime: new Date("2026-01-01T00:45:00Z").toISOString(),
+        endTime: new Date("2026-01-01T01:00:00Z").toISOString(),
+        tokens: 250,
+        cost: 0.0018,
+      }),
       cruxes: {
         stepName: "cruxes",
         status: "skipped",
