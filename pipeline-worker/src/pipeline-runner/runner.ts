@@ -1325,6 +1325,8 @@ export async function runPipeline(
   const { signal } = abortController;
 
   // Create timeout promise that respects abort signal
+  // Note: This promise only rejects (never resolves) which is intentional.
+  // In Promise.race, the main pipeline promise handles the success case.
   const timeoutPromise = new Promise<PipelineResult>((_, reject) => {
     const timeoutId = setTimeout(() => {
       if (!signal.aborted) {
