@@ -25,7 +25,11 @@ import type {
   Topic,
   TopicTreeResult,
 } from "../pipeline-steps/types.js";
-import { PIPELINE_TIMEOUT_MS } from "./constants.js";
+import {
+  LOCK_REFRESH_INTERVAL_MS,
+  LOCK_TTL_SECONDS,
+  PIPELINE_TIMEOUT_MS,
+} from "./constants.js";
 import {
   createInitialState,
   getNextStep,
@@ -262,6 +266,80 @@ interface StepExecutionResult<T> {
   outputTokens: number;
   totalTokens: number;
   cost: number;
+}
+
+/**
+ * Start periodic lock extension during long-running step execution.
+ * Returns a cleanup function to stop the extension timer.
+ *
+ * @param stateStore - State store for lock operations
+ * @param reportId - Report identifier
+ * @param lockValue - Lock value to verify ownership
+ * @param reportLogger - Logger instance
+ * @returns Cleanup function to stop the extension timer
+ */
+function startLockExtension(
+  stateStore: RedisPipelineStateStore,
+  reportId: string,
+  lockValue: string | undefined,
+  reportLogger: typeof runnerLogger,
+): () => void {
+  // If no lock value provided, return no-op cleanup
+  if (!lockValue) {
+    return () => {};
+  }
+
+  let extensionCount = 0;
+
+  const intervalId = setInterval(async () => {
+    try {
+      extensionCount++;
+      const refreshed = await stateStore.refreshPipelineLock(
+        reportId,
+        lockValue,
+      );
+
+      if (refreshed) {
+        reportLogger.debug(
+          {
+            reportId,
+            extensionCount,
+            newTtlSeconds: LOCK_TTL_SECONDS,
+          },
+          "Lock TTL refreshed during step execution",
+        );
+      } else {
+        reportLogger.warn(
+          {
+            reportId,
+            extensionCount,
+            lockValue,
+          },
+          "Failed to refresh lock during step execution - lock may have expired or been acquired by another worker",
+        );
+      }
+    } catch (error) {
+      reportLogger.error(
+        {
+          error,
+          reportId,
+          extensionCount,
+        },
+        "Error refreshing lock during step execution",
+      );
+    }
+  }, LOCK_REFRESH_INTERVAL_MS);
+
+  // Return cleanup function
+  return () => {
+    clearInterval(intervalId);
+    if (extensionCount > 0) {
+      reportLogger.debug(
+        { reportId, extensionCount },
+        "Lock extension timer stopped",
+      );
+    }
+  };
 }
 
 /**
@@ -664,8 +742,22 @@ async function executeAndHandleStep(
     "in_progress",
   );
 
-  // Execute the step
-  const result = await executor();
+  // Start periodic lock extension during step execution
+  const stopLockExtension = startLockExtension(
+    stateStore,
+    state.reportId,
+    config.lockValue,
+    reportLogger,
+  );
+
+  // Execute the step (make sure to stop lock extension on completion or error)
+  let result: Result<StepExecutionResult<unknown>, Error>;
+  try {
+    result = await executor();
+  } finally {
+    // Always stop lock extension when step completes (success or failure)
+    stopLockExtension();
+  }
 
   // Handle failure
   if (result.tag === "failure") {

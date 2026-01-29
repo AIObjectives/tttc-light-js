@@ -32,3 +32,13 @@ export const LOCK_TTL_SECONDS = Math.ceil((PIPELINE_TIMEOUT_MS / 1000) * 1.17);
 export const LOCK_EXTENSION_SECONDS = Math.ceil(
   (PIPELINE_TIMEOUT_MS / 1000) * 0.33,
 );
+
+/**
+ * Lock refresh interval: how often to extend the lock during step execution (5 minutes)
+ * Should be significantly less than LOCK_TTL_SECONDS to ensure the lock doesn't expire
+ * during long-running steps like claims extraction.
+ *
+ * Formula: Refresh every ~14% of lock TTL (5 minutes for 35 minute lock)
+ * This provides multiple refresh opportunities before expiration.
+ */
+export const LOCK_REFRESH_INTERVAL_MS = 5 * 60 * 1000;

@@ -289,6 +289,22 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   }
 
   /**
+   * Refreshes the TTL of the pipeline execution lock back to the full lock duration.
+   * Use this periodically during long-running step execution to prevent expiration.
+   *
+   * @param reportId - Report identifier
+   * @param lockValue - Unique identifier that acquired the lock
+   * @returns true if lock was refreshed, false if not held or held by different value
+   */
+  async refreshPipelineLock(
+    reportId: string,
+    lockValue: string,
+  ): Promise<boolean> {
+    const lockKey = getLockKey(reportId);
+    return this.cache.extendLock(lockKey, lockValue, LOCK_TTL_SECONDS);
+  }
+
+  /**
    * Get pipeline state from Redis
    */
   async get(reportId: string): Promise<PipelineState | null> {
