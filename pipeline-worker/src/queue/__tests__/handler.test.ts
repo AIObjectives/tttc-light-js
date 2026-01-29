@@ -461,143 +461,56 @@ describe("handlePipelineJob - GCS rollback integration", () => {
     publishTime: new Date(),
   });
 
-  const createCompletedState = (): Awaited<
-    ReturnType<RedisPipelineStateStore["get"]>
-  > => ({
+  // Base state builder - minimal fields
+  const createBaseState = (
+    overrides: Partial<
+      Awaited<ReturnType<RedisPipelineStateStore["get"]>>
+    > = {},
+  ): Awaited<ReturnType<RedisPipelineStateStore["get"]>> => ({
     version: "1.0",
     reportId: TEST_IDS.report,
     userId: TEST_IDS.user,
     createdAt: new Date(TEST_DATES.base).toISOString(),
     updatedAt: new Date(TEST_DATES.summaries).toISOString(),
-    status: "completed",
+    status: "pending",
     stepAnalytics: {
       clustering: {
         stepName: "clustering",
-        status: "completed",
-        startedAt: new Date(TEST_DATES.base).toISOString(),
-        completedAt: new Date(TEST_DATES.clustering).toISOString(),
-        durationMs: 900000,
-        totalTokens: 150,
-        cost: 0.001,
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
       },
       claims: {
         stepName: "claims",
-        status: "completed",
-        startedAt: new Date(TEST_DATES.clustering).toISOString(),
-        completedAt: new Date(TEST_DATES.claims).toISOString(),
-        durationMs: 900000,
-        totalTokens: 300,
-        cost: 0.002,
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
       },
       sort_and_deduplicate: {
         stepName: "sort_and_deduplicate",
-        status: "completed",
-        startedAt: new Date(TEST_DATES.claims).toISOString(),
-        completedAt: new Date(TEST_DATES.sortDedup).toISOString(),
-        durationMs: 900000,
-        totalTokens: 200,
-        cost: 0.0015,
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
       },
       summaries: {
         stepName: "summaries",
-        status: "completed",
-        startedAt: new Date(TEST_DATES.sortDedup).toISOString(),
-        completedAt: new Date(TEST_DATES.summaries).toISOString(),
-        durationMs: 900000,
-        totalTokens: 250,
-        cost: 0.0018,
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
       },
       cruxes: {
         stepName: "cruxes",
-        status: "skipped",
+        status: "pending",
+        durationMs: 0,
+        totalTokens: 0,
+        cost: 0,
       },
     },
-    completedResults: {
-      clustering: {
-        data: [
-          {
-            topicName: TEST_STRINGS.topic,
-            topicShortDescription: TEST_STRINGS.topicDesc,
-            subtopics: [
-              {
-                subtopicName: TEST_STRINGS.subtopic,
-                subtopicShortDescription: TEST_STRINGS.subtopicDesc,
-              },
-            ],
-          },
-        ],
-        usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-        cost: 0.001,
-      },
-      claims: {
-        data: {
-          [TEST_STRINGS.topic]: {
-            total: 1,
-            subtopics: {
-              [TEST_STRINGS.subtopic]: {
-                total: 1,
-                claims: [
-                  {
-                    claim: TEST_STRINGS.claim,
-                    quote: TEST_STRINGS.quote,
-                    speaker: TEST_STRINGS.speaker,
-                    topicName: TEST_STRINGS.topic,
-                    subtopicName: TEST_STRINGS.subtopic,
-                    commentId: TEST_IDS.comment,
-                  },
-                ],
-              },
-            },
-          },
-        },
-        usage: { input_tokens: 200, output_tokens: 100, total_tokens: 300 },
-        cost: 0.002,
-      },
-      sort_and_deduplicate: {
-        data: [
-          [
-            TEST_STRINGS.topic,
-            {
-              topics: [
-                [
-                  TEST_STRINGS.subtopic,
-                  {
-                    claims: [
-                      {
-                        claim: TEST_STRINGS.claim,
-                        quote: TEST_STRINGS.quote,
-                        speaker: TEST_STRINGS.speaker,
-                        topicName: TEST_STRINGS.topic,
-                        subtopicName: TEST_STRINGS.subtopic,
-                        commentId: TEST_IDS.comment,
-                        duplicates: [],
-                        duplicated: false,
-                      },
-                    ],
-                    speakers: [TEST_STRINGS.speaker],
-                    counts: { claims: 1, speakers: 1 },
-                  },
-                ],
-              ],
-              speakers: [TEST_STRINGS.speaker],
-              counts: { claims: 1, speakers: 1 },
-            },
-          ],
-        ],
-        usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
-        cost: 0.0018,
-      },
-      summaries: {
-        data: [
-          {
-            topicName: TEST_STRINGS.topic,
-            summary: TEST_STRINGS.summary,
-          },
-        ],
-        usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
-        cost: 0.0018,
-      },
-    },
+    completedResults: {},
     validationFailures: {
       clustering: 0,
       claims: 0,
@@ -605,10 +518,170 @@ describe("handlePipelineJob - GCS rollback integration", () => {
       summaries: 0,
       cruxes: 0,
     },
-    totalTokens: 900,
-    totalCost: 0.0063,
-    totalDurationMs: 3600000,
+    totalTokens: 0,
+    totalCost: 0,
+    totalDurationMs: 0,
+    ...overrides,
   });
+
+  // Step analytics builder
+  const withCompletedSteps = (
+    state: Awaited<ReturnType<RedisPipelineStateStore["get"]>>,
+  ): Awaited<ReturnType<RedisPipelineStateStore["get"]>> => {
+    if (!state) throw new Error("State is null");
+    return {
+      ...state,
+      status: "completed",
+      stepAnalytics: {
+        clustering: {
+          stepName: "clustering",
+          status: "completed",
+          startedAt: new Date(TEST_DATES.base).toISOString(),
+          completedAt: new Date(TEST_DATES.clustering).toISOString(),
+          durationMs: 900000,
+          totalTokens: 150,
+          cost: 0.001,
+        },
+        claims: {
+          stepName: "claims",
+          status: "completed",
+          startedAt: new Date(TEST_DATES.clustering).toISOString(),
+          completedAt: new Date(TEST_DATES.claims).toISOString(),
+          durationMs: 900000,
+          totalTokens: 300,
+          cost: 0.002,
+        },
+        sort_and_deduplicate: {
+          stepName: "sort_and_deduplicate",
+          status: "completed",
+          startedAt: new Date(TEST_DATES.claims).toISOString(),
+          completedAt: new Date(TEST_DATES.sortDedup).toISOString(),
+          durationMs: 900000,
+          totalTokens: 200,
+          cost: 0.0015,
+        },
+        summaries: {
+          stepName: "summaries",
+          status: "completed",
+          startedAt: new Date(TEST_DATES.sortDedup).toISOString(),
+          completedAt: new Date(TEST_DATES.summaries).toISOString(),
+          durationMs: 900000,
+          totalTokens: 250,
+          cost: 0.0018,
+        },
+        cruxes: {
+          stepName: "cruxes",
+          status: "skipped",
+        },
+      },
+      totalTokens: 900,
+      totalCost: 0.0063,
+      totalDurationMs: 3600000,
+    };
+  };
+
+  // Mock data fixtures
+  const MOCK_CLAIM = {
+    claim: TEST_STRINGS.claim,
+    quote: TEST_STRINGS.quote,
+    speaker: TEST_STRINGS.speaker,
+    topicName: TEST_STRINGS.topic,
+    subtopicName: TEST_STRINGS.subtopic,
+    commentId: TEST_IDS.comment,
+  };
+
+  const MOCK_SORT_DEDUPE_DATA: [
+    string,
+    {
+      topics: [
+        string,
+        {
+          claims: Array<
+            typeof MOCK_CLAIM & { duplicates: never[]; duplicated: boolean }
+          >;
+          speakers: string[];
+          counts: { claims: number; speakers: number };
+        },
+      ][];
+      speakers: string[];
+      counts: { claims: number; speakers: number };
+    },
+  ][] = [
+    [
+      TEST_STRINGS.topic,
+      {
+        topics: [
+          [
+            TEST_STRINGS.subtopic,
+            {
+              claims: [{ ...MOCK_CLAIM, duplicates: [], duplicated: false }],
+              speakers: [TEST_STRINGS.speaker],
+              counts: { claims: 1, speakers: 1 },
+            },
+          ],
+        ],
+        speakers: [TEST_STRINGS.speaker],
+        counts: { claims: 1, speakers: 1 },
+      },
+    ],
+  ];
+
+  // Completed results builder
+  const withCompletedResults = (
+    state: Awaited<ReturnType<RedisPipelineStateStore["get"]>>,
+  ): Awaited<ReturnType<RedisPipelineStateStore["get"]>> => {
+    if (!state) throw new Error("State is null");
+    return {
+      ...state,
+      completedResults: {
+        clustering: {
+          data: [
+            {
+              topicName: TEST_STRINGS.topic,
+              topicShortDescription: TEST_STRINGS.topicDesc,
+              subtopics: [
+                {
+                  subtopicName: TEST_STRINGS.subtopic,
+                  subtopicShortDescription: TEST_STRINGS.subtopicDesc,
+                },
+              ],
+            },
+          ],
+          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+          cost: 0.001,
+        },
+        claims: {
+          data: {
+            [TEST_STRINGS.topic]: {
+              total: 1,
+              subtopics: {
+                [TEST_STRINGS.subtopic]: { total: 1, claims: [MOCK_CLAIM] },
+              },
+            },
+          },
+          usage: { input_tokens: 200, output_tokens: 100, total_tokens: 300 },
+          cost: 0.002,
+        },
+        sort_and_deduplicate: {
+          data: MOCK_SORT_DEDUPE_DATA,
+          usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
+          cost: 0.0018,
+        },
+        summaries: {
+          data: [
+            { topicName: TEST_STRINGS.topic, summary: TEST_STRINGS.summary },
+          ],
+          usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
+          cost: 0.0018,
+        },
+      },
+    };
+  };
+
+  // Convenience function for fully completed state
+  const createCompletedState = (): Awaited<
+    ReturnType<RedisPipelineStateStore["get"]>
+  > => withCompletedResults(withCompletedSteps(createBaseState()));
 
   it("should rollback GCS upload when Firestore update fails in actual handler", async () => {
     const completedState = createCompletedState();
