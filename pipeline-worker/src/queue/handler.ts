@@ -660,6 +660,7 @@ async function executePipelineWithLock(
         reportId,
         userId,
         resumeFromState: shouldResume,
+        lockValue,
       },
       stateStore,
     );

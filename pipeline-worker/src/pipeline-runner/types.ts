@@ -145,6 +145,8 @@ export interface PipelineRunnerConfig {
   userId: string;
   /** Whether to resume from existing state */
   resumeFromState: boolean;
+  /** Lock value for verifying ownership during state updates */
+  lockValue?: string;
   /** Optional callback for step status updates */
   onStepUpdate?: (step: PipelineStepName, status: PipelineStepStatus) => void;
   /** Optional callback for progress updates */

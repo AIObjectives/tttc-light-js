@@ -51,6 +51,34 @@ const runnerLogger = logger.child({ module: "pipeline-runner" });
 const MAX_VALIDATION_FAILURES = 3;
 
 /**
+ * Verify lock ownership before state save.
+ * If lockValue is provided, verifies we still hold the lock.
+ * Throws an error if lock verification fails.
+ */
+async function verifyLockBeforeSave(
+  stateStore: RedisPipelineStateStore,
+  reportId: string,
+  lockValue: string | undefined,
+  reportLogger: typeof runnerLogger,
+): Promise<void> {
+  if (!lockValue) {
+    // No lock value provided - skip verification
+    return;
+  }
+
+  const hasLock = await stateStore.verifyPipelineLock(reportId, lockValue);
+  if (!hasLock) {
+    reportLogger.error(
+      { reportId, lockValue },
+      "Lock verification failed - lock expired or acquired by another worker",
+    );
+    throw new Error(
+      "Pipeline lock lost during execution - cannot safely save state",
+    );
+  }
+}
+
+/**
  * Validate that a recovered result has the expected structure.
  * Most steps return { data, usage, cost }, but cruxes returns
  * { subtopicCruxes, topicScores, speakerCruxMatrix, usage, cost }
@@ -429,6 +457,8 @@ interface StepResultContext {
     totalTokens: number;
     cost: number;
   };
+  lockValue?: string;
+  reportLogger: typeof runnerLogger;
 }
 
 /**
@@ -437,7 +467,15 @@ interface StepResultContext {
 async function saveStepResult(
   context: StepResultContext,
 ): Promise<PipelineState> {
-  const { stateStore, state, stepName, result, analytics } = context;
+  const {
+    stateStore,
+    state,
+    stepName,
+    result,
+    analytics,
+    lockValue,
+    reportLogger,
+  } = context;
 
   // Mark step as completed with analytics
   let updatedState = markStepCompleted(state, stepName, analytics);
@@ -456,6 +494,14 @@ async function saveStepResult(
     totalDurationMs: updatedState.totalDurationMs + analytics.durationMs,
   };
 
+  // Verify lock before saving state
+  await verifyLockBeforeSave(
+    stateStore,
+    state.reportId,
+    lockValue,
+    reportLogger,
+  );
+
   // Persist to Redis
   await stateStore.save(updatedState);
 
@@ -470,6 +516,7 @@ interface StepExecutionContext {
   totalSteps: number;
   completedSteps: number;
   executor: () => Promise<Result<StepExecutionResult<unknown>, Error>>;
+  reportLogger: typeof runnerLogger;
 }
 
 /**
@@ -550,11 +597,21 @@ async function executeAndHandleStep(
     totalSteps,
     completedSteps,
     executor,
+    reportLogger,
   } = context;
 
   // Mark step as started
   let updatedState = markStepStarted(state, stepName);
   updatedState.currentStep = stepName;
+
+  // Verify lock before saving state
+  await verifyLockBeforeSave(
+    stateStore,
+    state.reportId,
+    config.lockValue,
+    reportLogger,
+  );
+
   await stateStore.save(updatedState);
 
   safelyInvokeCallback(
@@ -578,6 +635,14 @@ async function executeAndHandleStep(
     );
     // handleStepFailure always returns failure, so we can safely access error
     if (failureResult.tag === "failure") {
+      // Verify lock before saving failure state
+      await verifyLockBeforeSave(
+        stateStore,
+        state.reportId,
+        config.lockValue,
+        reportLogger,
+      );
+
       // Save the updated state with failure information
       await stateStore.save(failureResult.error.state);
     }
@@ -598,6 +663,8 @@ async function executeAndHandleStep(
       totalTokens: result.value.totalTokens,
       cost: result.value.cost,
     },
+    lockValue: config.lockValue,
+    reportLogger,
   });
 
   // Notify completion
@@ -649,6 +716,15 @@ async function initializePipelineState(
 
   const state = createInitialState(config.reportId, config.userId);
   state.status = "running";
+
+  // Verify lock before saving initial state
+  await verifyLockBeforeSave(
+    stateStore,
+    state.reportId,
+    config.lockValue,
+    reportLogger,
+  );
+
   await stateStore.save(state);
   return state;
 }
@@ -674,6 +750,7 @@ async function executeStepIfNeeded<T>(
   totalSteps: number,
   completedSteps: number,
   executor: () => Promise<Result<StepExecutionResult<T>, Error>>,
+  reportLogger: typeof runnerLogger,
 ): Promise<Result<
   { state: PipelineState; result: T },
   PipelineStepError
@@ -690,6 +767,7 @@ async function executeStepIfNeeded<T>(
     totalSteps,
     completedSteps,
     executor,
+    reportLogger,
   });
 
   if (result.tag === "failure") {
@@ -700,7 +778,7 @@ async function executeStepIfNeeded<T>(
   // This provides runtime safety that the executor returned a valid result
   const stepResult = result.value.result;
   if (!validateResultStructure(stepResult, stepName)) {
-    runnerLogger.error(
+    reportLogger.error(
       {
         stepName,
         resultType: typeof stepResult,
@@ -756,6 +834,7 @@ async function executeStepWithRecovery<T>(
   stateStore: RedisPipelineStateStore,
   runnerConfig: PipelineRunnerConfig,
   totalSteps: number,
+  reportLogger: typeof runnerLogger,
 ): Promise<Result<{ state: PipelineState; result: T }, PipelineStepError>> {
   // Check dependency validation first
   if (config.dependencyError) {
@@ -778,6 +857,7 @@ async function executeStepWithRecovery<T>(
     totalSteps,
     config.stepNumber,
     config.executor,
+    reportLogger,
   );
 
   // Handle execution failure
@@ -970,6 +1050,7 @@ async function executeAllSteps(
     stateStore,
     config,
     totalSteps,
+    reportLogger,
   );
 
   if (clusteringResult.tag === "failure") {
@@ -1000,6 +1081,7 @@ async function executeAllSteps(
     stateStore,
     config,
     totalSteps,
+    reportLogger,
   );
 
   if (claimsResult.tag === "failure") {
@@ -1030,6 +1112,7 @@ async function executeAllSteps(
     stateStore,
     config,
     totalSteps,
+    reportLogger,
   );
 
   if (sortedResult.tag === "failure") {
@@ -1060,6 +1143,7 @@ async function executeAllSteps(
     stateStore,
     config,
     totalSteps,
+    reportLogger,
   );
 
   if (summariesResult.tag === "failure") {
@@ -1093,6 +1177,7 @@ async function executeAllSteps(
       stateStore,
       config,
       totalSteps,
+      reportLogger,
     );
 
     if (cruxesResult.tag === "failure") {
@@ -1103,6 +1188,15 @@ async function executeAllSteps(
     results.cruxesResult = cruxesResult.value.result;
   } else {
     currentState = markStepSkipped(currentState, "cruxes");
+
+    // Verify lock before saving state
+    await verifyLockBeforeSave(
+      stateStore,
+      currentState.reportId,
+      config.lockValue,
+      reportLogger,
+    );
+
     await stateStore.save(currentState);
 
     safelyInvokeCallback(
@@ -1204,6 +1298,7 @@ async function handlePipelineFailure(
   error: unknown,
   state: PipelineState,
   stateStore: RedisPipelineStateStore,
+  config: PipelineRunnerConfig,
   reportLogger: typeof runnerLogger,
 ): Promise<PipelineResult> {
   const err = error instanceof Error ? error : new Error(String(error));
@@ -1225,6 +1320,15 @@ async function handlePipelineFailure(
       step: state.currentStep,
     },
   };
+
+  // Verify lock before saving failure state
+  await verifyLockBeforeSave(
+    stateStore,
+    state.reportId,
+    config.lockValue,
+    reportLogger,
+  );
+
   await stateStore.save(updatedState);
 
   return {
@@ -1270,6 +1374,15 @@ async function executePipelineInternal(
       status: "completed",
       currentStep: undefined,
     };
+
+    // Verify lock before saving completion state
+    await verifyLockBeforeSave(
+      stateStore,
+      state.reportId,
+      config.lockValue,
+      reportLogger,
+    );
+
     await stateStore.save(state);
 
     reportLogger.info(
@@ -1287,13 +1400,20 @@ async function executePipelineInternal(
         successResult.error,
         state,
         stateStore,
+        config,
         reportLogger,
       );
     }
 
     return successResult.value;
   } catch (error) {
-    return handlePipelineFailure(error, state, stateStore, reportLogger);
+    return handlePipelineFailure(
+      error,
+      state,
+      stateStore,
+      config,
+      reportLogger,
+    );
   }
 }
 
@@ -1369,6 +1489,7 @@ export async function runPipeline(
         error,
         currentState,
         stateStore,
+        config,
         reportLogger,
       );
     }
