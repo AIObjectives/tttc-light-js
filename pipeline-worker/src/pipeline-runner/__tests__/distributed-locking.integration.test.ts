@@ -37,7 +37,7 @@ import {
 } from "vitest";
 import { RedisCache } from "../../cache/providers/redis.js";
 import type { Cache } from "../../cache/types.js";
-import { RedisPipelineStateStore } from "../state-store.js";
+import { createInitialState, RedisPipelineStateStore } from "../state-store.js";
 import type { PipelineInput, PipelineRunnerConfig } from "../types.js";
 
 // Mock logger
@@ -384,6 +384,50 @@ describe("Distributed Locking with Real Redis", () => {
       // Should succeed because lock expired
       expect(result.success).toBe(true);
     });
+
+    it("should fail pipeline when lock expires mid-execution before state save", async () => {
+      const reportId = `lock-expire-mid-execution-${Date.now()}`;
+      const input = createTestInput();
+      const lockValue = `test-worker-${Date.now()}`;
+      const config = createTestConfig({ reportId, lockValue });
+      const lockKey = `pipeline_lock:${reportId}`;
+
+      // Pre-acquire lock with the same lockValue that the pipeline will use
+      const acquired = await cache.acquireLock(lockKey, lockValue, 10);
+      expect(acquired).toBe(true);
+
+      // Mock clustering to succeed, but delete the lock during execution
+      // to simulate it expiring mid-execution
+      let clusteringCallCount = 0;
+      vi.mocked(commentsToTree).mockImplementation(async () => {
+        clusteringCallCount++;
+        // After step executes, delete the lock to simulate expiration
+        // This will cause the next verifyLockBeforeSave to fail
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        await cache.delete(lockKey);
+        return success(mockClusteringResult);
+      });
+
+      // Run pipeline - should throw or return error when verifyLockBeforeSave detects lost lock
+      // The lock gets deleted during clustering execution, causing the next save to fail
+      try {
+        const result = await runPipeline(input, config, stateStore);
+        // If it returns a result, verify it's a failure with the correct error
+        expect(result.success).toBe(false);
+        expect(result.error?.message).toContain(
+          "Pipeline lock lost during execution - cannot safely save state",
+        );
+      } catch (error) {
+        // If it throws, verify it's the correct error
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain(
+          "Pipeline lock lost during execution - cannot safely save state",
+        );
+      }
+
+      // Verify the clustering step was actually called
+      expect(clusteringCallCount).toBeGreaterThanOrEqual(1);
+    });
   });
 
   describe("State Serialization with Real Redis", () => {
@@ -538,6 +582,49 @@ describe("Distributed Locking with Real Redis", () => {
       // Should fail after first attempt (since MAX_VALIDATION_FAILURES is checked)
       expect(result.success).toBe(false);
       expect(result.state.error?.step).toBe("claims");
+    });
+
+    it("should fail permanently after MAX_VALIDATION_FAILURES with corrupted state", async () => {
+      const reportId = `validation-max-corrupted-${Date.now()}`;
+
+      // Create state with completed clustering step
+      const input = createTestInput();
+      const initialConfig = createTestConfig({ reportId });
+
+      // First run succeeds
+      const firstResult = await runPipeline(input, initialConfig, stateStore);
+      expect(firstResult.success).toBe(true);
+
+      // Manually corrupt the clustering result in Redis to trigger validation failures
+      const state = await stateStore.get(reportId);
+      if (state) {
+        state.status = "failed";
+        state.stepAnalytics.claims.status = "failed";
+        state.completedResults.clustering = {
+          data: mockClusteringResult.data,
+          usage: mockClusteringResult.usage,
+          // Missing 'cost' field - will fail validation
+        } as typeof mockClusteringResult;
+
+        // Set validation counter to 3 (at the limit)
+        await stateStore.save(state);
+        await cache.set(
+          `pipeline_validation_failure:${reportId}:clustering`,
+          "3",
+        );
+      }
+
+      // Try to resume - should fail permanently after incrementing to 4
+      const resumeConfig = createTestConfig({
+        reportId,
+        resumeFromState: true,
+      });
+
+      const result = await runPipeline(input, resumeConfig, stateStore);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toContain("validation failed 4 times");
+      expect(result.error?.message).toContain("permanently corrupted");
     });
   });
 
