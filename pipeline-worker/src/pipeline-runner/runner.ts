@@ -1522,33 +1522,71 @@ export async function getPipelineStatus(
 
 /**
  * Cancel a running pipeline
+ *
+ * Acquires a lock to ensure safe cancellation without race conditions.
+ * If the pipeline is already locked by an active worker, this will wait
+ * briefly and return false if the lock cannot be acquired.
  */
 export async function cancelPipeline(
   reportId: string,
   stateStore: RedisPipelineStateStore,
 ): Promise<boolean> {
-  const state = await stateStore.get(reportId);
+  // Generate a unique lock value for this cancellation operation
+  const lockValue = `cancel-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  if (!state) {
+  // Attempt to acquire lock to safely modify state
+  const lockAcquired = await stateStore.acquirePipelineLock(
+    reportId,
+    lockValue,
+  );
+
+  if (!lockAcquired) {
+    // Lock held by active pipeline worker - cannot cancel safely
+    runnerLogger.warn(
+      { reportId },
+      "Cannot cancel pipeline - lock held by active worker",
+    );
     return false;
   }
 
-  if (state.status !== "running") {
-    return false;
+  try {
+    // Read state after acquiring lock to prevent race conditions
+    const state = await stateStore.get(reportId);
+
+    if (!state) {
+      return false;
+    }
+
+    if (state.status !== "running") {
+      return false;
+    }
+
+    const updatedState: PipelineState = {
+      ...state,
+      status: "failed",
+      error: {
+        message: "Pipeline cancelled by user",
+        name: "CancellationError",
+        step: state.currentStep,
+      },
+    };
+
+    // Verify we still hold the lock before saving
+    const hasLock = await stateStore.verifyPipelineLock(reportId, lockValue);
+    if (!hasLock) {
+      runnerLogger.error(
+        { reportId, lockValue },
+        "Lock lost during cancellation - another worker may have taken over",
+      );
+      return false;
+    }
+
+    await stateStore.save(updatedState);
+    return true;
+  } finally {
+    // Always release the lock, even if cancellation failed
+    await stateStore.releasePipelineLock(reportId, lockValue);
   }
-
-  const updatedState: PipelineState = {
-    ...state,
-    status: "failed",
-    error: {
-      message: "Pipeline cancelled by user",
-      name: "CancellationError",
-      step: state.currentStep,
-    },
-  };
-
-  await stateStore.save(updatedState);
-  return true;
 }
 
 /**

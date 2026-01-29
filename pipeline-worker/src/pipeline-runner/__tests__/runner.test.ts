@@ -612,6 +612,56 @@ describe("Pipeline Runner", () => {
 
       expect(cancelled).toBe(false);
     });
+
+    it("should return false when lock is held by another worker", async () => {
+      const state = createInitialState("report-123", "user-456");
+      state.status = "running";
+      state.currentStep = "claims";
+      await stateStore.save(state);
+
+      // Simulate another worker holding the lock
+      const workerLockValue = "worker-123";
+      const lockAcquired = await stateStore.acquirePipelineLock(
+        "report-123",
+        workerLockValue,
+      );
+      expect(lockAcquired).toBe(true);
+
+      // Attempt to cancel should fail because lock is held
+      const cancelled = await cancelPipeline("report-123", stateStore);
+
+      expect(cancelled).toBe(false);
+
+      // State should remain unchanged
+      const updatedState = await stateStore.get("report-123");
+      expect(updatedState?.status).toBe("running");
+
+      // Clean up: release the lock
+      await stateStore.releasePipelineLock("report-123", workerLockValue);
+    });
+
+    it("should acquire and release lock during cancellation", async () => {
+      const state = createInitialState("report-123", "user-456");
+      state.status = "running";
+      state.currentStep = "claims";
+      await stateStore.save(state);
+
+      const cancelled = await cancelPipeline("report-123", stateStore);
+
+      expect(cancelled).toBe(true);
+
+      // After cancellation completes, lock should be released
+      // We can verify by acquiring the lock ourselves
+      const testLockValue = "test-lock";
+      const lockAvailable = await stateStore.acquirePipelineLock(
+        "report-123",
+        testLockValue,
+      );
+      expect(lockAvailable).toBe(true);
+
+      // Clean up
+      await stateStore.releasePipelineLock("report-123", testLockValue);
+    });
   });
 
   describe("cleanupPipelineState", () => {
