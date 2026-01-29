@@ -50,6 +50,49 @@ describe("pipelineJobSchema validation", () => {
       const result = pipelineJobSchema.safeParse(validPipelineJob);
       expect(result.success).toBe(true);
     });
+
+    it("should accept pipeline job data without cruxInstructions when cruxes disabled", () => {
+      const jobWithoutCruxInstructions = {
+        ...validPipelineJob,
+        config: {
+          ...validPipelineJob.config,
+          instructions: {
+            ...validPipelineJob.config.instructions,
+            cruxInstructions: undefined,
+          },
+          options: {
+            ...validPipelineJob.config.options,
+            cruxes: false,
+          },
+        },
+      };
+      const result = pipelineJobSchema.safeParse(jobWithoutCruxInstructions);
+      expect(result.success).toBe(true);
+    });
+
+    it("should accept pipeline job data with empty cruxInstructions when cruxes disabled", () => {
+      const jobWithEmptyCruxInstructions = {
+        ...validPipelineJob,
+        config: {
+          ...validPipelineJob.config,
+          instructions: {
+            ...validPipelineJob.config.instructions,
+            cruxInstructions: "",
+          },
+          options: {
+            ...validPipelineJob.config.options,
+            cruxes: false,
+          },
+        },
+      };
+      const result = pipelineJobSchema.safeParse(jobWithEmptyCruxInstructions);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe(
+          "Crux instructions cannot be empty",
+        );
+      }
+    });
   });
 
   describe("empty string validation", () => {
@@ -82,11 +125,6 @@ describe("pipelineJobSchema validation", () => {
         name: "summariesInstructions",
         path: ["config", "instructions", "summariesInstructions"],
         expectedError: "Summaries instructions cannot be empty",
-      },
-      {
-        name: "cruxInstructions",
-        path: ["config", "instructions", "cruxInstructions"],
-        expectedError: "Crux instructions cannot be empty",
       },
       {
         name: "model name",

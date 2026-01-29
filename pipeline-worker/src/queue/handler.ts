@@ -63,7 +63,11 @@ function validatePipelineJobConfig(
     }
   }
 
-  if (options.cruxes && !instructions.cruxInstructions) {
+  if (
+    options.cruxes &&
+    (!instructions.cruxInstructions ||
+      instructions.cruxInstructions.trim() === "")
+  ) {
     return failure(
       new ValidationError(
         "Missing required field: config.instructions.cruxInstructions (required when cruxes are enabled)",
@@ -150,13 +154,14 @@ function convertToPipelineInput(
       system_prompt: instructions.systemInstructions,
       user_prompt: instructions.summariesInstructions,
     },
-    cruxesConfig: options.cruxes
-      ? {
-          model_name: llm.model,
-          system_prompt: instructions.systemInstructions,
-          user_prompt: instructions.cruxInstructions,
-        }
-      : undefined,
+    cruxesConfig:
+      options.cruxes && instructions.cruxInstructions
+        ? {
+            model_name: llm.model,
+            system_prompt: instructions.systemInstructions,
+            user_prompt: instructions.cruxInstructions,
+          }
+        : undefined,
     apiKey: env.OPENAI_API_KEY,
     enableCruxes: options.cruxes,
     sortStrategy: options.sortStrategy,

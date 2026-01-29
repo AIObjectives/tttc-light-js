@@ -50,7 +50,10 @@ export const pipelineJobSchema = z.object({
       summariesInstructions: z
         .string()
         .min(1, "Summaries instructions cannot be empty"),
-      cruxInstructions: z.string().min(1, "Crux instructions cannot be empty"),
+      cruxInstructions: z
+        .string()
+        .min(1, "Crux instructions cannot be empty")
+        .optional(),
       outputLanguage: z.string().optional(),
     }),
     options: z.object({

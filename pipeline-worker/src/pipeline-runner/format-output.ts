@@ -35,7 +35,7 @@ export interface SimplifiedPipelineOutput {
     extractionInstructions: string;
     dedupInstructions: string;
     summariesInstructions: string;
-    cruxInstructions: string;
+    cruxInstructions?: string;
     outputLanguage?: string;
   };
   completedAt: string;
