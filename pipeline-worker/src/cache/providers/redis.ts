@@ -288,8 +288,8 @@ export class RedisCache implements Cache {
     }
 
     try {
-      const pipeline = this.buildPipeline(operations);
-      const results = await pipeline.exec();
+      const multi = this.buildPipeline(operations);
+      const results = await multi.exec();
       this.validatePipelineResults(results);
     } catch (error) {
       const keys = operations.map((op) => op.key).join(", ");
@@ -301,38 +301,38 @@ export class RedisCache implements Cache {
   }
 
   /**
-   * Builds a Redis pipeline with set operations.
+   * Builds a Redis MULTI transaction with set operations.
    *
-   * @param operations - Array of set operations to add to the pipeline
-   * @returns Configured Redis pipeline
+   * @param operations - Array of set operations to add to the transaction
+   * @returns Configured Redis multi transaction
    */
   private buildPipeline(
     operations: Array<{ key: string; value: string; options?: SetOptions }>,
-  ): ReturnType<Redis["pipeline"]> {
-    const pipeline = this.client.pipeline();
+  ): ReturnType<Redis["multi"]> {
+    const multi = this.client.multi();
 
     for (const op of operations) {
       if (op.options?.ttl !== undefined) {
-        pipeline.setex(op.key, op.options.ttl, op.value);
+        multi.setex(op.key, op.options.ttl, op.value);
       } else {
-        pipeline.set(op.key, op.value);
+        multi.set(op.key, op.value);
       }
     }
 
-    return pipeline;
+    return multi;
   }
 
   /**
-   * Validates that all pipeline operations succeeded.
+   * Validates that all MULTI transaction operations succeeded.
    *
-   * @param results - Pipeline execution results
-   * @throws {Error} When pipeline execution fails or any operation has an error
+   * @param results - MULTI transaction execution results
+   * @throws {Error} When transaction execution fails or any operation has an error
    */
   private validatePipelineResults(
     results: Array<[Error | null, unknown]> | null,
   ): void {
     if (!results) {
-      throw new Error("Pipeline execution returned null");
+      throw new Error("MULTI transaction execution returned null");
     }
 
     for (const [error] of results) {
