@@ -171,13 +171,19 @@ type MockData = {
   data: Array<{ comment_id: string; comment_text: string; speaker: string }>;
 };
 
-const saveSuccessfulPipeline = async (
-  result: MockPipelineResult,
-  _data: MockData,
-  reportId: string,
-  storage: MockStorage,
-  refStore: MockRefStore,
-) => {
+type SavePipelineOptions = {
+  result: MockPipelineResult;
+  reportId: string;
+  storage: MockStorage;
+  refStore: MockRefStore;
+};
+
+const saveSuccessfulPipeline = async ({
+  result,
+  reportId,
+  storage,
+  refStore,
+}: SavePipelineOptions) => {
   const reportUrl = await storage.storeFile(
     `${reportId}.json`,
     JSON.stringify(result),
@@ -237,13 +243,12 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
     };
 
     await expect(
-      saveSuccessfulPipeline(
-        createMockPipelineResult(),
-        createMockData(),
-        "test-report-id",
-        mockStorage,
-        mockRefStore,
-      ),
+      saveSuccessfulPipeline({
+        result: createMockPipelineResult(),
+        reportId: "test-report-id",
+        storage: mockStorage,
+        refStore: mockRefStore,
+      }),
     ).rejects.toThrow("Firestore connection failed");
 
     expect(mockStorage.storeFile).toHaveBeenCalledWith(
@@ -277,13 +282,12 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
     };
 
     await expect(
-      saveSuccessfulPipeline(
-        createMockPipelineResult(),
-        createMockData(),
-        "test-report-id",
-        mockStorage,
-        mockRefStore,
-      ),
+      saveSuccessfulPipeline({
+        result: createMockPipelineResult(),
+        reportId: "test-report-id",
+        storage: mockStorage,
+        refStore: mockRefStore,
+      }),
     ).rejects.toThrow("Firestore update failed");
 
     expect(mockStorage.deleteFile).toHaveBeenCalledWith("test-report-id.json");
