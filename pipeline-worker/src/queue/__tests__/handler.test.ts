@@ -290,6 +290,375 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
   });
 });
 
+describe("handlePipelineJob - GCS rollback integration", () => {
+  let mockStateStore: RedisPipelineStateStore;
+  let mockStorage: BucketStore;
+  let mockRefStore: RefStoreServices;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockStateStore = {
+      get: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
+      update: vi.fn(),
+      acquirePipelineLock: vi.fn(),
+      extendPipelineLock: vi.fn(),
+      releasePipelineLock: vi.fn(),
+      incrementValidationFailure: vi.fn(),
+    } as unknown as RedisPipelineStateStore;
+
+    mockStorage = {
+      storeFile: vi.fn(),
+      deleteFile: vi.fn(),
+      fileExists: vi.fn(),
+    } as unknown as BucketStore;
+
+    mockRefStore = {
+      Report: {
+        get: vi.fn(),
+        modify: vi.fn(),
+        create: vi.fn(),
+        delete: vi.fn(),
+      },
+    } as unknown as RefStoreServices;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const createMockMessage = (): PubSubMessage<{
+    data: Array<{ comment_id: string; comment_text: string; speaker: string }>;
+    config: {
+      instructions: {
+        systemInstructions: string;
+        clusteringInstructions: string;
+        extractionInstructions: string;
+        dedupInstructions: string;
+        summariesInstructions: string;
+        cruxInstructions: string;
+        outputLanguage?: string;
+      };
+      llm: { model: string; temperature: number; max_tokens: number };
+      options: { cruxes: boolean; sortStrategy: "numPeople" | "numClaims" };
+      env: { OPENAI_API_KEY: string };
+      firebaseDetails: { reportId: string; userId: string };
+    };
+    reportDetails: {
+      title: string;
+      description: string;
+      question: string;
+      filename: string;
+    };
+  }> => ({
+    id: "msg-123",
+    data: {
+      data: [
+        { comment_id: "c1", comment_text: "Test comment", speaker: "Speaker1" },
+      ],
+      config: {
+        instructions: {
+          systemInstructions: "System instructions",
+          clusteringInstructions: "Clustering instructions",
+          extractionInstructions: "Extraction instructions",
+          dedupInstructions: "Dedup instructions",
+          summariesInstructions: "Summaries instructions",
+          cruxInstructions: "Crux instructions",
+        },
+        llm: { model: "gpt-4", temperature: 0.7, max_tokens: 1000 },
+        options: { cruxes: false, sortStrategy: "numPeople" },
+        env: { OPENAI_API_KEY: "test-api-key" },
+        firebaseDetails: {
+          reportId: "test-report-123",
+          userId: "test-user-123",
+        },
+      },
+      reportDetails: {
+        title: "Test Report",
+        description: "Test Description",
+        question: "Test Question",
+        filename: "test.csv",
+      },
+    },
+    attributes: { requestId: "req-123" },
+    publishTime: new Date(),
+  });
+
+  const createCompletedState = (): Awaited<
+    ReturnType<RedisPipelineStateStore["get"]>
+  > => ({
+    version: "1.0",
+    reportId: "test-report-123",
+    userId: "test-user-123",
+    createdAt: new Date("2026-01-01T00:00:00Z").toISOString(),
+    updatedAt: new Date("2026-01-01T01:00:00Z").toISOString(),
+    status: "completed",
+    stepAnalytics: {
+      clustering: {
+        stepName: "clustering",
+        status: "completed",
+        startedAt: new Date("2026-01-01T00:00:00Z").toISOString(),
+        completedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
+        durationMs: 900000,
+        totalTokens: 150,
+        cost: 0.001,
+      },
+      claims: {
+        stepName: "claims",
+        status: "completed",
+        startedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
+        completedAt: new Date("2026-01-01T00:30:00Z").toISOString(),
+        durationMs: 900000,
+        totalTokens: 300,
+        cost: 0.002,
+      },
+      sort_and_deduplicate: {
+        stepName: "sort_and_deduplicate",
+        status: "completed",
+        startedAt: new Date("2026-01-01T00:30:00Z").toISOString(),
+        completedAt: new Date("2026-01-01T00:45:00Z").toISOString(),
+        durationMs: 900000,
+        totalTokens: 200,
+        cost: 0.0015,
+      },
+      summaries: {
+        stepName: "summaries",
+        status: "completed",
+        startedAt: new Date("2026-01-01T00:45:00Z").toISOString(),
+        completedAt: new Date("2026-01-01T01:00:00Z").toISOString(),
+        durationMs: 900000,
+        totalTokens: 250,
+        cost: 0.0018,
+      },
+      cruxes: {
+        stepName: "cruxes",
+        status: "skipped",
+      },
+    },
+    completedResults: {
+      clustering: {
+        data: [
+          {
+            topicName: "Test Topic",
+            topicShortDescription: "A test topic",
+            subtopics: [
+              {
+                subtopicName: "Test Subtopic",
+                subtopicShortDescription: "A test subtopic",
+              },
+            ],
+          },
+        ],
+        usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+        cost: 0.001,
+      },
+      claims: {
+        data: {
+          "Test Topic": {
+            total: 1,
+            subtopics: {
+              "Test Subtopic": {
+                total: 1,
+                claims: [
+                  {
+                    claim: "Test claim",
+                    quote: "Test quote",
+                    speaker: "Speaker1",
+                    topicName: "Test Topic",
+                    subtopicName: "Test Subtopic",
+                    commentId: "c1",
+                  },
+                ],
+              },
+            },
+          },
+        },
+        usage: { input_tokens: 200, output_tokens: 100, total_tokens: 300 },
+        cost: 0.002,
+      },
+      sort_and_deduplicate: {
+        data: [
+          [
+            "Test Topic",
+            {
+              topics: [
+                [
+                  "Test Subtopic",
+                  {
+                    claims: [
+                      {
+                        claim: "Test claim",
+                        quote: "Test quote",
+                        speaker: "Speaker1",
+                        topicName: "Test Topic",
+                        subtopicName: "Test Subtopic",
+                        commentId: "c1",
+                        duplicates: [],
+                        duplicated: false,
+                      },
+                    ],
+                    speakers: ["Speaker1"],
+                    counts: { claims: 1, speakers: 1 },
+                  },
+                ],
+              ],
+              speakers: ["Speaker1"],
+              counts: { claims: 1, speakers: 1 },
+            },
+          ],
+        ],
+        usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
+        cost: 0.0018,
+      },
+      summaries: {
+        data: [
+          {
+            topicName: "Test Topic",
+            summary: "Test summary",
+          },
+        ],
+        usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
+        cost: 0.0018,
+      },
+    },
+    validationFailures: {
+      clustering: 0,
+      claims: 0,
+      sort_and_deduplicate: 0,
+      summaries: 0,
+      cruxes: 0,
+    },
+    totalTokens: 900,
+    totalCost: 0.0063,
+    totalDurationMs: 3600000,
+  });
+
+  it("should rollback GCS upload when Firestore update fails in actual handler", async () => {
+    const completedState = createCompletedState();
+    const message = createMockMessage();
+
+    // Mock that storage doesn't exist but state shows completed
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: false });
+    vi.mocked(mockStateStore.get).mockResolvedValue(completedState);
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStateStore.releasePipelineLock).mockResolvedValue(true);
+
+    // Mock successful GCS upload
+    vi.mocked(mockStorage.storeFile).mockResolvedValue(
+      "gs://bucket/test-report-123.json",
+    );
+
+    // Mock successful ReportRef.get but failed modify (Firestore connection failure)
+    vi.mocked(mockRefStore.Report.get).mockResolvedValue({
+      id: "test-report-123",
+      userId: "test-user-123",
+      reportDataUri: "",
+      title: "Test Report",
+      description: "Test Description",
+      numTopics: 0,
+      numSubtopics: 0,
+      numClaims: 0,
+      numPeople: 0,
+      status: "processing",
+      createdDate: new Date(),
+      lastStatusUpdate: new Date(),
+    });
+
+    vi.mocked(mockRefStore.Report.modify).mockRejectedValue(
+      new Error("Firestore connection failed"),
+    );
+
+    // Mock successful deletion (rollback)
+    vi.mocked(mockStorage.deleteFile).mockResolvedValue(undefined);
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Verify the result is a failure
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toContain("Firestore connection failed");
+    }
+
+    // Verify the sequence of operations
+    expect(mockStorage.fileExists).toHaveBeenCalledWith("test-report-123.json");
+    expect(mockStateStore.acquirePipelineLock).toHaveBeenCalled();
+    expect(mockStorage.storeFile).toHaveBeenCalledWith(
+      "test-report-123.json",
+      expect.any(String),
+    );
+    expect(mockRefStore.Report.modify).toHaveBeenCalled();
+
+    // Critical assertion: Verify rollback was triggered
+    expect(mockStorage.deleteFile).toHaveBeenCalledWith("test-report-123.json");
+
+    // Verify lock was released
+    expect(mockStateStore.releasePipelineLock).toHaveBeenCalled();
+  });
+
+  it("should handle rollback deletion failure but preserve original error", async () => {
+    const completedState = createCompletedState();
+    const message = createMockMessage();
+
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: false });
+    vi.mocked(mockStateStore.get).mockResolvedValue(completedState);
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStateStore.releasePipelineLock).mockResolvedValue(true);
+
+    vi.mocked(mockStorage.storeFile).mockResolvedValue(
+      "gs://bucket/test-report-123.json",
+    );
+
+    vi.mocked(mockRefStore.Report.get).mockResolvedValue({
+      id: "test-report-123",
+      userId: "test-user-123",
+      reportDataUri: "",
+      title: "Test Report",
+      description: "Test Description",
+      numTopics: 0,
+      numSubtopics: 0,
+      numClaims: 0,
+      numPeople: 0,
+      status: "processing",
+      createdDate: new Date(),
+      lastStatusUpdate: new Date(),
+    });
+
+    // Firestore update fails
+    vi.mocked(mockRefStore.Report.modify).mockRejectedValue(
+      new Error("Firestore update failed"),
+    );
+
+    // Rollback deletion also fails
+    vi.mocked(mockStorage.deleteFile).mockRejectedValue(
+      new Error("Delete permission denied"),
+    );
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should still fail with the original Firestore error, not the deletion error
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toContain("Firestore update failed");
+      expect(result.error.message).not.toContain("Delete permission denied");
+    }
+
+    // Verify rollback was attempted
+    expect(mockStorage.deleteFile).toHaveBeenCalledWith("test-report-123.json");
+  });
+});
+
 describe("handlePipelineJob - save-only retry", () => {
   const mockSortedResult: SortAndDeduplicateResult = {
     data: [
