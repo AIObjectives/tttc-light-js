@@ -676,6 +676,12 @@ async function executePipelineWithLock(
       jobLogger.error(
         "Failed to extend pipeline lock - lock lost during execution (expired or acquired by another worker)",
       );
+      await updateFirestoreWithError(
+        reportId,
+        "Lock lost during execution",
+        refStore,
+        jobLogger,
+      );
       return failure(
         new HandlerError(
           "Pipeline lock lost during execution - cannot safely process results to prevent duplicate processing",
