@@ -79,6 +79,45 @@ async function verifyLockBeforeSave(
 }
 
 /**
+ * Atomically saves pipeline state with lock verification.
+ * This prevents TOCTOU race conditions by using a Lua script that verifies
+ * lock ownership and saves state in a single atomic Redis operation.
+ *
+ * Falls back to non-atomic save if no lock value is provided.
+ *
+ * @param stateStore - Redis state store
+ * @param state - Pipeline state to save
+ * @param lockValue - Unique lock identifier (optional)
+ * @param reportLogger - Logger for this report
+ * @throws {Error} When lock is lost or save fails
+ */
+async function saveWithLockVerification(
+  stateStore: RedisPipelineStateStore,
+  state: PipelineState,
+  lockValue: string | undefined,
+  reportLogger: typeof runnerLogger,
+): Promise<void> {
+  if (!lockValue) {
+    // No lock value provided - use regular save without verification
+    await stateStore.save(state);
+    return;
+  }
+
+  // Use atomic lock-verified save to prevent TOCTOU race conditions
+  const result = await stateStore.saveWithLockVerification(state, lockValue);
+
+  if (!result.success) {
+    reportLogger.error(
+      { reportId: state.reportId, lockValue, reason: result.reason },
+      "Atomic save failed - lock verification failed during save operation",
+    );
+    throw new Error(
+      `Pipeline lock lost during save - cannot safely persist state: ${result.reason}`,
+    );
+  }
+}
+
+/**
  * Validate that a recovered result has the expected structure.
  * Most steps return { data, usage, cost }, but cruxes returns
  * { subtopicCruxes, topicScores, speakerCruxMatrix, usage, cost }
@@ -502,16 +541,13 @@ async function saveStepResult(
     totalDurationMs: updatedState.totalDurationMs + analytics.durationMs,
   };
 
-  // Verify lock before saving state
-  await verifyLockBeforeSave(
+  // Atomically save state with lock verification to prevent TOCTOU race conditions
+  await saveWithLockVerification(
     stateStore,
-    state.reportId,
+    updatedState,
     lockValue,
     reportLogger,
   );
-
-  // Persist to Redis
-  await stateStore.save(updatedState);
 
   return updatedState;
 }
@@ -612,15 +648,13 @@ async function executeAndHandleStep(
   let updatedState = markStepStarted(state, stepName);
   updatedState.currentStep = stepName;
 
-  // Verify lock before saving state
-  await verifyLockBeforeSave(
+  // Atomically save state with lock verification to prevent TOCTOU race conditions
+  await saveWithLockVerification(
     stateStore,
-    state.reportId,
+    updatedState,
     config.lockValue,
     reportLogger,
   );
-
-  await stateStore.save(updatedState);
 
   safelyInvokeCallback(
     config.onStepUpdate,
@@ -643,16 +677,13 @@ async function executeAndHandleStep(
     );
     // handleStepFailure always returns failure, so we can safely access error
     if (failureResult.tag === "failure") {
-      // Verify lock before saving failure state
-      await verifyLockBeforeSave(
+      // Atomically save failure state with lock verification
+      await saveWithLockVerification(
         stateStore,
-        state.reportId,
+        failureResult.error.state,
         config.lockValue,
         reportLogger,
       );
-
-      // Save the updated state with failure information
-      await stateStore.save(failureResult.error.state);
     }
     return failureResult;
   }
@@ -725,15 +756,14 @@ async function initializePipelineState(
   const state = createInitialState(config.reportId, config.userId);
   state.status = "running";
 
-  // Verify lock before saving initial state
-  await verifyLockBeforeSave(
+  // Atomically save initial state with lock verification
+  await saveWithLockVerification(
     stateStore,
-    state.reportId,
+    state,
     config.lockValue,
     reportLogger,
   );
 
-  await stateStore.save(state);
   return state;
 }
 
@@ -1193,15 +1223,13 @@ async function executeAllSteps(
   } else {
     currentState = markStepSkipped(currentState, "cruxes");
 
-    // Verify lock before saving state
-    await verifyLockBeforeSave(
+    // Atomically save skipped step state with lock verification
+    await saveWithLockVerification(
       stateStore,
-      currentState.reportId,
+      currentState,
       config.lockValue,
       reportLogger,
     );
-
-    await stateStore.save(currentState);
 
     safelyInvokeCallback(
       config.onStepUpdate,
@@ -1325,15 +1353,13 @@ async function handlePipelineFailure(
     },
   };
 
-  // Verify lock before saving failure state
-  await verifyLockBeforeSave(
+  // Atomically save failure state with lock verification
+  await saveWithLockVerification(
     stateStore,
-    state.reportId,
+    updatedState,
     config.lockValue,
     reportLogger,
   );
-
-  await stateStore.save(updatedState);
 
   return {
     success: false,
@@ -1379,15 +1405,13 @@ async function executePipelineInternal(
       currentStep: undefined,
     };
 
-    // Verify lock before saving completion state
-    await verifyLockBeforeSave(
+    // Atomically save completion state with lock verification
+    await saveWithLockVerification(
       stateStore,
-      state.reportId,
+      state,
       config.lockValue,
       reportLogger,
     );
-
-    await stateStore.save(state);
 
     reportLogger.info(
       {
@@ -1571,17 +1595,20 @@ export async function cancelPipeline(
       },
     };
 
-    // Verify we still hold the lock before saving
-    const hasLock = await stateStore.verifyPipelineLock(reportId, lockValue);
-    if (!hasLock) {
+    // Atomically save cancellation state with lock verification
+    const result = await stateStore.saveWithLockVerification(
+      updatedState,
+      lockValue,
+    );
+
+    if (!result.success) {
       runnerLogger.error(
-        { reportId, lockValue },
+        { reportId, lockValue, reason: result.reason },
         "Lock lost during cancellation - another worker may have taken over",
       );
       return false;
     }
 
-    await stateStore.save(updatedState);
     return true;
   } finally {
     // Always release the lock, even if cancellation failed

@@ -103,6 +103,38 @@ function createMockCache(): Cache & {
         ttls.delete(key);
       });
     },
+    async setMultipleWithLockVerification(
+      lockKey: string,
+      lockValue: string,
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+      deleteKeys?: string[],
+    ): Promise<{ success: boolean; reason?: string }> {
+      // Verify lock
+      const currentLockValue = storage.get(lockKey);
+      if (currentLockValue !== lockValue) {
+        return {
+          success: false,
+          reason: currentLockValue ? "lock_stolen" : "lock_expired",
+        };
+      }
+      // Perform operations atomically
+      operations.forEach((op) => {
+        storage.set(op.key, op.value);
+        const ttl = op.options?.ttl;
+        if (ttl !== undefined) {
+          ttls.set(op.key, ttl);
+        }
+      });
+      deleteKeys?.forEach((key) => {
+        storage.delete(key);
+        ttls.delete(key);
+      });
+      return { success: true };
+    },
     async healthCheck(): Promise<void> {
       // Mock cache is always healthy
     },

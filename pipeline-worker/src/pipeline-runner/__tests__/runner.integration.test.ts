@@ -323,6 +323,7 @@ function createInMemoryCache(): Cache {
         value: string;
         options?: { ttl?: number };
       }>,
+      deleteKeys?: string[],
     ): Promise<void> {
       for (const op of operations) {
         const expiresAt = op.options?.ttl
@@ -330,6 +331,43 @@ function createInMemoryCache(): Cache {
           : undefined;
         storage.set(op.key, { value: op.value, expiresAt });
       }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+    },
+    async setMultipleWithLockVerification(
+      lockKey: string,
+      lockValue: string,
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+      deleteKeys?: string[],
+    ): Promise<{ success: boolean; reason?: string }> {
+      // Verify lock
+      const lockEntry = storage.get(lockKey);
+      if (!lockEntry || lockEntry.value !== lockValue) {
+        return {
+          success: false,
+          reason: lockEntry ? "lock_stolen" : "lock_expired",
+        };
+      }
+      // Perform operations atomically
+      for (const op of operations) {
+        const expiresAt = op.options?.ttl
+          ? Date.now() + op.options.ttl * 1000
+          : undefined;
+        storage.set(op.key, { value: op.value, expiresAt });
+      }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+      return { success: true };
     },
     async healthCheck(): Promise<void> {
       // In-memory cache is always healthy

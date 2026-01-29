@@ -379,6 +379,82 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   }
 
   /**
+   * Atomically saves pipeline state while verifying lock ownership.
+   * This prevents TOCTOU race conditions where the lock could be lost
+   * between verification and save operations.
+   *
+   * @param state - Pipeline state to save
+   * @param lockValue - Unique lock identifier to verify ownership
+   * @param options - Optional save settings (TTL, etc.)
+   * @returns Object indicating success and reason for failure if applicable
+   */
+  async saveWithLockVerification(
+    state: PipelineState,
+    lockValue: string,
+    options?: StateOptions,
+  ): Promise<{ success: boolean; reason?: string }> {
+    const key = getStateKey(state.reportId);
+    const lockKey = getLockKey(state.reportId);
+
+    // Use shorter TTL for failed states to prevent memory buildup during outages
+    const defaultTtl =
+      state.status === "failed" ? FAILED_STATE_TTL : DEFAULT_STATE_TTL;
+    const ttl = options?.ttl ?? defaultTtl;
+
+    // Update timestamp
+    const updatedState: PipelineState = {
+      ...state,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Persist validation failure counters to separate keys
+    // Collect all counter updates to execute atomically with main state
+    const steps: PipelineStepName[] = [
+      "clustering",
+      "claims",
+      "sort_and_deduplicate",
+      "summaries",
+      "cruxes",
+    ];
+
+    const counterOperations: Array<{
+      key: string;
+      value: string;
+      options?: { ttl?: number };
+    }> = [];
+
+    const deletionKeys: string[] = [];
+
+    for (const step of steps) {
+      const count = state.validationFailures[step];
+      const counterKey = getValidationFailureKey(state.reportId, step);
+
+      if (count > 0) {
+        counterOperations.push({
+          key: counterKey,
+          value: String(count),
+          options: { ttl },
+        });
+      } else {
+        // Delete counter key when reset to 0 to prevent stale data
+        deletionKeys.push(counterKey);
+      }
+    }
+
+    // Execute main state save + counter updates + zero counter deletions atomically
+    // with lock verification to prevent TOCTOU race conditions
+    return await this.cache.setMultipleWithLockVerification(
+      lockKey,
+      lockValue,
+      [
+        { key, value: JSON.stringify(updatedState), options: { ttl } },
+        ...counterOperations,
+      ],
+      deletionKeys,
+    );
+  }
+
+  /**
    * Delete pipeline state from Redis
    */
   async delete(reportId: string): Promise<void> {

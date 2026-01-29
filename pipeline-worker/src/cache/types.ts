@@ -163,6 +163,25 @@ export interface Cache {
   ): Promise<void>;
 
   /**
+   * Atomically verifies lock ownership and executes multiple set/delete operations.
+   * This prevents TOCTOU race conditions by ensuring the lock check and state save
+   * happen atomically in a single Redis operation.
+   *
+   * @param lockKey - The lock key to verify
+   * @param lockValue - Expected lock value (unique identifier of lock holder)
+   * @param operations - Array of set operations to execute if lock is held
+   * @param deleteKeys - Optional array of keys to delete if lock is held
+   * @returns Object indicating success and reason for failure if applicable
+   * @throws {CacheSetError} When the Redis operation fails
+   */
+  setMultipleWithLockVerification(
+    lockKey: string,
+    lockValue: string,
+    operations: Array<{ key: string; value: string; options?: SetOptions }>,
+    deleteKeys?: string[],
+  ): Promise<{ success: boolean; reason?: string }>;
+
+  /**
    * Verifies cache connectivity and availability.
    *
    * @returns A Promise that resolves when the cache is healthy

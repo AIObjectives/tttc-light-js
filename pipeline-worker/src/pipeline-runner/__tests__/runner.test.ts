@@ -196,10 +196,45 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
         value: string;
         options?: { ttl?: number };
       }>,
+      deleteKeys?: string[],
     ): Promise<void> {
       for (const op of operations) {
         storage.set(op.key, op.value);
       }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+    },
+    async setMultipleWithLockVerification(
+      lockKey: string,
+      lockValue: string,
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+      deleteKeys?: string[],
+    ): Promise<{ success: boolean; reason?: string }> {
+      // Verify lock
+      const currentLockValue = storage.get(lockKey);
+      if (currentLockValue !== lockValue) {
+        return {
+          success: false,
+          reason: currentLockValue ? "lock_stolen" : "lock_expired",
+        };
+      }
+      // Perform operations atomically
+      for (const op of operations) {
+        storage.set(op.key, op.value);
+      }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+      return { success: true };
     },
     async healthCheck(): Promise<void> {
       // Mock cache is always healthy

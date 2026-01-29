@@ -305,6 +305,78 @@ export class RedisCache implements Cache {
   }
 
   /**
+   * Atomically verifies lock ownership and executes multiple set/delete operations.
+   * This prevents TOCTOU race conditions by ensuring the lock check and state save
+   * happen atomically in a single Redis Lua script execution.
+   *
+   * The Lua script:
+   * 1. Checks if the lock key holds the expected value
+   * 2. If not, returns failure reason (expired or stolen)
+   * 3. If yes, executes all set/delete operations atomically
+   * 4. Returns success
+   *
+   * @param lockKey - The lock key to verify
+   * @param lockValue - Expected lock value (unique identifier of lock holder)
+   * @param operations - Array of set operations to execute if lock is held
+   * @param deleteKeys - Optional array of keys to delete if lock is held
+   * @returns Object indicating success and reason for failure if applicable
+   * @throws {CacheSetError} When the Redis operation fails
+   */
+  async setMultipleWithLockVerification(
+    lockKey: string,
+    lockValue: string,
+    operations: Array<{ key: string; value: string; options?: SetOptions }>,
+    deleteKeys?: string[],
+  ): Promise<{ success: boolean; reason?: string }> {
+    if (operations.length === 0 && (!deleteKeys || deleteKeys.length === 0)) {
+      return { success: true };
+    }
+
+    try {
+      // Build the Lua script dynamically based on operations
+      const script = this.buildLockVerificationScript(
+        operations.length,
+        deleteKeys?.length || 0,
+      );
+
+      // Prepare arguments for the Lua script
+      // KEYS: [lockKey, ...operationKeys, ...deleteKeys]
+      // ARGV: [lockValue, ...operationValues, ...operationTTLs, ...deleteDummyArgs]
+      const keys = [
+        lockKey,
+        ...operations.map((op) => op.key),
+        ...(deleteKeys || []),
+      ];
+
+      const argv = [
+        lockValue,
+        ...operations.map((op) => op.value),
+        ...operations.map((op) => String(op.options?.ttl || 0)),
+      ];
+
+      const result = (await this.client.eval(
+        script,
+        keys.length,
+        ...keys,
+        ...argv,
+      )) as [number, string];
+
+      if (result[0] === 1) {
+        return { success: true };
+      }
+      return { success: false, reason: result[1] };
+    } catch (error) {
+      const setKeys = operations.map((op) => op.key).join(", ");
+      const delKeys = deleteKeys?.join(", ") || "";
+      const allKeys = [setKeys, delKeys].filter(Boolean).join(", ");
+      throw new CacheSetError(
+        `[${allKeys}]`,
+        `Atomic lock-verified batch operation failed: ${formatError(error)}`,
+      );
+    }
+  }
+
+  /**
    * Builds a Redis MULTI transaction with set and delete operations.
    *
    * @param operations - Array of set operations to add to the transaction
@@ -332,6 +404,70 @@ export class RedisCache implements Cache {
     }
 
     return multi;
+  }
+
+  /**
+   * Builds a Lua script that atomically verifies a lock and performs set/delete operations.
+   *
+   * The script structure:
+   * - KEYS[1] = lockKey
+   * - KEYS[2..n] = operation keys
+   * - KEYS[n+1..end] = deletion keys
+   * - ARGV[1] = expected lock value
+   * - ARGV[2..n+1] = operation values
+   * - ARGV[n+2..end] = operation TTLs (0 means no TTL)
+   *
+   * @param numOperations - Number of set operations
+   * @param numDeletions - Number of delete operations
+   * @returns Lua script string
+   */
+  private buildLockVerificationScript(
+    numOperations: number,
+    numDeletions: number,
+  ): string {
+    return `
+      -- Verify lock ownership
+      local lock_val = redis.call("GET", KEYS[1])
+      if lock_val ~= ARGV[1] then
+        if lock_val == false then
+          return {0, "lock_expired"}
+        else
+          return {0, "lock_stolen"}
+        end
+      end
+
+      -- Lock is valid, perform all operations atomically
+      local num_ops = ${numOperations}
+      local num_dels = ${numDeletions}
+
+      -- Execute SET operations (KEYS[2] onwards)
+      for i = 1, num_ops do
+        local key_idx = i + 1
+        local val_idx = i + 1
+        local ttl_idx = i + 1 + num_ops
+
+        local key = KEYS[key_idx]
+        local value = ARGV[val_idx]
+        local ttl = tonumber(ARGV[ttl_idx])
+
+        if ttl > 0 then
+          redis.call("SETEX", key, ttl, value)
+        else
+          redis.call("SET", key, value)
+        end
+      end
+
+      -- Execute DELETE operations (remaining KEYS)
+      if num_dels > 0 then
+        local del_keys = {}
+        for i = 1, num_dels do
+          table.insert(del_keys, KEYS[num_ops + 1 + i])
+        end
+        redis.call("DEL", unpack(del_keys))
+      end
+
+      return {1, "ok"}
+    `;
   }
 
   /**

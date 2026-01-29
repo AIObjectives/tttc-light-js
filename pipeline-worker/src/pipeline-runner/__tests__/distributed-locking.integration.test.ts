@@ -412,16 +412,16 @@ describe("Distributed Locking with Real Redis", () => {
       // The lock gets deleted during clustering execution, causing the next save to fail
       try {
         const result = await runPipeline(input, config, stateStore);
-        // If it returns a result, verify it's a failure with the correct error
+        // If it returns a result, verify it's a failure with the correct error (new atomic save message)
         expect(result.success).toBe(false);
         expect(result.error?.message).toContain(
-          "Pipeline lock lost during execution - cannot safely save state",
+          "Pipeline lock lost during save - cannot safely persist state",
         );
       } catch (error) {
-        // If it throws, verify it's the correct error
+        // If it throws, verify it's the correct error (new atomic save message)
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toContain(
-          "Pipeline lock lost during execution - cannot safely save state",
+          "Pipeline lock lost during save - cannot safely persist state",
         );
       }
 
