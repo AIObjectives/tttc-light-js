@@ -652,6 +652,12 @@ async function executePipelineWithLock(
           { error: cause.message },
           "Failed to reconstruct pipeline output from completed state",
         );
+        await updateFirestoreWithError(
+          reportId,
+          `Cannot reconstruct output: ${cause.message}`,
+          refStore,
+          jobLogger,
+        );
         return failure(
           new HandlerError(
             `Cannot reconstruct output: ${cause.message}`,
