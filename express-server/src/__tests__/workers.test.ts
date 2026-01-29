@@ -1,3 +1,4 @@
+import type { Logger } from "pino";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as firebase from "../Firebase";
 import { type PipelineJob, pipelineJob } from "../jobs/pipeline";
@@ -34,6 +35,22 @@ vi.mock("tttc-common/logger", () => {
   return { logger: mockLogger };
 });
 
+// Create a mock logger for tests with proper Logger type
+const createMockLogger = (): Logger => {
+  const mockLogger = {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    fatal: vi.fn(),
+    trace: vi.fn(),
+    silent: vi.fn(),
+    child: vi.fn(),
+    level: "info",
+  };
+  return mockLogger as unknown as Logger;
+};
+
 describe("Workers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -45,6 +62,7 @@ describe("Workers", () => {
 
   describe("processJob", () => {
     it("should call pipelineJob with the provided job data", async () => {
+      const mockLogger = createMockLogger();
       const mockJob: PipelineJob = {
         config: {
           env: "test" as any,
@@ -77,13 +95,14 @@ describe("Workers", () => {
 
       vi.mocked(pipelineJob).mockResolvedValue(undefined);
 
-      await processJob(mockJob);
+      await processJob(mockJob, mockLogger);
 
       // requestId is undefined when not provided
       expect(pipelineJob).toHaveBeenCalledWith(mockJob, undefined);
     });
 
     it("should pass requestId to pipelineJob when provided", async () => {
+      const mockLogger = createMockLogger();
       const mockJob: PipelineJob = {
         config: {
           env: "test" as any,
@@ -117,12 +136,13 @@ describe("Workers", () => {
       const requestId = "test-request-id-123";
       vi.mocked(pipelineJob).mockResolvedValue(undefined);
 
-      await processJob(mockJob, requestId);
+      await processJob(mockJob, mockLogger, requestId);
 
       expect(pipelineJob).toHaveBeenCalledWith(mockJob, requestId);
     });
 
     it("should propagate errors from pipelineJob", async () => {
+      const mockLogger = createMockLogger();
       const mockJob: PipelineJob = {
         config: {
           env: "test" as any,
@@ -155,7 +175,7 @@ describe("Workers", () => {
       const testError = new Error("Pipeline processing failed");
       vi.mocked(pipelineJob).mockRejectedValue(testError);
 
-      await expect(processJob(mockJob)).rejects.toThrow(
+      await expect(processJob(mockJob, mockLogger)).rejects.toThrow(
         "Pipeline processing failed",
       );
     });
@@ -197,7 +217,7 @@ describe("Workers", () => {
 
       vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
 
-      await processJobFailure(mockJob, mockError);
+      await processJobFailure(mockJob, mockError, createMockLogger());
 
       expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
         "report-456",
@@ -241,7 +261,7 @@ describe("Workers", () => {
 
       vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
 
-      await processJobFailure(mockJob, mockError);
+      await processJobFailure(mockJob, mockError, createMockLogger());
 
       expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
         "firebase-job-123", // Should use firebaseJobId as fallback
@@ -285,7 +305,7 @@ describe("Workers", () => {
 
       vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
 
-      await processJobFailure(mockJob, mockError as any);
+      await processJobFailure(mockJob, mockError as any, createMockLogger());
 
       expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
         "report-456",
@@ -333,7 +353,7 @@ describe("Workers", () => {
 
       // Should not throw
       await expect(
-        processJobFailure(mockJob, mockError),
+        processJobFailure(mockJob, mockError, createMockLogger()),
       ).resolves.not.toThrow();
     });
 
@@ -367,7 +387,7 @@ describe("Workers", () => {
 
       // Should not throw even with missing firebaseDetails
       await expect(
-        processJobFailure(mockJob, mockError),
+        processJobFailure(mockJob, mockError, createMockLogger()),
       ).resolves.not.toThrow();
 
       // Should not call update functions
@@ -414,7 +434,7 @@ describe("Workers", () => {
 
       // Should not throw even if update fails
       await expect(
-        processJobFailure(mockJob, mockError),
+        processJobFailure(mockJob, mockError, createMockLogger()),
       ).resolves.not.toThrow();
     });
 
@@ -461,7 +481,7 @@ describe("Workers", () => {
       );
 
       const startTime = Date.now();
-      await processJobFailure(mockJob, mockError);
+      await processJobFailure(mockJob, mockError, createMockLogger());
       const endTime = Date.now();
 
       // Should have been called
@@ -476,7 +496,7 @@ describe("Workers", () => {
 
       // Should not throw with null job
       await expect(
-        processJobFailure(null as any, mockError),
+        processJobFailure(null as any, mockError, createMockLogger()),
       ).resolves.not.toThrow();
 
       expect(firebase.updateReportRefStatusWithRetry).not.toHaveBeenCalled();
@@ -518,7 +538,7 @@ describe("Workers", () => {
 
       vi.mocked(firebase.updateReportRefStatusWithRetry).mockResolvedValue();
 
-      await processJobFailure(mockJob, mockError);
+      await processJobFailure(mockJob, mockError, createMockLogger());
 
       // Should call the firebase update function
       expect(firebase.updateReportRefStatusWithRetry).toHaveBeenCalledWith(
