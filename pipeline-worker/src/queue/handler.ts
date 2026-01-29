@@ -17,6 +17,7 @@ import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
 import type { PipelineInput } from "../pipeline-runner/types.js";
 import {
+  ErrorCategory,
   HandlerError,
   StorageError,
   ValidationError,
@@ -586,7 +587,12 @@ async function handlePipelineFailure(
   await updateFirestoreWithError(reportId, errorMessage, refStore, jobLogger);
 
   return failure(
-    new HandlerError(`Pipeline failed: ${errorMessage}`, false, result.error),
+    new HandlerError(
+      `Pipeline failed: ${errorMessage}`,
+      false,
+      ErrorCategory.PIPELINE,
+      result.error,
+    ),
   );
 }
 
@@ -678,6 +684,7 @@ async function executePipelineWithLock(
           new HandlerError(
             `Cannot reconstruct output: ${cause.message}`,
             false,
+            ErrorCategory.VALIDATION,
             cause,
           ),
         );
@@ -726,7 +733,8 @@ async function executePipelineWithLock(
       return failure(
         new HandlerError(
           "Pipeline lock lost during execution - cannot safely process results to prevent duplicate processing",
-          false,
+          true,
+          ErrorCategory.CONCURRENCY,
         ),
       );
     }

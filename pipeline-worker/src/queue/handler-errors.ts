@@ -6,12 +6,29 @@
  */
 
 /**
+ * Error category for better classification and monitoring
+ */
+export enum ErrorCategory {
+  /** Invalid input data or configuration */
+  VALIDATION = "validation",
+  /** Infrastructure failures (GCS, Firestore, Redis) */
+  INFRASTRUCTURE = "infrastructure",
+  /** Pipeline processing failures (LLM, pipeline logic) */
+  PIPELINE = "pipeline",
+  /** Lock acquisition or extension failures */
+  CONCURRENCY = "concurrency",
+  /** Unclassified errors */
+  UNKNOWN = "unknown",
+}
+
+/**
  * Base error for queue handler operations
  */
 export class HandlerError extends Error {
   constructor(
     message: string,
     public readonly isTransient: boolean,
+    public readonly category: ErrorCategory = ErrorCategory.UNKNOWN,
     public readonly cause?: Error,
   ) {
     super(message);
