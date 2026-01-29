@@ -183,7 +183,8 @@ export class GCPBucketStore implements BucketStore {
       const file = bucketRef.file(fileName);
       await file.delete();
     } catch (error) {
-      throw new DeleteFailedError(fileName, formatError(error));
+      const errorType = categorizeStorageError(error);
+      throw new DeleteFailedError(fileName, formatError(error), errorType);
     }
   }
 

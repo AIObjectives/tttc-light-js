@@ -61,6 +61,7 @@ export class DeleteFailedError extends BucketStoreError {
   constructor(
     public fileName: string,
     public reason: string,
+    public errorType?: "permission" | "transient" | "not_found" | "permanent",
   ) {
     super(`Delete failed for ${fileName}: ${reason}`);
     this.name = "DeleteFailedError";

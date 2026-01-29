@@ -937,4 +937,235 @@ describe("GCPBucketStore", () => {
       }
     });
   });
+
+  describe("deleteFile - Error Categorization", () => {
+    it("should categorize 403 errors as permission using ApiError.code", async () => {
+      const error = new Error("Access denied");
+      (error as { code?: number }).code = 403;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.fileName).toBe("test.json");
+          expect(error.errorType).toBe("permission");
+        }
+      }
+    });
+
+    it("should categorize 401 errors as permission using ApiError.code", async () => {
+      const error = new Error("Unauthorized");
+      (error as { code?: number }).code = 401;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("permission");
+        }
+      }
+    });
+
+    it("should categorize 404 errors as not_found using ApiError.code", async () => {
+      const error = new Error("Not found");
+      (error as { code?: number }).code = 404;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("not_found");
+        }
+      }
+    });
+
+    it("should categorize 410 errors as not_found using ApiError.code", async () => {
+      const error = new Error("Gone");
+      (error as { code?: number }).code = 410;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("not_found");
+        }
+      }
+    });
+
+    it("should categorize 503 errors as transient using ApiError.code", async () => {
+      const error = new Error("Service unavailable");
+      (error as { code?: number }).code = 503;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+
+    it("should categorize 504 errors as transient using ApiError.code", async () => {
+      const error = new Error("Gateway timeout");
+      (error as { code?: number }).code = 504;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+
+    it("should categorize 429 errors as transient using ApiError.code", async () => {
+      const error = new Error("Too many requests");
+      (error as { code?: number }).code = 429;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+
+    it("should categorize 500 errors as transient using ApiError.code", async () => {
+      const error = new Error("Internal server error");
+      (error as { code?: number }).code = 500;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+
+    it("should categorize 400 errors as permanent using ApiError.code", async () => {
+      const error = new Error("Bad request");
+      (error as { code?: number }).code = 400;
+
+      mockDelete.mockRejectedValue(error);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("permanent");
+        }
+      }
+    });
+
+    it("should categorize permission errors with string matching", async () => {
+      mockDelete.mockRejectedValue(new Error("Permission denied"));
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("permission");
+        }
+      }
+    });
+
+    it("should categorize network timeout as transient", async () => {
+      mockDelete.mockRejectedValue(new Error("Network timeout"));
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+
+    it("should categorize ETIMEDOUT as transient", async () => {
+      mockDelete.mockRejectedValue(new Error("ETIMEDOUT"));
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+
+    it("should categorize ECONNREFUSED as transient", async () => {
+      mockDelete.mockRejectedValue(new Error("ECONNREFUSED"));
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+
+    it("should categorize unknown errors as permanent", async () => {
+      mockDelete.mockRejectedValue(new Error("Unknown error"));
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.errorType).toBe("permanent");
+        }
+      }
+    });
+
+    it("should preserve fileName in categorized errors", async () => {
+      const error = new Error("Service unavailable");
+      (error as { code?: number }).code = 503;
+
+      mockDelete.mockRejectedValue(error);
+
+      const fileName = "reports/2024/data.json";
+
+      try {
+        await bucketStore.deleteFile(fileName);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.fileName).toBe(fileName);
+          expect(error.errorType).toBe("transient");
+        }
+      }
+    });
+  });
 });
