@@ -8,7 +8,10 @@ import { logger } from "tttc-common/logger";
 import type { PipelineJobMessage } from "tttc-common/schema";
 import type { BucketStore } from "../bucketstore/index.js";
 import type { RefStoreServices } from "../datastore/refstore/index.js";
-import { formatPipelineOutput } from "../pipeline-runner/format-output.js";
+import {
+  formatPipelineOutput,
+  type SimplifiedPipelineOutput,
+} from "../pipeline-runner/format-output.js";
 import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
 import type { PipelineInput } from "../pipeline-runner/types.js";
@@ -178,8 +181,12 @@ function convertToPipelineInput(
  * The report is already in "processing" status from pipeline execution.
  * If GCS upload fails, the error is caught and status is set to "failed".
  */
-async function saveSuccessfulPipeline(
-  result: Awaited<ReturnType<typeof runPipeline>>,
+/**
+ * Save pipeline output to GCS and update Firestore
+ * This is the common save logic used by both fresh pipeline runs and save-only retries
+ */
+async function savePipelineOutput(
+  pipelineOutput: SimplifiedPipelineOutput,
   data: PipelineJobMessage,
   reportId: string,
   storage: BucketStore,
@@ -187,8 +194,6 @@ async function saveSuccessfulPipeline(
   jobLogger: typeof queueLogger,
 ): Promise<Result<void, StorageError>> {
   try {
-    // Format pipeline output for storage
-    const pipelineOutput = formatPipelineOutput(result, data);
     const reportJson = JSON.stringify(pipelineOutput);
     const filename = `${reportId}.json`;
 
@@ -293,6 +298,29 @@ async function saveSuccessfulPipeline(
     // unless they're permission errors, which would have been caught in checkStorageExists
     return failure(new StorageError(cause.message, true, cause));
   }
+}
+
+/**
+ * Save successful pipeline result (formats output then saves)
+ */
+async function saveSuccessfulPipeline(
+  result: Awaited<ReturnType<typeof runPipeline>>,
+  data: PipelineJobMessage,
+  reportId: string,
+  storage: BucketStore,
+  refStore: RefStoreServices,
+  jobLogger: typeof queueLogger,
+): Promise<Result<void, StorageError>> {
+  // Format pipeline output for storage
+  const pipelineOutput = formatPipelineOutput(result, data);
+  return savePipelineOutput(
+    pipelineOutput,
+    data,
+    reportId,
+    storage,
+    refStore,
+    jobLogger,
+  );
 }
 
 /**
@@ -438,12 +466,61 @@ async function shouldSkipPipeline(
   if (existingState?.status === "completed") {
     // If we reach here, storage check succeeded but file doesn't exist
     // This means the pipeline completed but the file was deleted or never saved
+    // The save-only retry will be handled in executePipelineWithLock
     jobLogger.info(
-      "Pipeline marked completed but storage missing, re-attempting save only (not re-running pipeline)",
+      "Pipeline marked completed but storage missing, will retry save operations",
     );
   }
 
   return success({ skip: false, shouldResume, existingState });
+}
+
+/**
+ * Reconstruct pipeline output from completed state stored in Redis
+ * This is used when pipeline completed but save operations failed
+ */
+function reconstructPipelineOutputFromState(
+  state: NonNullable<Awaited<ReturnType<RedisPipelineStateStore["get"]>>>,
+  data: PipelineJobMessage,
+): SimplifiedPipelineOutput {
+  const { completedResults } = state;
+
+  if (!completedResults.sort_and_deduplicate) {
+    throw new Error(
+      "Cannot reconstruct output: sort_and_deduplicate result missing from completed state",
+    );
+  }
+
+  const { instructions } = data.config;
+  const { reportDetails } = data;
+
+  return {
+    version: "pipeline-worker-v1.0",
+    reportDetails: {
+      title: reportDetails.title,
+      description: reportDetails.description,
+      question: reportDetails.question,
+      filename: reportDetails.filename,
+    },
+    sortedTree: completedResults.sort_and_deduplicate.data,
+    analytics: {
+      totalTokens: state.totalTokens,
+      totalCost: state.totalCost,
+      totalDurationMs: state.totalDurationMs,
+      stepAnalytics: state.stepAnalytics,
+    },
+    cruxes: completedResults.cruxes,
+    prompts: {
+      systemInstructions: instructions.systemInstructions,
+      clusteringInstructions: instructions.clusteringInstructions,
+      extractionInstructions: instructions.extractionInstructions,
+      dedupInstructions: instructions.dedupInstructions,
+      summariesInstructions: instructions.summariesInstructions,
+      cruxInstructions: instructions.cruxInstructions,
+      outputLanguage: instructions.outputLanguage,
+    },
+    completedAt: state.updatedAt,
+  };
 }
 
 /**
@@ -544,6 +621,47 @@ async function executePipelineWithLock(
   }
 
   try {
+    // Handle save-only path: pipeline completed but save operations failed
+    if (existingState?.status === "completed") {
+      jobLogger.info(
+        {
+          totalDurationMs: existingState.totalDurationMs,
+          totalTokens: existingState.totalTokens,
+          totalCost: existingState.totalCost,
+        },
+        "Pipeline already completed, performing save-only retry",
+      );
+
+      try {
+        const pipelineOutput = reconstructPipelineOutputFromState(
+          existingState,
+          data,
+        );
+        return savePipelineOutput(
+          pipelineOutput,
+          data,
+          reportId,
+          storage,
+          refStore,
+          jobLogger,
+        );
+      } catch (error) {
+        const cause = error instanceof Error ? error : new Error(String(error));
+        jobLogger.error(
+          { error: cause.message },
+          "Failed to reconstruct pipeline output from completed state",
+        );
+        return failure(
+          new HandlerError(
+            `Cannot reconstruct output: ${cause.message}`,
+            false,
+            cause,
+          ),
+        );
+      }
+    }
+
+    // Normal pipeline execution path
     if (shouldResume && existingState) {
       jobLogger.info(
         {
