@@ -11,6 +11,7 @@ import type { RefStoreServices } from "../datastore/refstore/index.js";
 import {
   formatPipelineOutput,
   type SimplifiedPipelineOutput,
+  simplifiedPipelineOutputSchema,
 } from "../pipeline-runner/format-output.js";
 import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
@@ -465,7 +466,7 @@ function reconstructPipelineOutputFromState(
   const { completedResults } = state;
 
   if (!completedResults.sort_and_deduplicate) {
-    throw new Error(
+    throw new ValidationError(
       "Cannot reconstruct output: sort_and_deduplicate result missing from completed state",
     );
   }
@@ -473,8 +474,8 @@ function reconstructPipelineOutputFromState(
   const { instructions } = data.config;
   const { reportDetails } = data;
 
-  return {
-    version: "pipeline-worker-v1.0",
+  const reconstructed = {
+    version: "pipeline-worker-v1.0" as const,
     reportDetails: {
       title: reportDetails.title,
       description: reportDetails.description,
@@ -500,6 +501,24 @@ function reconstructPipelineOutputFromState(
     },
     completedAt: state.updatedAt,
   };
+
+  // Validate the reconstructed data structure
+  const parseResult = simplifiedPipelineOutputSchema.safeParse(reconstructed);
+
+  if (!parseResult.success) {
+    queueLogger.error(
+      {
+        errors: parseResult.error.issues,
+        reportId: data.config.firebaseDetails.reportId,
+      },
+      "Reconstructed pipeline output validation failed - Redis state may be corrupted",
+    );
+    throw new ValidationError(
+      `Invalid pipeline output reconstructed from Redis state: ${parseResult.error.message}`,
+    );
+  }
+
+  return reconstructed;
 }
 
 /**

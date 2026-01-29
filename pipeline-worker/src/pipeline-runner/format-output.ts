@@ -11,6 +11,8 @@
  */
 
 import type { PipelineJobMessage } from "tttc-common/schema";
+import * as schema from "tttc-common/schema";
+import { z } from "zod";
 import { PipelineFormatError, type PipelineResult } from "./types";
 
 export interface SimplifiedPipelineOutput {
@@ -40,6 +42,68 @@ export interface SimplifiedPipelineOutput {
   };
   completedAt: string;
 }
+
+/**
+ * Zod schema for step analytics
+ * Matches StepAnalytics interface from types.ts
+ */
+const stepAnalyticsSchema = z.object({
+  stepName: z.enum([
+    "clustering",
+    "claims",
+    "sort_and_deduplicate",
+    "summaries",
+    "cruxes",
+  ]),
+  status: z.enum(["pending", "in_progress", "completed", "failed", "skipped"]),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional(),
+  durationMs: z.number().optional(),
+  inputTokens: z.number().optional(),
+  outputTokens: z.number().optional(),
+  totalTokens: z.number().optional(),
+  cost: z.number().optional(),
+  errorMessage: z.string().optional(),
+  errorName: z.string().optional(),
+});
+
+/**
+ * Zod schema for validating SimplifiedPipelineOutput
+ * Used to validate reconstructed pipeline output from Redis state
+ */
+export const simplifiedPipelineOutputSchema = z.object({
+  version: z.literal("pipeline-worker-v1.0"),
+  reportDetails: z.object({
+    title: z.string(),
+    description: z.string(),
+    question: z.string(),
+    filename: z.string(),
+  }),
+  sortedTree: z.unknown(), // SortedTree format - validated during pipeline execution
+  analytics: z.object({
+    totalTokens: z.number(),
+    totalCost: z.number(),
+    totalDurationMs: z.number(),
+    stepAnalytics: z.object({
+      clustering: stepAnalyticsSchema,
+      claims: stepAnalyticsSchema,
+      sort_and_deduplicate: stepAnalyticsSchema,
+      summaries: stepAnalyticsSchema,
+      cruxes: stepAnalyticsSchema,
+    }),
+  }),
+  cruxes: z.unknown().optional(),
+  prompts: z.object({
+    systemInstructions: z.string(),
+    clusteringInstructions: z.string(),
+    extractionInstructions: z.string(),
+    dedupInstructions: z.string(),
+    summariesInstructions: z.string(),
+    cruxInstructions: z.string().optional(),
+    outputLanguage: z.string().optional(),
+  }),
+  completedAt: z.string(),
+});
 
 /**
  * Convert pipeline runner result to simplified output format
