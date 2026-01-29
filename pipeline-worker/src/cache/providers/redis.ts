@@ -288,33 +288,57 @@ export class RedisCache implements Cache {
     }
 
     try {
-      const pipeline = this.client.pipeline();
-
-      for (const op of operations) {
-        if (op.options?.ttl !== undefined) {
-          pipeline.setex(op.key, op.options.ttl, op.value);
-        } else {
-          pipeline.set(op.key, op.value);
-        }
-      }
-
+      const pipeline = this.buildPipeline(operations);
       const results = await pipeline.exec();
-
-      if (!results) {
-        throw new Error("Pipeline execution returned null");
-      }
-
-      for (const [error] of results) {
-        if (error) {
-          throw error;
-        }
-      }
+      this.validatePipelineResults(results);
     } catch (error) {
       const keys = operations.map((op) => op.key).join(", ");
       throw new CacheSetError(
         `[${keys}]`,
         `Batch set failed: ${formatError(error)}`,
       );
+    }
+  }
+
+  /**
+   * Builds a Redis pipeline with set operations.
+   *
+   * @param operations - Array of set operations to add to the pipeline
+   * @returns Configured Redis pipeline
+   */
+  private buildPipeline(
+    operations: Array<{ key: string; value: string; options?: SetOptions }>,
+  ): ReturnType<Redis["pipeline"]> {
+    const pipeline = this.client.pipeline();
+
+    for (const op of operations) {
+      if (op.options?.ttl !== undefined) {
+        pipeline.setex(op.key, op.options.ttl, op.value);
+      } else {
+        pipeline.set(op.key, op.value);
+      }
+    }
+
+    return pipeline;
+  }
+
+  /**
+   * Validates that all pipeline operations succeeded.
+   *
+   * @param results - Pipeline execution results
+   * @throws {Error} When pipeline execution fails or any operation has an error
+   */
+  private validatePipelineResults(
+    results: Array<[Error | null, unknown]> | null,
+  ): void {
+    if (!results) {
+      throw new Error("Pipeline execution returned null");
+    }
+
+    for (const [error] of results) {
+      if (error) {
+        throw error;
+      }
     }
   }
 
