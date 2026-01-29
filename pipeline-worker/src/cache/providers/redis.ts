@@ -274,40 +274,46 @@ export class RedisCache implements Cache {
   }
 
   /**
-   * Executes multiple set operations atomically using Redis pipeline (MULTI/EXEC).
+   * Executes multiple set and delete operations atomically using Redis pipeline (MULTI/EXEC).
    * All operations either succeed together or fail together.
    *
    * @param operations - Array of set operations to execute atomically
+   * @param deleteKeys - Optional array of keys to delete atomically
    * @throws {CacheSetError} When any operation fails
    */
   async setMultiple(
     operations: Array<{ key: string; value: string; options?: SetOptions }>,
+    deleteKeys?: string[],
   ): Promise<void> {
-    if (operations.length === 0) {
+    if (operations.length === 0 && (!deleteKeys || deleteKeys.length === 0)) {
       return;
     }
 
     try {
-      const multi = this.buildPipeline(operations);
+      const multi = this.buildPipeline(operations, deleteKeys);
       const results = await multi.exec();
       this.validatePipelineResults(results);
     } catch (error) {
-      const keys = operations.map((op) => op.key).join(", ");
+      const setKeys = operations.map((op) => op.key).join(", ");
+      const delKeys = deleteKeys?.join(", ") || "";
+      const allKeys = [setKeys, delKeys].filter(Boolean).join(", ");
       throw new CacheSetError(
-        `[${keys}]`,
-        `Batch set failed: ${formatError(error)}`,
+        `[${allKeys}]`,
+        `Batch operation failed: ${formatError(error)}`,
       );
     }
   }
 
   /**
-   * Builds a Redis MULTI transaction with set operations.
+   * Builds a Redis MULTI transaction with set and delete operations.
    *
    * @param operations - Array of set operations to add to the transaction
+   * @param deleteKeys - Optional array of keys to delete
    * @returns Configured Redis multi transaction
    */
   private buildPipeline(
     operations: Array<{ key: string; value: string; options?: SetOptions }>,
+    deleteKeys?: string[],
   ): ReturnType<Redis["multi"]> {
     const multi = this.client.multi();
 
@@ -317,6 +323,12 @@ export class RedisCache implements Cache {
       } else {
         multi.set(op.key, op.value);
       }
+    }
+
+    // Add deletions to the same atomic transaction
+    if (deleteKeys && deleteKeys.length > 0) {
+      // Redis DEL command accepts multiple keys: DEL key1 key2 key3
+      multi.del(...deleteKeys);
     }
 
     return multi;

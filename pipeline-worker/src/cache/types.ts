@@ -149,15 +149,17 @@ export interface Cache {
   increment(key: string, ttlSeconds?: number): Promise<number>;
 
   /**
-   * Executes multiple set operations atomically using Redis pipeline (MULTI/EXEC).
+   * Executes multiple set and delete operations atomically using Redis pipeline (MULTI/EXEC).
    * All operations either succeed together or fail together.
    *
    * @param operations - Array of set operations to execute atomically
+   * @param deleteKeys - Optional array of keys to delete atomically
    * @returns A Promise that resolves when all operations complete
    * @throws {CacheSetError} When any operation fails
    */
   setMultiple(
     operations: Array<{ key: string; value: string; options?: SetOptions }>,
+    deleteKeys?: string[],
   ): Promise<void>;
 
   /**

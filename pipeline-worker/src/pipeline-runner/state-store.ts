@@ -367,18 +367,15 @@ export class RedisPipelineStateStore implements PipelineStateStore {
       }
     }
 
-    // Execute main state save + all counter updates atomically using Redis pipeline
-    // This ensures crash consistency - either all updates succeed or none do
-    await this.cache.setMultiple([
-      { key, value: JSON.stringify(updatedState), options: { ttl } },
-      ...counterOperations,
-    ]);
-
-    // Delete zero counters (this is safe to do non-atomically after main save)
-    // If these deletions fail, stale zero values are not critical
-    for (const deleteKey of deletionKeys) {
-      await this.cache.delete(deleteKey);
-    }
+    // Execute main state save + counter updates + zero counter deletions atomically
+    // This ensures crash consistency - either all operations succeed or none do
+    await this.cache.setMultiple(
+      [
+        { key, value: JSON.stringify(updatedState), options: { ttl } },
+        ...counterOperations,
+      ],
+      deletionKeys,
+    );
   }
 
   /**

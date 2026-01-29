@@ -88,11 +88,18 @@ function createMockCache(): Cache & {
         value: string;
         options?: { ttl?: number };
       }>,
+      deleteKeys?: string[],
     ): Promise<void> {
       for (const op of operations) {
         storage.set(op.key, op.value);
         if (op.options?.ttl) {
           ttls.set(op.key, op.options.ttl);
+        }
+      }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+          ttls.delete(key);
         }
       }
     },
@@ -414,6 +421,131 @@ describe("Pipeline State Store", () => {
         );
 
         expect(verified).toBe(true);
+      });
+    });
+
+    describe("validation failure counters", () => {
+      it("should atomically save state with counter updates and zero counter deletions", async () => {
+        const state = createInitialState("report-123", "user-456");
+        state.validationFailures.clustering = 5;
+        state.validationFailures.claims = 0;
+        state.validationFailures.sort_and_deduplicate = 3;
+
+        await stateStore.save(state);
+
+        // Verify state was saved
+        const retrieved = await stateStore.get("report-123");
+        expect(retrieved).not.toBeNull();
+        expect(retrieved?.validationFailures.clustering).toBe(5);
+        expect(retrieved?.validationFailures.claims).toBe(0);
+
+        // Verify non-zero counters were saved
+        expect(
+          mockCache.storage.get(
+            "pipeline_validation_failure:report-123:clustering",
+          ),
+        ).toBe("5");
+        expect(
+          mockCache.storage.get(
+            "pipeline_validation_failure:report-123:sort_and_deduplicate",
+          ),
+        ).toBe("3");
+
+        // Verify zero counter key was deleted (not just set to "0")
+        expect(
+          mockCache.storage.has(
+            "pipeline_validation_failure:report-123:claims",
+          ),
+        ).toBe(false);
+      });
+
+      it("should delete counter when decremented to zero", async () => {
+        const state = createInitialState("report-123", "user-456");
+        state.validationFailures.clustering = 5;
+
+        await stateStore.save(state);
+
+        // Verify counter exists
+        expect(
+          mockCache.storage.has(
+            "pipeline_validation_failure:report-123:clustering",
+          ),
+        ).toBe(true);
+
+        // Reset to zero
+        state.validationFailures.clustering = 0;
+        await stateStore.save(state);
+
+        // Verify counter key was deleted
+        expect(
+          mockCache.storage.has(
+            "pipeline_validation_failure:report-123:clustering",
+          ),
+        ).toBe(false);
+      });
+
+      it("should handle all counters being zero", async () => {
+        const state = createInitialState("report-123", "user-456");
+        // All validation failures default to 0
+
+        await stateStore.save(state);
+
+        // Verify state was saved
+        const retrieved = await stateStore.get("report-123");
+        expect(retrieved).not.toBeNull();
+
+        // Verify no counter keys exist
+        for (const step of [
+          "clustering",
+          "claims",
+          "sort_and_deduplicate",
+          "summaries",
+          "cruxes",
+        ]) {
+          expect(
+            mockCache.storage.has(
+              `pipeline_validation_failure:report-123:${step}`,
+            ),
+          ).toBe(false);
+        }
+      });
+
+      it("should handle all counters being non-zero", async () => {
+        const state = createInitialState("report-123", "user-456");
+        state.validationFailures.clustering = 1;
+        state.validationFailures.claims = 2;
+        state.validationFailures.sort_and_deduplicate = 3;
+        state.validationFailures.summaries = 4;
+        state.validationFailures.cruxes = 5;
+
+        await stateStore.save(state);
+
+        // Verify all counter keys exist with correct values
+        expect(
+          mockCache.storage.get(
+            "pipeline_validation_failure:report-123:clustering",
+          ),
+        ).toBe("1");
+        expect(
+          mockCache.storage.get(
+            "pipeline_validation_failure:report-123:claims",
+          ),
+        ).toBe("2");
+        expect(
+          mockCache.storage.get(
+            "pipeline_validation_failure:report-123:sort_and_deduplicate",
+          ),
+        ).toBe("3");
+        expect(
+          mockCache.storage.get(
+            "pipeline_validation_failure:report-123:summaries",
+          ),
+        ).toBe("4");
+        expect(
+          mockCache.storage.get(
+            "pipeline_validation_failure:report-123:cruxes",
+          ),
+        ).toBe("5");
       });
     });
   });
