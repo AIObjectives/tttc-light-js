@@ -82,6 +82,20 @@ function createMockCache(): Cache & {
       }
       return newValue;
     },
+    async setMultiple(
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+    ): Promise<void> {
+      for (const op of operations) {
+        storage.set(op.key, op.value);
+        if (op.options?.ttl) {
+          ttls.set(op.key, op.options.ttl);
+        }
+      }
+    },
   };
 }
 

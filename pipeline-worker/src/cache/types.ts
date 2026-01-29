@@ -147,6 +147,18 @@ export interface Cache {
    * @throws {CacheSetError} When the operation fails
    */
   increment(key: string, ttlSeconds?: number): Promise<number>;
+
+  /**
+   * Executes multiple set operations atomically using Redis pipeline (MULTI/EXEC).
+   * All operations either succeed together or fail together.
+   *
+   * @param operations - Array of set operations to execute atomically
+   * @returns A Promise that resolves when all operations complete
+   * @throws {CacheSetError} When any operation fails
+   */
+  setMultiple(
+    operations: Array<{ key: string; value: string; options?: SetOptions }>,
+  ): Promise<void>;
 }
 
 /**

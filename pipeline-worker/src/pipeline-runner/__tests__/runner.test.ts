@@ -190,6 +190,17 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
       storage.set(key, String(newValue));
       return newValue;
     },
+    async setMultiple(
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+    ): Promise<void> {
+      for (const op of operations) {
+        storage.set(op.key, op.value);
+      }
+    },
   };
 }
 

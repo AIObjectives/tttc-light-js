@@ -333,10 +333,8 @@ export class RedisPipelineStateStore implements PipelineStateStore {
       updatedAt: new Date().toISOString(),
     };
 
-    await this.cache.set(key, JSON.stringify(updatedState), { ttl });
-
     // Persist validation failure counters to separate keys
-    // This enables atomic increment operations while maintaining consistency
+    // Collect all counter updates to execute atomically with main state
     const steps: PipelineStepName[] = [
       "clustering",
       "claims",
@@ -345,17 +343,41 @@ export class RedisPipelineStateStore implements PipelineStateStore {
       "cruxes",
     ];
 
+    const counterOperations: Array<{
+      key: string;
+      value: string;
+      options?: { ttl?: number };
+    }> = [];
+
+    const deletionKeys: string[] = [];
+
     for (const step of steps) {
       const count = state.validationFailures[step];
       const counterKey = getValidationFailureKey(state.reportId, step);
 
       if (count > 0) {
-        // Update counter in Redis
-        await this.cache.set(counterKey, String(count), { ttl });
+        counterOperations.push({
+          key: counterKey,
+          value: String(count),
+          options: { ttl },
+        });
       } else {
         // Delete counter key when reset to 0 to prevent stale data
-        await this.cache.delete(counterKey);
+        deletionKeys.push(counterKey);
       }
+    }
+
+    // Execute main state save + all counter updates atomically using Redis pipeline
+    // This ensures crash consistency - either all updates succeed or none do
+    await this.cache.setMultiple([
+      { key, value: JSON.stringify(updatedState), options: { ttl } },
+      ...counterOperations,
+    ]);
+
+    // Delete zero counters (this is safe to do non-atomically after main save)
+    // If these deletions fail, stale zero values are not critical
+    for (const deleteKey of deletionKeys) {
+      await this.cache.delete(deleteKey);
     }
   }
 

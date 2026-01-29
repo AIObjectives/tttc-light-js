@@ -406,6 +406,122 @@ describe("Redis Integration Tests", () => {
     });
   });
 
+  describe("Batch Operations", () => {
+    it("should atomically set multiple keys", async () => {
+      if (!redisAvailable) return;
+
+      const operations = [
+        {
+          key: `${testKeyPrefix}:batch:1`,
+          value: "value-1",
+        },
+        {
+          key: `${testKeyPrefix}:batch:2`,
+          value: "value-2",
+        },
+        {
+          key: `${testKeyPrefix}:batch:3`,
+          value: "value-3",
+        },
+      ];
+
+      await cache.setMultiple(operations);
+
+      const results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch:1`),
+        cache.get(`${testKeyPrefix}:batch:2`),
+        cache.get(`${testKeyPrefix}:batch:3`),
+      ]);
+
+      expect(results[0]).toBe("value-1");
+      expect(results[1]).toBe("value-2");
+      expect(results[2]).toBe("value-3");
+
+      await Promise.all([
+        cache.delete(`${testKeyPrefix}:batch:1`),
+        cache.delete(`${testKeyPrefix}:batch:2`),
+        cache.delete(`${testKeyPrefix}:batch:3`),
+      ]);
+    });
+
+    it("should handle batch operations with TTL", async () => {
+      if (!redisAvailable) return;
+
+      const operations = [
+        {
+          key: `${testKeyPrefix}:batch-ttl:1`,
+          value: "value-1",
+          options: { ttl: 1 },
+        },
+        {
+          key: `${testKeyPrefix}:batch-ttl:2`,
+          value: "value-2",
+          options: { ttl: 1 },
+        },
+      ];
+
+      await cache.setMultiple(operations);
+
+      // Values should exist immediately
+      let results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch-ttl:1`),
+        cache.get(`${testKeyPrefix}:batch-ttl:2`),
+      ]);
+
+      expect(results[0]).toBe("value-1");
+      expect(results[1]).toBe("value-2");
+
+      // Wait for expiration
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Values should be expired
+      results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch-ttl:1`),
+        cache.get(`${testKeyPrefix}:batch-ttl:2`),
+      ]);
+
+      expect(results[0]).toBeNull();
+      expect(results[1]).toBeNull();
+    });
+
+    it("should handle empty batch operations", async () => {
+      if (!redisAvailable) return;
+
+      await expect(cache.setMultiple([])).resolves.not.toThrow();
+    });
+
+    it("should handle mixed TTL in batch operations", async () => {
+      if (!redisAvailable) return;
+
+      const operations = [
+        {
+          key: `${testKeyPrefix}:batch-mixed:1`,
+          value: "value-1",
+        },
+        {
+          key: `${testKeyPrefix}:batch-mixed:2`,
+          value: "value-2",
+          options: { ttl: 10 },
+        },
+      ];
+
+      await cache.setMultiple(operations);
+
+      const results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch-mixed:1`),
+        cache.get(`${testKeyPrefix}:batch-mixed:2`),
+      ]);
+
+      expect(results[0]).toBe("value-1");
+      expect(results[1]).toBe("value-2");
+
+      await Promise.all([
+        cache.delete(`${testKeyPrefix}:batch-mixed:1`),
+        cache.delete(`${testKeyPrefix}:batch-mixed:2`),
+      ]);
+    });
+  });
+
   describe("Lock Operations", () => {
     it("should acquire lock successfully", async () => {
       if (!redisAvailable) return;

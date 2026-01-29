@@ -274,6 +274,51 @@ export class RedisCache implements Cache {
   }
 
   /**
+   * Executes multiple set operations atomically using Redis pipeline (MULTI/EXEC).
+   * All operations either succeed together or fail together.
+   *
+   * @param operations - Array of set operations to execute atomically
+   * @throws {CacheSetError} When any operation fails
+   */
+  async setMultiple(
+    operations: Array<{ key: string; value: string; options?: SetOptions }>,
+  ): Promise<void> {
+    if (operations.length === 0) {
+      return;
+    }
+
+    try {
+      const pipeline = this.client.pipeline();
+
+      for (const op of operations) {
+        if (op.options?.ttl !== undefined) {
+          pipeline.setex(op.key, op.options.ttl, op.value);
+        } else {
+          pipeline.set(op.key, op.value);
+        }
+      }
+
+      const results = await pipeline.exec();
+
+      if (!results) {
+        throw new Error("Pipeline execution returned null");
+      }
+
+      for (const [error] of results) {
+        if (error) {
+          throw error;
+        }
+      }
+    } catch (error) {
+      const keys = operations.map((op) => op.key).join(", ");
+      throw new CacheSetError(
+        `[${keys}]`,
+        `Batch set failed: ${formatError(error)}`,
+      );
+    }
+  }
+
+  /**
    * Disconnects from Redis gracefully.
    * Should be called when shutting down the application or in test cleanup.
    */

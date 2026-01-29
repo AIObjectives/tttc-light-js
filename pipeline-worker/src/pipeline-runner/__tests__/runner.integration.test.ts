@@ -317,6 +317,20 @@ function createInMemoryCache(): Cache {
       storage.set(key, { value: String(newValue), expiresAt });
       return newValue;
     },
+    async setMultiple(
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+    ): Promise<void> {
+      for (const op of operations) {
+        const expiresAt = op.options?.ttl
+          ? Date.now() + op.options.ttl * 1000
+          : undefined;
+        storage.set(op.key, { value: op.value, expiresAt });
+      }
+    },
   };
 }
 
