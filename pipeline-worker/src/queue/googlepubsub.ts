@@ -49,10 +49,32 @@ export class GooglePubSub<T extends z.ZodTypeAny>
         await handler(pubsubMessage);
         message.ack();
       } catch (e) {
-        pubsubLogger.error(
-          { messageId: message.id, error: e },
-          "Error processing message",
-        );
+        // Extract as much context as possible from the raw message for debugging
+        const errorContext: Record<string, unknown> = {
+          messageId: message.id,
+          error: e,
+        };
+
+        // Try to extract reportId, userId, and requestId from the raw message
+        // This provides critical debugging context even when parsing/validation fails
+        try {
+          const rawJson = JSON.parse(message.data.toString());
+          if (rawJson?.config?.firebaseDetails?.reportId) {
+            errorContext.reportId = rawJson.config.firebaseDetails.reportId;
+          }
+          if (rawJson?.config?.firebaseDetails?.userId) {
+            errorContext.userId = rawJson.config.firebaseDetails.userId;
+          }
+        } catch {
+          // If we can't parse JSON at all, just log without these fields
+        }
+
+        // Extract requestId from message attributes for request correlation
+        if (message.attributes?.requestId) {
+          errorContext.requestId = message.attributes.requestId;
+        }
+
+        pubsubLogger.error(errorContext, "Error processing message");
         message.nack();
       }
     };

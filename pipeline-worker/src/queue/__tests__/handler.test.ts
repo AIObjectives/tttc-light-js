@@ -565,8 +565,15 @@ describe("handlePipelineJob - save-only retry", () => {
       "gs://bucket/test-report-123.json",
     );
     vi.mocked(mockRefStore.Report.get).mockResolvedValue({
-      reportId: "test-report-123",
+      id: "test-report-123",
       userId: "test-user-123",
+      reportDataUri: "gs://bucket/test-report-123.json",
+      title: "Test Report",
+      description: "Test Description",
+      numTopics: 5,
+      numSubtopics: 10,
+      numClaims: 20,
+      numPeople: 15,
       status: "processing",
       createdDate: new Date(),
       lastStatusUpdate: new Date(),
@@ -646,8 +653,15 @@ describe("handlePipelineJob - save-only retry", () => {
     );
 
     vi.mocked(mockRefStore.Report.get).mockResolvedValue({
-      reportId: "test-report-123",
+      id: "test-report-123",
       userId: "test-user-123",
+      reportDataUri: "gs://bucket/test-report-123.json",
+      title: "Test Report",
+      description: "Test Description",
+      numTopics: 5,
+      numSubtopics: 10,
+      numClaims: 20,
+      numPeople: 15,
       status: "processing",
       createdDate: new Date(),
       lastStatusUpdate: new Date(),
