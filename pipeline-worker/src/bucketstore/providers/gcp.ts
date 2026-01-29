@@ -2,6 +2,7 @@ import { Storage } from "@google-cloud/storage";
 import { formatError } from "tttc-common/utils";
 import {
   type BucketStore,
+  DeleteFailedError,
   type FileExistsResult,
   UploadFailedError,
 } from "../types";
@@ -173,6 +174,16 @@ export class GCPBucketStore implements BucketStore {
         error: wrappedError,
         errorType,
       };
+    }
+  }
+
+  async deleteFile(fileName: string): Promise<void> {
+    try {
+      const bucketRef = this.storage.bucket(this.bucketName);
+      const file = bucketRef.file(fileName);
+      await file.delete();
+    } catch (error) {
+      throw new DeleteFailedError(fileName, formatError(error));
     }
   }
 }

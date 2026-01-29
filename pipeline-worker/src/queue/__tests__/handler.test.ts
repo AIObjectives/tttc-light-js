@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { validateDataArray } from "../handler";
 
 describe("validateDataArray", () => {
@@ -116,5 +116,166 @@ describe("validateDataArray", () => {
         "Found 5 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5",
       );
     }
+  });
+});
+
+describe("saveSuccessfulPipeline rollback behavior", () => {
+  it("should rollback GCS upload when Firestore update fails", async () => {
+    const mockStorage = {
+      storeFile: vi
+        .fn()
+        .mockResolvedValue("https://storage.googleapis.com/bucket/report.json"),
+      deleteFile: vi.fn().mockResolvedValue(undefined),
+      fileExists: vi.fn(),
+    };
+
+    const mockRefStore = {
+      Report: {
+        get: vi.fn().mockResolvedValue({
+          reportId: "test-report-id",
+          status: "processing",
+          userId: "test-user",
+        }),
+        modify: vi
+          .fn()
+          .mockRejectedValue(new Error("Firestore connection failed")),
+      },
+    };
+
+    const mockPipelineResult = {
+      sortedTree: [["topic1", { topics: [], counts: { claims: 5 } }]],
+      completedAt: new Date().toISOString(),
+    };
+
+    const mockData = {
+      reportDetails: {
+        title: "Test Report",
+        description: "Test Description",
+      },
+      data: [{ comment_id: "1", comment_text: "test", speaker: "user1" }],
+    };
+
+    const saveSuccessfulPipeline = async (
+      result: typeof mockPipelineResult,
+      data: typeof mockData,
+      reportId: string,
+      storage: typeof mockStorage,
+      refStore: typeof mockRefStore,
+    ) => {
+      const reportUrl = await storage.storeFile(
+        `${reportId}.json`,
+        JSON.stringify(result),
+      );
+
+      try {
+        const reportRef = await refStore.Report.get(reportId);
+        await refStore.Report.modify(reportId, {
+          ...reportRef,
+          reportDataUri: reportUrl,
+          status: "completed",
+        });
+      } catch (firestoreError) {
+        try {
+          await storage.deleteFile(`${reportId}.json`);
+        } catch (deleteError) {
+          // Log but don't throw
+        }
+        throw firestoreError;
+      }
+    };
+
+    await expect(
+      saveSuccessfulPipeline(
+        mockPipelineResult,
+        mockData,
+        "test-report-id",
+        mockStorage,
+        mockRefStore,
+      ),
+    ).rejects.toThrow("Firestore connection failed");
+
+    expect(mockStorage.storeFile).toHaveBeenCalledWith(
+      "test-report-id.json",
+      expect.any(String),
+    );
+    expect(mockRefStore.Report.modify).toHaveBeenCalled();
+    expect(mockStorage.deleteFile).toHaveBeenCalledWith("test-report-id.json");
+  });
+
+  it("should log error if rollback deletion fails but still throw original error", async () => {
+    const mockStorage = {
+      storeFile: vi
+        .fn()
+        .mockResolvedValue("https://storage.googleapis.com/bucket/report.json"),
+      deleteFile: vi
+        .fn()
+        .mockRejectedValue(new Error("Delete permission denied")),
+      fileExists: vi.fn(),
+    };
+
+    const mockRefStore = {
+      Report: {
+        get: vi.fn().mockResolvedValue({
+          reportId: "test-report-id",
+          status: "processing",
+          userId: "test-user",
+        }),
+        modify: vi.fn().mockRejectedValue(new Error("Firestore update failed")),
+      },
+    };
+
+    const mockPipelineResult = {
+      sortedTree: [["topic1", { topics: [], counts: { claims: 5 } }]],
+      completedAt: new Date().toISOString(),
+    };
+
+    const mockData = {
+      reportDetails: {
+        title: "Test Report",
+        description: "Test Description",
+      },
+      data: [{ comment_id: "1", comment_text: "test", speaker: "user1" }],
+    };
+
+    const saveSuccessfulPipeline = async (
+      result: typeof mockPipelineResult,
+      data: typeof mockData,
+      reportId: string,
+      storage: typeof mockStorage,
+      refStore: typeof mockRefStore,
+    ) => {
+      const reportUrl = await storage.storeFile(
+        `${reportId}.json`,
+        JSON.stringify(result),
+      );
+
+      try {
+        const reportRef = await refStore.Report.get(reportId);
+        await refStore.Report.modify(reportId, {
+          ...reportRef,
+          reportDataUri: reportUrl,
+          status: "completed",
+        });
+      } catch (firestoreError) {
+        try {
+          await storage.deleteFile(`${reportId}.json`);
+        } catch (deleteError) {
+          // Deletion failed but we still throw the original error
+        }
+        throw firestoreError;
+      }
+    };
+
+    await expect(
+      saveSuccessfulPipeline(
+        mockPipelineResult,
+        mockData,
+        "test-report-id",
+        mockStorage,
+        mockRefStore,
+      ),
+    ).rejects.toThrow("Firestore update failed");
+
+    expect(mockStorage.deleteFile).toHaveBeenCalledWith("test-report-id.json");
   });
 });

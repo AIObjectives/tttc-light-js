@@ -246,7 +246,29 @@ async function saveSuccessfulPipeline(
       createdDate: new Date(pipelineOutput.completedAt),
     };
 
-    await refStore.Report.modify(reportId, updatedReportRef);
+    try {
+      await refStore.Report.modify(reportId, updatedReportRef);
+    } catch (firestoreError) {
+      // Firestore update failed - rollback the GCS upload to maintain consistency
+      jobLogger.error(
+        { error: firestoreError, filename },
+        "Firestore update failed, attempting to rollback GCS upload",
+      );
+
+      try {
+        await storage.deleteFile(filename);
+        jobLogger.info({ filename }, "Successfully rolled back GCS upload");
+      } catch (deleteError) {
+        // Log deletion failure but don't throw - the original Firestore error is more important
+        jobLogger.error(
+          { deleteError, filename },
+          "Failed to rollback GCS upload after Firestore failure",
+        );
+      }
+
+      // Re-throw the original Firestore error to trigger the outer catch block
+      throw firestoreError;
+    }
 
     jobLogger.info(
       {

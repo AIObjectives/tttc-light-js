@@ -55,6 +55,19 @@ export class UrlGenerationFailedError extends BucketStoreError {
 }
 
 /**
+ * Error thrown when a file deletion fails
+ */
+export class DeleteFailedError extends BucketStoreError {
+  constructor(
+    public fileName: string,
+    public reason: string,
+  ) {
+    super(`Delete failed for ${fileName}: ${reason}`);
+    this.name = "DeleteFailedError";
+  }
+}
+
+/**
  * Result of checking file existence
  */
 export type FileExistsResult =
@@ -98,6 +111,17 @@ export interface BucketStore {
    * @returns A result object indicating existence and any errors encountered
    */
   fileExists(fileName: string): Promise<FileExistsResult>;
+
+  /**
+   * Deletes a file from the configured bucket.
+   *
+   * @param fileName - The name of the file to delete
+   * @returns A Promise that resolves when the file is deleted
+   * @throws {DeleteFailedError} When the deletion fails
+   * @throws {BucketNotFoundError} When the bucket is not found
+   * @throws {AccessDeniedError} When access is denied
+   */
+  deleteFile(fileName: string): Promise<void>;
 }
 
 /**

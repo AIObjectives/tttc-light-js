@@ -1,6 +1,6 @@
 import { Storage } from "@google-cloud/storage";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import { UploadFailedError } from "../../types";
+import { DeleteFailedError, UploadFailedError } from "../../types";
 import { GCPBucketStore } from "../gcp";
 
 /**
@@ -9,6 +9,7 @@ import { GCPBucketStore } from "../gcp";
 interface MockFileInstance {
   save: Mock;
   exists: Mock;
+  delete: Mock;
 }
 
 interface MockBucketInstance {
@@ -23,14 +24,16 @@ interface MockStorageInstance {
  * Mock the @google-cloud/storage module
  *
  * This mock provides a complete implementation of the Storage API
- * that we need for testing, including bucket(), file(), and save() methods.
+ * that we need for testing, including bucket(), file(), save(), exists(), and delete() methods.
  */
 vi.mock("@google-cloud/storage", () => {
   const mockSave = vi.fn();
   const mockExists = vi.fn();
+  const mockDelete = vi.fn();
   const mockFile = vi.fn(() => ({
     save: mockSave,
     exists: mockExists,
+    delete: mockDelete,
   }));
   const mockBucket = vi.fn(() => ({
     file: mockFile,
@@ -51,6 +54,7 @@ describe("GCPBucketStore", () => {
   let mockFile: Mock;
   let mockSave: Mock;
   let mockExists: Mock;
+  let mockDelete: Mock;
 
   /**
    * Before each test, we need to:
@@ -70,6 +74,7 @@ describe("GCPBucketStore", () => {
     const fileInstance = mockFile();
     mockSave = fileInstance.save;
     mockExists = fileInstance.exists;
+    mockDelete = fileInstance.delete;
 
     // Create a new instance for each test
     bucketStore = new GCPBucketStore("test-bucket");
@@ -796,6 +801,140 @@ describe("GCPBucketStore", () => {
       expect(result.exists).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.errorType).toBe("permanent");
+    });
+  });
+
+  describe("deleteFile - Success Scenarios", () => {
+    it("should successfully delete a file", async () => {
+      mockDelete.mockResolvedValue(undefined);
+
+      await bucketStore.deleteFile("test-file.json");
+
+      expect(mockBucket).toHaveBeenCalledWith("test-bucket");
+      expect(mockFile).toHaveBeenCalledWith("test-file.json");
+      expect(mockDelete).toHaveBeenCalled();
+    });
+
+    it("should call bucket with correct bucket name", async () => {
+      mockDelete.mockResolvedValue(undefined);
+      mockBucket.mockClear();
+
+      await bucketStore.deleteFile("test.json");
+
+      expect(mockBucket).toHaveBeenCalledWith("test-bucket");
+      expect(mockBucket).toHaveBeenCalledTimes(1);
+    });
+
+    it("should call file with correct file name", async () => {
+      mockDelete.mockResolvedValue(undefined);
+      mockFile.mockClear();
+
+      await bucketStore.deleteFile("report.json");
+
+      expect(mockFile).toHaveBeenCalledWith("report.json");
+      expect(mockFile).toHaveBeenCalledTimes(1);
+    });
+
+    it("should handle file names with paths", async () => {
+      mockDelete.mockResolvedValue(undefined);
+
+      await bucketStore.deleteFile("reports/2024/report.json");
+
+      expect(mockFile).toHaveBeenCalledWith("reports/2024/report.json");
+      expect(mockDelete).toHaveBeenCalled();
+    });
+
+    it("should handle multiple sequential deletions", async () => {
+      mockDelete.mockResolvedValue(undefined);
+
+      await bucketStore.deleteFile("file1.json");
+      await bucketStore.deleteFile("file2.json");
+      await bucketStore.deleteFile("file3.json");
+
+      expect(mockDelete).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("deleteFile - Error Scenarios", () => {
+    it("should throw DeleteFailedError when deletion fails", async () => {
+      const deleteError = new Error("File not found");
+      mockDelete.mockRejectedValue(deleteError);
+
+      await expect(bucketStore.deleteFile("test.json")).rejects.toThrow(
+        DeleteFailedError,
+      );
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.fileName).toBe("test.json");
+          expect(error.reason).toBe("File not found");
+        }
+      }
+    });
+
+    it("should throw DeleteFailedError with correct properties", async () => {
+      mockDelete.mockRejectedValue(new Error("Permission denied"));
+
+      try {
+        await bucketStore.deleteFile("protected.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.fileName).toBe("protected.json");
+          expect(error.reason).toBe("Permission denied");
+          expect(error.name).toBe("DeleteFailedError");
+        }
+      }
+    });
+
+    it("should handle permission denied error", async () => {
+      const permissionError = new Error(
+        "Access denied: Insufficient permissions",
+      );
+      mockDelete.mockRejectedValue(permissionError);
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.reason).toContain("Access denied");
+        }
+      }
+    });
+
+    it("should handle network errors", async () => {
+      mockDelete.mockRejectedValue(new Error("Network timeout"));
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.reason).toBe("Network timeout");
+        }
+      }
+    });
+
+    it("should handle non-Error object thrown during deletion", async () => {
+      mockDelete.mockRejectedValue({ code: 404, message: "Not found" });
+
+      await expect(bucketStore.deleteFile("test.json")).rejects.toThrow(
+        DeleteFailedError,
+      );
+
+      try {
+        await bucketStore.deleteFile("test.json");
+      } catch (error) {
+        expect(error).toBeInstanceOf(DeleteFailedError);
+        if (error instanceof DeleteFailedError) {
+          expect(error.fileName).toBe("test.json");
+          expect(error.reason).toBe("Not found");
+        }
+      }
     });
   });
 });
