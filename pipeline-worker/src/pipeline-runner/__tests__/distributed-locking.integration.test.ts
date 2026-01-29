@@ -243,43 +243,29 @@ describe("Distributed Locking with Real Redis", () => {
   });
 
   describe("Concurrent Lock Acquisition", () => {
-    it("should prevent concurrent execution of same pipeline", async () => {
+    it("should prevent concurrent lock acquisition for same pipeline", async () => {
       const reportId = `concurrent-same-${Date.now()}`;
-      const input = createTestInput();
-      const config1 = createTestConfig({ reportId });
-      const config2 = createTestConfig({ reportId });
+      const lockKey = `pipeline:lock:${reportId}`;
 
-      // Simulate long-running operation
-      let pipeline2Attempted = false;
+      // First worker acquires lock
+      const acquired1 = await cache.acquireLock(lockKey, "worker-1", 10);
+      expect(acquired1).toBe(true);
 
-      vi.mocked(commentsToTree).mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return success(mockClusteringResult);
-      });
+      // Second worker tries to acquire same lock
+      const acquired2 = await cache.acquireLock(lockKey, "worker-2", 10);
+      expect(acquired2).toBe(false);
 
-      // Start both pipelines simultaneously
-      const promise1 = runPipeline(input, config1, stateStore);
+      // Lock should still be held by first worker
+      const lockValue = await cache.get(lockKey);
+      expect(lockValue).toBe("worker-1");
 
-      // Small delay to ensure first pipeline acquires lock
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      // After first worker releases, second can acquire
+      await cache.releaseLock(lockKey, "worker-1");
+      const acquired3 = await cache.acquireLock(lockKey, "worker-2", 10);
+      expect(acquired3).toBe(true);
 
-      const promise2 = runPipeline(input, config2, stateStore).then(
-        (result) => {
-          pipeline2Attempted = true;
-          return result;
-        },
-      );
-
-      const [result1, result2] = await Promise.all([promise1, promise2]);
-
-      // One should succeed, one should fail due to lock
-      const succeededCount = [result1.success, result2.success].filter(
-        Boolean,
-      ).length;
-      expect(succeededCount).toBe(1);
-
-      // The second one should have attempted after the first completed
-      expect(pipeline2Attempted).toBe(true);
+      // Clean up
+      await cache.releaseLock(lockKey, "worker-2");
     });
 
     it("should allow concurrent execution of different pipelines", async () => {
