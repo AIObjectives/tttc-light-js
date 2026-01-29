@@ -146,8 +146,70 @@ describe("validateDataArray", () => {
 });
 
 describe("saveSuccessfulPipeline rollback behavior", () => {
+  type MockStorage = {
+    storeFile: ReturnType<typeof vi.fn>;
+    deleteFile: ReturnType<typeof vi.fn>;
+    fileExists: ReturnType<typeof vi.fn>;
+  };
+
+  type MockRefStore = {
+    Report: {
+      get: ReturnType<typeof vi.fn>;
+      modify: ReturnType<typeof vi.fn>;
+    };
+  };
+
+  const saveSuccessfulPipeline = async (
+    result: { sortedTree: unknown[]; completedAt: string },
+    data: {
+      reportDetails: { title: string; description: string };
+      data: Array<{
+        comment_id: string;
+        comment_text: string;
+        speaker: string;
+      }>;
+    },
+    reportId: string,
+    storage: MockStorage,
+    refStore: MockRefStore,
+  ) => {
+    const reportUrl = await storage.storeFile(
+      `${reportId}.json`,
+      JSON.stringify(result),
+    );
+
+    try {
+      const reportRef = await refStore.Report.get(reportId);
+      await refStore.Report.modify(reportId, {
+        ...reportRef,
+        reportDataUri: reportUrl,
+        status: "completed",
+      });
+    } catch (firestoreError) {
+      try {
+        await storage.deleteFile(`${reportId}.json`);
+      } catch (deleteError) {
+        // Log but don't throw
+      }
+      throw firestoreError;
+    }
+  };
+
+  const createMockPipelineResult = () => ({
+    sortedTree: [["topic1", { topics: [], counts: { claims: 5 } }]],
+    completedAt: new Date().toISOString(),
+  });
+
+  const createMockData = () => ({
+    reportDetails: {
+      title: "Test Report",
+      description: "Test Description",
+    },
+    data: [{ comment_id: "1", comment_text: "test", speaker: "user1" }],
+  });
+
   it("should rollback GCS upload when Firestore update fails", async () => {
-    const mockStorage = {
+    const mockStorage: MockStorage = {
       storeFile: vi
         .fn()
         .mockResolvedValue("https://storage.googleapis.com/bucket/report.json"),
@@ -155,7 +217,7 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
       fileExists: vi.fn(),
     };
 
-    const mockRefStore = {
+    const mockRefStore: MockRefStore = {
       Report: {
         get: vi.fn().mockResolvedValue({
           reportId: "test-report-id",
@@ -168,52 +230,10 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
       },
     };
 
-    const mockPipelineResult = {
-      sortedTree: [["topic1", { topics: [], counts: { claims: 5 } }]],
-      completedAt: new Date().toISOString(),
-    };
-
-    const mockData = {
-      reportDetails: {
-        title: "Test Report",
-        description: "Test Description",
-      },
-      data: [{ comment_id: "1", comment_text: "test", speaker: "user1" }],
-    };
-
-    const saveSuccessfulPipeline = async (
-      result: typeof mockPipelineResult,
-      data: typeof mockData,
-      reportId: string,
-      storage: typeof mockStorage,
-      refStore: typeof mockRefStore,
-    ) => {
-      const reportUrl = await storage.storeFile(
-        `${reportId}.json`,
-        JSON.stringify(result),
-      );
-
-      try {
-        const reportRef = await refStore.Report.get(reportId);
-        await refStore.Report.modify(reportId, {
-          ...reportRef,
-          reportDataUri: reportUrl,
-          status: "completed",
-        });
-      } catch (firestoreError) {
-        try {
-          await storage.deleteFile(`${reportId}.json`);
-        } catch (deleteError) {
-          // Log but don't throw
-        }
-        throw firestoreError;
-      }
-    };
-
     await expect(
       saveSuccessfulPipeline(
-        mockPipelineResult,
-        mockData,
+        createMockPipelineResult(),
+        createMockData(),
         "test-report-id",
         mockStorage,
         mockRefStore,
@@ -229,7 +249,7 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
   });
 
   it("should log error if rollback deletion fails but still throw original error", async () => {
-    const mockStorage = {
+    const mockStorage: MockStorage = {
       storeFile: vi
         .fn()
         .mockResolvedValue("https://storage.googleapis.com/bucket/report.json"),
@@ -239,7 +259,7 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
       fileExists: vi.fn(),
     };
 
-    const mockRefStore = {
+    const mockRefStore: MockRefStore = {
       Report: {
         get: vi.fn().mockResolvedValue({
           reportId: "test-report-id",
@@ -250,52 +270,10 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
       },
     };
 
-    const mockPipelineResult = {
-      sortedTree: [["topic1", { topics: [], counts: { claims: 5 } }]],
-      completedAt: new Date().toISOString(),
-    };
-
-    const mockData = {
-      reportDetails: {
-        title: "Test Report",
-        description: "Test Description",
-      },
-      data: [{ comment_id: "1", comment_text: "test", speaker: "user1" }],
-    };
-
-    const saveSuccessfulPipeline = async (
-      result: typeof mockPipelineResult,
-      data: typeof mockData,
-      reportId: string,
-      storage: typeof mockStorage,
-      refStore: typeof mockRefStore,
-    ) => {
-      const reportUrl = await storage.storeFile(
-        `${reportId}.json`,
-        JSON.stringify(result),
-      );
-
-      try {
-        const reportRef = await refStore.Report.get(reportId);
-        await refStore.Report.modify(reportId, {
-          ...reportRef,
-          reportDataUri: reportUrl,
-          status: "completed",
-        });
-      } catch (firestoreError) {
-        try {
-          await storage.deleteFile(`${reportId}.json`);
-        } catch (deleteError) {
-          // Deletion failed but we still throw the original error
-        }
-        throw firestoreError;
-      }
-    };
-
     await expect(
       saveSuccessfulPipeline(
-        mockPipelineResult,
-        mockData,
+        createMockPipelineResult(),
+        createMockData(),
         "test-report-id",
         mockStorage,
         mockRefStore,
