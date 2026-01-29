@@ -4,6 +4,22 @@ import { UploadFailedError } from "../../types";
 import { GCPBucketStore } from "../gcp";
 
 /**
+ * Type definitions for mocked Google Cloud Storage objects
+ */
+interface MockFileInstance {
+  save: Mock;
+  exists: Mock;
+}
+
+interface MockBucketInstance {
+  file: Mock;
+}
+
+interface MockStorageInstance {
+  bucket: Mock;
+}
+
+/**
  * Mock the @google-cloud/storage module
  *
  * This mock provides a complete implementation of the Storage API
@@ -30,8 +46,7 @@ vi.mock("@google-cloud/storage", () => {
 
 describe("GCPBucketStore", () => {
   let bucketStore: GCPBucketStore;
-  // biome-ignore lint/suspicious/noExplicitAny: Mocking Google Cloud Storage instance
-  let mockStorage: any;
+  let mockStorage: MockStorageInstance;
   let mockBucket: Mock;
   let mockFile: Mock;
   let mockSave: Mock;
