@@ -669,6 +669,106 @@ describe("Distributed Locking with Real Redis", () => {
       expect(commentsToTree).toHaveBeenCalledTimes(1);
     });
 
+    it("should prevent concurrent resume attempts of same failed pipeline", async () => {
+      const reportId = `concurrent-resume-${Date.now()}`;
+      const input = createTestInput();
+      const initialConfig = createTestConfig({ reportId });
+
+      // First run: complete clustering, then fail
+      vi.mocked(extractClaims).mockResolvedValue(
+        failure(new Error("Simulated crash during claims")),
+      );
+
+      const firstResult = await runPipeline(input, initialConfig, stateStore);
+      expect(firstResult.success).toBe(false);
+
+      // Verify state was persisted with failed claims step
+      const intermediateState = await stateStore.get(reportId);
+      expect(intermediateState?.completedResults.clustering).toEqual(
+        mockClusteringResult,
+      );
+      expect(intermediateState?.stepAnalytics.claims.status).toBe("failed");
+
+      // Reset mocks and fix the claims step for resume
+      vi.clearAllMocks();
+      vi.mocked(commentsToTree).mockResolvedValue(
+        success(mockClusteringResult),
+      );
+      vi.mocked(extractClaims).mockResolvedValue(success(mockClaimsResult));
+      vi.mocked(sortAndDeduplicateClaims).mockResolvedValue(
+        success(mockSortedResult),
+      );
+      vi.mocked(generateTopicSummaries).mockResolvedValue(
+        success(mockSummariesResult),
+      );
+
+      // Simulate two workers trying to resume concurrently
+      // Each worker attempts to acquire lock before running pipeline (like handler.ts does)
+      const worker1LockValue = `worker-1-${Date.now()}`;
+      const worker2LockValue = `worker-2-${Date.now()}`;
+
+      // Worker simulation function that mimics handler.ts behavior
+      const simulateWorker = async (
+        lockValue: string,
+      ): Promise<{
+        lockAcquired: boolean;
+        result?: Awaited<ReturnType<typeof runPipeline>>;
+      }> => {
+        const lockAcquired = await stateStore.acquirePipelineLock(
+          reportId,
+          lockValue,
+        );
+
+        if (!lockAcquired) {
+          return { lockAcquired: false };
+        }
+
+        try {
+          const result = await runPipeline(
+            input,
+            {
+              reportId,
+              userId: "user-integration-test",
+              resumeFromState: true,
+              lockValue,
+            },
+            stateStore,
+          );
+          return { lockAcquired: true, result };
+        } finally {
+          await stateStore.releasePipelineLock(reportId, lockValue);
+        }
+      };
+
+      // Run both workers concurrently
+      const [worker1, worker2] = await Promise.all([
+        simulateWorker(worker1LockValue),
+        simulateWorker(worker2LockValue),
+      ]);
+
+      // Only one worker should have acquired the lock
+      const lockAcquisitions = [worker1, worker2].filter(
+        (w) => w.lockAcquired,
+      ).length;
+      expect(lockAcquisitions).toBe(1);
+
+      // The worker that acquired the lock should have completed successfully
+      const successfulWorker = [worker1, worker2].find((w) => w.lockAcquired);
+      expect(successfulWorker).toBeDefined();
+      expect(successfulWorker?.result?.success).toBe(true);
+
+      // The other worker should not have run the pipeline
+      const blockedWorker = [worker1, worker2].find((w) => !w.lockAcquired);
+      expect(blockedWorker?.result).toBeUndefined();
+
+      // Verify final state shows completion
+      const finalState = await stateStore.get(reportId);
+      expect(finalState?.status).toBe("completed");
+
+      // Verify clustering was not re-executed (already completed in first run)
+      expect(commentsToTree).not.toHaveBeenCalled();
+    });
+
     it("should handle Redis connection loss gracefully", async () => {
       const reportId = `redis-disconnect-${Date.now()}`;
 
