@@ -1528,3 +1528,333 @@ describe("handlePipelineJob - running state staleness check", () => {
     expect(runPipeline).toHaveBeenCalled();
   });
 });
+
+describe("handlePipelineJob - orphaned file detection", () => {
+  let mockStateStore: RedisPipelineStateStore;
+  let mockStorage: BucketStore;
+  let mockRefStore: RefStoreServices;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const mocks = createTestMocks();
+    mockStateStore = mocks.stateStore;
+    mockStorage = mocks.storage;
+    mockRefStore = mocks.refStore;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const createMockMessage = (): PubSubMessage<{
+    data: Array<{ comment_id: string; comment_text: string; speaker: string }>;
+    config: {
+      instructions: {
+        systemInstructions: string;
+        clusteringInstructions: string;
+        extractionInstructions: string;
+        dedupInstructions: string;
+        summariesInstructions: string;
+        cruxInstructions: string;
+        outputLanguage?: string;
+      };
+      llm: { model: string; temperature: number; max_tokens: number };
+      options: { cruxes: boolean; sortStrategy: "numPeople" | "numClaims" };
+      env: { OPENAI_API_KEY: string };
+      firebaseDetails: { reportId: string; userId: string };
+    };
+    reportDetails: {
+      title: string;
+      description: string;
+      question: string;
+      filename: string;
+    };
+  }> => ({
+    id: TEST_IDS.message,
+    data: {
+      data: [
+        {
+          comment_id: TEST_IDS.comment,
+          comment_text: TEST_STRINGS.comment,
+          speaker: TEST_STRINGS.speaker,
+        },
+      ],
+      config: {
+        instructions: {
+          systemInstructions: TEST_INSTRUCTIONS.system,
+          clusteringInstructions: TEST_INSTRUCTIONS.clustering,
+          extractionInstructions: TEST_INSTRUCTIONS.extraction,
+          dedupInstructions: TEST_INSTRUCTIONS.dedup,
+          summariesInstructions: TEST_INSTRUCTIONS.summaries,
+          cruxInstructions: TEST_INSTRUCTIONS.crux,
+        },
+        llm: { model: TEST_STRINGS.model, temperature: 0.7, max_tokens: 1000 },
+        options: { cruxes: false, sortStrategy: "numPeople" },
+        env: { OPENAI_API_KEY: TEST_STRINGS.apiKey },
+        firebaseDetails: {
+          reportId: TEST_IDS.report,
+          userId: TEST_IDS.user,
+        },
+      },
+      reportDetails: {
+        title: TEST_STRINGS.title,
+        description: TEST_STRINGS.description,
+        question: TEST_STRINGS.question,
+        filename: TEST_STRINGS.filename,
+      },
+    },
+    attributes: { requestId: TEST_IDS.request },
+    publishTime: new Date(),
+  });
+
+  it("should skip when GCS file exists and Firestore status is completed", async () => {
+    const message = createMockMessage();
+
+    // GCS file exists
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: true });
+
+    // Firestore shows completed status
+    vi.mocked(mockRefStore.Report.get).mockResolvedValue({
+      id: TEST_IDS.report,
+      userId: TEST_IDS.user,
+      reportDataUri: TEST_STORAGE.url(TEST_IDS.report),
+      title: TEST_STRINGS.title,
+      description: TEST_STRINGS.description,
+      numTopics: 5,
+      numSubtopics: 10,
+      numClaims: 20,
+      numPeople: 15,
+      status: "completed",
+      createdDate: new Date(),
+      lastStatusUpdate: new Date(),
+    });
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should skip successfully
+    expect(result.tag).toBe("success");
+    expect(mockStorage.fileExists).toHaveBeenCalledWith(
+      TEST_STORAGE.filename(TEST_IDS.report),
+    );
+    expect(mockRefStore.Report.get).toHaveBeenCalledWith(TEST_IDS.report);
+
+    // Should NOT acquire lock or run pipeline
+    expect(mockStateStore.acquirePipelineLock).not.toHaveBeenCalled();
+    const { runPipeline } = await import("../../pipeline-runner/index.js");
+    expect(runPipeline).not.toHaveBeenCalled();
+  });
+
+  it("should detect orphaned file and complete when GCS exists but Firestore is processing", async () => {
+    const message = createMockMessage();
+
+    // GCS file exists (orphaned from failed rollback)
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: true });
+
+    // Firestore still shows processing (rollback failed to delete GCS file)
+    vi.mocked(mockRefStore.Report.get).mockResolvedValue({
+      id: TEST_IDS.report,
+      userId: TEST_IDS.user,
+      reportDataUri: "",
+      title: TEST_STRINGS.title,
+      description: TEST_STRINGS.description,
+      numTopics: 0,
+      numSubtopics: 0,
+      numClaims: 0,
+      numPeople: 0,
+      status: "processing",
+      createdDate: new Date(),
+      lastStatusUpdate: new Date(),
+    });
+
+    // Mock completed state in Redis
+    vi.mocked(mockStateStore.get).mockResolvedValue({
+      version: "1.0",
+      reportId: TEST_IDS.report,
+      userId: TEST_IDS.user,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: "completed",
+      stepAnalytics: {
+        clustering: {
+          stepName: "clustering",
+          status: "completed",
+          durationMs: 1000,
+          totalTokens: 100,
+          cost: 0.001,
+        },
+        claims: {
+          stepName: "claims",
+          status: "completed",
+          durationMs: 1000,
+          totalTokens: 100,
+          cost: 0.001,
+        },
+        sort_and_deduplicate: {
+          stepName: "sort_and_deduplicate",
+          status: "completed",
+          durationMs: 1000,
+          totalTokens: 100,
+          cost: 0.001,
+        },
+        summaries: {
+          stepName: "summaries",
+          status: "completed",
+          durationMs: 1000,
+          totalTokens: 100,
+          cost: 0.001,
+        },
+        cruxes: {
+          stepName: "cruxes",
+          status: "skipped",
+        },
+      },
+      completedResults: {
+        clustering: {
+          data: [],
+          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+          cost: 0.001,
+        },
+        claims: {
+          data: {},
+          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+          cost: 0.001,
+        },
+        sort_and_deduplicate: {
+          data: [
+            [
+              TEST_STRINGS.topic,
+              {
+                topics: [],
+                speakers: [],
+                counts: { claims: 1, speakers: 1 },
+              },
+            ],
+          ],
+          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+          cost: 0.001,
+        },
+        summaries: {
+          data: [],
+          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+          cost: 0.001,
+        },
+      },
+      validationFailures: {
+        clustering: 0,
+        claims: 0,
+        sort_and_deduplicate: 0,
+        summaries: 0,
+        cruxes: 0,
+      },
+      totalTokens: 400,
+      totalCost: 0.004,
+      totalDurationMs: 4000,
+    });
+
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStateStore.releasePipelineLock).mockResolvedValue(true);
+    vi.mocked(mockStorage.storeFile).mockResolvedValue(
+      TEST_STORAGE.url(TEST_IDS.report),
+    );
+    vi.mocked(mockRefStore.Report.modify).mockResolvedValue(undefined);
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should complete successfully by reconstructing from state
+    expect(result.tag).toBe("success");
+
+    // Should detect orphan and proceed
+    expect(mockStorage.fileExists).toHaveBeenCalled();
+    expect(mockRefStore.Report.get).toHaveBeenCalledTimes(2); // Once for orphan check, once for save
+
+    // Should complete the report by updating Firestore
+    expect(mockRefStore.Report.modify).toHaveBeenCalledWith(
+      TEST_IDS.report,
+      expect.objectContaining({
+        status: "completed",
+        reportDataUri: TEST_STORAGE.url(TEST_IDS.report),
+      }),
+    );
+  });
+
+  it("should handle Firestore read error during orphan check gracefully", async () => {
+    const message = createMockMessage();
+
+    // GCS file exists
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: true });
+
+    // Firestore read fails
+    vi.mocked(mockRefStore.Report.get).mockRejectedValue(
+      new Error("Firestore read timeout"),
+    );
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should fail with storage error (transient)
+    expect(result.tag).toBe("failure");
+    if (result.tag === "failure") {
+      expect(result.error.message).toContain(
+        "Failed to verify Firestore status",
+      );
+    }
+
+    // Should NOT proceed to pipeline execution
+    expect(mockStateStore.acquirePipelineLock).not.toHaveBeenCalled();
+  });
+
+  it("should detect orphaned file when Firestore status is failed and not skip", async () => {
+    const message = createMockMessage();
+
+    // GCS file exists (orphaned from a previous failed attempt)
+    vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: true });
+
+    // Firestore shows failed status - should NOT skip
+    vi.mocked(mockRefStore.Report.get).mockResolvedValue({
+      id: TEST_IDS.report,
+      userId: TEST_IDS.user,
+      reportDataUri: "",
+      title: TEST_STRINGS.title,
+      description: TEST_STRINGS.description,
+      numTopics: 0,
+      numSubtopics: 0,
+      numClaims: 0,
+      numPeople: 0,
+      status: "failed",
+      errorMessage: "Previous failure",
+      createdDate: new Date(),
+      lastStatusUpdate: new Date(),
+    });
+
+    // Mock state for retry attempt
+    vi.mocked(mockStateStore.get).mockResolvedValue(null);
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(false);
+
+    const result = await handlePipelineJob(
+      message,
+      mockStateStore,
+      mockStorage,
+      mockRefStore,
+    );
+
+    // Should have checked for orphan
+    expect(mockRefStore.Report.get).toHaveBeenCalled();
+
+    // Should have attempted to acquire lock (not skipped)
+    expect(mockStateStore.acquirePipelineLock).toHaveBeenCalled();
+  });
+});

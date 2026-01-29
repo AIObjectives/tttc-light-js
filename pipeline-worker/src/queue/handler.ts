@@ -456,10 +456,14 @@ function shouldResumeFromState(
  *
  * Storage errors (both transient and permanent) are returned as failures.
  * State checks are deferred until after lock acquisition to prevent race conditions.
+ *
+ * When a GCS file exists, verifies Firestore status to detect orphaned files
+ * (files that exist in GCS but Firestore wasn't updated due to rollback failure).
  */
 async function checkStorageForSkip(
   reportId: string,
   storage: BucketStore,
+  refStore: RefStoreServices,
   jobLogger: typeof queueLogger,
 ): Promise<Result<{ skip: boolean }, StorageError>> {
   const storageCheck = await checkStorageExists(reportId, storage, jobLogger);
@@ -469,7 +473,39 @@ async function checkStorageForSkip(
   }
 
   if (storageCheck.value.exists) {
-    return success({ skip: true });
+    // Verify Firestore status to detect orphaned files from failed rollbacks
+    try {
+      const reportRef = await refStore.Report.get(reportId);
+
+      if (reportRef?.status === "completed") {
+        // File exists and Firestore shows completion - legitimate skip
+        return success({ skip: true });
+      }
+
+      // Orphaned file detected: GCS file exists but Firestore incomplete
+      // This happens when GCS upload succeeds but Firestore update fails,
+      // and the rollback deletion also fails. Allow pipeline to complete.
+      jobLogger.warn(
+        {
+          reportId,
+          firestoreStatus: reportRef?.status,
+        },
+        "Orphaned GCS file detected - Firestore status incomplete, allowing pipeline completion",
+      );
+      return success({ skip: false });
+    } catch (firestoreError) {
+      // Firestore read failed - treat as transient and return error
+      jobLogger.error(
+        { error: firestoreError, reportId },
+        "Failed to verify Firestore status during orphan check",
+      );
+      return failure(
+        new StorageError(
+          `Failed to verify Firestore status: ${firestoreError instanceof Error ? firestoreError.message : String(firestoreError)}`,
+          true,
+        ),
+      );
+    }
   }
 
   return success({ skip: false });
@@ -872,7 +908,12 @@ export async function handlePipelineJob(
   }
 
   // Check if storage file already exists (quick optimization before acquiring lock)
-  const skipResult = await checkStorageForSkip(reportId, storage, jobLogger);
+  const skipResult = await checkStorageForSkip(
+    reportId,
+    storage,
+    refStore,
+    jobLogger,
+  );
 
   if (skipResult.tag === "failure") {
     jobLogger.error({ error: skipResult.error }, "Storage check failed");
