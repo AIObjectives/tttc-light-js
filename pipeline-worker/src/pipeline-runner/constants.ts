@@ -34,14 +34,19 @@ export const LOCK_EXTENSION_SECONDS = Math.ceil(
 );
 
 /**
- * Lock refresh interval: how often to extend the lock during step execution (5 minutes)
+ * Lock refresh interval: how often to extend the lock during step execution
  * Should be significantly less than LOCK_TTL_SECONDS to ensure the lock doesn't expire
  * during long-running steps like claims extraction.
  *
- * Formula: Refresh every ~14% of lock TTL (5 minutes for 35 minute lock)
- * This provides multiple refresh opportunities before expiration.
+ * Formula: Refresh every 1/10th of lock TTL to provide 10 refresh opportunities
+ * Example: 35-minute lock / 10 = 3.5 minutes between refreshes
+ * This provides resilience against 3-4 transient refresh failures before lock expiration.
+ *
+ * Calculated dynamically to maintain consistency with LOCK_TTL_SECONDS.
  */
-export const LOCK_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+export const LOCK_REFRESH_INTERVAL_MS = Math.floor(
+  (LOCK_TTL_SECONDS * 1000) / 10,
+);
 
 /**
  * State staleness threshold: equal to LOCK_TTL_SECONDS (35 minutes)

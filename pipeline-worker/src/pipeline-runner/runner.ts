@@ -277,26 +277,34 @@ interface StepExecutionResult<T> {
 
 /**
  * Start periodic lock extension during long-running step execution.
- * Returns a cleanup function to stop the extension timer.
+ * Returns a cleanup function to stop the extension timer and a promise that
+ * resolves if the lock is lost (refresh fails or throws).
  *
  * @param stateStore - State store for lock operations
  * @param reportId - Report identifier
  * @param lockValue - Lock value to verify ownership
  * @param reportLogger - Logger instance
- * @returns Cleanup function to stop the extension timer
+ * @returns Object with cleanup function and abort promise
  */
 function startLockExtension(
   stateStore: RedisPipelineStateStore,
   reportId: string,
   lockValue: string | undefined,
   reportLogger: typeof runnerLogger,
-): () => void {
-  // If no lock value provided, return no-op cleanup
+): { cleanup: () => void; aborted: Promise<void> } {
+  // If no lock value provided, return no-op cleanup and never-resolving abort promise
   if (!lockValue) {
-    return () => {};
+    return {
+      cleanup: () => {},
+      aborted: new Promise(() => {}), // Never resolves
+    };
   }
 
   let extensionCount = 0;
+  let abortResolve: (() => void) | undefined;
+  const aborted = new Promise<void>((resolve) => {
+    abortResolve = resolve;
+  });
 
   const intervalId = setInterval(async () => {
     try {
@@ -316,14 +324,16 @@ function startLockExtension(
           "Lock TTL refreshed during step execution",
         );
       } else {
-        reportLogger.warn(
+        reportLogger.error(
           {
             reportId,
             extensionCount,
             lockValue,
           },
-          "Failed to refresh lock during step execution - lock may have expired or been acquired by another worker",
+          "Failed to refresh lock during step execution - lock lost or held by another worker, aborting pipeline",
         );
+        clearInterval(intervalId);
+        abortResolve?.();
       }
     } catch (error) {
       reportLogger.error(
@@ -332,20 +342,25 @@ function startLockExtension(
           reportId,
           extensionCount,
         },
-        "Error refreshing lock during step execution",
+        "Error refreshing lock during step execution - aborting pipeline",
       );
+      clearInterval(intervalId);
+      abortResolve?.();
     }
   }, LOCK_REFRESH_INTERVAL_MS);
 
-  // Return cleanup function
-  return () => {
-    clearInterval(intervalId);
-    if (extensionCount > 0) {
-      reportLogger.debug(
-        { reportId, extensionCount },
-        "Lock extension timer stopped",
-      );
-    }
+  // Return cleanup function and abort promise
+  return {
+    cleanup: () => {
+      clearInterval(intervalId);
+      if (extensionCount > 0) {
+        reportLogger.debug(
+          { reportId, extensionCount },
+          "Lock extension timer stopped",
+        );
+      }
+    },
+    aborted,
   };
 }
 
@@ -750,7 +765,7 @@ async function executeAndHandleStep(
   );
 
   // Start periodic lock extension during step execution
-  const stopLockExtension = startLockExtension(
+  const { cleanup: stopLockExtension, aborted } = startLockExtension(
     stateStore,
     state.reportId,
     config.lockValue,
@@ -758,9 +773,21 @@ async function executeAndHandleStep(
   );
 
   // Execute the step (make sure to stop lock extension on completion or error)
+  // Race between step execution and lock refresh failure
   let result: Result<StepExecutionResult<unknown>, Error>;
   try {
-    result = await executor();
+    const executionResult = await Promise.race([
+      executor(),
+      aborted.then(() => {
+        // Lock was lost during execution
+        return failure(
+          new Error(
+            "Pipeline lock lost during step execution - another worker may have acquired the lock",
+          ),
+        );
+      }),
+    ]);
+    result = executionResult;
   } finally {
     // Always stop lock extension when step completes (success or failure)
     stopLockExtension();

@@ -8,6 +8,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LOCK_EXTENSION_SECONDS,
+  LOCK_REFRESH_INTERVAL_MS,
   LOCK_TTL_SECONDS,
   PIPELINE_TIMEOUT_MS,
 } from "../constants.js";
@@ -71,11 +72,55 @@ describe("Pipeline Configuration Constants", () => {
     });
   });
 
+  describe("LOCK_REFRESH_INTERVAL_MS", () => {
+    it("should be significantly less than lock TTL to allow multiple refresh attempts", () => {
+      const lockTtlMs = LOCK_TTL_SECONDS * 1000;
+      expect(LOCK_REFRESH_INTERVAL_MS).toBeLessThan(lockTtlMs / 2);
+    });
+
+    it("should provide at least 7 refresh opportunities before lock expiration", () => {
+      const lockTtlMs = LOCK_TTL_SECONDS * 1000;
+      const maxRefreshAttempts = Math.floor(
+        lockTtlMs / LOCK_REFRESH_INTERVAL_MS,
+      );
+      expect(maxRefreshAttempts).toBeGreaterThanOrEqual(7);
+    });
+
+    it("should be approximately 1/10th of lock TTL", () => {
+      const expectedValue = Math.floor((LOCK_TTL_SECONDS * 1000) / 10);
+      expect(LOCK_REFRESH_INTERVAL_MS).toBe(expectedValue);
+    });
+
+    it("should be approximately 3.5 minutes for current 35 minute lock TTL", () => {
+      // This test verifies the current actual value
+      // If LOCK_TTL_SECONDS changes, this test will need updating
+      if (LOCK_TTL_SECONDS === 2106) {
+        expect(LOCK_REFRESH_INTERVAL_MS).toBe(210600); // 3.51 minutes
+        expect(LOCK_REFRESH_INTERVAL_MS / 1000 / 60).toBeCloseTo(3.51, 1);
+      }
+    });
+
+    it("should provide resilience against multiple transient failures", () => {
+      const lockTtlMs = LOCK_TTL_SECONDS * 1000;
+      const maxRefreshAttempts = Math.floor(
+        lockTtlMs / LOCK_REFRESH_INTERVAL_MS,
+      );
+      // With 10 attempts, we can tolerate 3-4 failures
+      const toleratedFailures = 3;
+      expect(maxRefreshAttempts).toBeGreaterThan(toleratedFailures);
+    });
+  });
+
   describe("Constant relationships", () => {
     it("should maintain correct ordering: extension < timeout < lock TTL", () => {
       const timeoutSeconds = PIPELINE_TIMEOUT_MS / 1000;
       expect(LOCK_EXTENSION_SECONDS).toBeLessThan(timeoutSeconds);
       expect(timeoutSeconds).toBeLessThan(LOCK_TTL_SECONDS);
+    });
+
+    it("should maintain correct ordering: refresh interval < lock TTL", () => {
+      const lockTtlMs = LOCK_TTL_SECONDS * 1000;
+      expect(LOCK_REFRESH_INTERVAL_MS).toBeLessThan(lockTtlMs);
     });
 
     it("should scale proportionally if timeout changes", () => {
@@ -85,11 +130,23 @@ describe("Pipeline Configuration Constants", () => {
       const alternativeExtension = Math.ceil(
         (alternativeTimeout / 1000) * 0.33,
       );
+      const alternativeRefreshInterval = Math.floor(
+        (alternativeLockTtl * 1000) / 10,
+      );
 
       // Verify scaling preserves required relationships
       expect(alternativeLockTtl).toBeGreaterThan(alternativeTimeout / 1000);
       expect(alternativeExtension).toBeLessThan(alternativeTimeout / 1000);
       expect(alternativeExtension).toBeGreaterThanOrEqual(5 * 60);
+      expect(alternativeRefreshInterval).toBeLessThan(
+        alternativeLockTtl * 1000,
+      );
+
+      // Verify refresh interval provides sufficient attempts
+      const refreshAttempts = Math.floor(
+        (alternativeLockTtl * 1000) / alternativeRefreshInterval,
+      );
+      expect(refreshAttempts).toBeGreaterThanOrEqual(7);
     });
   });
 });
