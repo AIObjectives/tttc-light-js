@@ -90,18 +90,18 @@ function createMockCache(): Cache & {
       }>,
       deleteKeys?: string[],
     ): Promise<void> {
-      for (const op of operations) {
+      operations.forEach((op) => {
         storage.set(op.key, op.value);
-        if (op.options?.ttl) {
-          ttls.set(op.key, op.options.ttl);
+        const ttl = op.options?.ttl;
+        if (ttl !== undefined) {
+          ttls.set(op.key, ttl);
         }
-      }
-      if (deleteKeys) {
-        for (const key of deleteKeys) {
-          storage.delete(key);
-          ttls.delete(key);
-        }
-      }
+      });
+
+      deleteKeys?.forEach((key) => {
+        storage.delete(key);
+        ttls.delete(key);
+      });
     },
     async healthCheck(): Promise<void> {
       // Mock cache is always healthy
