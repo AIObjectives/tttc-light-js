@@ -50,6 +50,35 @@ const expectValidationFailure = (
   }
 };
 
+// Factory function to create test mocks (eliminates duplication across describe blocks)
+const createTestMocks = () => ({
+  stateStore: {
+    get: vi.fn(),
+    save: vi.fn(),
+    delete: vi.fn(),
+    update: vi.fn(),
+    acquirePipelineLock: vi.fn(),
+    extendPipelineLock: vi.fn(),
+    releasePipelineLock: vi.fn(),
+    incrementValidationFailure: vi.fn(),
+  } as unknown as RedisPipelineStateStore,
+
+  storage: {
+    storeFile: vi.fn(),
+    fileExists: vi.fn(),
+    deleteFile: vi.fn(),
+  } as unknown as BucketStore,
+
+  refStore: {
+    Report: {
+      get: vi.fn(),
+      modify: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+    },
+  } as unknown as RefStoreServices,
+});
+
 describe("validateDataArray", () => {
   it("should return success for valid non-empty comments", () => {
     const data = [
@@ -301,32 +330,10 @@ describe("handlePipelineJob - GCS rollback integration", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockStateStore = {
-      get: vi.fn(),
-      save: vi.fn(),
-      delete: vi.fn(),
-      update: vi.fn(),
-      acquirePipelineLock: vi.fn(),
-      extendPipelineLock: vi.fn(),
-      releasePipelineLock: vi.fn(),
-      incrementValidationFailure: vi.fn(),
-    } as unknown as RedisPipelineStateStore;
-
-    mockStorage = {
-      storeFile: vi.fn(),
-      deleteFile: vi.fn(),
-      fileExists: vi.fn(),
-    } as unknown as BucketStore;
-
-    mockRefStore = {
-      Report: {
-        get: vi.fn(),
-        modify: vi.fn(),
-        create: vi.fn(),
-        delete: vi.fn(),
-      },
-    } as unknown as RefStoreServices;
+    const mocks = createTestMocks();
+    mockStateStore = mocks.stateStore;
+    mockStorage = mocks.storage;
+    mockRefStore = mocks.refStore;
   });
 
   afterEach(() => {
@@ -891,32 +898,10 @@ describe("handlePipelineJob - save-only retry", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockStateStore = {
-      get: vi.fn(),
-      save: vi.fn(),
-      delete: vi.fn(),
-      update: vi.fn(),
-      acquirePipelineLock: vi.fn(),
-      extendPipelineLock: vi.fn(),
-      releasePipelineLock: vi.fn(),
-      incrementValidationFailure: vi.fn(),
-    } as unknown as RedisPipelineStateStore;
-
-    mockStorage = {
-      storeFile: vi.fn(),
-      fileExists: vi.fn(),
-      deleteFile: vi.fn(),
-    } as unknown as BucketStore;
-
-    mockRefStore = {
-      Report: {
-        get: vi.fn(),
-        modify: vi.fn(),
-        create: vi.fn(),
-        delete: vi.fn(),
-      },
-    } as unknown as RefStoreServices;
+    const mocks = createTestMocks();
+    mockStateStore = mocks.stateStore;
+    mockStorage = mocks.storage;
+    mockRefStore = mocks.refStore;
   });
 
   afterEach(() => {
@@ -1210,32 +1195,10 @@ describe("handlePipelineJob - running state staleness check", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockStateStore = {
-      get: vi.fn(),
-      save: vi.fn(),
-      delete: vi.fn(),
-      update: vi.fn(),
-      acquirePipelineLock: vi.fn(),
-      extendPipelineLock: vi.fn(),
-      releasePipelineLock: vi.fn(),
-      incrementValidationFailure: vi.fn(),
-    } as unknown as RedisPipelineStateStore;
-
-    mockStorage = {
-      storeFile: vi.fn(),
-      fileExists: vi.fn(),
-      deleteFile: vi.fn(),
-    } as unknown as BucketStore;
-
-    mockRefStore = {
-      Report: {
-        get: vi.fn(),
-        modify: vi.fn(),
-        create: vi.fn(),
-        delete: vi.fn(),
-      },
-    } as unknown as RefStoreServices;
+    const mocks = createTestMocks();
+    mockStateStore = mocks.stateStore;
+    mockStorage = mocks.storage;
+    mockRefStore = mocks.refStore;
   });
 
   afterEach(() => {
