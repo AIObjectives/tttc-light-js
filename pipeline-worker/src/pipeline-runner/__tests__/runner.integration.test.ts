@@ -331,6 +331,9 @@ function createInMemoryCache(): Cache {
         storage.set(op.key, { value: op.value, expiresAt });
       }
     },
+    async healthCheck(): Promise<void> {
+      // In-memory cache is always healthy
+    },
   };
 }
 

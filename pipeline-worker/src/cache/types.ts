@@ -159,6 +159,14 @@ export interface Cache {
   setMultiple(
     operations: Array<{ key: string; value: string; options?: SetOptions }>,
   ): Promise<void>;
+
+  /**
+   * Verifies cache connectivity and availability.
+   *
+   * @returns A Promise that resolves when the cache is healthy
+   * @throws {CacheConnectionError} When the cache is not reachable or not ready
+   */
+  healthCheck(): Promise<void>;
 }
 
 /**

@@ -122,6 +122,16 @@ export interface BucketStore {
    * @throws {AccessDeniedError} When access is denied
    */
   deleteFile(fileName: string): Promise<void>;
+
+  /**
+   * Verifies bucket accessibility and permissions.
+   *
+   * @returns A Promise that resolves when the bucket is accessible
+   * @throws {BucketNotFoundError} When the bucket is not found
+   * @throws {AccessDeniedError} When access is denied
+   * @throws {BucketStoreError} When verification fails for other reasons
+   */
+  healthCheck(): Promise<void>;
 }
 
 /**

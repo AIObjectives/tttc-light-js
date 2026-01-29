@@ -96,6 +96,9 @@ function createMockCache(): Cache & {
         }
       }
     },
+    async healthCheck(): Promise<void> {
+      // Mock cache is always healthy
+    },
   };
 }
 

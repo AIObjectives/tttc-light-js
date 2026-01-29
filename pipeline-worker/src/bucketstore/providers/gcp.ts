@@ -186,4 +186,37 @@ export class GCPBucketStore implements BucketStore {
       throw new DeleteFailedError(fileName, formatError(error));
     }
   }
+
+  async healthCheck(): Promise<void> {
+    try {
+      const bucketRef = this.storage.bucket(this.bucketName);
+      // Verify bucket exists and we have access by checking if it exists
+      const [exists] = await bucketRef.exists();
+
+      if (!exists) {
+        throw new Error(`Bucket ${this.bucketName} does not exist`);
+      }
+
+      // Verify we have permissions by attempting to get metadata
+      await bucketRef.getMetadata();
+    } catch (error) {
+      const errorType = categorizeStorageError(error);
+
+      if (errorType === "permission") {
+        throw new Error(
+          `Access denied to bucket ${this.bucketName}: ${formatError(error)}`,
+        );
+      }
+
+      if (errorType === "not_found") {
+        throw new Error(
+          `Bucket ${this.bucketName} not found: ${formatError(error)}`,
+        );
+      }
+
+      throw new Error(
+        `GCS health check failed for bucket ${this.bucketName}: ${formatError(error)}`,
+      );
+    }
+  }
 }

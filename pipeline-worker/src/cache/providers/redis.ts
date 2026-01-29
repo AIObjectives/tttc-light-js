@@ -319,6 +319,24 @@ export class RedisCache implements Cache {
   }
 
   /**
+   * Verifies Redis connectivity by executing a PING command.
+   *
+   * @throws {CacheConnectionError} When Redis is not reachable or not ready
+   */
+  async healthCheck(): Promise<void> {
+    try {
+      const result = await this.client.ping();
+      if (result !== "PONG") {
+        throw new Error(`Unexpected PING response: ${result}`);
+      }
+    } catch (error) {
+      throw new CacheConnectionError(
+        `Redis health check failed: ${formatError(error)}`,
+      );
+    }
+  }
+
+  /**
    * Disconnects from Redis gracefully.
    * Should be called when shutting down the application or in test cleanup.
    */

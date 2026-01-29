@@ -9,7 +9,7 @@ async function main() {
   try {
     mainLogger.info("Starting pipeline worker...");
 
-    const services = initServices();
+    const services = await initServices();
 
     mainLogger.info("Pipeline worker started successfully");
 

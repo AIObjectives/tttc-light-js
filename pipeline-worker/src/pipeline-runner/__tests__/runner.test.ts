@@ -201,6 +201,9 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
         storage.set(op.key, op.value);
       }
     },
+    async healthCheck(): Promise<void> {
+      // Mock cache is always healthy
+    },
   };
 }
 

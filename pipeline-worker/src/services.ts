@@ -23,7 +23,7 @@ export interface Services {
   Storage: BucketStore;
 }
 
-export function initServices(): Services {
+export async function initServices(): Promise<Services> {
   const RefStore = RefStoreServicesLive(process.env);
   const Cache = CacheServicesLive(process.env);
 
@@ -44,6 +44,32 @@ export function initServices(): Services {
     projectId,
   });
 
+  // Verify Redis connectivity before proceeding
+  servicesLogger.info("Verifying Redis connectivity...");
+  try {
+    await Cache.healthCheck();
+    servicesLogger.info("Redis health check passed");
+  } catch (error) {
+    servicesLogger.error({ error }, "Redis health check failed");
+    throw error;
+  }
+
+  // Verify GCS accessibility before proceeding
+  servicesLogger.info(
+    { bucket: bucketName },
+    "Verifying GCS bucket accessibility...",
+  );
+  try {
+    await Storage.healthCheck();
+    servicesLogger.info({ bucket: bucketName }, "GCS health check passed");
+  } catch (error) {
+    servicesLogger.error(
+      { error, bucket: bucketName },
+      "GCS health check failed",
+    );
+    throw error;
+  }
+
   // Initialize PubSub queue
   const pubsubClient = new PubSub({
     projectId: process.env.GOOGLE_CLOUD_PROJECT,
@@ -59,7 +85,7 @@ export function initServices(): Services {
     pipelineJobSchema,
   );
 
-  // Start listening for messages
+  // Start listening for messages (only after health checks pass)
   Queue.subscribe(subscriptionName, async (message) => {
     const result = await handlePipelineJob(
       message,
