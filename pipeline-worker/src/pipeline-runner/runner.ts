@@ -55,6 +55,13 @@ const runnerLogger = logger.child({ module: "pipeline-runner" });
 const MAX_VALIDATION_FAILURES = 3;
 
 /**
+ * Minimum step duration in milliseconds for analytics tracking.
+ * Very fast operations (e.g., mocked steps) can complete in <1ms,
+ * but we need at least 1ms for accurate analytics reporting.
+ */
+const MIN_STEP_DURATION_MS = 1;
+
+/**
  * Verify lock ownership before state save.
  * If lockValue is provided, verifies we still hold the lock.
  * Throws an error if lock verification fails.
@@ -360,9 +367,9 @@ async function executeStep<T>(
   try {
     const result = await executor();
 
-    // Ensure minimum duration of 1ms for analytics tracking
+    // Ensure minimum duration for analytics tracking
     // (very fast operations like mocked steps can complete in <1ms)
-    const durationMs = Math.max(1, Date.now() - startTime);
+    const durationMs = Math.max(MIN_STEP_DURATION_MS, Date.now() - startTime);
 
     if (result.tag === "failure") {
       reportLogger.error(
