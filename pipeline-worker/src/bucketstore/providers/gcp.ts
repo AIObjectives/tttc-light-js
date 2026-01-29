@@ -153,6 +153,19 @@ export class GCPBucketStore implements BucketStore {
       // This ensures that either the complete file is available or no file exists
       await tempFile.move(finalFile);
 
+      // Verify upload integrity by comparing expected size with uploaded size
+      const expectedSize = Buffer.byteLength(fileContent, "utf8");
+      const [metadata] = await finalFile.getMetadata();
+
+      if (metadata.size !== undefined) {
+        const uploadedSize = Number(metadata.size);
+        if (uploadedSize !== expectedSize) {
+          throw new Error(
+            `Upload verification failed: expected ${expectedSize} bytes, got ${uploadedSize} bytes`,
+          );
+        }
+      }
+
       // Generate the public URL for the file
       const url = `https://storage.googleapis.com/${this.bucketName}/${fileName}`;
 

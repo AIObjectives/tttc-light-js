@@ -11,6 +11,7 @@ interface MockFileInstance {
   exists: Mock;
   delete: Mock;
   move: Mock;
+  getMetadata: Mock;
 }
 
 interface MockBucketInstance {
@@ -32,11 +33,13 @@ vi.mock("@google-cloud/storage", () => {
   const mockExists = vi.fn();
   const mockDelete = vi.fn();
   const mockMove = vi.fn();
+  const mockGetMetadata = vi.fn();
   const mockFile = vi.fn(() => ({
     save: mockSave,
     exists: mockExists,
     delete: mockDelete,
     move: mockMove,
+    getMetadata: mockGetMetadata,
   }));
   const mockBucket = vi.fn(() => ({
     file: mockFile,
@@ -59,6 +62,18 @@ describe("GCPBucketStore", () => {
   let mockExists: Mock;
   let mockDelete: Mock;
   let mockMove: Mock;
+  let mockGetMetadata: Mock;
+
+  /**
+   * Helper to set up successful upload mocks with proper size verification
+   */
+  const setupSuccessfulUpload = (fileContent: string): void => {
+    mockSave.mockResolvedValue(undefined);
+    mockMove.mockResolvedValue(undefined);
+    mockGetMetadata.mockResolvedValue([
+      { size: Buffer.byteLength(fileContent, "utf8") },
+    ]);
+  };
 
   /**
    * Before each test, we need to:
@@ -80,6 +95,7 @@ describe("GCPBucketStore", () => {
     mockExists = fileInstance.exists;
     mockDelete = fileInstance.delete;
     mockMove = fileInstance.move;
+    mockGetMetadata = fileInstance.getMetadata;
 
     // Create a new instance for each test
     bucketStore = new GCPBucketStore("test-bucket");
@@ -119,13 +135,10 @@ describe("GCPBucketStore", () => {
 
   describe("storeFile - Success Scenarios", () => {
     it("should successfully upload file and return correct URL", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = '{"key": "value"}';
+      setupSuccessfulUpload(fileContent);
 
-      const url = await bucketStore.storeFile(
-        "test-file.json",
-        '{"key": "value"}',
-      );
+      const url = await bucketStore.storeFile("test-file.json", fileContent);
 
       expect(url).toBe(
         "https://storage.googleapis.com/test-bucket/test-file.json",
@@ -133,32 +146,31 @@ describe("GCPBucketStore", () => {
     });
 
     it("should call bucket() with correct bucket name", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = '{"key": "value"}';
+      setupSuccessfulUpload(fileContent);
       mockBucket.mockClear();
 
-      await bucketStore.storeFile("test-file.json", '{"key": "value"}');
+      await bucketStore.storeFile("test-file.json", fileContent);
 
       expect(mockBucket).toHaveBeenCalledWith("test-bucket");
       expect(mockBucket).toHaveBeenCalledTimes(1);
     });
 
     it("should call file() with correct file name", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = '{"data": 123}';
+      setupSuccessfulUpload(fileContent);
       mockFile.mockClear();
 
-      await bucketStore.storeFile("my-data.json", '{"data": 123}');
+      await bucketStore.storeFile("my-data.json", fileContent);
 
       expect(mockFile).toHaveBeenCalledWith("my-data.json");
       expect(mockFile).toHaveBeenCalledTimes(2); // Once for temp file, once for final file
     });
 
     it("should call save() with correct content and metadata", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
-
       const fileContent = '{"test": "data"}';
+      setupSuccessfulUpload(fileContent);
+
       await bucketStore.storeFile("test.json", fileContent);
 
       expect(mockSave).toHaveBeenCalledWith(fileContent, {
@@ -170,21 +182,21 @@ describe("GCPBucketStore", () => {
     });
 
     it("should set contentType to application/json", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
-      await bucketStore.storeFile("test.json", "{}");
+      await bucketStore.storeFile("test.json", fileContent);
 
       const saveCall = mockSave.mock.calls[0];
       expect(saveCall[1].metadata.contentType).toBe("application/json");
     });
 
     it("should handle file names with special characters", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const fileName = "reports/2024/data-file_v1.2.json";
-      const url = await bucketStore.storeFile(fileName, "{}");
+      const url = await bucketStore.storeFile(fileName, fileContent);
 
       expect(mockFile).toHaveBeenCalledWith(fileName);
       expect(url).toBe(
@@ -193,10 +205,10 @@ describe("GCPBucketStore", () => {
     });
 
     it("should handle empty file content", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "";
+      setupSuccessfulUpload(fileContent);
 
-      const url = await bucketStore.storeFile("empty.json", "");
+      const url = await bucketStore.storeFile("empty.json", fileContent);
 
       expect(mockSave).toHaveBeenCalledWith("", {
         metadata: {
@@ -207,10 +219,9 @@ describe("GCPBucketStore", () => {
     });
 
     it("should handle large file content", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
-
       const largeContent = JSON.stringify({ data: "x".repeat(10000) });
+      setupSuccessfulUpload(largeContent);
+
       const url = await bucketStore.storeFile("large.json", largeContent);
 
       expect(mockSave).toHaveBeenCalledWith(largeContent, {
@@ -222,10 +233,10 @@ describe("GCPBucketStore", () => {
     });
 
     it("should generate URL with correct format", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
-      const url = await bucketStore.storeFile("path/to/file.json", "{}");
+      const url = await bucketStore.storeFile("path/to/file.json", fileContent);
 
       expect(url).toMatch(/^https:\/\/storage\.googleapis\.com\/[^/]+\/.+$/);
       expect(url).toContain("test-bucket");
@@ -235,11 +246,11 @@ describe("GCPBucketStore", () => {
 
   describe("storeFile - Atomic Upload", () => {
     it("should upload to temporary file first then move to final name", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = '{"data": "test"}';
+      setupSuccessfulUpload(fileContent);
       mockFile.mockClear();
 
-      await bucketStore.storeFile("report.json", '{"data": "test"}');
+      await bucketStore.storeFile("report.json", fileContent);
 
       // Should create temp file first
       const firstFileCall = mockFile.mock.calls[0][0];
@@ -254,12 +265,12 @@ describe("GCPBucketStore", () => {
     });
 
     it("should use unique temporary filename based on timestamp", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
       mockFile.mockClear();
 
       const startTime = Date.now();
-      await bucketStore.storeFile("test.json", "{}");
+      await bucketStore.storeFile("test.json", fileContent);
       const endTime = Date.now();
 
       const tempFileName = mockFile.mock.calls[0][0];
@@ -274,10 +285,10 @@ describe("GCPBucketStore", () => {
     });
 
     it("should not leave temporary file if move succeeds", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
-      await bucketStore.storeFile("test.json", "{}");
+      await bucketStore.storeFile("test.json", fileContent);
 
       // Delete should not be called on temp file - move handles cleanup
       expect(mockDelete).not.toHaveBeenCalled();
@@ -316,10 +327,10 @@ describe("GCPBucketStore", () => {
     });
 
     it("should prevent serving corrupted files by using atomic move", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = '{"data": "complete"}';
+      setupSuccessfulUpload(fileContent);
 
-      await bucketStore.storeFile("report.json", '{"data": "complete"}');
+      await bucketStore.storeFile("report.json", fileContent);
 
       // Verify move was called
       // This ensures partial uploads never make it to the final filename
@@ -454,14 +465,125 @@ describe("GCPBucketStore", () => {
     });
   });
 
-  describe("Integration Scenarios", () => {
-    it("should handle multiple sequential uploads", async () => {
+  describe("storeFile - Upload Verification", () => {
+    it("should verify upload integrity by checking file size", async () => {
+      const fileContent = '{"test": "data", "count": 42}';
+      const expectedSize = Buffer.byteLength(fileContent, "utf8");
+
+      setupSuccessfulUpload(fileContent);
+
+      await bucketStore.storeFile("test.json", fileContent);
+
+      expect(mockGetMetadata).toHaveBeenCalledTimes(1);
+      expect(mockGetMetadata).toHaveBeenCalled();
+    });
+
+    it("should throw error when uploaded size does not match expected size", async () => {
+      const fileContent = '{"test": "data"}';
       mockSave.mockResolvedValue(undefined);
       mockMove.mockResolvedValue(undefined);
+      // Simulate corrupted upload - size mismatch
+      mockGetMetadata.mockResolvedValue([{ size: 999 }]);
 
-      const url1 = await bucketStore.storeFile("file1.json", "{}");
-      const url2 = await bucketStore.storeFile("file2.json", "{}");
-      const url3 = await bucketStore.storeFile("file3.json", "{}");
+      await expect(
+        bucketStore.storeFile("test.json", fileContent),
+      ).rejects.toThrow(UploadFailedError);
+
+      try {
+        await bucketStore.storeFile("test.json", fileContent);
+      } catch (error) {
+        expect(error).toBeInstanceOf(UploadFailedError);
+        if (error instanceof UploadFailedError) {
+          expect(error.reason).toContain("Upload verification failed");
+          expect(error.reason).toContain("expected");
+          expect(error.reason).toContain("got 999 bytes");
+        }
+      }
+    });
+
+    it("should calculate correct byte size for UTF-8 content", async () => {
+      const fileContent = "Hello 世界 🌍"; // Mixed ASCII, Chinese, emoji
+      const expectedSize = Buffer.byteLength(fileContent, "utf8");
+
+      setupSuccessfulUpload(fileContent);
+
+      await bucketStore.storeFile("unicode.json", fileContent);
+
+      expect(mockGetMetadata).toHaveBeenCalledTimes(1);
+    });
+
+    it("should verify empty file upload correctly", async () => {
+      const fileContent = "";
+      setupSuccessfulUpload(fileContent);
+
+      const url = await bucketStore.storeFile("empty.json", fileContent);
+
+      expect(url).toBe("https://storage.googleapis.com/test-bucket/empty.json");
+      expect(mockGetMetadata).toHaveBeenCalledTimes(1);
+    });
+
+    it("should verify large file upload correctly", async () => {
+      const largeContent = JSON.stringify({ data: "x".repeat(100000) });
+      setupSuccessfulUpload(largeContent);
+
+      const url = await bucketStore.storeFile("large.json", largeContent);
+
+      expect(url).toBe("https://storage.googleapis.com/test-bucket/large.json");
+      expect(mockGetMetadata).toHaveBeenCalledTimes(1);
+    });
+
+    it("should handle metadata without size field gracefully", async () => {
+      const fileContent = '{"test": "data"}';
+      mockSave.mockResolvedValue(undefined);
+      mockMove.mockResolvedValue(undefined);
+      // Metadata without size field (shouldn't happen in practice, but defensive)
+      mockGetMetadata.mockResolvedValue([{}]);
+
+      // Should not throw error, verification is skipped
+      const url = await bucketStore.storeFile("test.json", fileContent);
+
+      expect(url).toBe("https://storage.googleapis.com/test-bucket/test.json");
+    });
+
+    it("should throw error if getMetadata fails after successful upload", async () => {
+      const fileContent = '{"test": "data"}';
+      mockSave.mockResolvedValue(undefined);
+      mockMove.mockResolvedValue(undefined);
+      mockGetMetadata.mockRejectedValue(new Error("Metadata fetch failed"));
+
+      await expect(
+        bucketStore.storeFile("test.json", fileContent),
+      ).rejects.toThrow(UploadFailedError);
+
+      try {
+        await bucketStore.storeFile("test.json", fileContent);
+      } catch (error) {
+        expect(error).toBeInstanceOf(UploadFailedError);
+        if (error instanceof UploadFailedError) {
+          expect(error.reason).toContain("Metadata fetch failed");
+        }
+      }
+    });
+
+    it("should verify size matches for exact byte boundaries", async () => {
+      // Test with content that's exactly at common byte boundaries
+      const fileContent = "x".repeat(1024); // 1KB
+      setupSuccessfulUpload(fileContent);
+
+      await bucketStore.storeFile("1kb.json", fileContent);
+
+      expect(mockGetMetadata).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("Integration Scenarios", () => {
+    it("should handle multiple sequential uploads", async () => {
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
+
+      const url1 = await bucketStore.storeFile("file1.json", fileContent);
+      const url2 = await bucketStore.storeFile("file2.json", fileContent);
+      const url3 = await bucketStore.storeFile("file3.json", fileContent);
 
       expect(url1).toBe(
         "https://storage.googleapis.com/test-bucket/file1.json",
@@ -498,26 +620,26 @@ describe("GCPBucketStore", () => {
     });
 
     it("should maintain bucket name across multiple operations", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
       mockBucket.mockClear();
 
-      await bucketStore.storeFile("file1.json", "{}");
-      await bucketStore.storeFile("file2.json", "{}");
+      await bucketStore.storeFile("file1.json", fileContent);
+      await bucketStore.storeFile("file2.json", fileContent);
 
       expect(mockBucket).toHaveBeenCalledWith("test-bucket");
       expect(mockBucket).toHaveBeenCalledTimes(2);
     });
 
     it("should work correctly with different bucket instances", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const store1 = new GCPBucketStore("bucket-1");
       const store2 = new GCPBucketStore("bucket-2");
 
-      await store1.storeFile("file.json", "{}");
-      await store2.storeFile("file.json", "{}");
+      await store1.storeFile("file.json", fileContent);
+      await store2.storeFile("file.json", fileContent);
 
       // Both should have been called with their respective bucket names
       const bucketCalls = mockBucket.mock.calls;
@@ -526,13 +648,13 @@ describe("GCPBucketStore", () => {
     });
 
     it("should handle concurrent uploads to same bucket", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const promises = [
-        bucketStore.storeFile("file1.json", "{}"),
-        bucketStore.storeFile("file2.json", "{}"),
-        bucketStore.storeFile("file3.json", "{}"),
+        bucketStore.storeFile("file1.json", fileContent),
+        bucketStore.storeFile("file2.json", fileContent),
+        bucketStore.storeFile("file3.json", fileContent),
       ];
 
       const results = await Promise.all(promises);
@@ -548,22 +670,22 @@ describe("GCPBucketStore", () => {
 
   describe("Edge Cases", () => {
     it("should handle file names with spaces", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const fileName = "file with spaces.json";
-      const url = await bucketStore.storeFile(fileName, "{}");
+      const url = await bucketStore.storeFile(fileName, fileContent);
 
       expect(mockFile).toHaveBeenCalledWith(fileName);
       expect(url).toContain("file with spaces.json");
     });
 
     it("should handle file names with unicode characters", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const fileName = "файл-данных-文件.json";
-      const url = await bucketStore.storeFile(fileName, "{}");
+      const url = await bucketStore.storeFile(fileName, fileContent);
 
       expect(mockFile).toHaveBeenCalledWith(fileName);
       expect(url).toBe(
@@ -572,11 +694,11 @@ describe("GCPBucketStore", () => {
     });
 
     it("should handle very long file names", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const longFileName = `${"a".repeat(500)}.json`;
-      const url = await bucketStore.storeFile(longFileName, "{}");
+      const url = await bucketStore.storeFile(longFileName, fileContent);
 
       expect(mockFile).toHaveBeenCalledWith(longFileName);
       expect(url).toBe(
@@ -585,22 +707,21 @@ describe("GCPBucketStore", () => {
     });
 
     it("should handle file content with special JSON characters", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = '{"text": "Hello \\"world\\"\\n\\t"}';
+      setupSuccessfulUpload(fileContent);
 
-      const content = '{"text": "Hello \\"world\\"\\n\\t"}';
-      const url = await bucketStore.storeFile("test.json", content);
+      const url = await bucketStore.storeFile("test.json", fileContent);
 
-      expect(mockSave).toHaveBeenCalledWith(content, expect.any(Object));
+      expect(mockSave).toHaveBeenCalledWith(fileContent, expect.any(Object));
       expect(url).toBe("https://storage.googleapis.com/test-bucket/test.json");
     });
 
     it("should handle nested file paths", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const fileName = "a/b/c/d/e/file.json";
-      const url = await bucketStore.storeFile(fileName, "{}");
+      const url = await bucketStore.storeFile(fileName, fileContent);
 
       expect(url).toBe(
         "https://storage.googleapis.com/test-bucket/a/b/c/d/e/file.json",
@@ -608,11 +729,11 @@ describe("GCPBucketStore", () => {
     });
 
     it("should handle file names with multiple dots", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const fileName = "data.backup.v2.0.json";
-      const url = await bucketStore.storeFile(fileName, "{}");
+      const url = await bucketStore.storeFile(fileName, fileContent);
 
       expect(mockFile).toHaveBeenCalledWith(fileName);
       expect(url).toBe(
@@ -621,11 +742,11 @@ describe("GCPBucketStore", () => {
     });
 
     it("should handle bucket name with hyphens", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
       const store = new GCPBucketStore("my-test-bucket-123");
-      const url = await store.storeFile("file.json", "{}");
+      const url = await store.storeFile("file.json", fileContent);
 
       expect(url).toContain("my-test-bucket-123");
     });
@@ -633,10 +754,10 @@ describe("GCPBucketStore", () => {
 
   describe("Error Type Verification", () => {
     it("should return string type on successful upload", async () => {
-      mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      const fileContent = "{}";
+      setupSuccessfulUpload(fileContent);
 
-      const url = await bucketStore.storeFile("test.json", "{}");
+      const url = await bucketStore.storeFile("test.json", fileContent);
 
       expect(typeof url).toBe("string");
       expect(url).toBeTruthy();
