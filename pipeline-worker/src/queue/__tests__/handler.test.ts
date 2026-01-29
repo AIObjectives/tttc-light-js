@@ -27,16 +27,27 @@ vi.mock("../../pipeline-runner/index.js", () => ({
   runPipeline: vi.fn(),
 }));
 
-describe("validateDataArray", () => {
-  const createComment = (
-    id: string,
-    text: string,
-  ): { comment_id: string; comment_text: string; speaker: string } => ({
-    comment_id: id,
-    comment_text: text,
-    speaker: "participant",
-  });
+// Test helpers
+const createComment = (
+  id: string,
+  text: string,
+): { comment_id: string; comment_text: string; speaker: string } => ({
+  comment_id: id,
+  comment_text: text,
+  speaker: "participant",
+});
 
+const expectValidationFailure = (
+  result: ReturnType<typeof validateDataArray>,
+  expectedMessage: string,
+) => {
+  expect(result.tag).toBe("failure");
+  if (result.tag === "failure") {
+    expect(result.error.message).toBe(expectedMessage);
+  }
+};
+
+describe("validateDataArray", () => {
   it("should return success for valid non-empty comments", () => {
     const data = [
       createComment("1", "This is a valid comment"),
@@ -49,64 +60,65 @@ describe("validateDataArray", () => {
 
   it("should return failure for empty data array", () => {
     const result = validateDataArray([]);
-    expect(result.tag).toBe("failure");
-    if (result.tag === "failure") {
-      expect(result.error.message).toBe(
-        "Data array is empty - no comments to process",
-      );
-    }
+    expectValidationFailure(
+      result,
+      "Data array is empty - no comments to process",
+    );
   });
 
-  it("should return failure for empty comment text", () => {
-    const data = [
-      createComment("1", "Valid comment"),
-      createComment("2", ""),
-      createComment("3", "Another valid comment"),
-    ];
-
-    const result = validateDataArray(data);
-    expect(result.tag).toBe("failure");
-    if (result.tag === "failure") {
-      expect(result.error.message).toBe(
+  it.each([
+    {
+      description: "empty comment text",
+      comments: [
+        createComment("1", "Valid comment"),
+        createComment("2", ""),
+        createComment("3", "Another valid comment"),
+      ],
+      expectedMessage:
         "Found 1 comment(s) with empty or whitespace-only text: 2",
-      );
-    }
-  });
-
-  it("should return failure for whitespace-only comment text", () => {
-    const data = [
-      createComment("1", "Valid comment"),
-      createComment("2", "   "),
-      createComment("3", "\t\n"),
-    ];
-
-    const result = validateDataArray(data);
-    expect(result.tag).toBe("failure");
-    if (result.tag === "failure") {
-      expect(result.error.message).toBe(
+    },
+    {
+      description: "whitespace-only comment text",
+      comments: [
+        createComment("1", "Valid comment"),
+        createComment("2", "   "),
+        createComment("3", "\t\n"),
+      ],
+      expectedMessage:
         "Found 2 comment(s) with empty or whitespace-only text: 2, 3",
-      );
-    }
-  });
-
-  it("should list up to 5 IDs when multiple empty comments exist", () => {
-    const data = [
-      createComment("id1", ""),
-      createComment("id2", "   "),
-      createComment("id3", ""),
-      createComment("id4", "  \t  "),
-      createComment("id5", ""),
-      createComment("id6", ""),
-      createComment("id7", ""),
-    ];
-
-    const result = validateDataArray(data);
-    expect(result.tag).toBe("failure");
-    if (result.tag === "failure") {
-      expect(result.error.message).toBe(
+    },
+    {
+      description: "multiple empty comments with 'and more' suffix",
+      comments: [
+        createComment("id1", ""),
+        createComment("id2", "   "),
+        createComment("id3", ""),
+        createComment("id4", "  \t  "),
+        createComment("id5", ""),
+        createComment("id6", ""),
+        createComment("id7", ""),
+      ],
+      expectedMessage:
         "Found 7 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5 and 2 more",
-      );
-    }
+    },
+    {
+      description: "exactly 5 empty comments without 'and more' suffix",
+      comments: [
+        createComment("id1", ""),
+        createComment("id2", ""),
+        createComment("id3", ""),
+        createComment("id4", ""),
+        createComment("id5", ""),
+      ],
+      expectedMessage:
+        "Found 5 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5",
+    },
+  ])("should return failure for $description", ({
+    comments,
+    expectedMessage,
+  }) => {
+    const result = validateDataArray(comments);
+    expectValidationFailure(result, expectedMessage);
   });
 
   it("should return success for comments with leading/trailing whitespace but content", () => {
@@ -125,82 +137,73 @@ describe("validateDataArray", () => {
     const result = validateDataArray(data);
     expect(result.tag).toBe("success");
   });
-
-  it("should handle exactly 5 empty comments without 'and more' suffix", () => {
-    const data = [
-      createComment("id1", ""),
-      createComment("id2", ""),
-      createComment("id3", ""),
-      createComment("id4", ""),
-      createComment("id5", ""),
-    ];
-
-    const result = validateDataArray(data);
-    expect(result.tag).toBe("failure");
-    if (result.tag === "failure") {
-      expect(result.error.message).toBe(
-        "Found 5 comment(s) with empty or whitespace-only text: id1, id2, id3, id4, id5",
-      );
-    }
-  });
 });
 
-describe("saveSuccessfulPipeline rollback behavior", () => {
-  type MockStorage = {
-    storeFile: ReturnType<typeof vi.fn>;
-    deleteFile: ReturnType<typeof vi.fn>;
-    fileExists: ReturnType<typeof vi.fn>;
+// Shared test helper for rollback behavior tests
+type MockStorage = {
+  storeFile: ReturnType<typeof vi.fn>;
+  deleteFile: ReturnType<typeof vi.fn>;
+  fileExists: ReturnType<typeof vi.fn>;
+};
+
+type MockRefStore = {
+  Report: {
+    get: ReturnType<typeof vi.fn>;
+    modify: ReturnType<typeof vi.fn>;
   };
+};
 
-  type MockRefStore = {
-    Report: {
-      get: ReturnType<typeof vi.fn>;
-      modify: ReturnType<typeof vi.fn>;
-    };
+type MockPipelineResult = {
+  sortedTree: Array<
+    [string, { topics: Array<never>; counts: { claims: number } }]
+  >;
+  completedAt: string;
+};
+
+type MockData = {
+  reportDetails: {
+    title: string;
+    description: string;
   };
+  data: Array<{ comment_id: string; comment_text: string; speaker: string }>;
+};
 
-  const saveSuccessfulPipeline = async (
-    result: { sortedTree: unknown[]; completedAt: string },
-    data: {
-      reportDetails: { title: string; description: string };
-      data: Array<{
-        comment_id: string;
-        comment_text: string;
-        speaker: string;
-      }>;
-    },
-    reportId: string,
-    storage: MockStorage,
-    refStore: MockRefStore,
-  ) => {
-    const reportUrl = await storage.storeFile(
-      `${reportId}.json`,
-      JSON.stringify(result),
-    );
+const saveSuccessfulPipeline = async (
+  result: MockPipelineResult,
+  data: MockData,
+  reportId: string,
+  storage: MockStorage,
+  refStore: MockRefStore,
+) => {
+  const reportUrl = await storage.storeFile(
+    `${reportId}.json`,
+    JSON.stringify(result),
+  );
 
+  try {
+    const reportRef = await refStore.Report.get(reportId);
+    await refStore.Report.modify(reportId, {
+      ...reportRef,
+      reportDataUri: reportUrl,
+      status: "completed",
+    });
+  } catch (firestoreError) {
     try {
-      const reportRef = await refStore.Report.get(reportId);
-      await refStore.Report.modify(reportId, {
-        ...reportRef,
-        reportDataUri: reportUrl,
-        status: "completed",
-      });
-    } catch (firestoreError) {
-      try {
-        await storage.deleteFile(`${reportId}.json`);
-      } catch (deleteError) {
-        // Log but don't throw
-      }
-      throw firestoreError;
+      await storage.deleteFile(`${reportId}.json`);
+    } catch (deleteError) {
+      // Log but don't throw - deletion failure shouldn't mask original error
     }
-  };
+    throw firestoreError;
+  }
+};
 
-  const createMockPipelineResult = () => ({
+describe("saveSuccessfulPipeline rollback behavior", () => {
+  const createMockPipelineResult = (): MockPipelineResult => ({
     sortedTree: [["topic1", { topics: [], counts: { claims: 5 } }]],
     completedAt: new Date().toISOString(),
   });
 
-  const createMockData = () => ({
+  const createMockData = (): MockData => ({
     reportDetails: {
       title: "Test Report",
       description: "Test Description",
