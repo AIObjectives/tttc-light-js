@@ -86,7 +86,15 @@ async function verifyLockBeforeSave(
 function validateResultStructure(
   result: unknown,
   stepName: PipelineStepName,
-): result is { data: unknown; usage: unknown; cost: number } {
+): result is
+  | { data: unknown; usage: unknown; cost: number }
+  | {
+      subtopicCruxes: unknown;
+      topicScores: unknown;
+      speakerCruxMatrix: unknown;
+      usage: unknown;
+      cost: number;
+    } {
   if (!result || typeof result !== "object") {
     runnerLogger.warn(
       { stepName, resultType: typeof result, isNull: result === null },
