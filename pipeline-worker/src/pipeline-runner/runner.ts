@@ -852,8 +852,11 @@ async function executeAllSteps(
         stepName,
       );
 
-      // Update in-memory state to reflect new count
-      currentState.validationFailures[stepName] = newFailureCount;
+      // Note: We do not update currentState.validationFailures here because:
+      // 1. Redis counter is the source of truth (read via getValidationFailureCount)
+      // 2. In-memory update would not persist until state is saved later
+      // 3. This prevents race condition if process crashes before state save
+      // The counter will be synced to state JSON when save() is eventually called
 
       // If validation fails, we cannot use this result and must re-run the step
       reportLogger.error(

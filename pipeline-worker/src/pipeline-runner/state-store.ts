@@ -347,9 +347,14 @@ export class RedisPipelineStateStore implements PipelineStateStore {
 
     for (const step of steps) {
       const count = state.validationFailures[step];
+      const counterKey = getValidationFailureKey(state.reportId, step);
+
       if (count > 0) {
-        const counterKey = getValidationFailureKey(state.reportId, step);
+        // Update counter in Redis
         await this.cache.set(counterKey, String(count), { ttl });
+      } else {
+        // Delete counter key when reset to 0 to prevent stale data
+        await this.cache.delete(counterKey);
       }
     }
   }
