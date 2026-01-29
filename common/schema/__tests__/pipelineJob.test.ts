@@ -52,230 +52,144 @@ describe("pipelineJobSchema validation", () => {
     });
   });
 
-  // @codescene(disable:"Code Duplication") <-- reason:"Test cases are similar by nature"
   describe("empty string validation", () => {
     const emptyStringTestCases: Array<{
       name: string;
-      createInvalidData: (base: typeof validPipelineJob) => unknown;
+      path: string[];
       expectedError: string;
     }> = [
       {
         name: "systemInstructions",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            instructions: {
-              ...base.config.instructions,
-              systemInstructions: "",
-            },
-          },
-        }),
+        path: ["config", "instructions", "systemInstructions"],
         expectedError: "System instructions cannot be empty",
       },
       {
         name: "clusteringInstructions",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            instructions: {
-              ...base.config.instructions,
-              clusteringInstructions: "",
-            },
-          },
-        }),
+        path: ["config", "instructions", "clusteringInstructions"],
         expectedError: "Clustering instructions cannot be empty",
       },
       {
         name: "extractionInstructions",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            instructions: {
-              ...base.config.instructions,
-              extractionInstructions: "",
-            },
-          },
-        }),
+        path: ["config", "instructions", "extractionInstructions"],
         expectedError: "Extraction instructions cannot be empty",
       },
       {
         name: "dedupInstructions",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            instructions: {
-              ...base.config.instructions,
-              dedupInstructions: "",
-            },
-          },
-        }),
+        path: ["config", "instructions", "dedupInstructions"],
         expectedError: "Dedup instructions cannot be empty",
       },
       {
         name: "summariesInstructions",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            instructions: {
-              ...base.config.instructions,
-              summariesInstructions: "",
-            },
-          },
-        }),
+        path: ["config", "instructions", "summariesInstructions"],
         expectedError: "Summaries instructions cannot be empty",
       },
       {
         name: "cruxInstructions",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            instructions: {
-              ...base.config.instructions,
-              cruxInstructions: "",
-            },
-          },
-        }),
+        path: ["config", "instructions", "cruxInstructions"],
         expectedError: "Crux instructions cannot be empty",
       },
       {
         name: "model name",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            llm: {
-              model: "",
-            },
-          },
-        }),
+        path: ["config", "llm", "model"],
         expectedError: "Model name cannot be empty",
       },
       {
         name: "API key",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            env: {
-              OPENAI_API_KEY: "",
-            },
-          },
-        }),
+        path: ["config", "env", "OPENAI_API_KEY"],
         expectedError: "API key cannot be empty",
       },
       {
         name: "reportId",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            firebaseDetails: {
-              ...base.config.firebaseDetails,
-              reportId: "",
-            },
-          },
-        }),
+        path: ["config", "firebaseDetails", "reportId"],
         expectedError: "Report ID cannot be empty",
       },
       {
         name: "userId",
-        createInvalidData: (base) => ({
-          ...base,
-          config: {
-            ...base.config,
-            firebaseDetails: {
-              ...base.config.firebaseDetails,
-              userId: "",
-            },
-          },
-        }),
+        path: ["config", "firebaseDetails", "userId"],
         expectedError: "User ID cannot be empty",
       },
       {
         name: "title",
-        createInvalidData: (base) => ({
-          ...base,
-          reportDetails: {
-            ...base.reportDetails,
-            title: "",
-          },
-        }),
+        path: ["reportDetails", "title"],
         expectedError: "Title cannot be empty",
       },
       {
         name: "description",
-        createInvalidData: (base) => ({
-          ...base,
-          reportDetails: {
-            ...base.reportDetails,
-            description: "",
-          },
-        }),
+        path: ["reportDetails", "description"],
         expectedError: "Description cannot be empty",
       },
       {
         name: "question",
-        createInvalidData: (base) => ({
-          ...base,
-          reportDetails: {
-            ...base.reportDetails,
-            question: "",
-          },
-        }),
+        path: ["reportDetails", "question"],
         expectedError: "Question cannot be empty",
       },
       {
         name: "filename",
-        createInvalidData: (base) => ({
-          ...base,
-          reportDetails: {
-            ...base.reportDetails,
-            filename: "",
-          },
-        }),
+        path: ["reportDetails", "filename"],
         expectedError: "Filename cannot be empty",
       },
+    ];
+
+    const commentFieldTestCases: Array<{
+      name: string;
+      field: "comment_id" | "comment_text";
+      expectedError: string;
+    }> = [
       {
         name: "comment_id",
-        createInvalidData: (base) => ({
-          ...base,
-          data: [
-            {
-              comment_id: "",
-              comment_text: "Valid text",
-              speaker: "participant",
-            },
-          ],
-        }),
+        field: "comment_id",
         expectedError: "Comment ID cannot be empty",
       },
       {
         name: "comment_text",
-        createInvalidData: (base) => ({
-          ...base,
-          data: [
-            {
-              comment_id: "comment-1",
-              comment_text: "",
-              speaker: "participant",
-            },
-          ],
-        }),
+        field: "comment_text",
         expectedError: "Comment text cannot be empty",
       },
     ];
 
+    function setNestedValue(
+      obj: unknown,
+      path: string[],
+      value: unknown,
+    ): unknown {
+      if (path.length === 0) return value;
+      const [head, ...tail] = path;
+      return {
+        ...(obj as Record<string, unknown>),
+        [head]: setNestedValue(
+          (obj as Record<string, unknown>)[head],
+          tail,
+          value,
+        ),
+      };
+    }
+
     it.each(emptyStringTestCases)("should reject empty $name", ({
-      createInvalidData,
+      path,
       expectedError,
     }) => {
-      const invalid = createInvalidData(validPipelineJob);
+      const invalid = setNestedValue(validPipelineJob, path, "");
+      const result = pipelineJobSchema.safeParse(invalid);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe(expectedError);
+      }
+    });
+
+    it.each(commentFieldTestCases)("should reject empty $name", ({
+      field,
+      expectedError,
+    }) => {
+      const invalid = {
+        ...validPipelineJob,
+        data: [
+          {
+            comment_id: field === "comment_id" ? "" : "comment-1",
+            comment_text: field === "comment_text" ? "" : "Valid text",
+            speaker: "participant",
+          },
+        ],
+      };
       const result = pipelineJobSchema.safeParse(invalid);
       expect(result.success).toBe(false);
       if (!result.success) {
