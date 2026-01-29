@@ -51,8 +51,8 @@ describe("pipelineJobSchema validation", () => {
     });
   });
 
+  // @codescene(disable:"Code Duplication") <-- reason:"Test cases are similar by nature"
   describe("empty string validation", () => {
-    // codescene:ignore-start - Validation test cases require similar structure
     const emptyStringTestCases: Array<{
       name: string;
       createInvalidData: (base: typeof validPipelineJob) => unknown;
@@ -269,7 +269,6 @@ describe("pipelineJobSchema validation", () => {
         expectedError: "Comment text cannot be empty",
       },
     ];
-    // codescene:ignore-end
 
     it.each(emptyStringTestCases)("should reject empty $name", ({
       createInvalidData,
