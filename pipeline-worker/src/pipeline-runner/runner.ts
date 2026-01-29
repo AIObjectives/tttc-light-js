@@ -905,26 +905,6 @@ async function executeAllSteps(
   ): Promise<Result<T | undefined, PipelineStepError>> => {
     if (!result) return success(undefined);
     if (!validateResultStructure(result, stepName)) {
-      // Get current failure count atomically from Redis
-      const failureCount = await stateStore.getValidationFailureCount(
-        state.reportId,
-        stepName,
-      );
-
-      // If we've exceeded the retry limit, fail the pipeline permanently
-      if (failureCount >= MAX_VALIDATION_FAILURES) {
-        return failure(
-          new PipelineStepError(
-            stepName,
-            new Error(
-              `Step result validation failed ${failureCount} times - state is permanently corrupted. ` +
-                `This may indicate a schema version mismatch or data serialization issue.`,
-            ),
-            currentState,
-          ),
-        );
-      }
-
       // Atomically increment failure counter in Redis
       // This ensures the counter persists across crashes and prevents race conditions
       const newFailureCount = await stateStore.incrementValidationFailure(
@@ -932,8 +912,24 @@ async function executeAllSteps(
         stepName,
       );
 
+      // If we've exceeded the retry limit, fail the pipeline permanently
+      // Check AFTER incrementing to avoid race condition where two workers
+      // both read count=2, both pass check, both increment → count=4 when MAX=3
+      if (newFailureCount > MAX_VALIDATION_FAILURES) {
+        return failure(
+          new PipelineStepError(
+            stepName,
+            new Error(
+              `Step result validation failed ${newFailureCount} times - state is permanently corrupted. ` +
+                `This may indicate a schema version mismatch or data serialization issue.`,
+            ),
+            currentState,
+          ),
+        );
+      }
+
       // Note: We do not update currentState.validationFailures here because:
-      // 1. Redis counter is the source of truth (read via getValidationFailureCount)
+      // 1. Redis counter is the source of truth (atomically incremented above)
       // 2. In-memory update would not persist until state is saved later
       // 3. This prevents race condition if process crashes before state save
       // The counter will be synced to state JSON when save() is eventually called

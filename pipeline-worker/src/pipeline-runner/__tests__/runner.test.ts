@@ -707,7 +707,7 @@ describe("Pipeline Runner", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeInstanceOf(PipelineStepError);
-      expect(result.error?.message).toContain("validation failed 3 times");
+      expect(result.error?.message).toContain("validation failed 4 times");
       expect(result.error?.message).toContain("permanently corrupted");
     });
 
