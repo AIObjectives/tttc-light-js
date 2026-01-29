@@ -139,6 +139,17 @@ export interface Cache {
   extendLock(key: string, value: string, ttlSeconds: number): Promise<boolean>;
 
   /**
+   * Verifies that a distributed lock is held by the specified value atomically.
+   * This prevents TOCTOU race conditions by checking lock ownership in a single operation.
+   *
+   * @param key - The lock key
+   * @param value - Unique identifier to verify against
+   * @returns true if lock exists and is held by the specified value, false otherwise
+   * @throws {CacheGetError} When the operation fails
+   */
+  verifyLock(key: string, value: string): Promise<boolean>;
+
+  /**
    * Atomically increments a counter by 1 and returns the new value.
    *
    * @param key - The counter key

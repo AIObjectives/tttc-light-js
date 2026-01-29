@@ -255,6 +255,9 @@ export class RedisPipelineStateStore implements PipelineStateStore {
    * Checks if we still hold the pipeline execution lock.
    * Use this before critical state updates to prevent race conditions.
    *
+   * Uses an atomic Lua script to verify lock ownership, preventing TOCTOU race
+   * conditions where the lock could expire between reading and comparing the value.
+   *
    * @param reportId - Report identifier
    * @param lockValue - Unique identifier that acquired the lock
    * @returns true if we still hold the lock, false otherwise
@@ -265,8 +268,7 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   ): Promise<boolean> {
     const lockKey = getLockKey(reportId);
     try {
-      const currentValue = await this.cache.get(lockKey);
-      return currentValue === lockValue;
+      return await this.cache.verifyLock(lockKey, lockValue);
     } catch {
       return false;
     }

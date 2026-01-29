@@ -240,6 +240,36 @@ export class RedisCache implements Cache {
   }
 
   /**
+   * Verifies that a distributed lock is held by the specified value atomically.
+   *
+   * @param key - The lock key
+   * @param value - Unique identifier to verify against
+   * @returns true if lock exists and is held by the specified value, false otherwise
+   * @throws {CacheGetError} When the operation fails
+   */
+  async verifyLock(key: string, value: string): Promise<boolean> {
+    try {
+      // Lua script to atomically check if lock exists and matches the value
+      // This ensures we get an atomic snapshot of the lock state
+      const script = `
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+          return 1
+        else
+          return 0
+        end
+      `;
+
+      const result = await this.client.eval(script, 1, key, value);
+      return result === 1;
+    } catch (error) {
+      throw new CacheGetError(
+        key,
+        `Lock verification failed: ${formatError(error)}`,
+      );
+    }
+  }
+
+  /**
    * Atomically increments a counter by 1 and returns the new value.
    * Optionally sets a TTL on the key after incrementing.
    *

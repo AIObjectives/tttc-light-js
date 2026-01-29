@@ -184,6 +184,10 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
       if (!lockValue || lockValue !== value) return false;
       return true;
     },
+    async verifyLock(key: string, value: string): Promise<boolean> {
+      const lockValue = storage.get(key);
+      return lockValue === value;
+    },
     async increment(key: string, _ttlSeconds?: number): Promise<number> {
       const currentValue = storage.get(key);
       const newValue = currentValue ? parseInt(currentValue, 10) + 1 : 1;

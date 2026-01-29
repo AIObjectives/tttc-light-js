@@ -309,6 +309,15 @@ function createInMemoryCache(): Cache {
       storage.set(key, { value, expiresAt });
       return true;
     },
+    async verifyLock(key: string, value: string): Promise<boolean> {
+      const lockEntry = storage.get(key);
+      if (!lockEntry) return false;
+      if (lockEntry.expiresAt && Date.now() > lockEntry.expiresAt) {
+        storage.delete(key);
+        return false;
+      }
+      return lockEntry.value === value;
+    },
     async increment(key: string, ttlSeconds?: number): Promise<number> {
       const entry = storage.get(key);
       const currentValue = entry?.value;

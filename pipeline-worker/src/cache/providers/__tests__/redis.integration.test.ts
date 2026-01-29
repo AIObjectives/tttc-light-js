@@ -254,11 +254,13 @@ describe("Redis Integration Tests", () => {
       const result = await cache.get(testKey);
 
       expect(result).toBe(jsonValue);
-      expect(JSON.parse(result!)).toEqual({
-        foo: "bar",
-        nested: { val: 123 },
-        array: [1, 2, 3],
-      });
+      if (result !== null) {
+        expect(JSON.parse(result)).toEqual({
+          foo: "bar",
+          nested: { val: 123 },
+          array: [1, 2, 3],
+        });
+      }
 
       await cache.delete(testKey);
     });
@@ -629,6 +631,42 @@ describe("Redis Integration Tests", () => {
       expect(acquired).toBe(true);
 
       await cache.releaseLock(lockKey, "worker-2");
+    });
+
+    it("should verify lock is held by correct value", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:verify-correct`;
+      const lockValue = "worker-1";
+
+      await cache.acquireLock(lockKey, lockValue, 10);
+      const verified = await cache.verifyLock(lockKey, lockValue);
+
+      expect(verified).toBe(true);
+
+      await cache.releaseLock(lockKey, lockValue);
+    });
+
+    it("should fail verification with wrong value", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:verify-wrong`;
+
+      await cache.acquireLock(lockKey, "worker-1", 10);
+      const verified = await cache.verifyLock(lockKey, "worker-2");
+
+      expect(verified).toBe(false);
+
+      await cache.releaseLock(lockKey, "worker-1");
+    });
+
+    it("should fail verification when lock does not exist", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:verify-nonexistent`;
+      const verified = await cache.verifyLock(lockKey, "worker-1");
+
+      expect(verified).toBe(false);
     });
   });
 
