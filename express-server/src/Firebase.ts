@@ -6,6 +6,7 @@ import {
   type UserDocument,
   useGetCollectionName,
 } from "tttc-common/firebase";
+import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { FIRESTORE_ID_REGEX, isValidReportUri } from "tttc-common/utils";
 import { z } from "zod";
@@ -263,52 +264,67 @@ export async function updateReportRefWithStats(
     numPeople: number;
     createdDate?: Date;
   },
-) {
-  // Input validation
-  reportIdSchema.parse(reportId);
-  jobIdSchema.parse(jobId);
-  reportStatsSchema.parse(stats);
+): Promise<Result<void, Error>> {
+  try {
+    // Input validation
+    reportIdSchema.parse(reportId);
+    jobIdSchema.parse(jobId);
+    reportStatsSchema.parse(stats);
 
-  const docRef = db.collection(getCollectionName("REPORT_REF")).doc(reportId);
+    const docRef = db.collection(getCollectionName("REPORT_REF")).doc(reportId);
 
-  await db.runTransaction(async (transaction) => {
-    const doc = await transaction.get(docRef);
-    if (!doc.exists) {
-      throw new Error(`Report ref ${reportId} not found`);
-    }
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      if (!doc.exists) {
+        throw new Error(`Report ref ${reportId} not found`);
+      }
 
-    const updateData: any = {
-      numTopics: stats.numTopics,
-      numSubtopics: stats.numSubtopics,
-      numClaims: stats.numClaims,
-      numPeople: stats.numPeople,
-      title: stats.title, // Title is now required
-      jobId: jobId, // Update job ID
-    };
+      const updateData: any = {
+        numTopics: stats.numTopics,
+        numSubtopics: stats.numSubtopics,
+        numClaims: stats.numClaims,
+        numPeople: stats.numPeople,
+        title: stats.title, // Title is now required
+        jobId: jobId, // Update job ID
+      };
 
-    // Only update description if provided
-    if (stats.description) {
-      updateData.description = stats.description;
-    }
-    if (stats.createdDate) {
-      const timestamp = admin.firestore.Timestamp.fromDate(stats.createdDate);
-      updateData.createdDate = timestamp;
-    }
+      // Only update description if provided
+      if (stats.description) {
+        updateData.description = stats.description;
+      }
+      if (stats.createdDate) {
+        const timestamp = admin.firestore.Timestamp.fromDate(stats.createdDate);
+        updateData.createdDate = timestamp;
+      }
 
-    transaction.update(docRef, updateData);
-  });
+      transaction.update(docRef, updateData);
+    });
 
-  firebaseLogger.info(
-    {
-      reportId,
-      jobId,
-      numTopics: stats.numTopics,
-      numSubtopics: stats.numSubtopics,
-      numClaims: stats.numClaims,
-      numPeople: stats.numPeople,
-    },
-    "Updated ReportRef with final statistics",
-  );
+    firebaseLogger.info(
+      {
+        reportId,
+        jobId,
+        numTopics: stats.numTopics,
+        numSubtopics: stats.numSubtopics,
+        numClaims: stats.numClaims,
+        numPeople: stats.numPeople,
+      },
+      "Updated ReportRef with final statistics",
+    );
+
+    return success(undefined);
+  } catch (error) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    firebaseLogger.error(
+      {
+        error: errorObj,
+        reportId,
+        jobId,
+      },
+      "Failed to update ReportRef with final statistics",
+    );
+    return failure(errorObj);
+  }
 }
 
 export class JobNotFoundError extends Error {}
@@ -343,7 +359,7 @@ export async function updateReportJobDataUri(
 export async function updateReportRefDataUri(
   reportId: string,
   reportDataUri: string,
-) {
+): Promise<Result<void, Error>> {
   try {
     const docRef = db.collection(getCollectionName("REPORT_REF")).doc(reportId);
     await updateDocumentWithValidation(
@@ -352,12 +368,14 @@ export async function updateReportRefDataUri(
       `Report ref ${reportId} not found`,
     );
     firebaseLogger.info({ reportId }, "Updated reportDataUri for report ref");
+    return success(undefined);
   } catch (error) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
     firebaseLogger.error(
-      { error, reportId },
+      { error: errorObj, reportId },
       "Failed to update reportDataUri for report ref",
     );
-    throw error;
+    return failure(errorObj);
   }
 }
 

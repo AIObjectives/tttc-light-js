@@ -1,6 +1,7 @@
 export * from "./googlepubsub";
 
 import { PubSub } from "@google-cloud/pubsub";
+import { pipelineJobSchema } from "tttc-common/schema";
 import { z } from "zod";
 import { GooglePubSub } from "./googlepubsub";
 
@@ -98,8 +99,7 @@ export const createPubSubFactory = ({
  * Interface containing our pubsub services
  */
 export interface PubSubServices {
-  // TODO
-  placeholder: PubSubInterface<any>;
+  pipeline: PubSubInterface<typeof pipelineJobSchema>;
 }
 
 /**
@@ -115,6 +115,6 @@ export const PubSubServicesLive = async (env: {
   });
 
   return {
-    placeholder: await factory("placeholder", z.any()),
+    pipeline: await factory("pipeline-jobs", pipelineJobSchema),
   };
 };

@@ -73,6 +73,15 @@ function createMockCache(): Cache & {
       ttls.set(key, ttlSeconds);
       return true;
     },
+    async increment(key: string, ttlSeconds?: number): Promise<number> {
+      const currentValue = storage.get(key);
+      const newValue = currentValue ? parseInt(currentValue, 10) + 1 : 1;
+      storage.set(key, String(newValue));
+      if (ttlSeconds) {
+        ttls.set(key, ttlSeconds);
+      }
+      return newValue;
+    },
   };
 }
 

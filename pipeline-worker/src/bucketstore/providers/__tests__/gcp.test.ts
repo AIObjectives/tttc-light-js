@@ -11,8 +11,10 @@ import { GCPBucketStore } from "../gcp";
  */
 vi.mock("@google-cloud/storage", () => {
   const mockSave = vi.fn();
+  const mockExists = vi.fn();
   const mockFile = vi.fn(() => ({
     save: mockSave,
+    exists: mockExists,
   }));
   const mockBucket = vi.fn(() => ({
     file: mockFile,
@@ -28,10 +30,12 @@ vi.mock("@google-cloud/storage", () => {
 
 describe("GCPBucketStore", () => {
   let bucketStore: GCPBucketStore;
+  // biome-ignore lint/suspicious/noExplicitAny: Mocking Google Cloud Storage instance
   let mockStorage: any;
   let mockBucket: Mock;
   let mockFile: Mock;
   let mockSave: Mock;
+  let mockExists: Mock;
 
   /**
    * Before each test, we need to:
@@ -50,6 +54,7 @@ describe("GCPBucketStore", () => {
     mockFile = bucketInstance.file;
     const fileInstance = mockFile();
     mockSave = fileInstance.save;
+    mockExists = fileInstance.exists;
 
     // Create a new instance for each test
     bucketStore = new GCPBucketStore("test-bucket");
@@ -267,6 +272,7 @@ describe("GCPBucketStore", () => {
 
     it("should handle error with null message", async () => {
       const errorWithNull = new Error();
+      // biome-ignore lint/suspicious/noExplicitAny: Testing edge case with malformed error
       errorWithNull.message = null as any;
       mockSave.mockRejectedValue(errorWithNull);
 
@@ -654,6 +660,127 @@ describe("GCPBucketStore", () => {
           expect(error.reason).toBe("Main message");
         }
       }
+    });
+  });
+
+  describe("fileExists - Success Scenarios", () => {
+    it("should return true when file exists", async () => {
+      mockExists.mockResolvedValue([true]);
+
+      const result = await bucketStore.fileExists("test-file.json");
+
+      expect(result.exists).toBe(true);
+      expect(result.error).toBeUndefined();
+      expect(mockBucket).toHaveBeenCalledWith("test-bucket");
+      expect(mockFile).toHaveBeenCalledWith("test-file.json");
+      expect(mockExists).toHaveBeenCalled();
+    });
+
+    it("should return false when file does not exist", async () => {
+      mockExists.mockResolvedValue([false]);
+
+      const result = await bucketStore.fileExists("missing-file.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeUndefined();
+      expect(mockBucket).toHaveBeenCalledWith("test-bucket");
+      expect(mockFile).toHaveBeenCalledWith("missing-file.json");
+      expect(mockExists).toHaveBeenCalled();
+    });
+
+    it("should handle different file paths", async () => {
+      mockExists.mockResolvedValue([true]);
+
+      const result = await bucketStore.fileExists("folder/subfolder/file.json");
+
+      expect(result.exists).toBe(true);
+      expect(mockFile).toHaveBeenCalledWith("folder/subfolder/file.json");
+    });
+  });
+
+  describe("fileExists - Error Scenarios", () => {
+    it("should return error result for permission errors with string matching", async () => {
+      mockExists.mockRejectedValue(new Error("Permission denied"));
+
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toContain("Failed to check file existence");
+      expect(result.error?.message).toContain("Permission denied");
+      expect(result.errorType).toBe("permission");
+    });
+
+    it("should categorize network errors as transient", async () => {
+      mockExists.mockRejectedValue(new Error("Network timeout"));
+
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("transient");
+    });
+
+    it("should categorize 403 errors as permission using ApiError.code", async () => {
+      const error = new Error("Access denied");
+      (error as { code?: number }).code = 403;
+
+      mockExists.mockRejectedValue(error);
+
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("permission");
+    });
+
+    it("should categorize 404 errors as not_found using ApiError.code", async () => {
+      const error = new Error("Not found");
+      (error as { code?: number }).code = 404;
+
+      mockExists.mockRejectedValue(error);
+
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("not_found");
+    });
+
+    it("should categorize 503 errors as transient using ApiError.code", async () => {
+      const error = new Error("Service unavailable");
+      (error as { code?: number }).code = 503;
+
+      mockExists.mockRejectedValue(error);
+
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("transient");
+    });
+
+    it("should categorize 400 errors as permanent using ApiError.code", async () => {
+      const error = new Error("Bad request");
+      (error as { code?: number }).code = 400;
+
+      mockExists.mockRejectedValue(error);
+
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("permanent");
+    });
+
+    it("should categorize unknown errors as permanent", async () => {
+      mockExists.mockRejectedValue(new Error("Unknown error"));
+
+      const result = await bucketStore.fileExists("test.json");
+
+      expect(result.exists).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.errorType).toBe("permanent");
     });
   });
 });
