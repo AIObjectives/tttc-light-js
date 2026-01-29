@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BucketStore } from "../../bucketstore/index.js";
 import type { RefStoreServices } from "../../datastore/refstore/index.js";
 import type { RedisPipelineStateStore } from "../../pipeline-runner/state-store.js";
-import type { PipelineState } from "../../pipeline-runner/types.js";
+import type {
+  PipelineState,
+  PipelineStepName,
+} from "../../pipeline-runner/types.js";
 import type { SortAndDeduplicateResult } from "../../pipeline-steps/types.js";
 import { handlePipelineJob, validateDataArray } from "../handler";
 import type { PubSubMessage } from "../index.js";
@@ -323,6 +326,87 @@ describe("handlePipelineJob - save-only retry", () => {
     cost: 0.001,
   };
 
+  // Helper to create step analytics with completed status
+  const createStepAnalytics = (
+    stepName: PipelineStepName,
+    startTime: string,
+    endTime: string,
+    tokens: number,
+    cost: number,
+  ) => ({
+    stepName,
+    status: "completed" as const,
+    startedAt: startTime,
+    completedAt: endTime,
+    durationMs: 900000,
+    totalTokens: tokens,
+    cost,
+  });
+
+  // Helper to create completed results for all pipeline steps
+  const createCompletedResults = () => ({
+    clustering: {
+      data: [
+        {
+          topicName: "Test Topic",
+          topicShortDescription: "A test topic",
+          subtopics: [
+            {
+              subtopicName: "Test Subtopic",
+              subtopicShortDescription: "A test subtopic",
+            },
+          ],
+        },
+      ],
+      usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+      cost: 0.001,
+    },
+    claims: {
+      data: {
+        "Test Topic": {
+          total: 1,
+          subtopics: {
+            "Test Subtopic": {
+              total: 1,
+              claims: [
+                {
+                  claim: "Test claim",
+                  quote: "Test quote",
+                  speaker: "Speaker1",
+                  topicName: "Test Topic",
+                  subtopicName: "Test Subtopic",
+                  commentId: "c1",
+                },
+              ],
+            },
+          },
+        },
+      },
+      usage: { input_tokens: 200, output_tokens: 100, total_tokens: 300 },
+      cost: 0.002,
+    },
+    sort_and_deduplicate: mockSortedResult,
+    summaries: {
+      data: [
+        {
+          topicName: "Test Topic",
+          summary: "Test summary",
+        },
+      ],
+      usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
+      cost: 0.0018,
+    },
+  });
+
+  // Helper to create validation failures object
+  const createValidationFailures = () => ({
+    clustering: 0,
+    claims: 0,
+    sort_and_deduplicate: 0,
+    summaries: 0,
+    cruxes: 0,
+  });
+
   const createCompletedState = (): PipelineState => ({
     version: "1.0",
     reportId: "test-report-123",
@@ -331,107 +415,41 @@ describe("handlePipelineJob - save-only retry", () => {
     updatedAt: new Date("2026-01-01T01:00:00Z").toISOString(),
     status: "completed",
     stepAnalytics: {
-      clustering: {
-        stepName: "clustering",
-        status: "completed",
-        startedAt: new Date("2026-01-01T00:00:00Z").toISOString(),
-        completedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
-        durationMs: 900000,
-        totalTokens: 150,
-        cost: 0.001,
-      },
-      claims: {
-        stepName: "claims",
-        status: "completed",
-        startedAt: new Date("2026-01-01T00:15:00Z").toISOString(),
-        completedAt: new Date("2026-01-01T00:30:00Z").toISOString(),
-        durationMs: 900000,
-        totalTokens: 300,
-        cost: 0.002,
-      },
-      sort_and_deduplicate: {
-        stepName: "sort_and_deduplicate",
-        status: "completed",
-        startedAt: new Date("2026-01-01T00:30:00Z").toISOString(),
-        completedAt: new Date("2026-01-01T00:45:00Z").toISOString(),
-        durationMs: 900000,
-        totalTokens: 200,
-        cost: 0.0015,
-      },
-      summaries: {
-        stepName: "summaries",
-        status: "completed",
-        startedAt: new Date("2026-01-01T00:45:00Z").toISOString(),
-        completedAt: new Date("2026-01-01T01:00:00Z").toISOString(),
-        durationMs: 900000,
-        totalTokens: 250,
-        cost: 0.0018,
-      },
+      clustering: createStepAnalytics(
+        "clustering",
+        new Date("2026-01-01T00:00:00Z").toISOString(),
+        new Date("2026-01-01T00:15:00Z").toISOString(),
+        150,
+        0.001,
+      ),
+      claims: createStepAnalytics(
+        "claims",
+        new Date("2026-01-01T00:15:00Z").toISOString(),
+        new Date("2026-01-01T00:30:00Z").toISOString(),
+        300,
+        0.002,
+      ),
+      sort_and_deduplicate: createStepAnalytics(
+        "sort_and_deduplicate",
+        new Date("2026-01-01T00:30:00Z").toISOString(),
+        new Date("2026-01-01T00:45:00Z").toISOString(),
+        200,
+        0.0015,
+      ),
+      summaries: createStepAnalytics(
+        "summaries",
+        new Date("2026-01-01T00:45:00Z").toISOString(),
+        new Date("2026-01-01T01:00:00Z").toISOString(),
+        250,
+        0.0018,
+      ),
       cruxes: {
         stepName: "cruxes",
         status: "skipped",
       },
     },
-    completedResults: {
-      clustering: {
-        data: [
-          {
-            topicName: "Test Topic",
-            topicShortDescription: "A test topic",
-            subtopics: [
-              {
-                subtopicName: "Test Subtopic",
-                subtopicShortDescription: "A test subtopic",
-              },
-            ],
-          },
-        ],
-        usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-        cost: 0.001,
-      },
-      claims: {
-        data: {
-          "Test Topic": {
-            total: 1,
-            subtopics: {
-              "Test Subtopic": {
-                total: 1,
-                claims: [
-                  {
-                    claim: "Test claim",
-                    quote: "Test quote",
-                    speaker: "Speaker1",
-                    topicName: "Test Topic",
-                    subtopicName: "Test Subtopic",
-                    commentId: "c1",
-                  },
-                ],
-              },
-            },
-          },
-        },
-        usage: { input_tokens: 200, output_tokens: 100, total_tokens: 300 },
-        cost: 0.002,
-      },
-      sort_and_deduplicate: mockSortedResult,
-      summaries: {
-        data: [
-          {
-            topicName: "Test Topic",
-            summary: "Test summary",
-          },
-        ],
-        usage: { input_tokens: 150, output_tokens: 100, total_tokens: 250 },
-        cost: 0.0018,
-      },
-    },
-    validationFailures: {
-      clustering: 0,
-      claims: 0,
-      sort_and_deduplicate: 0,
-      summaries: 0,
-      cruxes: 0,
-    },
+    completedResults: createCompletedResults(),
+    validationFailures: createValidationFailures(),
     totalTokens: 900,
     totalCost: 0.0063,
     totalDurationMs: 3600000,
