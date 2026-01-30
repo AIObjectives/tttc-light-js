@@ -25,6 +25,7 @@ interface MockFileInstance {
   exists: Mock;
   delete: Mock;
   move: Mock;
+  getMetadata: Mock;
 }
 
 interface MockBucketInstance {
@@ -36,15 +37,25 @@ interface MockStorageInstance {
 }
 
 vi.mock("@google-cloud/storage", () => {
-  const mockSave = vi.fn();
+  // Track saved content globally for size verification
+  let lastSavedContent = "";
+
+  const mockSave = vi.fn().mockImplementation(async (content: string) => {
+    lastSavedContent = content;
+    return undefined;
+  });
   const mockExists = vi.fn();
   const mockDelete = vi.fn();
   const mockMove = vi.fn();
+  const mockGetMetadata = vi.fn().mockImplementation(async () => {
+    return [{ size: Buffer.byteLength(lastSavedContent, "utf8") }];
+  });
   const mockFile = vi.fn(() => ({
     save: mockSave,
     exists: mockExists,
     delete: mockDelete,
     move: mockMove,
+    getMetadata: mockGetMetadata,
   }));
   const mockBucket = vi.fn(() => ({
     file: mockFile,
@@ -69,6 +80,7 @@ describe("GCS Atomic Upload Integration Tests", () => {
   let mockExists: Mock;
   let mockDelete: Mock;
   let mockMove: Mock;
+  let mockGetMetadata: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -84,6 +96,7 @@ describe("GCS Atomic Upload Integration Tests", () => {
     mockExists = fileInstance.exists;
     mockDelete = fileInstance.delete;
     mockMove = fileInstance.move;
+    mockGetMetadata = fileInstance.getMetadata;
 
     bucketStore = new GCPBucketStore("test-bucket");
   });

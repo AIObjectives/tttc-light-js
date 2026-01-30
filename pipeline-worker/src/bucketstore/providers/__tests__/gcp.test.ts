@@ -481,7 +481,7 @@ describe("GCPBucketStore", () => {
     it("should throw error when uploaded size does not match expected size", async () => {
       const fileContent = '{"test": "data"}';
       mockSave.mockResolvedValue(undefined);
-      mockMove.mockResolvedValue(undefined);
+      mockDelete.mockResolvedValue(undefined);
       // Simulate corrupted upload - size mismatch
       mockGetMetadata.mockResolvedValue([{ size: 999 }]);
 
@@ -489,6 +489,7 @@ describe("GCPBucketStore", () => {
         bucketStore.storeFile("test.json", fileContent),
       ).rejects.toThrow(UploadFailedError);
 
+      // Verify error details
       try {
         await bucketStore.storeFile("test.json", fileContent);
       } catch (error) {
@@ -499,6 +500,11 @@ describe("GCPBucketStore", () => {
           expect(error.reason).toContain("got 999 bytes");
         }
       }
+
+      // Verify temp file was cleaned up (called twice, once per storeFile call)
+      expect(mockDelete).toHaveBeenCalledTimes(2);
+      // Verify move was never called (file never made public)
+      expect(mockMove).not.toHaveBeenCalled();
     });
 
     it("should calculate correct byte size for UTF-8 content", async () => {
@@ -573,6 +579,45 @@ describe("GCPBucketStore", () => {
       await bucketStore.storeFile("1kb.json", fileContent);
 
       expect(mockGetMetadata).toHaveBeenCalledTimes(1);
+    });
+
+    it("should verify temp file before moving to prevent race condition", async () => {
+      const fileContent = '{"test": "data"}';
+      mockSave.mockResolvedValue(undefined);
+      mockGetMetadata.mockResolvedValue([
+        { size: Buffer.byteLength(fileContent, "utf8") },
+      ]);
+      mockMove.mockResolvedValue(undefined);
+
+      await bucketStore.storeFile("test.json", fileContent);
+
+      // Verify the call order: save, getMetadata (verify), then move
+      const callOrder = [
+        mockSave.mock.invocationCallOrder[0],
+        mockGetMetadata.mock.invocationCallOrder[0],
+        mockMove.mock.invocationCallOrder[0],
+      ];
+
+      // Ensure getMetadata is called before move
+      expect(callOrder[0]).toBeLessThan(callOrder[1]); // save before verify
+      expect(callOrder[1]).toBeLessThan(callOrder[2]); // verify before move
+    });
+
+    it("should clean up temp file and never move when verification fails", async () => {
+      const fileContent = '{"test": "data"}';
+      mockSave.mockResolvedValue(undefined);
+      mockDelete.mockResolvedValue(undefined);
+      // Simulate size mismatch
+      mockGetMetadata.mockResolvedValue([{ size: 9999 }]);
+
+      await expect(
+        bucketStore.storeFile("test.json", fileContent),
+      ).rejects.toThrow(UploadFailedError);
+
+      // Temp file should be deleted
+      expect(mockDelete).toHaveBeenCalledTimes(1);
+      // File should never be moved to final location
+      expect(mockMove).not.toHaveBeenCalled();
     });
   });
 
