@@ -252,9 +252,11 @@ describe("GCPBucketStore", () => {
 
       await bucketStore.storeFile("report.json", fileContent);
 
-      // Should create temp file first
+      // Should create temp file first using UUID format
       const firstFileCall = mockFile.mock.calls[0][0];
-      expect(firstFileCall).toMatch(/^report\.json\.tmp\.\d+$/);
+      expect(firstFileCall).toMatch(
+        /^report\.json\.tmp\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
 
       // Should create final file reference for move operation
       const secondFileCall = mockFile.mock.calls[1][0];
@@ -264,24 +266,26 @@ describe("GCPBucketStore", () => {
       expect(mockMove).toHaveBeenCalledTimes(1);
     });
 
-    it("should use unique temporary filename based on timestamp", async () => {
+    it("should use unique temporary filename using UUID", async () => {
       const fileContent = "{}";
       setupSuccessfulUpload(fileContent);
       mockFile.mockClear();
 
-      const startTime = Date.now();
+      // Create multiple uploads to verify uniqueness
       await bucketStore.storeFile("test.json", fileContent);
-      const endTime = Date.now();
+      await bucketStore.storeFile("test.json", fileContent);
 
-      const tempFileName = mockFile.mock.calls[0][0];
-      const timestampMatch = tempFileName.match(/\.tmp\.(\d+)$/);
-      expect(timestampMatch).toBeTruthy();
+      const tempFileName1 = mockFile.mock.calls[0][0];
+      const tempFileName2 = mockFile.mock.calls[2][0]; // Skip final file call at index 1
 
-      if (timestampMatch) {
-        const timestamp = Number.parseInt(timestampMatch[1], 10);
-        expect(timestamp).toBeGreaterThanOrEqual(startTime);
-        expect(timestamp).toBeLessThanOrEqual(endTime);
-      }
+      // Both should match UUID pattern
+      const uuidPattern =
+        /^test\.json\.tmp\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+      expect(tempFileName1).toMatch(uuidPattern);
+      expect(tempFileName2).toMatch(uuidPattern);
+
+      // UUIDs should be different
+      expect(tempFileName1).not.toBe(tempFileName2);
     });
 
     it("should not leave temporary file if move succeeds", async () => {

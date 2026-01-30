@@ -35,6 +35,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { isDockerAvailable } from "../../__tests__/test-helpers.js";
 import { RedisCache } from "../../cache/providers/redis.js";
 import type { Cache } from "../../cache/types.js";
 import { createInitialState, RedisPipelineStateStore } from "../state-store.js";
@@ -158,7 +159,10 @@ import {
 import type { SortAndDeduplicateResult } from "../../pipeline-steps/types.js";
 import { runPipeline } from "../runner.js";
 
-describe("Distributed Locking with Real Redis", () => {
+// Check Docker availability before running tests
+const dockerAvailable = await isDockerAvailable();
+
+describe.skipIf(!dockerAvailable)("Distributed Locking with Real Redis", () => {
   let redisContainer: StartedRedisContainer;
   let cache: Cache;
   let stateStore: RedisPipelineStateStore;

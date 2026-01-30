@@ -36,33 +36,58 @@ interface MockStorageInstance {
   bucket: Mock;
 }
 
-vi.mock("@google-cloud/storage", () => {
-  // Track saved content globally for size verification
-  let lastSavedContent = "";
+// Storage for file contents indexed by filename - must be outside vi.mock
+const fileContents = new Map<string, string>();
 
-  const mockSave = vi.fn().mockImplementation(async (content: string) => {
-    lastSavedContent = content;
-    return undefined;
+vi.mock("@google-cloud/storage", () => {
+  // All mock state must be created inside this factory
+  const mockSave = vi.fn().mockResolvedValue(undefined);
+  const mockExists = vi.fn().mockResolvedValue([false]);
+  const mockDelete = vi.fn().mockResolvedValue(undefined);
+  const mockMove = vi.fn().mockResolvedValue(undefined);
+  const mockGetMetadata = vi.fn().mockImplementation(async function (this: {
+    fileName: string;
+  }) {
+    const content = fileContents.get(this.fileName) || "";
+    return [{ size: Buffer.byteLength(content, "utf8") }];
   });
-  const mockExists = vi.fn();
-  const mockDelete = vi.fn();
-  const mockMove = vi.fn();
-  const mockGetMetadata = vi.fn().mockImplementation(async () => {
-    return [{ size: Buffer.byteLength(lastSavedContent, "utf8") }];
-  });
-  const mockFile = vi.fn(() => ({
-    save: mockSave,
+
+  // Create wrapper that always tracks content
+  const createSaveWrapper = (fileName: string) => {
+    return async (
+      content: string,
+      options?: { metadata?: Record<string, string> },
+    ) => {
+      fileContents.set(fileName, content);
+      return mockSave(content, options);
+    };
+  };
+
+  const mockFile = vi.fn((fileName: string) => ({
+    fileName,
+    save: createSaveWrapper(fileName),
     exists: mockExists,
     delete: mockDelete,
     move: mockMove,
     getMetadata: mockGetMetadata,
   }));
+
   const mockBucket = vi.fn(() => ({
     file: mockFile,
   }));
+
   const MockStorage = vi.fn(() => ({
     bucket: mockBucket,
   }));
+
+  // Export mocks for test access
+  (MockStorage as { _mockFile?: Mock })._mockFile = mockFile;
+  (MockStorage as { _mockSave?: Mock })._mockSave = mockSave;
+  (MockStorage as { _mockExists?: Mock })._mockExists = mockExists;
+  (MockStorage as { _mockDelete?: Mock })._mockDelete = mockDelete;
+  (MockStorage as { _mockMove?: Mock })._mockMove = mockMove;
+  (MockStorage as { _mockGetMetadata?: Mock })._mockGetMetadata =
+    mockGetMetadata;
 
   return {
     Storage: MockStorage,
@@ -83,20 +108,52 @@ describe("GCS Atomic Upload Integration Tests", () => {
   let mockGetMetadata: Mock;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    fileContents.clear();
 
-    // Get mocked functions
-    const StorageConstructor = Storage as unknown as Mock;
+    // Get the mocked Storage constructor
+    const StorageConstructor = Storage as unknown as Mock & {
+      _mockFile?: Mock;
+      _mockSave?: Mock;
+      _mockExists?: Mock;
+      _mockDelete?: Mock;
+      _mockMove?: Mock;
+      _mockGetMetadata?: Mock;
+    };
+
+    // Extract the mock functions from the constructor
+    mockFile = StorageConstructor._mockFile!;
+    mockSave = StorageConstructor._mockSave!;
+    mockExists = StorageConstructor._mockExists!;
+    mockDelete = StorageConstructor._mockDelete!;
+    mockMove = StorageConstructor._mockMove!;
+    mockGetMetadata = StorageConstructor._mockGetMetadata!;
+
+    // Reset all mocks to default behavior
+    mockFile.mockClear();
+
+    mockSave.mockClear();
+    mockSave.mockResolvedValue(undefined);
+
+    mockExists.mockClear();
+    mockExists.mockResolvedValue([false]);
+
+    mockDelete.mockClear();
+    mockDelete.mockResolvedValue(undefined);
+
+    mockMove.mockClear();
+    mockMove.mockResolvedValue(undefined);
+
+    mockGetMetadata.mockClear();
+    mockGetMetadata.mockImplementation(async function (this: {
+      fileName: string;
+    }) {
+      const content = fileContents.get(this.fileName) || "";
+      return [{ size: Buffer.byteLength(content, "utf8") }];
+    });
+
+    // Create Storage instance for the test
     mockStorage = new StorageConstructor();
     mockBucket = mockStorage.bucket;
-    const bucketInstance = mockBucket();
-    mockFile = bucketInstance.file;
-    const fileInstance = mockFile();
-    mockSave = fileInstance.save;
-    mockExists = fileInstance.exists;
-    mockDelete = fileInstance.delete;
-    mockMove = fileInstance.move;
-    mockGetMetadata = fileInstance.getMetadata;
 
     bucketStore = new GCPBucketStore("test-bucket");
   });
@@ -113,7 +170,10 @@ describe("GCS Atomic Upload Integration Tests", () => {
       expect(calls.length).toBeGreaterThanOrEqual(2);
 
       const tempFileName = calls[0][0];
-      expect(tempFileName).toMatch(/^report\.json\.tmp\.\d+$/);
+      // Temp file should use UUID format: report.json.tmp.<uuid>
+      expect(tempFileName).toMatch(
+        /^report\.json\.tmp\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
 
       // Verify final file reference
       const finalFileName = calls[1][0];
@@ -220,9 +280,10 @@ describe("GCS Atomic Upload Integration Tests", () => {
         .map((call) => call[0])
         .filter((name: string) => name && name.includes(".tmp."));
 
-      // All temp filenames should be unique
+      // All temp filenames should be unique (using UUID ensures no collisions)
       const uniqueTempNames = new Set(tempFileNames);
       expect(uniqueTempNames.size).toBe(tempFileNames.length);
+      expect(tempFileNames.length).toBe(3); // Should have 3 temp files
     });
 
     it("should handle mixed success and failure in concurrent uploads", async () => {

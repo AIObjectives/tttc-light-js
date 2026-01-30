@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Storage } from "@google-cloud/storage";
 import { formatError } from "tttc-common/utils";
 import {
@@ -138,7 +139,8 @@ export class GCPBucketStore implements BucketStore {
       const bucketRef = this.storage.bucket(this.bucketName);
 
       // Use temporary filename to prevent serving corrupted files on partial upload
-      const tempFileName = `${fileName}.tmp.${Date.now()}`;
+      // Use UUID to ensure uniqueness even for concurrent uploads
+      const tempFileName = `${fileName}.tmp.${randomUUID()}`;
       const tempFile = bucketRef.file(tempFileName);
       const finalFile = bucketRef.file(fileName);
 
