@@ -43,13 +43,17 @@ export class GooglePubSub<T extends z.ZodTypeAny>
         maxBytes?: number;
         allowExcessMessages?: boolean;
       };
+      messageTracking?: {
+        onMessageStart?: () => void;
+        onMessageEnd?: () => void;
+      };
     },
   ): Promise<PubSubSubscription> {
     const messageHandler = async (message: Message) => {
       // Track active message for graceful shutdown
-      const incrementActive = (global as any).__incrementActiveMessages;
-      const decrementActive = (global as any).__decrementActiveMessages;
-      if (incrementActive) incrementActive();
+      if (options?.messageTracking?.onMessageStart) {
+        options.messageTracking.onMessageStart();
+      }
 
       try {
         const json = JSON.parse(message.data.toString());
@@ -93,7 +97,9 @@ export class GooglePubSub<T extends z.ZodTypeAny>
         message.nack();
       } finally {
         // Decrement active count on completion or error
-        if (decrementActive) decrementActive();
+        if (options?.messageTracking?.onMessageEnd) {
+          options.messageTracking.onMessageEnd();
+        }
       }
     };
 

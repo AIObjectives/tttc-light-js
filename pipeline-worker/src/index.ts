@@ -9,14 +9,20 @@ async function main() {
   try {
     mainLogger.info("Starting pipeline worker...");
 
-    const services = await initServices();
-
-    mainLogger.info("Pipeline worker started successfully");
-
     // Track active message processing for graceful shutdown
     let activeMessageCount = 0;
-    const incrementActive = () => activeMessageCount++;
-    const decrementActive = () => activeMessageCount--;
+    const messageTracking = {
+      onMessageStart: () => {
+        activeMessageCount++;
+      },
+      onMessageEnd: () => {
+        activeMessageCount--;
+      },
+    };
+
+    const services = await initServices(messageTracking);
+
+    mainLogger.info("Pipeline worker started successfully");
 
     // Graceful shutdown handler
     const shutdown = async (signal: string) => {
@@ -57,10 +63,6 @@ async function main() {
     // Keep process alive
     process.on("SIGINT", () => shutdown("SIGINT"));
     process.on("SIGTERM", () => shutdown("SIGTERM"));
-
-    // Export helpers for message tracking (used by queue handler)
-    (global as any).__incrementActiveMessages = incrementActive;
-    (global as any).__decrementActiveMessages = decrementActive;
   } catch (error) {
     mainLogger.error(
       { error: error instanceof Error ? error : new Error(String(error)) },
