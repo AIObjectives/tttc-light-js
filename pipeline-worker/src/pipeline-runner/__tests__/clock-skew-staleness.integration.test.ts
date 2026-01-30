@@ -237,6 +237,20 @@ describe("Clock Skew and Staleness Integration Tests", () => {
     );
   });
 
+  // Helper to create and save state with adjusted timestamp
+  const createStateWithTimestamp = async (
+    reportId: string,
+    userId: string,
+    timestampOffsetMs: number,
+  ) => {
+    const state = createInitialState(reportId, userId);
+    const adjustedTimestamp = new Date(Date.now() + timestampOffsetMs);
+    state.createdAt = adjustedTimestamp.toISOString();
+    state.updatedAt = adjustedTimestamp.toISOString();
+    await stateStore.save(state);
+    return state;
+  };
+
   describe("Clock Skew Between Worker and Redis", () => {
     it("should handle worker clock slightly ahead of Redis", async () => {
       const reportId = `clock-ahead-${Date.now()}`;
@@ -244,14 +258,11 @@ describe("Clock Skew and Staleness Integration Tests", () => {
       const config = createTestConfig({ reportId });
 
       // Create state with timestamp from "past" (simulating Redis time being behind)
-      const state = createInitialState(reportId, config.userId);
-
-      // Manually set an older timestamp to simulate clock skew
-      const olderTimestamp = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
-      state.createdAt = olderTimestamp.toISOString();
-      state.updatedAt = olderTimestamp.toISOString();
-
-      await stateStore.save(state);
+      await createStateWithTimestamp(
+        reportId,
+        config.userId,
+        -5 * 60 * 1000, // 5 minutes ago
+      );
 
       // Run pipeline - should succeed despite timestamp difference
       const result = await runPipeline(input, config, stateStore);
@@ -266,14 +277,11 @@ describe("Clock Skew and Staleness Integration Tests", () => {
       const config = createTestConfig({ reportId });
 
       // Create state with "future" timestamp (simulating worker clock behind)
-      const state = createInitialState(reportId, config.userId);
-
-      // Set a future timestamp (within reasonable bounds)
-      const futureTimestamp = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes ahead
-      state.createdAt = futureTimestamp.toISOString();
-      state.updatedAt = futureTimestamp.toISOString();
-
-      await stateStore.save(state);
+      await createStateWithTimestamp(
+        reportId,
+        config.userId,
+        5 * 60 * 1000, // 5 minutes ahead
+      );
 
       // Run pipeline - should succeed
       const result = await runPipeline(input, config, stateStore);
@@ -318,6 +326,21 @@ describe("Clock Skew and Staleness Integration Tests", () => {
     });
   });
 
+  // Helper to create stale state at specific threshold
+  const createStaleState = async (
+    reportId: string,
+    userId: string,
+    ageMs: number,
+  ) => {
+    const state = createInitialState(reportId, userId);
+    const staleTimestamp = new Date(Date.now() - ageMs);
+    state.status = "running";
+    state.updatedAt = staleTimestamp.toISOString();
+    state.stepAnalytics.clustering.status = "in_progress";
+    await stateStore.save(state);
+    return state;
+  };
+
   describe("Staleness Detection at Threshold Boundaries", () => {
     it("should consider state stale when exactly at staleness threshold", async () => {
       const reportId = `stale-exact-${Date.now()}`;
@@ -325,16 +348,11 @@ describe("Clock Skew and Staleness Integration Tests", () => {
       const config = createTestConfig({ reportId });
 
       // Create state with updatedAt exactly at staleness threshold
-      const state = createInitialState(reportId, config.userId);
-
-      const staleTimestamp = new Date(
-        Date.now() - STATE_STALENESS_THRESHOLD_MS,
+      await createStaleState(
+        reportId,
+        config.userId,
+        STATE_STALENESS_THRESHOLD_MS,
       );
-      state.status = "running";
-      state.updatedAt = staleTimestamp.toISOString();
-      state.stepAnalytics.clustering.status = "in_progress";
-
-      await stateStore.save(state);
 
       // Attempting to resume should treat this as stale
       const resumeConfig = createTestConfig({
@@ -391,13 +409,12 @@ describe("Clock Skew and Staleness Integration Tests", () => {
       const config = createTestConfig({ reportId });
 
       // Create state that's way past staleness threshold (2 hours old)
-      const state = createInitialState(reportId, config.userId);
-
-      const veryStaleTimestamp = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours
-      state.status = "running";
-      state.updatedAt = veryStaleTimestamp.toISOString();
-      state.createdAt = veryStaleTimestamp.toISOString();
-
+      const state = await createStaleState(
+        reportId,
+        config.userId,
+        2 * 60 * 60 * 1000, // 2 hours
+      );
+      state.createdAt = state.updatedAt; // Also set createdAt to match
       await stateStore.save(state);
 
       // Resume attempt should handle stale state
@@ -497,6 +514,40 @@ describe("Clock Skew and Staleness Integration Tests", () => {
       await cache.releaseLock(lockKey, worker1LockValue);
     });
 
+    // Helper to create a worker that attempts to resume with lock
+    const createResumeWorker = (
+      workerId: number,
+      reportId: string,
+      input: PipelineInput,
+      delayMs: number,
+    ) => {
+      return async () => {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        const lockValue = `worker-${workerId}-${Date.now()}`;
+        const acquired = await stateStore.acquirePipelineLock(
+          reportId,
+          lockValue,
+        );
+        if (!acquired) return { lockAcquired: false };
+
+        try {
+          const result = await runPipeline(
+            input,
+            {
+              reportId,
+              userId: "user-integration-test",
+              resumeFromState: true,
+              lockValue,
+            },
+            stateStore,
+          );
+          return { lockAcquired: true, result };
+        } finally {
+          await stateStore.releasePipelineLock(reportId, lockValue);
+        }
+      };
+    };
+
     it("should handle multiple workers with timestamp variations attempting resume", async () => {
       const reportId = `multi-worker-resume-${Date.now()}`;
       const input = createTestInput();
@@ -522,102 +573,21 @@ describe("Clock Skew and Staleness Integration Tests", () => {
       );
 
       // Simulate 3 workers with slightly different system times
-      const worker1 = async () => {
-        const lockValue = `worker-1-${Date.now()}`;
-        const acquired = await stateStore.acquirePipelineLock(
-          reportId,
-          lockValue,
-        );
-        if (!acquired) return { lockAcquired: false };
-
-        try {
-          const result = await runPipeline(
-            input,
-            {
-              reportId,
-              userId: "user-integration-test",
-              resumeFromState: true,
-              lockValue,
-            },
-            stateStore,
-          );
-          return { lockAcquired: true, result };
-        } finally {
-          await stateStore.releasePipelineLock(reportId, lockValue);
-        }
-      };
-
-      const worker2 = async () => {
-        // Slight delay to simulate clock skew
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        const lockValue = `worker-2-${Date.now()}`;
-        const acquired = await stateStore.acquirePipelineLock(
-          reportId,
-          lockValue,
-        );
-        if (!acquired) return { lockAcquired: false };
-
-        try {
-          const result = await runPipeline(
-            input,
-            {
-              reportId,
-              userId: "user-integration-test",
-              resumeFromState: true,
-              lockValue,
-            },
-            stateStore,
-          );
-          return { lockAcquired: true, result };
-        } finally {
-          await stateStore.releasePipelineLock(reportId, lockValue);
-        }
-      };
-
-      const worker3 = async () => {
-        // Different delay
-        await new Promise((resolve) => setTimeout(resolve, 20));
-        const lockValue = `worker-3-${Date.now()}`;
-        const acquired = await stateStore.acquirePipelineLock(
-          reportId,
-          lockValue,
-        );
-        if (!acquired) return { lockAcquired: false };
-
-        try {
-          const result = await runPipeline(
-            input,
-            {
-              reportId,
-              userId: "user-integration-test",
-              resumeFromState: true,
-              lockValue,
-            },
-            stateStore,
-          );
-          return { lockAcquired: true, result };
-        } finally {
-          await stateStore.releasePipelineLock(reportId, lockValue);
-        }
-      };
+      const workers = [
+        createResumeWorker(1, reportId, input, 0),
+        createResumeWorker(2, reportId, input, 10),
+        createResumeWorker(3, reportId, input, 20),
+      ];
 
       // Run all workers concurrently
-      const [result1, result2, result3] = await Promise.all([
-        worker1(),
-        worker2(),
-        worker3(),
-      ]);
+      const results = await Promise.all(workers.map((w) => w()));
 
       // Only one should have acquired the lock
-      const successCount = [result1, result2, result3].filter(
-        (r) => r.lockAcquired,
-      ).length;
+      const successCount = results.filter((r) => r.lockAcquired).length;
       expect(successCount).toBe(1);
 
       // The successful worker should have completed the pipeline
-      const successfulResult = [result1, result2, result3].find(
-        (r) => r.lockAcquired,
-      );
+      const successfulResult = results.find((r) => r.lockAcquired);
       expect(successfulResult?.result?.success).toBe(true);
 
       // Final state should show completion
