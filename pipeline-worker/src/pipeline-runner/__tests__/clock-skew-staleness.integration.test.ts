@@ -36,6 +36,42 @@ import {
 import { createInitialState, RedisPipelineStateStore } from "../state-store.js";
 import type { PipelineInput, PipelineRunnerConfig } from "../types.js";
 
+// Test configuration types to avoid primitive obsession
+type TimestampTestConfig = {
+  reportIdPrefix: string;
+  timestampOffsetMs: number;
+  userId?: string;
+  expectedStatus?: "completed" | "running";
+};
+
+type StaleStateConfig = {
+  reportId: string;
+  userId: string;
+  ageMs: number;
+  status?: "running" | "completed" | "failed";
+};
+
+type WorkerConfig = {
+  workerId: number;
+  reportId: string;
+  input: PipelineInput;
+  delayMs: number;
+};
+
+type WorkerResult = {
+  lockAcquired: boolean;
+  result?: ReturnType<typeof runPipeline> extends Promise<infer T> ? T : never;
+  alreadyCompleted?: boolean;
+};
+
+// Test constants
+const TEST_USER_ID = "user-integration-test";
+const CLOCK_SKEW_MINUTES = 5;
+const STALENESS_BUFFER_MS = 60000; // 1 minute
+const PIPELINE_LOCK_PREFIX = "pipeline:lock:";
+const WORKER_LOCK_PREFIX = "worker-";
+const PIPELINE_COMPLETED_ERROR = "Pipeline already completed";
+
 // Mock logger
 vi.mock("tttc-common/logger", () => {
   const createMockLogger = (): Record<string, unknown> => {
@@ -198,7 +234,7 @@ describe.skipIf(!dockerAvailable)(
       overrides: Partial<PipelineRunnerConfig> = {},
     ): PipelineRunnerConfig => ({
       reportId: `report-${Date.now()}-${Math.random()}`,
-      userId: "user-integration-test",
+      userId: TEST_USER_ID,
       resumeFromState: false,
       ...overrides,
     });
@@ -246,13 +282,13 @@ describe.skipIf(!dockerAvailable)(
     });
 
     // Helper to create and save state with adjusted timestamp
-    const createStateWithTimestamp = async (
-      reportId: string,
-      userId: string,
-      timestampOffsetMs: number,
-    ) => {
-      const state = createInitialState(reportId, userId);
-      const adjustedTimestamp = new Date(Date.now() + timestampOffsetMs);
+    const createStateWithTimestamp = async (config: {
+      reportId: string;
+      userId: string;
+      timestampOffsetMs: number;
+    }) => {
+      const state = createInitialState(config.reportId, config.userId);
+      const adjustedTimestamp = new Date(Date.now() + config.timestampOffsetMs);
       state.createdAt = adjustedTimestamp.toISOString();
       state.updatedAt = adjustedTimestamp.toISOString();
       await stateStore.save(state);
@@ -260,33 +296,52 @@ describe.skipIf(!dockerAvailable)(
     };
 
     // Helper for clock skew tests - runs pipeline with existing state
-    const runClockSkewTest = async (
-      reportIdPrefix: string,
-      timestampOffsetMs: number,
-    ) => {
-      const reportId = `${reportIdPrefix}-${Date.now()}`;
+    const runClockSkewTest = async (config: TimestampTestConfig) => {
+      const reportId = `${config.reportIdPrefix}-${Date.now()}`;
       const input = createTestInput();
-      const config = createTestConfig({ reportId });
+      const pipelineConfig = createTestConfig({ reportId });
 
-      await createStateWithTimestamp(
+      await createStateWithTimestamp({
         reportId,
-        config.userId,
-        timestampOffsetMs,
-      );
+        userId: config.userId || TEST_USER_ID,
+        timestampOffsetMs: config.timestampOffsetMs,
+      });
 
-      const result = await runPipeline(input, config, stateStore);
+      const result = await runPipeline(input, pipelineConfig, stateStore);
 
       expect(result.success).toBe(true);
       return result;
     };
 
-    // Helper for resume tests with timestamp manipulation
-    const runResumeWithTimestampTest = async (
-      reportIdPrefix: string,
-      timestampOffsetMs: number,
-      expectedStatus: "completed" | "running" = "completed",
+    // Validation helpers for worker concurrency tests
+    const validateLockAcquisition = (results: WorkerResult[]) => {
+      const acquiredCount = results.filter((r) => r.lockAcquired).length;
+      expect(acquiredCount).toBeGreaterThanOrEqual(1);
+      return acquiredCount;
+    };
+
+    const validatePipelineCompletion = (results: WorkerResult[]) => {
+      const successfulResult = results.find(
+        (r) => r.lockAcquired && "result" in r && r.result?.success,
+      );
+      expect(successfulResult).toBeDefined();
+      expect(successfulResult?.result?.success).toBe(true);
+      return successfulResult;
+    };
+
+    const validateConcurrencyRules = (
+      acquiredCount: number,
+      results: WorkerResult[],
     ) => {
-      const reportId = `${reportIdPrefix}-${Date.now()}`;
+      const alreadyCompletedCount = results.filter(
+        (r) => r.lockAcquired && "alreadyCompleted" in r && r.alreadyCompleted,
+      ).length;
+      expect(acquiredCount).toBe(1 + alreadyCompletedCount);
+    };
+
+    // Helper for resume tests with timestamp manipulation
+    const runResumeWithTimestampTest = async (config: TimestampTestConfig) => {
+      const reportId = `${config.reportIdPrefix}-${Date.now()}`;
       const input = createTestInput();
       const initialConfig = createTestConfig({ reportId });
 
@@ -300,7 +355,9 @@ describe.skipIf(!dockerAvailable)(
       // Retrieve state and adjust timestamp
       const state = await stateStore.get(reportId);
       if (state) {
-        const adjustedTimestamp = new Date(Date.now() + timestampOffsetMs);
+        const adjustedTimestamp = new Date(
+          Date.now() + config.timestampOffsetMs,
+        );
         state.updatedAt = adjustedTimestamp.toISOString();
         await stateStore.save(state);
       }
@@ -317,37 +374,42 @@ describe.skipIf(!dockerAvailable)(
       const result = await runPipeline(input, resumeConfig, stateStore);
 
       expect(result.success).toBe(true);
-      expect(result.state.status).toBe(expectedStatus);
+      expect(result.state.status).toBe(config.expectedStatus || "completed");
       return result;
     };
 
     describe("Clock Skew Between Worker and Redis", () => {
       it("should handle worker clock slightly ahead of Redis", async () => {
         // Create state with timestamp from "past" (simulating Redis time being behind)
-        const result = await runClockSkewTest("clock-ahead", -5 * 60 * 1000);
+        const result = await runClockSkewTest({
+          reportIdPrefix: "clock-ahead",
+          timestampOffsetMs: -CLOCK_SKEW_MINUTES * 60 * 1000,
+        });
         expect(result.state.reportId).toContain("clock-ahead");
       });
 
       it("should handle worker clock slightly behind Redis", async () => {
         // Create state with "future" timestamp (simulating worker clock behind)
-        await runClockSkewTest("clock-behind", 5 * 60 * 1000);
+        await runClockSkewTest({
+          reportIdPrefix: "clock-behind",
+          timestampOffsetMs: CLOCK_SKEW_MINUTES * 60 * 1000,
+        });
       });
 
       it("should not treat recent state as stale even with minor clock differences", async () => {
         // Resume should work - 2 minutes is well within staleness threshold
-        await runResumeWithTimestampTest("clock-recent", -2 * 60 * 1000);
+        await runResumeWithTimestampTest({
+          reportIdPrefix: "clock-recent",
+          timestampOffsetMs: -2 * 60 * 1000,
+        });
       });
     });
 
     // Helper to create stale state at specific threshold
-    const createStaleState = async (
-      reportId: string,
-      userId: string,
-      ageMs: number,
-    ) => {
-      const state = createInitialState(reportId, userId);
-      const staleTimestamp = new Date(Date.now() - ageMs);
-      state.status = "running";
+    const createStaleState = async (config: StaleStateConfig) => {
+      const state = createInitialState(config.reportId, config.userId);
+      const staleTimestamp = new Date(Date.now() - config.ageMs);
+      state.status = config.status || "running";
       state.updatedAt = staleTimestamp.toISOString();
       state.stepAnalytics.clustering.status = "in_progress";
       await stateStore.save(state);
@@ -361,11 +423,11 @@ describe.skipIf(!dockerAvailable)(
         const config = createTestConfig({ reportId });
 
         // Create state with updatedAt exactly at staleness threshold
-        await createStaleState(
+        await createStaleState({
           reportId,
-          config.userId,
-          STATE_STALENESS_THRESHOLD_MS,
-        );
+          userId: config.userId,
+          ageMs: STATE_STALENESS_THRESHOLD_MS,
+        });
 
         // Attempting to resume should treat this as stale
         const resumeConfig = createTestConfig({
@@ -381,10 +443,12 @@ describe.skipIf(!dockerAvailable)(
 
       it("should not consider state stale when just under threshold", async () => {
         // Set state timestamp to just under staleness threshold (1 minute before threshold)
-        await runResumeWithTimestampTest(
-          "not-stale",
-          -(STATE_STALENESS_THRESHOLD_MS - 60000),
-        );
+        await runResumeWithTimestampTest({
+          reportIdPrefix: "not-stale",
+          timestampOffsetMs: -(
+            STATE_STALENESS_THRESHOLD_MS - STALENESS_BUFFER_MS
+          ),
+        });
       });
 
       it("should definitely consider state stale when well past threshold", async () => {
@@ -393,11 +457,11 @@ describe.skipIf(!dockerAvailable)(
         const config = createTestConfig({ reportId });
 
         // Create state that's way past staleness threshold (2 hours old)
-        const state = await createStaleState(
+        const state = await createStaleState({
           reportId,
-          config.userId,
-          2 * 60 * 60 * 1000, // 2 hours
-        );
+          userId: config.userId,
+          ageMs: 2 * 60 * 60 * 1000, // 2 hours
+        });
         state.createdAt = state.updatedAt; // Also set createdAt to match
         await stateStore.save(state);
 
@@ -444,7 +508,7 @@ describe.skipIf(!dockerAvailable)(
         }
 
         // Verify lock doesn't exist
-        const lockKey = `pipeline:lock:${reportId}`;
+        const lockKey = `${PIPELINE_LOCK_PREFIX}${reportId}`;
         const lockValue = await cache.get(lockKey);
         expect(lockValue).toBeNull();
 
@@ -470,8 +534,8 @@ describe.skipIf(!dockerAvailable)(
         const input = createTestInput();
 
         // Worker 1 acquires lock
-        const worker1LockValue = `worker-1-${Date.now()}`;
-        const lockKey = `pipeline:lock:${reportId}`;
+        const worker1LockValue = `${WORKER_LOCK_PREFIX}1-${Date.now()}`;
+        const lockKey = `${PIPELINE_LOCK_PREFIX}${reportId}`;
         const acquired = await cache.acquireLock(
           lockKey,
           worker1LockValue,
@@ -480,7 +544,7 @@ describe.skipIf(!dockerAvailable)(
         expect(acquired).toBe(true);
 
         // Worker 2 tries to acquire same lock (even with different timestamp perception)
-        const worker2LockValue = `worker-2-${Date.now() + 60000}`; // "future" timestamp
+        const worker2LockValue = `${WORKER_LOCK_PREFIX}2-${Date.now() + 60000}`; // "future" timestamp
         const acquired2 = await cache.acquireLock(
           lockKey,
           worker2LockValue,
@@ -499,27 +563,22 @@ describe.skipIf(!dockerAvailable)(
       });
 
       // Helper to create a worker that attempts to resume with lock
-      const createResumeWorker = (
-        workerId: number,
-        reportId: string,
-        input: PipelineInput,
-        delayMs: number,
-      ) => {
-        return async () => {
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-          const lockValue = `worker-${workerId}-${Date.now()}`;
+      const createResumeWorker = (config: WorkerConfig) => {
+        return async (): Promise<WorkerResult> => {
+          await new Promise((resolve) => setTimeout(resolve, config.delayMs));
+          const lockValue = `${WORKER_LOCK_PREFIX}${config.workerId}-${Date.now()}`;
           const acquired = await stateStore.acquirePipelineLock(
-            reportId,
+            config.reportId,
             lockValue,
           );
           if (!acquired) return { lockAcquired: false };
 
           try {
             const result = await runPipeline(
-              input,
+              config.input,
               {
-                reportId,
-                userId: "user-integration-test",
+                reportId: config.reportId,
+                userId: TEST_USER_ID,
                 resumeFromState: true,
                 lockValue,
               },
@@ -530,13 +589,13 @@ describe.skipIf(!dockerAvailable)(
             // If pipeline is already completed, another worker finished first
             if (
               error instanceof Error &&
-              error.message.includes("Pipeline already completed")
+              error.message.includes(PIPELINE_COMPLETED_ERROR)
             ) {
               return { lockAcquired: true, alreadyCompleted: true };
             }
             throw error;
           } finally {
-            await stateStore.releasePipelineLock(reportId, lockValue);
+            await stateStore.releasePipelineLock(config.reportId, lockValue);
           }
         };
       };
@@ -567,31 +626,18 @@ describe.skipIf(!dockerAvailable)(
 
         // Simulate 3 workers with slightly different system times
         const workers = [
-          createResumeWorker(1, reportId, input, 0),
-          createResumeWorker(2, reportId, input, 10),
-          createResumeWorker(3, reportId, input, 20),
+          createResumeWorker({ workerId: 1, reportId, input, delayMs: 0 }),
+          createResumeWorker({ workerId: 2, reportId, input, delayMs: 10 }),
+          createResumeWorker({ workerId: 3, reportId, input, delayMs: 20 }),
         ];
 
         // Run all workers concurrently
         const results = await Promise.all(workers.map((w) => w()));
 
-        // At least one should have acquired the lock
-        const acquiredCount = results.filter((r) => r.lockAcquired).length;
-        expect(acquiredCount).toBeGreaterThanOrEqual(1);
-
-        // One worker should have successfully completed the pipeline
-        const successfulResult = results.find(
-          (r) => r.lockAcquired && "result" in r && r.result?.success,
-        );
-        expect(successfulResult).toBeDefined();
-        expect(successfulResult?.result?.success).toBe(true);
-
-        // Other workers that acquired lock should have found it already completed
-        const alreadyCompletedCount = results.filter(
-          (r) =>
-            r.lockAcquired && "alreadyCompleted" in r && r.alreadyCompleted,
-        ).length;
-        expect(acquiredCount).toBe(1 + alreadyCompletedCount);
+        // Validate lock acquisition and pipeline completion
+        const acquiredCount = validateLockAcquisition(results);
+        validatePipelineCompletion(results);
+        validateConcurrencyRules(acquiredCount, results);
 
         // Final state should show completion
         const finalState = await stateStore.get(reportId);
