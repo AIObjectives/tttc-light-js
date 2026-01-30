@@ -1607,6 +1607,97 @@ describe("handlePipelineJob - orphaned file detection", () => {
     publishTime: new Date(),
   });
 
+  // Helper to create completed step analytics
+  const createCompletedStepAnalytics = () => ({
+    clustering: {
+      stepName: "clustering" as const,
+      status: "completed" as const,
+      durationMs: 1000,
+      totalTokens: 100,
+      cost: 0.001,
+    },
+    claims: {
+      stepName: "claims" as const,
+      status: "completed" as const,
+      durationMs: 1000,
+      totalTokens: 100,
+      cost: 0.001,
+    },
+    sort_and_deduplicate: {
+      stepName: "sort_and_deduplicate" as const,
+      status: "completed" as const,
+      durationMs: 1000,
+      totalTokens: 100,
+      cost: 0.001,
+    },
+    summaries: {
+      stepName: "summaries" as const,
+      status: "completed" as const,
+      durationMs: 1000,
+      totalTokens: 100,
+      cost: 0.001,
+    },
+    cruxes: {
+      stepName: "cruxes" as const,
+      status: "skipped" as const,
+    },
+  });
+
+  // Helper to create completed results with minimal test data
+  const createCompletedResults = (): PipelineState["completedResults"] => ({
+    clustering: {
+      data: [],
+      usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+      cost: 0.001,
+    },
+    claims: {
+      data: {},
+      usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+      cost: 0.001,
+    },
+    sort_and_deduplicate: {
+      data: [
+        [
+          TEST_STRINGS.topic,
+          {
+            topics: [],
+            speakers: [],
+            counts: { claims: 1, speakers: 1 },
+          },
+        ],
+      ],
+      usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+      cost: 0.001,
+    },
+    summaries: {
+      data: [],
+      usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+      cost: 0.001,
+    },
+  });
+
+  // Helper to create completed pipeline state for orphan tests
+  const createCompletedState = (): PipelineState => ({
+    version: "1.0",
+    reportId: TEST_IDS.report,
+    userId: TEST_IDS.user,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: "completed",
+    stepAnalytics: createCompletedStepAnalytics(),
+    completedResults: createCompletedResults(),
+    validationFailures: {
+      clustering: 0,
+      claims: 0,
+      sort_and_deduplicate: 0,
+      summaries: 0,
+      cruxes: 0,
+    },
+    totalTokens: 400,
+    totalCost: 0.004,
+    totalDurationMs: 4000,
+  });
+
   it("should skip when GCS file exists and Firestore status is completed", async () => {
     const message = createMockMessage();
 
@@ -1672,89 +1763,7 @@ describe("handlePipelineJob - orphaned file detection", () => {
     });
 
     // Mock completed state in Redis
-    vi.mocked(mockStateStore.get).mockResolvedValue({
-      version: "1.0",
-      reportId: TEST_IDS.report,
-      userId: TEST_IDS.user,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: "completed",
-      stepAnalytics: {
-        clustering: {
-          stepName: "clustering",
-          status: "completed",
-          durationMs: 1000,
-          totalTokens: 100,
-          cost: 0.001,
-        },
-        claims: {
-          stepName: "claims",
-          status: "completed",
-          durationMs: 1000,
-          totalTokens: 100,
-          cost: 0.001,
-        },
-        sort_and_deduplicate: {
-          stepName: "sort_and_deduplicate",
-          status: "completed",
-          durationMs: 1000,
-          totalTokens: 100,
-          cost: 0.001,
-        },
-        summaries: {
-          stepName: "summaries",
-          status: "completed",
-          durationMs: 1000,
-          totalTokens: 100,
-          cost: 0.001,
-        },
-        cruxes: {
-          stepName: "cruxes",
-          status: "skipped",
-        },
-      },
-      completedResults: {
-        clustering: {
-          data: [],
-          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-          cost: 0.001,
-        },
-        claims: {
-          data: {},
-          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-          cost: 0.001,
-        },
-        sort_and_deduplicate: {
-          data: [
-            [
-              TEST_STRINGS.topic,
-              {
-                topics: [],
-                speakers: [],
-                counts: { claims: 1, speakers: 1 },
-              },
-            ],
-          ],
-          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-          cost: 0.001,
-        },
-        summaries: {
-          data: [],
-          usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-          cost: 0.001,
-        },
-      },
-      validationFailures: {
-        clustering: 0,
-        claims: 0,
-        sort_and_deduplicate: 0,
-        summaries: 0,
-        cruxes: 0,
-      },
-      totalTokens: 400,
-      totalCost: 0.004,
-      totalDurationMs: 4000,
-    });
+    vi.mocked(mockStateStore.get).mockResolvedValue(createCompletedState());
 
     vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
     vi.mocked(mockStateStore.releasePipelineLock).mockResolvedValue(true);
