@@ -269,7 +269,8 @@
     "HSET",
     "maxmemory",
     "allkeys",
-    "TOCTOU"
+    "TOCTOU",
+    "dels"
   ],
   "ignorePaths": [
     "node_modules",
