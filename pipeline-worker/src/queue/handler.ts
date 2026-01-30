@@ -166,26 +166,44 @@ function hasPermanentErrorPattern(message: string): boolean {
 }
 
 /**
+ * Categorize numeric HTTP status codes
+ * Returns true if transient, false if permanent, undefined if unknown
+ */
+function categorizeHttpCode(code: number): boolean | undefined {
+  if (isTransientHttpStatus(code)) {
+    return true;
+  }
+  if (isPermanentHttpStatus(code)) {
+    return false;
+  }
+  return undefined;
+}
+
+/**
+ * Categorize string Firestore error codes
+ * Returns true if transient, false if permanent, undefined if unknown
+ */
+function categorizeFirestoreCode(code: string): boolean | undefined {
+  if (isTransientFirestoreCode(code)) {
+    return true;
+  }
+  if (isPermanentFirestoreCode(code)) {
+    return false;
+  }
+  return undefined;
+}
+
+/**
  * Categorize errors with code property (GCS or Firestore)
  * Returns true if transient, false if permanent, undefined if unknown
  */
 function categorizeCodedError(code: number | string): boolean | undefined {
   if (typeof code === "number") {
-    if (isTransientHttpStatus(code)) {
-      return true;
-    }
-    if (isPermanentHttpStatus(code)) {
-      return false;
-    }
+    return categorizeHttpCode(code);
   }
 
   if (typeof code === "string") {
-    if (isTransientFirestoreCode(code)) {
-      return true;
-    }
-    if (isPermanentFirestoreCode(code)) {
-      return false;
-    }
+    return categorizeFirestoreCode(code);
   }
 
   return undefined;
