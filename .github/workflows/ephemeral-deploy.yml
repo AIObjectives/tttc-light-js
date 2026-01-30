@@ -89,6 +89,19 @@ jobs:
           docker build -f pyserver/Dockerfile -t gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA} .
           docker push gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA}
 
+      - name: Build and push Docker image for Pipeline Worker
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          COMMIT_SHA=${{ github.sha }}
+          SHORT_SHA=${COMMIT_SHA:0:7}
+
+          docker build \
+            --build-arg TURBO_TOKEN=${{ secrets.TURBO_TOKEN }} \
+            --build-arg TURBO_TEAM=${{ secrets.TURBO_TEAM }} \
+            -f pipeline-worker/Dockerfile \
+            -t gcr.io/$PROJECT_ID/dev-t3c-pipeline-worker:pr-${PR_NUMBER}-${SHORT_SHA} .
+          docker push gcr.io/$PROJECT_ID/dev-t3c-pipeline-worker:pr-${PR_NUMBER}-${SHORT_SHA}
+
       - name: Create Pub/Sub topic and subscription
         run: |
           PR_NUMBER=${{ github.event.number }}
@@ -114,7 +127,7 @@ jobs:
           mkdir -p deploy/temp
 
           # Process each manifest
-          for service in next-client express-server pyserver; do
+          for service in next-client express-server pyserver pipeline-worker; do
             cp deploy/cloudrun/${service}.yaml deploy/temp/${service}.yaml
 
             # Replace placeholders
@@ -130,6 +143,7 @@ jobs:
           # Deploy each service
           gcloud run services replace deploy/temp/express-server.yaml --region=$REGION
           gcloud run services replace deploy/temp/pyserver.yaml --region=$REGION
+          gcloud run services replace deploy/temp/pipeline-worker.yaml --region=$REGION
           gcloud run services replace deploy/temp/next-client.yaml --region=$REGION
 
           # Make services publicly accessible

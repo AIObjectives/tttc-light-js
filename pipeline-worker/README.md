@@ -344,7 +344,7 @@ Autoscaling parameters are configured in the Cloud Run deployment workflows:
 - **Timeout**: 3600s (1 hour per message)
 
 **Production** (`.github/workflows/deploy-pipeline-worker-production.yml`):
-- **Min instances**: 1 (always-on for immediate response)
+- **Min instances**: 0 (scales to zero when idle)
 - **Max instances**: 20
 - **Concurrency**: 5 (max 5 concurrent messages per instance)
 - **CPU**: 4 vCPU per instance
@@ -389,13 +389,7 @@ Cloud Run will spawn new instances until the max instance limit is reached.
 - **Idle instances** - No active message processing
 - **Low CPU** - Instances underutilized
 
-Cloud Run will terminate idle instances after a cooldown period (typically 15 minutes).
-
-#### Zero-Scaling (Staging Only)
-When min instances = 0, staging will scale to zero after sustained inactivity:
-- **Cold start penalty**: 10-30 seconds to start first instance
-- **Cost savings**: No charges when idle
-- **Use case**: Development/testing environments
+Cloud Run will terminate idle instances after a cooldown period (typically 15 minutes). With min instances set to 0, the service will scale to zero after sustained inactivity, providing cost savings at the expense of a 10-30 second cold start when messages arrive.
 
 ### Monitoring Autoscaling
 
