@@ -184,6 +184,65 @@ function createMockCache(): Cache & { storage: Map<string, string> } {
       if (!lockValue || lockValue !== value) return false;
       return true;
     },
+    async verifyLock(key: string, value: string): Promise<boolean> {
+      const lockValue = storage.get(key);
+      return lockValue === value;
+    },
+    async increment(key: string, _ttlSeconds?: number): Promise<number> {
+      const currentValue = storage.get(key);
+      const newValue = currentValue ? parseInt(currentValue, 10) + 1 : 1;
+      storage.set(key, String(newValue));
+      return newValue;
+    },
+    async setMultiple(
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+      deleteKeys?: string[],
+    ): Promise<void> {
+      for (const op of operations) {
+        storage.set(op.key, op.value);
+      }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+    },
+    async setMultipleWithLockVerification(
+      lockKey: string,
+      lockValue: string,
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+      deleteKeys?: string[],
+    ): Promise<{ success: boolean; reason?: string }> {
+      // Verify lock
+      const currentLockValue = storage.get(lockKey);
+      if (currentLockValue !== lockValue) {
+        return {
+          success: false,
+          reason: currentLockValue ? "lock_stolen" : "lock_expired",
+        };
+      }
+      // Perform operations atomically
+      for (const op of operations) {
+        storage.set(op.key, op.value);
+      }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+      return { success: true };
+    },
+    async healthCheck(): Promise<void> {
+      // Mock cache is always healthy
+    },
   };
 }
 
@@ -592,6 +651,56 @@ describe("Pipeline Runner", () => {
 
       expect(cancelled).toBe(false);
     });
+
+    it("should return false when lock is held by another worker", async () => {
+      const state = createInitialState("report-123", "user-456");
+      state.status = "running";
+      state.currentStep = "claims";
+      await stateStore.save(state);
+
+      // Simulate another worker holding the lock
+      const workerLockValue = "worker-123";
+      const lockAcquired = await stateStore.acquirePipelineLock(
+        "report-123",
+        workerLockValue,
+      );
+      expect(lockAcquired).toBe(true);
+
+      // Attempt to cancel should fail because lock is held
+      const cancelled = await cancelPipeline("report-123", stateStore);
+
+      expect(cancelled).toBe(false);
+
+      // State should remain unchanged
+      const updatedState = await stateStore.get("report-123");
+      expect(updatedState?.status).toBe("running");
+
+      // Clean up: release the lock
+      await stateStore.releasePipelineLock("report-123", workerLockValue);
+    });
+
+    it("should acquire and release lock during cancellation", async () => {
+      const state = createInitialState("report-123", "user-456");
+      state.status = "running";
+      state.currentStep = "claims";
+      await stateStore.save(state);
+
+      const cancelled = await cancelPipeline("report-123", stateStore);
+
+      expect(cancelled).toBe(true);
+
+      // After cancellation completes, lock should be released
+      // We can verify by acquiring the lock ourselves
+      const testLockValue = "test-lock";
+      const lockAvailable = await stateStore.acquirePipelineLock(
+        "report-123",
+        testLockValue,
+      );
+      expect(lockAvailable).toBe(true);
+
+      // Clean up
+      await stateStore.releasePipelineLock("report-123", testLockValue);
+    });
   });
 
   describe("cleanupPipelineState", () => {
@@ -675,7 +784,7 @@ describe("Pipeline Runner", () => {
         usage: mockClusteringResult.usage,
         // Missing 'cost' field - will fail validation
       } as typeof mockClusteringResult;
-      existingState.validationFailures.clustering = 3; // Already at max retries
+      existingState.validationFailures.clustering = 2; // At max-1 retries
       await stateStore.save(existingState);
 
       const config: PipelineRunnerConfig = {
@@ -729,7 +838,7 @@ describe("Pipeline Runner", () => {
         usage: mockClusteringResult.usage,
         // Missing 'cost' field - will fail validation and trigger re-run
       } as typeof mockClusteringResult;
-      existingState.validationFailures.clustering = 2; // Had previous failures
+      existingState.validationFailures.clustering = 1; // Had previous failures
       await stateStore.save(existingState);
 
       const config: PipelineRunnerConfig = {

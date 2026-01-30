@@ -1,19 +1,6 @@
 import type { Logger } from "pino";
-import { logger } from "tttc-common/logger";
 import * as firebase from "./Firebase";
 import { type PipelineJob, pipelineJob } from "./jobs/pipeline";
-
-const workersLogger = logger.child({ module: "workers" });
-
-/**
- * Create a logger with optional requestId for distributed tracing
- */
-function createJobLogger(requestId?: string): Logger {
-  if (requestId) {
-    return workersLogger.child({ requestId });
-  }
-  return workersLogger;
-}
 
 /**
  * Extract error message from unknown error type
@@ -44,9 +31,11 @@ function buildDebugInfo(job: PipelineJob | null) {
   };
 }
 
-export async function processJob(job: PipelineJob, requestId?: string) {
-  const jobLogger = createJobLogger(requestId);
-
+export async function processJob(
+  job: PipelineJob,
+  jobLogger: Logger,
+  requestId?: string,
+) {
   jobLogger.info(
     {
       reportId: job.config.firebaseDetails.reportId,
@@ -86,9 +75,8 @@ async function updateFirebaseFailedStatus(
 export async function processJobFailure(
   job: PipelineJob,
   err: unknown,
-  requestId?: string,
+  jobLogger: Logger,
 ) {
-  const jobLogger = createJobLogger(requestId);
   const errorMessage = getErrorMessage(err);
 
   try {

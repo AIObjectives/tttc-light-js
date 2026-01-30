@@ -264,7 +264,13 @@
     "circlehollow",
     "Devnote",
     "llmoutput",
-    "levelname"
+    "levelname",
+    "acked",
+    "HSET",
+    "maxmemory",
+    "allkeys",
+    "TOCTOU",
+    "dels"
   ],
   "ignorePaths": [
     "node_modules",

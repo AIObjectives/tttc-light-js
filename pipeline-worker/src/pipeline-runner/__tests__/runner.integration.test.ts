@@ -309,6 +309,78 @@ function createInMemoryCache(): Cache {
       storage.set(key, { value, expiresAt });
       return true;
     },
+    async verifyLock(key: string, value: string): Promise<boolean> {
+      const lockEntry = storage.get(key);
+      if (!lockEntry) return false;
+      if (lockEntry.expiresAt && Date.now() > lockEntry.expiresAt) {
+        storage.delete(key);
+        return false;
+      }
+      return lockEntry.value === value;
+    },
+    async increment(key: string, ttlSeconds?: number): Promise<number> {
+      const entry = storage.get(key);
+      const currentValue = entry?.value;
+      const newValue = currentValue ? parseInt(currentValue, 10) + 1 : 1;
+      const expiresAt = ttlSeconds ? Date.now() + ttlSeconds * 1000 : undefined;
+      storage.set(key, { value: String(newValue), expiresAt });
+      return newValue;
+    },
+    async setMultiple(
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+      deleteKeys?: string[],
+    ): Promise<void> {
+      for (const op of operations) {
+        const expiresAt = op.options?.ttl
+          ? Date.now() + op.options.ttl * 1000
+          : undefined;
+        storage.set(op.key, { value: op.value, expiresAt });
+      }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+    },
+    async setMultipleWithLockVerification(
+      lockKey: string,
+      lockValue: string,
+      operations: Array<{
+        key: string;
+        value: string;
+        options?: { ttl?: number };
+      }>,
+      deleteKeys?: string[],
+    ): Promise<{ success: boolean; reason?: string }> {
+      // Verify lock
+      const lockEntry = storage.get(lockKey);
+      if (!lockEntry || lockEntry.value !== lockValue) {
+        return {
+          success: false,
+          reason: lockEntry ? "lock_stolen" : "lock_expired",
+        };
+      }
+      // Perform operations atomically
+      for (const op of operations) {
+        const expiresAt = op.options?.ttl
+          ? Date.now() + op.options.ttl * 1000
+          : undefined;
+        storage.set(op.key, { value: op.value, expiresAt });
+      }
+      if (deleteKeys) {
+        for (const key of deleteKeys) {
+          storage.delete(key);
+        }
+      }
+      return { success: true };
+    },
+    async healthCheck(): Promise<void> {
+      // In-memory cache is always healthy
+    },
   };
 }
 

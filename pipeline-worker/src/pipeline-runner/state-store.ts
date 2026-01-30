@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import type { Cache } from "../cache/types.js";
+import { LOCK_EXTENSION_SECONDS, LOCK_TTL_SECONDS } from "./constants.js";
 import {
   type PipelineState,
   PipelineStateError,
@@ -28,21 +29,8 @@ const STATE_KEY_PREFIX = "pipeline_state:";
 /** Redis key prefix for pipeline execution locks */
 const LOCK_KEY_PREFIX = "pipeline_lock:";
 
-/**
- * Lock TTL: 35 minutes
- * Must exceed PIPELINE_TIMEOUT_MS (30 minutes) to prevent lock expiration
- * during normal execution. If a pipeline times out, the lock will still be
- * held to prevent duplicate execution until it naturally expires.
- */
-const LOCK_TTL_SECONDS = 35 * 60;
-
-/**
- * Lock extension TTL: 10 minutes
- * Used to extend the lock after pipeline execution completes but before
- * result processing (GCS upload, Firestore updates). Provides protection
- * against race conditions during the critical post-execution window.
- */
-const LOCK_EXTENSION_SECONDS = 10 * 60;
+/** Redis key prefix for validation failure counters */
+const VALIDATION_FAILURE_KEY_PREFIX = "pipeline_validation_failure:";
 
 /**
  * Zod schema for validating step analytics
@@ -156,6 +144,16 @@ function getLockKey(reportId: string): string {
 }
 
 /**
+ * Get the Redis key for a validation failure counter
+ */
+function getValidationFailureKey(
+  reportId: string,
+  stepName: PipelineStepName,
+): string {
+  return `${VALIDATION_FAILURE_KEY_PREFIX}${reportId}:${stepName}`;
+}
+
+/**
  * Create initial step analytics for all steps
  */
 export function createInitialStepAnalytics(): Record<
@@ -257,6 +255,9 @@ export class RedisPipelineStateStore implements PipelineStateStore {
    * Checks if we still hold the pipeline execution lock.
    * Use this before critical state updates to prevent race conditions.
    *
+   * Uses an atomic Lua script to verify lock ownership, preventing TOCTOU race
+   * conditions where the lock could expire between reading and comparing the value.
+   *
    * @param reportId - Report identifier
    * @param lockValue - Unique identifier that acquired the lock
    * @returns true if we still hold the lock, false otherwise
@@ -267,8 +268,7 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   ): Promise<boolean> {
     const lockKey = getLockKey(reportId);
     try {
-      const currentValue = await this.cache.get(lockKey);
-      return currentValue === lockValue;
+      return await this.cache.verifyLock(lockKey, lockValue);
     } catch {
       return false;
     }
@@ -288,6 +288,22 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   ): Promise<boolean> {
     const lockKey = getLockKey(reportId);
     return this.cache.extendLock(lockKey, lockValue, LOCK_EXTENSION_SECONDS);
+  }
+
+  /**
+   * Refreshes the TTL of the pipeline execution lock back to the full lock duration.
+   * Use this periodically during long-running step execution to prevent expiration.
+   *
+   * @param reportId - Report identifier
+   * @param lockValue - Unique identifier that acquired the lock
+   * @returns true if lock was refreshed, false if not held or held by different value
+   */
+  async refreshPipelineLock(
+    reportId: string,
+    lockValue: string,
+  ): Promise<boolean> {
+    const lockKey = getLockKey(reportId);
+    return this.cache.extendLock(lockKey, lockValue, LOCK_TTL_SECONDS);
   }
 
   /**
@@ -318,7 +334,8 @@ export class RedisPipelineStateStore implements PipelineStateStore {
   }
 
   /**
-   * Save pipeline state to Redis
+   * Save pipeline state to Redis.
+   * Also persists validation failure counters to separate keys for atomic operations.
    */
   async save(state: PipelineState, options?: StateOptions): Promise<void> {
     const key = getStateKey(state.reportId);
@@ -334,7 +351,125 @@ export class RedisPipelineStateStore implements PipelineStateStore {
       updatedAt: new Date().toISOString(),
     };
 
-    await this.cache.set(key, JSON.stringify(updatedState), { ttl });
+    // Persist validation failure counters to separate keys
+    // Collect all counter updates to execute atomically with main state
+    const steps: PipelineStepName[] = [
+      "clustering",
+      "claims",
+      "sort_and_deduplicate",
+      "summaries",
+      "cruxes",
+    ];
+
+    const counterOperations: Array<{
+      key: string;
+      value: string;
+      options?: { ttl?: number };
+    }> = [];
+
+    const deletionKeys: string[] = [];
+
+    for (const step of steps) {
+      const count = state.validationFailures[step];
+      const counterKey = getValidationFailureKey(state.reportId, step);
+
+      if (count > 0) {
+        counterOperations.push({
+          key: counterKey,
+          value: String(count),
+          options: { ttl },
+        });
+      } else {
+        // Delete counter key when reset to 0 to prevent stale data
+        deletionKeys.push(counterKey);
+      }
+    }
+
+    // Execute main state save + counter updates + zero counter deletions atomically
+    // This ensures crash consistency - either all operations succeed or none do
+    await this.cache.setMultiple(
+      [
+        { key, value: JSON.stringify(updatedState), options: { ttl } },
+        ...counterOperations,
+      ],
+      deletionKeys,
+    );
+  }
+
+  /**
+   * Atomically saves pipeline state while verifying lock ownership.
+   * This prevents TOCTOU race conditions where the lock could be lost
+   * between verification and save operations.
+   *
+   * @param state - Pipeline state to save
+   * @param lockValue - Unique lock identifier to verify ownership
+   * @param options - Optional save settings (TTL, etc.)
+   * @returns Object indicating success and reason for failure if applicable
+   */
+  async saveWithLockVerification(
+    state: PipelineState,
+    lockValue: string,
+    options?: StateOptions,
+  ): Promise<{ success: boolean; reason?: string }> {
+    const key = getStateKey(state.reportId);
+    const lockKey = getLockKey(state.reportId);
+
+    // Use shorter TTL for failed states to prevent memory buildup during outages
+    const defaultTtl =
+      state.status === "failed" ? FAILED_STATE_TTL : DEFAULT_STATE_TTL;
+    const ttl = options?.ttl ?? defaultTtl;
+
+    // Update timestamp
+    const updatedState: PipelineState = {
+      ...state,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Persist validation failure counters to separate keys
+    // Collect all counter updates to execute atomically with main state
+    const steps: PipelineStepName[] = [
+      "clustering",
+      "claims",
+      "sort_and_deduplicate",
+      "summaries",
+      "cruxes",
+    ];
+
+    const counterOperations: Array<{
+      key: string;
+      value: string;
+      options?: { ttl?: number };
+    }> = [];
+
+    const deletionKeys: string[] = [];
+
+    for (const step of steps) {
+      const count = state.validationFailures[step];
+      const counterKey = getValidationFailureKey(state.reportId, step);
+
+      if (count > 0) {
+        counterOperations.push({
+          key: counterKey,
+          value: String(count),
+          options: { ttl },
+        });
+      } else {
+        // Delete counter key when reset to 0 to prevent stale data
+        deletionKeys.push(counterKey);
+      }
+    }
+
+    // Execute main state save + counter updates + zero counter deletions atomically
+    // with lock verification to prevent TOCTOU race conditions
+    return await this.cache.setMultipleWithLockVerification(
+      lockKey,
+      lockValue,
+      [
+        { key, value: JSON.stringify(updatedState), options: { ttl } },
+        ...counterOperations,
+      ],
+      deletionKeys,
+    );
   }
 
   /**
@@ -366,6 +501,53 @@ export class RedisPipelineStateStore implements PipelineStateStore {
 
     await this.save(updatedState);
     return updatedState;
+  }
+
+  /**
+   * Atomically increment a validation failure counter for a step.
+   * Uses Redis INCR to ensure the counter is incremented atomically,
+   * preventing race conditions and ensuring counts persist across crashes.
+   *
+   * The counter is stored in a separate Redis key to enable atomic operations
+   * without parsing/serializing the entire state JSON.
+   *
+   * @param reportId - Report identifier
+   * @param stepName - Step name to increment failure counter for
+   * @returns The new failure count after incrementing
+   */
+  async incrementValidationFailure(
+    reportId: string,
+    stepName: PipelineStepName,
+  ): Promise<number> {
+    const key = getValidationFailureKey(reportId, stepName);
+
+    // Atomically increment and set TTL in a single operation
+    // TTL matches state TTL (24 hours) to prevent orphaned counters
+    const newCount = await this.cache.increment(key, DEFAULT_STATE_TTL);
+
+    return newCount;
+  }
+
+  /**
+   * Get the current validation failure count for a step.
+   *
+   * @param reportId - Report identifier
+   * @param stepName - Step name to get failure count for
+   * @returns The current failure count (0 if not set)
+   */
+  async getValidationFailureCount(
+    reportId: string,
+    stepName: PipelineStepName,
+  ): Promise<number> {
+    const key = getValidationFailureKey(reportId, stepName);
+    const value = await this.cache.get(key);
+
+    if (!value) {
+      return 0;
+    }
+
+    const count = parseInt(value, 10);
+    return Number.isNaN(count) ? 0 : count;
   }
 }
 

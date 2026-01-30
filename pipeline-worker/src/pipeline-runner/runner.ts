@@ -26,6 +26,11 @@ import type {
   TopicTreeResult,
 } from "../pipeline-steps/types.js";
 import {
+  LOCK_REFRESH_INTERVAL_MS,
+  LOCK_TTL_SECONDS,
+  PIPELINE_TIMEOUT_MS,
+} from "./constants.js";
+import {
   createInitialState,
   getNextStep,
   markStepCompleted,
@@ -46,11 +51,82 @@ import {
 
 const runnerLogger = logger.child({ module: "pipeline-runner" });
 
-/** Maximum pipeline execution time: 30 minutes */
-const PIPELINE_TIMEOUT_MS = 30 * 60 * 1000;
-
 /** Maximum validation failures before considering state permanently corrupted */
 const MAX_VALIDATION_FAILURES = 3;
+
+/**
+ * Minimum step duration in milliseconds for analytics tracking.
+ * Very fast operations (e.g., mocked steps) can complete in <1ms,
+ * but we need at least 1ms for accurate analytics reporting.
+ */
+const MIN_STEP_DURATION_MS = 1;
+
+/**
+ * Verify lock ownership before state save.
+ * If lockValue is provided, verifies we still hold the lock.
+ * Throws an error if lock verification fails.
+ */
+async function verifyLockBeforeSave(
+  stateStore: RedisPipelineStateStore,
+  reportId: string,
+  lockValue: string | undefined,
+  reportLogger: typeof runnerLogger,
+): Promise<void> {
+  if (!lockValue) {
+    // No lock value provided - skip verification
+    return;
+  }
+
+  const hasLock = await stateStore.verifyPipelineLock(reportId, lockValue);
+  if (!hasLock) {
+    reportLogger.error(
+      { reportId, lockValue },
+      "Lock verification failed - lock expired or acquired by another worker",
+    );
+    throw new Error(
+      "Pipeline lock lost during execution - cannot safely save state",
+    );
+  }
+}
+
+/**
+ * Atomically saves pipeline state with lock verification.
+ * This prevents TOCTOU race conditions by using a Lua script that verifies
+ * lock ownership and saves state in a single atomic Redis operation.
+ *
+ * Falls back to non-atomic save if no lock value is provided.
+ *
+ * @param stateStore - Redis state store
+ * @param state - Pipeline state to save
+ * @param lockValue - Unique lock identifier (optional)
+ * @param reportLogger - Logger for this report
+ * @throws {Error} When lock is lost or save fails
+ */
+async function saveWithLockVerification(
+  stateStore: RedisPipelineStateStore,
+  state: PipelineState,
+  lockValue: string | undefined,
+  reportLogger: typeof runnerLogger,
+): Promise<void> {
+  if (!lockValue) {
+    // No lock value provided - use regular save without verification
+    await stateStore.save(state);
+    return;
+  }
+
+  // Use atomic lock-verified save to prevent TOCTOU race conditions
+  const result = await stateStore.saveWithLockVerification(state, lockValue);
+
+  if (!result.success) {
+    reportLogger.error(
+      { reportId: state.reportId, lockValue, reason: result.reason },
+      "Atomic save failed - lock verification failed during save operation",
+    );
+    throw new Error(
+      `Pipeline lock lost during save - cannot safely persist state: ${result.reason}`,
+    );
+  }
+}
 
 /**
  * Validate that a recovered result has the expected structure.
@@ -60,7 +136,15 @@ const MAX_VALIDATION_FAILURES = 3;
 function validateResultStructure(
   result: unknown,
   stepName: PipelineStepName,
-): result is { data: unknown; usage: unknown; cost: number } {
+): result is
+  | { data: unknown; usage: unknown; cost: number }
+  | {
+      subtopicCruxes: unknown;
+      topicScores: unknown;
+      speakerCruxMatrix: unknown;
+      usage: unknown;
+      cost: number;
+    } {
   if (!result || typeof result !== "object") {
     runnerLogger.warn(
       { stepName, resultType: typeof result, isNull: result === null },
@@ -192,6 +276,95 @@ interface StepExecutionResult<T> {
 }
 
 /**
+ * Start periodic lock extension during long-running step execution.
+ * Returns a cleanup function to stop the extension timer and a promise that
+ * resolves if the lock is lost (refresh fails or throws).
+ *
+ * @param stateStore - State store for lock operations
+ * @param reportId - Report identifier
+ * @param lockValue - Lock value to verify ownership
+ * @param reportLogger - Logger instance
+ * @returns Object with cleanup function and abort promise
+ */
+function startLockExtension(
+  stateStore: RedisPipelineStateStore,
+  reportId: string,
+  lockValue: string | undefined,
+  reportLogger: typeof runnerLogger,
+): { cleanup: () => void; aborted: Promise<void> } {
+  // If no lock value provided, return no-op cleanup and never-resolving abort promise
+  if (!lockValue) {
+    return {
+      cleanup: () => {},
+      aborted: new Promise(() => {}), // Never resolves
+    };
+  }
+
+  let extensionCount = 0;
+  let abortResolve: (() => void) | undefined;
+  const aborted = new Promise<void>((resolve) => {
+    abortResolve = resolve;
+  });
+
+  const intervalId = setInterval(async () => {
+    try {
+      extensionCount++;
+      const refreshed = await stateStore.refreshPipelineLock(
+        reportId,
+        lockValue,
+      );
+
+      if (refreshed) {
+        reportLogger.debug(
+          {
+            reportId,
+            extensionCount,
+            newTtlSeconds: LOCK_TTL_SECONDS,
+          },
+          "Lock TTL refreshed during step execution",
+        );
+      } else {
+        reportLogger.error(
+          {
+            reportId,
+            extensionCount,
+            lockValue,
+          },
+          "Failed to refresh lock during step execution - lock lost or held by another worker, aborting pipeline",
+        );
+        clearInterval(intervalId);
+        abortResolve?.();
+      }
+    } catch (error) {
+      reportLogger.error(
+        {
+          error,
+          reportId,
+          extensionCount,
+        },
+        "Error refreshing lock during step execution - aborting pipeline",
+      );
+      clearInterval(intervalId);
+      abortResolve?.();
+    }
+  }, LOCK_REFRESH_INTERVAL_MS);
+
+  // Return cleanup function and abort promise
+  return {
+    cleanup: () => {
+      clearInterval(intervalId);
+      if (extensionCount > 0) {
+        reportLogger.debug(
+          { reportId, extensionCount },
+          "Lock extension timer stopped",
+        );
+      }
+    },
+    aborted,
+  };
+}
+
+/**
  * Execute a single pipeline step with timing and error handling
  */
 async function executeStep<T>(
@@ -201,12 +374,17 @@ async function executeStep<T>(
 ): Promise<Result<StepExecutionResult<T>, Error>> {
   const startTime = Date.now();
 
-  reportLogger.info({ step: stepName }, `Starting pipeline step: ${stepName}`);
+  reportLogger.info(
+    { step: stepName, status: "started" },
+    "Pipeline step started",
+  );
 
   try {
     const result = await executor();
 
-    const durationMs = Date.now() - startTime;
+    // Ensure minimum duration for analytics tracking
+    // (very fast operations like mocked steps can complete in <1ms)
+    const durationMs = Math.max(MIN_STEP_DURATION_MS, Date.now() - startTime);
 
     if (result.tag === "failure") {
       reportLogger.error(
@@ -214,8 +392,9 @@ async function executeStep<T>(
           step: stepName,
           error: result.error,
           durationMs,
+          status: "failed",
         },
-        `Pipeline step failed: ${stepName}`,
+        "Pipeline step failed",
       );
       return failure(result.error);
     }
@@ -227,8 +406,9 @@ async function executeStep<T>(
           step: stepName,
           durationMs,
           resultKeys: Object.keys(result.value as object),
+          missingFields: ["usage", "cost"],
         },
-        `Step ${stepName} returned result without analytics (usage/cost) - analytics tracking will be incomplete`,
+        "Step returned result without analytics - analytics tracking will be incomplete",
       );
 
       // Continue with default analytics to avoid breaking the pipeline
@@ -255,8 +435,9 @@ async function executeStep<T>(
         outputTokens,
         totalTokens,
         cost,
+        status: "completed",
       },
-      `Pipeline step completed: ${stepName}`,
+      "Pipeline step completed",
     );
 
     return success({
@@ -276,8 +457,9 @@ async function executeStep<T>(
         step: stepName,
         error: err,
         durationMs,
+        status: "exception",
       },
-      `Pipeline step threw exception: ${stepName}`,
+      "Pipeline step threw exception",
     );
 
     return failure(err);
@@ -422,6 +604,8 @@ interface StepResultContext {
     totalTokens: number;
     cost: number;
   };
+  lockValue?: string;
+  reportLogger: typeof runnerLogger;
 }
 
 /**
@@ -430,7 +614,15 @@ interface StepResultContext {
 async function saveStepResult(
   context: StepResultContext,
 ): Promise<PipelineState> {
-  const { stateStore, state, stepName, result, analytics } = context;
+  const {
+    stateStore,
+    state,
+    stepName,
+    result,
+    analytics,
+    lockValue,
+    reportLogger,
+  } = context;
 
   // Mark step as completed with analytics
   let updatedState = markStepCompleted(state, stepName, analytics);
@@ -449,8 +641,13 @@ async function saveStepResult(
     totalDurationMs: updatedState.totalDurationMs + analytics.durationMs,
   };
 
-  // Persist to Redis
-  await stateStore.save(updatedState);
+  // Atomically save state with lock verification to prevent TOCTOU race conditions
+  await saveWithLockVerification(
+    stateStore,
+    updatedState,
+    lockValue,
+    reportLogger,
+  );
 
   return updatedState;
 }
@@ -463,20 +660,22 @@ interface StepExecutionContext {
   totalSteps: number;
   completedSteps: number;
   executor: () => Promise<Result<StepExecutionResult<unknown>, Error>>;
+  reportLogger: typeof runnerLogger;
 }
 
 /**
  * Safely invoke a callback without breaking pipeline execution
  */
-function safelyInvokeCallback(
-  callback: (() => void) | undefined,
+function safelyInvokeCallback<TArgs extends unknown[]>(
+  callback: ((...args: TArgs) => void) | undefined,
   callbackName: string,
   stepName: PipelineStepName,
+  ...args: TArgs
 ): void {
   if (!callback) return;
 
   try {
-    callback();
+    callback(...args);
   } catch (callbackError) {
     runnerLogger.warn(
       { error: callbackError, stepName },
@@ -496,38 +695,31 @@ function notifyProgress(
 ): void {
   const percentComplete = Math.round((completedSteps / totalSteps) * 100);
 
-  safelyInvokeCallback(
-    config.onProgress
-      ? () =>
-          config.onProgress?.({
-            currentStep: stepName,
-            totalSteps,
-            completedSteps,
-            percentComplete,
-          })
-      : undefined,
-    "onProgress",
-    stepName,
-  );
+  safelyInvokeCallback(config.onProgress, "onProgress", stepName, {
+    currentStep: stepName,
+    totalSteps,
+    completedSteps,
+    percentComplete,
+  });
 }
 
 /**
  * Handle step failure
  */
-async function handleStepFailure(
+function handleStepFailure(
   stepName: PipelineStepName,
   error: Error,
   state: PipelineState,
-  stateStore: RedisPipelineStateStore,
   config: PipelineRunnerConfig,
-): Promise<Result<never, PipelineStepError>> {
+): Result<never, PipelineStepError> {
   const updatedState = markStepFailed(state, stepName, error);
-  await stateStore.save(updatedState);
 
   safelyInvokeCallback(
-    () => config.onStepUpdate?.(stepName, "failed"),
+    config.onStepUpdate,
     "onStepUpdate",
     stepName,
+    stepName,
+    "failed",
   );
 
   return failure(new PipelineStepError(stepName, error, updatedState));
@@ -549,31 +741,77 @@ async function executeAndHandleStep(
     totalSteps,
     completedSteps,
     executor,
+    reportLogger,
   } = context;
 
   // Mark step as started
   let updatedState = markStepStarted(state, stepName);
   updatedState.currentStep = stepName;
-  await stateStore.save(updatedState);
 
-  safelyInvokeCallback(
-    () => config.onStepUpdate?.(stepName, "in_progress"),
-    "onStepUpdate",
-    stepName,
+  // Atomically save state with lock verification to prevent TOCTOU race conditions
+  await saveWithLockVerification(
+    stateStore,
+    updatedState,
+    config.lockValue,
+    reportLogger,
   );
 
-  // Execute the step
-  const result = await executor();
+  safelyInvokeCallback(
+    config.onStepUpdate,
+    "onStepUpdate",
+    stepName,
+    stepName,
+    "in_progress",
+  );
+
+  // Start periodic lock extension during step execution
+  const { cleanup: stopLockExtension, aborted } = startLockExtension(
+    stateStore,
+    state.reportId,
+    config.lockValue,
+    reportLogger,
+  );
+
+  // Execute the step (make sure to stop lock extension on completion or error)
+  // Race between step execution and lock refresh failure
+  let result: Result<StepExecutionResult<unknown>, Error>;
+  try {
+    const executionResult = await Promise.race([
+      executor(),
+      aborted.then(() => {
+        // Lock was lost during execution
+        return failure(
+          new Error(
+            "Pipeline lock lost during step execution - another worker may have acquired the lock",
+          ),
+        );
+      }),
+    ]);
+    result = executionResult;
+  } finally {
+    // Always stop lock extension when step completes (success or failure)
+    stopLockExtension();
+  }
 
   // Handle failure
   if (result.tag === "failure") {
-    return handleStepFailure(
+    const failureResult = handleStepFailure(
       stepName,
       result.error,
       updatedState,
-      stateStore,
       config,
     );
+    // handleStepFailure always returns failure, so we can safely access error
+    if (failureResult.tag === "failure") {
+      // Atomically save failure state with lock verification
+      await saveWithLockVerification(
+        stateStore,
+        failureResult.error.state,
+        config.lockValue,
+        reportLogger,
+      );
+    }
+    return failureResult;
   }
 
   // Save successful result
@@ -590,13 +828,17 @@ async function executeAndHandleStep(
       totalTokens: result.value.totalTokens,
       cost: result.value.cost,
     },
+    lockValue: config.lockValue,
+    reportLogger,
   });
 
   // Notify completion
   safelyInvokeCallback(
-    () => config.onStepUpdate?.(stepName, "completed"),
+    config.onStepUpdate,
     "onStepUpdate",
     stepName,
+    stepName,
+    "completed",
   );
 
   notifyProgress(config, stepName, completedSteps, totalSteps);
@@ -639,7 +881,15 @@ async function initializePipelineState(
 
   const state = createInitialState(config.reportId, config.userId);
   state.status = "running";
-  await stateStore.save(state);
+
+  // Atomically save initial state with lock verification
+  await saveWithLockVerification(
+    stateStore,
+    state,
+    config.lockValue,
+    reportLogger,
+  );
+
   return state;
 }
 
@@ -664,6 +914,7 @@ async function executeStepIfNeeded<T>(
   totalSteps: number,
   completedSteps: number,
   executor: () => Promise<Result<StepExecutionResult<T>, Error>>,
+  reportLogger: typeof runnerLogger,
 ): Promise<Result<
   { state: PipelineState; result: T },
   PipelineStepError
@@ -680,6 +931,7 @@ async function executeStepIfNeeded<T>(
     totalSteps,
     completedSteps,
     executor,
+    reportLogger,
   });
 
   if (result.tag === "failure") {
@@ -690,7 +942,7 @@ async function executeStepIfNeeded<T>(
   // This provides runtime safety that the executor returned a valid result
   const stepResult = result.value.result;
   if (!validateResultStructure(stepResult, stepName)) {
-    runnerLogger.error(
+    reportLogger.error(
       {
         stepName,
         resultType: typeof stepResult,
@@ -719,6 +971,80 @@ async function executeStepIfNeeded<T>(
 }
 
 /**
+ * Configuration for executing a single pipeline step with dependency validation
+ */
+interface StepExecutionConfig<T> {
+  stepName: PipelineStepName;
+  stepNumber: number;
+  cachedResult: T | undefined;
+  executor: () => Promise<Result<StepExecutionResult<T>, Error>>;
+  dependencyError?: string;
+}
+
+/**
+ * Execute a pipeline step with automatic recovery, dependency validation, and state updates.
+ * This function encapsulates the common pattern used across all pipeline steps:
+ * 1. Check for cached/recovered result
+ * 2. Validate dependencies (if provided)
+ * 3. Execute step if needed
+ * 4. Handle failures
+ * 5. Update state and results
+ *
+ * @returns Updated state and result, or failure if dependencies are missing or execution fails
+ */
+async function executeStepWithRecovery<T>(
+  config: StepExecutionConfig<T>,
+  state: PipelineState,
+  stateStore: RedisPipelineStateStore,
+  runnerConfig: PipelineRunnerConfig,
+  totalSteps: number,
+  reportLogger: typeof runnerLogger,
+): Promise<Result<{ state: PipelineState; result: T }, PipelineStepError>> {
+  // Check dependency validation first
+  if (config.dependencyError) {
+    return failure(
+      new PipelineStepError(
+        config.stepName,
+        new Error(config.dependencyError),
+        state,
+      ),
+    );
+  }
+
+  // Execute step if not already cached
+  const executionResult = await executeStepIfNeeded(
+    config.stepName,
+    !config.cachedResult,
+    state,
+    stateStore,
+    runnerConfig,
+    totalSteps,
+    config.stepNumber,
+    config.executor,
+    reportLogger,
+  );
+
+  // Handle execution failure
+  if (executionResult?.tag === "failure") {
+    return failure(executionResult.error);
+  }
+
+  // Return updated state and result (either from execution or cache)
+  if (executionResult) {
+    return success({
+      state: executionResult.value.state,
+      result: executionResult.value.result,
+    });
+  }
+
+  // Use cached result
+  return success({
+    state,
+    result: config.cachedResult as T,
+  });
+}
+
+/**
  * Execute all pipeline steps in sequence
  */
 async function executeAllSteps(
@@ -737,29 +1063,40 @@ async function executeAllSteps(
 
   // Validate and recover results from Redis state
   // Each result must have the required structure (data, usage, cost)
-  const validateAndCast = <T>(
+  const validateAndCast = async <T>(
     result: unknown,
     stepName: PipelineStepName,
-  ): T | undefined => {
-    if (!result) return undefined;
+  ): Promise<Result<T | undefined, PipelineStepError>> => {
+    if (!result) return success(undefined);
     if (!validateResultStructure(result, stepName)) {
-      // Track validation failure
-      const failureCount = currentState.validationFailures[stepName];
+      // Atomically increment failure counter in Redis
+      // This ensures the counter persists across crashes and prevents race conditions
+      const newFailureCount = await stateStore.incrementValidationFailure(
+        state.reportId,
+        stepName,
+      );
 
       // If we've exceeded the retry limit, fail the pipeline permanently
-      if (failureCount >= MAX_VALIDATION_FAILURES) {
-        throw new PipelineStepError(
-          stepName,
-          new Error(
-            `Step result validation failed ${failureCount} times - state is permanently corrupted. ` +
-              `This may indicate a schema version mismatch or data serialization issue.`,
+      // Check AFTER incrementing to avoid race condition where two workers
+      // both read count=2, both pass check, both increment → count=4 when MAX=3
+      if (newFailureCount >= MAX_VALIDATION_FAILURES) {
+        return failure(
+          new PipelineStepError(
+            stepName,
+            new Error(
+              `Step result validation failed ${newFailureCount} times - state is permanently corrupted. ` +
+                `This may indicate a schema version mismatch or data serialization issue.`,
+            ),
+            currentState,
           ),
-          currentState,
         );
       }
 
-      // Increment failure counter and update state
-      currentState.validationFailures[stepName] = failureCount + 1;
+      // Note: We do not update currentState.validationFailures here because:
+      // 1. Redis counter is the source of truth (atomically incremented above)
+      // 2. In-memory update would not persist until state is saved later
+      // 3. This prevents race condition if process crashes before state save
+      // The counter will be synced to state JSON when save() is eventually called
 
       // If validation fails, we cannot use this result and must re-run the step
       reportLogger.error(
@@ -768,37 +1105,63 @@ async function executeAllSteps(
           reportId: state.reportId,
           hasResult: !!result,
           resultType: typeof result,
-          failureCount: currentState.validationFailures[stepName],
+          failureCount: newFailureCount,
           maxFailures: MAX_VALIDATION_FAILURES,
         },
-        `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed (attempt ${currentState.validationFailures[stepName]}/${MAX_VALIDATION_FAILURES})`,
+        `Discarding corrupted step result from Redis - step '${stepName}' will be re-executed (attempt ${newFailureCount}/${MAX_VALIDATION_FAILURES})`,
       );
-      return undefined;
+      return success(undefined);
     }
-    return result as T;
+    return success(result as T);
   };
 
+  // Validate each result and collect any errors
+  const clusteringValidation = await validateAndCast<TopicTreeResult>(
+    state.completedResults.clustering,
+    "clustering",
+  );
+  if (clusteringValidation.tag === "failure") {
+    return failure(clusteringValidation.error);
+  }
+
+  const claimsValidation = await validateAndCast<ClaimsResult>(
+    state.completedResults.claims,
+    "claims",
+  );
+  if (claimsValidation.tag === "failure") {
+    return failure(claimsValidation.error);
+  }
+
+  const sortedValidation = await validateAndCast<SortAndDeduplicateResult>(
+    state.completedResults.sort_and_deduplicate,
+    "sort_and_deduplicate",
+  );
+  if (sortedValidation.tag === "failure") {
+    return failure(sortedValidation.error);
+  }
+
+  const summariesValidation = await validateAndCast<SummariesResult>(
+    state.completedResults.summaries,
+    "summaries",
+  );
+  if (summariesValidation.tag === "failure") {
+    return failure(summariesValidation.error);
+  }
+
+  const cruxesValidation = await validateAndCast<CruxesResult>(
+    state.completedResults.cruxes,
+    "cruxes",
+  );
+  if (cruxesValidation.tag === "failure") {
+    return failure(cruxesValidation.error);
+  }
+
   const results: PipelineStepResults = {
-    clusteringResult: validateAndCast<TopicTreeResult>(
-      state.completedResults.clustering,
-      "clustering",
-    ),
-    claimsResult: validateAndCast<ClaimsResult>(
-      state.completedResults.claims,
-      "claims",
-    ),
-    sortedResult: validateAndCast<SortAndDeduplicateResult>(
-      state.completedResults.sort_and_deduplicate,
-      "sort_and_deduplicate",
-    ),
-    summariesResult: validateAndCast<SummariesResult>(
-      state.completedResults.summaries,
-      "summaries",
-    ),
-    cruxesResult: validateAndCast<CruxesResult>(
-      state.completedResults.cruxes,
-      "cruxes",
-    ),
+    clusteringResult: clusteringValidation.value,
+    claimsResult: claimsValidation.value,
+    sortedResult: sortedValidation.value,
+    summariesResult: summariesValidation.value,
+    cruxesResult: cruxesValidation.value,
   };
 
   // Log summary of recovered vs corrupted results
@@ -824,18 +1187,6 @@ async function executeAllSteps(
     );
   }
 
-  // Save updated state with incremented validation failure counters
-  // This ensures the counters persist across restarts
-  if (corruptedSteps.length > 0) {
-    await stateStore.save(currentState);
-    reportLogger.info(
-      { validationFailures: currentState.validationFailures },
-      "Updated validation failure counters persisted to Redis",
-    );
-  }
-
-  const nextStep = getNextStep(currentState);
-
   // Calculate total steps based on what will actually run
   // Steps: clustering, claims, sort_and_deduplicate, summaries, [cruxes if enabled]
   const allSteps: PipelineStepName[] = [
@@ -848,180 +1199,171 @@ async function executeAllSteps(
   const totalSteps = input.enableCruxes ? allSteps.length : allSteps.length - 1;
 
   // Step 1: Clustering
-  const clusteringResult = await executeStepIfNeeded(
-    "clustering",
-    nextStep === "clustering" || !results.clusteringResult,
+  const clusteringResult = await executeStepWithRecovery(
+    {
+      stepName: "clustering",
+      stepNumber: 1,
+      cachedResult: results.clusteringResult,
+      executor: () => executeClusteringStep(input, config, reportLogger),
+    },
     currentState,
     stateStore,
     config,
     totalSteps,
-    1,
-    () => executeClusteringStep(input, config, reportLogger),
+    reportLogger,
   );
 
-  if (clusteringResult?.tag === "failure") {
+  if (clusteringResult.tag === "failure") {
     return failure(clusteringResult.error);
   }
 
-  if (clusteringResult) {
-    currentState = clusteringResult.value.state;
-    results.clusteringResult = clusteringResult.value.result;
-  }
+  currentState = clusteringResult.value.state;
+  results.clusteringResult = clusteringResult.value.result;
 
   // Step 2: Claims extraction
-  if (!results.clusteringResult) {
-    return failure(
-      new PipelineStepError(
-        "claims",
-        new Error("Clustering result is required for claims extraction"),
-        currentState,
-      ),
-    );
-  }
-
-  const clusteringTopics = results.clusteringResult.data;
-  const claimsResult = await executeStepIfNeeded(
-    "claims",
-    !results.claimsResult,
+  const claimsResult = await executeStepWithRecovery(
+    {
+      stepName: "claims",
+      stepNumber: 2,
+      cachedResult: results.claimsResult,
+      executor: () =>
+        executeClaimsStep(
+          input,
+          results.clusteringResult!.data,
+          config,
+          reportLogger,
+        ),
+      dependencyError: !results.clusteringResult
+        ? "Clustering result is required for claims extraction"
+        : undefined,
+    },
     currentState,
     stateStore,
     config,
     totalSteps,
-    2,
-    () => executeClaimsStep(input, clusteringTopics, config, reportLogger),
+    reportLogger,
   );
 
-  if (claimsResult?.tag === "failure") {
+  if (claimsResult.tag === "failure") {
     return failure(claimsResult.error);
   }
 
-  if (claimsResult) {
-    currentState = claimsResult.value.state;
-    results.claimsResult = claimsResult.value.result;
-  }
+  currentState = claimsResult.value.state;
+  results.claimsResult = claimsResult.value.result;
 
   // Step 3: Sort and deduplicate
-  if (!results.claimsResult) {
-    return failure(
-      new PipelineStepError(
-        "sort_and_deduplicate",
-        new Error("Claims result is required for sort and deduplicate"),
-        currentState,
-      ),
-    );
-  }
-
-  const claimsTreeData = results.claimsResult.data;
-  const sortedResult = await executeStepIfNeeded(
-    "sort_and_deduplicate",
-    !results.sortedResult,
+  const sortedResult = await executeStepWithRecovery(
+    {
+      stepName: "sort_and_deduplicate",
+      stepNumber: 3,
+      cachedResult: results.sortedResult,
+      executor: () =>
+        executeSortAndDeduplicateStep(
+          input,
+          results.claimsResult!.data,
+          config,
+          reportLogger,
+        ),
+      dependencyError: !results.claimsResult
+        ? "Claims result is required for sort and deduplicate"
+        : undefined,
+    },
     currentState,
     stateStore,
     config,
     totalSteps,
-    3,
-    () =>
-      executeSortAndDeduplicateStep(
-        input,
-        claimsTreeData,
-        config,
-        reportLogger,
-      ),
+    reportLogger,
   );
 
-  if (sortedResult?.tag === "failure") {
+  if (sortedResult.tag === "failure") {
     return failure(sortedResult.error);
   }
 
-  if (sortedResult) {
-    currentState = sortedResult.value.state;
-    results.sortedResult = sortedResult.value.result;
-  }
+  currentState = sortedResult.value.state;
+  results.sortedResult = sortedResult.value.result;
 
   // Step 4: Summaries
-  if (!results.sortedResult) {
-    return failure(
-      new PipelineStepError(
-        "summaries",
-        new Error("Sorted result is required for summaries"),
-        currentState,
-      ),
-    );
-  }
-
-  const sortedData = results.sortedResult;
-  const summariesResult = await executeStepIfNeeded(
-    "summaries",
-    !results.summariesResult,
+  const summariesResult = await executeStepWithRecovery(
+    {
+      stepName: "summaries",
+      stepNumber: 4,
+      cachedResult: results.summariesResult,
+      executor: () =>
+        executeSummariesStep(
+          input,
+          results.sortedResult!,
+          config,
+          reportLogger,
+        ),
+      dependencyError: !results.sortedResult
+        ? "Sorted result is required for summaries"
+        : undefined,
+    },
     currentState,
     stateStore,
     config,
     totalSteps,
-    4,
-    () => executeSummariesStep(input, sortedData, config, reportLogger),
+    reportLogger,
   );
 
-  if (summariesResult?.tag === "failure") {
+  if (summariesResult.tag === "failure") {
     return failure(summariesResult.error);
   }
 
-  if (summariesResult) {
-    currentState = summariesResult.value.state;
-    results.summariesResult = summariesResult.value.result;
-  }
+  currentState = summariesResult.value.state;
+  results.summariesResult = summariesResult.value.result;
 
   // Step 5: Cruxes (optional)
   if (input.enableCruxes) {
-    if (!results.claimsResult || !results.clusteringResult) {
-      return failure(
-        new PipelineStepError(
-          "cruxes",
-          new Error("Claims and clustering results are required for cruxes"),
-          currentState,
-        ),
-      );
-    }
-
-    const cruxesClaimsTree = results.claimsResult.data;
-    const cruxesTopics = results.clusteringResult.data;
-    const cruxesResult = await executeStepIfNeeded(
-      "cruxes",
-      !results.cruxesResult,
+    const cruxesResult = await executeStepWithRecovery(
+      {
+        stepName: "cruxes",
+        stepNumber: 5,
+        cachedResult: results.cruxesResult,
+        executor: () =>
+          executeCruxesStep(
+            input,
+            results.claimsResult!.data,
+            results.clusteringResult!.data,
+            config,
+            reportLogger,
+          ),
+        dependencyError:
+          !results.claimsResult || !results.clusteringResult
+            ? "Claims and clustering results are required for cruxes"
+            : undefined,
+      },
       currentState,
       stateStore,
       config,
       totalSteps,
-      5,
-      () =>
-        executeCruxesStep(
-          input,
-          cruxesClaimsTree,
-          cruxesTopics,
-          config,
-          reportLogger,
-        ),
+      reportLogger,
     );
 
-    if (cruxesResult?.tag === "failure") {
+    if (cruxesResult.tag === "failure") {
       return failure(cruxesResult.error);
     }
 
-    if (cruxesResult) {
-      currentState = cruxesResult.value.state;
-      results.cruxesResult = cruxesResult.value.result;
-    }
+    currentState = cruxesResult.value.state;
+    results.cruxesResult = cruxesResult.value.result;
   } else {
     currentState = markStepSkipped(currentState, "cruxes");
-    await stateStore.save(currentState);
 
-    try {
-      config.onStepUpdate?.("cruxes", "skipped");
-    } catch (callbackError) {
-      reportLogger.warn(
-        { error: callbackError },
-        "onStepUpdate callback threw an error",
-      );
-    }
+    // Atomically save skipped step state with lock verification
+    await saveWithLockVerification(
+      stateStore,
+      currentState,
+      config.lockValue,
+      reportLogger,
+    );
+
+    safelyInvokeCallback(
+      config.onStepUpdate,
+      "onStepUpdate",
+      "cruxes",
+      "cruxes",
+      "skipped",
+    );
   }
 
   return success({ state: currentState, results });
@@ -1032,31 +1374,52 @@ async function executeAllSteps(
  */
 function validateRequiredResults(
   results: PipelineStepResults,
-): asserts results is Required<
-  Pick<
+): Result<
+  Required<
+    Pick<
+      PipelineStepResults,
+      "clusteringResult" | "claimsResult" | "sortedResult" | "summariesResult"
+    >
+  > &
     PipelineStepResults,
-    "clusteringResult" | "claimsResult" | "sortedResult" | "summariesResult"
-  >
-> &
-  PipelineStepResults {
+  Error
+> {
   const { clusteringResult, claimsResult, sortedResult, summariesResult } =
     results;
 
   if (!clusteringResult) {
-    throw new Error("Pipeline completed but clustering result is missing");
+    return failure(
+      new Error("Pipeline completed but clustering result is missing"),
+    );
   }
 
   if (!claimsResult) {
-    throw new Error("Pipeline completed but claims result is missing");
+    return failure(
+      new Error("Pipeline completed but claims result is missing"),
+    );
   }
 
   if (!sortedResult) {
-    throw new Error("Pipeline completed but sorted result is missing");
+    return failure(
+      new Error("Pipeline completed but sorted result is missing"),
+    );
   }
 
   if (!summariesResult) {
-    throw new Error("Pipeline completed but summaries result is missing");
+    return failure(
+      new Error("Pipeline completed but summaries result is missing"),
+    );
   }
+
+  return success(
+    results as Required<
+      Pick<
+        PipelineStepResults,
+        "clusteringResult" | "claimsResult" | "sortedResult" | "summariesResult"
+      >
+    > &
+      PipelineStepResults,
+  );
 }
 
 /**
@@ -1065,20 +1428,25 @@ function validateRequiredResults(
 function buildSuccessResult(
   state: PipelineState,
   results: PipelineStepResults,
-): PipelineResult {
-  validateRequiredResults(results);
+): Result<PipelineResult, Error> {
+  const validation = validateRequiredResults(results);
+  if (validation.tag === "failure") {
+    return failure(validation.error);
+  }
 
-  return {
+  const validatedResults = validation.value;
+
+  return success({
     success: true,
     state,
     outputs: {
-      topicTree: results.clusteringResult.data,
-      claimsTree: results.claimsResult.data,
-      sortedTree: results.sortedResult.data,
-      summaries: results.summariesResult.data,
-      cruxes: results.cruxesResult,
+      topicTree: validatedResults.clusteringResult.data,
+      claimsTree: validatedResults.claimsResult.data,
+      sortedTree: validatedResults.sortedResult.data,
+      summaries: validatedResults.summariesResult.data,
+      cruxes: validatedResults.cruxesResult,
     },
-  };
+  });
 }
 
 /**
@@ -1088,6 +1456,7 @@ async function handlePipelineFailure(
   error: unknown,
   state: PipelineState,
   stateStore: RedisPipelineStateStore,
+  config: PipelineRunnerConfig,
   reportLogger: typeof runnerLogger,
 ): Promise<PipelineResult> {
   const err = error instanceof Error ? error : new Error(String(error));
@@ -1109,7 +1478,14 @@ async function handlePipelineFailure(
       step: state.currentStep,
     },
   };
-  await stateStore.save(updatedState);
+
+  // Atomically save failure state with lock verification
+  await saveWithLockVerification(
+    stateStore,
+    updatedState,
+    config.lockValue,
+    reportLogger,
+  );
 
   return {
     success: false,
@@ -1154,7 +1530,14 @@ async function executePipelineInternal(
       status: "completed",
       currentStep: undefined,
     };
-    await stateStore.save(state);
+
+    // Atomically save completion state with lock verification
+    await saveWithLockVerification(
+      stateStore,
+      state,
+      config.lockValue,
+      reportLogger,
+    );
 
     reportLogger.info(
       {
@@ -1165,9 +1548,26 @@ async function executePipelineInternal(
       "Pipeline completed successfully",
     );
 
-    return buildSuccessResult(state, stepsResult.value.results);
+    const successResult = buildSuccessResult(state, stepsResult.value.results);
+    if (successResult.tag === "failure") {
+      return handlePipelineFailure(
+        successResult.error,
+        state,
+        stateStore,
+        config,
+        reportLogger,
+      );
+    }
+
+    return successResult.value;
   } catch (error) {
-    return handlePipelineFailure(error, state, stateStore, reportLogger);
+    return handlePipelineFailure(
+      error,
+      state,
+      stateStore,
+      config,
+      reportLogger,
+    );
   }
 }
 
@@ -1199,6 +1599,8 @@ export async function runPipeline(
   const { signal } = abortController;
 
   // Create timeout promise that respects abort signal
+  // Note: This promise only rejects (never resolves) which is intentional.
+  // In Promise.race, the main pipeline promise handles the success case.
   const timeoutPromise = new Promise<PipelineResult>((_, reject) => {
     const timeoutId = setTimeout(() => {
       if (!signal.aborted) {
@@ -1241,6 +1643,7 @@ export async function runPipeline(
         error,
         currentState,
         stateStore,
+        config,
         reportLogger,
       );
     }
@@ -1269,33 +1672,74 @@ export async function getPipelineStatus(
 
 /**
  * Cancel a running pipeline
+ *
+ * Acquires a lock to ensure safe cancellation without race conditions.
+ * If the pipeline is already locked by an active worker, this will wait
+ * briefly and return false if the lock cannot be acquired.
  */
 export async function cancelPipeline(
   reportId: string,
   stateStore: RedisPipelineStateStore,
 ): Promise<boolean> {
-  const state = await stateStore.get(reportId);
+  // Generate a unique lock value for this cancellation operation
+  const lockValue = `cancel-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  if (!state) {
+  // Attempt to acquire lock to safely modify state
+  const lockAcquired = await stateStore.acquirePipelineLock(
+    reportId,
+    lockValue,
+  );
+
+  if (!lockAcquired) {
+    // Lock held by active pipeline worker - cannot cancel safely
+    runnerLogger.warn(
+      { reportId },
+      "Cannot cancel pipeline - lock held by active worker",
+    );
     return false;
   }
 
-  if (state.status !== "running") {
-    return false;
+  try {
+    // Read state after acquiring lock to prevent race conditions
+    const state = await stateStore.get(reportId);
+
+    if (!state) {
+      return false;
+    }
+
+    if (state.status !== "running") {
+      return false;
+    }
+
+    const updatedState: PipelineState = {
+      ...state,
+      status: "failed",
+      error: {
+        message: "Pipeline cancelled by user",
+        name: "CancellationError",
+        step: state.currentStep,
+      },
+    };
+
+    // Atomically save cancellation state with lock verification
+    const result = await stateStore.saveWithLockVerification(
+      updatedState,
+      lockValue,
+    );
+
+    if (!result.success) {
+      runnerLogger.error(
+        { reportId, lockValue, reason: result.reason },
+        "Lock lost during cancellation - another worker may have taken over",
+      );
+      return false;
+    }
+
+    return true;
+  } finally {
+    // Always release the lock, even if cancellation failed
+    await stateStore.releasePipelineLock(reportId, lockValue);
   }
-
-  const updatedState: PipelineState = {
-    ...state,
-    status: "failed",
-    error: {
-      message: "Pipeline cancelled by user",
-      name: "CancellationError",
-      step: state.currentStep,
-    },
-  };
-
-  await stateStore.save(updatedState);
-  return true;
 }
 
 /**

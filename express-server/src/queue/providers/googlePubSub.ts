@@ -111,6 +111,11 @@ export class GooglePubSubQueue implements Queue {
       let jobData: PipelineJob | undefined;
       // Extract requestId from message attributes for distributed tracing
       const requestId = message.attributes?.requestId;
+      // Create logger once per message for distributed tracing
+      const jobLogger = requestId
+        ? pubsubLogger.child({ requestId })
+        : pubsubLogger;
+
       try {
         jobData = JSON.parse(message.data.toString()) as PipelineJob;
 
@@ -125,7 +130,7 @@ export class GooglePubSubQueue implements Queue {
 
           // If completed, ack and skip (idempotent - already done)
           if (status === "completed") {
-            pubsubLogger.info(
+            jobLogger.info(
               {
                 reportId,
                 jobId: jobData.config.firebaseDetails.firebaseJobId,
@@ -140,7 +145,7 @@ export class GooglePubSubQueue implements Queue {
 
           // If still processing, ignore without ack (let it redeliver later)
           if (status === "processing") {
-            pubsubLogger.info(
+            jobLogger.info(
               {
                 reportId,
                 jobId: jobData.config.firebaseDetails.firebaseJobId,
@@ -153,12 +158,12 @@ export class GooglePubSubQueue implements Queue {
           }
         }
 
-        await processJob(jobData, requestId);
+        await processJob(jobData, jobLogger, requestId);
         message.ack();
       } catch (error) {
         message.nack();
         if (jobData) {
-          pubsubLogger.error(
+          jobLogger.error(
             {
               error,
               messageId: message.id,
@@ -169,10 +174,10 @@ export class GooglePubSubQueue implements Queue {
           await processJobFailure(
             jobData,
             error instanceof Error ? error : new Error(String(error)),
-            requestId,
+            jobLogger,
           );
         } else {
-          pubsubLogger.error(
+          jobLogger.error(
             { error, messageId: message.id, requestId },
             "Failed to parse message data",
           );

@@ -137,6 +137,68 @@ export interface Cache {
    * @throws {CacheSetError} When the operation fails
    */
   extendLock(key: string, value: string, ttlSeconds: number): Promise<boolean>;
+
+  /**
+   * Verifies that a distributed lock is held by the specified value atomically.
+   * This prevents TOCTOU race conditions by checking lock ownership in a single operation.
+   *
+   * @param key - The lock key
+   * @param value - Unique identifier to verify against
+   * @returns true if lock exists and is held by the specified value, false otherwise
+   * @throws {CacheGetError} When the operation fails
+   */
+  verifyLock(key: string, value: string): Promise<boolean>;
+
+  /**
+   * Atomically increments a counter by 1 and returns the new value.
+   *
+   * @param key - The counter key
+   * @param ttlSeconds - Optional TTL to set on the key after incrementing
+   * @returns The new value after incrementing
+   * @throws {CacheSetError} When the operation fails
+   */
+  increment(key: string, ttlSeconds?: number): Promise<number>;
+
+  /**
+   * Executes multiple set and delete operations atomically using Redis pipeline (MULTI/EXEC).
+   * All operations either succeed together or fail together.
+   *
+   * @param operations - Array of set operations to execute atomically
+   * @param deleteKeys - Optional array of keys to delete atomically
+   * @returns A Promise that resolves when all operations complete
+   * @throws {CacheSetError} When any operation fails
+   */
+  setMultiple(
+    operations: Array<{ key: string; value: string; options?: SetOptions }>,
+    deleteKeys?: string[],
+  ): Promise<void>;
+
+  /**
+   * Atomically verifies lock ownership and executes multiple set/delete operations.
+   * This prevents TOCTOU race conditions by ensuring the lock check and state save
+   * happen atomically in a single Redis operation.
+   *
+   * @param lockKey - The lock key to verify
+   * @param lockValue - Expected lock value (unique identifier of lock holder)
+   * @param operations - Array of set operations to execute if lock is held
+   * @param deleteKeys - Optional array of keys to delete if lock is held
+   * @returns Object indicating success and reason for failure if applicable
+   * @throws {CacheSetError} When the Redis operation fails
+   */
+  setMultipleWithLockVerification(
+    lockKey: string,
+    lockValue: string,
+    operations: Array<{ key: string; value: string; options?: SetOptions }>,
+    deleteKeys?: string[],
+  ): Promise<{ success: boolean; reason?: string }>;
+
+  /**
+   * Verifies cache connectivity and availability.
+   *
+   * @returns A Promise that resolves when the cache is healthy
+   * @throws {CacheConnectionError} When the cache is not reachable or not ready
+   */
+  healthCheck(): Promise<void>;
 }
 
 /**

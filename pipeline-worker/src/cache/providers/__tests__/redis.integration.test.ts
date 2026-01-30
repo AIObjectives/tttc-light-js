@@ -254,11 +254,13 @@ describe("Redis Integration Tests", () => {
       const result = await cache.get(testKey);
 
       expect(result).toBe(jsonValue);
-      expect(JSON.parse(result!)).toEqual({
-        foo: "bar",
-        nested: { val: 123 },
-        array: [1, 2, 3],
-      });
+      if (result !== null) {
+        expect(JSON.parse(result)).toEqual({
+          foo: "bar",
+          nested: { val: 123 },
+          array: [1, 2, 3],
+        });
+      }
 
       await cache.delete(testKey);
     });
@@ -406,6 +408,122 @@ describe("Redis Integration Tests", () => {
     });
   });
 
+  describe("Batch Operations", () => {
+    it("should atomically set multiple keys", async () => {
+      if (!redisAvailable) return;
+
+      const operations = [
+        {
+          key: `${testKeyPrefix}:batch:1`,
+          value: "value-1",
+        },
+        {
+          key: `${testKeyPrefix}:batch:2`,
+          value: "value-2",
+        },
+        {
+          key: `${testKeyPrefix}:batch:3`,
+          value: "value-3",
+        },
+      ];
+
+      await cache.setMultiple(operations);
+
+      const results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch:1`),
+        cache.get(`${testKeyPrefix}:batch:2`),
+        cache.get(`${testKeyPrefix}:batch:3`),
+      ]);
+
+      expect(results[0]).toBe("value-1");
+      expect(results[1]).toBe("value-2");
+      expect(results[2]).toBe("value-3");
+
+      await Promise.all([
+        cache.delete(`${testKeyPrefix}:batch:1`),
+        cache.delete(`${testKeyPrefix}:batch:2`),
+        cache.delete(`${testKeyPrefix}:batch:3`),
+      ]);
+    });
+
+    it("should handle batch operations with TTL", async () => {
+      if (!redisAvailable) return;
+
+      const operations = [
+        {
+          key: `${testKeyPrefix}:batch-ttl:1`,
+          value: "value-1",
+          options: { ttl: 1 },
+        },
+        {
+          key: `${testKeyPrefix}:batch-ttl:2`,
+          value: "value-2",
+          options: { ttl: 1 },
+        },
+      ];
+
+      await cache.setMultiple(operations);
+
+      // Values should exist immediately
+      let results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch-ttl:1`),
+        cache.get(`${testKeyPrefix}:batch-ttl:2`),
+      ]);
+
+      expect(results[0]).toBe("value-1");
+      expect(results[1]).toBe("value-2");
+
+      // Wait for expiration
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Values should be expired
+      results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch-ttl:1`),
+        cache.get(`${testKeyPrefix}:batch-ttl:2`),
+      ]);
+
+      expect(results[0]).toBeNull();
+      expect(results[1]).toBeNull();
+    });
+
+    it("should handle empty batch operations", async () => {
+      if (!redisAvailable) return;
+
+      await expect(cache.setMultiple([])).resolves.not.toThrow();
+    });
+
+    it("should handle mixed TTL in batch operations", async () => {
+      if (!redisAvailable) return;
+
+      const operations = [
+        {
+          key: `${testKeyPrefix}:batch-mixed:1`,
+          value: "value-1",
+        },
+        {
+          key: `${testKeyPrefix}:batch-mixed:2`,
+          value: "value-2",
+          options: { ttl: 10 },
+        },
+      ];
+
+      await cache.setMultiple(operations);
+
+      const results = await Promise.all([
+        cache.get(`${testKeyPrefix}:batch-mixed:1`),
+        cache.get(`${testKeyPrefix}:batch-mixed:2`),
+      ]);
+
+      expect(results[0]).toBe("value-1");
+      expect(results[1]).toBe("value-2");
+
+      await Promise.all([
+        cache.delete(`${testKeyPrefix}:batch-mixed:1`),
+        cache.delete(`${testKeyPrefix}:batch-mixed:2`),
+      ]);
+    });
+  });
+
   describe("Lock Operations", () => {
     it("should acquire lock successfully", async () => {
       if (!redisAvailable) return;
@@ -513,6 +631,252 @@ describe("Redis Integration Tests", () => {
       expect(acquired).toBe(true);
 
       await cache.releaseLock(lockKey, "worker-2");
+    });
+
+    it("should verify lock is held by correct value", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:verify-correct`;
+      const lockValue = "worker-1";
+
+      await cache.acquireLock(lockKey, lockValue, 10);
+      const verified = await cache.verifyLock(lockKey, lockValue);
+
+      expect(verified).toBe(true);
+
+      await cache.releaseLock(lockKey, lockValue);
+    });
+
+    it("should fail verification with wrong value", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:verify-wrong`;
+
+      await cache.acquireLock(lockKey, "worker-1", 10);
+      const verified = await cache.verifyLock(lockKey, "worker-2");
+
+      expect(verified).toBe(false);
+
+      await cache.releaseLock(lockKey, "worker-1");
+    });
+
+    it("should fail verification when lock does not exist", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:verify-nonexistent`;
+      const verified = await cache.verifyLock(lockKey, "worker-1");
+
+      expect(verified).toBe(false);
+    });
+  });
+
+  describe("setMultipleWithLockVerification", () => {
+    it("should successfully save when lock is held", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:atomic-save`;
+      const lockValue = "worker-1";
+
+      // Acquire lock
+      await cache.acquireLock(lockKey, lockValue, 10);
+
+      // Perform atomic save with lock verification
+      const operations = [
+        {
+          key: `${testKeyPrefix}:atomic:state`,
+          value: JSON.stringify({ status: "running", step: 1 }),
+        },
+        {
+          key: `${testKeyPrefix}:atomic:counter`,
+          value: "5",
+          options: { ttl: 100 },
+        },
+      ];
+
+      const result = await cache.setMultipleWithLockVerification(
+        lockKey,
+        lockValue,
+        operations,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.reason).toBeUndefined();
+
+      // Verify data was saved
+      const stateValue = await cache.get(`${testKeyPrefix}:atomic:state`);
+      const counterValue = await cache.get(`${testKeyPrefix}:atomic:counter`);
+
+      expect(stateValue).toBe(JSON.stringify({ status: "running", step: 1 }));
+      expect(counterValue).toBe("5");
+
+      // Cleanup
+      await cache.releaseLock(lockKey, lockValue);
+      await cache.delete(`${testKeyPrefix}:atomic:state`);
+      await cache.delete(`${testKeyPrefix}:atomic:counter`);
+    });
+
+    it("should fail when lock is not held", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:atomic-save-no-lock`;
+      const lockValue = "worker-1";
+
+      // Don't acquire lock - just try to save
+      const operations = [
+        {
+          key: `${testKeyPrefix}:atomic:should-not-exist`,
+          value: "test",
+        },
+      ];
+
+      const result = await cache.setMultipleWithLockVerification(
+        lockKey,
+        lockValue,
+        operations,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe("lock_expired");
+
+      // Verify data was NOT saved
+      const value = await cache.get(`${testKeyPrefix}:atomic:should-not-exist`);
+      expect(value).toBeNull();
+    });
+
+    it("should fail when lock is held by different worker", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:atomic-save-wrong-worker`;
+
+      // Worker 1 acquires lock
+      await cache.acquireLock(lockKey, "worker-1", 10);
+
+      // Worker 2 tries to save with wrong lock value
+      const operations = [
+        {
+          key: `${testKeyPrefix}:atomic:wrong-worker`,
+          value: "test",
+        },
+      ];
+
+      const result = await cache.setMultipleWithLockVerification(
+        lockKey,
+        "worker-2",
+        operations,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe("lock_stolen");
+
+      // Verify data was NOT saved
+      const value = await cache.get(`${testKeyPrefix}:atomic:wrong-worker`);
+      expect(value).toBeNull();
+
+      // Cleanup
+      await cache.releaseLock(lockKey, "worker-1");
+    });
+
+    it("should handle operations with deletions atomically", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:atomic-save-with-dels`;
+      const lockValue = "worker-1";
+
+      // Set up some keys to delete
+      await cache.set(`${testKeyPrefix}:atomic:to-delete-1`, "old-value-1");
+      await cache.set(`${testKeyPrefix}:atomic:to-delete-2`, "old-value-2");
+
+      // Acquire lock
+      await cache.acquireLock(lockKey, lockValue, 10);
+
+      // Perform atomic save with deletions
+      const operations = [
+        {
+          key: `${testKeyPrefix}:atomic:new-state`,
+          value: "new-state-value",
+        },
+      ];
+
+      const deleteKeys = [
+        `${testKeyPrefix}:atomic:to-delete-1`,
+        `${testKeyPrefix}:atomic:to-delete-2`,
+      ];
+
+      const result = await cache.setMultipleWithLockVerification(
+        lockKey,
+        lockValue,
+        operations,
+        deleteKeys,
+      );
+
+      expect(result.success).toBe(true);
+
+      // Verify new state was saved
+      const newValue = await cache.get(`${testKeyPrefix}:atomic:new-state`);
+      expect(newValue).toBe("new-state-value");
+
+      // Verify old keys were deleted
+      const deleted1 = await cache.get(`${testKeyPrefix}:atomic:to-delete-1`);
+      const deleted2 = await cache.get(`${testKeyPrefix}:atomic:to-delete-2`);
+      expect(deleted1).toBeNull();
+      expect(deleted2).toBeNull();
+
+      // Cleanup
+      await cache.releaseLock(lockKey, lockValue);
+      await cache.delete(`${testKeyPrefix}:atomic:new-state`);
+    });
+
+    it("should prevent TOCTOU race condition", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:atomic-save-toctou`;
+      const lockValue = "worker-1";
+
+      // Worker 1 acquires lock
+      await cache.acquireLock(lockKey, lockValue, 1);
+
+      // Wait for lock to expire (simulating slow execution)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Try to save after lock expired - should fail
+      const operations = [
+        {
+          key: `${testKeyPrefix}:atomic:toctou-test`,
+          value: "should-not-save",
+        },
+      ];
+
+      const result = await cache.setMultipleWithLockVerification(
+        lockKey,
+        lockValue,
+        operations,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe("lock_expired");
+
+      // Verify data was NOT saved (atomic operation prevented TOCTOU)
+      const value = await cache.get(`${testKeyPrefix}:atomic:toctou-test`);
+      expect(value).toBeNull();
+    });
+
+    it("should handle empty operations gracefully", async () => {
+      if (!redisAvailable) return;
+
+      const lockKey = `${testKeyPrefix}:lock:atomic-save-empty`;
+      const lockValue = "worker-1";
+
+      await cache.acquireLock(lockKey, lockValue, 10);
+
+      const result = await cache.setMultipleWithLockVerification(
+        lockKey,
+        lockValue,
+        [],
+      );
+
+      expect(result.success).toBe(true);
+
+      await cache.releaseLock(lockKey, lockValue);
     });
   });
 });
