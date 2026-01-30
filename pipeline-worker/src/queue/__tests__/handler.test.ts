@@ -1701,6 +1701,9 @@ describe("handlePipelineJob - orphaned file detection", () => {
   it("should skip when GCS file exists and Firestore status is completed", async () => {
     const message = createMockMessage();
 
+    // Lock should be acquired to check storage atomically
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+
     // GCS file exists
     vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: true });
 
@@ -1734,8 +1737,8 @@ describe("handlePipelineJob - orphaned file detection", () => {
     );
     expect(mockRefStore.Report.get).toHaveBeenCalledWith(TEST_IDS.report);
 
-    // Should NOT acquire lock or run pipeline
-    expect(mockStateStore.acquirePipelineLock).not.toHaveBeenCalled();
+    // Lock should be acquired (to prevent race condition) but pipeline should not run
+    expect(mockStateStore.acquirePipelineLock).toHaveBeenCalled();
     const { runPipeline } = await import("../../pipeline-runner/index.js");
     expect(runPipeline).not.toHaveBeenCalled();
   });
@@ -1799,6 +1802,9 @@ describe("handlePipelineJob - orphaned file detection", () => {
   it("should handle Firestore read error during orphan check gracefully", async () => {
     const message = createMockMessage();
 
+    // Lock should be acquired to check storage atomically
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
+
     // GCS file exists
     vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: true });
 
@@ -1822,12 +1828,15 @@ describe("handlePipelineJob - orphaned file detection", () => {
       );
     }
 
-    // Should NOT proceed to pipeline execution
-    expect(mockStateStore.acquirePipelineLock).not.toHaveBeenCalled();
+    // Lock should be acquired (to prevent race condition) but should fail during storage check
+    expect(mockStateStore.acquirePipelineLock).toHaveBeenCalled();
   });
 
   it("should detect orphaned file when Firestore status is failed and not skip", async () => {
     const message = createMockMessage();
+
+    // Lock should be acquired to check storage atomically
+    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(true);
 
     // GCS file exists (orphaned from a previous failed attempt)
     vi.mocked(mockStorage.fileExists).mockResolvedValue({ exists: true });
@@ -1851,7 +1860,6 @@ describe("handlePipelineJob - orphaned file detection", () => {
 
     // Mock state for retry attempt
     vi.mocked(mockStateStore.get).mockResolvedValue(null);
-    vi.mocked(mockStateStore.acquirePipelineLock).mockResolvedValue(false);
 
     const result = await handlePipelineJob(
       message,

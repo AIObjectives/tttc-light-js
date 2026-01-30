@@ -679,6 +679,31 @@ async function executePipelineWithLock(
   }
 
   try {
+    // Check storage AFTER acquiring lock to prevent race conditions
+    // This must happen inside the lock to ensure atomicity with the upload operation
+    const skipResult = await checkStorageForSkip(
+      reportId,
+      storage,
+      refStore,
+      jobLogger,
+    );
+
+    if (skipResult.tag === "failure") {
+      jobLogger.error({ error: skipResult.error }, "Storage check failed");
+      await updateFirestoreWithError(
+        reportId,
+        skipResult.error.message,
+        refStore,
+        jobLogger,
+      );
+      return skipResult;
+    }
+
+    if (skipResult.value.skip) {
+      jobLogger.info("Pipeline already completed, skipping");
+      return success(undefined);
+    }
+
     // Read state AFTER acquiring lock to prevent race conditions
     const existingState = await stateStore.get(reportId);
     const shouldResume = shouldResumeFromState(existingState);
@@ -907,31 +932,7 @@ export async function handlePipelineJob(
     return inputResult;
   }
 
-  // Check if storage file already exists (quick optimization before acquiring lock)
-  const skipResult = await checkStorageForSkip(
-    reportId,
-    storage,
-    refStore,
-    jobLogger,
-  );
-
-  if (skipResult.tag === "failure") {
-    jobLogger.error({ error: skipResult.error }, "Storage check failed");
-    await updateFirestoreWithError(
-      reportId,
-      skipResult.error.message,
-      refStore,
-      jobLogger,
-    );
-    return skipResult;
-  }
-
-  if (skipResult.value.skip) {
-    jobLogger.info("Pipeline already completed, skipping");
-    return success(undefined);
-  }
-
-  // Execute pipeline - state will be read after lock acquisition to prevent race conditions
+  // Execute pipeline - storage and state checks happen after lock acquisition to prevent race conditions
   return executePipelineWithLock(
     reportId,
     userId,
