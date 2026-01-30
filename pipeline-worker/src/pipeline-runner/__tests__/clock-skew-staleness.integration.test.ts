@@ -259,78 +259,83 @@ describe.skipIf(!dockerAvailable)(
       return state;
     };
 
+    // Helper for clock skew tests - runs pipeline with existing state
+    const runClockSkewTest = async (
+      reportIdPrefix: string,
+      timestampOffsetMs: number,
+    ) => {
+      const reportId = `${reportIdPrefix}-${Date.now()}`;
+      const input = createTestInput();
+      const config = createTestConfig({ reportId });
+
+      await createStateWithTimestamp(
+        reportId,
+        config.userId,
+        timestampOffsetMs,
+      );
+
+      const result = await runPipeline(input, config, stateStore);
+
+      expect(result.success).toBe(true);
+      return result;
+    };
+
+    // Helper for resume tests with timestamp manipulation
+    const runResumeWithTimestampTest = async (
+      reportIdPrefix: string,
+      timestampOffsetMs: number,
+      expectedStatus: "completed" | "running" = "completed",
+    ) => {
+      const reportId = `${reportIdPrefix}-${Date.now()}`;
+      const input = createTestInput();
+      const initialConfig = createTestConfig({ reportId });
+
+      // First run: fail partway through
+      vi.mocked(extractClaims).mockResolvedValue(
+        failure(new Error("Simulated failure")),
+      );
+
+      await runPipeline(input, initialConfig, stateStore);
+
+      // Retrieve state and adjust timestamp
+      const state = await stateStore.get(reportId);
+      if (state) {
+        const adjustedTimestamp = new Date(Date.now() + timestampOffsetMs);
+        state.updatedAt = adjustedTimestamp.toISOString();
+        await stateStore.save(state);
+      }
+
+      // Fix the claims step
+      vi.mocked(extractClaims).mockResolvedValue(success(mockClaimsResult));
+
+      // Resume
+      const resumeConfig = createTestConfig({
+        reportId,
+        resumeFromState: true,
+      });
+
+      const result = await runPipeline(input, resumeConfig, stateStore);
+
+      expect(result.success).toBe(true);
+      expect(result.state.status).toBe(expectedStatus);
+      return result;
+    };
+
     describe("Clock Skew Between Worker and Redis", () => {
       it("should handle worker clock slightly ahead of Redis", async () => {
-        const reportId = `clock-ahead-${Date.now()}`;
-        const input = createTestInput();
-        const config = createTestConfig({ reportId });
-
         // Create state with timestamp from "past" (simulating Redis time being behind)
-        await createStateWithTimestamp(
-          reportId,
-          config.userId,
-          -5 * 60 * 1000, // 5 minutes ago
-        );
-
-        // Run pipeline - should succeed despite timestamp difference
-        const result = await runPipeline(input, config, stateStore);
-
-        expect(result.success).toBe(true);
-        expect(result.state.reportId).toBe(reportId);
+        const result = await runClockSkewTest("clock-ahead", -5 * 60 * 1000);
+        expect(result.state.reportId).toContain("clock-ahead");
       });
 
       it("should handle worker clock slightly behind Redis", async () => {
-        const reportId = `clock-behind-${Date.now()}`;
-        const input = createTestInput();
-        const config = createTestConfig({ reportId });
-
         // Create state with "future" timestamp (simulating worker clock behind)
-        await createStateWithTimestamp(
-          reportId,
-          config.userId,
-          5 * 60 * 1000, // 5 minutes ahead
-        );
-
-        // Run pipeline - should succeed
-        const result = await runPipeline(input, config, stateStore);
-
-        expect(result.success).toBe(true);
+        await runClockSkewTest("clock-behind", 5 * 60 * 1000);
       });
 
       it("should not treat recent state as stale even with minor clock differences", async () => {
-        const reportId = `clock-recent-${Date.now()}`;
-        const input = createTestInput();
-        const initialConfig = createTestConfig({ reportId });
-
-        // First run: fail partway through
-        vi.mocked(extractClaims).mockResolvedValue(
-          failure(new Error("Simulated failure")),
-        );
-
-        await runPipeline(input, initialConfig, stateStore);
-
-        // Retrieve state and artificially adjust timestamp by 2 minutes
-        const state = await stateStore.get(reportId);
-        if (state) {
-          const adjustedTimestamp = new Date(state.updatedAt);
-          adjustedTimestamp.setMinutes(adjustedTimestamp.getMinutes() - 2);
-          state.updatedAt = adjustedTimestamp.toISOString();
-          await stateStore.save(state);
-        }
-
-        // Fix the claims step
-        vi.mocked(extractClaims).mockResolvedValue(success(mockClaimsResult));
-
         // Resume should work - 2 minutes is well within staleness threshold
-        const resumeConfig = createTestConfig({
-          reportId,
-          resumeFromState: true,
-        });
-
-        const result = await runPipeline(input, resumeConfig, stateStore);
-
-        expect(result.success).toBe(true);
-        expect(result.state.status).toBe("completed");
+        await runResumeWithTimestampTest("clock-recent", -2 * 60 * 1000);
       });
     });
 
@@ -375,40 +380,11 @@ describe.skipIf(!dockerAvailable)(
       });
 
       it("should not consider state stale when just under threshold", async () => {
-        const reportId = `not-stale-${Date.now()}`;
-        const input = createTestInput();
-        const initialConfig = createTestConfig({ reportId });
-
-        // First run: fail after clustering
-        vi.mocked(extractClaims).mockResolvedValue(
-          failure(new Error("Simulated failure")),
+        // Set state timestamp to just under staleness threshold (1 minute before threshold)
+        await runResumeWithTimestampTest(
+          "not-stale",
+          -(STATE_STALENESS_THRESHOLD_MS - 60000),
         );
-
-        await runPipeline(input, initialConfig, stateStore);
-
-        // Set state timestamp to just under staleness threshold (30 minutes ago)
-        const state = await stateStore.get(reportId);
-        if (state) {
-          const almostStaleTimestamp = new Date(
-            Date.now() - (STATE_STALENESS_THRESHOLD_MS - 60000), // 1 minute before threshold
-          );
-          state.updatedAt = almostStaleTimestamp.toISOString();
-          await stateStore.save(state);
-        }
-
-        // Fix claims step
-        vi.mocked(extractClaims).mockResolvedValue(success(mockClaimsResult));
-
-        // Resume should succeed - state is not yet stale
-        const resumeConfig = createTestConfig({
-          reportId,
-          resumeFromState: true,
-        });
-
-        const result = await runPipeline(input, resumeConfig, stateStore);
-
-        expect(result.success).toBe(true);
-        expect(result.state.status).toBe("completed");
       });
 
       it("should definitely consider state stale when well past threshold", async () => {
