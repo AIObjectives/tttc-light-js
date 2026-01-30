@@ -28,6 +28,138 @@ import type { PubSubMessage } from "./index.js";
 const queueLogger = logger.child({ module: "queue-handler" });
 
 /**
+ * Type guard to check if an error is a GCS ApiError with a code property
+ */
+interface ApiError extends Error {
+  code?: number | string;
+  errors?: unknown[];
+}
+
+/**
+ * Type guard for ApiError
+ */
+function isApiError(error: unknown): error is ApiError {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    (typeof (error as ApiError).code === "number" ||
+      typeof (error as ApiError).code === "string")
+  );
+}
+
+/**
+ * Categorize storage and Firestore errors to determine if they should be retried.
+ *
+ * Returns true if the error is transient (should be retried), false if permanent.
+ *
+ * Handles both GCS errors (with HTTP status codes) and Firestore errors (with string codes).
+ * @internal Exported for testing
+ */
+export function categorizeError(error: unknown): boolean {
+  // Handle structured errors with code property (GCS ApiError or Firestore error)
+  if (isApiError(error) && error.code !== undefined) {
+    const code = error.code;
+
+    // Handle numeric HTTP status codes (GCS)
+    if (typeof code === "number") {
+      // Transient errors (network, rate limiting, server errors)
+      if (
+        code === 429 || // Too Many Requests
+        code === 503 || // Service Unavailable
+        code === 504 || // Gateway Timeout
+        code === 408 || // Request Timeout
+        (code >= 500 && code < 600) // Other 5xx errors
+      ) {
+        return true;
+      }
+
+      // Permanent errors (client errors, permission issues)
+      if (
+        code === 403 || // Forbidden
+        code === 401 || // Unauthorized
+        code === 404 || // Not Found
+        code === 410 || // Gone
+        (code >= 400 && code < 500) // Other 4xx errors
+      ) {
+        return false;
+      }
+    }
+
+    // Handle Firestore string error codes
+    if (typeof code === "string") {
+      // Transient Firestore errors (should retry)
+      const transientFirestoreCodes = [
+        "unavailable", // Service temporarily unavailable
+        "deadline-exceeded", // Request timeout
+        "resource-exhausted", // Quota exceeded (may recover)
+        "aborted", // Transaction aborted (can retry)
+        "cancelled", // Request cancelled (can retry)
+        "internal", // Internal error (may be transient)
+      ];
+
+      if (transientFirestoreCodes.includes(code.toLowerCase())) {
+        return true;
+      }
+
+      // Permanent Firestore errors (should NOT retry)
+      const permanentFirestoreCodes = [
+        "permission-denied", // Access denied
+        "unauthenticated", // Not authenticated
+        "not-found", // Document not found
+        "already-exists", // Document already exists
+        "failed-precondition", // Precondition failed
+        "invalid-argument", // Invalid argument
+        "out-of-range", // Value out of range
+        "unimplemented", // Operation not implemented
+        "data-loss", // Unrecoverable data loss
+      ];
+
+      if (permanentFirestoreCodes.includes(code.toLowerCase())) {
+        return false;
+      }
+    }
+  }
+
+  // Fallback to string matching for wrapped or unstructured errors
+  const errorMessage =
+    error instanceof Error ? error.message.toLowerCase() : String(error);
+
+  // Check for transient error patterns
+  if (
+    errorMessage.includes("timeout") ||
+    errorMessage.includes("etimedout") ||
+    errorMessage.includes("econnrefused") ||
+    errorMessage.includes("econnreset") ||
+    errorMessage.includes("unavailable") ||
+    errorMessage.includes("deadline") ||
+    errorMessage.includes("503") ||
+    errorMessage.includes("504") ||
+    errorMessage.includes("429")
+  ) {
+    return true;
+  }
+
+  // Check for permanent error patterns
+  if (
+    errorMessage.includes("permission") ||
+    errorMessage.includes("access denied") ||
+    errorMessage.includes("unauthorized") ||
+    errorMessage.includes("forbidden") ||
+    errorMessage.includes("not found") ||
+    errorMessage.includes("no such object") ||
+    errorMessage.includes("invalid") ||
+    errorMessage.includes("403") ||
+    errorMessage.includes("401") ||
+    errorMessage.includes("404")
+  ) {
+    return false;
+  }
+
+  // Default to permanent for unknown errors to avoid infinite retries
+  return false;
+}
+
+/**
  * Validate required fields in pipeline job config
  */
 function validatePipelineJobConfig(
@@ -297,9 +429,18 @@ async function savePipelineOutput(
     return success(undefined);
   } catch (error) {
     const cause = error instanceof Error ? error : new Error(String(error));
-    // Storage operations are generally transient (network issues)
-    // unless they're permission errors, which would have been caught in checkStorageExists
-    return failure(new StorageError(cause.message, true, cause));
+    const isTransient = categorizeError(error);
+
+    jobLogger.error(
+      {
+        error: cause,
+        isTransient,
+        errorType: isTransient ? "transient" : "permanent",
+      },
+      "Storage operation failed during pipeline save",
+    );
+
+    return failure(new StorageError(cause.message, isTransient, cause));
   }
 }
 
