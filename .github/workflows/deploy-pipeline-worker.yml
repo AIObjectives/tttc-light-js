@@ -1,0 +1,73 @@
+name: Deploy Pipeline Worker to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  pre-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: log execution mode
+        run: |
+          if [ "${{ github.event.act }}" = "true" ]; then
+              echo "::notice:: Running locally with act - pipeline worker deploy skipped"
+            else
+              echo "::notice:: Running in CI - deploying pipeline worker"
+            fi
+  deploy:
+    name: Deploy Pipeline Worker
+    if: ${{!github.event.act}}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: tttc-light-js
+
+      ####
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg TURBO_TOKEN=${{ secrets.TURBO_TOKEN }} \
+            --build-arg TURBO_TEAM=${{ secrets.TURBO_TEAM }} \
+            -t gcr.io/tttc-light-js/stage-t3c-pipeline-worker:${{ env.SHORT_SHA }} \
+            -f pipeline-worker/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          gcloud auth configure-docker --quiet
+          docker push gcr.io/tttc-light-js/stage-t3c-pipeline-worker:${{ env.SHORT_SHA }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy stage-t3c-pipeline-worker \
+            --image gcr.io/tttc-light-js/stage-t3c-pipeline-worker:${{ env.SHORT_SHA }} \
+            --platform managed \
+            --region us-central1 \
+            --no-allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 10 \
+            --cpu 2 \
+            --memory 4Gi \
+            --concurrency 5 \
+            --timeout 3600 \
+            --cpu-throttling \
+            --startup-cpu-boost \
+            --execution-environment gen2 \
+            --quiet

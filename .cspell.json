@@ -270,7 +270,13 @@
     "maxmemory",
     "allkeys",
     "TOCTOU",
-    "dels"
+    "dels",
+    "autoscaling",
+    "Autoscaling",
+    "vCPU",
+    "cooldown",
+    "underutilized",
+    "nacked"
   ],
   "ignorePaths": [
     "node_modules",

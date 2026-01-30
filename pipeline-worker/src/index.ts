@@ -13,18 +13,54 @@ async function main() {
 
     mainLogger.info("Pipeline worker started successfully");
 
-    // Keep process alive
-    process.on("SIGINT", async () => {
-      mainLogger.info("Received SIGINT, shutting down gracefully...");
-      await services.Queue.close();
-      process.exit(0);
-    });
+    // Track active message processing for graceful shutdown
+    let activeMessageCount = 0;
+    const incrementActive = () => activeMessageCount++;
+    const decrementActive = () => activeMessageCount--;
 
-    process.on("SIGTERM", async () => {
-      mainLogger.info("Received SIGTERM, shutting down gracefully...");
+    // Graceful shutdown handler
+    const shutdown = async (signal: string) => {
+      mainLogger.info(
+        { signal, activeMessages: activeMessageCount },
+        "Received shutdown signal, closing subscription...",
+      );
+
+      // Stop accepting new messages
       await services.Queue.close();
+      mainLogger.info("Subscription closed, no new messages will be received");
+
+      // Wait for active messages to complete (with timeout)
+      const shutdownTimeout = 30000; // 30 seconds for graceful shutdown
+      const startTime = Date.now();
+
+      while (activeMessageCount > 0) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed > shutdownTimeout) {
+          mainLogger.warn(
+            { activeMessages: activeMessageCount },
+            "Shutdown timeout reached, exiting with active messages",
+          );
+          break;
+        }
+
+        mainLogger.info(
+          { activeMessages: activeMessageCount, elapsed },
+          "Waiting for active messages to complete...",
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      mainLogger.info("Graceful shutdown complete");
       process.exit(0);
-    });
+    };
+
+    // Keep process alive
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+    // Export helpers for message tracking (used by queue handler)
+    (global as any).__incrementActiveMessages = incrementActive;
+    (global as any).__decrementActiveMessages = decrementActive;
   } catch (error) {
     mainLogger.error(
       { error: error instanceof Error ? error : new Error(String(error)) },

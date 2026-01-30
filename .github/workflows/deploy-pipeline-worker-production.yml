@@ -1,0 +1,78 @@
+name: Deploy Pipeline Worker to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type 'deploy-to-production' to confirm"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate-input:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirmation }}" != "deploy-to-production" ]; then
+            echo "::error::Confirmation text does not match. Aborting deployment."
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy Pipeline Worker to Production
+    needs: validate-input
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY2 }}"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: tttc-light-js
+
+      ####
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg TURBO_TOKEN=${{ secrets.TURBO_TOKEN }} \
+            --build-arg TURBO_TEAM=${{ secrets.TURBO_TEAM }} \
+            -t gcr.io/tttc-light-js/prod-t3c-pipeline-worker:${{ env.SHORT_SHA }} \
+            -f pipeline-worker/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          gcloud auth configure-docker --quiet
+          docker push gcr.io/tttc-light-js/prod-t3c-pipeline-worker:${{ env.SHORT_SHA }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy prod-t3c-pipeline-worker \
+            --image gcr.io/tttc-light-js/prod-t3c-pipeline-worker:${{ env.SHORT_SHA }} \
+            --platform managed \
+            --region us-central1 \
+            --no-allow-unauthenticated \
+            --min-instances 1 \
+            --max-instances 20 \
+            --cpu 4 \
+            --memory 8Gi \
+            --concurrency 5 \
+            --timeout 3600 \
+            --cpu-throttling \
+            --startup-cpu-boost \
+            --execution-environment gen2 \
+            --quiet

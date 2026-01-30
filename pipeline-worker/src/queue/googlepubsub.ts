@@ -4,6 +4,7 @@ import type {
   Subscription,
   Topic,
 } from "@google-cloud/pubsub";
+import { Duration } from "@google-cloud/pubsub";
 import { logger } from "tttc-common/logger";
 import type { z } from "zod";
 import type { PubSubInterface, PubSubMessage, PubSubSubscription } from ".";
@@ -34,8 +35,22 @@ export class GooglePubSub<T extends z.ZodTypeAny>
   async subscribe(
     subscriptionName: string,
     handler: (message: PubSubMessage<z.infer<T>>) => Promise<void> | void,
+    options?: {
+      maxMessages?: number;
+      ackDeadline?: number;
+      flowControl?: {
+        maxMessages?: number;
+        maxBytes?: number;
+        allowExcessMessages?: boolean;
+      };
+    },
   ): Promise<PubSubSubscription> {
     const messageHandler = async (message: Message) => {
+      // Track active message for graceful shutdown
+      const incrementActive = (global as any).__incrementActiveMessages;
+      const decrementActive = (global as any).__decrementActiveMessages;
+      if (incrementActive) incrementActive();
+
       try {
         const json = JSON.parse(message.data.toString());
         const parsedData = this.schema.parse(json);
@@ -76,8 +91,40 @@ export class GooglePubSub<T extends z.ZodTypeAny>
 
         pubsubLogger.error(errorContext, "Error processing message");
         message.nack();
+      } finally {
+        // Decrement active count on completion or error
+        if (decrementActive) decrementActive();
       }
     };
+
+    // Configure flow control and subscription options
+    if (options?.flowControl) {
+      this.subscription.setOptions({
+        flowControl: {
+          maxMessages: options.flowControl.maxMessages,
+          maxBytes: options.flowControl.maxBytes,
+          allowExcessMessages: options.flowControl.allowExcessMessages,
+        },
+      });
+      pubsubLogger.info(
+        { flowControl: options.flowControl },
+        "Flow control configured",
+      );
+    }
+
+    if (options?.ackDeadline) {
+      const ackDeadlineDuration = Duration.from({
+        seconds: options.ackDeadline,
+      });
+      this.subscription.setOptions({
+        minAckDeadline: ackDeadlineDuration,
+        maxAckDeadline: ackDeadlineDuration,
+      });
+      pubsubLogger.info(
+        { ackDeadlineSeconds: options.ackDeadline },
+        "Ack deadline configured",
+      );
+    }
 
     this.subscription.on("message", messageHandler);
     this.subscription.on("error", (error: Error) => {
