@@ -12,6 +12,7 @@ async function main() {
 
     // Track active message processing for graceful shutdown
     let activeMessageCount = 0;
+    let servicesReady = false;
     const messageTracking = {
       onMessageStart: () => {
         activeMessageCount++;
@@ -21,18 +22,17 @@ async function main() {
       },
     };
 
-    const services = await initServices(messageTracking);
-
-    mainLogger.info("Pipeline worker started successfully");
-
-    // Start HTTP health check server for Cloud Run
+    // Start HTTP health check server FIRST for Cloud Run
+    // This ensures the port is listening before services initialize
     const port = Number.parseInt(process.env.PORT || "8080", 10);
     const healthServer = http.createServer((req, res) => {
       if (req.url === "/health" || req.url === "/") {
-        res.writeHead(200, { "Content-Type": "application/json" });
+        const status = servicesReady ? 200 : 503;
+        res.writeHead(status, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
-            status: "healthy",
+            status: servicesReady ? "healthy" : "starting",
+            ready: servicesReady,
             activeMessages: activeMessageCount,
             uptime: process.uptime(),
           }),
@@ -43,9 +43,19 @@ async function main() {
       }
     });
 
-    healthServer.listen(port, () => {
-      mainLogger.info({ port }, "Health check server listening");
+    await new Promise<void>((resolve) => {
+      healthServer.listen(port, () => {
+        mainLogger.info({ port }, "Health check server listening");
+        resolve();
+      });
     });
+
+    // Now initialize services (this can take time for health checks)
+    mainLogger.info("Initializing services...");
+    const services = await initServices(messageTracking);
+    servicesReady = true;
+
+    mainLogger.info("Pipeline worker started successfully");
 
     // Graceful shutdown handler
     const shutdown = async (signal: string) => {
