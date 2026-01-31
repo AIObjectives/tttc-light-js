@@ -92,6 +92,7 @@ jobs:
             gcloud run services delete dev-t3c-next-client-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Frontend not found"
             gcloud run services delete dev-t3c-express-server-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Backend not found"
             gcloud run services delete dev-pyserver-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Pyserver not found"
+            gcloud run services delete dev-t3c-pipeline-worker-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Pipeline worker not found"
 
             # Remove from Firebase authorized domains
             if [ -n "$FRONTEND_URL" ]; then
@@ -173,6 +174,7 @@ jobs:
           gcloud run services delete dev-t3c-next-client-pr-${PR_NUMBER} --region=$REGION --quiet || echo "Frontend service not found"
           gcloud run services delete dev-t3c-express-server-pr-${PR_NUMBER} --region=$REGION --quiet || echo "Backend service not found"
           gcloud run services delete dev-pyserver-pr-${PR_NUMBER} --region=$REGION --quiet || echo "Python service not found"
+          gcloud run services delete dev-t3c-pipeline-worker-pr-${PR_NUMBER} --region=$REGION --quiet || echo "Pipeline worker service not found"
 
       - name: Remove domain from Firebase authorized domains
         if: steps.get-frontend-url.outputs.frontend_domain != ''

@@ -23,7 +23,14 @@ export interface Services {
   Storage: BucketStore;
 }
 
-export async function initServices(): Promise<Services> {
+export interface MessageTracking {
+  onMessageStart: () => void;
+  onMessageEnd: () => void;
+}
+
+export async function initServices(
+  messageTracking?: MessageTracking,
+): Promise<Services> {
   const RefStore = RefStoreServicesLive(process.env);
   const Cache = CacheServicesLive(process.env);
 
@@ -85,30 +92,57 @@ export async function initServices(): Promise<Services> {
     pipelineJobSchema,
   );
 
-  // Start listening for messages (only after health checks pass)
-  Queue.subscribe(subscriptionName, async (message) => {
-    const result = await handlePipelineJob(
-      message,
-      PipelineStateStore,
-      Storage,
-      RefStore,
-    );
+  // Configure subscription options for autoscaling
+  // In production, limit concurrent messages per instance to control resource usage
+  const isProduction = process.env.NODE_ENV === "production";
+  const subscriptionOptions = {
+    ...(isProduction
+      ? {
+          // Ack deadline: 35 minutes (matches lock TTL from pipeline constants)
+          ackDeadline: 2100,
+          flowControl: {
+            // Max concurrent messages per worker instance
+            // Each pipeline job can take 30+ minutes and significant memory
+            maxMessages: 5,
+            // Max 500MB in memory for message data (conservative estimate)
+            maxBytes: 500 * 1024 * 1024,
+            // Don't allow excess messages to prevent resource exhaustion
+            allowExcessMessages: false,
+          },
+        }
+      : {}),
+    // Add message tracking callbacks for graceful shutdown
+    ...(messageTracking ? { messageTracking } : {}),
+  };
 
-    if (result.tag === "failure") {
-      const error = result.error;
-      servicesLogger.error(
-        { error, messageId: message.id },
-        "Failed to process pipeline job",
+  // Start listening for messages (only after health checks pass)
+  Queue.subscribe(
+    subscriptionName,
+    async (message) => {
+      const result = await handlePipelineJob(
+        message,
+        PipelineStateStore,
+        Storage,
+        RefStore,
       );
 
-      // Only throw for transient errors to trigger message retry
-      if (error.isTransient) {
-        throw error; // Nack message for retry
+      if (result.tag === "failure") {
+        const error = result.error;
+        servicesLogger.error(
+          { error, messageId: message.id },
+          "Failed to process pipeline job",
+        );
+
+        // Only throw for transient errors to trigger message retry
+        if (error.isTransient) {
+          throw error; // Nack message for retry
+        }
+        // For permanent errors: log but don't throw (let message ack)
+        // Firestore already updated with error status by handlePipelineJob
       }
-      // For permanent errors: log but don't throw (let message ack)
-      // Firestore already updated with error status by handlePipelineJob
-    }
-  }).catch((error) => {
+    },
+    subscriptionOptions,
+  ).catch((error) => {
     servicesLogger.error({ error }, "Failed to start queue subscription");
     throw error;
   });

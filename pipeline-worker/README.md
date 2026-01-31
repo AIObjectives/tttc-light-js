@@ -323,6 +323,185 @@ The validation failure counter is stored in a separate Redis key (`pipeline_vali
 
 For transient storage errors (network issues), messages are NOT acked and will be retried by Pub/Sub.
 
+## Autoscaling
+
+The pipeline worker is deployed to Google Cloud Run with autoscaling based on incoming Pub/Sub message volume. Cloud Run automatically scales instances up and down based on:
+
+1. **Message concurrency** - Number of unacknowledged messages
+2. **CPU utilization** - Instance resource usage
+3. **Request processing time** - Long-running pipeline executions
+
+### Autoscaling Configuration
+
+Autoscaling parameters are configured in the Cloud Run deployment workflows:
+
+**Staging** (`.github/workflows/deploy-pipeline-worker.yml`):
+- **Min instances**: 0 (scales to zero when idle)
+- **Max instances**: 10
+- **Concurrency**: 5 (max 5 concurrent messages per instance)
+- **CPU**: 2 vCPU per instance (always allocated)
+- **Memory**: 4Gi per instance
+- **Timeout**: 3600s (1 hour per message)
+- **CPU Allocation**: Always allocated (instance-based billing with `--no-cpu-throttling`)
+
+**Production** (`.github/workflows/deploy-pipeline-worker-production.yml`):
+- **Min instances**: 0 (scales to zero when idle)
+- **Max instances**: 20
+- **Concurrency**: 5 (max 5 concurrent messages per instance)
+- **CPU**: 4 vCPU per instance (always allocated)
+- **Memory**: 8Gi per instance
+- **Timeout**: 3600s (1 hour per message)
+- **CPU Allocation**: Always allocated (instance-based billing with `--no-cpu-throttling`)
+
+**Why Always-Allocated CPU?**
+
+The pipeline worker uses `--no-cpu-throttling` (instance-based billing) instead of request-based billing because:
+- **Background processing**: Pub/Sub messages are processed continuously, not just during HTTP requests
+- **Predictable performance**: CPU is always available for processing, no cold start delays
+- **Cost efficiency**: For long-running jobs (30+ minutes), instance billing is more economical than request billing
+- **Better for workers**: Background workers benefit from consistent CPU allocation
+
+### Flow Control
+
+To prevent resource exhaustion, the worker implements Pub/Sub flow control (see `services.ts:89`):
+
+```typescript
+flowControl: {
+  maxMessages: 5,              // Max 5 concurrent messages per instance
+  maxBytes: 500 * 1024 * 1024, // Max 500MB in memory
+  allowExcessMessages: false,  // Strict limit enforcement
+}
+```
+
+This ensures each instance processes at most 5 pipeline jobs simultaneously, preventing memory overload from large comment datasets.
+
+### Health Check Server
+
+The worker runs a simple HTTP server for Cloud Run health checks (see `index.ts:30`):
+
+- **Port**: 8080 (configured via `PORT` environment variable)
+- **Endpoints**:
+  - `GET /health` - Returns JSON with status, active message count, and uptime
+  - `GET /` - Same as `/health`
+
+This allows Cloud Run to verify the worker is alive and ready to process messages.
+
+### Graceful Shutdown
+
+When Cloud Run scales down an instance, the worker:
+
+1. **Closes health check server** - Stops accepting health check requests
+2. **Stops accepting new messages** - Closes Pub/Sub subscription
+3. **Waits for active messages** - Allows in-flight pipelines to complete (up to 30s)
+4. **Exits cleanly** - Ensures Redis state is saved and locks are released
+
+See `index.ts:50` for graceful shutdown implementation.
+
+### Scaling Behavior
+
+#### Scale Up Triggers
+- **Message backlog** - Pub/Sub has unacknowledged messages
+- **High CPU** - Existing instances near capacity
+- **Slow processing** - Messages taking longer than expected
+
+Cloud Run will spawn new instances until the max instance limit is reached.
+
+#### Scale Down Triggers
+- **Low message volume** - Few or no pending messages
+- **Idle instances** - No active message processing
+- **Low CPU** - Instances underutilized
+
+Cloud Run will terminate idle instances after a cooldown period (typically 15 minutes). With min instances set to 0, the service will scale to zero after sustained inactivity, providing cost savings at the expense of a 10-30 second cold start when messages arrive.
+
+### Monitoring Autoscaling
+
+Check Cloud Run metrics for scaling behavior:
+
+```bash
+# List current revisions and instance counts
+gcloud run services describe stage-t3c-pipeline-worker \
+  --region us-central1 \
+  --format='table(status.traffic.revisionName, status.traffic.percent, status.conditions.status)'
+
+# View instance metrics
+gcloud logging read 'resource.type="cloud_run_revision"
+  AND resource.labels.service_name="stage-t3c-pipeline-worker"
+  AND jsonPayload.message=~"instance"' \
+  --limit 50 \
+  --format json
+```
+
+### Adjusting Autoscaling
+
+To change autoscaling parameters:
+
+1. **Update workflow files** - Edit `deploy-pipeline-worker.yml` or `deploy-pipeline-worker-production.yml`
+2. **Adjust instance limits** - Change `--min-instances` and `--max-instances`
+3. **Tune concurrency** - Modify `--concurrency` (balance throughput vs. memory)
+4. **Update resources** - Adjust `--cpu` and `--memory` based on workload
+
+Example: Increase production max instances to 50:
+
+```yaml
+--max-instances 50
+```
+
+Then redeploy:
+
+```bash
+git add .github/workflows/deploy-pipeline-worker-production.yml
+git commit -m "Increase production worker max instances to 50"
+git push
+# Trigger workflow manually via GitHub Actions UI
+```
+
+### Cost Optimization
+
+Autoscaling helps minimize costs while maintaining performance:
+
+1. **Right-size instances** - 4-8 vCPU sufficient for most workloads
+2. **Optimize concurrency** - Higher concurrency = fewer instances needed
+3. **Enable zero-scaling** - Use min=0 for non-production environments
+4. **Monitor idle time** - Reduce max instances if consistently underutilized
+
+### Troubleshooting Autoscaling
+
+**Problem**: Instances not scaling up despite message backlog
+
+```bash
+# Check Pub/Sub subscription metrics
+gcloud pubsub subscriptions describe pipeline-worker \
+  --format='yaml(ackDeadlineSeconds, messageRetentionDuration)'
+
+# Verify Cloud Run has capacity
+gcloud run services describe stage-t3c-pipeline-worker \
+  --region us-central1 \
+  --format='yaml(spec.template.spec.containerConcurrency, spec.template.spec.containers[0].resources)'
+```
+
+**Solution**: Ensure `--concurrency` matches flow control `maxMessages`
+
+**Problem**: Instances scaling too aggressively (cost spike)
+
+```bash
+# Check recent scaling events
+gcloud logging read 'resource.type="cloud_run_revision"
+  AND resource.labels.service_name="stage-t3c-pipeline-worker"
+  AND jsonPayload.message=~"scaling"' \
+  --limit 100
+```
+
+**Solution**: Reduce `--max-instances` or increase `--concurrency` to pack more work per instance
+
+**Problem**: Graceful shutdown timeout (messages lost)
+
+```bash
+# Check for shutdown-related errors
+pnpm logs pipeline-worker staging --errors --since 1h | grep -i shutdown
+```
+
+**Solution**: Increase shutdown timeout in `index.ts:19` (default 30s)
+
 ## Configuration
 
 ### Environment Variables

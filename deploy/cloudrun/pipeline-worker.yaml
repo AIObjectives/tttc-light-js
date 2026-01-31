@@ -1,0 +1,62 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: dev-t3c-pipeline-worker-pr-PR_NUMBER
+  labels:
+    env: development
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/ingress: internal
+    run.googleapis.com/ingress-status: internal
+spec:
+  template:
+    metadata:
+      labels:
+        env: development
+      annotations:
+        autoscaling.knative.dev/maxScale: "5"
+        autoscaling.knative.dev/minScale: "0"
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/startup-cpu-boost: "true"
+        run.googleapis.com/vpc-access-connector: projects/tttc-light-js/locations/us-central1/connectors/prod-us-central1-vpc-con
+        run.googleapis.com/vpc-access-egress: all-traffic
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 5
+      timeoutSeconds: 3600
+      serviceAccountName: 384505539696-compute@developer.gserviceaccount.com
+      containers:
+        - name: dev-t3c-pipeline-worker
+          image: gcr.io/tttc-light-js/dev-t3c-pipeline-worker:TAG
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: REDIS_URL
+              value: "redis://10.16.80.3:6379"
+            - name: GCLOUD_STORAGE_BUCKET
+              value: tttc-light-dev
+            - name: GOOGLE_CLOUD_PROJECT
+              value: tttc-light-js
+            - name: PUBSUB_TOPIC
+              value: dev-pipeline-pr-PR_NUMBER
+            - name: PUBSUB_SUBSCRIPTION
+              value: dev-pipeline-pr-PR_NUMBER-subscription
+            - name: GOOGLE_CREDENTIALS_ENCODED
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: google-credentials
+            - name: FIREBASE_CREDENTIALS_ENCODED
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: firebase-credentials
+            - name: FIREBASE_DATABASE_URL
+              value: "https://tttc-light-js.firebaseapp.com"
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+  traffic:
+    - percent: 100
+      latestRevision: true
