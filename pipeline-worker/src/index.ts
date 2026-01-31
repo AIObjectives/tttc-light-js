@@ -1,4 +1,9 @@
-process.loadEnvFile(".env");
+// Load .env file in development (Cloud Run injects env vars directly)
+import { existsSync } from "node:fs";
+
+if (existsSync(".env")) {
+  process.loadEnvFile(".env");
+}
 
 import http from "node:http";
 import { logger } from "tttc-common/logger";
