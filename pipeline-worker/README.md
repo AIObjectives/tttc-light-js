@@ -365,15 +365,27 @@ flowControl: {
 
 This ensures each instance processes at most 5 pipeline jobs simultaneously, preventing memory overload from large comment datasets.
 
+### Health Check Server
+
+The worker runs a simple HTTP server for Cloud Run health checks (see `index.ts:30`):
+
+- **Port**: 8080 (configured via `PORT` environment variable)
+- **Endpoints**:
+  - `GET /health` - Returns JSON with status, active message count, and uptime
+  - `GET /` - Same as `/health`
+
+This allows Cloud Run to verify the worker is alive and ready to process messages.
+
 ### Graceful Shutdown
 
 When Cloud Run scales down an instance, the worker:
 
-1. **Stops accepting new messages** - Closes Pub/Sub subscription
-2. **Waits for active messages** - Allows in-flight pipelines to complete (up to 30s)
-3. **Exits cleanly** - Ensures Redis state is saved and locks are released
+1. **Closes health check server** - Stops accepting health check requests
+2. **Stops accepting new messages** - Closes Pub/Sub subscription
+3. **Waits for active messages** - Allows in-flight pipelines to complete (up to 30s)
+4. **Exits cleanly** - Ensures Redis state is saved and locks are released
 
-See `index.ts:19` for graceful shutdown implementation.
+See `index.ts:50` for graceful shutdown implementation.
 
 ### Scaling Behavior
 

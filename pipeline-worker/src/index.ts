@@ -1,5 +1,6 @@
 process.loadEnvFile(".env");
 
+import http from "node:http";
 import { logger } from "tttc-common/logger";
 import { initServices } from "./services";
 
@@ -24,12 +25,37 @@ async function main() {
 
     mainLogger.info("Pipeline worker started successfully");
 
+    // Start HTTP health check server for Cloud Run
+    const port = Number.parseInt(process.env.PORT || "8080", 10);
+    const healthServer = http.createServer((req, res) => {
+      if (req.url === "/health" || req.url === "/") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            status: "healthy",
+            activeMessages: activeMessageCount,
+            uptime: process.uptime(),
+          }),
+        );
+      } else {
+        res.writeHead(404);
+        res.end();
+      }
+    });
+
+    healthServer.listen(port, () => {
+      mainLogger.info({ port }, "Health check server listening");
+    });
+
     // Graceful shutdown handler
     const shutdown = async (signal: string) => {
       mainLogger.info(
         { signal, activeMessages: activeMessageCount },
         "Received shutdown signal, closing subscription...",
       );
+
+      // Close health check server
+      healthServer.close();
 
       // Stop accepting new messages
       await services.Queue.close();
