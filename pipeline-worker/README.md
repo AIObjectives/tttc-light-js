@@ -339,17 +339,27 @@ Autoscaling parameters are configured in the Cloud Run deployment workflows:
 - **Min instances**: 0 (scales to zero when idle)
 - **Max instances**: 10
 - **Concurrency**: 5 (max 5 concurrent messages per instance)
-- **CPU**: 2 vCPU per instance
+- **CPU**: 2 vCPU per instance (always allocated)
 - **Memory**: 4Gi per instance
 - **Timeout**: 3600s (1 hour per message)
+- **CPU Allocation**: Always allocated (instance-based billing with `--no-cpu-throttling`)
 
 **Production** (`.github/workflows/deploy-pipeline-worker-production.yml`):
 - **Min instances**: 0 (scales to zero when idle)
 - **Max instances**: 20
 - **Concurrency**: 5 (max 5 concurrent messages per instance)
-- **CPU**: 4 vCPU per instance
+- **CPU**: 4 vCPU per instance (always allocated)
 - **Memory**: 8Gi per instance
 - **Timeout**: 3600s (1 hour per message)
+- **CPU Allocation**: Always allocated (instance-based billing with `--no-cpu-throttling`)
+
+**Why Always-Allocated CPU?**
+
+The pipeline worker uses `--no-cpu-throttling` (instance-based billing) instead of request-based billing because:
+- **Background processing**: Pub/Sub messages are processed continuously, not just during HTTP requests
+- **Predictable performance**: CPU is always available for processing, no cold start delays
+- **Cost efficiency**: For long-running jobs (30+ minutes), instance billing is more economical than request billing
+- **Better for workers**: Background workers benefit from consistent CPU allocation
 
 ### Flow Control
 

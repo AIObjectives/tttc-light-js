@@ -67,7 +67,7 @@ jobs:
             --memory 4Gi \
             --concurrency 5 \
             --timeout 3600 \
-            --cpu-throttling \
-            --startup-cpu-boost \
+            --cpu-boost \
+            --no-cpu-throttling \
             --execution-environment gen2 \
             --quiet
