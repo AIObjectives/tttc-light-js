@@ -492,6 +492,21 @@ function getErrorCodeForException(e: unknown): ErrorCode {
   }
 }
 
+/**
+ * Select the appropriate queue based on feature flag configuration.
+ * Returns the node worker queue if available and feature flag is enabled,
+ * otherwise returns the default pipeline queue.
+ */
+async function selectQueue(userId: string): Promise<typeof pipelineQueue> {
+  const shouldUseNodeWorker =
+    nodeWorkerQueue !== null &&
+    (await isFeatureEnabled(FEATURE_FLAGS.USE_NODE_WORKER_QUEUE, { userId }));
+
+  return shouldUseNodeWorker
+    ? (nodeWorkerQueue as NonNullable<typeof nodeWorkerQueue>)
+    : pipelineQueue;
+}
+
 export default async function create(req: RequestWithAuth, res: Response) {
   const requestId = getRequestId(req);
 
@@ -507,27 +522,8 @@ export default async function create(req: RequestWithAuth, res: Response) {
       return;
     }
 
-    // Select queue based on feature flag
-    const shouldUseNodeWorker =
-      nodeWorkerQueue !== null &&
-      (await isFeatureEnabled(FEATURE_FLAGS.USE_NODE_WORKER_QUEUE, {
-        userId: req.auth.uid,
-      }));
-
-    // When shouldUseNodeWorker is true, nodeWorkerQueue is guaranteed to be non-null
-    const selectedQueue = shouldUseNodeWorker
-      ? (nodeWorkerQueue as NonNullable<typeof nodeWorkerQueue>)
-      : pipelineQueue;
-
-    if (shouldUseNodeWorker) {
-      createLogger.info(
-        { userId: req.auth.uid, requestId },
-        "Using node worker queue for pipeline job",
-      );
-    }
-
-    // Queue the pipeline job before sending response
-    // This ensures the user only gets success if the job was actually queued
+    // Select queue based on feature flag and enqueue the job
+    const selectedQueue = await selectQueue(req.auth.uid);
     await selectedQueue.enqueue(result.value.pipelineJob, { requestId });
     res.json(result.value.response);
   } catch (e) {
