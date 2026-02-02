@@ -58,6 +58,7 @@ vi.mock("../../server", () => ({
   pipelineQueue: {
     enqueue: mockQueueEnqueue,
   },
+  nodeWorkerQueue: null,
 }));
 
 describe("Queue Failure Handling (T3C-891)", () => {

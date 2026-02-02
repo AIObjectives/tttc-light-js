@@ -58,6 +58,7 @@ vi.mock("../../server", () => ({
   pipelineQueue: {
     enqueue: vi.fn(),
   },
+  nodeWorkerQueue: null,
 }));
 
 describe("Email Verification in Create Route", () => {
