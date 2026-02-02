@@ -497,10 +497,14 @@ function getErrorCodeForException(e: unknown): ErrorCode {
  * Returns the node worker queue if available and feature flag is enabled,
  * otherwise returns the default pipeline queue.
  */
-async function selectQueue(userId: string): Promise<typeof pipelineQueue> {
+async function selectQueue(
+  auth: DecodedIdToken,
+): Promise<typeof pipelineQueue> {
   const shouldUseNodeWorker =
     nodeWorkerQueue !== null &&
-    (await isFeatureEnabled(FEATURE_FLAGS.USE_NODE_WORKER_QUEUE, { userId }));
+    (await isFeatureEnabled(FEATURE_FLAGS.USE_NODE_WORKER_QUEUE, {
+      userId: auth.uid,
+    }));
 
   return shouldUseNodeWorker
     ? (nodeWorkerQueue as NonNullable<typeof nodeWorkerQueue>)
@@ -523,7 +527,7 @@ export default async function create(req: RequestWithAuth, res: Response) {
     }
 
     // Select queue based on feature flag and enqueue the job
-    const selectedQueue = await selectQueue(req.auth.uid);
+    const selectedQueue = await selectQueue(req.auth);
     await selectedQueue.enqueue(result.value.pipelineJob, { requestId });
     res.json(result.value.response);
   } catch (e) {
