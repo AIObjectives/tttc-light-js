@@ -41,6 +41,10 @@ spec:
               value: dev-pipeline-pr-PR_NUMBER
             - name: PUBSUB_SUBSCRIPTION
               value: dev-pipeline-pr-PR_NUMBER-subscription
+            - name: NODE_WORKER_TOPIC
+              value: dev-node-worker-pr-PR_NUMBER
+            - name: NODE_WORKER_SUBSCRIPTION
+              value: dev-node-worker-pr-PR_NUMBER-subscription
             - name: GOOGLE_CREDENTIALS_ENCODED
               valueFrom:
                 secretKeyRef:
