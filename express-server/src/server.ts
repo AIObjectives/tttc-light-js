@@ -120,24 +120,19 @@ pipelineQueue.listen().catch(async (error: Error) => {
 
 // Create optional node worker queue if configured
 let nodeWorkerQueue: ReturnType<typeof createQueue> | null = null;
-if (env.NODE_WORKER_QUEUE) {
-  const [topicName, subscriptionName] = env.NODE_WORKER_QUEUE.split("/");
-  if (topicName && subscriptionName) {
-    nodeWorkerQueue = new GooglePubSubQueue(
-      topicName,
-      subscriptionName,
-      env.GOOGLE_CLOUD_PROJECT_ID,
-    );
-    serverLogger.info(
-      { topic: topicName, subscription: subscriptionName },
-      "Node worker queue configured",
-    );
-  } else {
-    serverLogger.warn(
-      { NODE_WORKER_QUEUE: env.NODE_WORKER_QUEUE },
-      "NODE_WORKER_QUEUE format invalid, expected 'topic/subscription'",
-    );
-  }
+if (env.NODE_WORKER_TOPIC_NAME && env.NODE_WORKER_SUBSCRIPTION_NAME) {
+  nodeWorkerQueue = new GooglePubSubQueue(
+    env.NODE_WORKER_TOPIC_NAME,
+    env.NODE_WORKER_SUBSCRIPTION_NAME,
+    env.GOOGLE_CLOUD_PROJECT_ID,
+  );
+  serverLogger.info(
+    {
+      topic: env.NODE_WORKER_TOPIC_NAME,
+      subscription: env.NODE_WORKER_SUBSCRIPTION_NAME,
+    },
+    "Node worker queue configured",
+  );
 }
 
 // Create Redis connection for rate limiting

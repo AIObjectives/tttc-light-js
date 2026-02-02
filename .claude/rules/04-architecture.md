@@ -74,10 +74,11 @@ GOOGLE_CLOUD_PROJECT_ID=your-project-id
 
 **Optional Node worker queue:**
 ```bash
-NODE_WORKER_QUEUE=topic-name/subscription-name
+NODE_WORKER_TOPIC_NAME=node-worker-topic
+NODE_WORKER_SUBSCRIPTION_NAME=node-worker-subscription
 ```
 
-When the `use_node_worker_queue` feature flag is enabled for a user, pipeline jobs are sent to the Node worker queue instead of the default PubSub queue. The NODE_WORKER_QUEUE format is `topic/subscription`.
+When the `use_node_worker_queue` feature flag is enabled for a user, pipeline jobs are sent to the Node worker queue instead of the default PubSub queue.
 
 ## Firestore Configuration
 
