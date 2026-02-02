@@ -13,7 +13,9 @@ import { logger } from "tttc-common/logger";
 import { DEFAULT_LIMITS, getUserCapabilities } from "tttc-common/permissions";
 import type * as schema from "tttc-common/schema";
 import * as firebase from "../Firebase";
-import { pipelineQueue } from "../server";
+import { isFeatureEnabled } from "../featureFlags";
+import { FEATURE_FLAGS } from "../featureFlags/constants";
+import { nodeWorkerQueue, pipelineQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";
 import { getRequestId, type RequestWithAuth } from "../types/request";
@@ -504,9 +506,36 @@ export default async function create(req: RequestWithAuth, res: Response) {
       );
       return;
     }
+
+    // Check feature flag to determine which queue to use
+    const useNodeWorkerQueue = await isFeatureEnabled(
+      FEATURE_FLAGS.USE_NODE_WORKER_QUEUE,
+      {
+        userId: req.auth.uid,
+      },
+    );
+
+    // Select the appropriate queue based on feature flag
+    let selectedQueue = pipelineQueue;
+    let queueName = "pubsub";
+
+    if (useNodeWorkerQueue && nodeWorkerQueue) {
+      selectedQueue = nodeWorkerQueue;
+      queueName = "node-worker";
+      createLogger.info(
+        { userId: req.auth.uid, queueName, requestId },
+        "Using node worker queue for pipeline job",
+      );
+    } else if (useNodeWorkerQueue && !nodeWorkerQueue) {
+      createLogger.warn(
+        { userId: req.auth.uid, requestId },
+        "Node worker queue feature flag enabled but queue not configured, falling back to pubsub queue",
+      );
+    }
+
     // Queue the pipeline job before sending response
     // This ensures the user only gets success if the job was actually queued
-    await pipelineQueue.enqueue(result.value.pipelineJob, { requestId });
+    await selectedQueue.enqueue(result.value.pipelineJob, { requestId });
     res.json(result.value.response);
   } catch (e) {
     req.log.error(
