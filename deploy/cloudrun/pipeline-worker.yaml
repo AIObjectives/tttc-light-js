@@ -38,12 +38,8 @@ spec:
             - name: GOOGLE_CLOUD_PROJECT
               value: tttc-light-js
             - name: PUBSUB_TOPIC
-              value: dev-pipeline-pr-PR_NUMBER
-            - name: PUBSUB_SUBSCRIPTION
-              value: dev-pipeline-pr-PR_NUMBER-subscription
-            - name: NODE_WORKER_TOPIC
               value: dev-node-worker-pr-PR_NUMBER
-            - name: NODE_WORKER_SUBSCRIPTION
+            - name: PUBSUB_SUBSCRIPTION
               value: dev-node-worker-pr-PR_NUMBER-subscription
             - name: GOOGLE_CREDENTIALS_ENCODED
               valueFrom:
