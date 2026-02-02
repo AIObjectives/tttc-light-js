@@ -507,29 +507,22 @@ export default async function create(req: RequestWithAuth, res: Response) {
       return;
     }
 
-    // Check feature flag to determine which queue to use
-    const useNodeWorkerQueue = await isFeatureEnabled(
-      FEATURE_FLAGS.USE_NODE_WORKER_QUEUE,
-      {
+    // Select queue based on feature flag
+    const shouldUseNodeWorker =
+      nodeWorkerQueue !== null &&
+      (await isFeatureEnabled(FEATURE_FLAGS.USE_NODE_WORKER_QUEUE, {
         userId: req.auth.uid,
-      },
-    );
+      }));
 
-    // Select the appropriate queue based on feature flag
-    let selectedQueue = pipelineQueue;
-    let queueName = "pubsub";
+    // When shouldUseNodeWorker is true, nodeWorkerQueue is guaranteed to be non-null
+    const selectedQueue = shouldUseNodeWorker
+      ? (nodeWorkerQueue as NonNullable<typeof nodeWorkerQueue>)
+      : pipelineQueue;
 
-    if (useNodeWorkerQueue && nodeWorkerQueue) {
-      selectedQueue = nodeWorkerQueue;
-      queueName = "node-worker";
+    if (shouldUseNodeWorker) {
       createLogger.info(
-        { userId: req.auth.uid, queueName, requestId },
-        "Using node worker queue for pipeline job",
-      );
-    } else if (useNodeWorkerQueue && !nodeWorkerQueue) {
-      createLogger.warn(
         { userId: req.auth.uid, requestId },
-        "Node worker queue feature flag enabled but queue not configured, falling back to pubsub queue",
+        "Using node worker queue for pipeline job",
       );
     }
 
