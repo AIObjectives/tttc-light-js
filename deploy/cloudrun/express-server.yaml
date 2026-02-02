@@ -69,6 +69,8 @@ spec:
               value: dev-pipeline-pr-PR_NUMBER
             - name: PUBSUB_SUBSCRIPTION_NAME
               value: dev-pipeline-pr-PR_NUMBER-subscription
+            - name: NODE_WORKER_QUEUE
+              value: dev-node-worker-pr-PR_NUMBER/dev-node-worker-pr-PR_NUMBER-subscription
             - name: GOOGLE_CLOUD_PROJECT_ID
               value: tttc-light-js
             - name: ALLOWED_ORIGINS
