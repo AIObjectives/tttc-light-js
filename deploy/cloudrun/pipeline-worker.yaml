@@ -24,7 +24,7 @@ spec:
     spec:
       containerConcurrency: 5
       timeoutSeconds: 3600
-      serviceAccountName: 384505539696-compute@developer.gserviceaccount.com
+      serviceAccountName: pipeline-worker@tttc-light-js.iam.gserviceaccount.com
       containers:
         - name: dev-t3c-pipeline-worker
           image: gcr.io/tttc-light-js/dev-t3c-pipeline-worker:TAG
@@ -41,11 +41,6 @@ spec:
               value: dev-node-worker-pr-PR_NUMBER
             - name: PUBSUB_SUBSCRIPTION
               value: dev-node-worker-pr-PR_NUMBER-subscription
-            - name: GOOGLE_CREDENTIALS_ENCODED
-              valueFrom:
-                secretKeyRef:
-                  key: latest
-                  name: google-credentials
             - name: FIREBASE_CREDENTIALS_ENCODED
               valueFrom:
                 secretKeyRef:

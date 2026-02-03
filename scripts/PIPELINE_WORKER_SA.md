@@ -28,7 +28,9 @@ The pipeline-worker needs access to:
 
 ## Cloud Run Deployment
 
-To use this service account in Cloud Run, update your deployment:
+The pipeline-worker uses **Application Default Credentials**, which means it authenticates using the Cloud Run service account identity. No explicit credentials or secrets are needed.
+
+### Update Service Account
 
 ```bash
 gcloud run services update pipeline-worker \
@@ -37,7 +39,9 @@ gcloud run services update pipeline-worker \
   --project=tttc-light-js
 ```
 
-Or update the Cloud Run YAML:
+### Update Cloud Run YAML
+
+In `deploy/cloudrun/pipeline-worker.yaml`:
 
 ```yaml
 spec:
@@ -46,53 +50,25 @@ spec:
       serviceAccountName: pipeline-worker@tttc-light-js.iam.gserviceaccount.com
 ```
 
+**Important**: Remove any `GOOGLE_CREDENTIALS_ENCODED` environment variables from the deployment. The service will automatically use the service account's credentials.
+
 ## Local Development
 
-For local development, you can either:
-
-### Option 1: Use Application Default Credentials (Recommended)
+For local development, use Application Default Credentials:
 
 ```bash
 gcloud auth application-default login
 ```
 
-This will use your personal credentials with the same permissions.
-
-### Option 2: Use Service Account Key
-
-Generate a key file:
-
-```bash
-gcloud iam service-accounts keys create pipeline-worker-key.json \
-  --iam-account=pipeline-worker@tttc-light-js.iam.gserviceaccount.com \
-  --project=tttc-light-js
-```
-
-Encode for environment variable:
-
-```bash
-base64 -w 0 pipeline-worker-key.json
-```
-
-Add to `pipeline-worker/.env`:
-
-```bash
-GOOGLE_CREDENTIALS_ENCODED=<base64-encoded-key>
-FIREBASE_CREDENTIALS_ENCODED=<base64-encoded-key>
-```
-
-**Note**: The same service account key can be used for both GCS and Firestore access.
+This authenticates using your personal Google Cloud credentials. Make sure your account has the same permissions as the pipeline-worker service account.
 
 ## Ephemeral Environments
 
-For ephemeral PR environments, update `.github/workflows/ephemeral-deploy.yml` to use this service account:
+For ephemeral PR environments, the service account is configured in `deploy/cloudrun/pipeline-worker.yaml`. The GitHub Actions workflow automatically applies this YAML during deployment.
 
+Make sure the `serviceAccountName` in the YAML is set to:
 ```yaml
-- name: Deploy Pipeline Worker
-  run: |
-    gcloud run deploy pipeline-worker-pr-${{ github.event.pull_request.number }} \
-      --service-account=pipeline-worker@tttc-light-js.iam.gserviceaccount.com \
-      # ... other flags
+serviceAccountName: pipeline-worker@tttc-light-js.iam.gserviceaccount.com
 ```
 
 ## Verification
