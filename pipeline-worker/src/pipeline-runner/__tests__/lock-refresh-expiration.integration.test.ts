@@ -632,10 +632,12 @@ describe.skipIf(!dockerAvailable)(
         const config = createTestConfig({ reportId, lockValue });
 
         // Pipeline should handle disconnection gracefully
-        // When Redis disconnects, the pipeline will throw a CacheGetError
-        await expect(
-          runPipeline(input, config, testStateStore),
-        ).rejects.toThrow(/Connection is closed/);
+        // When Redis disconnects, the pipeline will return a failure result
+        const result = await runPipeline(input, config, testStateStore);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBeInstanceOf(Error);
+        expect(result.error?.message).toMatch(/Connection is closed/);
       }, 30000);
 
       it("should not extend lock with wrong worker ID", async () => {

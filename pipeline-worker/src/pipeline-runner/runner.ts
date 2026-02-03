@@ -1637,14 +1637,22 @@ export async function runPipeline(
     );
 
     // Try to get current state to save timeout error
-    const currentState = await stateStore.get(config.reportId);
-    if (currentState) {
-      return handlePipelineFailure(
-        error,
-        currentState,
-        stateStore,
-        config,
-        reportLogger,
+    try {
+      const currentState = await stateStore.get(config.reportId);
+      if (currentState) {
+        return handlePipelineFailure(
+          error,
+          currentState,
+          stateStore,
+          config,
+          reportLogger,
+        );
+      }
+    } catch (stateError) {
+      // If we can't get state (e.g., Redis disconnected), fall through to minimal error result
+      reportLogger.warn(
+        { stateError },
+        "Could not retrieve state during error handling",
       );
     }
 
