@@ -53,6 +53,8 @@ spec:
                   name: firebase-credentials
             - name: FIREBASE_DATABASE_URL
               value: "https://tttc-light-js.firebaseapp.com"
+            - name: WHICH_SERVICE_REFSTORE
+              value: firebase
           resources:
             limits:
               cpu: 2000m
