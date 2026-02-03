@@ -57,7 +57,7 @@ type Env = {
  * Configuration for different implementations of our refstore
  */
 type ServiceConfig =
-  | ({ type: "firebase"; credentials: string } & Env)
+  | ({ type: "firebase"; credentials: Record<string, unknown> } & Env)
   | ({ type: "postgres"; connectionString: string } & Env);
 
 const parseSetup = ({
@@ -150,10 +150,15 @@ export const parseConfig = ({
   }
 };
 
-const initializeFirebase = (credentials: string): admin.firestore.Firestore => {
+const initializeFirebase = (
+  credentials: Record<string, unknown>,
+): admin.firestore.Firestore => {
   try {
+    // Type-safe casting to service account for firebase-admin
+    const serviceAccount = credentials as admin.ServiceAccount;
+
     const app = admin.initializeApp({
-      credential: admin.credential.cert(credentials),
+      credential: admin.credential.cert(serviceAccount),
     });
     return admin.firestore(app);
   } catch (e) {
