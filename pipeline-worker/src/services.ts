@@ -40,15 +40,31 @@ export async function initServices(
   // Initialize GCS storage
   const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
   const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+  const encodedCredentials = process.env.GOOGLE_CREDENTIALS_ENCODED;
 
   if (!bucketName) {
     throw new Error("Missing GCLOUD_STORAGE_BUCKET environment variable");
+  }
+
+  // Decode GCS credentials if provided (required in Cloud Run environments)
+  let credentials: Record<string, unknown> | undefined;
+  if (encodedCredentials) {
+    try {
+      credentials = JSON.parse(
+        Buffer.from(encodedCredentials, "base64").toString("utf-8"),
+      );
+      servicesLogger.info("GCS credentials decoded successfully");
+    } catch (error) {
+      servicesLogger.error({ error }, "Failed to decode GCS credentials");
+      throw new Error("Invalid GOOGLE_CREDENTIALS_ENCODED format");
+    }
   }
 
   const Storage = createBucketStore({
     provider: "gcp",
     bucketName,
     projectId,
+    credentials,
   });
 
   // Verify Redis connectivity before proceeding

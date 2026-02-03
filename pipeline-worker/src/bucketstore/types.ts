@@ -142,6 +142,7 @@ export type GCPBucketStoreConfig = {
   provider: "gcp";
   bucketName: string;
   projectId?: string;
+  credentials?: Record<string, unknown>;
 };
 
 /**

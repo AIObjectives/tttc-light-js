@@ -124,10 +124,28 @@ export class GCPBucketStore implements BucketStore {
    *
    * @param bucketName - The name of the GCS bucket to use for storing files
    * @param projectId - Optional GCP project ID. If not provided, uses the default from credentials.
+   * @param credentials - Optional GCP service account credentials object
    */
-  constructor(bucketName: string, projectId?: string) {
+  constructor(
+    bucketName: string,
+    projectId?: string,
+    credentials?: Record<string, unknown>,
+  ) {
     this.bucketName = bucketName;
-    this.storage = new Storage(projectId ? { projectId } : {});
+    const storageOptions: {
+      projectId?: string;
+      credentials?: Record<string, unknown>;
+    } = {};
+
+    if (projectId) {
+      storageOptions.projectId = projectId;
+    }
+
+    if (credentials) {
+      storageOptions.credentials = credentials;
+    }
+
+    this.storage = new Storage(storageOptions);
   }
 
   async storeFile(

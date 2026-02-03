@@ -33,7 +33,11 @@ export {
 export function createBucketStore(config: BucketStoreConfig): BucketStore {
   switch (config.provider) {
     case "gcp":
-      return new GCPBucketStore(config.bucketName, config.projectId);
+      return new GCPBucketStore(
+        config.bucketName,
+        config.projectId,
+        config.credentials,
+      );
     default:
       throw new Error(`Unsupported provider: ${config.provider}`);
   }
