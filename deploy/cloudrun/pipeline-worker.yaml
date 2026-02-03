@@ -34,7 +34,7 @@ spec:
             - name: REDIS_URL
               value: "redis://10.16.80.3:6379"
             - name: GCLOUD_STORAGE_BUCKET
-              value: tttc-light-dev
+              value: tttc-light-prod
             - name: GOOGLE_CLOUD_PROJECT
               value: tttc-light-js
             - name: PUBSUB_TOPIC

@@ -5,7 +5,7 @@ set -e
 # Usage: ./scripts/create-pipeline-worker-sa.sh [PROJECT_ID] [BUCKET_NAME]
 
 PROJECT_ID=${1:-tttc-light-js}
-BUCKET_NAME=${2:-tttc-light-dev}
+BUCKET_NAME=${2:-tttc-light-prod}
 SA_NAME="pipeline-worker"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 

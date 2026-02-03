@@ -24,7 +24,7 @@ Run the automated setup script:
 Or specify custom project/bucket:
 
 ```bash
-./scripts/create-pipeline-worker-sa.sh tttc-light-js tttc-light-dev
+./scripts/create-pipeline-worker-sa.sh tttc-light-js tttc-light-prod
 ```
 
 This creates a service account named `pipeline-worker@tttc-light-js.iam.gserviceaccount.com` with:
@@ -92,7 +92,7 @@ If you see permission errors:
 
 3. **Check bucket permissions**:
    ```bash
-   gsutil iam get gs://tttc-light-dev | grep pipeline-worker
+   gsutil iam get gs://tttc-light-prod | grep pipeline-worker
    ```
 
 4. **Verify Cloud Run is using the service account**:
