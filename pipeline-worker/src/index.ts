@@ -105,8 +105,26 @@ async function main() {
     process.on("SIGINT", () => shutdown("SIGINT"));
     process.on("SIGTERM", () => shutdown("SIGTERM"));
   } catch (error) {
+    const errorDetails =
+      error instanceof Error
+        ? {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+            cause: error.cause,
+          }
+        : { message: String(error) };
+
     mainLogger.error(
-      { error: error instanceof Error ? error : new Error(String(error)) },
+      {
+        error: errorDetails,
+        env: {
+          PUBSUB_TOPIC: process.env.PUBSUB_TOPIC,
+          PUBSUB_SUBSCRIPTION: process.env.PUBSUB_SUBSCRIPTION,
+          GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
+          NODE_ENV: process.env.NODE_ENV,
+        },
+      },
       "Failed to start pipeline worker",
     );
     process.exit(1);
