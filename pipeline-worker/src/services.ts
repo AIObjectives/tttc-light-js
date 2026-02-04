@@ -45,6 +45,12 @@ export async function initServices(
     throw new Error("Missing GCLOUD_STORAGE_BUCKET environment variable");
   }
 
+  // Always use Application Default Credentials (Cloud Run service account)
+  servicesLogger.info(
+    { bucketName, projectId },
+    "Initializing GCS with Application Default Credentials",
+  );
+
   const Storage = createBucketStore({
     provider: "gcp",
     bucketName,
@@ -84,6 +90,35 @@ export async function initServices(
 
   const topicName = process.env.PUBSUB_TOPIC || "pipeline-jobs";
   const subscriptionName = process.env.PUBSUB_SUBSCRIPTION || "pipeline-worker";
+
+  // Verify subscription exists before connecting
+  try {
+    const subscription = pubsubClient
+      .topic(topicName)
+      .subscription(subscriptionName);
+    const [exists] = await subscription.exists();
+    if (!exists) {
+      throw new Error(
+        `Subscription '${subscriptionName}' does not exist on topic '${topicName}'. ` +
+          `Please create it before starting the worker.`,
+      );
+    }
+    servicesLogger.info(
+      { topic: topicName, subscription: subscriptionName },
+      "Verified PubSub subscription exists",
+    );
+  } catch (error) {
+    servicesLogger.error(
+      {
+        error,
+        topic: topicName,
+        subscription: subscriptionName,
+        project: process.env.GOOGLE_CLOUD_PROJECT,
+      },
+      "Failed to verify PubSub subscription",
+    );
+    throw error;
+  }
 
   const Queue = new GooglePubSub(
     pubsubClient,

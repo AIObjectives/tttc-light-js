@@ -26,6 +26,7 @@ import {
   visibilityRateLimitMiddleware,
 } from "./middleware";
 import { createQueue } from "./queue";
+import { GooglePubSubQueue } from "./queue/providers/googlePubSub";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
 import ensureUser from "./routes/ensureUser";
@@ -117,13 +118,30 @@ pipelineQueue.listen().catch(async (error: Error) => {
   await gracefulShutdown("QUEUE_LISTEN_ERROR");
 });
 
+// Create optional node worker queue if configured
+let nodeWorkerQueue: ReturnType<typeof createQueue> | null = null;
+if (env.NODE_WORKER_TOPIC_NAME && env.NODE_WORKER_SUBSCRIPTION_NAME) {
+  nodeWorkerQueue = new GooglePubSubQueue(
+    env.NODE_WORKER_TOPIC_NAME,
+    env.NODE_WORKER_SUBSCRIPTION_NAME,
+    env.GOOGLE_CLOUD_PROJECT_ID,
+  );
+  serverLogger.info(
+    {
+      topic: env.NODE_WORKER_TOPIC_NAME,
+      subscription: env.NODE_WORKER_SUBSCRIPTION_NAME,
+    },
+    "Node worker queue configured",
+  );
+}
+
 // Create Redis connection for rate limiting
 const redisConnection = new Redis(env.REDIS_URL, {
   connectionName: "Express-Pipeline",
   maxRetriesPerRequest: null,
 });
 
-export { pipelineQueue };
+export { pipelineQueue, nodeWorkerQueue };
 
 // Initialize feature flags
 initializeFeatureFlags(env);

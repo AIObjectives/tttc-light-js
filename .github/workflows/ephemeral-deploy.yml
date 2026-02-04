@@ -117,6 +117,19 @@ jobs:
             --ack-deadline=600 \
             --message-retention-duration=7d || echo "Subscription already exists"
 
+          # Create node worker queue topic and subscription
+          NODE_WORKER_TOPIC="dev-node-worker-pr-${PR_NUMBER}"
+          NODE_WORKER_SUBSCRIPTION="dev-node-worker-pr-${PR_NUMBER}-subscription"
+
+          # Create node worker topic (ignore if already exists)
+          gcloud pubsub topics create $NODE_WORKER_TOPIC || echo "Node worker topic already exists"
+
+          # Create node worker subscription (ignore if already exists)
+          gcloud pubsub subscriptions create $NODE_WORKER_SUBSCRIPTION \
+            --topic=$NODE_WORKER_TOPIC \
+            --ack-deadline=600 \
+            --message-retention-duration=7d || echo "Node worker subscription already exists"
+
       - name: Prepare deployment manifests
         run: |
           PR_NUMBER=${{ github.event.number }}

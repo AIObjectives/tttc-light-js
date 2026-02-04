@@ -63,6 +63,23 @@ FEATURE_FLAG_PROVIDER=local
 LOCAL_FLAGS='{"feature_name_enabled": true}'
 ```
 
+## Queue System
+
+**Default pipeline queue (PubSub):**
+```bash
+PUBSUB_TOPIC_NAME=test-topic
+PUBSUB_SUBSCRIPTION_NAME=test-subscription
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+```
+
+**Optional Node worker queue:**
+```bash
+NODE_WORKER_TOPIC_NAME=node-worker-topic
+NODE_WORKER_SUBSCRIPTION_NAME=node-worker-subscription
+```
+
+When the `use_node_worker_queue` feature flag is enabled for a user, pipeline jobs are sent to the Node worker queue instead of the default PubSub queue.
+
 ## Firestore Configuration
 
 **Deploy indexes and rules:**

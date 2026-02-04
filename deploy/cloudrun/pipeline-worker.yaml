@@ -24,7 +24,7 @@ spec:
     spec:
       containerConcurrency: 5
       timeoutSeconds: 3600
-      serviceAccountName: 384505539696-compute@developer.gserviceaccount.com
+      serviceAccountName: pipeline-worker@tttc-light-js.iam.gserviceaccount.com
       containers:
         - name: dev-t3c-pipeline-worker
           image: gcr.io/tttc-light-js/dev-t3c-pipeline-worker:TAG
@@ -34,18 +34,13 @@ spec:
             - name: REDIS_URL
               value: "redis://10.16.80.3:6379"
             - name: GCLOUD_STORAGE_BUCKET
-              value: tttc-light-dev
+              value: tttc-light-prod
             - name: GOOGLE_CLOUD_PROJECT
               value: tttc-light-js
             - name: PUBSUB_TOPIC
-              value: dev-pipeline-pr-PR_NUMBER
+              value: dev-node-worker-pr-PR_NUMBER
             - name: PUBSUB_SUBSCRIPTION
-              value: dev-pipeline-pr-PR_NUMBER-subscription
-            - name: GOOGLE_CREDENTIALS_ENCODED
-              valueFrom:
-                secretKeyRef:
-                  key: latest
-                  name: google-credentials
+              value: dev-node-worker-pr-PR_NUMBER-subscription
             - name: FIREBASE_CREDENTIALS_ENCODED
               valueFrom:
                 secretKeyRef:
@@ -53,6 +48,8 @@ spec:
                   name: firebase-credentials
             - name: FIREBASE_DATABASE_URL
               value: "https://tttc-light-js.firebaseapp.com"
+            - name: WHICH_SERVICE_REFSTORE
+              value: firebase
           resources:
             limits:
               cpu: 2000m

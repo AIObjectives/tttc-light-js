@@ -59,6 +59,7 @@ vi.mock("../../server", () => ({
   pipelineQueue: {
     enqueue: mockQueueEnqueue,
   },
+  nodeWorkerQueue: null,
 }));
 
 describe("End-to-End Data Flow Integration", () => {

@@ -13,7 +13,9 @@ import { logger } from "tttc-common/logger";
 import { DEFAULT_LIMITS, getUserCapabilities } from "tttc-common/permissions";
 import type * as schema from "tttc-common/schema";
 import * as firebase from "../Firebase";
-import { pipelineQueue } from "../server";
+import { isFeatureEnabled } from "../featureFlags";
+import { FEATURE_FLAGS } from "../featureFlags/constants";
+import { nodeWorkerQueue, pipelineQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";
 import { getRequestId, type RequestWithAuth } from "../types/request";
@@ -490,6 +492,25 @@ function getErrorCodeForException(e: unknown): ErrorCode {
   }
 }
 
+/**
+ * Select the appropriate queue based on feature flag configuration.
+ * Returns the node worker queue if available and feature flag is enabled,
+ * otherwise returns the default pipeline queue.
+ */
+async function selectQueue(
+  auth: DecodedIdToken,
+): Promise<typeof pipelineQueue> {
+  const shouldUseNodeWorker =
+    nodeWorkerQueue !== null &&
+    (await isFeatureEnabled(FEATURE_FLAGS.USE_NODE_WORKER_QUEUE, {
+      userId: auth.uid,
+    }));
+
+  return shouldUseNodeWorker
+    ? (nodeWorkerQueue as NonNullable<typeof nodeWorkerQueue>)
+    : pipelineQueue;
+}
+
 export default async function create(req: RequestWithAuth, res: Response) {
   const requestId = getRequestId(req);
 
@@ -504,9 +525,10 @@ export default async function create(req: RequestWithAuth, res: Response) {
       );
       return;
     }
-    // Queue the pipeline job before sending response
-    // This ensures the user only gets success if the job was actually queued
-    await pipelineQueue.enqueue(result.value.pipelineJob, { requestId });
+
+    // Select queue based on feature flag and enqueue the job
+    const selectedQueue = await selectQueue(req.auth);
+    await selectedQueue.enqueue(result.value.pipelineJob, { requestId });
     res.json(result.value.response);
   } catch (e) {
     req.log.error(

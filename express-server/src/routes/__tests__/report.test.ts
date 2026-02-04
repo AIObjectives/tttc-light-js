@@ -62,6 +62,7 @@ vi.mock("../../server", () => ({
   pipelineQueue: {
     getJob: vi.fn(),
   },
+  nodeWorkerQueue: null,
 }));
 
 // Create a focused mock request factory for testing

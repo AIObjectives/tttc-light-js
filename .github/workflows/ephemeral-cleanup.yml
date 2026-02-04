@@ -88,6 +88,10 @@ jobs:
             gcloud pubsub subscriptions delete dev-pipeline-pr-${pr}-subscription --quiet 2>/dev/null || echo "Subscription not found"
             gcloud pubsub topics delete dev-pipeline-pr-${pr} --quiet 2>/dev/null || echo "Topic not found"
 
+            # Delete node worker queue resources
+            gcloud pubsub subscriptions delete dev-node-worker-pr-${pr}-subscription --quiet 2>/dev/null || echo "Node worker subscription not found"
+            gcloud pubsub topics delete dev-node-worker-pr-${pr} --quiet 2>/dev/null || echo "Node worker topic not found"
+
             # Delete Cloud Run services
             gcloud run services delete dev-t3c-next-client-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Frontend not found"
             gcloud run services delete dev-t3c-express-server-pr-${pr} --region=$REGION --quiet 2>/dev/null || echo "Backend not found"
@@ -165,6 +169,16 @@ jobs:
 
           # Delete topic (ignore errors if it doesn't exist)
           gcloud pubsub topics delete $TOPIC_NAME || echo "Topic not found"
+
+          # Delete node worker queue resources
+          NODE_WORKER_TOPIC="dev-node-worker-pr-${PR_NUMBER}"
+          NODE_WORKER_SUBSCRIPTION="dev-node-worker-pr-${PR_NUMBER}-subscription"
+
+          # Delete node worker subscription first (ignore errors if it doesn't exist)
+          gcloud pubsub subscriptions delete $NODE_WORKER_SUBSCRIPTION || echo "Node worker subscription not found"
+
+          # Delete node worker topic (ignore errors if it doesn't exist)
+          gcloud pubsub topics delete $NODE_WORKER_TOPIC || echo "Node worker topic not found"
 
       - name: Delete Cloud Run services
         run: |
