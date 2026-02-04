@@ -315,8 +315,8 @@ export function validateDataArray(
   const emptyComments: string[] = [];
 
   for (const comment of data) {
-    if (!comment.comment_text || comment.comment_text.trim().length === 0) {
-      emptyComments.push(comment.comment_id);
+    if (!comment.comment || comment.comment.trim().length === 0) {
+      emptyComments.push(comment.id);
     }
   }
 
@@ -345,11 +345,11 @@ function convertToPipelineInput(
   const { config, data } = job;
   const { instructions, llm, options, env } = config;
 
-  // Convert comments to pipeline-worker format
+  // Convert comments from SourceRow format to pipeline-worker format
   const comments = data.map((comment: PipelineJobMessage["data"][number]) => ({
-    id: comment.comment_id,
-    text: comment.comment_text,
-    speaker: comment.speaker,
+    id: comment.id,
+    text: comment.comment,
+    speaker: comment.interview || "participant",
   }));
 
   return success({
@@ -427,7 +427,7 @@ async function savePipelineOutput(
     );
     const numPeople = new Set(
       data.data
-        .map((comment: (typeof data.data)[0]) => comment.speaker)
+        .map((comment: (typeof data.data)[0]) => comment.interview)
         .filter(Boolean),
     ).size;
 

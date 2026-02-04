@@ -65,11 +65,11 @@ export const TEST_STORAGE = {
 export const createComment = (
   id: string,
   text: string,
-  speaker = "participant",
-): { comment_id: string; comment_text: string; speaker: string } => ({
-  comment_id: id,
-  comment_text: text,
-  speaker,
+  interview = "participant",
+): { id: string; comment: string; interview?: string } => ({
+  id,
+  comment: text,
+  interview,
 });
 
 // Factory function to create test mocks
@@ -102,7 +102,13 @@ export const createTestMocks = () => ({
 });
 
 export const createMockMessage = (): PubSubMessage<{
-  data: Array<{ comment_id: string; comment_text: string; speaker: string }>;
+  data: Array<{
+    id: string;
+    comment: string;
+    interview?: string;
+    video?: string;
+    timestamp?: string;
+  }>;
   config: {
     instructions: {
       systemInstructions: string;
@@ -129,9 +135,9 @@ export const createMockMessage = (): PubSubMessage<{
   data: {
     data: [
       {
-        comment_id: TEST_IDS.comment,
-        comment_text: TEST_STRINGS.comment,
-        speaker: TEST_STRINGS.speaker,
+        id: TEST_IDS.comment,
+        comment: TEST_STRINGS.comment,
+        interview: TEST_STRINGS.speaker,
       },
     ],
     config: {

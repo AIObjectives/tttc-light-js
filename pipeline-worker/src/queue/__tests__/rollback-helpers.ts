@@ -27,7 +27,13 @@ export type MockData = {
     title: string;
     description: string;
   };
-  data: Array<{ comment_id: string; comment_text: string; speaker: string }>;
+  data: Array<{
+    id: string;
+    comment: string;
+    interview?: string;
+    video?: string;
+    timestamp?: string;
+  }>;
 };
 
 export type SavePipelineOptions = {
