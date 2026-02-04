@@ -7,14 +7,14 @@ import { z } from "zod";
 
 /**
  * Schema for comment in pipeline job
+ * Matches SourceRow format from express-server
  */
 const commentSchema = z.object({
-  comment_id: z.string().min(1, "Comment ID cannot be empty"),
-  comment_text: z.string().min(1, "Comment text cannot be empty"),
-  speaker: z.string().default("participant"),
-  votes: z.number().optional(),
-  agrees: z.number().optional(),
-  disagrees: z.number().optional(),
+  id: z.string().min(1, "Comment ID cannot be empty"),
+  comment: z.string().min(1, "Comment text cannot be empty"),
+  interview: z.string().optional(),
+  video: z.string().optional(),
+  timestamp: z.string().optional(),
 });
 
 /**

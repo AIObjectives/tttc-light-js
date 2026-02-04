@@ -4,11 +4,7 @@ import type { RefStoreServices } from "../../datastore/refstore/index.js";
 import type { RedisPipelineStateStore } from "../../pipeline-runner/state-store.js";
 import type { PipelineState } from "../../pipeline-runner/types.js";
 import type { SortAndDeduplicateResult } from "../../pipeline-steps/types.js";
-import {
-  categorizeError,
-  handlePipelineJob,
-  validateDataArray,
-} from "../handler";
+import { handlePipelineJob, validateDataArray } from "../handler";
 import {
   createComment,
   createMockMessage,
@@ -28,17 +24,9 @@ import type {
 } from "./rollback-helpers.js";
 import { saveSuccessfulPipeline } from "./rollback-helpers.js";
 import {
-  createBaseState,
-  createClusteringResult,
-  createCompletedResults,
   createCompletedState,
   createCompletedStateTyped,
   createRunningState,
-  createRunningStepAnalytics,
-  createStepAnalytics,
-  createValidationFailures,
-  withCompletedResults,
-  withCompletedSteps,
 } from "./state-builders.js";
 
 // Mock logger
@@ -169,12 +157,12 @@ describe("saveSuccessfulPipeline rollback behavior", () => {
     completedAt: new Date().toISOString(),
   });
 
-  const createMockData = (): MockData => ({
+  const _createMockData = (): MockData => ({
     reportDetails: {
       title: TEST_STRINGS.title,
       description: TEST_STRINGS.description,
     },
-    data: [{ comment_id: "1", comment_text: "test", speaker: "user1" }],
+    data: [{ id: "1", comment: "test", interview: "user1" }],
   });
 
   it("should rollback GCS upload when Firestore update fails", async () => {
@@ -852,7 +840,7 @@ describe("handlePipelineJob - orphaned file detection", () => {
     // Mock state for retry attempt
     vi.mocked(mockStateStore.get).mockResolvedValue(null);
 
-    const result = await handlePipelineJob(
+    const _result = await handlePipelineJob(
       message,
       mockStateStore,
       mockStorage,

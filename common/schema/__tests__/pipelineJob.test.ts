@@ -32,9 +32,9 @@ describe("pipelineJobSchema validation", () => {
     },
     data: [
       {
-        comment_id: "comment-1",
-        comment_text: "This is a test comment",
-        speaker: "participant",
+        id: "comment-1",
+        comment: "This is a test comment",
+        interview: "participant",
       },
     ],
     reportDetails: {
@@ -170,17 +170,17 @@ describe("pipelineJobSchema validation", () => {
 
     const commentFieldTestCases: Array<{
       name: string;
-      field: "comment_id" | "comment_text";
+      field: "id" | "comment";
       expectedError: string;
     }> = [
       {
-        name: "comment_id",
-        field: "comment_id",
+        name: "id",
+        field: "id",
         expectedError: "Comment ID cannot be empty",
       },
       {
-        name: "comment_text",
-        field: "comment_text",
+        name: "comment",
+        field: "comment",
         expectedError: "Comment text cannot be empty",
       },
     ];
@@ -222,9 +222,9 @@ describe("pipelineJobSchema validation", () => {
         ...validPipelineJob,
         data: [
           {
-            comment_id: field === "comment_id" ? "" : "comment-1",
-            comment_text: field === "comment_text" ? "" : "Valid text",
-            speaker: "participant",
+            id: field === "id" ? "" : "comment-1",
+            comment: field === "comment" ? "" : "Valid text",
+            interview: "participant",
           },
         ],
       };
