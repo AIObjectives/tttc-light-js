@@ -19,28 +19,13 @@ async function main() {
     // Track active message processing for graceful shutdown
     let activeMessageCount = 0;
     let servicesReady = false;
-    const messageTracking = {
-      onMessageStart: () => {
-        activeMessageCount++;
-      },
-      onMessageEnd: () => {
-        activeMessageCount--;
-      },
-    };
-
-    // Check if we should use push or pull mode
-    const usePushSubscription = process.env.PUBSUB_PUSH_ENABLED === "true";
-    mainLogger.info(
-      { mode: usePushSubscription ? "push" : "pull" },
-      "Starting pipeline worker in subscription mode",
-    );
 
     // Start HTTP server for health checks AND push subscriptions
     const port = Number.parseInt(process.env.PORT || "8080", 10);
 
     // Initialize services early so we can handle push messages
     mainLogger.info("Initializing services...");
-    const services = await initServices(messageTracking, usePushSubscription);
+    const services = await initServices();
     servicesReady = true;
 
     const healthServer = http.createServer(async (req, res) => {
@@ -54,7 +39,6 @@ async function main() {
             ready: servicesReady,
             activeMessages: activeMessageCount,
             uptime: process.uptime(),
-            mode: usePushSubscription ? "push" : "pull",
           }),
         );
         return;
@@ -68,7 +52,7 @@ async function main() {
           return;
         }
 
-        messageTracking.onMessageStart();
+        activeMessageCount++;
 
         try {
           // Read the request body
@@ -121,7 +105,7 @@ async function main() {
             }),
           );
         } finally {
-          messageTracking.onMessageEnd();
+          activeMessageCount--;
         }
         return;
       }
@@ -144,23 +128,12 @@ async function main() {
     const shutdown = async (signal: string) => {
       mainLogger.info(
         { signal, activeMessages: activeMessageCount },
-        "Received shutdown signal, closing subscription...",
+        "Received shutdown signal...",
       );
 
-      // Close health check server
+      // Close HTTP server to stop accepting new messages
       healthServer.close();
-
-      // Stop accepting new messages (only for pull mode)
-      if (services.Queue) {
-        await services.Queue.close();
-        mainLogger.info(
-          "Subscription closed, no new messages will be received",
-        );
-      } else {
-        mainLogger.info(
-          "Push mode - HTTP server closed, no new messages will be received",
-        );
-      }
+      mainLogger.info("HTTP server closed, no new messages will be received");
 
       // Wait for active messages to complete (with timeout)
       const shutdownTimeout = 30000; // 30 seconds for graceful shutdown

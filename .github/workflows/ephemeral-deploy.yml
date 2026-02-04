@@ -214,12 +214,6 @@ jobs:
             --update-env-vars \
               PIPELINE_EXPRESS_URL=${{steps.get-urls.outputs.backend_url}}
 
-          # Enable push mode for pipeline worker
-          gcloud run services update dev-t3c-pipeline-worker-pr-${PR_NUMBER} \
-            --region=$REGION \
-            --update-env-vars \
-              PUBSUB_PUSH_ENABLED=true
-
       - name: Add domain to Firebase authorized domains
         run: |
           # Extract domain from frontend URL
