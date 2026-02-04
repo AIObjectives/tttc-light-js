@@ -6,8 +6,8 @@ metadata:
     env: development
     cloud.googleapis.com/location: us-central1
   annotations:
-    run.googleapis.com/ingress: internal
-    run.googleapis.com/ingress-status: internal
+    run.googleapis.com/ingress: internal-and-cloud-load-balancing
+    run.googleapis.com/ingress-status: internal-and-cloud-load-balancing
 spec:
   template:
     metadata:
@@ -41,6 +41,8 @@ spec:
               value: dev-node-worker-pr-PR_NUMBER
             - name: PUBSUB_SUBSCRIPTION
               value: dev-node-worker-pr-PR_NUMBER-subscription
+            - name: PUBSUB_PUSH_ENABLED
+              value: "false"
             - name: FIREBASE_CREDENTIALS_ENCODED
               valueFrom:
                 secretKeyRef:

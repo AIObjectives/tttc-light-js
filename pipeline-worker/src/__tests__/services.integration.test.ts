@@ -28,7 +28,9 @@ describe("Services Health Checks Integration", () => {
     await expect(services.Storage.healthCheck()).resolves.not.toThrow();
 
     // Cleanup
-    await services.Queue.close();
+    if (services.Queue) {
+      await services.Queue.close();
+    }
   });
 
   it("should fail initialization if Redis is not available", async () => {
