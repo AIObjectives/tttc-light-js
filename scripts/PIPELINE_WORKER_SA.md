@@ -17,7 +17,8 @@ This document explains how to create and configure a service account for the pip
 The pipeline-worker needs access to:
 
 1. **Pub/Sub** - To receive pipeline job messages
-   - Role: `roles/pubsub.subscriber`
+   - Role: `roles/pubsub.subscriber` (to consume messages)
+   - Role: `roles/pubsub.viewer` (to verify subscriptions exist)
 
 2. **Firestore** - To read/write report metadata and job status
    - Role: `roles/datastore.user`

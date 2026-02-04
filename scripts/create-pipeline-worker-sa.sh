@@ -29,6 +29,13 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role="roles/pubsub.subscriber" \
   --condition=None
 
+# Grant Pub/Sub Viewer role (to verify subscriptions exist)
+echo "Granting Pub/Sub Viewer role..."
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/pubsub.viewer" \
+  --condition=None
+
 # Grant Cloud Datastore User role (for Firestore read/write)
 echo "Granting Cloud Datastore User role..."
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -55,6 +62,7 @@ echo "Service Account Email: $SA_EMAIL"
 echo ""
 echo "Roles granted:"
 echo "  - roles/pubsub.subscriber (project-level)"
+echo "  - roles/pubsub.viewer (project-level)"
 echo "  - roles/datastore.user (project-level)"
 echo "  - roles/storage.objectAdmin (bucket: $BUCKET_NAME)"
 echo "  - roles/storage.legacyBucketReader (project-level)"

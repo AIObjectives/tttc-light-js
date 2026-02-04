@@ -29,6 +29,7 @@ Or specify custom project/bucket:
 
 This creates a service account named `pipeline-worker@tttc-light-js.iam.gserviceaccount.com` with:
 - `roles/pubsub.subscriber` (project-level)
+- `roles/pubsub.viewer` (project-level)
 - `roles/datastore.user` (project-level)
 - `roles/storage.objectAdmin` (on bucket)
 - `roles/storage.legacyBucketReader` (project-level)
