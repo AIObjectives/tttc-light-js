@@ -36,22 +36,31 @@ export async function initServices(): Promise<Services> {
 
   // Initialize GCS storage
   const bucketName = process.env.GCLOUD_STORAGE_BUCKET;
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+  const encodedCredentials = process.env.GOOGLE_CREDENTIALS_ENCODED;
 
   if (!bucketName) {
     throw new Error("Missing GCLOUD_STORAGE_BUCKET environment variable");
   }
 
-  // Always use Application Default Credentials (Cloud Run service account)
+  if (!encodedCredentials) {
+    throw new Error("Missing GOOGLE_CREDENTIALS_ENCODED environment variable");
+  }
+
+  // Decode base64 credentials
+  const credentials = JSON.parse(
+    Buffer.from(encodedCredentials, "base64").toString("utf-8"),
+  );
+
   servicesLogger.info(
-    { bucketName, projectId },
-    "Initializing GCS with Application Default Credentials",
+    { bucketName, projectId: credentials.project_id },
+    "Initializing GCS with encoded credentials",
   );
 
   const Storage = createBucketStore({
     provider: "gcp",
     bucketName,
-    projectId,
+    projectId: credentials.project_id,
+    credentials,
   });
 
   // Verify Redis connectivity before proceeding

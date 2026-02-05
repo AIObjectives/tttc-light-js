@@ -235,15 +235,17 @@ export class GCPBucketStore implements BucketStore {
   async healthCheck(): Promise<void> {
     try {
       const bucketRef = this.storage.bucket(this.bucketName);
-      // Verify bucket exists and we have access by checking if it exists
-      const [exists] = await bucketRef.exists();
+      const healthCheckFile = ".health-check";
 
-      if (!exists) {
-        throw new Error(`Bucket ${this.bucketName} does not exist`);
-      }
+      // Test object-level permissions by listing files with a prefix that likely doesn't exist
+      // This verifies we have storage.objects.list permission without requiring bucket metadata access
+      // Using getFiles with maxResults: 1 is lightweight and only requires object-level permissions
+      await bucketRef.getFiles({
+        prefix: healthCheckFile,
+        maxResults: 1,
+      });
 
-      // Verify we have permissions by attempting to get metadata
-      await bucketRef.getMetadata();
+      // Successfully listing files (even if empty) proves we have necessary object-level access
     } catch (error) {
       const errorType = categorizeStorageError(error);
 
