@@ -19,16 +19,13 @@ describe("Services Health Checks Integration", () => {
     expect(services).toBeDefined();
     expect(services.Cache).toBeDefined();
     expect(services.Storage).toBeDefined();
-    expect(services.Queue).toBeDefined();
     expect(services.RefStore).toBeDefined();
     expect(services.PipelineStateStore).toBeDefined();
+    expect(services.handlePushMessage).toBeDefined();
 
     // Verify health checks pass
     await expect(services.Cache.healthCheck()).resolves.not.toThrow();
     await expect(services.Storage.healthCheck()).resolves.not.toThrow();
-
-    // Cleanup
-    await services.Queue.close();
   });
 
   it("should fail initialization if Redis is not available", async () => {

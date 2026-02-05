@@ -102,33 +102,15 @@ jobs:
             -t gcr.io/$PROJECT_ID/dev-t3c-pipeline-worker:pr-${PR_NUMBER}-${SHORT_SHA} .
           docker push gcr.io/$PROJECT_ID/dev-t3c-pipeline-worker:pr-${PR_NUMBER}-${SHORT_SHA}
 
-      - name: Create Pub/Sub topic and subscription
+      - name: Create Pub/Sub topics (subscriptions created after deployment)
         run: |
           PR_NUMBER=${{ github.event.number }}
           TOPIC_NAME="dev-pipeline-pr-${PR_NUMBER}"
-          SUBSCRIPTION_NAME="dev-pipeline-pr-${PR_NUMBER}-subscription"
-
-          # Create topic (ignore if already exists)
-          gcloud pubsub topics create $TOPIC_NAME || echo "Topic already exists"
-
-          # Create subscription (ignore if already exists)
-          gcloud pubsub subscriptions create $SUBSCRIPTION_NAME \
-            --topic=$TOPIC_NAME \
-            --ack-deadline=600 \
-            --message-retention-duration=7d || echo "Subscription already exists"
-
-          # Create node worker queue topic and subscription
           NODE_WORKER_TOPIC="dev-node-worker-pr-${PR_NUMBER}"
-          NODE_WORKER_SUBSCRIPTION="dev-node-worker-pr-${PR_NUMBER}-subscription"
 
-          # Create node worker topic (ignore if already exists)
+          # Create topics (ignore if already exists)
+          gcloud pubsub topics create $TOPIC_NAME || echo "Topic already exists"
           gcloud pubsub topics create $NODE_WORKER_TOPIC || echo "Node worker topic already exists"
-
-          # Create node worker subscription (ignore if already exists)
-          gcloud pubsub subscriptions create $NODE_WORKER_SUBSCRIPTION \
-            --topic=$NODE_WORKER_TOPIC \
-            --ack-deadline=600 \
-            --message-retention-duration=7d || echo "Node worker subscription already exists"
 
       - name: Prepare deployment manifests
         run: |
@@ -183,10 +165,35 @@ jobs:
           FRONTEND_URL=$(gcloud run services describe dev-t3c-next-client-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
           BACKEND_URL=$(gcloud run services describe dev-t3c-express-server-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
           PYTHON_URL=$(gcloud run services describe dev-pyserver-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
+          PIPELINE_WORKER_URL=$(gcloud run services describe dev-t3c-pipeline-worker-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
 
           echo "frontend_url=$FRONTEND_URL" >> $GITHUB_OUTPUT
           echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
           echo "python_url=$PYTHON_URL" >> $GITHUB_OUTPUT
+          echo "pipeline_worker_url=$PIPELINE_WORKER_URL" >> $GITHUB_OUTPUT
+
+      - name: Configure push subscriptions
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          NODE_WORKER_TOPIC="dev-node-worker-pr-${PR_NUMBER}"
+          NODE_WORKER_SUBSCRIPTION="dev-node-worker-pr-${PR_NUMBER}-subscription"
+          PIPELINE_WORKER_URL="${{ steps.get-urls.outputs.pipeline_worker_url }}/pubsub/push"
+
+          # Get the service account email for the pipeline worker
+          SERVICE_ACCOUNT="pipeline-worker@tttc-light-js.iam.gserviceaccount.com"
+
+          # Delete old subscription if it exists (to convert from pull to push)
+          gcloud pubsub subscriptions delete $NODE_WORKER_SUBSCRIPTION 2>/dev/null || echo "Subscription doesn't exist yet"
+
+          # Create push subscription with the pipeline worker endpoint
+          gcloud pubsub subscriptions create $NODE_WORKER_SUBSCRIPTION \
+            --topic=$NODE_WORKER_TOPIC \
+            --push-endpoint=$PIPELINE_WORKER_URL \
+            --push-auth-service-account=$SERVICE_ACCOUNT \
+            --ack-deadline=600 \
+            --message-retention-duration=7d
+
+          echo "Created push subscription: $NODE_WORKER_SUBSCRIPTION -> $PIPELINE_WORKER_URL"
 
       - name: Update service URL environment variables
         run: |

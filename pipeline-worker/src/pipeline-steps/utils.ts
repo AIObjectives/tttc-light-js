@@ -164,7 +164,9 @@ export async function initializeWeaveIfEnabled(
   enableScoring: boolean,
   weaveProjectName: string,
 ): Promise<OpenAI["responses"]["create"]> {
-  let responsesCreate = openaiClient.responses.create;
+  let responsesCreate = openaiClient.responses.create.bind(
+    openaiClient.responses,
+  );
 
   if (enableScoring) {
     try {

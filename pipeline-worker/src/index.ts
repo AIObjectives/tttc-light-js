@@ -7,6 +7,7 @@ if (existsSync(".env")) {
 
 import http from "node:http";
 import { logger } from "tttc-common/logger";
+import { pipelineJobSchema } from "tttc-common/schema";
 import { initServices } from "./services";
 
 const mainLogger = logger.child({ module: "main" });
@@ -18,19 +19,17 @@ async function main() {
     // Track active message processing for graceful shutdown
     let activeMessageCount = 0;
     let servicesReady = false;
-    const messageTracking = {
-      onMessageStart: () => {
-        activeMessageCount++;
-      },
-      onMessageEnd: () => {
-        activeMessageCount--;
-      },
-    };
 
-    // Start HTTP health check server FIRST for Cloud Run
-    // This ensures the port is listening before services initialize
+    // Start HTTP server for health checks AND push subscriptions
     const port = Number.parseInt(process.env.PORT || "8080", 10);
-    const healthServer = http.createServer((req, res) => {
+
+    // Initialize services early so we can handle push messages
+    mainLogger.info("Initializing services...");
+    const services = await initServices();
+    servicesReady = true;
+
+    const healthServer = http.createServer(async (req, res) => {
+      // Health check endpoint
       if (req.url === "/health" || req.url === "/") {
         const status = servicesReady ? 200 : 503;
         res.writeHead(status, { "Content-Type": "application/json" });
@@ -42,23 +41,86 @@ async function main() {
             uptime: process.uptime(),
           }),
         );
-      } else {
-        res.writeHead(404);
-        res.end();
+        return;
       }
+
+      // Push subscription endpoint
+      if (req.url === "/pubsub/push" && req.method === "POST") {
+        if (!servicesReady) {
+          res.writeHead(503, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Service not ready" }));
+          return;
+        }
+
+        activeMessageCount++;
+
+        try {
+          // Read the request body
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) {
+            chunks.push(chunk);
+          }
+          const body = Buffer.concat(chunks).toString("utf-8");
+
+          // Parse Pub/Sub push message format
+          const pushMessage = JSON.parse(body);
+          const messageData = Buffer.from(
+            pushMessage.message.data,
+            "base64",
+          ).toString("utf-8");
+          const jobData = JSON.parse(messageData);
+
+          // Validate against schema
+          const validatedJob = pipelineJobSchema.parse(jobData);
+
+          // Process the message using the push handler
+          await services.handlePushMessage({
+            id: pushMessage.message.messageId,
+            data: validatedJob,
+            attributes: pushMessage.message.attributes || {},
+            publishTime: new Date(pushMessage.message.publishTime),
+          });
+
+          // Acknowledge the message
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true }));
+        } catch (error) {
+          mainLogger.error(
+            { error, url: req.url },
+            "Error processing push message",
+          );
+          // Return 4xx for permanent errors (don't retry)
+          // Return 5xx for transient errors (Pub/Sub will retry)
+          const isTransient =
+            error instanceof Error &&
+            (error.message.includes("timeout") ||
+              error.message.includes("connection") ||
+              error.message.includes("ECONNREFUSED"));
+
+          const statusCode = isTransient ? 500 : 400;
+          res.writeHead(statusCode, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          );
+        } finally {
+          activeMessageCount--;
+        }
+        return;
+      }
+
+      // 404 for unknown routes
+      res.writeHead(404);
+      res.end();
     });
 
     await new Promise<void>((resolve) => {
       healthServer.listen(port, () => {
-        mainLogger.info({ port }, "Health check server listening");
+        mainLogger.info({ port }, "HTTP server listening");
         resolve();
       });
     });
-
-    // Now initialize services (this can take time for health checks)
-    mainLogger.info("Initializing services...");
-    const services = await initServices(messageTracking);
-    servicesReady = true;
 
     mainLogger.info("Pipeline worker started successfully");
 
@@ -66,15 +128,12 @@ async function main() {
     const shutdown = async (signal: string) => {
       mainLogger.info(
         { signal, activeMessages: activeMessageCount },
-        "Received shutdown signal, closing subscription...",
+        "Received shutdown signal...",
       );
 
-      // Close health check server
+      // Close HTTP server to stop accepting new messages
       healthServer.close();
-
-      // Stop accepting new messages
-      await services.Queue.close();
-      mainLogger.info("Subscription closed, no new messages will be received");
+      mainLogger.info("HTTP server closed, no new messages will be received");
 
       // Wait for active messages to complete (with timeout)
       const shutdownTimeout = 30000; // 30 seconds for graceful shutdown
