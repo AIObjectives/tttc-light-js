@@ -1060,14 +1060,14 @@ async function executePipelineWithLock(
                 });
                 jobLogger.info(
                   { step, subState: mapStepToSubState(step) },
-                  "Updated progress substate",
+                  "Updated progress sub-state",
                 );
               }
             } catch (error) {
               // Log but don't fail the pipeline on progress update errors
               jobLogger.warn(
                 { error, step, status },
-                "Failed to update progress substate in Firestore",
+                "Failed to update progress sub-state in Firestore",
               );
             }
           }
