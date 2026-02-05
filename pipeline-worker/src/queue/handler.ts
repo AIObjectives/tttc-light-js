@@ -2,7 +2,7 @@
  * Queue message handler for pipeline jobs
  */
 
-import type { ReportRef } from "tttc-common/firebase";
+import type { ProcessingSubState, ReportRef } from "tttc-common/firebase";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import type { PipelineJobMessage } from "tttc-common/schema";
@@ -16,7 +16,10 @@ import {
 } from "../pipeline-runner/format-output.js";
 import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
-import type { PipelineInput } from "../pipeline-runner/types.js";
+import type {
+  PipelineInput,
+  PipelineStepName,
+} from "../pipeline-runner/types.js";
 import {
   ErrorCategory,
   HandlerError,
@@ -26,6 +29,25 @@ import {
 import type { PubSubMessage } from "./index.js";
 
 const queueLogger = logger.child({ module: "queue-handler" });
+
+/**
+ * Map pipeline step names to processing substates for progress tracking.
+ * This determines what the client displays during pipeline execution.
+ */
+function mapStepToSubState(step: PipelineStepName): ProcessingSubState {
+  switch (step) {
+    case "clustering":
+      return "clustering";
+    case "claims":
+      return "extraction";
+    case "sort_and_deduplicate":
+      return "dedup";
+    case "summaries":
+      return "summarizing";
+    case "cruxes":
+      return "scoring_bridging";
+  }
+}
 
 /**
  * Type guard to check if an error is a GCS ApiError with a code property
@@ -1024,6 +1046,32 @@ async function executePipelineWithLock(
         userId,
         resumeFromState: shouldResume,
         lockValue,
+        onStepUpdate: async (step, status) => {
+          // Update Firestore with progress when a step starts
+          if (status === "in_progress") {
+            try {
+              const reportRef = await refStore.Report.get(reportId);
+              if (reportRef) {
+                await refStore.Report.modify(reportId, {
+                  ...reportRef,
+                  status: "processing",
+                  processingSubState: mapStepToSubState(step),
+                  lastStatusUpdate: new Date(),
+                });
+                jobLogger.info(
+                  { step, subState: mapStepToSubState(step) },
+                  "Updated progress substate",
+                );
+              }
+            } catch (error) {
+              // Log but don't fail the pipeline on progress update errors
+              jobLogger.warn(
+                { error, step, status },
+                "Failed to update progress substate in Firestore",
+              );
+            }
+          }
+        },
       },
       stateStore,
     );
