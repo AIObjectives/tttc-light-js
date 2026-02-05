@@ -5,15 +5,12 @@
 import type { ReportRef } from "tttc-common/firebase";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import type * as schema from "tttc-common/schema";
 import type { PipelineJobMessage } from "tttc-common/schema";
 import type { BucketStore } from "../bucketstore/index.js";
 import type { RefStoreServices } from "../datastore/refstore/index.js";
 import { STATE_STALENESS_THRESHOLD_MS } from "../pipeline-runner/constants.js";
-import {
-  formatPipelineOutput,
-  type SimplifiedPipelineOutput,
-  simplifiedPipelineOutputSchema,
-} from "../pipeline-runner/format-output.js";
+import { formatPipelineOutput } from "../pipeline-runner/format-output.js";
 import { runPipeline } from "../pipeline-runner/index.js";
 import type { RedisPipelineStateStore } from "../pipeline-runner/state-store.js";
 import type { PipelineInput } from "../pipeline-runner/types.js";
@@ -403,7 +400,7 @@ function convertToPipelineInput(
  * This is the common save logic used by both fresh pipeline runs and save-only retries
  */
 async function savePipelineOutput(
-  pipelineOutput: SimplifiedPipelineOutput,
+  pipelineOutput: schema.LLMPipelineOutput,
   data: PipelineJobMessage,
   reportId: string,
   storage: BucketStore,
@@ -414,15 +411,20 @@ async function savePipelineOutput(
     const reportJson = JSON.stringify(pipelineOutput);
     const filename = `${reportId}.json`;
 
-    // Extract statistics from sortedTree
-    const sortedTree = pipelineOutput.sortedTree;
-    const numTopics = sortedTree.length;
-    const numSubtopics = sortedTree.reduce(
-      (sum, [, topicData]) => sum + topicData.topics.length,
+    // Extract statistics from taxonomy tree
+    const numTopics = pipelineOutput.tree.length;
+    const numSubtopics = pipelineOutput.tree.reduce(
+      (sum: number, topic: schema.LLMTopic) => sum + topic.subtopics.length,
       0,
     );
-    const numClaims = sortedTree.reduce(
-      (sum, [, topicData]) => sum + topicData.counts.claims,
+    const numClaims = pipelineOutput.tree.reduce(
+      (sum: number, topic: schema.LLMTopic) =>
+        sum +
+        topic.subtopics.reduce(
+          (subtopicSum: number, subtopic: schema.LLMSubtopic) =>
+            subtopicSum + (subtopic.claimsCount || 0),
+          0,
+        ),
       0,
     );
     const numPeople = new Set(
@@ -470,7 +472,7 @@ async function savePipelineOutput(
       numSubtopics,
       numClaims,
       numPeople,
-      createdDate: new Date(pipelineOutput.completedAt),
+      createdDate: new Date(pipelineOutput.end || Date.now()),
     };
 
     try {
@@ -735,70 +737,41 @@ async function checkStorageForSkip(
 }
 
 /**
+ * NOTE: Save-only retry is disabled because we cannot reconstruct the full
+ * LLMPipelineOutput format from just the sortedTree stored in Redis state.
+ * The sortedTree lacks the taxonomy structure with claims that express-server
+ * expects. If save-only retry is needed, the Redis state would need to store
+ * the complete pipeline result including claimsTree and summaries.
+ *
+ * For now, if GCS upload or Firestore update fails, the job will be retried
+ * from scratch (re-running the full pipeline).
+ */
+
+/**
  * Reconstruct pipeline output from completed state stored in Redis
  * This is used when pipeline completed but save operations failed
+ *
+ * DISABLED: Cannot reconstruct LLMPipelineOutput from sortedTree alone.
+ * Keeping this commented out for reference in case we add full state storage later.
  */
-function reconstructPipelineOutputFromState(
-  state: NonNullable<Awaited<ReturnType<RedisPipelineStateStore["get"]>>>,
-  data: PipelineJobMessage,
-): SimplifiedPipelineOutput {
-  const { completedResults } = state;
-
-  if (!completedResults.sort_and_deduplicate) {
-    throw new ValidationError(
-      "Cannot reconstruct output: sort_and_deduplicate result missing from completed state",
-    );
-  }
-
-  const { instructions } = data.config;
-  const { reportDetails } = data;
-
-  const reconstructed = {
-    version: "pipeline-worker-v1.0" as const,
-    reportDetails: {
-      title: reportDetails.title,
-      description: reportDetails.description,
-      question: reportDetails.question,
-      filename: reportDetails.filename,
-    },
-    sortedTree: completedResults.sort_and_deduplicate.data,
-    analytics: {
-      totalTokens: state.totalTokens,
-      totalCost: state.totalCost,
-      totalDurationMs: state.totalDurationMs,
-      stepAnalytics: state.stepAnalytics,
-    },
-    cruxes: completedResults.cruxes,
-    prompts: {
-      systemInstructions: instructions.systemInstructions,
-      clusteringInstructions: instructions.clusteringInstructions,
-      extractionInstructions: instructions.extractionInstructions,
-      dedupInstructions: instructions.dedupInstructions,
-      summariesInstructions: instructions.summariesInstructions,
-      cruxInstructions: instructions.cruxInstructions,
-      outputLanguage: instructions.outputLanguage,
-    },
-    completedAt: state.updatedAt,
-  };
-
-  // Validate the reconstructed data structure
-  const parseResult = simplifiedPipelineOutputSchema.safeParse(reconstructed);
-
-  if (!parseResult.success) {
-    queueLogger.error(
-      {
-        errors: parseResult.error.issues,
-        reportId: data.config.firebaseDetails.reportId,
-      },
-      "Reconstructed pipeline output validation failed - Redis state may be corrupted",
-    );
-    throw new ValidationError(
-      `Invalid pipeline output reconstructed from Redis state: ${parseResult.error.message}`,
-    );
-  }
-
-  return reconstructed;
-}
+// function reconstructPipelineOutputFromState(
+//   state: NonNullable<Awaited<ReturnType<RedisPipelineStateStore["get"]>>>,
+//   data: PipelineJobMessage,
+// ): schema.LLMPipelineOutput {
+//   const { completedResults } = state;
+//
+//   if (!completedResults.sort_and_deduplicate) {
+//     throw new ValidationError(
+//       "Cannot reconstruct output: sort_and_deduplicate result missing from completed state",
+//     );
+//   }
+//
+//   // Would need to reconstruct full LLMPipelineOutput with taxonomy tree
+//   // This requires claimsTree and summaries which are not stored in Redis state
+//   throw new ValidationError(
+//     "Cannot reconstruct LLMPipelineOutput from sortedTree alone - full pipeline result needed",
+//   );
+// }
 
 /**
  * Handle successful pipeline result
@@ -931,67 +904,19 @@ async function executePipelineWithLock(
     const existingState = await stateStore.get(reportId);
     const shouldResume = shouldResumeFromState(existingState);
 
-    // Handle save-only path: pipeline completed but save operations failed
+    // Save-only retry is disabled (see note above reconstructPipelineOutputFromState)
+    // If state shows completed but GCS file doesn't exist, we'll re-run the pipeline
     if (existingState?.status === "completed") {
-      jobLogger.info(
+      jobLogger.warn(
         {
           totalDurationMs: existingState.totalDurationMs,
           totalTokens: existingState.totalTokens,
           totalCost: existingState.totalCost,
         },
-        "Pipeline already completed, performing save-only retry",
+        "Pipeline state shows completed but save-only retry is disabled - will re-run pipeline",
       );
-
-      try {
-        const pipelineOutput = reconstructPipelineOutputFromState(
-          existingState,
-          data,
-        );
-        return savePipelineOutput(
-          pipelineOutput,
-          data,
-          reportId,
-          storage,
-          refStore,
-          jobLogger,
-        );
-      } catch (error) {
-        // Preserve ValidationError type information for proper error handling
-        if (error instanceof ValidationError) {
-          jobLogger.error(
-            { error: error.message },
-            "Failed to reconstruct pipeline output from completed state",
-          );
-          await updateFirestoreWithError(
-            reportId,
-            error.message,
-            refStore,
-            jobLogger,
-          );
-          return failure(error);
-        }
-
-        // Handle other error types
-        const cause = error instanceof Error ? error : new Error(String(error));
-        jobLogger.error(
-          { error: cause.message },
-          "Failed to reconstruct pipeline output from completed state",
-        );
-        await updateFirestoreWithError(
-          reportId,
-          `Cannot reconstruct output: ${cause.message}`,
-          refStore,
-          jobLogger,
-        );
-        return failure(
-          new HandlerError(
-            `Cannot reconstruct output: ${cause.message}`,
-            false,
-            ErrorCategory.VALIDATION,
-            cause,
-          ),
-        );
-      }
+      // Clear the completed state and continue to re-run the pipeline
+      await stateStore.delete(reportId);
     }
 
     // Skip if state is "running" but not stale (another worker is actively processing)
