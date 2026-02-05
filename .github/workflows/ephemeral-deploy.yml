@@ -157,6 +157,12 @@ jobs:
             --role="roles/run.invoker" \
             --region=$REGION
 
+          # Grant pipeline-worker service account permission to invoke the pipeline worker service
+          gcloud run services add-iam-policy-binding dev-t3c-pipeline-worker-pr-${PR_NUMBER} \
+            --member="serviceAccount:pipeline-worker@tttc-light-js.iam.gserviceaccount.com" \
+            --role="roles/run.invoker" \
+            --region=$REGION
+
       - name: Get service URLs
         id: get-urls
         run: |
@@ -175,6 +181,8 @@ jobs:
       - name: Configure push subscriptions
         run: |
           PR_NUMBER=${{ github.event.number }}
+          PIPELINE_TOPIC="dev-pipeline-pr-${PR_NUMBER}"
+          PIPELINE_SUBSCRIPTION="dev-pipeline-pr-${PR_NUMBER}-subscription"
           NODE_WORKER_TOPIC="dev-node-worker-pr-${PR_NUMBER}"
           NODE_WORKER_SUBSCRIPTION="dev-node-worker-pr-${PR_NUMBER}-subscription"
           PIPELINE_WORKER_URL="${{ steps.get-urls.outputs.pipeline_worker_url }}/pubsub/push"
@@ -182,10 +190,21 @@ jobs:
           # Get the service account email for the pipeline worker
           SERVICE_ACCOUNT="pipeline-worker@tttc-light-js.iam.gserviceaccount.com"
 
-          # Delete old subscription if it exists (to convert from pull to push)
-          gcloud pubsub subscriptions delete $NODE_WORKER_SUBSCRIPTION 2>/dev/null || echo "Subscription doesn't exist yet"
+          # Delete old subscriptions if they exist (to convert from pull to push)
+          gcloud pubsub subscriptions delete $PIPELINE_SUBSCRIPTION 2>/dev/null || echo "Default subscription doesn't exist yet"
+          gcloud pubsub subscriptions delete $NODE_WORKER_SUBSCRIPTION 2>/dev/null || echo "Node worker subscription doesn't exist yet"
 
-          # Create push subscription with the pipeline worker endpoint
+          # Create push subscription for default pipeline queue
+          gcloud pubsub subscriptions create $PIPELINE_SUBSCRIPTION \
+            --topic=$PIPELINE_TOPIC \
+            --push-endpoint=$PIPELINE_WORKER_URL \
+            --push-auth-service-account=$SERVICE_ACCOUNT \
+            --ack-deadline=600 \
+            --message-retention-duration=7d
+
+          echo "Created push subscription: $PIPELINE_SUBSCRIPTION -> $PIPELINE_WORKER_URL"
+
+          # Create push subscription for node worker queue
           gcloud pubsub subscriptions create $NODE_WORKER_SUBSCRIPTION \
             --topic=$NODE_WORKER_TOPIC \
             --push-endpoint=$PIPELINE_WORKER_URL \
