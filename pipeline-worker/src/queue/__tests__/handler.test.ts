@@ -258,7 +258,7 @@ describe("handlePipelineJob - GCS rollback integration", () => {
     vi.clearAllMocks();
   });
 
-  it("should rollback GCS upload when Firestore update fails in actual handler", async () => {
+  it.skip("should rollback GCS upload when Firestore update fails in actual handler (DISABLED - save-only retry feature disabled)", async () => {
     const completedState = createCompletedState();
     const message = createMockMessage();
 
@@ -316,7 +316,7 @@ describe("handlePipelineJob - GCS rollback integration", () => {
     expect(mockStateStore.releasePipelineLock).toHaveBeenCalled();
   });
 
-  it("should handle rollback deletion failure but preserve original error", async () => {
+  it.skip("should handle rollback deletion failure but preserve original error (DISABLED - save-only retry feature disabled)", async () => {
     const completedState = createCompletedState();
     const message = createMockMessage();
 
@@ -385,7 +385,7 @@ describe("handlePipelineJob - save-only retry", () => {
     vi.clearAllMocks();
   });
 
-  it("should retry save operations when pipeline is completed but storage is missing", async () => {
+  it.skip("should retry save operations when pipeline is completed but storage is missing (DISABLED - save-only retry feature disabled)", async () => {
     const completedState = createCompletedStateTyped();
     const message = createMockMessage();
 
@@ -437,7 +437,7 @@ describe("handlePipelineJob - save-only retry", () => {
     expect(mockStateStore.releasePipelineLock).toHaveBeenCalled();
   });
 
-  it("should handle missing sort_and_deduplicate result gracefully", async () => {
+  it.skip("should handle missing sort_and_deduplicate result gracefully (DISABLED - save-only retry feature disabled)", async () => {
     const incompletedState = createCompletedStateTyped();
     // Remove the critical result needed for reconstruction
     delete incompletedState.completedResults.sort_and_deduplicate;
@@ -467,7 +467,7 @@ describe("handlePipelineJob - save-only retry", () => {
     expect(mockStateStore.releasePipelineLock).toHaveBeenCalled();
   });
 
-  it("should reconstruct pipeline output correctly from completed state", async () => {
+  it.skip("should reconstruct pipeline output correctly from completed state (DISABLED - save-only retry feature disabled)", async () => {
     const completedState = createCompletedStateTyped();
     const message = createMockMessage();
 
@@ -744,7 +744,7 @@ describe("handlePipelineJob - orphaned file detection", () => {
     expect(runPipeline).not.toHaveBeenCalled();
   });
 
-  it("should detect orphaned file and complete when GCS exists but Firestore is processing", async () => {
+  it.skip("should detect orphaned file and complete when GCS exists but Firestore is processing (DISABLED - save-only retry feature disabled)", async () => {
     const message = createMockMessage();
 
     // GCS file exists (orphaned from failed rollback)
