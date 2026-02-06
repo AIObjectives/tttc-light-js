@@ -44,7 +44,7 @@ export function formatPipelineOutput(
 
           return {
             subtopicName,
-            subtopicShortDescription: undefined, // No short descriptions in pipeline-worker
+            subtopicShortDescription: subtopicName, // Use subtopic name as default description
             subtopicId: undefined, // IDs are generated later by transforms
             claimsCount: claims.length,
             claims,
@@ -55,7 +55,7 @@ export function formatPipelineOutput(
       return {
         topicName,
         topicSummary: topicSummary?.summary,
-        topicShortDescription: undefined, // No short descriptions in pipeline-worker
+        topicShortDescription: topicName, // Use topic name as default description
         topicId: undefined, // IDs are generated later by transforms
         claimsCount: topicData.counts.claims,
         subtopics,
