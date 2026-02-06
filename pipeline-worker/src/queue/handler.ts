@@ -7,6 +7,7 @@ import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import type * as schema from "tttc-common/schema";
 import type { PipelineJobMessage } from "tttc-common/schema";
+import { llmPipelineToSchema } from "tttc-common/transforms/pipeline";
 import type { BucketStore } from "../bucketstore/index.js";
 import type { RefStoreServices } from "../datastore/refstore/index.js";
 import { STATE_STALENESS_THRESHOLD_MS } from "../pipeline-runner/constants.js";
@@ -408,7 +409,9 @@ async function savePipelineOutput(
   jobLogger: typeof queueLogger,
 ): Promise<Result<void, StorageError>> {
   try {
-    const reportJson = JSON.stringify(pipelineOutput);
+    // Transform LLMPipelineOutput to PipelineOutput schema for storage
+    const transformedOutput = llmPipelineToSchema(pipelineOutput);
+    const reportJson = JSON.stringify(transformedOutput);
     const filename = `${reportId}.json`;
 
     // Extract statistics from taxonomy tree
