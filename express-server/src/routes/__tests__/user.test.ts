@@ -27,6 +27,7 @@ vi.mock("tttc-common/permissions", () => {
       csvSizeLimit: roles.includes("large_uploads")
         ? LARGE_UPLOAD_LIMIT
         : DEFAULT_LIMIT,
+      canViewElicitationTracking: roles.includes("event_organizer"),
     })),
   };
 });
@@ -119,6 +120,7 @@ describe("getUserLimits", () => {
 
     expect(mockRes.json).toHaveBeenCalledWith({
       csvSizeLimit: 153600, // 150KB default
+      canViewElicitationTracking: false,
     });
   });
 
@@ -129,6 +131,7 @@ describe("getUserLimits", () => {
 
     expect(mockRes.json).toHaveBeenCalledWith({
       csvSizeLimit: 2097152, // 2MB for large_uploads role
+      canViewElicitationTracking: false,
     });
   });
 
@@ -140,6 +143,7 @@ describe("getUserLimits", () => {
     // Should still return default capabilities
     expect(mockRes.json).toHaveBeenCalledWith({
       csvSizeLimit: 153600, // Default limit
+      canViewElicitationTracking: false,
     });
   });
 
@@ -158,6 +162,28 @@ describe("getUserLimits", () => {
         message: "Something went wrong on our end. Please try again.",
         code: "INTERNAL_ERROR",
       },
+    });
+  });
+
+  it("should return elicitation tracking capability for event organizers", async () => {
+    setupUserDocument(["event_organizer"]);
+
+    await getUserLimits(mockReq, mockRes);
+
+    expect(mockRes.json).toHaveBeenCalledWith({
+      csvSizeLimit: 153600, // Default CSV limit
+      canViewElicitationTracking: true,
+    });
+  });
+
+  it("should combine capabilities for users with multiple roles", async () => {
+    setupUserDocument(["large_uploads", "event_organizer"]);
+
+    await getUserLimits(mockReq, mockRes);
+
+    expect(mockRes.json).toHaveBeenCalledWith({
+      csvSizeLimit: 2097152, // Large uploads limit
+      canViewElicitationTracking: true, // Event organizer capability
     });
   });
 

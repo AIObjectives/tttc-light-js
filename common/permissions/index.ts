@@ -17,6 +17,9 @@ export const CAPABILITIES = {
   large_uploads: {
     csvSizeLimit: LARGE_UPLOAD_CSV_SIZE_LIMIT,
   },
+  event_organizer: {
+    canViewElicitationTracking: true,
+  },
   // Future roles can be added here as needed
 } as const;
 
@@ -26,6 +29,15 @@ export const CAPABILITIES = {
 export const DEFAULT_LIMITS = {
   csvSizeLimit: DEFAULT_CSV_SIZE_LIMIT,
 } as const;
+
+/**
+ * Check if user has event organizer role
+ * @param roles Array of role strings from the user document
+ * @returns True if user has event_organizer role
+ */
+export function isEventOrganizer(roles: string[]): boolean {
+  return roles.includes("event_organizer");
+}
 
 /**
  * Get the CSV size limit for a user based on their roles
@@ -50,6 +62,7 @@ export function getUserCsvSizeLimit(roles: string[]): number {
 export function getUserCapabilities(roles: string[]) {
   return {
     csvSizeLimit: getUserCsvSizeLimit(roles),
+    canViewElicitationTracking: isEventOrganizer(roles),
     // Future capabilities can be added here
   };
 }

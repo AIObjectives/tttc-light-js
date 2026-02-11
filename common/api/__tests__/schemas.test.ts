@@ -13,6 +13,7 @@ describe("API Schema Validation", () => {
     it("should validate correct user capabilities response", () => {
       const validResponse = {
         csvSizeLimit: 153600,
+        canViewElicitationTracking: false,
       };
 
       const result = userCapabilitiesResponse.safeParse(validResponse);
@@ -20,12 +21,14 @@ describe("API Schema Validation", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.csvSizeLimit).toBe(153600);
+        expect(result.data.canViewElicitationTracking).toBe(false);
       }
     });
 
     it("should validate response with large upload limit", () => {
       const validResponse = {
         csvSizeLimit: 2097152, // 2MB
+        canViewElicitationTracking: false,
       };
 
       const result = userCapabilitiesResponse.safeParse(validResponse);
@@ -33,6 +36,7 @@ describe("API Schema Validation", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.csvSizeLimit).toBe(2097152);
+        expect(result.data.canViewElicitationTracking).toBe(false);
       }
     });
 
@@ -45,8 +49,10 @@ describe("API Schema Validation", () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(["csvSizeLimit"]);
-        expect(result.error.issues[0].code).toBe("invalid_type");
+        // Should have errors for both missing fields
+        const paths = result.error.issues.map((issue) => issue.path[0]);
+        expect(paths).toContain("csvSizeLimit");
+        expect(paths).toContain("canViewElicitationTracking");
       }
     });
 
@@ -82,6 +88,7 @@ describe("API Schema Validation", () => {
     it("should accept zero as valid csvSizeLimit", () => {
       const validResponse = {
         csvSizeLimit: 0,
+        canViewElicitationTracking: true,
       };
 
       const result = userCapabilitiesResponse.safeParse(validResponse);
@@ -89,12 +96,14 @@ describe("API Schema Validation", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.csvSizeLimit).toBe(0);
+        expect(result.data.canViewElicitationTracking).toBe(true);
       }
     });
 
     it("should strip unknown fields (non-strict parsing)", () => {
       const responseWithExtra = {
         csvSizeLimit: 153600,
+        canViewElicitationTracking: false,
         extraField: "should be ignored",
       };
 
@@ -102,7 +111,10 @@ describe("API Schema Validation", () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data).toEqual({ csvSizeLimit: 153600 });
+        expect(result.data).toEqual({
+          csvSizeLimit: 153600,
+          canViewElicitationTracking: false,
+        });
         expect(result.data).not.toHaveProperty("extraField");
       }
     });
@@ -118,11 +130,45 @@ describe("API Schema Validation", () => {
     it("should work with parse() and return data on valid input", () => {
       const validResponse = {
         csvSizeLimit: 153600,
+        canViewElicitationTracking: true,
       };
 
       const result = userCapabilitiesResponse.parse(validResponse);
 
       expect(result.csvSizeLimit).toBe(153600);
+      expect(result.canViewElicitationTracking).toBe(true);
+    });
+
+    it("should validate event organizer capabilities", () => {
+      const eventOrganizerResponse = {
+        csvSizeLimit: 153600,
+        canViewElicitationTracking: true,
+      };
+
+      const result = userCapabilitiesResponse.safeParse(eventOrganizerResponse);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.canViewElicitationTracking).toBe(true);
+      }
+    });
+
+    it("should reject response with invalid canViewElicitationTracking type", () => {
+      const invalidResponse = {
+        csvSizeLimit: 153600,
+        canViewElicitationTracking: "yes",
+      };
+
+      const result = userCapabilitiesResponse.safeParse(invalidResponse);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toEqual([
+          "canViewElicitationTracking",
+        ]);
+        expect(result.error.issues[0].code).toBe("invalid_type");
+        expect(result.error.issues[0].expected).toBe("boolean");
+      }
     });
   });
 });
