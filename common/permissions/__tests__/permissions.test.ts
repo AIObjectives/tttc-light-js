@@ -4,6 +4,7 @@ import {
   DEFAULT_LIMITS,
   getUserCapabilities,
   getUserCsvSizeLimit,
+  isEventOrganizer,
 } from "../index";
 
 describe("Permission System", () => {
@@ -39,11 +40,38 @@ describe("Permission System", () => {
     });
   });
 
+  describe("isEventOrganizer", () => {
+    it("should return false for users with no roles", () => {
+      const result = isEventOrganizer([]);
+      expect(result).toBe(false);
+    });
+
+    it("should return false for users with unrelated roles", () => {
+      const result = isEventOrganizer(["large_uploads", "other_role"]);
+      expect(result).toBe(false);
+    });
+
+    it("should return true for users with event_organizer role", () => {
+      const result = isEventOrganizer(["event_organizer"]);
+      expect(result).toBe(true);
+    });
+
+    it("should return true when event_organizer is among multiple roles", () => {
+      const result = isEventOrganizer([
+        "large_uploads",
+        "event_organizer",
+        "other_role",
+      ]);
+      expect(result).toBe(true);
+    });
+  });
+
   describe("getUserCapabilities", () => {
     it("should return default capabilities for users with no roles", () => {
       const capabilities = getUserCapabilities([]);
       expect(capabilities).toEqual({
         csvSizeLimit: DEFAULT_LIMITS.csvSizeLimit,
+        canViewElicitationTracking: false,
       });
     });
 
@@ -51,12 +79,33 @@ describe("Permission System", () => {
       const capabilities = getUserCapabilities(["large_uploads"]);
       expect(capabilities).toEqual({
         csvSizeLimit: CAPABILITIES.large_uploads.csvSizeLimit,
+        canViewElicitationTracking: false,
+      });
+    });
+
+    it("should return elicitation tracking capability for event organizers", () => {
+      const capabilities = getUserCapabilities(["event_organizer"]);
+      expect(capabilities).toEqual({
+        csvSizeLimit: DEFAULT_LIMITS.csvSizeLimit,
+        canViewElicitationTracking: true,
+      });
+    });
+
+    it("should combine capabilities from multiple roles", () => {
+      const capabilities = getUserCapabilities([
+        "large_uploads",
+        "event_organizer",
+      ]);
+      expect(capabilities).toEqual({
+        csvSizeLimit: CAPABILITIES.large_uploads.csvSizeLimit,
+        canViewElicitationTracking: true,
       });
     });
 
     it("should be extensible for future capabilities", () => {
       const capabilities = getUserCapabilities(["large_uploads"]);
       expect(capabilities).toHaveProperty("csvSizeLimit");
+      expect(capabilities).toHaveProperty("canViewElicitationTracking");
       // Future capabilities would be added here
     });
   });

@@ -55,6 +55,7 @@ export type MigrationApiResponse = z.infer<typeof migrationApiResponse>;
 
 export const userCapabilitiesResponse = z.object({
   csvSizeLimit: z.number().min(0),
+  canViewElicitationTracking: z.boolean(),
   // Future capabilities can be added here
 });
 
