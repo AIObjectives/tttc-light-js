@@ -176,6 +176,23 @@ export const userDocument = z.object({
 
 export type UserDocument = z.infer<typeof userDocument>;
 
+// Elicitation event summary for tracking page
+export const elicitationEventSummary = z.object({
+  id: z.string(), // Event document ID
+  eventName: z.string(), // Human-readable event name
+  ownerUserId: z.string(), // Firebase UID of owner
+  responderCount: z.number(), // Count of participants
+  createdAt: z.preprocess(
+    (arg) =>
+      firebaseTimestamp.safeParse(arg).success
+        ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+        : arg,
+    z.date(),
+  ),
+});
+
+export type ElicitationEventSummary = z.infer<typeof elicitationEventSummary>;
+
 const COLLECTIONS = {
   REPORT_REF: "reportRef",
   REPORT_JOB: "reportJob",

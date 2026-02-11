@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { elicitationEventSummary } from "../firebase";
 import * as schema from "../schema";
 
 export const generateApiRequest = z.object({
@@ -74,3 +75,12 @@ export type CreateReportActionResult =
   | { status: "idle" }
   | { status: "success"; data: GenerateApiResponse }
   | { status: "error"; error: FormActionError };
+
+// GET /api/elicitation/events response
+export const elicitationEventsResponse = z.object({
+  events: z.array(elicitationEventSummary),
+});
+
+export type ElicitationEventsResponse = z.infer<
+  typeof elicitationEventsResponse
+>;
