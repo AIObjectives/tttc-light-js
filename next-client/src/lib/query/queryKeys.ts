@@ -30,4 +30,8 @@ export const queryKeys = {
     value: (flagName: string, contextKey: string) =>
       [...queryKeys.featureFlags.all, "value", flagName, contextKey] as const,
   },
+  elicitationEvents: {
+    all: ["elicitationEvents"] as const,
+    list: () => [...queryKeys.elicitationEvents.all, "list"] as const,
+  },
 } as const;
