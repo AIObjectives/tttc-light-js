@@ -296,7 +296,9 @@ describe("fetchElicitationEvents", () => {
       text: () => Promise.resolve("Forbidden"),
     });
 
-    await expect(fetchElicitationEvents()).rejects.toThrow("HTTP 403: Forbidden");
+    await expect(fetchElicitationEvents()).rejects.toThrow(
+      "HTTP 403: Forbidden",
+    );
   });
 
   it("should handle text() error gracefully", async () => {
