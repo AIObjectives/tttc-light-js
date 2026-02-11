@@ -34,7 +34,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting and lint
-        run: pnpm exec biome check .
+        run: pnpm exec biome check --diagnostic-level=error .
 
       - name: Check dependency versions
         run: pnpm deps:lint
