@@ -167,6 +167,8 @@
     "Waitlist",
     "waitlist",
     "substates",
+    "subcollection",
+    "subcollections",
     "numstr",
     "adminsdk",
     "secretmanager",

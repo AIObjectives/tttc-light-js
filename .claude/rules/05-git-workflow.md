@@ -7,6 +7,15 @@
 - Focus on what changed and why
 - **Do NOT add Claude attribution lines**
 
+## Pull Requests
+
+**Do NOT include Claude Code attribution** in PR descriptions. Skip these lines entirely:
+- `Generated with [Claude Code]`
+- `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
+- Any similar AI attribution
+
+Just write a normal PR description with summary and test plan.
+
 ## Code Review Process
 
 **CRITICAL**: When reviewing PRs, work with complete file content.
