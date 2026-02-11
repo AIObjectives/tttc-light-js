@@ -17,7 +17,7 @@ vi.mock("../../Firebase", () => ({
       })),
     })),
   },
-  getCollectionName: vi.fn((name: string) => `${name}_test`),
+  getCollectionName: vi.fn((name: string) => `${name.toLowerCase()}_test`),
 }));
 
 // Mock permissions module
@@ -114,7 +114,7 @@ describe("getElicitationEvents", () => {
     const mockEventsGet = vi.fn().mockResolvedValue({ docs: events });
     const mockWhere = vi.fn().mockReturnValue({ get: mockEventsGet });
     const mockCollection = vi.fn((collectionName: string) => {
-      if (collectionName.includes("users") || collectionName === "USERS_test") {
+      if (collectionName === "users_test") {
         // Return user collection mock
         return {
           doc: vi.fn().mockReturnValue({
@@ -247,10 +247,7 @@ describe("getElicitationEvents", () => {
         get: vi.fn().mockResolvedValue({ docs: [] }),
       });
       const mockCollection = vi.fn((collectionName: string) => {
-        if (
-          collectionName.includes("users") ||
-          collectionName === "USERS_test"
-        ) {
+        if (collectionName === "users_test") {
           return {
             doc: vi.fn().mockReturnValue({
               get: vi
@@ -276,10 +273,7 @@ describe("getElicitationEvents", () => {
       const calls: string[] = [];
       const mockCollection = vi.fn((collectionName: string) => {
         calls.push(collectionName);
-        if (
-          collectionName.includes("users") ||
-          collectionName === "USERS_test"
-        ) {
+        if (collectionName === "users_test") {
           return {
             doc: vi.fn().mockReturnValue({
               get: vi
