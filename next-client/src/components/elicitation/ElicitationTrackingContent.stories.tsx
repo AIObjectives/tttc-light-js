@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
-import { ElicitationTrackingContentView, EventCard } from "./ElicitationTrackingContent";
+import {
+  ElicitationTrackingContentView,
+  EventCard,
+} from "./ElicitationTrackingContent";
 
 const meta = {
   title: "Elicitation/ElicitationTrackingContent",
@@ -32,7 +35,8 @@ const mockEvents: ElicitationEventSummary[] = [
   },
   {
     id: "event-3",
-    eventName: "Healthcare Reform Elicitation Session with a Very Long Title That Should Be Truncated",
+    eventName:
+      "Healthcare Reform Elicitation Session with a Very Long Title That Should Be Truncated",
     ownerUserId: "user-123",
     responderCount: 1,
     createdAt: new Date("2026-02-05T09:15:00Z"),
@@ -67,7 +71,7 @@ export const Loading: Story = {
 };
 
 // Story: Error State
-export const Error: Story = {
+export const ErrorState: Story = {
   args: {
     events: [],
     isLoading: false,
