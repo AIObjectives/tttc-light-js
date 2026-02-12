@@ -193,23 +193,6 @@ function EventHeader({ event }: { event: ElicitationEventSummary }) {
         ? formatDate(event.createdAt)
         : "No date available";
 
-  const getStatusVariant = (
-    status?: string,
-  ): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case "completed":
-        return "default";
-      case "active":
-        return "secondary";
-      case "draft":
-        return "outline";
-      case "archived":
-        return "destructive";
-      default:
-        return "secondary";
-    }
-  };
-
   const getStatusText = (status?: string) => {
     if (!status) return null;
     return status.charAt(0).toUpperCase() + status.slice(1);
