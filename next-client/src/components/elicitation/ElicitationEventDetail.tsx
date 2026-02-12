@@ -254,9 +254,14 @@ function EventDescription({ text }: { text: string }) {
 }
 
 /**
- * Event metadata: participant count and follow-up mode indicator
+ * Event metadata: participant count and mode
  */
 function EventMetadata({ event }: { event: ElicitationEventSummary }) {
+  const formatMode = (mode?: string) => {
+    if (!mode) return null;
+    return mode.charAt(0).toUpperCase() + mode.slice(1);
+  };
+
   return (
     <Row gap={6} className="items-center flex-wrap">
       <TextIcon icon={<Icons.People size={16} />}>
@@ -267,11 +272,8 @@ function EventMetadata({ event }: { event: ElicitationEventSummary }) {
         </span>
       </TextIcon>
 
-      {event.mode === "followup" && (
-        <Row gap={2} className="items-center">
-          <div className="w-4 h-4 border-2 border-indigo-600 rounded" />
-          <span className="text-sm text-slate-900">Follow-up mode</span>
-        </Row>
+      {event.mode && (
+        <span className="text-sm text-slate-900">{formatMode(event.mode)}</span>
       )}
     </Row>
   );
