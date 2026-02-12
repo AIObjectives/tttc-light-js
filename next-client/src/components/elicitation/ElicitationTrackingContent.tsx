@@ -90,8 +90,7 @@ export function ElicitationTrackingContentView({
  * This is the default export for use in pages.
  */
 export default function ElicitationTrackingContent() {
-  const { events, isLoading, isError, error, refresh } =
-    useElicitationEvents();
+  const { events, isLoading, isError, error, refresh } = useElicitationEvents();
 
   return (
     <ElicitationTrackingContentView
@@ -140,11 +139,7 @@ export function EventCard({ event }: EventCardProps) {
   const { eventName, responderCount, createdAt } = event;
 
   // Format date similar to MyReports component
-  const formattedDate = createdAt
-    .toDateString()
-    .split(" ")
-    .slice(1)
-    .join(" ");
+  const formattedDate = createdAt.toDateString().split(" ").slice(1).join(" ");
 
   return (
     <Card className="min-w-72 h-40 overflow-hidden">
@@ -156,9 +151,7 @@ export function EventCard({ event }: EventCardProps) {
               {responderCount}{" "}
               {responderCount === 1 ? "responder" : "responders"}
             </TextIcon>
-            <TextIcon icon={<Icons.Date size={16} />}>
-              {formattedDate}
-            </TextIcon>
+            <TextIcon icon={<Icons.Date size={16} />}>{formattedDate}</TextIcon>
           </Row>
         </Col>
       </CardContent>
