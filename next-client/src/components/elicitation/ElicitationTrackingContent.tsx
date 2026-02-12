@@ -1,6 +1,7 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
+import Link from "next/link";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
 import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
@@ -137,6 +138,7 @@ interface EventCardProps {
 
 export function EventCard({ event }: EventCardProps) {
   const {
+    id,
     eventName,
     responderCount,
     createdAt,
@@ -155,92 +157,99 @@ export function EventCard({ event }: EventCardProps) {
   const modeDisplay = mode.charAt(0).toUpperCase() + mode.slice(1);
 
   return (
-    <Card className="min-w-72 overflow-hidden">
-      <CardContent>
-        <Col gap={3}>
-          <h4 className="line-clamp-1">{eventName}</h4>
+    <Link href={`/elicitation/${id}`}>
+      <Card className="min-w-72 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+        <CardContent>
+          <Col gap={3}>
+            <h4 className="line-clamp-1">{eventName}</h4>
 
-          {/* Mode */}
-          <div className="text-sm">
-            <span className="font-medium text-muted-foreground">Mode: </span>
-            <span>{modeDisplay}</span>
-          </div>
-
-          {/* Main Question */}
-          {mainQuestion && (
+            {/* Mode */}
             <div className="text-sm">
-              <span className="font-medium text-muted-foreground">
-                Main Question:{" "}
-              </span>
-              <span className="line-clamp-2">{mainQuestion}</span>
+              <span className="font-medium text-muted-foreground">Mode: </span>
+              <span>{modeDisplay}</span>
             </div>
-          )}
 
-          {/* Questions */}
-          {questions && questions.length > 0 && (
-            <div className="text-sm">
-              <span className="font-medium text-muted-foreground">
-                Questions:{" "}
-              </span>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                {questions.map((q, i) => (
-                  <li key={`q-${i}-${q.slice(0, 20)}`} className="line-clamp-1">
-                    {q}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+            {/* Main Question */}
+            {mainQuestion && (
+              <div className="text-sm">
+                <span className="font-medium text-muted-foreground">
+                  Main Question:{" "}
+                </span>
+                <span className="line-clamp-2">{mainQuestion}</span>
+              </div>
+            )}
 
-          {/* Follow-up Questions */}
-          {followUpQuestions && followUpQuestions.length > 0 && (
-            <div className="text-sm">
-              <span className="font-medium text-muted-foreground">
-                Follow-up Questions:{" "}
-              </span>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                {followUpQuestions.map((q, i) => (
-                  <li
-                    key={`fq-${i}-${q.slice(0, 20)}`}
-                    className="line-clamp-1"
-                  >
-                    {q}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+            {/* Questions */}
+            {questions && questions.length > 0 && (
+              <div className="text-sm">
+                <span className="font-medium text-muted-foreground">
+                  Questions:{" "}
+                </span>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  {questions.map((q, i) => (
+                    <li
+                      key={`q-${i}-${q.slice(0, 20)}`}
+                      className="line-clamp-1"
+                    >
+                      {q}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {/* Opening Message */}
-          {initialMessage && (
-            <div className="text-sm">
-              <span className="font-medium text-muted-foreground">
-                Opening:{" "}
-              </span>
-              <span className="line-clamp-2">{initialMessage}</span>
-            </div>
-          )}
+            {/* Follow-up Questions */}
+            {followUpQuestions && followUpQuestions.length > 0 && (
+              <div className="text-sm">
+                <span className="font-medium text-muted-foreground">
+                  Follow-up Questions:{" "}
+                </span>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  {followUpQuestions.map((q, i) => (
+                    <li
+                      key={`fq-${i}-${q.slice(0, 20)}`}
+                      className="line-clamp-1"
+                    >
+                      {q}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {/* Closing Message */}
-          {completionMessage && (
-            <div className="text-sm">
-              <span className="font-medium text-muted-foreground">
-                Closing:{" "}
-              </span>
-              <span className="line-clamp-2">{completionMessage}</span>
-            </div>
-          )}
+            {/* Opening Message */}
+            {initialMessage && (
+              <div className="text-sm">
+                <span className="font-medium text-muted-foreground">
+                  Opening:{" "}
+                </span>
+                <span className="line-clamp-2">{initialMessage}</span>
+              </div>
+            )}
 
-          {/* Meta info */}
-          <Row gap={4} className="flex-wrap pt-2 border-t">
-            <TextIcon icon={<Icons.People size={16} />}>
-              {responderCount}{" "}
-              {responderCount === 1 ? "responder" : "responders"}
-            </TextIcon>
-            <TextIcon icon={<Icons.Date size={16} />}>{formattedDate}</TextIcon>
-          </Row>
-        </Col>
-      </CardContent>
-    </Card>
+            {/* Closing Message */}
+            {completionMessage && (
+              <div className="text-sm">
+                <span className="font-medium text-muted-foreground">
+                  Closing:{" "}
+                </span>
+                <span className="line-clamp-2">{completionMessage}</span>
+              </div>
+            )}
+
+            {/* Meta info */}
+            <Row gap={4} className="flex-wrap pt-2 border-t">
+              <TextIcon icon={<Icons.People size={16} />}>
+                {responderCount}{" "}
+                {responderCount === 1 ? "responder" : "responders"}
+              </TextIcon>
+              <TextIcon icon={<Icons.Date size={16} />}>
+                {formattedDate}
+              </TextIcon>
+            </Row>
+          </Col>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

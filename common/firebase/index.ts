@@ -176,10 +176,22 @@ export const userDocument = z.object({
 
 export type UserDocument = z.infer<typeof userDocument>;
 
+// Elicitation event status enum
+const elicitationEventStatus = z.enum([
+  "draft", // Event created but not yet started
+  "active", // Event is currently running
+  "completed", // Event has finished
+  "archived", // Event is archived
+]);
+
+export type ElicitationEventStatus = z.infer<typeof elicitationEventStatus>;
+export { elicitationEventStatus };
+
 // Elicitation event summary for tracking page
 export const elicitationEventSummary = z.object({
   id: z.string(), // Event document ID
   eventName: z.string(), // Human-readable event name
+  description: z.string().optional(), // Full description of the study/event
   ownerUserId: z.string(), // Firebase UID of owner
   responderCount: z.number(), // Count of participants
   createdAt: z.preprocess(
@@ -189,14 +201,41 @@ export const elicitationEventSummary = z.object({
         : arg,
     z.date(),
   ),
+  // Event date range
+  startDate: z
+    .preprocess(
+      (arg) =>
+        firebaseTimestamp.safeParse(arg).success
+          ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+          : arg,
+      z.date(),
+    )
+    .optional(),
+  endDate: z
+    .preprocess(
+      (arg) =>
+        firebaseTimestamp.safeParse(arg).success
+          ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+          : arg,
+      z.date(),
+    )
+    .optional(),
+  // Event status
+  status: elicitationEventStatus.optional(),
   // Event mode (required)
   mode: z.enum(["followup", "listener", "survey"]),
+  // WhatsApp link for participants
+  whatsappLink: z.string().optional(),
   // Event questions (optional - may not exist on all events)
   mainQuestion: z.string().optional(), // Primary survey question
   questions: z.array(z.string()).optional(), // Array of question strings
   followUpQuestions: z.array(z.string()).optional(), // Array of follow-up question strings
   initialMessage: z.string().optional(), // Opening/welcome message
   completionMessage: z.string().optional(), // Closing message
+  // Link to generated report (if available)
+  reportId: z.string().optional(),
+  // Schema version for future migrations
+  schemaVersion: z.number().optional(),
 });
 
 export type ElicitationEventSummary = z.infer<typeof elicitationEventSummary>;
@@ -216,6 +255,7 @@ export const SCHEMA_VERSIONS = {
   REPORT_REF: 1, // Current schema with placeholder URI security
   REPORT_JOB: 1, // Current schema with timestamps and optional fields
   USER_DOCUMENT: 1, // Current schema with roles and profile fields
+  ELICITATION_EVENT: 1, // Current schema with description, dates, status, whatsapp link
 } as const;
 
 export const useGetCollectionName =

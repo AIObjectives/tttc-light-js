@@ -29,7 +29,10 @@ import { createQueue } from "./queue";
 import { GooglePubSubQueue } from "./queue/providers/googlePubSub";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
-import { getElicitationEvents } from "./routes/elicitation";
+import {
+  getElicitationEvent,
+  getElicitationEvents,
+} from "./routes/elicitation";
 import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
 import { updateProfile } from "./routes/profile";
@@ -374,6 +377,18 @@ app.get(
   authLimiter,
   authMiddleware(),
   getElicitationEvents as unknown as express.RequestHandler,
+);
+
+/**
+ * Get a single elicitation event by ID
+ * Requires event_organizer role and ownership
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.get(
+  "/api/elicitation/events/:id",
+  authLimiter,
+  authMiddleware(),
+  getElicitationEvent as unknown as express.RequestHandler,
 );
 
 /**
