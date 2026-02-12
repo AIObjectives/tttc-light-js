@@ -28,5 +28,9 @@ export default function ElicitationEventPage({
     );
   }
 
-  return <ElicitationEventDetail eventId={params.id} />;
+  return (
+    <div className="fixed inset-0 top-16 overflow-auto">
+      <ElicitationEventDetail eventId={params.id} />
+    </div>
+  );
 }

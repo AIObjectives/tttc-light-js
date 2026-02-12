@@ -21,6 +21,8 @@ import {
   TextIcon,
 } from "../elements";
 import { Center, Col, Row } from "../layout";
+import { StudySidebar } from "./StudySidebar";
+import { StudyTimeline } from "./StudyTimeline";
 
 interface ElicitationEventDetailProps {
   eventId: string;
@@ -94,21 +96,80 @@ interface ElicitationEventDetailViewProps {
 export function ElicitationEventDetailView({
   event,
 }: ElicitationEventDetailViewProps) {
+  // Mock data for timeline - in real implementation, this would come from API
+  const timelineEvents = [
+    {
+      id: event.id,
+      name: event.eventName,
+      date: "Jan 2024",
+      icon: "study" as const,
+      isActive: true,
+    },
+    {
+      id: "feb-2024",
+      name: "Feb Study",
+      date: "Feb 2024",
+      icon: "document" as const,
+      isActive: false,
+    },
+    {
+      id: "new",
+      name: "New Study",
+      date: "New Study",
+      icon: "new" as const,
+      isActive: false,
+    },
+  ];
+
+  // Mock data for sidebar - in real implementation, this would come from API
+  const sidebarStudies = [
+    {
+      id: event.id,
+      name: event.eventName,
+      month: "January 2024",
+      participants: event.responderCount,
+    },
+    {
+      id: "feb-2024",
+      name: "Permitting survey",
+      month: "February 2024",
+      participants: 203,
+    },
+  ];
+
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-6">
-      <Card className="shadow-lg">
-        <CardContent className="p-6">
-          <Col gap={4}>
-            <EventHeader event={event} />
-            {event.description && <EventDescription text={event.description} />}
-            <EventMetadata event={event} />
-            {event.whatsappLink && (
-              <WhatsAppLinkSection link={event.whatsappLink} />
-            )}
-            <EventContentSections event={event} />
-          </Col>
-        </CardContent>
-      </Card>
+    <div className="flex h-full bg-slate-50">
+      {/* Sidebar */}
+      <div className="hidden lg:block flex-shrink-0">
+        <StudySidebar studies={sidebarStudies} activeStudyId={event.id} />
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-5xl mx-auto px-8">
+          {/* Timeline */}
+          <div className="sticky top-0 bg-white z-10 border-b border-slate-200 mb-6">
+            <StudyTimeline events={timelineEvents} />
+          </div>
+
+          {/* Study details */}
+          <div className="pb-8">
+            <Card className="shadow-lg border-slate-200">
+              <CardContent className="p-6 space-y-6">
+                <EventHeader event={event} />
+                {event.description && (
+                  <EventDescription text={event.description} />
+                )}
+                <EventMetadata event={event} />
+                {event.whatsappLink && (
+                  <WhatsAppLinkSection link={event.whatsappLink} />
+                )}
+                <EventContentSections event={event} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -157,7 +218,7 @@ function EventHeader({ event }: { event: ElicitationEventSummary }) {
   return (
     <Row gap={4} className="justify-between items-start flex-wrap">
       <Col gap={1}>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+        <h1 className="text-xl font-semibold text-slate-900">
           {event.eventName}
         </h1>
         <p className="text-sm text-slate-500">{dateRange}</p>
@@ -166,18 +227,25 @@ function EventHeader({ event }: { event: ElicitationEventSummary }) {
       <Row gap={3} className="items-center flex-wrap">
         {event.status && (
           <Badge
-            variant={getStatusVariant(event.status)}
-            className="bg-green-100 text-green-800 hover:bg-green-100"
+            variant="default"
+            className="bg-green-100 text-green-800 hover:bg-green-100 rounded-full px-3"
           >
             {getStatusText(event.status)}
           </Badge>
         )}
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-indigo-50 text-indigo-700 border-indigo-50 hover:bg-indigo-100"
+        >
           Download data
         </Button>
         {event.reportId ? (
           <Link href={`/report/${event.reportId}`}>
-            <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
               Go to report
             </Button>
           </Link>
@@ -185,7 +253,7 @@ function EventHeader({ event }: { event: ElicitationEventSummary }) {
           <Button
             size="sm"
             disabled
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-indigo-600 hover:bg-indigo-700"
           >
             Go to report
           </Button>
@@ -277,20 +345,26 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
   return (
     <Col gap={4} className="mt-4">
       {event.initialMessage && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Opening message</CardTitle>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">
+              Opening message
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-600">{event.initialMessage}</p>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {event.initialMessage}
+            </p>
           </CardContent>
         </Card>
       )}
 
       {event.questions && event.questions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Survey questions</CardTitle>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">
+              Survey questions
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ol className="list-decimal list-inside space-y-2">
@@ -308,12 +382,16 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
       )}
 
       {event.completionMessage && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Closing message</CardTitle>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">
+              Closing message
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-600">{event.completionMessage}</p>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {event.completionMessage}
+            </p>
           </CardContent>
         </Card>
       )}
