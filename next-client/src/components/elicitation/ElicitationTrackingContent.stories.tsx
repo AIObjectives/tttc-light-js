@@ -25,8 +25,18 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 42,
     createdAt: new Date("2026-02-10T10:00:00Z"),
+    mode: "survey",
     mainQuestion:
       "What are your thoughts on AI safety measures and regulations?",
+    questions: [
+      "What are the most important AI safety concerns?",
+      "How should AI systems be regulated?",
+      "What role should government play in AI development?",
+    ],
+    followUpQuestions: [
+      "Can you elaborate on your concerns?",
+      "What specific policies would you recommend?",
+    ],
     initialMessage:
       "Thank you for participating. Your responses will help shape future AI policy.",
     completionMessage:
@@ -38,7 +48,12 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 18,
     createdAt: new Date("2026-02-08T14:30:00Z"),
+    mode: "listener",
     mainQuestion: "How should we address climate change at the local level?",
+    questions: [
+      "What local climate initiatives are most effective?",
+      "How can communities reduce their carbon footprint?",
+    ],
     initialMessage: "Welcome to the climate policy discussion.",
     completionMessage: "We appreciate your time and thoughtful responses.",
   },
@@ -49,8 +64,19 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 1,
     createdAt: new Date("2026-02-05T09:15:00Z"),
+    mode: "followup",
     mainQuestion:
       "What improvements would you like to see in the healthcare system, and what specific challenges have you or your family faced when accessing healthcare services?",
+    questions: [
+      "What are your biggest healthcare concerns?",
+      "How accessible is healthcare in your area?",
+      "What would improve your healthcare experience?",
+    ],
+    followUpQuestions: [
+      "Can you share a specific example?",
+      "How did this impact you or your family?",
+      "What would you change about this experience?",
+    ],
     initialMessage:
       "Your voice matters in shaping healthcare policy. All responses are confidential and will be used to inform policy decisions.",
     completionMessage:
@@ -62,7 +88,12 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 156,
     createdAt: new Date("2026-01-28T16:45:00Z"),
+    mode: "survey",
     mainQuestion: "How has technology impacted your educational experience?",
+    questions: [
+      "What educational technologies do you use most?",
+      "How has online learning affected your education?",
+    ],
   },
 ];
 
@@ -128,6 +159,7 @@ export const ManyEvents: Story = {
         ownerUserId: "user-123",
         responderCount: 89,
         createdAt: new Date("2026-01-20T11:00:00Z"),
+        mode: "listener",
       },
       {
         id: "event-6",
@@ -135,6 +167,7 @@ export const ManyEvents: Story = {
         ownerUserId: "user-123",
         responderCount: 234,
         createdAt: new Date("2026-01-15T13:30:00Z"),
+        mode: "survey",
       },
     ],
     isLoading: false,

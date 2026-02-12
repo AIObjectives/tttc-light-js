@@ -189,8 +189,12 @@ export const elicitationEventSummary = z.object({
         : arg,
     z.date(),
   ),
+  // Event mode (required)
+  mode: z.enum(["followup", "listener", "survey"]),
   // Event questions (optional - may not exist on all events)
   mainQuestion: z.string().optional(), // Primary survey question
+  questions: z.array(z.string()).optional(), // Array of question strings
+  followUpQuestions: z.array(z.string()).optional(), // Array of follow-up question strings
   initialMessage: z.string().optional(), // Opening/welcome message
   completionMessage: z.string().optional(), // Closing message
 });

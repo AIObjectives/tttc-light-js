@@ -140,7 +140,10 @@ export function EventCard({ event }: EventCardProps) {
     eventName,
     responderCount,
     createdAt,
+    mode,
     mainQuestion,
+    questions,
+    followUpQuestions,
     initialMessage,
     completionMessage,
   } = event;
@@ -148,11 +151,20 @@ export function EventCard({ event }: EventCardProps) {
   // Format date similar to MyReports component
   const formattedDate = createdAt.toDateString().split(" ").slice(1).join(" ");
 
+  // Capitalize mode for display
+  const modeDisplay = mode.charAt(0).toUpperCase() + mode.slice(1);
+
   return (
     <Card className="min-w-72 overflow-hidden">
       <CardContent>
         <Col gap={3}>
           <h4 className="line-clamp-1">{eventName}</h4>
+
+          {/* Mode */}
+          <div className="text-sm">
+            <span className="font-medium text-muted-foreground">Mode: </span>
+            <span>{modeDisplay}</span>
+          </div>
 
           {/* Main Question */}
           {mainQuestion && (
@@ -161,6 +173,41 @@ export function EventCard({ event }: EventCardProps) {
                 Main Question:{" "}
               </span>
               <span className="line-clamp-2">{mainQuestion}</span>
+            </div>
+          )}
+
+          {/* Questions */}
+          {questions && questions.length > 0 && (
+            <div className="text-sm">
+              <span className="font-medium text-muted-foreground">
+                Questions:{" "}
+              </span>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                {questions.map((q, i) => (
+                  <li key={`q-${i}-${q.slice(0, 20)}`} className="line-clamp-1">
+                    {q}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Follow-up Questions */}
+          {followUpQuestions && followUpQuestions.length > 0 && (
+            <div className="text-sm">
+              <span className="font-medium text-muted-foreground">
+                Follow-up Questions:{" "}
+              </span>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                {followUpQuestions.map((q, i) => (
+                  <li
+                    key={`fq-${i}-${q.slice(0, 20)}`}
+                    className="line-clamp-1"
+                  >
+                    {q}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
