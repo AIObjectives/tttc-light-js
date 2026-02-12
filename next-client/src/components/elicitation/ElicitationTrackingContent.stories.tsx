@@ -25,7 +25,8 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 42,
     createdAt: new Date("2026-02-10T10:00:00Z"),
-    mainQuestion: "What are your thoughts on AI safety measures and regulations?",
+    mainQuestion:
+      "What are your thoughts on AI safety measures and regulations?",
     initialMessage:
       "Thank you for participating. Your responses will help shape future AI policy.",
     completionMessage:
