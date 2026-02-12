@@ -25,6 +25,11 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 42,
     createdAt: new Date("2026-02-10T10:00:00Z"),
+    mainQuestion: "What are your thoughts on AI safety measures and regulations?",
+    initialMessage:
+      "Thank you for participating. Your responses will help shape future AI policy.",
+    completionMessage:
+      "Thank you for sharing your insights. Your input is valuable to this discussion.",
   },
   {
     id: "event-2",
@@ -32,6 +37,9 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 18,
     createdAt: new Date("2026-02-08T14:30:00Z"),
+    mainQuestion: "How should we address climate change at the local level?",
+    initialMessage: "Welcome to the climate policy discussion.",
+    completionMessage: "We appreciate your time and thoughtful responses.",
   },
   {
     id: "event-3",
@@ -40,6 +48,12 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 1,
     createdAt: new Date("2026-02-05T09:15:00Z"),
+    mainQuestion:
+      "What improvements would you like to see in the healthcare system, and what specific challenges have you or your family faced when accessing healthcare services?",
+    initialMessage:
+      "Your voice matters in shaping healthcare policy. All responses are confidential and will be used to inform policy decisions.",
+    completionMessage:
+      "Thank you for sharing your healthcare experiences. Your input helps us understand the real-world impact of policy decisions.",
   },
   {
     id: "event-4",
@@ -47,6 +61,7 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 156,
     createdAt: new Date("2026-01-28T16:45:00Z"),
+    mainQuestion: "How has technology impacted your educational experience?",
   },
 ];
 

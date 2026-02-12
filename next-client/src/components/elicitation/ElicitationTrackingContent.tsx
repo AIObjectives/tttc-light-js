@@ -136,17 +136,56 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const { eventName, responderCount, createdAt } = event;
+  const {
+    eventName,
+    responderCount,
+    createdAt,
+    mainQuestion,
+    initialMessage,
+    completionMessage,
+  } = event;
 
   // Format date similar to MyReports component
   const formattedDate = createdAt.toDateString().split(" ").slice(1).join(" ");
 
   return (
-    <Card className="min-w-72 h-40 overflow-hidden">
+    <Card className="min-w-72 overflow-hidden">
       <CardContent>
-        <Col gap={4}>
-          <h4 className="line-clamp-2">{eventName}</h4>
-          <Row gap={4} className="flex-wrap">
+        <Col gap={3}>
+          <h4 className="line-clamp-1">{eventName}</h4>
+
+          {/* Main Question */}
+          {mainQuestion && (
+            <div className="text-sm">
+              <span className="font-medium text-muted-foreground">
+                Main Question:{" "}
+              </span>
+              <span className="line-clamp-2">{mainQuestion}</span>
+            </div>
+          )}
+
+          {/* Opening Message */}
+          {initialMessage && (
+            <div className="text-sm">
+              <span className="font-medium text-muted-foreground">
+                Opening:{" "}
+              </span>
+              <span className="line-clamp-2">{initialMessage}</span>
+            </div>
+          )}
+
+          {/* Closing Message */}
+          {completionMessage && (
+            <div className="text-sm">
+              <span className="font-medium text-muted-foreground">
+                Closing:{" "}
+              </span>
+              <span className="line-clamp-2">{completionMessage}</span>
+            </div>
+          )}
+
+          {/* Meta info */}
+          <Row gap={4} className="flex-wrap pt-2 border-t">
             <TextIcon icon={<Icons.People size={16} />}>
               {responderCount}{" "}
               {responderCount === 1 ? "responder" : "responders"}

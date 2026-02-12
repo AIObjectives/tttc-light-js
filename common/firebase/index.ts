@@ -189,6 +189,10 @@ export const elicitationEventSummary = z.object({
         : arg,
     z.date(),
   ),
+  // Event questions (optional - may not exist on all events)
+  mainQuestion: z.string().optional(), // Primary survey question
+  initialMessage: z.string().optional(), // Opening/welcome message
+  completionMessage: z.string().optional(), // Closing message
 });
 
 export type ElicitationEventSummary = z.infer<typeof elicitationEventSummary>;

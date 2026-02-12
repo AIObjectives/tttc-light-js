@@ -83,6 +83,9 @@ export async function getElicitationEvents(
           ownerUserId: data.owner_user_id || userId,
           responderCount,
           createdAt: data.created_at?.toDate() || new Date(),
+          mainQuestion: data.main_question,
+          initialMessage: data.initial_message,
+          completionMessage: data.completion_message,
         };
       }),
     );
