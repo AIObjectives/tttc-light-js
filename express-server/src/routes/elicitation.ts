@@ -62,6 +62,7 @@ async function buildEventSummary(
     initialMessage: data.initial_message,
     completionMessage: data.completion_message,
     reportId: data.report_id,
+    reportIds: data.report_ids,
     schemaVersion: data.schema_version,
   };
 }

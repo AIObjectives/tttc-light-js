@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar, FileText, Plus } from "lucide-react";
+import Link from "next/link";
 
 interface TimelineEvent {
   id: string;
@@ -40,31 +41,53 @@ export function StudyTimeline({ events, onEventClick }: StudyTimelineProps) {
 
         {/* Timeline events */}
         <div className="relative flex justify-between items-start z-10">
-          {events.map((event) => (
-            <button
-              key={event.id}
-              type="button"
-              onClick={() => onEventClick?.(event.id)}
-              className="flex flex-col items-center gap-2 group min-w-[80px]"
-            >
-              <div
-                className={`
-                  w-14 h-14 rounded-full flex items-center justify-center
-                  shadow-md transition-all relative z-10
-                  ${
-                    event.isActive
-                      ? "bg-indigo-600 text-white ring-2 ring-indigo-200"
-                      : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
-                  }
-                `}
+          {events.map((event) => {
+            // For document icons (reports), link to the report page
+            const isReport = event.icon === "document";
+            const content = (
+              <>
+                <div
+                  className={`
+                    w-14 h-14 rounded-full flex items-center justify-center
+                    shadow-md transition-all relative z-10
+                    ${
+                      event.isActive
+                        ? "bg-indigo-600 text-white ring-2 ring-indigo-200"
+                        : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+                    }
+                  `}
+                >
+                  {getIcon(event.icon)}
+                </div>
+                <span className="text-xs text-slate-500 text-center font-medium">
+                  {event.date}
+                </span>
+              </>
+            );
+
+            if (isReport) {
+              return (
+                <Link
+                  key={event.id}
+                  href={`/report/${event.id}`}
+                  className="flex flex-col items-center gap-2 group min-w-[80px]"
+                >
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <button
+                key={event.id}
+                type="button"
+                onClick={() => onEventClick?.(event.id)}
+                className="flex flex-col items-center gap-2 group min-w-[80px]"
               >
-                {getIcon(event.icon)}
-              </div>
-              <span className="text-xs text-slate-500 text-center font-medium">
-                {event.date}
-              </span>
-            </button>
-          ))}
+                {content}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
 import { useElicitationEvent } from "@/lib/hooks/useElicitationEvent";
+import { useEventReports } from "@/lib/hooks/useEventReports";
 import {
   Alert,
   AlertDescription,
@@ -96,44 +97,37 @@ interface ElicitationEventDetailViewProps {
 export function ElicitationEventDetailView({
   event,
 }: ElicitationEventDetailViewProps) {
-  // Mock data for timeline - in real implementation, this would come from API
-  const timelineEvents = [
-    {
-      id: event.id,
-      name: event.eventName,
-      date: "Jan 2024",
-      icon: "study" as const,
-      isActive: true,
-    },
-    {
-      id: "feb-2024",
-      name: "Feb Study",
-      date: "Feb 2024",
-      icon: "document" as const,
-      isActive: false,
-    },
-    {
-      id: "new",
-      name: "New Study",
-      date: "New Study",
-      icon: "new" as const,
-      isActive: false,
-    },
-  ];
+  // Fetch all reports associated with this event
+  const { reports } = useEventReports(event.reportIds);
 
-  // Mock data for sidebar - in real implementation, this would come from API
+  // Format reports for timeline display
+  const timelineEvents = reports.map((report) => ({
+    id: report.id,
+    name: report.title,
+    date: report.createdDate.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    }),
+    icon: "document" as const,
+    isActive: false,
+  }));
+
+  // Get the most recent report for the "Go to report" button
+  const mostRecentReport = reports[0]; // Reports are already sorted by date, newest first
+
+  // For sidebar - currently showing just this event
+  // TODO: Fetch all user's events for sidebar
   const sidebarStudies = [
     {
       id: event.id,
       name: event.eventName,
-      month: "January 2024",
+      month: event.startDate
+        ? event.startDate.toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })
+        : "No date",
       participants: event.responderCount,
-    },
-    {
-      id: "feb-2024",
-      name: "Permitting survey",
-      month: "February 2024",
-      participants: 203,
     },
   ];
 
@@ -148,15 +142,20 @@ export function ElicitationEventDetailView({
       <div className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto px-8">
           {/* Timeline */}
-          <div className="sticky top-0 bg-white z-10 border-b border-slate-200 mb-6">
-            <StudyTimeline events={timelineEvents} />
-          </div>
+          {timelineEvents.length > 0 && (
+            <div className="sticky top-0 bg-white z-10 border-b border-slate-200 mb-6">
+              <StudyTimeline events={timelineEvents} />
+            </div>
+          )}
 
           {/* Study details */}
           <div className="pb-8">
             <Card className="shadow-lg border-slate-200">
               <CardContent className="p-6 space-y-6">
-                <EventHeader event={event} />
+                <EventHeader
+                  event={event}
+                  mostRecentReportId={mostRecentReport?.id}
+                />
                 {event.description && (
                   <EventDescription text={event.description} />
                 )}
@@ -177,7 +176,13 @@ export function ElicitationEventDetailView({
 /**
  * Event header with title, date range, status badge, and action buttons
  */
-function EventHeader({ event }: { event: ElicitationEventSummary }) {
+function EventHeader({
+  event,
+  mostRecentReportId,
+}: {
+  event: ElicitationEventSummary;
+  mostRecentReportId?: string;
+}) {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -223,8 +228,8 @@ function EventHeader({ event }: { event: ElicitationEventSummary }) {
         >
           Download data
         </Button>
-        {event.reportId ? (
-          <Link href={`/report/${event.reportId}`}>
+        {mostRecentReportId ? (
+          <Link href={`/report/${mostRecentReportId}`}>
             <Button
               size="sm"
               className="bg-indigo-600 hover:bg-indigo-700 text-white"

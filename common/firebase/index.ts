@@ -91,6 +91,8 @@ const reportRefSchema = z.object({
   // Visibility: undefined = legacy (public), true = public, false = private
   // New reports default to private. Existing reports without this field are grandfathered as public.
   isPublic: z.boolean().optional(),
+  // Link to elicitation event that generated this report (optional for backward compatibility)
+  elicitationEventId: z.string().optional(),
 });
 
 export const reportRef = reportRefSchema;
@@ -232,8 +234,10 @@ export const elicitationEventSummary = z.object({
   followUpQuestions: z.array(z.string()).optional(), // Array of follow-up question strings
   initialMessage: z.string().optional(), // Opening/welcome message
   completionMessage: z.string().optional(), // Closing message
-  // Link to generated report (if available)
+  // Link to generated report (if available) - DEPRECATED: use reportIds array instead
   reportId: z.string().optional(),
+  // Array of report IDs associated with this event (ordered by creation date)
+  reportIds: z.array(z.string()).optional(),
   // Schema version for future migrations
   schemaVersion: z.number().optional(),
 });
