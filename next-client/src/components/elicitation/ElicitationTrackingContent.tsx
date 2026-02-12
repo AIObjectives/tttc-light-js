@@ -16,10 +16,25 @@ import {
 } from "../elements";
 import { Center, Col, Row } from "../layout";
 
-export default function ElicitationTrackingContent() {
-  const { events, isLoading, isError, error, refresh } =
-    useElicitationEvents();
+interface ElicitationTrackingContentProps {
+  events: ElicitationEventSummary[];
+  isLoading?: boolean;
+  isError?: boolean;
+  error?: Error;
+  onRefresh: () => void;
+}
 
+/**
+ * Presentational component for displaying elicitation events.
+ * Use this for testing and Storybook stories.
+ */
+export function ElicitationTrackingContentView({
+  events,
+  isLoading = false,
+  isError = false,
+  error,
+  onRefresh,
+}: ElicitationTrackingContentProps) {
   if (isLoading) {
     return (
       <Center>
@@ -40,7 +55,7 @@ export default function ElicitationTrackingContent() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => refresh()}
+              onClick={onRefresh}
               className="mt-2"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -54,7 +69,7 @@ export default function ElicitationTrackingContent() {
 
   return (
     <Col gap={8} className="items-center px-4">
-      <ElicitationTrackingHeader onRefresh={() => refresh()} />
+      <ElicitationTrackingHeader onRefresh={onRefresh} />
       {events.length === 0 ? (
         <div className="max-w-[896px] w-full text-center py-12 text-muted-foreground">
           No elicitation events found. Create your first event to get started.
@@ -67,6 +82,25 @@ export default function ElicitationTrackingContent() {
         </div>
       )}
     </Col>
+  );
+}
+
+/**
+ * Container component that fetches data using the useElicitationEvents hook.
+ * This is the default export for use in pages.
+ */
+export default function ElicitationTrackingContent() {
+  const { events, isLoading, isError, error, refresh } =
+    useElicitationEvents();
+
+  return (
+    <ElicitationTrackingContentView
+      events={events}
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      onRefresh={refresh}
+    />
   );
 }
 
@@ -102,7 +136,7 @@ interface EventCardProps {
   event: ElicitationEventSummary;
 }
 
-function EventCard({ event }: EventCardProps) {
+export function EventCard({ event }: EventCardProps) {
   const { eventName, responderCount, createdAt } = event;
 
   // Format date similar to MyReports component
