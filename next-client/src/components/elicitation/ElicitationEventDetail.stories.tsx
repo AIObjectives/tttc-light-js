@@ -1,12 +1,73 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ElicitationEventDetailView } from "./ElicitationEventDetail";
 
+// Mock fetch for Storybook to simulate report API responses
+const mockReportResponses: Record<string, unknown> = {
+  "report-123": {
+    id: "report-123",
+    title: "Initial Analysis Report",
+    createdDate: "2024-01-20T10:00:00Z",
+    status: "completed",
+  },
+  "report-456": {
+    id: "report-456",
+    title: "Follow-up Survey Report",
+    createdDate: "2024-02-15T14:30:00Z",
+    status: "completed",
+  },
+  "report-789": {
+    id: "report-789",
+    title: "Final Insights Report",
+    createdDate: "2024-03-10T09:15:00Z",
+    status: "completed",
+  },
+};
+
 const meta = {
   title: "Elicitation/ElicitationEventDetail",
   component: ElicitationEventDetailView,
   parameters: {
     layout: "fullscreen",
+    mockData: [
+      {
+        url: /\/report\/([\w-]+)/,
+        method: "GET",
+        status: 200,
+        response: (request: Request) => {
+          const reportId = request.url.match(/\/report\/([\w-]+)/)?.[1];
+          return mockReportResponses[reportId || ""] || { error: "Not found" };
+        },
+      },
+    ],
   },
+  decorators: [
+    (Story) => {
+      // Mock global fetch for report requests
+      const originalFetch = global.fetch;
+      global.fetch = ((url: string | Request | URL, ...args: unknown[]) => {
+        const urlString = url.toString();
+        const reportMatch = urlString.match(/\/report\/([\w-]+)/);
+
+        if (reportMatch) {
+          const reportId = reportMatch[1];
+          const mockData = mockReportResponses[reportId];
+
+          if (mockData) {
+            return Promise.resolve(
+              new Response(JSON.stringify(mockData), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              }),
+            );
+          }
+        }
+
+        return originalFetch(url as RequestInfo, ...(args as RequestInit[]));
+      }) as typeof fetch;
+
+      return Story();
+    },
+  ],
   tags: ["autodocs"],
 } satisfies Meta<typeof ElicitationEventDetailView>;
 
