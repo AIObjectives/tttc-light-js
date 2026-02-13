@@ -34,7 +34,8 @@ const mockEvent = {
   ],
   completionMessage: "Lorem ipsum dolor sit...",
   mode: "standard" as const,
-  reportId: "report-123",
+  reportId: "report-123", // Legacy field
+  reportIds: ["report-123", "report-456", "report-789"], // New array field
 };
 
 export const Default: Story = {
@@ -57,6 +58,7 @@ export const WithoutReport: Story = {
     event: {
       ...mockEvent,
       reportId: undefined,
+      reportIds: undefined,
     },
   },
 };
