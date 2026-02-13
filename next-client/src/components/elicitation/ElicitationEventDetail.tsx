@@ -98,7 +98,10 @@ export function ElicitationEventDetailView({
   event,
 }: ElicitationEventDetailViewProps) {
   // Fetch all reports associated with this event
-  const { reports } = useEventReports(event.reportIds);
+  // Handle backward compatibility: use reportIds array if available, otherwise fall back to single reportId
+  const reportIdsToFetch =
+    event.reportIds || (event.reportId ? [event.reportId] : undefined);
+  const { reports } = useEventReports(reportIdsToFetch);
 
   // Build timeline: start with the event itself, then add reports
   const eventDate = event.startDate || event.createdAt;
