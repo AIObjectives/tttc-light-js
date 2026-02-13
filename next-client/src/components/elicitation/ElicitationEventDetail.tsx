@@ -100,17 +100,32 @@ export function ElicitationEventDetailView({
   // Fetch all reports associated with this event
   const { reports } = useEventReports(event.reportIds);
 
-  // Format reports for timeline display
-  const timelineEvents = reports.map((report) => ({
-    id: report.id,
-    name: report.title,
-    date: report.createdDate.toLocaleDateString("en-US", {
-      month: "short",
-      year: "numeric",
-    }),
-    icon: "document" as const,
-    isActive: false,
-  }));
+  // Build timeline: start with the event itself, then add reports
+  const eventDate = event.startDate || event.createdAt;
+  const timelineEvents = [
+    // The event itself
+    {
+      id: event.id,
+      name: event.eventName,
+      date: eventDate.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      }),
+      icon: "study" as const,
+      isActive: true,
+    },
+    // Add all reports
+    ...reports.map((report) => ({
+      id: report.id,
+      name: report.title,
+      date: report.createdDate.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      }),
+      icon: "document" as const,
+      isActive: false,
+    })),
+  ];
 
   // Get the most recent report for the "Go to report" button
   const mostRecentReport = reports[0]; // Reports are already sorted by date, newest first
@@ -142,11 +157,9 @@ export function ElicitationEventDetailView({
       <div className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto px-8">
           {/* Timeline */}
-          {timelineEvents.length > 0 && (
-            <div className="sticky top-0 bg-white z-10 border-b border-slate-200 mb-6">
-              <StudyTimeline events={timelineEvents} />
-            </div>
-          )}
+          <div className="sticky top-0 bg-white z-10 border-b border-slate-200 mb-6">
+            <StudyTimeline events={timelineEvents} />
+          </div>
 
           {/* Study details */}
           <div className="pb-8">
