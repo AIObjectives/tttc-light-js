@@ -230,8 +230,21 @@ export const elicitationEventSummary = z.object({
   whatsappLink: z.string().optional(),
   // Event questions (optional - may not exist on all events)
   mainQuestion: z.string().optional(), // Primary survey question
-  questions: z.array(z.string()).optional(), // Array of question strings
-  followUpQuestions: z.array(z.string()).optional(), // Array of follow-up question strings
+  questions: z
+    .array(
+      z.object({
+        id: z.number(),
+        text: z.string(),
+        asked_count: z.number(),
+      }),
+    )
+    .optional(), // Array of question objects
+  followUpQuestions: z
+    .object({
+      enabled: z.boolean(),
+      questions: z.array(z.string()),
+    })
+    .optional(), // Follow-up questions config with enabled flag and questions array
   initialMessage: z.string().optional(), // Opening/welcome message
   completionMessage: z.string().optional(), // Closing message
   // Link to generated report (if available) - DEPRECATED: use reportIds array instead

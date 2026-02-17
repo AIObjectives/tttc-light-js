@@ -186,12 +186,9 @@ export function EventCard({ event }: EventCardProps) {
                   Questions:{" "}
                 </span>
                 <ul className="list-disc list-inside mt-1 space-y-1">
-                  {questions.map((q, i) => (
-                    <li
-                      key={`q-${i}-${q.slice(0, 20)}`}
-                      className="line-clamp-1"
-                    >
-                      {q}
+                  {questions.map((q) => (
+                    <li key={`q-${q.id}`} className="line-clamp-1">
+                      {q.text}
                     </li>
                   ))}
                 </ul>
@@ -199,23 +196,24 @@ export function EventCard({ event }: EventCardProps) {
             )}
 
             {/* Follow-up Questions */}
-            {followUpQuestions && followUpQuestions.length > 0 && (
-              <div className="text-sm">
-                <span className="font-medium text-muted-foreground">
-                  Follow-up Questions:{" "}
-                </span>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  {followUpQuestions.map((q, i) => (
-                    <li
-                      key={`fq-${i}-${q.slice(0, 20)}`}
-                      className="line-clamp-1"
-                    >
-                      {q}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {followUpQuestions?.enabled &&
+              followUpQuestions.questions.length > 0 && (
+                <div className="text-sm">
+                  <span className="font-medium text-muted-foreground">
+                    Follow-up Questions:{" "}
+                  </span>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    {followUpQuestions.questions.map((q, i) => (
+                      <li
+                        key={`fq-${i}-${q.slice(0, 20)}`}
+                        className="line-clamp-1"
+                      >
+                        {q}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
             {/* Opening Message */}
             {initialMessage && (

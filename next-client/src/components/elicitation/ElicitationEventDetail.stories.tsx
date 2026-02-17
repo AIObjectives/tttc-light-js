@@ -87,11 +87,27 @@ const mockEvent = {
   whatsappLink: "lorem-ipsum-wa",
   initialMessage: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
   questions: [
-    "Lorem ipsum",
-    "Lorem ipsum",
-    "Lorem ipsum",
-    "Lorem ipsum",
-    "Lorem ipsum",
+    { id: 1, text: "What is your overall impression of AI?", asked_count: 156 },
+    {
+      id: 2,
+      text: "How often do you interact with AI in your daily life?",
+      asked_count: 156,
+    },
+    {
+      id: 3,
+      text: "What concerns do you have about AI technology?",
+      asked_count: 156,
+    },
+    {
+      id: 4,
+      text: "Do you think AI will have a positive impact on society?",
+      asked_count: 156,
+    },
+    {
+      id: 5,
+      text: "What AI applications are you most interested in?",
+      asked_count: 156,
+    },
   ],
   completionMessage: "Lorem ipsum dolor sit...",
   mode: "standard" as const,
@@ -105,11 +121,34 @@ export const Default: Story = {
   },
 };
 
-export const WithFollowUpMode: Story = {
+export const WithFollowUpQuestions: Story = {
   args: {
     event: {
       ...mockEvent,
       mode: "followup" as const,
+      followUpQuestions: {
+        enabled: true,
+        questions: [
+          "Can you elaborate on your previous answer?",
+          "What specific examples can you provide?",
+          "How has this affected your daily routine?",
+        ],
+      },
+    },
+  },
+};
+
+export const WithFollowUpQuestionsDisabled: Story = {
+  args: {
+    event: {
+      ...mockEvent,
+      followUpQuestions: {
+        enabled: false,
+        questions: [
+          "This question should not appear",
+          "Neither should this one",
+        ],
+      },
     },
   },
 };
