@@ -33,5 +33,7 @@ export const queryKeys = {
   elicitationEvents: {
     all: ["elicitationEvents"] as const,
     list: () => [...queryKeys.elicitationEvents.all, "list"] as const,
+    detail: (eventId: string) =>
+      [...queryKeys.elicitationEvents.all, "detail", eventId] as const,
   },
 } as const;

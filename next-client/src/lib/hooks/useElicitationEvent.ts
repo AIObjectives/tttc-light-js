@@ -1,0 +1,93 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import type { ElicitationEventResponse } from "tttc-common/api";
+import type { ElicitationEventSummary } from "tttc-common/firebase";
+import { logger } from "tttc-common/logger/browser";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
+import { queryKeys } from "@/lib/query/queryKeys";
+import { useUserQuery } from "@/lib/query/useUserQuery";
+
+const elicitationEventLogger = logger.child({
+  module: "elicitation-event",
+});
+
+/**
+ * Fetch a single elicitation event from the API.
+ *
+ * @param eventId - The event ID to fetch
+ * @param authToken - Optional Firebase auth token for authenticated requests
+ * @internal Exported for testing
+ */
+export async function fetchElicitationEvent(
+  eventId: string,
+  authToken?: string,
+): Promise<ElicitationEventSummary> {
+  const headers: Record<string, string> = {};
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
+
+  const response = await fetchWithRequestId(
+    `/api/elicitation/events/${eventId}`,
+    {
+      headers,
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+  }
+
+  const data: ElicitationEventResponse = await response.json();
+  return data.event;
+}
+
+/**
+ * Hook to fetch a single elicitation event using TanStack Query.
+ *
+ * Features:
+ * - Automatic caching with 5-minute stale time
+ * - Authenticated requests when user is logged in
+ * - Automatic retries with exponential backoff
+ *
+ * @param eventId - The event ID to fetch
+ * @returns Object with event, loading state, error state, and refresh function
+ */
+export function useElicitationEvent(eventId: string | undefined) {
+  const { user } = useUserQuery();
+
+  const { data, isLoading, isError, error, refetch } = useQuery<
+    ElicitationEventSummary,
+    Error
+  >({
+    queryKey: queryKeys.elicitationEvents.detail(eventId ?? ""),
+    queryFn: async () => {
+      if (!eventId) {
+        throw new Error("Event ID is required");
+      }
+      elicitationEventLogger.debug({ eventId }, "Fetching elicitation event");
+      // Get fresh auth token if user is logged in
+      const authToken = user ? await user.getIdToken() : undefined;
+      return fetchElicitationEvent(eventId, authToken);
+    },
+
+    // Only run query if eventId is provided
+    enabled: !!eventId,
+
+    // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
+
+    // Retry up to 3 times on errors
+    retry: 3,
+  });
+
+  return {
+    event: data,
+    isLoading,
+    isError,
+    error: error ?? undefined,
+    refresh: refetch,
+  };
+}

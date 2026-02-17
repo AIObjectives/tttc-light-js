@@ -85,3 +85,10 @@ export const elicitationEventsResponse = z.object({
 export type ElicitationEventsResponse = z.infer<
   typeof elicitationEventsResponse
 >;
+
+// GET /api/elicitation/events/:id response
+export const elicitationEventResponse = z.object({
+  event: elicitationEventSummary,
+});
+
+export type ElicitationEventResponse = z.infer<typeof elicitationEventResponse>;
