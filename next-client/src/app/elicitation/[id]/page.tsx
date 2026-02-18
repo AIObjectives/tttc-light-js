@@ -1,9 +1,12 @@
 "use client";
 
-import { Spinner } from "@/components/elements";
-import { ElicitationEventDetail, ElicitationNoAccess } from "@/components/elicitation";
-import { Center } from "@/components/layout";
 import { useUserCapabilitiesQuery } from "@/components/create/hooks/useUserCapabilitiesQuery";
+import { Spinner } from "@/components/elements";
+import {
+  ElicitationEventDetail,
+  ElicitationNoAccess,
+} from "@/components/elicitation";
+import { Center } from "@/components/layout";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 
 export default function ElicitationEventPage({
