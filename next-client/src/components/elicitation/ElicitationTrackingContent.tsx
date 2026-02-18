@@ -142,18 +142,7 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const {
-    id,
-    eventName,
-    responderCount,
-    createdAt,
-    mode,
-    mainQuestion,
-    questions,
-    followUpQuestions,
-    initialMessage,
-    completionMessage,
-  } = event;
+  const { id, eventName, responderCount, createdAt, mode } = event;
 
   // Format date similar to MyReports component
   const formattedDate = createdAt.toDateString().split(" ").slice(1).join(" ");
@@ -173,72 +162,6 @@ export function EventCard({ event }: EventCardProps) {
               <span className="font-medium text-muted-foreground">Mode: </span>
               <span>{modeDisplay}</span>
             </div>
-
-            {/* Main Question */}
-            {mainQuestion && (
-              <div className="text-sm">
-                <span className="font-medium text-muted-foreground">
-                  Main Question:{" "}
-                </span>
-                <span className="line-clamp-2">{mainQuestion}</span>
-              </div>
-            )}
-
-            {/* Questions */}
-            {questions && questions.length > 0 && (
-              <div className="text-sm">
-                <span className="font-medium text-muted-foreground">
-                  Questions:{" "}
-                </span>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  {questions.map((q) => (
-                    <li key={`q-${q.id}`} className="line-clamp-1">
-                      {q.text}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Follow-up Questions */}
-            {followUpQuestions?.enabled &&
-              followUpQuestions.questions.length > 0 && (
-                <div className="text-sm">
-                  <span className="font-medium text-muted-foreground">
-                    Follow-up Questions:{" "}
-                  </span>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    {followUpQuestions.questions.map((q, i) => (
-                      <li
-                        key={`fq-${i}-${q.slice(0, 20)}`}
-                        className="line-clamp-1"
-                      >
-                        {q}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-            {/* Opening Message */}
-            {initialMessage && (
-              <div className="text-sm">
-                <span className="font-medium text-muted-foreground">
-                  Opening:{" "}
-                </span>
-                <span className="line-clamp-2">{initialMessage}</span>
-              </div>
-            )}
-
-            {/* Closing Message */}
-            {completionMessage && (
-              <div className="text-sm">
-                <span className="font-medium text-muted-foreground">
-                  Closing:{" "}
-                </span>
-                <span className="line-clamp-2">{completionMessage}</span>
-              </div>
-            )}
 
             {/* Meta info */}
             <Row gap={4} className="flex-wrap pt-2 border-t">
