@@ -152,7 +152,7 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <Link href={`/elicitation/${id}`}>
-      <Card className="min-w-72 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+      <Card className="min-w-72 w-full overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
         <CardContent>
           <Col gap={3}>
             <h4 className="line-clamp-1">{eventName}</h4>
