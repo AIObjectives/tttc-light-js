@@ -16,6 +16,7 @@ import {
   TextIcon,
 } from "../elements";
 import { Center, Col, Row } from "../layout";
+import { ElicitationNoAccess } from "./ElicitationNoAccess";
 
 interface ElicitationTrackingContentProps {
   events: ElicitationEventSummary[];
@@ -92,6 +93,10 @@ export function ElicitationTrackingContentView({
  */
 export default function ElicitationTrackingContent() {
   const { events, isLoading, isError, error, refresh } = useElicitationEvents();
+
+  if (isError && error?.message.startsWith("HTTP 403")) {
+    return <ElicitationNoAccess />;
+  }
 
   return (
     <ElicitationTrackingContentView
