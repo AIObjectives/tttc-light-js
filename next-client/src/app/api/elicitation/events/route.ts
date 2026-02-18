@@ -31,17 +31,14 @@ export async function GET(request: Request) {
     );
 
     if (!expressResponse.ok) {
-      const errorData = await expressResponse
-        .text()
-        .catch(() => "Unknown error");
+      const errorBody = await expressResponse.json().catch(() => ({
+        error: "Unknown error",
+      }));
       elicitationApiLogger.error(
-        { errorData, status: expressResponse.status },
+        { errorBody, status: expressResponse.status },
         "Express server error",
       );
-      return NextResponse.json(
-        { error: errorData },
-        { status: expressResponse.status },
-      );
+      return NextResponse.json(errorBody, { status: expressResponse.status });
     }
 
     const result = await expressResponse.json();
