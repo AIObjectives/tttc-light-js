@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
 import { useElicitationEvent } from "@/lib/hooks/useElicitationEvent";
+import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { useEventReports } from "@/lib/hooks/useEventReports";
 import {
   Alert,
@@ -133,21 +134,16 @@ export function ElicitationEventDetailView({
   // Get the most recent report for the "Go to report" button
   const mostRecentReport = reports[0]; // Reports are already sorted by date, newest first
 
-  // For sidebar - currently showing just this event
-  // TODO: Fetch all user's events for sidebar
-  const sidebarStudies = [
-    {
-      id: event.id,
-      name: event.eventName,
-      month: event.startDate
-        ? event.startDate.toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })
-        : "No date",
-      participants: event.responderCount,
-    },
-  ];
+  const { events: allEvents } = useElicitationEvents();
+  const sidebarStudies = allEvents.map((e) => ({
+    id: e.id,
+    name: e.eventName,
+    month: (e.startDate ?? e.createdAt).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    }),
+    participants: e.responderCount,
+  }));
 
   return (
     <div className="flex h-full bg-slate-50">

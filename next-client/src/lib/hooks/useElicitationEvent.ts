@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import type { ElicitationEventResponse } from "tttc-common/api";
+import { elicitationEventResponse } from "tttc-common/api";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger/browser";
 import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
@@ -40,7 +40,7 @@ export async function fetchElicitationEvent(
     throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
 
-  const data: ElicitationEventResponse = await response.json();
+  const data = elicitationEventResponse.parse(await response.json());
   return data.event;
 }
 
