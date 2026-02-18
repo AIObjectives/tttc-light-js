@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import { useUserCapabilitiesQuery } from "@/components/create/hooks/useUserCapabilitiesQuery";
 import { Spinner } from "@/components/elements";
 import {
@@ -12,8 +13,9 @@ import { useUserQuery } from "@/lib/query/useUserQuery";
 export default function ElicitationEventPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const { user, loading: authLoading } = useUserQuery();
   const { canViewElicitationTracking, capabilitiesLoaded } =
     useUserCapabilitiesQuery();
@@ -48,7 +50,7 @@ export default function ElicitationEventPage({
 
   return (
     <div className="fixed inset-0 top-16 overflow-auto">
-      <ElicitationEventDetail eventId={params.id} />
+      <ElicitationEventDetail eventId={id} />
     </div>
   );
 }
