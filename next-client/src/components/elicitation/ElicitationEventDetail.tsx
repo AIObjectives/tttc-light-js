@@ -336,12 +336,14 @@ function WhatsAppLinkSection({ link }: { link: string }) {
 }
 
 /**
- * Content sections: opening message, survey questions, closing message
+ * Content sections: opening message, survey questions, follow-up questions, closing message
  */
 function EventContentSections({ event }: { event: ElicitationEventSummary }) {
   const hasContent =
     event.initialMessage ||
     (event.questions && event.questions.length > 0) ||
+    (event.followUpQuestions?.enabled &&
+      event.followUpQuestions.questions.length > 0) ||
     event.completionMessage;
 
   if (!hasContent) {
@@ -374,18 +376,38 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
           </CardHeader>
           <CardContent>
             <ol className="list-decimal list-inside space-y-2">
-              {event.questions.map((question, index) => (
-                <li
-                  key={`q-${index}-${question.slice(0, 30)}`}
-                  className="text-sm text-slate-600"
-                >
-                  {question}
+              {event.questions.map((question) => (
+                <li key={`q-${question.id}`} className="text-sm text-slate-600">
+                  {question.text}
                 </li>
               ))}
             </ol>
           </CardContent>
         </Card>
       )}
+
+      {event.followUpQuestions?.enabled &&
+        event.followUpQuestions.questions.length > 0 && (
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">
+                Follow-up questions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="list-decimal list-inside space-y-2">
+                {event.followUpQuestions.questions.map((question, index) => (
+                  <li
+                    key={`fq-${index}-${question.slice(0, 30)}`}
+                    className="text-sm text-slate-600"
+                  >
+                    {question}
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+        )}
 
       {event.completionMessage && (
         <Card className="border-slate-200 shadow-sm">
