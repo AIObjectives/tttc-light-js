@@ -1,8 +1,9 @@
 "use client";
 
 import { Spinner } from "@/components/elements";
-import { ElicitationEventDetail } from "@/components/elicitation";
+import { ElicitationEventDetail, ElicitationNoAccess } from "@/components/elicitation";
 import { Center } from "@/components/layout";
+import { useUserCapabilitiesQuery } from "@/components/create/hooks/useUserCapabilitiesQuery";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 
 export default function ElicitationEventPage({
@@ -11,6 +12,8 @@ export default function ElicitationEventPage({
   params: { id: string };
 }) {
   const { user, loading: authLoading } = useUserQuery();
+  const { canViewElicitationTracking, capabilitiesLoaded } =
+    useUserCapabilitiesQuery();
 
   if (authLoading) {
     return (
@@ -26,6 +29,18 @@ export default function ElicitationEventPage({
         <p>Please login to view this event</p>
       </Center>
     );
+  }
+
+  if (!capabilitiesLoaded) {
+    return (
+      <Center>
+        <Spinner />
+      </Center>
+    );
+  }
+
+  if (!canViewElicitationTracking) {
+    return <ElicitationNoAccess />;
   }
 
   return (

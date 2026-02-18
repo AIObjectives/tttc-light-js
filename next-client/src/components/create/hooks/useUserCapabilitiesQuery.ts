@@ -91,9 +91,14 @@ export function useUserCapabilitiesQuery() {
   // Extract size limit from data, fallback to default
   const userSizeLimit = data?.csvSizeLimit ?? DEFAULT_SIZE_LIMIT;
 
+  // Default to true (fail open) so transient API errors don't block access
+  const canViewElicitationTracking =
+    data?.canViewElicitationTracking ?? true;
+
   return {
     // Primary data
     userSizeLimit,
+    canViewElicitationTracking,
 
     // Loading states - backward compatible naming
     capabilitiesLoaded,
