@@ -122,7 +122,7 @@ function ElicitationTrackingHeader({
       className="pt-8 w-full max-w-[896px] justify-between items-center"
     >
       <Col gap={2} className="justify-center">
-        <h3>Elicitation Events</h3>
+        <h3>Studies</h3>
       </Col>
       <Button
         variant="outline"
