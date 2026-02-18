@@ -53,6 +53,7 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-123",
     responderCount: 42,
     createdAt: new Date("2026-01-15T10:00:00Z"),
+    mode: "survey",
   },
   {
     id: "event-2",
@@ -60,6 +61,7 @@ const mockEvents: ElicitationEventSummary[] = [
     ownerUserId: "user-456",
     responderCount: 18,
     createdAt: new Date("2026-01-20T14:30:00Z"),
+    mode: "listener",
   },
 ];
 
@@ -154,6 +156,7 @@ describe("useElicitationEvents", () => {
         ownerUserId: "user-789",
         responderCount: 5,
         createdAt: new Date("2026-01-25T16:00:00Z"),
+        mode: "followup",
       },
     ];
     mockFetch.mockResolvedValue({
