@@ -196,31 +196,28 @@ export const elicitationEventSummary = z.object({
   description: z.string().optional(), // Full description of the study/event
   ownerUserId: z.string(), // Firebase UID of owner
   responderCount: z.number(), // Count of participants
-  createdAt: z.preprocess(
-    (arg) =>
-      firebaseTimestamp.safeParse(arg).success
-        ? new Date((arg as FirebaseTimestamp).seconds * 1000)
-        : arg,
-    z.date(),
-  ),
+  createdAt: z.preprocess((arg) => {
+    if (firebaseTimestamp.safeParse(arg).success)
+      return new Date((arg as FirebaseTimestamp).seconds * 1000);
+    if (typeof arg === "string") return new Date(arg);
+    return arg;
+  }, z.date()),
   // Event date range
   startDate: z
-    .preprocess(
-      (arg) =>
-        firebaseTimestamp.safeParse(arg).success
-          ? new Date((arg as FirebaseTimestamp).seconds * 1000)
-          : arg,
-      z.date(),
-    )
+    .preprocess((arg) => {
+      if (firebaseTimestamp.safeParse(arg).success)
+        return new Date((arg as FirebaseTimestamp).seconds * 1000);
+      if (typeof arg === "string") return new Date(arg);
+      return arg;
+    }, z.date())
     .optional(),
   endDate: z
-    .preprocess(
-      (arg) =>
-        firebaseTimestamp.safeParse(arg).success
-          ? new Date((arg as FirebaseTimestamp).seconds * 1000)
-          : arg,
-      z.date(),
-    )
+    .preprocess((arg) => {
+      if (firebaseTimestamp.safeParse(arg).success)
+        return new Date((arg as FirebaseTimestamp).seconds * 1000);
+      if (typeof arg === "string") return new Date(arg);
+      return arg;
+    }, z.date())
     .optional(),
   // Event status
   status: elicitationEventStatus.optional(),
