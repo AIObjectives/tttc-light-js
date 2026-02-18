@@ -288,6 +288,9 @@ export default function LoginButton() {
             <Link href={"/my-reports"}>
               <DropdownMenuItem>Reports</DropdownMenuItem>
             </Link>
+            <Link href={"/studies"}>
+              <DropdownMenuItem>Studies</DropdownMenuItem>
+            </Link>
             <DropdownMenuItem onClick={handleSignOut}>
               Sign out
             </DropdownMenuItem>
