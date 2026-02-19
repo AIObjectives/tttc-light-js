@@ -28,15 +28,11 @@ vi.mock("tttc-common/permissions", () => ({
 }));
 
 // Mock API schemas
-vi.mock("tttc-common/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("tttc-common/api")>();
-  return {
-    ...actual,
-    elicitationEventsResponse: {
-      parse: vi.fn((data) => data), // Pass through the data as-is
-    },
-  };
-});
+vi.mock("tttc-common/api", () => ({
+  elicitationEventsResponse: {
+    parse: vi.fn((data) => data), // Pass through the data as-is
+  },
+}));
 
 // Mock logger
 vi.mock("tttc-common/logger", () => ({
@@ -52,6 +48,15 @@ vi.mock("tttc-common/logger", () => ({
 // Mock feature flags module
 vi.mock("../../featureFlags", () => ({
   isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
+
+// Mock create route to prevent transitive loading of server.ts
+vi.mock("../create", () => ({
+  createAndSaveReport: vi.fn(),
+  createUserDocuments: vi.fn(),
+  buildPipelineJob: vi.fn(),
+  addAnonymousNames: vi.fn((data: { data: unknown[] }) => data),
+  selectQueue: vi.fn(),
 }));
 
 // Mock error handler
