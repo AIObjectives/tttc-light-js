@@ -17,7 +17,10 @@ export async function GET(request: Request) {
     initializeFeatureFlags();
     const enabled = await isFeatureEnabled("elicitation_enabled");
     if (!enabled) {
-      return NextResponse.json({ error: "Feature not available" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Feature not available" },
+        { status: 403 },
+      );
     }
 
     const authHeader = request.headers.get("Authorization");

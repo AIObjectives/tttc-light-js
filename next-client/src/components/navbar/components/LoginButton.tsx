@@ -113,7 +113,9 @@ const recordProfileSetupComplete = () => {
 
 export default function LoginButton() {
   const { user, loading, error } = useUserQuery();
-  const { enabled: studiesEnabled } = useFeatureFlagQuery("elicitation_enabled");
+  const { enabled: studiesEnabled } = useFeatureFlagQuery(
+    "elicitation_enabled",
+  );
   const [showEmailAuth, setShowEmailAuth] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(
     "signin",
