@@ -7,6 +7,7 @@
  * schema format.
  */
 
+import { randomUUID } from "node:crypto";
 import type * as schema from "tttc-common/schema";
 import type { PipelineJobMessage } from "tttc-common/schema";
 import type { DedupedClaim } from "../pipeline-steps/types";
@@ -112,13 +113,12 @@ export function formatPipelineOutput(
 
 /**
  * Convert DedupedClaim to LLMClaim format recursively
- * Note: DedupedClaim doesn't have claimId field - IDs are array indices
  */
 function convertDedupedClaimToLLMClaim(claim: DedupedClaim): schema.LLMClaim {
   const llmClaim: schema.LLMClaim = {
     claim: claim.claim,
     quote: claim.quote,
-    claimId: undefined, // No claim IDs in pipeline-worker format
+    claimId: randomUUID(),
     topicName: claim.topicName,
     subtopicName: claim.subtopicName,
     commentId: claim.commentId,
