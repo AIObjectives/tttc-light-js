@@ -11,6 +11,45 @@ import { sendErrorByCode } from "./sendError";
 const elicitationLogger = logger.child({ module: "elicitation" });
 
 /**
+ * Sanitize a CSV cell value to prevent formula injection in spreadsheet apps.
+ * Prefixes cells starting with formula characters with a single quote.
+ */
+function sanitizeCsvCell(value: string): string {
+  const str = String(value ?? "");
+  if (/^[=+\-@\t]/.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
+
+/**
+ * Escape and optionally quote a CSV cell value per RFC 4180.
+ */
+function escapeCsvValue(value: string): string {
+  const sanitized = sanitizeCsvCell(value);
+  if (
+    sanitized.includes(",") ||
+    sanitized.includes('"') ||
+    sanitized.includes("\n") ||
+    sanitized.includes("\r")
+  ) {
+    return `"${sanitized.replace(/"/g, '""')}"`;
+  }
+  return sanitized;
+}
+
+/**
+ * Build a CSV string from headers and rows.
+ */
+function buildCsvContent(headers: string[], rows: string[][]): string {
+  const lines = [
+    headers.map(escapeCsvValue).join(","),
+    ...rows.map((row) => row.map(escapeCsvValue).join(",")),
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+/**
  * Get elicitation collection name with environment suffix
  */
 function getElicitationCollectionName(env: string): string {
@@ -126,6 +165,168 @@ export async function getElicitationEvents(
     res.json(validatedResponse);
   } catch (error) {
     elicitationLogger.error({ error }, "Failed to get elicitation events");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
+  }
+}
+
+/**
+ * Download participant response data for a single elicitation event as CSV.
+ *
+ * Requires: authMiddleware()
+ * Requires: event_organizer role
+ * Requires: User must own the event
+ */
+export async function downloadElicitationEventCsv(
+  req: RequestWithAuth,
+  res: Response,
+): Promise<void> {
+  try {
+    const decodedUser = req.auth;
+    const userId = decodedUser.uid;
+    const eventId = req.params.id;
+
+    if (!eventId) {
+      elicitationLogger.warn({ userId }, "Event ID not provided");
+      sendErrorByCode(res, ERROR_CODES.INVALID_REQUEST, elicitationLogger);
+      return;
+    }
+
+    // Get user document to check roles
+    const userRef = db.collection(getCollectionName("USERS")).doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      elicitationLogger.warn({ userId }, "User document not found");
+      sendErrorByCode(res, ERROR_CODES.USER_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const roles = userData?.roles || [];
+
+    if (!isEventOrganizer(roles)) {
+      elicitationLogger.warn(
+        { userId, roles },
+        "User missing event_organizer role",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    // Get event document
+    const collectionName = getElicitationCollectionName(
+      req.context.env.NODE_ENV,
+    );
+    const eventDoc = await db.collection(collectionName).doc(eventId).get();
+
+    if (!eventDoc.exists) {
+      elicitationLogger.warn({ userId, eventId }, "Event not found");
+      sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    // Verify ownership
+    const eventData = eventDoc.data();
+    if (eventData?.owner_user_id !== userId) {
+      elicitationLogger.warn(
+        { userId, eventId, ownerId: eventData?.owner_user_id },
+        "User does not own this event",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    // Fetch all participant documents
+    const participantsSnapshot = await eventDoc.ref
+      .collection("participants")
+      .get();
+
+    const EXCLUDED_FIELDS = new Set([
+      "interactions",
+      "name",
+      "limit_reached_notified",
+      "event_id",
+    ]);
+
+    // Build one row per participant
+    const rows: Record<string, string>[] = participantsSnapshot.docs
+      .filter((doc) => doc.id !== "info")
+      .map((doc) => {
+        const data = doc.data();
+
+        // Extract only user messages from interactions (skip bot responses)
+        const interactions: unknown[] = Array.isArray(data.interactions)
+          ? data.interactions
+          : [];
+        const userMessages = interactions
+          .filter(
+            (i): i is { message: unknown } =>
+              typeof i === "object" &&
+              i !== null &&
+              "message" in i &&
+              !("response" in i),
+          )
+          .map((i) => String(i.message ?? ""));
+
+        const commentBody = userMessages
+          .join(" ")
+          .replace(/\[/g, "")
+          .replace(/\]/g, "")
+          .replace(/'/g, "");
+
+        // Collect any additional dynamic fields stored on the participant doc
+        const dynamicFields: Record<string, string> = {};
+        for (const [key, value] of Object.entries(data)) {
+          if (!EXCLUDED_FIELDS.has(key) && value !== null && value !== undefined) {
+            dynamicFields[key] = String(value);
+          }
+        }
+
+        return {
+          name: String(data.name ?? ""),
+          "comment-body": commentBody,
+          ...dynamicFields,
+        };
+      });
+
+    // Collect all unique column names across participants
+    const allKeys = new Set<string>();
+    for (const row of rows) {
+      for (const key of Object.keys(row)) {
+        allKeys.add(key);
+      }
+    }
+    const dynamicColumns = [...allKeys].sort();
+    const headers = ["comment-id", ...dynamicColumns];
+
+    const csvRows = rows.map((row, index) => [
+      String(index + 1),
+      ...dynamicColumns.map((key) => row[key] ?? ""),
+    ]);
+
+    const csvContent = buildCsvContent(headers, csvRows);
+
+    // Build a filesystem-safe filename from the event name
+    const eventName = String(eventData?.event_name ?? eventId);
+    const safeFilename = eventName
+      .replace(/[^a-zA-Z0-9\s-_]/g, "")
+      .trim()
+      .replace(/\s+/g, "_")
+      .substring(0, 60);
+
+    elicitationLogger.info(
+      { userId, eventId, participantCount: rows.length },
+      "Elicitation event CSV downloaded",
+    );
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeFilename}_responses.csv"`,
+    );
+    res.send(csvContent);
+  } catch (error) {
+    elicitationLogger.error({ error }, "Failed to download elicitation CSV");
     sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
   }
 }
