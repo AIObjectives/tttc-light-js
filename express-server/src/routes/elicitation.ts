@@ -537,9 +537,12 @@ export async function generateReportForEvent(
     await selectedQueue.enqueue(pipelineJob, {});
 
     // Associate the new report with the elicitation event
-    await db.collection(collectionName).doc(eventId).update({
-      report_ids: FieldValue.arrayUnion(reportId),
-    });
+    await db
+      .collection(collectionName)
+      .doc(eventId)
+      .update({
+        report_ids: FieldValue.arrayUnion(reportId),
+      });
 
     const reportUrl = new URL(
       `report/${reportId}`,
