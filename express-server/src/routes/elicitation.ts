@@ -1,13 +1,24 @@
 import type { Response } from "express";
+import { FieldValue } from "firebase-admin/firestore";
 import * as api from "tttc-common/api";
 import { ERROR_CODES } from "tttc-common/errors";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger";
 import { isEventOrganizer } from "tttc-common/permissions";
+import * as prompts from "tttc-common/prompts";
+import type * as schema from "tttc-common/schema";
 import { db, getCollectionName } from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
+import { createStorage } from "../storage";
 import type { RequestWithAuth } from "../types/request";
+import {
+  addAnonymousNames,
+  buildPipelineJob,
+  createAndSaveReport,
+  createUserDocuments,
+  selectQueue,
+} from "./create";
 import { sendErrorByCode } from "./sendError";
 
 const elicitationLogger = logger.child({ module: "elicitation" });
@@ -362,6 +373,190 @@ export async function downloadElicitationEventCsv(
     res.send(csvContent);
   } catch (error) {
     elicitationLogger.error({ error }, "Failed to download elicitation CSV");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
+  }
+}
+
+/**
+ * Generate a report from participant data for an elicitation event.
+ * Fetches participant responses, converts to SourceRow format, creates a report,
+ * and associates the report ID with the event.
+ *
+ * Requires: authMiddleware()
+ * Requires: event_organizer role
+ * Requires: User must own the event
+ */
+export async function generateReportForEvent(
+  req: RequestWithAuth,
+  res: Response,
+): Promise<void> {
+  try {
+    const decodedUser = req.auth;
+    const userId = decodedUser.uid;
+    const eventId = req.params.id;
+
+    if (!eventId) {
+      elicitationLogger.warn({ userId }, "Event ID not provided");
+      sendErrorByCode(res, ERROR_CODES.INVALID_REQUEST, elicitationLogger);
+      return;
+    }
+
+    // Get user document to check roles
+    const userRef = db.collection(getCollectionName("USERS")).doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      elicitationLogger.warn({ userId }, "User document not found");
+      sendErrorByCode(res, ERROR_CODES.USER_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const roles = userData?.roles || [];
+
+    if (!isEventOrganizer(roles)) {
+      elicitationLogger.warn(
+        { userId, roles },
+        "User missing event_organizer role",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    // Get event document
+    const collectionName = getElicitationCollectionName(
+      req.context.env.NODE_ENV,
+    );
+    const eventDoc = await db.collection(collectionName).doc(eventId).get();
+
+    if (!eventDoc.exists) {
+      elicitationLogger.warn({ userId, eventId }, "Event not found");
+      sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    // Verify ownership
+    const eventData = eventDoc.data();
+    if (eventData?.owner_user_id !== userId) {
+      elicitationLogger.warn(
+        { userId, eventId, ownerId: eventData?.owner_user_id },
+        "User does not own this event",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    // Fetch all participant documents
+    const participantsSnapshot = await eventDoc.ref
+      .collection("participants")
+      .get();
+
+    const participantRows = participantsSnapshot.docs
+      .filter((doc) => doc.id !== "info")
+      .map((doc) => participantDocToRow(doc.data()));
+
+    // Convert to SourceRow format, filtering out empty comments
+    const sourceRows: schema.SourceRow[] = participantRows
+      .filter((row) => row["comment-body"]?.trim())
+      .map((row, i) => {
+        const sr: schema.SourceRow = {
+          id: `cm${i}`,
+          comment: row["comment-body"],
+        };
+        if (row["name"]) {
+          sr.interview = row["name"];
+        }
+        return sr;
+      });
+
+    if (sourceRows.length === 0) {
+      elicitationLogger.warn(
+        { userId, eventId },
+        "No participant responses found for report generation",
+      );
+      sendErrorByCode(res, ERROR_CODES.INVALID_REQUEST, elicitationLogger);
+      return;
+    }
+
+    // Add anonymous names to participants without names
+    const dataWithNames = addAnonymousNames({ data: sourceRows });
+
+    // Build userConfig from event data + default prompts
+    const eventName = String(eventData?.event_name || "Study Report");
+    const eventDescription = String(
+      eventData?.description || eventData?.event_name || "Study Report",
+    );
+    const userConfig: schema.LLMUserConfig = {
+      title: eventName,
+      description: eventDescription,
+      systemInstructions: prompts.defaultSystemPrompt,
+      clusteringInstructions: prompts.defaultClusteringPrompt,
+      extractionInstructions: prompts.defaultExtractionPrompt,
+      dedupInstructions: prompts.defaultDedupPrompt,
+      summariesInstructions: prompts.defaultSummariesPrompt,
+      cruxInstructions: prompts.defaultCruxPrompt,
+      cruxesEnabled: false,
+      bridgingEnabled: false,
+      outputLanguage: "English",
+      isPublic: false,
+    };
+
+    // Generate a new reportId
+    const reportId = db.collection(getCollectionName("REPORT_REF")).doc().id;
+
+    // Create storage placeholder
+    const storage = createStorage(req.context.env);
+    const { jsonUrl } = await createAndSaveReport(storage, reportId);
+
+    // Create Firebase documents
+    const { firebaseJobId, reportId: createdReportId } =
+      await createUserDocuments(decodedUser, userConfig, jsonUrl, reportId);
+
+    if (!firebaseJobId) throw new Error("Failed to create firebase job");
+    if (!createdReportId) throw new Error("Failed to create report reference");
+
+    // Build and enqueue the pipeline job
+    const processedData: schema.SourceRow[] = dataWithNames.data.map(
+      (row, i) => ({
+        ...row,
+        id: row.id || `cm${i}`,
+      }),
+    );
+
+    const pipelineJob = buildPipelineJob(
+      req.context.env,
+      decodedUser,
+      firebaseJobId,
+      reportId,
+      userConfig,
+      { ...userConfig, data: processedData },
+      jsonUrl,
+    );
+
+    const selectedQueue = await selectQueue(req.auth);
+    await selectedQueue.enqueue(pipelineJob, {});
+
+    // Associate the new report with the elicitation event
+    await db.collection(collectionName).doc(eventId).update({
+      report_ids: FieldValue.arrayUnion(reportId),
+    });
+
+    const reportUrl = new URL(
+      `report/${reportId}`,
+      req.context.env.CLIENT_BASE_URL,
+    ).toString();
+
+    elicitationLogger.info(
+      { userId, eventId, reportId, participantCount: sourceRows.length },
+      "Report generation started for elicitation event",
+    );
+
+    res.json({ reportId, reportUrl });
+  } catch (error) {
+    elicitationLogger.error(
+      { error },
+      "Failed to generate report for elicitation event",
+    );
     sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
   }
 }

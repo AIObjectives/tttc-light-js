@@ -142,7 +142,7 @@ const validateFileSize = (
   }
 };
 
-const addAnonymousNames = (parsedData: {
+export const addAnonymousNames = (parsedData: {
   data: schema.SourceRow[];
   pieChart?: schema.LLMPieChart[];
 }) => {
@@ -159,7 +159,7 @@ const addAnonymousNames = (parsedData: {
   };
 };
 
-const createAndSaveReport = async (
+export const createAndSaveReport = async (
   storage: ReturnType<typeof createStorage>,
   reportId: string,
 ) => {
@@ -188,7 +188,7 @@ const createAndSaveReport = async (
  * Creates Firebase documents for an authenticated user's report.
  * Authentication is handled by authMiddleware, so decodedUser is always valid.
  */
-const createUserDocuments = async (
+export const createUserDocuments = async (
   decodedUser: DecodedIdToken,
   userConfig: schema.LLMUserConfig,
   jsonUrl: string,
@@ -254,7 +254,7 @@ const createUserDocuments = async (
   return { firebaseJobId: jobId, reportId };
 };
 
-const buildPipelineJob = (
+export const buildPipelineJob = (
   env: Env,
   decodedUser: DecodedIdToken,
   firebaseJobId: string,
@@ -497,7 +497,7 @@ function getErrorCodeForException(e: unknown): ErrorCode {
  * Returns the node worker queue if available and feature flag is enabled,
  * otherwise returns the default pipeline queue.
  */
-async function selectQueue(
+export async function selectQueue(
   auth: DecodedIdToken,
 ): Promise<typeof pipelineQueue> {
   const shouldUseNodeWorker =

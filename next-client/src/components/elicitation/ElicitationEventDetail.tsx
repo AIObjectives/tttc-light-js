@@ -2,6 +2,7 @@
 
 import { Copy, Download, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
@@ -197,8 +198,38 @@ function EventHeader({
   event: ElicitationEventSummary;
   mostRecentReportId?: string;
 }) {
+  const router = useRouter();
   const { user } = useUserQuery();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    try {
+      const authToken = user ? await user.getIdToken() : undefined;
+      const response = await fetchWithRequestId(
+        `/api/elicitation/events/${event.id}/generate-report`,
+        {
+          method: "POST",
+          headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const { reportId } = await response.json();
+      router.push(`/report/${reportId}`);
+    } catch {
+      toast.error("Failed to generate report");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -290,10 +321,11 @@ function EventHeader({
         ) : (
           <Button
             size="sm"
-            disabled
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
           >
-            Go to report
+            {isGenerating ? "Generating..." : "Generate report"}
           </Button>
         )}
       </Row>
