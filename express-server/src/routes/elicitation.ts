@@ -61,6 +61,50 @@ function serializeFieldValue(value: unknown): string {
   return String(value);
 }
 
+const PARTICIPANT_EXCLUDED_FIELDS = new Set([
+  "interactions",
+  "name",
+  "limit_reached_notified",
+  "event_id",
+]);
+
+/**
+ * Returns true for participant interaction objects that are user messages
+ * (bot responses carry a 'response' field; user messages do not).
+ */
+function isUserMessage(i: unknown): i is { message: unknown } {
+  return (
+    typeof i === "object" && i !== null && "message" in i && !("response" in i)
+  );
+}
+
+/**
+ * Convert a participant Firestore document into a flat string record for CSV output.
+ */
+function participantDocToRow(
+  data: FirebaseFirestore.DocumentData,
+): Record<string, string> {
+  const commentBody = (Array.isArray(data.interactions) ? data.interactions : [])
+    .filter(isUserMessage)
+    .map((i) => String(i.message ?? ""))
+    .join(" ")
+    .replace(/\[/g, "")
+    .replace(/\]/g, "")
+    .replace(/'/g, "");
+
+  const dynamicFields = Object.fromEntries(
+    Object.entries(data)
+      .filter(([key, value]) => !PARTICIPANT_EXCLUDED_FIELDS.has(key) && value != null)
+      .map(([key, value]) => [key, serializeFieldValue(value)]),
+  );
+
+  return {
+    name: serializeFieldValue(data.name ?? ""),
+    "comment-body": commentBody,
+    ...dynamicFields,
+  };
+}
+
 /**
  * Build a CSV string from headers and rows.
  */
@@ -264,62 +308,13 @@ export async function downloadElicitationEventCsv(
       .collection("participants")
       .get();
 
-    const EXCLUDED_FIELDS = new Set([
-      "interactions",
-      "name",
-      "limit_reached_notified",
-      "event_id",
-    ]);
-
-    // Build one row per participant
-    const rows: Record<string, string>[] = participantsSnapshot.docs
+    const rows = participantsSnapshot.docs
       .filter((doc) => doc.id !== "info")
-      .map((doc) => {
-        const data = doc.data();
+      .map((doc) => participantDocToRow(doc.data()));
 
-        // Extract only user messages from interactions (skip bot responses)
-        const interactions: unknown[] = Array.isArray(data.interactions)
-          ? data.interactions
-          : [];
-        const userMessages = interactions
-          .filter(
-            (i): i is { message: unknown } =>
-              typeof i === "object" &&
-              i !== null &&
-              "message" in i &&
-              !("response" in i),
-          )
-          .map((i) => String(i.message ?? ""));
-
-        const commentBody = userMessages
-          .join(" ")
-          .replace(/\[/g, "")
-          .replace(/\]/g, "")
-          .replace(/'/g, "");
-
-        // Collect any additional dynamic fields stored on the participant doc
-        const dynamicFields: Record<string, string> = {};
-        for (const [key, value] of Object.entries(data)) {
-          if (!EXCLUDED_FIELDS.has(key) && value !== null && value !== undefined) {
-            dynamicFields[key] = serializeFieldValue(value);
-          }
-        }
-
-        return {
-          name: serializeFieldValue(data.name ?? ""),
-          "comment-body": commentBody,
-          ...dynamicFields,
-        };
-      });
-
-    // Collect all unique column names across participants
-    const allKeys = new Set<string>();
-    for (const row of rows) {
-      for (const key of Object.keys(row)) {
-        allKeys.add(key);
-      }
-    }
-    const dynamicColumns = [...allKeys].sort();
+    const dynamicColumns = [
+      ...new Set(rows.flatMap((row) => Object.keys(row))),
+    ].sort();
     const headers = ["comment-id", ...dynamicColumns];
 
     const csvRows = rows.map((row, index) => [
