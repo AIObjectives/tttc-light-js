@@ -5,6 +5,8 @@ import type { ElicitationEventSummary } from "tttc-common/firebase";
 import { logger } from "tttc-common/logger";
 import { isEventOrganizer } from "tttc-common/permissions";
 import { db, getCollectionName } from "../Firebase";
+import { isFeatureEnabled } from "../featureFlags";
+import { FEATURE_FLAGS } from "../featureFlags/constants";
 import type { RequestWithAuth } from "../types/request";
 import { sendErrorByCode } from "./sendError";
 
@@ -185,6 +187,16 @@ export async function getElicitationEvents(
   try {
     const decodedUser = req.auth;
     const userId = decodedUser.uid;
+
+    // Check feature flag
+    const featureEnabled = await isFeatureEnabled(
+      FEATURE_FLAGS.ELICITATION_ENABLED,
+      { userId },
+    );
+    if (!featureEnabled) {
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
 
     // Get user document to check roles
     const userRef = db.collection(getCollectionName("USERS")).doc(userId);
@@ -370,6 +382,16 @@ export async function getElicitationEvent(
     const decodedUser = req.auth;
     const userId = decodedUser.uid;
     const eventId = req.params.id;
+
+    // Check feature flag
+    const featureEnabled = await isFeatureEnabled(
+      FEATURE_FLAGS.ELICITATION_ENABLED,
+      { userId },
+    );
+    if (!featureEnabled) {
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
 
     if (!eventId) {
       elicitationLogger.warn({ userId }, "Event ID not provided");

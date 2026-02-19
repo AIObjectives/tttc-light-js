@@ -25,6 +25,8 @@ export interface NextFeatureFlagEnv {
  * PostHog browser provider for client-side feature flags.
  */
 class PostHogBrowserProvider implements FeatureFlagProvider {
+  private identifiedUserId: string | undefined;
+
   constructor(apiKey: string, host?: string) {
     if (typeof window !== "undefined" && !posthog.__loaded) {
       posthog.init(apiKey, {
@@ -36,13 +38,43 @@ class PostHogBrowserProvider implements FeatureFlagProvider {
     }
   }
 
+  /**
+   * Identifies the user if not already identified, then waits for PostHog
+   * to reload feature flags before returning. This prevents the race
+   * condition where isFeatureEnabled reads stale anonymous-user flags
+   * immediately after identify().
+   */
+  private async identifyAndReload(context: FeatureFlagContext): Promise<void> {
+    if (!context.userId || context.userId === this.identifiedUserId) {
+      return;
+    }
+    posthog.identify(context.userId, context.properties);
+    this.identifiedUserId = context.userId;
+    await new Promise<void>((resolve) => {
+      let resolved = false;
+      const unsubscribe = posthog.onFeatureFlags(() => {
+        if (!resolved) {
+          resolved = true;
+          unsubscribe();
+          resolve();
+        }
+      });
+      posthog.reloadFeatureFlags();
+      // Safety timeout in case the callback never fires
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      }, 3000);
+    });
+  }
+
   async isEnabled(
     flagName: string,
     context: FeatureFlagContext,
   ): Promise<boolean> {
-    if (context.userId) {
-      posthog.identify(context.userId, context.properties);
-    }
+    await this.identifyAndReload(context);
     return posthog.isFeatureEnabled(flagName) || false;
   }
 
@@ -50,9 +82,7 @@ class PostHogBrowserProvider implements FeatureFlagProvider {
     flagName: string,
     context: FeatureFlagContext,
   ): Promise<string | boolean | number | null> {
-    if (context.userId) {
-      posthog.identify(context.userId, context.properties);
-    }
+    await this.identifyAndReload(context);
     const value = posthog.getFeatureFlag(flagName);
     return value === undefined ? null : value;
   }
@@ -60,6 +90,7 @@ class PostHogBrowserProvider implements FeatureFlagProvider {
   async shutdown(): Promise<void> {
     if (typeof window !== "undefined") {
       posthog.reset();
+      this.identifiedUserId = undefined;
     }
   }
 }
@@ -113,24 +144,15 @@ export function initializeFeatureFlags(
   const envVars = {
     NEXT_PUBLIC_FEATURE_FLAG_PROVIDER:
       env.NEXT_PUBLIC_FEATURE_FLAG_PROVIDER ||
-      (typeof window !== "undefined"
-        ? undefined
-        : process.env.NEXT_PUBLIC_FEATURE_FLAG_PROVIDER),
+      process.env.NEXT_PUBLIC_FEATURE_FLAG_PROVIDER,
     NEXT_PUBLIC_FEATURE_FLAG_API_KEY:
       env.NEXT_PUBLIC_FEATURE_FLAG_API_KEY ||
-      (typeof window !== "undefined"
-        ? undefined
-        : process.env.NEXT_PUBLIC_FEATURE_FLAG_API_KEY),
+      process.env.NEXT_PUBLIC_FEATURE_FLAG_API_KEY,
     NEXT_PUBLIC_FEATURE_FLAG_HOST:
       env.NEXT_PUBLIC_FEATURE_FLAG_HOST ||
-      (typeof window !== "undefined"
-        ? undefined
-        : process.env.NEXT_PUBLIC_FEATURE_FLAG_HOST),
+      process.env.NEXT_PUBLIC_FEATURE_FLAG_HOST,
     NEXT_PUBLIC_LOCAL_FLAGS:
-      env.NEXT_PUBLIC_LOCAL_FLAGS ||
-      (typeof window !== "undefined"
-        ? undefined
-        : process.env.NEXT_PUBLIC_LOCAL_FLAGS),
+      env.NEXT_PUBLIC_LOCAL_FLAGS || process.env.NEXT_PUBLIC_LOCAL_FLAGS,
   };
 
   const providerType = envVars.NEXT_PUBLIC_FEATURE_FLAG_PROVIDER || "local";

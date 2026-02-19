@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { logger } from "tttc-common/logger/browser";
 import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -23,6 +23,7 @@ import { ProfileSetupModal } from "@/components/profile/ProfileSetupModal";
 import { AUTH_ACTIONS } from "@/lib/constants/auth";
 import { signInWithGoogle, signOut } from "@/lib/firebase/auth";
 import { logAuthEvent } from "@/lib/firebase/authEvents";
+import { useFeatureFlagQuery } from "@/lib/query/useFeatureFlagQuery";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 
 const loginLogger = logger.child({ module: "login-button" });
@@ -112,6 +113,14 @@ const recordProfileSetupComplete = () => {
 
 export default function LoginButton() {
   const { user, loading, error } = useUserQuery();
+  const flagContext = useMemo(
+    () => (user?.uid ? { userId: user.uid } : undefined),
+    [user?.uid],
+  );
+  const { enabled: studiesEnabled } = useFeatureFlagQuery(
+    "elicitation_enabled",
+    flagContext,
+  );
   const [showEmailAuth, setShowEmailAuth] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(
     "signin",
@@ -288,9 +297,11 @@ export default function LoginButton() {
             <Link href={"/my-reports"}>
               <DropdownMenuItem>Reports</DropdownMenuItem>
             </Link>
-            <Link href={"/studies"}>
-              <DropdownMenuItem>Studies</DropdownMenuItem>
-            </Link>
+            {studiesEnabled && (
+              <Link href={"/studies"}>
+                <DropdownMenuItem>Studies</DropdownMenuItem>
+              </Link>
+            )}
             <DropdownMenuItem onClick={handleSignOut}>
               Sign out
             </DropdownMenuItem>
