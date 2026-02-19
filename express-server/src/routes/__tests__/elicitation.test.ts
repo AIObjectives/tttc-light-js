@@ -45,6 +45,11 @@ vi.mock("tttc-common/logger", () => ({
   },
 }));
 
+// Mock feature flags module
+vi.mock("../../featureFlags", () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
+
 // Mock error handler
 vi.mock("../sendError", () => ({
   sendErrorByCode: vi.fn(),
@@ -57,6 +62,8 @@ describe("getElicitationEvents", () => {
   let mockFirebase: any;
   // biome-ignore lint/suspicious/noExplicitAny: Test mock requires flexibility
   let mockSendError: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Test mock requires flexibility
+  let mockFeatureFlags: any;
 
   // Helper factories for test setup
   const createMockUser = (
@@ -134,6 +141,8 @@ describe("getElicitationEvents", () => {
     // Setup mocks
     mockFirebase = vi.mocked(await import("../../Firebase.js"));
     mockSendError = vi.mocked(await import("../sendError.js"));
+    mockFeatureFlags = vi.mocked(await import("../../featureFlags/index.js"));
+    mockFeatureFlags.isFeatureEnabled.mockResolvedValue(true);
 
     // Create mock request with auth (middleware provides req.auth)
     mockReq = {
@@ -154,6 +163,18 @@ describe("getElicitationEvents", () => {
   });
 
   describe("authorization", () => {
+    it("should return 403 if elicitation feature flag is disabled", async () => {
+      mockFeatureFlags.isFeatureEnabled.mockResolvedValue(false);
+
+      await getElicitationEvents(mockReq, mockRes);
+
+      expect(mockSendError.sendErrorByCode).toHaveBeenCalledWith(
+        mockRes,
+        "AUTH_UNAUTHORIZED",
+        expect.anything(),
+      );
+    });
+
     it("should return 403 if user document not found", async () => {
       setupUserDocument([], false);
 
