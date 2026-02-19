@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { logger } from "tttc-common/logger/browser";
 import { EmailPasswordAuthForm } from "@/components/auth/EmailPasswordAuthForm";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -113,8 +113,13 @@ const recordProfileSetupComplete = () => {
 
 export default function LoginButton() {
   const { user, loading, error } = useUserQuery();
+  const flagContext = useMemo(
+    () => (user?.uid ? { userId: user.uid } : undefined),
+    [user?.uid],
+  );
   const { enabled: studiesEnabled } = useFeatureFlagQuery(
     "elicitation_enabled",
+    flagContext,
   );
   const [showEmailAuth, setShowEmailAuth] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "reset">(
