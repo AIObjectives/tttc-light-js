@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { logger } from "tttc-common/logger/browser";
+import {
+  initializeFeatureFlags,
+  isFeatureEnabled,
+} from "@/lib/feature-flags/featureFlags.server";
 
 const elicitationApiLogger = logger.child({ module: "api-elicitation-events" });
 
@@ -10,6 +14,12 @@ const elicitationApiLogger = logger.child({ module: "api-elicitation-events" });
  */
 export async function GET(request: Request) {
   try {
+    initializeFeatureFlags();
+    const enabled = await isFeatureEnabled("elicitation_enabled");
+    if (!enabled) {
+      return NextResponse.json({ error: "Feature not available" }, { status: 403 });
+    }
+
     const authHeader = request.headers.get("Authorization");
     if (!authHeader) {
       return NextResponse.json(
