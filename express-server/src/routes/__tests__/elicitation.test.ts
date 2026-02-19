@@ -28,11 +28,15 @@ vi.mock("tttc-common/permissions", () => ({
 }));
 
 // Mock API schemas
-vi.mock("tttc-common/api", () => ({
-  elicitationEventsResponse: {
-    parse: vi.fn((data) => data), // Pass through the data as-is
-  },
-}));
+vi.mock("tttc-common/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("tttc-common/api")>();
+  return {
+    ...actual,
+    elicitationEventsResponse: {
+      parse: vi.fn((data) => data), // Pass through the data as-is
+    },
+  };
+});
 
 // Mock logger
 vi.mock("tttc-common/logger", () => ({
