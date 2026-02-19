@@ -1,14 +1,16 @@
 "use client";
 
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy, Download, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
+import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { useElicitationEvent } from "@/lib/hooks/useElicitationEvent";
 import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { useEventReports } from "@/lib/hooks/useEventReports";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   Alert,
   AlertDescription,
@@ -195,6 +197,39 @@ function EventHeader({
   event: ElicitationEventSummary;
   mostRecentReportId?: string;
 }) {
+  const { user } = useUserQuery();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const authToken = user ? await user.getIdToken() : undefined;
+      const response = await fetchWithRequestId(
+        `/api/elicitation/events/${event.id}/csv`,
+        { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${event.eventName
+        .replace(/[^a-zA-Z0-9\s-_]/g, "")
+        .trim()
+        .replace(/\s+/g, "_")}_responses.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download data");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -237,8 +272,11 @@ function EventHeader({
           variant="outline"
           size="sm"
           className="bg-indigo-50 text-indigo-700 border-indigo-50 hover:bg-indigo-100"
+          onClick={handleDownload}
+          disabled={isDownloading}
         >
-          Download data
+          <Download className="mr-2 h-4 w-4" />
+          {isDownloading ? "Downloading..." : "Download data"}
         </Button>
         {mostRecentReportId ? (
           <Link href={`/report/${mostRecentReportId}`}>

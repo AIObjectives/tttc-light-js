@@ -30,6 +30,7 @@ import { GooglePubSubQueue } from "./queue/providers/googlePubSub";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
 import {
+  downloadElicitationEventCsv,
   getElicitationEvent,
   getElicitationEvents,
 } from "./routes/elicitation";
@@ -389,6 +390,18 @@ app.get(
   authLimiter,
   authMiddleware(),
   getElicitationEvent as unknown as express.RequestHandler,
+);
+
+/**
+ * Download participant response data as CSV for a single elicitation event
+ * Requires event_organizer role and ownership
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.get(
+  "/api/elicitation/events/:id/csv",
+  authLimiter,
+  authMiddleware(),
+  downloadElicitationEventCsv as unknown as express.RequestHandler,
 );
 
 /**
