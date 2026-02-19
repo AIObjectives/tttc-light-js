@@ -39,6 +39,29 @@ function escapeCsvValue(value: string): string {
 }
 
 /**
+ * Serialize a Firestore field value to a plain string for CSV output.
+ * Handles Timestamps, arrays, and nested objects gracefully.
+ */
+function serializeFieldValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  // Firestore Timestamp: has a toDate() method
+  if (
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof (value as { toDate: unknown }).toDate === "function"
+  ) {
+    return (value as { toDate: () => Date }).toDate().toISOString();
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeFieldValue(item)).join("; ");
+  }
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+/**
  * Build a CSV string from headers and rows.
  */
 function buildCsvContent(headers: string[], rows: string[][]): string {
@@ -278,12 +301,12 @@ export async function downloadElicitationEventCsv(
         const dynamicFields: Record<string, string> = {};
         for (const [key, value] of Object.entries(data)) {
           if (!EXCLUDED_FIELDS.has(key) && value !== null && value !== undefined) {
-            dynamicFields[key] = String(value);
+            dynamicFields[key] = serializeFieldValue(value);
           }
         }
 
         return {
-          name: String(data.name ?? ""),
+          name: serializeFieldValue(data.name ?? ""),
           "comment-body": commentBody,
           ...dynamicFields,
         };
