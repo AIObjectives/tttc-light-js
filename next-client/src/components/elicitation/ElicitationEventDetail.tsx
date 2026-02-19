@@ -217,7 +217,10 @@ function EventHeader({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${event.eventName.replace(/[^a-zA-Z0-9\s-_]/g, "").trim().replace(/\s+/g, "_")}_responses.csv`;
+      a.download = `${event.eventName
+        .replace(/[^a-zA-Z0-9\s-_]/g, "")
+        .trim()
+        .replace(/\s+/g, "_")}_responses.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
