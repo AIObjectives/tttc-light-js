@@ -84,7 +84,9 @@ function isUserMessage(i: unknown): i is { message: unknown } {
 function participantDocToRow(
   data: FirebaseFirestore.DocumentData,
 ): Record<string, string> {
-  const commentBody = (Array.isArray(data.interactions) ? data.interactions : [])
+  const commentBody = (
+    Array.isArray(data.interactions) ? data.interactions : []
+  )
     .filter(isUserMessage)
     .map((i) => String(i.message ?? ""))
     .join(" ")
@@ -94,7 +96,10 @@ function participantDocToRow(
 
   const dynamicFields = Object.fromEntries(
     Object.entries(data)
-      .filter(([key, value]) => !PARTICIPANT_EXCLUDED_FIELDS.has(key) && value != null)
+      .filter(
+        ([key, value]) =>
+          !PARTICIPANT_EXCLUDED_FIELDS.has(key) && value != null,
+      )
       .map(([key, value]) => [key, serializeFieldValue(value)]),
   );
 
