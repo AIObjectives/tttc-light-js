@@ -185,22 +185,13 @@ export const createAndSaveReport = async (
 };
 
 /**
- * Creates Firebase documents for an authenticated user's report.
- * Authentication is handled by authMiddleware, so decodedUser is always valid.
+ * Throws if an email/password user has not verified their email.
+ * Note: firebase.sign_in_provider is only present in real Firebase tokens.
  */
-export const createUserDocuments = async (
-  decodedUser: DecodedIdToken,
-  userConfig: schema.LLMUserConfig,
-  jsonUrl: string,
-  preGeneratedReportId: string,
-  elicitationEventId?: string,
-) => {
-  // Check if user signed up with email/password and hasn't verified their email
-  // Note: firebase.sign_in_provider is only present in real Firebase tokens
+const assertEmailVerified = (decodedUser: DecodedIdToken): void => {
   const isEmailPasswordUser =
     decodedUser.firebase?.sign_in_provider === "password";
   const isEmailVerified = decodedUser.email_verified === true;
-
   if (isEmailPasswordUser && !isEmailVerified) {
     createLogger.warn(
       {
@@ -213,6 +204,20 @@ export const createUserDocuments = async (
     );
     throw new EmailNotVerifiedError();
   }
+};
+
+/**
+ * Creates Firebase documents for an authenticated user's report.
+ * Authentication is handled by authMiddleware, so decodedUser is always valid.
+ */
+export const createUserDocuments = async (
+  decodedUser: DecodedIdToken,
+  userConfig: schema.LLMUserConfig,
+  jsonUrl: string,
+  preGeneratedReportId: string,
+  elicitationEventId?: string,
+) => {
+  assertEmailVerified(decodedUser);
 
   createLogger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
   await firebase.ensureUserDocument(
