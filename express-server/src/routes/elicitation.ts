@@ -510,7 +510,7 @@ export async function generateReportForEvent(
 
     // Create Firebase documents
     const { firebaseJobId, reportId: createdReportId } =
-      await createUserDocuments(decodedUser, userConfig, jsonUrl, reportId);
+      await createUserDocuments(decodedUser, userConfig, jsonUrl, reportId, eventId);
 
     if (!firebaseJobId) throw new Error("Failed to create firebase job");
     if (!createdReportId) throw new Error("Failed to create report reference");

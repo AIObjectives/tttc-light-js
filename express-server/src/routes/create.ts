@@ -193,6 +193,7 @@ export const createUserDocuments = async (
   userConfig: schema.LLMUserConfig,
   jsonUrl: string,
   preGeneratedReportId: string,
+  elicitationEventId?: string,
 ) => {
   // Check if user signed up with email/password and hasn't verified their email
   // Note: firebase.sign_in_provider is only present in real Firebase tokens
@@ -242,6 +243,7 @@ export const createUserDocuments = async (
       createdDate: new Date(),
       outputLanguage: userConfig.outputLanguage, // Language for generated content
       isPublic: userConfig.isPublic ?? false, // Use user's choice, default to private
+      ...(elicitationEventId ? { elicitationEventId } : {}),
     },
     preGeneratedReportId, // Use the same reportId as storage filename
   );
