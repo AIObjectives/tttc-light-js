@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUserQuery } from "@/lib/query/useUserQuery";
 
 interface EventReport {
   id: string;
@@ -17,10 +18,11 @@ interface UseEventReportsResult {
 }
 
 /**
- * Fetch report metadata for multiple report IDs
- * Returns minimal report info for timeline display
+ * Fetch report metadata for multiple report IDs.
+ * Returns minimal report info for timeline display.
  */
 export function useEventReports(reportIds?: string[]): UseEventReportsResult {
+  const { user } = useUserQuery();
   const [reports, setReports] = useState<EventReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -38,17 +40,23 @@ export function useEventReports(reportIds?: string[]): UseEventReportsResult {
         setIsLoading(true);
         setIsError(false);
 
+        const authToken = user ? await user.getIdToken() : undefined;
+
         // Fetch all reports in parallel
         const reportPromises = reportIds.map(async (reportId) => {
           try {
-            const response = await fetch(`/report/${reportId}`);
+            const response = await fetch(`/api/report/${reportId}`, {
+              headers: authToken
+                ? { Authorization: `Bearer ${authToken}` }
+                : {},
+            });
             if (!response.ok) {
               return null;
             }
             const data = await response.json();
 
-            // Handle both old and new response formats
-            const reportData = data.reportRef || data;
+            // Express returns { metadata: ReportRef, status, ... }
+            const reportData = data.metadata || data;
 
             return {
               id: reportId,
@@ -86,7 +94,7 @@ export function useEventReports(reportIds?: string[]): UseEventReportsResult {
     };
 
     fetchReports();
-  }, [reportIds]);
+  }, [reportIds, user]);
 
   return { reports, isLoading, isError, error };
 }
