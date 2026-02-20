@@ -18,6 +18,25 @@ interface UseEventReportsResult {
 }
 
 /**
+ * Parse a date value that may be an ISO string or a serialized Firestore Timestamp.
+ * Firestore Timestamps serialize to JSON as { _seconds, _nanoseconds } when not
+ * parsed through the Zod schema.
+ */
+function parseReportDate(value: unknown): Date {
+  if (typeof value === "string") {
+    return new Date(value);
+  }
+  if (value !== null && typeof value === "object") {
+    const ts = value as Record<string, unknown>;
+    const seconds = ts._seconds ?? ts.seconds;
+    if (typeof seconds === "number") {
+      return new Date(seconds * 1000);
+    }
+  }
+  return new Date(value as string | number);
+}
+
+/**
  * Fetch report metadata for multiple report IDs.
  * Returns minimal report info for timeline display.
  */
@@ -61,7 +80,7 @@ export function useEventReports(reportIds?: string[]): UseEventReportsResult {
             return {
               id: reportId,
               title: reportData.title || "Untitled Report",
-              createdDate: new Date(reportData.createdDate),
+              createdDate: parseReportDate(reportData.createdDate),
               status: reportData.status,
             };
           } catch (err) {
