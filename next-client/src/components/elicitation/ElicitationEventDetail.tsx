@@ -134,8 +134,9 @@ export function ElicitationEventDetailView({
     })),
   ];
 
-  // Get the most recent report for the "Go to report" button
-  const mostRecentReport = reports[0]; // Reports are already sorted by date, newest first
+  // Get the most recent report ID for the "Go to report" button.
+  // Fall back to the first known report ID from the event if fetched reports haven't loaded.
+  const mostRecentReportId = reports[0]?.id ?? reportIdsToFetch?.[0];
 
   const { events: allEvents } = useElicitationEvents();
   const sidebarStudies = allEvents.map((e) => ({
@@ -169,7 +170,7 @@ export function ElicitationEventDetailView({
               <CardContent className="p-6 space-y-6">
                 <EventHeader
                   event={event}
-                  mostRecentReportId={mostRecentReport?.id}
+                  mostRecentReportId={mostRecentReportId}
                 />
                 {event.description && (
                   <EventDescription text={event.description} />
