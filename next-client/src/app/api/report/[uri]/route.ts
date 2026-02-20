@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 
 /**
- * GET /api/report/[id]
+ * GET /api/report/[uri]
  * Returns report metadata and status for a given report ID.
  * Proxies to Express server - auth header forwarded for private report access.
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ uri: string }> },
 ) {
   try {
-    const { id } = await params;
+    const { uri: id } = await params;
 
     const expressUrl =
       process.env.PIPELINE_EXPRESS_URL || "http://localhost:8080";
