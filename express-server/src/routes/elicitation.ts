@@ -1,5 +1,4 @@
 import type { Response } from "express";
-import { FieldValue } from "firebase-admin/firestore";
 import * as api from "tttc-common/api";
 import { ERROR_CODES } from "tttc-common/errors";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
@@ -168,6 +167,13 @@ async function buildEventSummary(
     .get();
   const responderCount = participantsSnapshot.data().count;
 
+  // Find all reports linked to this event via elicitationEventId
+  const linkedReportsSnapshot = await db
+    .collection(getCollectionName("REPORT_REF"))
+    .where("elicitationEventId", "==", doc.id)
+    .get();
+  const reportIds = linkedReportsSnapshot.docs.map((d) => d.id);
+
   return {
     id: doc.id,
     eventName: data.event_name || "",
@@ -186,7 +192,7 @@ async function buildEventSummary(
     initialMessage: data.initial_message,
     completionMessage: data.completion_message,
     reportId: data.report_id,
-    reportIds: data.report_ids,
+    reportIds: reportIds.length > 0 ? reportIds : undefined,
     schemaVersion: data.schema_version,
   };
 }
@@ -535,14 +541,6 @@ export async function generateReportForEvent(
 
     const selectedQueue = await selectQueue(req.auth);
     await selectedQueue.enqueue(pipelineJob, {});
-
-    // Associate the new report with the elicitation event
-    await db
-      .collection(collectionName)
-      .doc(eventId)
-      .update({
-        report_ids: FieldValue.arrayUnion(reportId),
-      });
 
     const reportUrl = new URL(
       `report/${reportId}`,
