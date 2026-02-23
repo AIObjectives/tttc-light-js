@@ -138,6 +138,14 @@ describe("getElicitationEvents", () => {
           }),
         };
       }
+      if (collectionName === "report_ref_test") {
+        // Return empty linked reports for buildEventSummary
+        return {
+          where: vi.fn().mockReturnValue({
+            get: vi.fn().mockResolvedValue({ docs: [] }),
+          }),
+        };
+      }
       // Return events collection mock
       return { where: mockWhere };
     });
@@ -238,20 +246,20 @@ describe("getElicitationEvents", () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         events: [
-          {
+          expect.objectContaining({
             id: "event-1",
             eventName: "Test Event 1",
             ownerUserId: "test-user-id",
             responderCount: 5,
             createdAt: now,
-          },
-          {
+          }),
+          expect.objectContaining({
             id: "event-2",
             eventName: "Test Event 2",
             ownerUserId: "test-user-id",
             responderCount: 10,
             createdAt: now,
-          },
+          }),
         ],
       });
     });
