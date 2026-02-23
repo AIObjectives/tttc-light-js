@@ -127,11 +127,15 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-const validateFileSize = (
-  actualDataSize: number | undefined,
-  maxFileSize: number,
-  isCsv: boolean,
-) => {
+const validateFileSize = ({
+  actualDataSize,
+  maxFileSize,
+  isCsv,
+}: {
+  actualDataSize: number | undefined;
+  maxFileSize: number;
+  isCsv: boolean;
+}) => {
   // Only validate file size for CSV uploads
   if (isCsv && typeof actualDataSize === "number") {
     if (actualDataSize > maxFileSize) {
@@ -414,7 +418,7 @@ async function createNewReport(
   }
 
   // Validate actual data size against user's limit
-  validateFileSize(actualDataSize, userCsvSizeLimit, isCsv);
+  validateFileSize({ actualDataSize, maxFileSize: userCsvSizeLimit, isCsv });
 
   // Parse and process data
   const _parsedData = await parseData(data);
