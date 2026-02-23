@@ -31,6 +31,7 @@ import authEvents from "./routes/authEvents";
 import create from "./routes/create";
 import {
   downloadElicitationEventCsv,
+  generateReportForEvent,
   getElicitationEvent,
   getElicitationEvents,
 } from "./routes/elicitation";
@@ -402,6 +403,18 @@ app.get(
   authLimiter,
   authMiddleware(),
   downloadElicitationEventCsv as unknown as express.RequestHandler,
+);
+
+/**
+ * Generate a report from participant data for a single elicitation event
+ * Requires event_organizer role and ownership
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.post(
+  "/api/elicitation/events/:id/generate-report",
+  authLimiter,
+  authMiddleware(),
+  generateReportForEvent as unknown as express.RequestHandler,
 );
 
 /**

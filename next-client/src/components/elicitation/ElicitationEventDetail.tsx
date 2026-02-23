@@ -2,6 +2,7 @@
 
 import { Copy, Download, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
@@ -133,8 +134,9 @@ export function ElicitationEventDetailView({
     })),
   ];
 
-  // Get the most recent report for the "Go to report" button
-  const mostRecentReport = reports[0]; // Reports are already sorted by date, newest first
+  // Get the most recent report ID for the "Go to report" button.
+  // Fall back to the first known report ID from the event if fetched reports haven't loaded.
+  const mostRecentReportId = reports[0]?.id ?? reportIdsToFetch?.[0];
 
   const { events: allEvents } = useElicitationEvents();
   const sidebarStudies = allEvents.map((e) => ({
@@ -168,7 +170,7 @@ export function ElicitationEventDetailView({
               <CardContent className="p-6 space-y-6">
                 <EventHeader
                   event={event}
-                  mostRecentReportId={mostRecentReport?.id}
+                  mostRecentReportId={mostRecentReportId}
                 />
                 {event.description && (
                   <EventDescription text={event.description} />
@@ -197,8 +199,38 @@ function EventHeader({
   event: ElicitationEventSummary;
   mostRecentReportId?: string;
 }) {
+  const router = useRouter();
   const { user } = useUserQuery();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    try {
+      const authToken = user ? await user.getIdToken() : undefined;
+      const response = await fetchWithRequestId(
+        `/api/elicitation/events/${event.id}/generate-report`,
+        {
+          method: "POST",
+          headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const { reportId } = await response.json();
+      router.push(`/report/${reportId}`);
+    } catch {
+      toast.error("Failed to generate report");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -290,10 +322,11 @@ function EventHeader({
         ) : (
           <Button
             size="sm"
-            disabled
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
           >
-            Go to report
+            {isGenerating ? "Generating..." : "Generate report"}
           </Button>
         )}
       </Row>

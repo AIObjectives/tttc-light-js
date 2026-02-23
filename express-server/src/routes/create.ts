@@ -127,11 +127,15 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-const validateFileSize = (
-  actualDataSize: number | undefined,
-  maxFileSize: number,
-  isCsv: boolean,
-) => {
+const validateFileSize = ({
+  actualDataSize,
+  maxFileSize,
+  isCsv,
+}: {
+  actualDataSize: number | undefined;
+  maxFileSize: number;
+  isCsv: boolean;
+}) => {
   // Only validate file size for CSV uploads
   if (isCsv && typeof actualDataSize === "number") {
     if (actualDataSize > maxFileSize) {
@@ -142,7 +146,7 @@ const validateFileSize = (
   }
 };
 
-const addAnonymousNames = (parsedData: {
+export const addAnonymousNames = (parsedData: {
   data: schema.SourceRow[];
   pieChart?: schema.LLMPieChart[];
 }) => {
@@ -159,7 +163,7 @@ const addAnonymousNames = (parsedData: {
   };
 };
 
-const createAndSaveReport = async (
+export const createAndSaveReport = async (
   storage: ReturnType<typeof createStorage>,
   reportId: string,
 ) => {
@@ -185,21 +189,13 @@ const createAndSaveReport = async (
 };
 
 /**
- * Creates Firebase documents for an authenticated user's report.
- * Authentication is handled by authMiddleware, so decodedUser is always valid.
+ * Throws if an email/password user has not verified their email.
+ * Note: firebase.sign_in_provider is only present in real Firebase tokens.
  */
-const createUserDocuments = async (
-  decodedUser: DecodedIdToken,
-  userConfig: schema.LLMUserConfig,
-  jsonUrl: string,
-  preGeneratedReportId: string,
-) => {
-  // Check if user signed up with email/password and hasn't verified their email
-  // Note: firebase.sign_in_provider is only present in real Firebase tokens
+const assertEmailVerified = (decodedUser: DecodedIdToken): void => {
   const isEmailPasswordUser =
     decodedUser.firebase?.sign_in_provider === "password";
   const isEmailVerified = decodedUser.email_verified === true;
-
   if (isEmailPasswordUser && !isEmailVerified) {
     createLogger.warn(
       {
@@ -212,6 +208,20 @@ const createUserDocuments = async (
     );
     throw new EmailNotVerifiedError();
   }
+};
+
+/**
+ * Creates Firebase documents for an authenticated user's report.
+ * Authentication is handled by authMiddleware, so decodedUser is always valid.
+ */
+export const createUserDocuments = async (
+  decodedUser: DecodedIdToken,
+  userConfig: schema.LLMUserConfig,
+  jsonUrl: string,
+  preGeneratedReportId: string,
+  elicitationEventId?: string,
+) => {
+  assertEmailVerified(decodedUser);
 
   createLogger.info({ uid: decodedUser.uid }, "Calling ensureUserDocument");
   await firebase.ensureUserDocument(
@@ -242,6 +252,7 @@ const createUserDocuments = async (
       createdDate: new Date(),
       outputLanguage: userConfig.outputLanguage, // Language for generated content
       isPublic: userConfig.isPublic ?? false, // Use user's choice, default to private
+      ...(elicitationEventId ? { elicitationEventId } : {}),
     },
     preGeneratedReportId, // Use the same reportId as storage filename
   );
@@ -254,7 +265,7 @@ const createUserDocuments = async (
   return { firebaseJobId: jobId, reportId };
 };
 
-const buildPipelineJob = (
+export const buildPipelineJob = (
   env: Env,
   decodedUser: DecodedIdToken,
   firebaseJobId: string,
@@ -407,7 +418,7 @@ async function createNewReport(
   }
 
   // Validate actual data size against user's limit
-  validateFileSize(actualDataSize, userCsvSizeLimit, isCsv);
+  validateFileSize({ actualDataSize, maxFileSize: userCsvSizeLimit, isCsv });
 
   // Parse and process data
   const _parsedData = await parseData(data);
@@ -497,7 +508,7 @@ function getErrorCodeForException(e: unknown): ErrorCode {
  * Returns the node worker queue if available and feature flag is enabled,
  * otherwise returns the default pipeline queue.
  */
-async function selectQueue(
+export async function selectQueue(
   auth: DecodedIdToken,
 ): Promise<typeof pipelineQueue> {
   const shouldUseNodeWorker =

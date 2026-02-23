@@ -50,6 +50,15 @@ vi.mock("../../featureFlags", () => ({
   isFeatureEnabled: vi.fn().mockResolvedValue(true),
 }));
 
+// Mock create route to prevent transitive loading of server.ts
+vi.mock("../create", () => ({
+  createAndSaveReport: vi.fn(),
+  createUserDocuments: vi.fn(),
+  buildPipelineJob: vi.fn(),
+  addAnonymousNames: vi.fn((data: { data: unknown[] }) => data),
+  selectQueue: vi.fn(),
+}));
+
 // Mock error handler
 vi.mock("../sendError", () => ({
   sendErrorByCode: vi.fn(),
@@ -126,6 +135,14 @@ describe("getElicitationEvents", () => {
         return {
           doc: vi.fn().mockReturnValue({
             get: vi.fn().mockResolvedValue(createMockUserDoc(userRoles)),
+          }),
+        };
+      }
+      if (collectionName === "report_ref_test") {
+        // Return empty linked reports for buildEventSummary
+        return {
+          where: vi.fn().mockReturnValue({
+            get: vi.fn().mockResolvedValue({ docs: [] }),
           }),
         };
       }
@@ -229,20 +246,20 @@ describe("getElicitationEvents", () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         events: [
-          {
+          expect.objectContaining({
             id: "event-1",
             eventName: "Test Event 1",
             ownerUserId: "test-user-id",
             responderCount: 5,
             createdAt: now,
-          },
-          {
+          }),
+          expect.objectContaining({
             id: "event-2",
             eventName: "Test Event 2",
             ownerUserId: "test-user-id",
             responderCount: 10,
             createdAt: now,
-          },
+          }),
         ],
       });
     });

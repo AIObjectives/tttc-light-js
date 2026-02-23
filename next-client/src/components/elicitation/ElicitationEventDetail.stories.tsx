@@ -28,6 +28,9 @@ const meta = {
   component: ElicitationEventDetailView,
   parameters: {
     layout: "fullscreen",
+    nextjs: {
+      appDirectory: true,
+    },
     mockData: [
       {
         url: /\/report\/([\w-]+)/,
