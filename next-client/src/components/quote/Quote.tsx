@@ -119,10 +119,13 @@ const formatLink = (link: string, beginTimestamp: string) => {
 
 const formatVimeoNonEmbeddedLink = (link: string, beginTimestamp: string) => {
   const url = new URL(link);
-  const idNum = url.pathname
-    .split("/")
-    .find((segment) => /^[0-9]+$/.test(segment));
-  return `https://player.vimeo.com/video/${idNum || ""}#t=${beginTimestamp}`;
+  const segments = url.pathname.split("/").filter(Boolean);
+  const idNum = segments.find((segment) => /^[0-9]+$/.test(segment));
+  const hash = segments.find(
+    (segment) => /^[0-9a-f]+$/i.test(segment) && !/^[0-9]+$/.test(segment),
+  );
+  const hashParam = hash ? `?h=${hash}` : "";
+  return `https://player.vimeo.com/video/${idNum || ""}${hashParam}#t=${beginTimestamp}`;
 };
 
 const formatVimeoLink = (link: string, beginTimestamp: string) =>
