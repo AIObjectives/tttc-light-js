@@ -404,6 +404,7 @@ function convertToPipelineInput(
         : undefined,
     apiKey: env.OPENAI_API_KEY,
     enableCruxes: options.cruxes,
+    enableWeave: options.evaluations,
     sortStrategy: options.sortStrategy,
   });
 }
@@ -974,6 +975,7 @@ async function executePipelineWithLock(
         userId,
         resumeFromState: shouldResume,
         lockValue,
+        options: { enableWeave: pipelineInput.enableWeave },
         onStepUpdate: async (step, status) => {
           // Update Firestore with progress when a step starts
           if (status === "in_progress") {

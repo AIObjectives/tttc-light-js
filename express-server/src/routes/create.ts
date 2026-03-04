@@ -4,6 +4,13 @@ import type { DecodedIdToken } from "firebase-admin/auth";
 import type { PipelineJob } from "src/jobs/pipeline";
 import * as api from "tttc-common/api";
 import {
+  defaultClusteringPrompt,
+  defaultDedupPrompt,
+  defaultExtractionPrompt,
+  defaultSummariesPrompt,
+  defaultSystemPrompt,
+} from "tttc-common/prompts";
+import {
   ERROR_CODES,
   ERROR_MESSAGES,
   type ErrorCode,
@@ -293,6 +300,12 @@ export const buildPipelineJob = (
       options: {
         cruxes: updatedConfig.cruxesEnabled ?? false,
         bridging: updatedConfig.bridgingEnabled ?? false,
+        evaluations:
+          userConfig.systemInstructions === defaultSystemPrompt &&
+          userConfig.clusteringInstructions === defaultClusteringPrompt &&
+          userConfig.extractionInstructions === defaultExtractionPrompt &&
+          userConfig.dedupInstructions === defaultDedupPrompt &&
+          userConfig.summariesInstructions === defaultSummariesPrompt,
       },
       llm: {
         // Model is intentionally hardcoded until user model selection is implemented.
