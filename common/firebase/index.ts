@@ -248,6 +248,8 @@ export const elicitationEventSummary = z.object({
   reportId: z.string().optional(),
   // Array of report IDs associated with this event (ordered by creation date)
   reportIds: z.array(z.string()).optional(),
+  // Total expected number of participants (for tracking purposes)
+  expectedParticipantCount: z.number().optional(),
   // Schema version for future migrations
   schemaVersion: z.number().optional(),
 });

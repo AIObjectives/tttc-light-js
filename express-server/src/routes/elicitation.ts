@@ -6,7 +6,7 @@ import { logger } from "tttc-common/logger";
 import { isEventOrganizer } from "tttc-common/permissions";
 import * as prompts from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
-import { db, getCollectionName } from "../Firebase";
+import { admin, db, getCollectionName } from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
 import { createStorage } from "../storage";
@@ -193,6 +193,7 @@ async function buildEventSummary(
     completionMessage: data.completion_message,
     reportId: data.report_id,
     reportIds: reportIds.length > 0 ? reportIds : undefined,
+    expectedParticipantCount: data.expected_participant_count,
     schemaVersion: data.schema_version,
   };
 }
@@ -655,6 +656,113 @@ export async function getElicitationEvent(
     res.json({ event });
   } catch (error) {
     elicitationLogger.error({ error }, "Failed to get elicitation event");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
+  }
+}
+
+/**
+ * Create a new elicitation event (study).
+ * The owner is set to the authenticated user.
+ *
+ * Requires: authMiddleware()
+ * Requires: event_organizer role
+ */
+export async function createElicitationEvent(
+  req: RequestWithAuth,
+  res: Response,
+): Promise<void> {
+  try {
+    const decodedUser = req.auth;
+    const userId = decodedUser.uid;
+
+    // Check feature flag
+    const featureEnabled = await isFeatureEnabled(
+      FEATURE_FLAGS.ELICITATION_ENABLED,
+      { userId },
+    );
+    if (!featureEnabled) {
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    // Get user document to check roles
+    const userRef = db.collection(getCollectionName("USERS")).doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      elicitationLogger.warn({ userId }, "User document not found");
+      sendErrorByCode(res, ERROR_CODES.USER_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const roles = userData?.roles || [];
+
+    if (!isEventOrganizer(roles)) {
+      elicitationLogger.warn(
+        { userId, roles },
+        "User missing event_organizer role",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    const body = api.createElicitationEventRequest.parse(req.body);
+
+    const collectionName = getElicitationCollectionName(
+      req.context.env.NODE_ENV,
+    );
+    const docRef = db.collection(collectionName).doc();
+    const now = new Date();
+
+    const docData: Record<string, unknown> = {
+      event_name: body.eventName,
+      owner_user_id: userId,
+      created_at: admin.firestore.Timestamp.fromDate(now),
+      mode: body.mode,
+    };
+
+    if (body.description !== undefined) docData.description = body.description;
+    if (body.startDate !== undefined)
+      docData.start_date = new Date(body.startDate);
+    if (body.endDate !== undefined) docData.end_date = new Date(body.endDate);
+    if (body.mainQuestion !== undefined)
+      docData.main_question = body.mainQuestion;
+    if (body.questions !== undefined)
+      docData.questions = body.questions.map((text, index) => ({
+        id: index,
+        text,
+        asked_count: 0,
+      }));
+    if (body.followUpQuestions !== undefined)
+      docData.follow_up_questions = {
+        enabled: true,
+        questions: body.followUpQuestions,
+      };
+    if (body.initialMessage !== undefined)
+      docData.initial_message = body.initialMessage;
+    if (body.completionMessage !== undefined)
+      docData.completion_message = body.completionMessage;
+    if (body.expectedParticipantCount !== undefined)
+      docData.expected_participant_count = body.expectedParticipantCount;
+
+    await docRef.set(docData);
+
+    const eventDoc = await docRef.get();
+    const event = await buildEventSummary(eventDoc, userId);
+
+    const validatedResponse = api.createElicitationEventResponse.parse({
+      event,
+    });
+
+    elicitationLogger.info(
+      { userId, eventId: docRef.id },
+      "Elicitation event created",
+    );
+
+    res.status(201).json(validatedResponse);
+  } catch (error) {
+    elicitationLogger.error({ error }, "Failed to create elicitation event");
     sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
   }
 }
