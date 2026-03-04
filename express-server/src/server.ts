@@ -30,6 +30,7 @@ import { GooglePubSubQueue } from "./queue/providers/googlePubSub";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
 import {
+  createElicitationEvent,
   downloadElicitationEventCsv,
   generateReportForEvent,
   getElicitationEvent,
@@ -367,6 +368,18 @@ app.get(
   authLimiter,
   authMiddleware(),
   getUserLimits as unknown as express.RequestHandler,
+);
+
+/**
+ * Create a new elicitation event (study)
+ * Requires event_organizer role
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.post(
+  "/api/elicitation/events",
+  authLimiter,
+  authMiddleware(),
+  createElicitationEvent as unknown as express.RequestHandler,
 );
 
 /**

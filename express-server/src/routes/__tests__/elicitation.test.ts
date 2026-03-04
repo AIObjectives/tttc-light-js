@@ -3,7 +3,7 @@ import type { DecodedIdToken } from "firebase-admin/auth";
 import { createMinimalTestEnv } from "tttc-common/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RequestWithAuth } from "../../types/request";
-import { getElicitationEvents } from "../elicitation";
+import { createElicitationEvent, getElicitationEvents } from "../elicitation";
 
 // Mock Firebase module
 vi.mock("../../Firebase", () => ({
@@ -11,11 +11,20 @@ vi.mock("../../Firebase", () => ({
     collection: vi.fn(() => ({
       doc: vi.fn(() => ({
         get: vi.fn(),
+        set: vi.fn(),
+        id: "new-event-id",
       })),
       where: vi.fn(() => ({
         get: vi.fn(),
       })),
     })),
+  },
+  admin: {
+    firestore: {
+      Timestamp: {
+        fromDate: vi.fn((d: Date) => ({ toDate: () => d })),
+      },
+    },
   },
   getCollectionName: vi.fn((name: string) => `${name.toLowerCase()}_test`),
 }));
@@ -30,7 +39,13 @@ vi.mock("tttc-common/permissions", () => ({
 // Mock API schemas
 vi.mock("tttc-common/api", () => ({
   elicitationEventsResponse: {
-    parse: vi.fn((data) => data), // Pass through the data as-is
+    parse: vi.fn((data) => data),
+  },
+  createElicitationEventRequest: {
+    parse: vi.fn((data) => data),
+  },
+  createElicitationEventResponse: {
+    parse: vi.fn((data) => data),
   },
 }));
 
@@ -348,6 +363,283 @@ describe("getElicitationEvents", () => {
         "INTERNAL_ERROR",
         expect.anything(),
       );
+    });
+  });
+});
+
+describe("createElicitationEvent", () => {
+  let mockReq: RequestWithAuth;
+  let mockRes: Response;
+  // biome-ignore lint/suspicious/noExplicitAny: Test mock requires flexibility
+  let mockFirebase: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Test mock requires flexibility
+  let mockSendError: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Test mock requires flexibility
+  let mockFeatureFlags: any;
+
+  const createMockUser = (
+    uid = "test-user-id",
+    email = "test@example.com",
+  ): DecodedIdToken =>
+    ({
+      uid,
+      email,
+    }) as DecodedIdToken;
+
+  const createMockUserDoc = (roles: string[] = [], exists = true) => ({
+    exists,
+    data: () => ({ email: "test@example.com", roles }),
+  });
+
+  const setupUserAndEventCreation = (roles: string[] = ["event_organizer"]) => {
+    const now = new Date();
+    const mockSet = vi.fn().mockResolvedValue(undefined);
+    const mockDocGet = vi.fn().mockResolvedValue({
+      id: "new-event-id",
+      ref: {
+        collection: vi.fn(() => ({
+          count: vi.fn(() => ({
+            get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+          })),
+        })),
+      },
+      data: () => ({
+        event_name: "Test Study",
+        owner_user_id: "test-user-id",
+        created_at: { toDate: () => now },
+        mode: "survey",
+      }),
+    });
+    const mockDocRef = {
+      id: "new-event-id",
+      set: mockSet,
+      get: mockDocGet,
+    };
+    const mockCollection = vi.fn((collectionName: string) => {
+      if (collectionName === "users_test") {
+        return {
+          doc: vi.fn().mockReturnValue({
+            get: vi.fn().mockResolvedValue(createMockUserDoc(roles)),
+          }),
+        };
+      }
+      if (collectionName === "report_ref_test") {
+        return {
+          where: vi.fn().mockReturnValue({
+            get: vi.fn().mockResolvedValue({ docs: [] }),
+          }),
+        };
+      }
+      return { doc: vi.fn().mockReturnValue(mockDocRef) };
+    });
+    mockFirebase.db.collection = mockCollection;
+    return { mockSet, mockDocGet };
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    mockFirebase = vi.mocked(await import("../../Firebase.js"));
+    mockSendError = vi.mocked(await import("../sendError.js"));
+    mockFeatureFlags = vi.mocked(await import("../../featureFlags/index.js"));
+    mockFeatureFlags.isFeatureEnabled.mockResolvedValue(true);
+
+    mockReq = {
+      auth: createMockUser(),
+      context: { env: createMinimalTestEnv() },
+      log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      body: { eventName: "Test Study", mode: "survey" },
+    } as unknown as RequestWithAuth;
+
+    mockRes = {
+      json: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+    } as unknown as Response;
+  });
+
+  describe("authorization", () => {
+    it("should return 403 if feature flag is disabled", async () => {
+      mockFeatureFlags.isFeatureEnabled.mockResolvedValue(false);
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(mockSendError.sendErrorByCode).toHaveBeenCalledWith(
+        mockRes,
+        "AUTH_UNAUTHORIZED",
+        expect.anything(),
+      );
+    });
+
+    it("should return 404 if user document not found", async () => {
+      const mockCollection = vi.fn().mockReturnValue({
+        doc: vi.fn().mockReturnValue({
+          get: vi.fn().mockResolvedValue(createMockUserDoc([], false)),
+        }),
+      });
+      mockFirebase.db.collection = mockCollection;
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(mockSendError.sendErrorByCode).toHaveBeenCalledWith(
+        mockRes,
+        "USER_NOT_FOUND",
+        expect.anything(),
+      );
+    });
+
+    it("should return 403 if user does not have event_organizer role", async () => {
+      const mockCollection = vi.fn().mockReturnValue({
+        doc: vi.fn().mockReturnValue({
+          get: vi.fn().mockResolvedValue(createMockUserDoc(["basic_user"])),
+        }),
+      });
+      mockFirebase.db.collection = mockCollection;
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(mockSendError.sendErrorByCode).toHaveBeenCalledWith(
+        mockRes,
+        "AUTH_UNAUTHORIZED",
+        expect.anything(),
+      );
+    });
+  });
+
+  describe("event creation", () => {
+    it("should create event and return 201 with event data", async () => {
+      setupUserAndEventCreation();
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(201);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: expect.objectContaining({
+            id: "new-event-id",
+            eventName: "Test Study",
+            mode: "survey",
+            ownerUserId: "test-user-id",
+            responderCount: 0,
+          }),
+        }),
+      );
+    });
+
+    it("should write document with correct fields", async () => {
+      const { mockSet } = setupUserAndEventCreation();
+      mockReq.body = {
+        eventName: "My Study",
+        mode: "followup",
+        description: "A description",
+        mainQuestion: "What do you think?",
+        expectedParticipantCount: 50,
+      };
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event_name: "My Study",
+          owner_user_id: "test-user-id",
+          mode: "followup",
+          description: "A description",
+          main_question: "What do you think?",
+          expected_participant_count: 50,
+        }),
+      );
+    });
+
+    it("should convert questions array to objects with id and asked_count", async () => {
+      const { mockSet } = setupUserAndEventCreation();
+      mockReq.body = {
+        eventName: "My Study",
+        mode: "survey",
+        questions: ["Question 1", "Question 2"],
+      };
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          questions: [
+            { id: 0, text: "Question 1", asked_count: 0 },
+            { id: 1, text: "Question 2", asked_count: 0 },
+          ],
+        }),
+      );
+    });
+
+    it("should store followUpQuestions with enabled: true", async () => {
+      const { mockSet } = setupUserAndEventCreation();
+      mockReq.body = {
+        eventName: "My Study",
+        mode: "followup",
+        followUpQuestions: ["Follow up 1", "Follow up 2"],
+      };
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          follow_up_questions: {
+            enabled: true,
+            questions: ["Follow up 1", "Follow up 2"],
+          },
+        }),
+      );
+    });
+
+    it("should use dev collection name in development", async () => {
+      const calls: string[] = [];
+      const now = new Date();
+      const mockCollection = vi.fn((collectionName: string) => {
+        calls.push(collectionName);
+        if (collectionName === "users_test") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValue(createMockUserDoc(["event_organizer"])),
+            }),
+          };
+        }
+        if (collectionName === "report_ref_test") {
+          return {
+            where: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({ docs: [] }),
+            }),
+          };
+        }
+        return {
+          doc: vi.fn().mockReturnValue({
+            id: "new-event-id",
+            set: vi.fn().mockResolvedValue(undefined),
+            get: vi.fn().mockResolvedValue({
+              id: "new-event-id",
+              ref: {
+                collection: vi.fn(() => ({
+                  count: vi.fn(() => ({
+                    get: vi
+                      .fn()
+                      .mockResolvedValue({ data: () => ({ count: 0 }) }),
+                  })),
+                })),
+              },
+              data: () => ({
+                event_name: "Test Study",
+                owner_user_id: "test-user-id",
+                created_at: { toDate: () => now },
+                mode: "survey",
+              }),
+            }),
+          }),
+        };
+      });
+      mockFirebase.db.collection = mockCollection;
+
+      await createElicitationEvent(mockReq, mockRes);
+
+      expect(calls).toContain("elicitation_bot_events_dev");
     });
   });
 });
