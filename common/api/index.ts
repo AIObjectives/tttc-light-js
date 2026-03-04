@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { elicitationEventStatus, elicitationEventSummary } from "../firebase";
+import { elicitationEventSummary } from "../firebase";
 import * as schema from "../schema";
 
 export const generateApiRequest = z.object({
