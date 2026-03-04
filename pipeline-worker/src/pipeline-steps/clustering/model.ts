@@ -39,17 +39,17 @@ export async function callClusteringModel(
   userPrompt: string,
   commentsText: string,
   options: {
-    enableScoring?: boolean;
+    enableWeave?: boolean;
     weaveProjectName?: string;
   } = {},
 ): Promise<Result<ClusteringOutput, ClusteringError>> {
-  const { enableScoring = false, weaveProjectName = "production-clustering" } =
+  const { enableWeave = false, weaveProjectName = "production-clustering" } =
     options;
 
-  // If scoring is enabled, initialize Weave and wrap responses create in a WeaveOp
+  // If Weave is enabled, initialize it and wrap responses create in a WeaveOp
   const responsesCreate = await initializeWeaveIfEnabled(
     openaiClient,
-    enableScoring,
+    enableWeave,
     weaveProjectName,
   );
 
@@ -118,8 +118,8 @@ export async function callClusteringModel(
     cost: costResult.value,
   };
 
-  // If scoring is enabled, run scorers on the result asynchronously
-  if (enableScoring) {
+  // If Weave is enabled, run scorers on the result asynchronously
+  if (enableWeave) {
     // Cast to any to handle OpenAI version mismatch between pipeline-worker (v6) and common (v4)
     const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 

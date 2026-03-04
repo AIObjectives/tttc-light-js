@@ -144,7 +144,7 @@ export async function commentsToTree(
     llmConfig.system_prompt,
     fullPrompt,
     commentsText,
-    { enableScoring: options.enableWeave },
+    { enableWeave: options.enableWeave },
   );
 
   if (clusteringResult.tag === "failure") {
