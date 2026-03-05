@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { CreateElicitationEventRequest } from "tttc-common/api";
 import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
+import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   Button,
@@ -18,7 +19,6 @@ import {
 } from "../elements";
 import { Col, Row } from "../layout";
 import { StudySidebar } from "./StudySidebar";
-import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 
 type ElicitationMode = "listener" | "survey" | "followup";
 
@@ -103,11 +103,12 @@ export function CreateStudyForm() {
       const authToken = user ? await user.getIdToken() : undefined;
 
       const descriptionParts: string[] = [];
-      if (location.trim()) descriptionParts.push(`Location: ${location.trim()}`);
-      if (otherUsageDetails.trim()) descriptionParts.push(otherUsageDetails.trim());
-      const description = descriptionParts.length > 0
-        ? descriptionParts.join("\n\n")
-        : undefined;
+      if (location.trim())
+        descriptionParts.push(`Location: ${location.trim()}`);
+      if (otherUsageDetails.trim())
+        descriptionParts.push(otherUsageDetails.trim());
+      const description =
+        descriptionParts.length > 0 ? descriptionParts.join("\n\n") : undefined;
 
       const { startDate, endDate } = parseDates(dates);
 
