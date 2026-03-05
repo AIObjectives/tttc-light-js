@@ -272,6 +272,13 @@ export const createUserDocuments = async (
   return { firebaseJobId: jobId, reportId };
 };
 
+const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean =>
+  userConfig.systemInstructions === defaultSystemPrompt &&
+  userConfig.clusteringInstructions === defaultClusteringPrompt &&
+  userConfig.extractionInstructions === defaultExtractionPrompt &&
+  userConfig.dedupInstructions === defaultDedupPrompt &&
+  userConfig.summariesInstructions === defaultSummariesPrompt;
+
 export const buildPipelineJob = (
   env: Env,
   decodedUser: DecodedIdToken,
@@ -300,12 +307,7 @@ export const buildPipelineJob = (
       options: {
         cruxes: updatedConfig.cruxesEnabled ?? false,
         bridging: updatedConfig.bridgingEnabled ?? false,
-        evaluations:
-          userConfig.systemInstructions === defaultSystemPrompt &&
-          userConfig.clusteringInstructions === defaultClusteringPrompt &&
-          userConfig.extractionInstructions === defaultExtractionPrompt &&
-          userConfig.dedupInstructions === defaultDedupPrompt &&
-          userConfig.summariesInstructions === defaultSummariesPrompt,
+        evaluations: isUsingDefaultPrompts(userConfig),
       },
       llm: {
         // Model is intentionally hardcoded until user model selection is implemented.
