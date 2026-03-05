@@ -1081,6 +1081,7 @@ export async function handlePipelineJob(
     {
       commentCount: data.data.length,
       enableCruxes: data.config.options.cruxes,
+      enableEvaluations: data.config.options.evaluations,
     },
     "Processing pipeline job from queue",
   );

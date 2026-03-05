@@ -172,12 +172,21 @@ export async function initializeWeaveIfEnabled(
     try {
       await weave.init(weaveProjectName);
       responsesCreate = weave.op(responsesCreate);
+      logger.info(
+        { weaveProjectName, module: "weave-init" },
+        "Weave initialized successfully",
+      );
     } catch (error) {
       logger.error(
         { error, weaveProjectName, module: "weave-init" },
         "Failed to initialize Weave",
       );
     }
+  } else {
+    logger.info(
+      { weaveProjectName, module: "weave-init" },
+      "Weave disabled, skipping initialization",
+    );
   }
 
   return responsesCreate;
