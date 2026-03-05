@@ -1,3 +1,4 @@
+export { CreateStudyForm } from "./CreateStudyForm";
 export { default as ElicitationEventDetail } from "./ElicitationEventDetail";
 export { ElicitationNoAccess } from "./ElicitationNoAccess";
 export { default as ElicitationTrackingContent } from "./ElicitationTrackingContent";

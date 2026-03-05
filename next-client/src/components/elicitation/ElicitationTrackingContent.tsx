@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import Icons from "@/assets/icons";
@@ -124,15 +124,23 @@ function ElicitationTrackingHeader({
       <Col gap={2} className="justify-center">
         <h3>Studies</h3>
       </Col>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onRefresh}
-        aria-label="Refresh events"
-      >
-        <RefreshCw className="mr-2 h-4 w-4" />
-        Refresh
-      </Button>
+      <Row gap={2}>
+        <Link href="/studies/new">
+          <Button size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            New study
+          </Button>
+        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          aria-label="Refresh events"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Refresh
+        </Button>
+      </Row>
     </Row>
   );
 }
