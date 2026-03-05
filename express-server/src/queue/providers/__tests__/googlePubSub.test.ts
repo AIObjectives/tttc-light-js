@@ -162,7 +162,7 @@ function createMockPipelineJob(): PipelineJob {
         cruxInstructions: "test",
         summariesInstructions: "test",
       },
-      options: { cruxes: false, bridging: false },
+      options: { cruxes: false, bridging: false, evaluations: false },
     },
     data: [],
     reportDetails: {
@@ -215,7 +215,7 @@ describe("GooglePubSubQueue", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
