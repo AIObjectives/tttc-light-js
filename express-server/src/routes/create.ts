@@ -4,13 +4,6 @@ import type { DecodedIdToken } from "firebase-admin/auth";
 import type { PipelineJob } from "src/jobs/pipeline";
 import * as api from "tttc-common/api";
 import {
-  defaultClusteringPrompt,
-  defaultDedupPrompt,
-  defaultExtractionPrompt,
-  defaultSummariesPrompt,
-  defaultSystemPrompt,
-} from "tttc-common/prompts";
-import {
   ERROR_CODES,
   ERROR_MESSAGES,
   type ErrorCode,
@@ -18,6 +11,13 @@ import {
 import type { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { DEFAULT_LIMITS, getUserCapabilities } from "tttc-common/permissions";
+import {
+  defaultClusteringPrompt,
+  defaultDedupPrompt,
+  defaultExtractionPrompt,
+  defaultSummariesPrompt,
+  defaultSystemPrompt,
+} from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
 import * as firebase from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";

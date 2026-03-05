@@ -120,7 +120,11 @@ export const createMockMessage = (): PubSubMessage<{
       outputLanguage?: string;
     };
     llm: { model: string; temperature: number; max_tokens: number };
-    options: { cruxes: boolean; evaluations: boolean; sortStrategy: "numPeople" | "numClaims" };
+    options: {
+      cruxes: boolean;
+      evaluations: boolean;
+      sortStrategy: "numPeople" | "numClaims";
+    };
     env: { OPENAI_API_KEY: string };
     firebaseDetails: { reportId: string; userId: string };
   };
