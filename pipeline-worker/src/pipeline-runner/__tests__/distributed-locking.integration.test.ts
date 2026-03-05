@@ -193,7 +193,7 @@ describe.skipIf(!dockerAvailable)("Distributed Locking with Real Redis", () => {
     },
     apiKey: "test-api-key",
     enableCruxes: false,
-      enableWeave: false,
+    enableWeave: false,
     sortStrategy: "numPeople",
     ...overrides,
   });

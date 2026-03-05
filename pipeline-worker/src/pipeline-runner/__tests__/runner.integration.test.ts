@@ -435,7 +435,7 @@ describe("Pipeline Runner Integration Tests", () => {
     },
     apiKey: "test-api-key",
     enableCruxes: false,
-      enableWeave: false,
+    enableWeave: false,
     sortStrategy: "numPeople",
     ...overrides,
   });
@@ -524,7 +524,7 @@ describe("Pipeline Runner Integration Tests", () => {
 
       const input = createTestInput({
         enableCruxes: true,
-      enableWeave: false,
+        enableWeave: false,
         cruxesConfig: {
           model_name: "gpt-4o-mini",
           system_prompt: "You are a helpful research assistant.",

@@ -276,7 +276,7 @@ describe("Pipeline Runner", () => {
     },
     apiKey: "test-api-key",
     enableCruxes: false,
-      enableWeave: false,
+    enableWeave: false,
     sortStrategy: "numPeople",
   };
 
@@ -327,7 +327,7 @@ describe("Pipeline Runner", () => {
       const input: PipelineInput = {
         ...defaultInput,
         enableCruxes: true,
-      enableWeave: false,
+        enableWeave: false,
         cruxesConfig: {
           model_name: "gpt-4o-mini",
           system_prompt: "System prompt",
@@ -440,7 +440,7 @@ describe("Pipeline Runner", () => {
       const input: PipelineInput = {
         ...defaultInput,
         enableCruxes: true,
-      enableWeave: false,
+        enableWeave: false,
         cruxesConfig: {
           model_name: "gpt-4o-mini",
           system_prompt: "System prompt",
