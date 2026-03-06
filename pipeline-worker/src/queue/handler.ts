@@ -365,6 +365,11 @@ function convertToPipelineInput(
   const { config, data } = job;
   const { instructions, llm, options, env } = config;
 
+  queueLogger.info(
+    { evaluations: options.evaluations, cruxes: options.cruxes },
+    "Converting pipeline job to input",
+  );
+
   // Convert comments from SourceRow format to pipeline-worker format
   const comments = data.map((comment: PipelineJobMessage["data"][number]) => ({
     id: comment.id,
