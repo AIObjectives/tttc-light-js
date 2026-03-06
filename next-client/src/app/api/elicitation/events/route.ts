@@ -51,3 +51,57 @@ export async function GET(request: Request) {
     );
   }
 }
+
+/**
+ * POST /api/elicitation/events
+ * Creates a new elicitation event (study).
+ * Proxies to Express server - requires authentication and event_organizer role.
+ */
+export async function POST(request: Request) {
+  try {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    const expressUrl =
+      process.env.PIPELINE_EXPRESS_URL || "http://localhost:8080";
+
+    const body = await request.json();
+
+    const expressResponse = await fetch(
+      `${expressUrl}/api/elicitation/events`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+    );
+
+    if (!expressResponse.ok) {
+      const errorBody = await expressResponse.json().catch(() => ({
+        error: "Unknown error",
+      }));
+      elicitationApiLogger.error(
+        { errorBody, status: expressResponse.status },
+        "Express server error",
+      );
+      return NextResponse.json(errorBody, { status: expressResponse.status });
+    }
+
+    const result = await expressResponse.json();
+    return NextResponse.json(result, { status: 201 });
+  } catch (error) {
+    elicitationApiLogger.error({ error }, "Failed to create elicitation event");
+    return NextResponse.json(
+      { error: "Failed to create elicitation event" },
+      { status: 500 },
+    );
+  }
+}

@@ -3,6 +3,7 @@ export * from "./alertDialog/AlertDialog";
 export * from "./avatar/Avatar";
 export * from "./badge";
 export * from "./button/Button";
+export * from "./calendar/Calendar";
 export * from "./card/Card";
 export * from "./dialog/Dialog";
 export * from "./drawer/Drawer";
