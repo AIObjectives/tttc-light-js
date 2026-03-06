@@ -272,12 +272,17 @@ export const createUserDocuments = async (
   return { firebaseJobId: jobId, reportId };
 };
 
-const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean =>
-  userConfig.systemInstructions === defaultSystemPrompt &&
-  userConfig.clusteringInstructions === defaultClusteringPrompt &&
-  userConfig.extractionInstructions === defaultExtractionPrompt &&
-  userConfig.dedupInstructions === defaultDedupPrompt &&
-  userConfig.summariesInstructions === defaultSummariesPrompt;
+const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean => {
+  const results = {
+    system: userConfig.systemInstructions === defaultSystemPrompt,
+    clustering: userConfig.clusteringInstructions === defaultClusteringPrompt,
+    extraction: userConfig.extractionInstructions === defaultExtractionPrompt,
+    dedup: userConfig.dedupInstructions === defaultDedupPrompt,
+    summaries: userConfig.summariesInstructions === defaultSummariesPrompt,
+  };
+  createLogger.info(results, "Default prompt comparison");
+  return Object.values(results).every(Boolean);
+};
 
 export const buildPipelineJob = (
   env: Env,
