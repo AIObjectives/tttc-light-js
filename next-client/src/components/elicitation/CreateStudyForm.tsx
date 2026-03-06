@@ -3,6 +3,7 @@
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import type { CreateElicitationEventRequest } from "tttc-common/api";
 import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
@@ -10,6 +11,7 @@ import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   Button,
+  Calendar,
   Card,
   CardContent,
   CardHeader,
@@ -33,22 +35,8 @@ const MODE_OPTIONS: ModeOption[] = [
   { value: "followup", label: "Follow-up" },
 ];
 
-/**
- * Parse a dates string in the format "YYYY-MM-DD to YYYY-MM-DD" or "YYYY-MM-DD"
- * into startDate and endDate strings.
- */
-function parseDates(dates: string): { startDate?: string; endDate?: string } {
-  const rangeMatch = dates
-    .trim()
-    .match(/^(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})$/);
-  if (rangeMatch) {
-    return { startDate: rangeMatch[1], endDate: rangeMatch[2] };
-  }
-  const singleMatch = dates.trim().match(/^(\d{4}-\d{2}-\d{2})$/);
-  if (singleMatch) {
-    return { startDate: singleMatch[1] };
-  }
-  return {};
+function toISODateString(date: Date): string {
+  return date.toISOString().split("T")[0];
 }
 
 /**
@@ -61,7 +49,7 @@ export function CreateStudyForm() {
 
   const [studyName, setStudyName] = useState("");
   const [location, setLocation] = useState("");
-  const [dates, setDates] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [expectedRespondents, setExpectedRespondents] = useState("");
   const [otherUsageDetails, setOtherUsageDetails] = useState("");
   const [mode, setMode] = useState<ElicitationMode>("listener");
@@ -110,7 +98,10 @@ export function CreateStudyForm() {
       const description =
         descriptionParts.length > 0 ? descriptionParts.join("\n\n") : undefined;
 
-      const { startDate, endDate } = parseDates(dates);
+      const startDate = dateRange?.from
+        ? toISODateString(dateRange.from)
+        : undefined;
+      const endDate = dateRange?.to ? toISODateString(dateRange.to) : undefined;
 
       const parsedRespondents = expectedRespondents.trim()
         ? Number(expectedRespondents.trim())
@@ -220,17 +211,12 @@ export function CreateStudyForm() {
 
                   {/* Dates */}
                   <Col gap={1.5}>
-                    <label
-                      htmlFor="dates"
-                      className="text-sm font-medium text-foreground"
-                    >
-                      Dates
-                    </label>
-                    <Input
-                      id="dates"
-                      placeholder="When will your study run? If more than one day, please include a range in the format YYYY-MM-DD to YYYY-MM-DD."
-                      value={dates}
-                      onChange={(e) => setDates(e.target.value)}
+                    <p className="text-sm font-medium text-foreground">Dates</p>
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      className="rounded-md border w-fit"
                     />
                   </Col>
 
