@@ -59,6 +59,7 @@ export const pipelineJobSchema = z.object({
     options: z.object({
       cruxes: z.boolean(),
       bridging: z.boolean().optional(),
+      evaluations: z.boolean().default(false),
       sortStrategy: z.enum(["numPeople", "numClaims"]).default("numPeople"),
     }),
     env: z.object({

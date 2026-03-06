@@ -11,6 +11,13 @@ import {
 import type { Result } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { DEFAULT_LIMITS, getUserCapabilities } from "tttc-common/permissions";
+import {
+  defaultClusteringPrompt,
+  defaultDedupPrompt,
+  defaultExtractionPrompt,
+  defaultSummariesPrompt,
+  defaultSystemPrompt,
+} from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
 import * as firebase from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
@@ -265,6 +272,23 @@ export const createUserDocuments = async (
   return { firebaseJobId: jobId, reportId };
 };
 
+const normalize = (s: string) => s.replace(/\r\n/g, "\n");
+
+const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean => {
+  const results = {
+    system: normalize(userConfig.systemInstructions) === defaultSystemPrompt,
+    clustering:
+      normalize(userConfig.clusteringInstructions) === defaultClusteringPrompt,
+    extraction:
+      normalize(userConfig.extractionInstructions) === defaultExtractionPrompt,
+    dedup: normalize(userConfig.dedupInstructions) === defaultDedupPrompt,
+    summaries:
+      normalize(userConfig.summariesInstructions) === defaultSummariesPrompt,
+  };
+  createLogger.info(results, "Default prompt comparison");
+  return Object.values(results).every(Boolean);
+};
+
 export const buildPipelineJob = (
   env: Env,
   decodedUser: DecodedIdToken,
@@ -293,6 +317,7 @@ export const buildPipelineJob = (
       options: {
         cruxes: updatedConfig.cruxesEnabled ?? false,
         bridging: updatedConfig.bridgingEnabled ?? false,
+        evaluations: isUsingDefaultPrompts(userConfig),
       },
       llm: {
         // Model is intentionally hardcoded until user model selection is implemented.

@@ -226,6 +226,7 @@ describe.skipIf(!dockerAvailable)(
       },
       apiKey: "test-api-key",
       enableCruxes: false,
+      enableWeave: false,
       sortStrategy: "numPeople",
       ...overrides,
     });

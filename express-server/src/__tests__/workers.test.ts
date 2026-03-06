@@ -82,7 +82,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -122,7 +122,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -161,7 +161,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -202,7 +202,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -246,7 +246,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -290,7 +290,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -334,7 +334,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -372,7 +372,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -414,7 +414,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -458,7 +458,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [],
         reportDetails: {
@@ -522,7 +522,7 @@ describe("Workers", () => {
             cruxInstructions: "test",
             summariesInstructions: "test",
           },
-          options: { cruxes: false, bridging: false },
+          options: { cruxes: false, bridging: false, evaluations: false },
         },
         data: [{ id: "testId", comment: "test data" }],
         reportDetails: {

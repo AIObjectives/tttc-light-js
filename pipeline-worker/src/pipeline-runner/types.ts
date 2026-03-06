@@ -131,6 +131,8 @@ export interface PipelineInput {
   apiKey: string;
   /** Whether to run cruxes step */
   enableCruxes: boolean;
+  /** Whether to run Weave evaluation suite */
+  enableWeave: boolean;
   /** Sort strategy for deduplication */
   sortStrategy: "numPeople" | "numClaims";
 }
