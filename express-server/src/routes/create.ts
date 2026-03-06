@@ -272,13 +272,18 @@ export const createUserDocuments = async (
   return { firebaseJobId: jobId, reportId };
 };
 
+const normalize = (s: string) => s.replace(/\r\n/g, "\n");
+
 const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean => {
   const results = {
-    system: userConfig.systemInstructions === defaultSystemPrompt,
-    clustering: userConfig.clusteringInstructions === defaultClusteringPrompt,
-    extraction: userConfig.extractionInstructions === defaultExtractionPrompt,
-    dedup: userConfig.dedupInstructions === defaultDedupPrompt,
-    summaries: userConfig.summariesInstructions === defaultSummariesPrompt,
+    system: normalize(userConfig.systemInstructions) === defaultSystemPrompt,
+    clustering:
+      normalize(userConfig.clusteringInstructions) === defaultClusteringPrompt,
+    extraction:
+      normalize(userConfig.extractionInstructions) === defaultExtractionPrompt,
+    dedup: normalize(userConfig.dedupInstructions) === defaultDedupPrompt,
+    summaries:
+      normalize(userConfig.summariesInstructions) === defaultSummariesPrompt,
   };
   createLogger.info(results, "Default prompt comparison");
   return Object.values(results).every(Boolean);
