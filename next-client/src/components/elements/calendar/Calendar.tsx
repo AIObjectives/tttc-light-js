@@ -33,25 +33,25 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
           "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] flex items-center justify-center",
         weeks: "w-full mt-2",
         week: "flex w-full mt-2",
-        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md [&:has([aria-selected].range_end)]:rounded-r-md [&:has([aria-selected].range_start)]:rounded-l-md",
+        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-slate-100 first:[&:has([aria-selected])]:rounded-l-full last:[&:has([aria-selected])]:rounded-r-full [&:has([aria-selected].range_end)]:rounded-r-full [&:has([aria-selected].range_start)]:rounded-l-full",
         day_button: cn(
           "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
-          "inline-flex items-center justify-center rounded-md text-sm ring-offset-background transition-colors",
-          "hover:bg-accent hover:text-accent-foreground",
+          "inline-flex items-center justify-center rounded-full text-sm ring-offset-background transition-colors",
+          "hover:bg-slate-100 hover:text-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           "disabled:pointer-events-none disabled:opacity-50",
         ),
         range_start:
-          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:rounded-md",
+          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:rounded-full",
         range_end:
-          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:rounded-md",
+          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:rounded-full",
         range_middle:
-          "bg-accent [&>button]:text-accent-foreground [&>button]:hover:bg-accent [&>button]:rounded-none",
+          "bg-slate-100 [&>button]:text-foreground [&>button]:hover:bg-slate-100 [&>button]:rounded-none",
         selected:
           "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground",
-        today: "[&>button]:bg-accent [&>button]:text-accent-foreground",
+        today: "[&>button]:bg-slate-100 [&>button]:text-foreground",
         outside:
-          "day-outside [&>button]:text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+          "day-outside [&>button]:text-muted-foreground opacity-50 aria-selected:bg-slate-100/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
         disabled: "[&>button]:text-muted-foreground [&>button]:opacity-50",
         hidden: "invisible",
         ...classNames,
