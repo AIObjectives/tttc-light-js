@@ -33,7 +33,7 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
           "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] flex items-center justify-center",
         weeks: "w-full mt-2",
         week: "flex w-full mt-2",
-        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-slate-100 first:[&:has([aria-selected])]:rounded-l-full last:[&:has([aria-selected])]:rounded-r-full [&:has([aria-selected].range_end)]:rounded-r-full [&:has([aria-selected].range_start)]:rounded-l-full",
+        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected].range_start)]:bg-[linear-gradient(to_right,transparent_50%,#f1f5f9_50%)] [&:has([aria-selected].range_end)]:bg-[linear-gradient(to_left,transparent_50%,#f1f5f9_50%)] [&:has([aria-selected].range_middle)]:bg-slate-100 first:[&:has([aria-selected].range_middle)]:rounded-l-full last:[&:has([aria-selected].range_middle)]:rounded-r-full",
         day_button: cn(
           "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
           "inline-flex items-center justify-center rounded-full text-sm ring-offset-background transition-colors",
@@ -46,12 +46,11 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
         range_end:
           "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:rounded-full",
         range_middle:
-          "bg-slate-100 [&>button]:text-foreground [&>button]:hover:bg-slate-100 [&>button]:rounded-none",
+          "[&>button]:text-foreground [&>button]:hover:bg-slate-100 [&>button]:rounded-none",
         selected:
           "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground",
         today: "[&>button]:bg-slate-100 [&>button]:text-foreground",
-        outside:
-          "day-outside [&>button]:text-muted-foreground opacity-50 aria-selected:bg-slate-100/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+        outside: "day-outside [&>button]:text-muted-foreground opacity-50",
         disabled: "[&>button]:text-muted-foreground [&>button]:opacity-50",
         hidden: "invisible",
         ...classNames,
