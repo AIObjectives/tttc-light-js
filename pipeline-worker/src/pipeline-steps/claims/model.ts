@@ -255,13 +255,13 @@ export async function extractClaimsFromComment(
     options = {},
   } = input;
 
-  const { enableScoring = false, weaveProjectName = "production-extraction" } =
+  const { enableWeave = false, weaveProjectName = "production-extraction" } =
     options;
 
   // Initialize Weave for scoring if enabled
   const responsesCreate = await initializeWeaveIfEnabled(
     openaiClient,
-    enableScoring,
+    enableWeave,
     weaveProjectName,
   );
 
@@ -318,7 +318,7 @@ export async function extractClaimsFromComment(
   };
 
   // If scoring is enabled, run scorers on the result asynchronously
-  if (enableScoring) {
+  if (enableWeave) {
     runClaimsEvaluation(openaiClient, claims, commentText, taxonomy);
   }
 

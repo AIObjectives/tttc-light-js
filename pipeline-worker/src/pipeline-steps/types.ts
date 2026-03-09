@@ -340,12 +340,12 @@ export interface ClaimsResult {
  * Options for claims extraction
  * @property reportId - Optional identifier for the report being processed
  * @property userId - Optional identifier for the user making the request
- * @property enableScoring - Optional flag to enable evaluation scoring
+ * @property enableWeave - Optional flag to enable Weave evaluation tracking
  */
 export interface ClaimsOptions {
   reportId?: string;
   userId?: string;
-  enableScoring?: boolean;
+  enableWeave?: boolean;
 }
 
 /**
@@ -395,7 +395,7 @@ export interface ExtractClaimsInput {
   commentId: string;
   /** Optional evaluation options */
   options?: {
-    enableScoring?: boolean;
+    enableWeave?: boolean;
     weaveProjectName?: string;
   };
 }

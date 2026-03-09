@@ -157,20 +157,20 @@ export async function processBatchConcurrently<T, R>(
  * wrapped as weave.op, so weave.init() alone is sufficient to enable tracing.
  *
  * @param openaiClient - OpenAI client instance
- * @param enableScoring - Whether to enable Weave scoring
+ * @param enableWeave - Whether to enable Weave scoring
  * @param weaveProjectName - Name of the Weave project to log to
  * @returns The responses.create function (unwrapped)
  */
 export async function initializeWeaveIfEnabled(
   openaiClient: OpenAI,
-  enableScoring: boolean,
+  enableWeave: boolean,
   weaveProjectName: string,
 ): Promise<OpenAI["responses"]["create"]> {
   const responsesCreate = openaiClient.responses.create.bind(
     openaiClient.responses,
   );
 
-  if (enableScoring) {
+  if (enableWeave) {
     try {
       await weave.init(weaveProjectName);
       logger.info(

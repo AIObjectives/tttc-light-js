@@ -212,7 +212,7 @@ function buildClaimsTree(
  * @param options - Optional configuration object
  * @param options.reportId - Optional report identifier for logging context
  * @param options.userId - Optional user identifier for logging context
- * @param options.enableScoring - Optional flag to enable Weave evaluation scoring
+ * @param options.enableWeave - Optional flag to enable Weave evaluation tracking
  * @returns Result containing claims tree with usage and cost information, or an error
  *
  * @example
@@ -308,7 +308,7 @@ export async function extractClaims(
           speaker: comment.speaker,
           commentId: comment.id,
           options: {
-            enableScoring: options.enableScoring,
+            enableWeave: options.enableWeave,
           },
         });
         return { comment, result };
