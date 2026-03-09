@@ -2,7 +2,7 @@
 
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import type { CreateElicitationEventRequest } from "tttc-common/api";
@@ -51,13 +51,13 @@ export function CreateStudyForm() {
   const [location, setLocation] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [expectedRespondents, setExpectedRespondents] = useState("");
-  const [otherUsageDetails, setOtherUsageDetails] = useState("");
   const [mode, setMode] = useState<ElicitationMode>("listener");
   const [initialMessage, setInitialMessage] = useState("");
   const [completionMessage, setCompletionMessage] = useState("");
   const [questions, setQuestions] = useState<string[]>([]);
   const [newQuestion, setNewQuestion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const dragIndexRef = useRef<number | null>(null);
 
   const sidebarStudies = allEvents.map((e) => ({
     id: e.id,
@@ -90,13 +90,9 @@ export function CreateStudyForm() {
     try {
       const authToken = user ? await user.getIdToken() : undefined;
 
-      const descriptionParts: string[] = [];
-      if (location.trim())
-        descriptionParts.push(`Location: ${location.trim()}`);
-      if (otherUsageDetails.trim())
-        descriptionParts.push(otherUsageDetails.trim());
-      const description =
-        descriptionParts.length > 0 ? descriptionParts.join("\n\n") : undefined;
+      const description = location.trim()
+        ? `Location: ${location.trim()}`
+        : undefined;
 
       const startDate = dateRange?.from
         ? toISODateString(dateRange.from)
@@ -238,23 +234,6 @@ export function CreateStudyForm() {
                     />
                   </Col>
 
-                  {/* Other usage details */}
-                  <Col gap={1.5}>
-                    <label
-                      htmlFor="other-usage-details"
-                      className="text-sm font-medium text-foreground"
-                    >
-                      Other usage details
-                    </label>
-                    <TextArea
-                      id="other-usage-details"
-                      placeholder={`Anything else you can tell us about when respondents will be using the tool? For example, "we're collecting data after classes that occur every Wednesday at 3pm."`}
-                      value={otherUsageDetails}
-                      onChange={(e) => setOtherUsageDetails(e.target.value)}
-                      rows={3}
-                    />
-                  </Col>
-
                   {/* Phone number (informational) */}
                   <Col gap={0.5}>
                     <p className="text-sm font-medium text-foreground">
@@ -322,71 +301,92 @@ export function CreateStudyForm() {
             </Card>
 
             {/* Survey questions card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">Survey questions</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  These are the questions we ask your respondents. If you
-                  selected "listening mode" above, you don't need to fill this
-                  out; we'll just use the opening prompt you wrote above. If you
-                  want to use survey or follow-up mode, add questions here.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <Col gap={4}>
-                  {/* Existing questions */}
-                  {questions.length > 0 && (
-                    <Col gap={2}>
-                      {questions.map((question, index) => (
-                        <Row
-                          key={`q-${index}-${question.slice(0, 20)}`}
-                          gap={3}
-                          className="items-center bg-white border border-slate-200 rounded-lg px-3 py-3"
-                        >
-                          <GripVertical className="h-5 w-5 text-slate-400 flex-shrink-0" />
-                          <span className="flex-1 text-sm text-slate-600">
-                            {question}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveQuestion(index)}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
-                            aria-label="Remove question"
+            {(mode === "survey" || mode === "followup") && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">Survey questions</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    These are the questions we ask your respondents. If you
+                    selected "listening mode" above, you don't need to fill this
+                    out; we'll just use the opening prompt you wrote above. If
+                    you want to use survey or follow-up mode, add questions
+                    here.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Col gap={4}>
+                    {/* Existing questions */}
+                    {questions.length > 0 && (
+                      <Col gap={2}>
+                        {questions.map((question, index) => (
+                          <Row
+                            key={`q-${question.slice(0, 20)}-${index}`}
+                            gap={3}
+                            draggable
+                            onDragStart={() => {
+                              dragIndexRef.current = index;
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                            }}
+                            onDrop={() => {
+                              const from = dragIndexRef.current;
+                              if (from === null || from === index) return;
+                              setQuestions((prev) => {
+                                const next = [...prev];
+                                const [moved] = next.splice(from, 1);
+                                next.splice(index, 0, moved);
+                                return next;
+                              });
+                              dragIndexRef.current = null;
+                            }}
+                            className="items-center bg-white border border-slate-200 rounded-lg px-3 py-3 cursor-grab active:cursor-grabbing"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </Row>
-                      ))}
-                    </Col>
-                  )}
+                            <GripVertical className="h-5 w-5 text-slate-400 flex-shrink-0" />
+                            <span className="flex-1 text-sm text-slate-600">
+                              {question}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveQuestion(index)}
+                              className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                              aria-label="Remove question"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </Row>
+                        ))}
+                      </Col>
+                    )}
 
-                  {/* Add new question */}
-                  <Row gap={2}>
-                    <Input
-                      placeholder="Enter a new question..."
-                      value={newQuestion}
-                      onChange={(e) => setNewQuestion(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddQuestion();
-                        }
-                      }}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddQuestion}
-                      disabled={!newQuestion.trim()}
-                      className="bg-primary text-primary-foreground shrink-0"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
-                    </Button>
-                  </Row>
-                </Col>
-              </CardContent>
-            </Card>
+                    {/* Add new question */}
+                    <Row gap={2}>
+                      <Input
+                        placeholder="Enter a new question..."
+                        value={newQuestion}
+                        onChange={(e) => setNewQuestion(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddQuestion();
+                          }
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleAddQuestion}
+                        disabled={!newQuestion.trim()}
+                        className="bg-primary text-primary-foreground shrink-0"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add
+                      </Button>
+                    </Row>
+                  </Col>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Closing message card */}
             <Card>
