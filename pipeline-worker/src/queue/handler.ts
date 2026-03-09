@@ -365,6 +365,11 @@ function convertToPipelineInput(
   const { config, data } = job;
   const { instructions, llm, options, env } = config;
 
+  queueLogger.info(
+    { evaluations: options.evaluations, cruxes: options.cruxes },
+    "Converting pipeline job to input",
+  );
+
   // Convert comments from SourceRow format to pipeline-worker format
   const comments = data.map((comment: PipelineJobMessage["data"][number]) => ({
     id: comment.id,
@@ -404,6 +409,7 @@ function convertToPipelineInput(
         : undefined,
     apiKey: env.OPENAI_API_KEY,
     enableCruxes: options.cruxes,
+    enableWeave: options.evaluations,
     sortStrategy: options.sortStrategy,
   });
 }
@@ -974,6 +980,7 @@ async function executePipelineWithLock(
         userId,
         resumeFromState: shouldResume,
         lockValue,
+        options: { enableWeave: pipelineInput.enableWeave },
         onStepUpdate: async (step, status) => {
           // Update Firestore with progress when a step starts
           if (status === "in_progress") {
@@ -1079,6 +1086,7 @@ export async function handlePipelineJob(
     {
       commentCount: data.data.length,
       enableCruxes: data.config.options.cruxes,
+      enableEvaluations: data.config.options.evaluations,
     },
     "Processing pipeline job from queue",
   );

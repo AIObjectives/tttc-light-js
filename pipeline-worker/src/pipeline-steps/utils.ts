@@ -152,32 +152,42 @@ export async function processBatchConcurrently<T, R>(
 }
 
 /**
- * Initialize Weave for scoring if enabled and wrap the OpenAI responses.create function
+ * Initialize Weave for scoring if enabled.
+ * The scorers (jsonStructureScorer, topicCoverageScorer, etc.) are already
+ * wrapped as weave.op, so weave.init() alone is sufficient to enable tracing.
  *
  * @param openaiClient - OpenAI client instance
- * @param enableScoring - Whether to enable Weave scoring
+ * @param enableWeave - Whether to enable Weave scoring
  * @param weaveProjectName - Name of the Weave project to log to
- * @returns The responses.create function, wrapped with weave.op if scoring is enabled
+ * @returns The responses.create function (unwrapped)
  */
 export async function initializeWeaveIfEnabled(
   openaiClient: OpenAI,
-  enableScoring: boolean,
+  enableWeave: boolean,
   weaveProjectName: string,
 ): Promise<OpenAI["responses"]["create"]> {
-  let responsesCreate = openaiClient.responses.create.bind(
+  const responsesCreate = openaiClient.responses.create.bind(
     openaiClient.responses,
   );
 
-  if (enableScoring) {
+  if (enableWeave) {
     try {
       await weave.init(weaveProjectName);
-      responsesCreate = weave.op(responsesCreate);
+      logger.info(
+        { weaveProjectName, module: "weave-init" },
+        "Weave initialized successfully",
+      );
     } catch (error) {
       logger.error(
         { error, weaveProjectName, module: "weave-init" },
         "Failed to initialize Weave",
       );
     }
+  } else {
+    logger.info(
+      { weaveProjectName, module: "weave-init" },
+      "Weave disabled, skipping initialization",
+    );
   }
 
   return responsesCreate;

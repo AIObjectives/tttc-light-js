@@ -137,6 +137,11 @@ export async function commentsToTree(
     `Making API call to ${llmConfig.model_name} (prompt length: ${fullPrompt.length} chars)`,
   );
 
+  reportLogger.info(
+    { enableWeave: options.enableWeave },
+    "Calling clustering model",
+  );
+
   // Call clustering model with usage tracking
   const clusteringResult = await callClusteringModel(
     client,
@@ -144,6 +149,7 @@ export async function commentsToTree(
     llmConfig.system_prompt,
     fullPrompt,
     commentsText,
+    { enableWeave: options.enableWeave },
   );
 
   if (clusteringResult.tag === "failure") {

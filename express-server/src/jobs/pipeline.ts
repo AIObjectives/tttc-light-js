@@ -149,6 +149,7 @@ interface PipelineConfig {
   options: {
     cruxes: boolean;
     bridging: boolean;
+    evaluations: boolean;
   };
 }
 

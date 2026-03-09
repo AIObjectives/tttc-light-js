@@ -12,6 +12,7 @@ import {
 } from "tttc-common/evaluations/extraction/scorers";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import * as weave from "weave";
 import { escapeQuotes } from "../sanitizer";
 import {
   ApiCallFailedError,
@@ -255,13 +256,13 @@ export async function extractClaimsFromComment(
     options = {},
   } = input;
 
-  const { enableScoring = false, weaveProjectName = "production-extraction" } =
+  const { enableWeave = false, weaveProjectName = "production-extraction" } =
     options;
 
   // Initialize Weave for scoring if enabled
   const responsesCreate = await initializeWeaveIfEnabled(
     openaiClient,
-    enableScoring,
+    enableWeave,
     weaveProjectName,
   );
 
@@ -318,7 +319,7 @@ export async function extractClaimsFromComment(
   };
 
   // If scoring is enabled, run scorers on the result asynchronously
-  if (enableScoring) {
+  if (enableWeave) {
     runClaimsEvaluation(openaiClient, claims, commentText, taxonomy);
   }
 
@@ -340,64 +341,47 @@ function runClaimsEvaluation(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 
-  // Build model output format for scorers
-  const modelOutput = {
-    claims: claims.map((c) => ({
-      claim: c.claim,
-      quote: c.quote,
-      topicName: c.topicName,
-      subtopicName: c.subtopicName,
-    })),
-  };
+  const capturedClaims = claims.map((c) => ({
+    claim: c.claim,
+    quote: c.quote,
+    topicName: c.topicName,
+    subtopicName: c.subtopicName,
+  }));
 
-  // Build dataset row format with taxonomy for alignment checking
-  const datasetRow = {
-    comment: commentText,
-    taxonomy: taxonomy.map((t) => ({
-      topicName: t.topicName,
-      subtopics: t.subtopics.map((s) => ({
-        subtopicName: s.subtopicName,
-      })),
-    })),
-  };
+  const model = weave.op(async function claimsModel() {
+    return { claims: capturedClaims };
+  });
 
-  // Run scorers on the result we already have (non-blocking)
-  // Scores are automatically sent to Weave since scorers are wrapped with weave.op
-  Promise.all([
-    extractionJsonStructureScorer({
-      modelOutput,
-      datasetRow,
-    }),
-    claimQualityScorer({
-      modelOutput,
-      datasetRow,
-    }),
-    taxonomyAlignmentScorer({
-      modelOutput,
-      datasetRow,
-    }),
-    quoteRelevanceScorer({
-      modelOutput,
-      datasetRow,
-    }),
-    llmJudgeScorer({
-      modelOutput,
-      datasetRow,
-    }),
-  ])
-    .then((scores) => {
-      claimsLogger.info(
-        {
-          jsonStructure: scores[0],
-          claimQuality: scores[1],
-          taxonomyAlignment: scores[2],
-          quoteRelevance: scores[3],
-          llmJudge: scores[4],
-        },
-        "Claims extraction evaluation complete",
-      );
+  const dataset = new weave.Dataset({
+    name: "extraction-production",
+    rows: [
+      {
+        comment: commentText,
+        taxonomy: taxonomy.map((t) => ({
+          topicName: t.topicName,
+          subtopics: t.subtopics.map((s) => ({ subtopicName: s.subtopicName })),
+        })),
+      },
+    ],
+  });
+
+  const evaluation = new weave.Evaluation({
+    dataset,
+    scorers: [
+      extractionJsonStructureScorer,
+      claimQualityScorer,
+      taxonomyAlignmentScorer,
+      quoteRelevanceScorer,
+      llmJudgeScorer,
+    ],
+  });
+
+  evaluation
+    .evaluate({ model })
+    .then((scores: Record<string, unknown>) => {
+      claimsLogger.info({ scores }, "Claims extraction evaluation complete");
     })
-    .catch((error) => {
-      claimsLogger.error({ error }, "Background scoring failed");
+    .catch((error: unknown) => {
+      claimsLogger.error({ error }, "Claims evaluation failed");
     });
 }

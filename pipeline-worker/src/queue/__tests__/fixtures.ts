@@ -120,7 +120,11 @@ export const createMockMessage = (): PubSubMessage<{
       outputLanguage?: string;
     };
     llm: { model: string; temperature: number; max_tokens: number };
-    options: { cruxes: boolean; sortStrategy: "numPeople" | "numClaims" };
+    options: {
+      cruxes: boolean;
+      evaluations: boolean;
+      sortStrategy: "numPeople" | "numClaims";
+    };
     env: { OPENAI_API_KEY: string };
     firebaseDetails: { reportId: string; userId: string };
   };
@@ -150,7 +154,7 @@ export const createMockMessage = (): PubSubMessage<{
         cruxInstructions: TEST_INSTRUCTIONS.crux,
       },
       llm: { model: TEST_STRINGS.model, temperature: 0.7, max_tokens: 1000 },
-      options: { cruxes: false, sortStrategy: "numPeople" },
+      options: { cruxes: false, evaluations: false, sortStrategy: "numPeople" },
       env: { OPENAI_API_KEY: TEST_STRINGS.apiKey },
       firebaseDetails: {
         reportId: TEST_IDS.report,
