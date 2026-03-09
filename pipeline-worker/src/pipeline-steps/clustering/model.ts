@@ -120,7 +120,7 @@ export async function callClusteringModel(
     cost: costResult.value,
   };
 
-  // If Weave is enabled, run a Weave Evaluation (shows in Evals tab)
+  // If Weave is enabled, run a Weave Evaluation (shows in the evaluations tab)
   if (enableWeave) {
     // Cast to any to handle OpenAI version mismatch between pipeline-worker (v6) and common (v4)
     const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
