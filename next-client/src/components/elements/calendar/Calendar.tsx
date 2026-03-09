@@ -21,37 +21,42 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
         nav: "flex items-center gap-1",
         button_previous: cn(
           "absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-          "inline-flex items-center justify-center rounded-md border border-input",
+          "inline-flex items-center justify-center rounded border border-input",
         ),
         button_next: cn(
           "absolute right-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-          "inline-flex items-center justify-center rounded-md border border-input",
+          "inline-flex items-center justify-center rounded border border-input",
         ),
         month_grid: "w-full border-collapse",
         weekdays: "flex",
         weekday:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] flex items-center justify-center",
-        weeks: "w-full mt-2",
-        week: "flex w-full mt-2",
-        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected].range_start)]:bg-[linear-gradient(to_right,transparent_50%,#f1f5f9_50%)] [&:has([aria-selected].range_end)]:bg-[linear-gradient(to_left,transparent_50%,#f1f5f9_50%)] [&:has([aria-selected].range_middle)]:bg-slate-100 first:[&:has([aria-selected].range_middle)]:rounded-l-full last:[&:has([aria-selected].range_middle)]:rounded-r-full",
+          "text-muted-foreground w-9 font-normal text-[0.8rem] flex items-center justify-center pb-1",
+        weeks: "w-full",
+        week: "flex w-full",
+        // The td cell — background applied here for range states
+        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected].range_start)]:bg-primary [&:has([aria-selected].range_start)]:rounded [&:has([aria-selected].range_end)]:bg-primary [&:has([aria-selected].range_end)]:rounded [&:has([aria-selected].range_middle)]:bg-muted",
         day_button: cn(
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
-          "inline-flex items-center justify-center rounded-full text-sm ring-offset-background transition-colors",
-          "hover:bg-slate-100 hover:text-foreground",
+          "h-9 w-9 p-0 font-normal",
+          "inline-flex items-center justify-center text-sm ring-offset-background transition-colors",
+          "hover:bg-muted hover:text-foreground rounded",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           "disabled:pointer-events-none disabled:opacity-50",
         ),
-        range_start:
-          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:rounded-full",
-        range_end:
-          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground [&>button]:rounded-full",
-        range_middle:
-          "[&>button]:text-foreground [&>button]:hover:bg-slate-100 [&>button]:rounded-none",
+        // selected covers both single-day and range start/end; range_* overrides below
         selected:
-          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground",
-        today: "[&>button]:bg-slate-100 [&>button]:text-foreground",
-        outside: "day-outside [&>button]:text-muted-foreground opacity-50",
-        disabled: "[&>button]:text-muted-foreground [&>button]:opacity-50",
+          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:rounded",
+        // Range start: td has primary bg+rounded; button is transparent so td shows through
+        range_start:
+          "[&>button]:bg-transparent [&>button]:text-primary-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
+        // Range end: same as range_start
+        range_end:
+          "[&>button]:bg-transparent [&>button]:text-primary-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
+        // Range middle: td has muted bg; button is transparent, no rounding
+        range_middle:
+          "[&>button]:bg-transparent [&>button]:text-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
+        today: "[&>button]:font-semibold",
+        outside: "opacity-30",
+        disabled: "opacity-50",
         hidden: "invisible",
         ...classNames,
       }}
