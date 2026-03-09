@@ -18,13 +18,13 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
         month: "flex flex-col gap-4",
         month_caption: "flex justify-center pt-1 relative items-center w-full",
         caption_label: "text-sm font-medium",
-        nav: "flex items-center gap-1",
+        nav: "absolute inset-x-1 top-1 flex items-center justify-between",
         button_previous: cn(
-          "absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
           "inline-flex items-center justify-center rounded border border-input",
         ),
         button_next: cn(
-          "absolute right-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
           "inline-flex items-center justify-center rounded border border-input",
         ),
         month_grid: "w-full border-collapse",
