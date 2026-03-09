@@ -33,8 +33,7 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
           "text-muted-foreground w-9 font-normal text-[0.8rem] flex items-center justify-center pb-1",
         weeks: "w-full",
         week: "flex w-full",
-        // The td cell — background applied here for range states
-        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected].range_start)]:bg-primary [&:has([aria-selected].range_start)]:rounded [&:has([aria-selected].range_end)]:bg-primary [&:has([aria-selected].range_end)]:rounded [&:has([aria-selected].range_middle)]:bg-muted",
+        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
         day_button: cn(
           "h-9 w-9 p-0 font-normal",
           "inline-flex items-center justify-center text-sm ring-offset-background transition-colors",
@@ -45,15 +44,15 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
         // selected covers both single-day and range start/end; range_* overrides below
         selected:
           "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:rounded",
-        // Range start: td has primary bg+rounded; button is transparent so td shows through
+        // Range start: bg-primary + rounded on the td itself; button is transparent
         range_start:
-          "[&>button]:bg-transparent [&>button]:text-primary-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
+          "bg-primary rounded [&>button]:bg-transparent [&>button]:text-primary-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
         // Range end: same as range_start
         range_end:
-          "[&>button]:bg-transparent [&>button]:text-primary-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
-        // Range middle: td has muted bg; button is transparent, no rounding
+          "bg-primary rounded [&>button]:bg-transparent [&>button]:text-primary-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
+        // Range middle: bg-muted on the td; button is transparent, no rounding
         range_middle:
-          "[&>button]:bg-transparent [&>button]:text-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
+          "bg-muted [&>button]:bg-transparent [&>button]:text-foreground [&>button]:hover:bg-transparent [&>button]:rounded-none",
         today: "[&>button]:font-semibold",
         outside: "opacity-30",
         disabled: "opacity-50",
