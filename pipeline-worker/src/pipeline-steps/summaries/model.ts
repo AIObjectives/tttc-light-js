@@ -11,6 +11,7 @@ import {
 } from "tttc-common/evaluations/summaries/scorers";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import * as weave from "weave";
 import { basicSanitize } from "../sanitizer";
 import {
   ApiCallFailedError,
@@ -47,40 +48,34 @@ function runSummaryScorers(
   // The eval suite uses OpenAI v4 while pipeline-worker uses v6
   const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 
-  // Run scorers on the result we already have (non-blocking)
-  // Note: The LLM judge scorer will make its own LLM call for evaluation
-  // Scores are automatically sent to Weave since scorers are wrapped with weave.op
-  Promise.all([
-    summariesJsonStructureScorer({
-      modelOutput: { topicName, summary },
-      datasetRow: { id: topicName, topic: tree[0] },
-    }),
-    summaryLengthScorer({
-      modelOutput: { topicName, summary },
-      datasetRow: { id: topicName, topic: tree[0] },
-    }),
-    summaryContentQualityScorer({
-      modelOutput: { topicName, summary },
-      datasetRow: { id: topicName, topic: tree[0] },
-    }),
-    llmJudgeScorer({
-      modelOutput: { topicName, summary },
-      datasetRow: { id: topicName, topic: tree[0] },
-    }),
-  ])
-    .then((scores) => {
-      summaryLogger.info(
-        {
-          jsonStructure: scores[0],
-          lengthScore: scores[1],
-          contentQuality: scores[2],
-          llmJudge: scores[3],
-        },
-        "Summary evaluation complete",
-      );
+  const capturedTopicName = topicName;
+  const capturedSummary = summary;
+  const model = weave.op(async function summaryModel() {
+    return { topicName: capturedTopicName, summary: capturedSummary };
+  });
+
+  const dataset = new weave.Dataset({
+    name: "summaries-production",
+    rows: [{ id: topicName, topic: tree[0] }],
+  });
+
+  const evaluation = new weave.Evaluation({
+    dataset,
+    scorers: [
+      summariesJsonStructureScorer,
+      summaryLengthScorer,
+      summaryContentQualityScorer,
+      llmJudgeScorer,
+    ],
+  });
+
+  evaluation
+    .evaluate({ model })
+    .then((scores: Record<string, unknown>) => {
+      summaryLogger.info({ scores }, "Summary evaluation complete");
     })
-    .catch((error) => {
-      summaryLogger.error({ error }, "Background scoring failed");
+    .catch((error: unknown) => {
+      summaryLogger.error({ error }, "Summary evaluation failed");
     });
 }
 

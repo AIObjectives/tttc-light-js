@@ -10,7 +10,9 @@ import {
 } from "tttc-common/evaluations/clustering/scorers";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import * as weave from "weave";
 import type { ClusteringOutput, Topic } from "../types";
+
 import {
   ApiCallFailedError,
   type ClusteringError,
@@ -118,40 +120,33 @@ export async function callClusteringModel(
     cost: costResult.value,
   };
 
-  // If Weave is enabled, run scorers on the result asynchronously
+  // If Weave is enabled, run a Weave Evaluation (shows in Evals tab)
   if (enableWeave) {
     // Cast to any to handle OpenAI version mismatch between pipeline-worker (v6) and common (v4)
     const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 
-    // Run scorers on the result we already have (non-blocking)
-    // Note: The LLM judge scorer will make its own LLM call for evaluation
-    // Scores are automatically sent to Weave since scorers are wrapped with weave.op
-    Promise.all([
-      jsonStructureScorer({
-        modelOutput: { taxonomy },
-        datasetRow: { comments: commentsText },
-      }),
-      topicCoverageScorer({
-        modelOutput: { taxonomy },
-        datasetRow: { comments: commentsText },
-      }),
-      llmJudgeScorer({
-        modelOutput: { taxonomy },
-        datasetRow: { comments: commentsText },
-      }),
-    ])
-      .then((scores) => {
-        clusteringLogger.info(
-          {
-            jsonStructure: scores[0],
-            topicCoverage: scores[1],
-            llmJudge: scores[2],
-          },
-          "Clustering evaluation complete",
-        );
+    const capturedTaxonomy = taxonomy;
+    const model = weave.op(async function clusteringModel() {
+      return { taxonomy: capturedTaxonomy };
+    });
+
+    const dataset = new weave.Dataset({
+      name: "clustering-production",
+      rows: [{ comments: commentsText }],
+    });
+
+    const evaluation = new weave.Evaluation({
+      dataset,
+      scorers: [jsonStructureScorer, topicCoverageScorer, llmJudgeScorer],
+    });
+
+    evaluation
+      .evaluate({ model })
+      .then((scores: Record<string, unknown>) => {
+        clusteringLogger.info({ scores }, "Clustering evaluation complete");
       })
-      .catch((error) => {
-        clusteringLogger.error({ error }, "Background scoring failed");
+      .catch((error: unknown) => {
+        clusteringLogger.error({ error }, "Clustering evaluation failed");
       });
   }
 
