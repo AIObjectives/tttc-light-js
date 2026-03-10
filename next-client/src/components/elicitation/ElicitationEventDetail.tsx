@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Download, RefreshCw } from "lucide-react";
+import { Copy, MoreHorizontal, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,14 +20,15 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Spinner,
   TextIcon,
 } from "../elements";
 import { Center, Col, Row } from "../layout";
 import { StudySidebar } from "./StudySidebar";
-import { StudyTimeline } from "./StudyTimeline";
 
 interface ElicitationEventDetailProps {
   eventId: string;
@@ -107,33 +108,6 @@ export function ElicitationEventDetailView({
     event.reportIds || (event.reportId ? [event.reportId] : undefined);
   const { reports } = useEventReports(reportIdsToFetch);
 
-  // Build timeline: start with the event itself, then add reports
-  const eventDate = event.startDate || event.createdAt;
-  const timelineEvents = [
-    // The event itself
-    {
-      id: event.id,
-      name: event.eventName,
-      date: eventDate.toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-      }),
-      icon: "study" as const,
-      isActive: true,
-    },
-    // Add all reports
-    ...reports.map((report) => ({
-      id: report.id,
-      name: report.title,
-      date: report.createdDate.toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-      }),
-      icon: "document" as const,
-      isActive: false,
-    })),
-  ];
-
   // Get the most recent report ID for the "Go to report" button.
   // Fall back to the first known report ID from the event if fetched reports haven't loaded.
   const mostRecentReportId = reports[0]?.id ?? reportIdsToFetch?.[0];
@@ -147,6 +121,7 @@ export function ElicitationEventDetailView({
       year: "numeric",
     }),
     participants: e.responderCount,
+    expectedParticipants: e.expectedParticipantCount,
   }));
 
   return (
@@ -158,31 +133,23 @@ export function ElicitationEventDetailView({
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-8">
-          {/* Timeline */}
-          <div className="sticky top-0 bg-white z-10 border-b border-slate-200 mb-6">
-            <StudyTimeline events={timelineEvents} />
-          </div>
-
-          {/* Study details */}
-          <div className="pb-8">
-            <Card className="shadow-lg border-slate-200">
-              <CardContent className="p-6 space-y-6">
-                <EventHeader
-                  event={event}
-                  mostRecentReportId={mostRecentReportId}
-                />
-                {event.description && (
-                  <EventDescription text={event.description} />
-                )}
-                <EventMetadata event={event} />
-                {event.whatsappLink && (
-                  <WhatsAppLinkSection link={event.whatsappLink} />
-                )}
-                <EventContentSections event={event} />
-              </CardContent>
-            </Card>
-          </div>
+        <div className="max-w-3xl mx-auto px-8 py-8">
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="p-6 space-y-4">
+              <EventHeader
+                event={event}
+                mostRecentReportId={mostRecentReportId}
+              />
+              {event.description && (
+                <EventDescription text={event.description} />
+              )}
+              <EventMetadata event={event} />
+              {event.whatsappLink && (
+                <WhatsAppLinkSection link={event.whatsappLink} />
+              )}
+              <EventContentSections event={event} />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
@@ -190,7 +157,7 @@ export function ElicitationEventDetailView({
 }
 
 /**
- * Event header with title, date range, status badge, and action buttons
+ * Event header with title, date range, status badge, and actions dropdown
  */
 function EventHeader({
   event,
@@ -291,7 +258,7 @@ function EventHeader({
         <p className="text-sm text-slate-500">{dateRange}</p>
       </Col>
 
-      <Row gap={3} className="items-center flex-wrap">
+      <Row gap={3} className="items-center">
         {event.status && (
           <Badge
             variant="default"
@@ -300,35 +267,37 @@ function EventHeader({
             {getStatusText(event.status)}
           </Badge>
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          className="bg-indigo-50 text-indigo-700 border-indigo-50 hover:bg-indigo-100"
-          onClick={handleDownload}
-          disabled={isDownloading}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          {isDownloading ? "Downloading..." : "Download data"}
-        </Button>
-        {mostRecentReportId ? (
-          <Link href={`/report/${mostRecentReportId}`}>
-            <Button
-              size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              Go to report
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
-          </Link>
-        ) : (
-          <Button
-            size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            onClick={handleGenerateReport}
-            disabled={isGenerating}
-          >
-            {isGenerating ? "Generating..." : "Generate report"}
-          </Button>
-        )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={handleDownload}
+              disabled={isDownloading}
+            >
+              {isDownloading ? "Downloading..." : "Download data"}
+            </DropdownMenuItem>
+            {mostRecentReportId ? (
+              <DropdownMenuItem asChild>
+                <Link href={`/report/${mostRecentReportId}`}>Go to report</Link>
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onSelect={handleGenerateReport}
+                disabled={isGenerating}
+              >
+                {isGenerating ? "Generating..." : "Generate report"}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem className="text-red-400">
+              Stop study
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </Row>
     </Row>
   );
@@ -351,17 +320,20 @@ function EventMetadata({ event }: { event: ElicitationEventSummary }) {
   };
 
   return (
-    <Row gap={6} className="items-center flex-wrap">
+    <Row gap={0} className="items-center flex-wrap">
       <TextIcon icon={<Icons.People size={16} />}>
         <span className="text-green-700">{event.responderCount}</span>
         <span className="text-slate-600">
           {" "}
-          / {event.responderCount} participants
+          / {event.expectedParticipantCount ?? event.responderCount} participants
         </span>
       </TextIcon>
 
       {event.mode && (
-        <span className="text-sm text-slate-900">{formatMode(event.mode)}</span>
+        <>
+          <div className="mx-4 h-4 w-px bg-slate-300" />
+          <span className="text-sm text-slate-900">{formatMode(event.mode)}</span>
+        </>
       )}
     </Row>
   );
@@ -421,13 +393,11 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
     <Col gap={4} className="mt-4">
       {event.initialMessage && (
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">
+          <CardContent className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
               Opening message
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            </h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
               {event.initialMessage}
             </p>
           </CardContent>
@@ -436,15 +406,13 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
 
       {event.questions && event.questions.length > 0 && (
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">
+          <CardContent className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
               Survey questions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="list-decimal list-inside space-y-2">
+            </h3>
+            <ol className="list-decimal list-inside space-y-1">
               {event.questions.map((question) => (
-                <li key={`q-${question.id}`} className="text-sm text-slate-600">
+                <li key={`q-${question.id}`} className="text-sm text-slate-500">
                   {question.text}
                 </li>
               ))}
@@ -456,17 +424,15 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
       {event.followUpQuestions?.enabled &&
         event.followUpQuestions.questions.length > 0 && (
           <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">
+            <CardContent className="p-6">
+              <h3 className="text-base font-semibold text-slate-900 mb-2">
                 Follow-up questions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal list-inside space-y-2">
+              </h3>
+              <ol className="list-decimal list-inside space-y-1">
                 {event.followUpQuestions.questions.map((question, index) => (
                   <li
                     key={`fq-${index}-${question.slice(0, 30)}`}
-                    className="text-sm text-slate-600"
+                    className="text-sm text-slate-500"
                   >
                     {question}
                   </li>
@@ -478,13 +444,11 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
 
       {event.completionMessage && (
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">
+          <CardContent className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
               Closing message
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            </h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
               {event.completionMessage}
             </p>
           </CardContent>

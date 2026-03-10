@@ -67,6 +67,7 @@ export function CreateStudyForm() {
       year: "numeric",
     }),
     participants: e.responderCount,
+    expectedParticipants: e.expectedParticipantCount,
   }));
 
   const handleAddQuestion = () => {
