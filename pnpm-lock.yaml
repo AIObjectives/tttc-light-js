@@ -241,7 +241,7 @@ importers:
         version: 16.6.1
       effect:
         specifier: ^3.18.4
-        version: 3.19.12
+        version: 3.19.19
       firebase:
         specifier: ^11.1.0
         version: 11.10.0
@@ -390,7 +390,7 @@ importers:
         version: 16.6.1
       effect:
         specifier: ^3.18.4
-        version: 3.19.12
+        version: 3.19.19
       firebase-admin:
         specifier: ^13.0.2
         version: 13.6.0
@@ -4498,8 +4498,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@3.19.12:
-    resolution: {integrity: sha512-7F9RGTrCTC3D7nh9Zw+3VlJWwZgo5k33KA+476BAaD0rKIXKZsY/jQ+ipyhR/Avo239Fi6GqAVFs1mqM1IJ7yg==}
+  effect@3.19.19:
+    resolution: {integrity: sha512-Yc8U/SVXo2dHnaP7zNBlAo83h/nzSJpi7vph6Hzyl4ulgMBIgPmz3UzOjb9sBgpFE00gC0iETR244sfXDNLHRg==}
 
   electron-to-chromium@1.5.302:
     resolution: {integrity: sha512-sM6HAN2LyK82IyPBpznDRqlTQAtuSaO+ShzFiWTvoMJLHyZ+Y39r8VMfHzwbU8MVBzQ4Wdn85+wlZl2TLGIlwg==}
@@ -11966,7 +11966,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@3.19.12:
+  effect@3.19.19:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
@@ -14806,7 +14806,7 @@ snapshots:
       chalk-template: 1.1.2
       commander: 13.1.0
       cosmiconfig: 9.0.0(typescript@5.9.3)
-      effect: 3.19.12
+      effect: 3.19.19
       enquirer: 2.4.1
       fast-check: 3.23.2
       globby: 14.1.0
