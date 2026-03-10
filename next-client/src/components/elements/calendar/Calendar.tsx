@@ -14,11 +14,11 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
     <DayPicker
       className={cn("p-3", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row gap-2",
+        months: "relative flex flex-col sm:flex-row gap-2",
         month: "flex flex-col gap-4",
-        month_caption: "flex justify-center pt-1 relative items-center w-full",
+        month_caption: "flex justify-center pt-1 items-center w-full",
         caption_label: "text-sm font-medium",
-        nav: "absolute inset-x-1 top-1 flex items-center justify-between",
+        nav: "absolute top-0 inset-x-0 h-9 z-10 flex items-center justify-between px-1",
         button_previous: cn(
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
           "inline-flex items-center justify-center rounded border border-input",
