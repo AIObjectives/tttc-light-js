@@ -3,6 +3,7 @@ import type { User } from "firebase/auth";
 import { AlertCircle } from "lucide-react";
 import Form from "next/form";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import type React from "react";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -136,12 +137,20 @@ function CreateReportComponent({
   user: ReturnType<typeof useUserQuery>["user"];
   emailVerified: boolean;
 }) {
+  const searchParams = useSearchParams();
+  const elicitationEventId = searchParams.get("elicitationEventId");
+  const prefillTitle = searchParams.get("title");
+  const prefillDescription = searchParams.get("description");
+
   const submitActionWithUser = bindTokenToAction(user, submitAction);
   const [state, formAction] = useActionState(
     submitActionWithUser,
     initialState,
   );
   const [files, setFiles] = useState<FileList | undefined>(undefined);
+  const [prefetchedFiles, setPrefetchedFiles] = useState<FileList | undefined>(
+    undefined,
+  );
 
   const formState = useFormState();
   const {
@@ -158,6 +167,38 @@ function CreateReportComponent({
     outputLanguage,
     visibility,
   } = formState;
+
+  useEffect(() => {
+    if (prefillTitle) title.setState(prefillTitle);
+    if (prefillDescription) description.setState(prefillDescription);
+    // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
+  }, []);
+
+  useEffect(() => {
+    if (!elicitationEventId || !user) return;
+
+    const fetchCsv = async () => {
+      try {
+        const authToken = await user.getIdToken();
+        const response = await fetch(
+          `/api/elicitation/events/${elicitationEventId}/csv`,
+          { headers: { Authorization: `Bearer ${authToken}` } },
+        );
+        if (!response.ok) return;
+        const blob = await response.blob();
+        const fileName = `${prefillTitle ?? "study"}_responses.csv`;
+        const file = new File([blob], fileName, { type: "text/csv" });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        setPrefetchedFiles(dt.files);
+      } catch {
+        // User can still upload manually
+      }
+    };
+
+    fetchCsv();
+    // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
+  }, []);
 
   const { submitAttempted, errorCount, handleSubmit } = useSubmitValidation(
     formState,
@@ -192,6 +233,7 @@ function CreateReportComponent({
             <FormDataInput
               files={files}
               setFiles={setFiles}
+              initialFiles={prefetchedFiles}
               showErrors={submitAttempted}
             />
             <TermsAndConditions />

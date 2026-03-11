@@ -35,6 +35,8 @@ import {
   generateReportForEvent,
   getElicitationEvent,
   getElicitationEvents,
+  launchElicitationEvent,
+  stopElicitationEvent,
 } from "./routes/elicitation";
 import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
@@ -428,6 +430,30 @@ app.post(
   authLimiter,
   authMiddleware(),
   generateReportForEvent as unknown as express.RequestHandler,
+);
+
+/**
+ * Launch an elicitation event (set event_initialized to true)
+ * Requires event_organizer role and ownership
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.patch(
+  "/api/elicitation/events/:id/launch",
+  authLimiter,
+  authMiddleware(),
+  launchElicitationEvent as unknown as express.RequestHandler,
+);
+
+/**
+ * Stop an elicitation event (set event_initialized to false)
+ * Requires event_organizer role and ownership
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.patch(
+  "/api/elicitation/events/:id/stop",
+  authLimiter,
+  authMiddleware(),
+  stopElicitationEvent as unknown as express.RequestHandler,
 );
 
 /**

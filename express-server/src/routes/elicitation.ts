@@ -195,6 +195,7 @@ async function buildEventSummary(
     reportIds: reportIds.length > 0 ? reportIds : undefined,
     expectedParticipantCount: data.expected_participant_count,
     schemaVersion: data.schema_version,
+    eventInitialized: data.event_initialized,
   };
 }
 
@@ -745,6 +746,7 @@ export async function createElicitationEvent(
       docData.completion_message = body.completionMessage;
     if (body.expectedParticipantCount !== undefined)
       docData.expected_participant_count = body.expectedParticipantCount;
+    docData.event_initialized = false;
 
     await docRef.set(docData);
 
@@ -763,6 +765,184 @@ export async function createElicitationEvent(
     res.status(201).json(validatedResponse);
   } catch (error) {
     elicitationLogger.error({ error }, "Failed to create elicitation event");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
+  }
+}
+
+/**
+ * Launch an elicitation event by setting event_initialized to true.
+ *
+ * Requires: authMiddleware()
+ * Requires: event_organizer role
+ * Requires: User must own the event
+ */
+export async function launchElicitationEvent(
+  req: RequestWithAuth,
+  res: Response,
+): Promise<void> {
+  try {
+    const decodedUser = req.auth;
+    const userId = decodedUser.uid;
+    const eventId = req.params.id;
+
+    // Check feature flag
+    const featureEnabled = await isFeatureEnabled(
+      FEATURE_FLAGS.ELICITATION_ENABLED,
+      { userId },
+    );
+    if (!featureEnabled) {
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    if (!eventId) {
+      elicitationLogger.warn({ userId }, "Event ID not provided");
+      sendErrorByCode(res, ERROR_CODES.INVALID_REQUEST, elicitationLogger);
+      return;
+    }
+
+    // Get user document to check roles
+    const userRef = db.collection(getCollectionName("USERS")).doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      elicitationLogger.warn({ userId }, "User document not found");
+      sendErrorByCode(res, ERROR_CODES.USER_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const roles = userData?.roles || [];
+
+    if (!isEventOrganizer(roles)) {
+      elicitationLogger.warn(
+        { userId, roles },
+        "User missing event_organizer role",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    const collectionName = getElicitationCollectionName(
+      req.context.env.NODE_ENV,
+    );
+    const eventRef = db.collection(collectionName).doc(eventId);
+    const eventDoc = await eventRef.get();
+
+    if (!eventDoc.exists) {
+      elicitationLogger.warn({ userId, eventId }, "Event not found");
+      sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const eventData = eventDoc.data();
+    if (eventData?.owner_user_id !== userId) {
+      elicitationLogger.warn(
+        { userId, eventId, ownerId: eventData?.owner_user_id },
+        "User does not own this event",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    await eventRef.update({ event_initialized: true });
+
+    const updatedDoc = await eventRef.get();
+    const event = await buildEventSummary(updatedDoc, userId);
+
+    elicitationLogger.info({ userId, eventId }, "Elicitation event launched");
+
+    res.json({ event });
+  } catch (error) {
+    elicitationLogger.error({ error }, "Failed to launch elicitation event");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
+  }
+}
+
+/**
+ * Stop an elicitation event by setting event_initialized to false.
+ *
+ * Requires: authMiddleware()
+ * Requires: event_organizer role
+ * Requires: User must own the event
+ */
+export async function stopElicitationEvent(
+  req: RequestWithAuth,
+  res: Response,
+): Promise<void> {
+  try {
+    const decodedUser = req.auth;
+    const userId = decodedUser.uid;
+    const eventId = req.params.id;
+
+    const featureEnabled = await isFeatureEnabled(
+      FEATURE_FLAGS.ELICITATION_ENABLED,
+      { userId },
+    );
+    if (!featureEnabled) {
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    if (!eventId) {
+      elicitationLogger.warn({ userId }, "Event ID not provided");
+      sendErrorByCode(res, ERROR_CODES.INVALID_REQUEST, elicitationLogger);
+      return;
+    }
+
+    const userRef = db.collection(getCollectionName("USERS")).doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      elicitationLogger.warn({ userId }, "User document not found");
+      sendErrorByCode(res, ERROR_CODES.USER_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const roles = userData?.roles || [];
+
+    if (!isEventOrganizer(roles)) {
+      elicitationLogger.warn(
+        { userId, roles },
+        "User missing event_organizer role",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    const collectionName = getElicitationCollectionName(
+      req.context.env.NODE_ENV,
+    );
+    const eventRef = db.collection(collectionName).doc(eventId);
+    const eventDoc = await eventRef.get();
+
+    if (!eventDoc.exists) {
+      elicitationLogger.warn({ userId, eventId }, "Event not found");
+      sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const eventData = eventDoc.data();
+    if (eventData?.owner_user_id !== userId) {
+      elicitationLogger.warn(
+        { userId, eventId, ownerId: eventData?.owner_user_id },
+        "User does not own this event",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    await eventRef.update({ event_initialized: false });
+
+    const updatedDoc = await eventRef.get();
+    const event = await buildEventSummary(updatedDoc, userId);
+
+    elicitationLogger.info({ userId, eventId }, "Elicitation event stopped");
+
+    res.json({ event });
+  } catch (error) {
+    elicitationLogger.error({ error }, "Failed to stop elicitation event");
     sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
   }
 }

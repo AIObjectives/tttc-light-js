@@ -252,6 +252,8 @@ export const elicitationEventSummary = z.object({
   expectedParticipantCount: z.number().optional(),
   // Schema version for future migrations
   schemaVersion: z.number().optional(),
+  // Whether the event has been fully initialized
+  eventInitialized: z.boolean().optional(),
 });
 
 export type ElicitationEventSummary = z.infer<typeof elicitationEventSummary>;

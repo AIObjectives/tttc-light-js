@@ -1,8 +1,8 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { Copy, MoreHorizontal, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
@@ -11,12 +11,12 @@ import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { useElicitationEvent } from "@/lib/hooks/useElicitationEvent";
 import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { useEventReports } from "@/lib/hooks/useEventReports";
+import { queryKeys } from "@/lib/query/queryKeys";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Badge,
   Button,
   Card,
   CardContent,
@@ -166,23 +166,23 @@ function EventHeader({
   event: ElicitationEventSummary;
   mostRecentReportId?: string;
 }) {
-  const router = useRouter();
   const { user } = useUserQuery();
+  const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
 
-  const handleGenerateReport = async () => {
-    setIsGenerating(true);
+  const generateReportHref = `/create?elicitationEventId=${event.id}&title=${encodeURIComponent(event.eventName)}&description=${encodeURIComponent(event.description ?? "")}`;
+
+  const handleLaunch = async () => {
+    setIsLaunching(true);
     try {
       const authToken = user ? await user.getIdToken() : undefined;
       const response = await fetchWithRequestId(
-        `/api/elicitation/events/${event.id}/generate-report`,
+        `/api/elicitation/events/${event.id}/launch`,
         {
-          method: "POST",
-          headers: {
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-            "Content-Type": "application/json",
-          },
+          method: "PATCH",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
         },
       );
 
@@ -190,12 +190,41 @@ function EventHeader({
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const { reportId } = await response.json();
-      router.push(`/report/${reportId}`);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.elicitationEvents.detail(event.id),
+      });
+      toast.success("Study launched");
     } catch {
-      toast.error("Failed to generate report");
+      toast.error("Failed to launch study");
     } finally {
-      setIsGenerating(false);
+      setIsLaunching(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setIsStopping(true);
+    try {
+      const authToken = user ? await user.getIdToken() : undefined;
+      const response = await fetchWithRequestId(
+        `/api/elicitation/events/${event.id}/stop`,
+        {
+          method: "PATCH",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.elicitationEvents.detail(event.id),
+      });
+      toast.success("Study stopped");
+    } catch {
+      toast.error("Failed to stop study");
+    } finally {
+      setIsStopping(false);
     }
   };
 
@@ -244,29 +273,17 @@ function EventHeader({
         ? formatDate(event.createdAt)
         : "No date available";
 
-  const getStatusText = (status?: string) => {
-    if (!status) return null;
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
   return (
-    <Row gap={4} className="justify-between items-start flex-wrap">
-      <Col gap={1}>
+    <Row gap={4} className="justify-between items-start">
+      <Col gap={1} className="min-w-0 flex-1">
         <h1 className="text-xl font-semibold text-slate-900">
           {event.eventName}
         </h1>
         <p className="text-sm text-slate-500">{dateRange}</p>
       </Col>
 
-      <Row gap={3} className="items-center">
-        {event.status && (
-          <Badge
-            variant="default"
-            className="bg-green-100 text-green-800 hover:bg-green-100 rounded-full px-3"
-          >
-            {getStatusText(event.status)}
-          </Badge>
-        )}
+      <Row gap={3} className="items-center shrink-0">
+        <StudyStatusBadge event={event} />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -275,31 +292,100 @@ function EventHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onSelect={handleDownload}
-              disabled={isDownloading}
-            >
-              {isDownloading ? "Downloading..." : "Download data"}
-            </DropdownMenuItem>
-            {mostRecentReportId ? (
-              <DropdownMenuItem asChild>
-                <Link href={`/report/${mostRecentReportId}`}>Go to report</Link>
-              </DropdownMenuItem>
+            {getStudyStatus(event) === "waiting" ? (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href={`/elicitation/${event.id}/edit`}>Edit study</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-emerald-500"
+                  onSelect={handleLaunch}
+                  disabled={isLaunching}
+                >
+                  {isLaunching ? "Launching..." : "Launch study"}
+                </DropdownMenuItem>
+              </>
             ) : (
-              <DropdownMenuItem
-                onSelect={handleGenerateReport}
-                disabled={isGenerating}
-              >
-                {isGenerating ? "Generating..." : "Generate report"}
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem
+                  onSelect={handleDownload}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? "Downloading..." : "Download data"}
+                </DropdownMenuItem>
+                {mostRecentReportId ? (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/report/${mostRecentReportId}`}>
+                      Go to report
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link href={generateReportHref}>Generate report</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="text-red-400"
+                  onSelect={handleStop}
+                  disabled={isStopping}
+                >
+                  {isStopping ? "Stopping..." : "Stop study"}
+                </DropdownMenuItem>
+              </>
             )}
-            <DropdownMenuItem className="text-red-400">
-              Stop study
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </Row>
     </Row>
+  );
+}
+
+type StudyStatus = "completed" | "in-progress" | "waiting";
+
+function getStudyStatus(event: ElicitationEventSummary): StudyStatus {
+  const { responderCount, expectedParticipantCount, eventInitialized } = event;
+
+  if (
+    (expectedParticipantCount !== undefined &&
+      responderCount >= expectedParticipantCount) ||
+    (!eventInitialized && responderCount > 0)
+  ) {
+    return "completed";
+  }
+
+  if (eventInitialized && responderCount < (expectedParticipantCount ?? Infinity)) {
+    return "in-progress";
+  }
+
+  return "waiting";
+}
+
+/**
+ * Badge showing the computed study status based on participant counts and initialization state
+ */
+function StudyStatusBadge({ event }: { event: ElicitationEventSummary }) {
+  const status = getStudyStatus(event);
+
+  if (status === "completed") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-[#dcfce7] px-3 py-1 text-xs font-medium text-[#008236] whitespace-nowrap">
+        Completed
+      </span>
+    );
+  }
+
+  if (status === "in-progress") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-[#ff6600] whitespace-nowrap">
+        In Progress
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center rounded-full bg-[#f5fb47] px-3 py-1 text-xs font-medium text-[#0f0f0f] whitespace-nowrap">
+      Waiting for launch
+    </span>
   );
 }
 
