@@ -45,7 +45,9 @@ export function StudySidebar({ studies, activeStudyId }: StudySidebarProps) {
                   <div className="pl-4 space-y-1">
                     <p className="text-sm text-slate-900">{study.month}</p>
                     <p className="text-sm text-slate-900">
-                      {study.participants} / {study.expectedParticipants ?? study.participants} participants
+                      {study.expectedParticipants !== undefined
+                        ? `${study.participants} / ${study.expectedParticipants} participants`
+                        : `${study.participants} participants`}
                     </p>
                   </div>
                 </div>

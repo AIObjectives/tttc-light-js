@@ -410,8 +410,9 @@ function EventMetadata({ event }: { event: ElicitationEventSummary }) {
       <TextIcon icon={<Icons.People size={16} />}>
         <span className="text-green-700">{event.responderCount}</span>
         <span className="text-slate-600">
-          {" "}
-          / {event.expectedParticipantCount ?? event.responderCount} participants
+          {event.expectedParticipantCount !== undefined
+            ? ` / ${event.expectedParticipantCount} participants`
+            : " participants"}
         </span>
       </TextIcon>
 
