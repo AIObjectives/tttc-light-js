@@ -346,7 +346,8 @@ export async function downloadElicitationEventCsv(
 
     const rows = participantsSnapshot.docs
       .filter((doc) => doc.id !== "info")
-      .map((doc) => participantDocToRow(doc.data()));
+      .map((doc) => participantDocToRow(doc.data()))
+      .filter((row) => row["comment-body"]?.trim());
 
     const dynamicColumns = [
       ...new Set(rows.flatMap((row) => Object.keys(row))),
