@@ -92,6 +92,24 @@ const parseUserConfig = (formData: FormData): LLMUserConfig => {
   });
 };
 
+/**
+ * Build the API request body from parsed config, data, and form metadata.
+ */
+const buildGenerateRequest = (
+  config: LLMUserConfig,
+  data: DataPayload,
+  formData: FormData,
+): GenerateApiRequest => {
+  const elicitationEventId = formData.get("elicitationEventId");
+  return {
+    userConfig: config,
+    data,
+    ...(elicitationEventId
+      ? { elicitationEventId: String(elicitationEventId) }
+      : {}),
+  };
+};
+
 export default async function submitAction(
   firebaseAuthToken: string | null,
   formData: FormData,
@@ -134,14 +152,7 @@ export default async function submitAction(
       "Submit action crux config",
     );
 
-    const elicitationEventId = formData.get("elicitationEventId");
-    const body: GenerateApiRequest = {
-      userConfig: config,
-      data: dataPayload,
-      ...(elicitationEventId
-        ? { elicitationEventId: String(elicitationEventId) }
-        : {}),
-    };
+    const body = buildGenerateRequest(config, dataPayload, formData);
     submitActionLogger.debug(
       { cruxesEnabled: body.userConfig.cruxesEnabled },
       "Submit action body config",

@@ -408,6 +408,22 @@ const getUserCsvSizeLimit = async (
   return DEFAULT_LIMITS.csvSizeLimit;
 };
 
+function getActualCsvDataSize(
+  data: schema.DataPayload,
+  log: RequestWithAuth["log"],
+): number | undefined {
+  if (data[0] !== "csv" || !data[1]) return undefined;
+  const csvRows = data[1] as schema.SourceRow[];
+  const actualDataSize = calculateDataSize(csvRows);
+  if (actualDataSize !== undefined) {
+    log.debug(
+      { actualDataSize, sourceType: data[0] },
+      "Data size calculated for validation",
+    );
+  }
+  return actualDataSize;
+}
+
 async function createNewReport(
   req: RequestWithAuth,
 ): Promise<
@@ -427,22 +443,7 @@ async function createNewReport(
 
   // Validate file size for CSV uploads
   const isCsv = data[0] === "csv";
-
-  // Calculate actual size of received data (server-side validation)
-  let actualDataSize: number | undefined;
-  if (isCsv && data[1]) {
-    const csvRows = data[1] as schema.SourceRow[];
-    actualDataSize = calculateDataSize(csvRows);
-
-    if (actualDataSize !== undefined) {
-      req.log.debug(
-        { actualDataSize, sourceType: data[0] },
-        "Data size calculated for validation",
-      );
-    }
-  }
-
-  // Validate actual data size against user's limit
+  const actualDataSize = getActualCsvDataSize(data, req.log);
   validateFileSize({ actualDataSize, maxFileSize: userCsvSizeLimit, isCsv });
 
   // Parse and process data
