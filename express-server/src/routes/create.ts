@@ -424,6 +424,40 @@ function getActualCsvDataSize(
   return actualDataSize;
 }
 
+async function createReportDocuments(
+  decodedUser: DecodedIdToken,
+  userConfig: schema.LLMUserConfig,
+  jsonUrl: string,
+  filename: string,
+  reportId: string,
+  elicitationEventId: string | undefined,
+  clientBaseUrl: string,
+): Promise<{ firebaseJobId: string; response: api.GenerateApiResponse }> {
+  const { firebaseJobId, reportId: createdReportId } =
+    await createUserDocuments(
+      decodedUser,
+      userConfig,
+      jsonUrl,
+      reportId,
+      elicitationEventId,
+    );
+
+  if (firebaseJobId === null) throw new Error("Failed to add firebase job.");
+  if (createdReportId === null)
+    throw new Error("Failed to create report reference.");
+
+  const reportUrl = new URL(`report/${reportId}`, clientBaseUrl).toString();
+  return {
+    firebaseJobId,
+    response: {
+      message: "Request received.",
+      filename,
+      jsonUrl,
+      reportUrl,
+    },
+  };
+}
+
 async function createNewReport(
   req: RequestWithAuth,
 ): Promise<
@@ -459,29 +493,16 @@ async function createNewReport(
   const storage = createStorage(env);
   const { filename, jsonUrl } = await createAndSaveReport(storage, reportId);
 
-  // Create Firebase documents for authenticated user
-  const { firebaseJobId, reportId: createdReportId } =
-    await createUserDocuments(
-      decodedUser,
-      userConfig,
-      jsonUrl,
-      reportId,
-      elicitationEventId,
-    );
-
-  // Validate Firebase document creation
-  if (firebaseJobId === null) throw new Error("Failed to add firebase job.");
-  if (createdReportId === null)
-    throw new Error("Failed to create report reference.");
-
-  const reportUrl = new URL(`report/${reportId}`, CLIENT_BASE_URL).toString();
-
-  const response: api.GenerateApiResponse = {
-    message: "Request received.",
-    filename: filename,
+  // Create Firebase documents and build response
+  const { firebaseJobId, response } = await createReportDocuments(
+    decodedUser,
+    userConfig,
     jsonUrl,
-    reportUrl,
-  };
+    filename,
+    reportId,
+    elicitationEventId,
+    CLIENT_BASE_URL,
+  );
 
   // Combine user config with parsed data, adding IDs to comments if not present
   const processedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] } = {
