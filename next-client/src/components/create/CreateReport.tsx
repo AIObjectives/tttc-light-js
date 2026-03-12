@@ -33,6 +33,7 @@ import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
 import { FormVisibility } from "./components/VisibilitySelector";
 import { useFormState } from "./hooks/useFormState";
 import { usePrefetchedCsv } from "./hooks/usePrefetchedCsv";
+import { usePrefillForm } from "./hooks/usePrefillForm";
 import { useSignInModal } from "./hooks/useSignInModal";
 import { useSubmitValidation } from "./hooks/useSubmitValidation";
 
@@ -170,11 +171,7 @@ function CreateReportComponent({
     visibility,
   } = formState;
 
-  useEffect(() => {
-    if (prefillTitle) title.setState(prefillTitle);
-    if (prefillDescription) description.setState(prefillDescription);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
-  }, []);
+  usePrefillForm(formState, prefillTitle, prefillDescription);
 
   const { submitAttempted, errorCount, handleSubmit } = useSubmitValidation(
     formState,
