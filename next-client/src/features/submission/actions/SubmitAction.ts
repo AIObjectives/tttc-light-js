@@ -134,9 +134,13 @@ export default async function submitAction(
       "Submit action crux config",
     );
 
+    const elicitationEventId = formData.get("elicitationEventId");
     const body: GenerateApiRequest = {
       userConfig: config,
       data: dataPayload,
+      ...(elicitationEventId
+        ? { elicitationEventId: String(elicitationEventId) }
+        : {}),
     };
     submitActionLogger.debug(
       { cruxesEnabled: body.userConfig.cruxesEnabled },

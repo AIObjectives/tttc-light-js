@@ -420,7 +420,7 @@ async function createNewReport(
   const { CLIENT_BASE_URL } = env;
   const decodedUser = req.auth;
   const body = api.generateApiRequest.parse(req.body);
-  const { data, userConfig } = body;
+  const { data, userConfig, elicitationEventId } = body;
 
   // Get user's CSV size limit based on roles and feature flags
   const userCsvSizeLimit = await getUserCsvSizeLimit(decodedUser);
@@ -460,7 +460,13 @@ async function createNewReport(
 
   // Create Firebase documents for authenticated user
   const { firebaseJobId, reportId: createdReportId } =
-    await createUserDocuments(decodedUser, userConfig, jsonUrl, reportId);
+    await createUserDocuments(
+      decodedUser,
+      userConfig,
+      jsonUrl,
+      reportId,
+      elicitationEventId,
+    );
 
   // Validate Firebase document creation
   if (firebaseJobId === null) throw new Error("Failed to add firebase job.");

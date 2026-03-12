@@ -189,6 +189,13 @@ function CreateReportComponent({
     <>
       <SigninModal isOpen={modalOpen} />
       <Form action={formAction} onSubmit={handleSubmit} noValidate>
+        {elicitationEventId && (
+          <input
+            type="hidden"
+            name="elicitationEventId"
+            value={elicitationEventId}
+          />
+        )}
         <SubmitFormControl response={state} onAuthError={handleAuthError}>
           <Col gap={8} className="mb-20">
             <h3>Create a report</h3>
