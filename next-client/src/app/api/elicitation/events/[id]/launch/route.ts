@@ -49,6 +49,9 @@ export async function PATCH(
     return NextResponse.json(result);
   } catch (error) {
     launchLogger.error({ error }, "Failed to launch study");
-    return NextResponse.json({ error: "Failed to launch study" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to launch study" },
+      { status: 500 },
+    );
   }
 }

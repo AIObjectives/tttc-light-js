@@ -49,6 +49,9 @@ export async function PATCH(
     return NextResponse.json(result);
   } catch (error) {
     stopLogger.error({ error }, "Failed to stop study");
-    return NextResponse.json({ error: "Failed to stop study" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to stop study" },
+      { status: 500 },
+    );
   }
 }

@@ -353,7 +353,10 @@ function getStudyStatus(event: ElicitationEventSummary): StudyStatus {
     return "completed";
   }
 
-  if (eventInitialized && responderCount < (expectedParticipantCount ?? Infinity)) {
+  if (
+    eventInitialized &&
+    responderCount < (expectedParticipantCount ?? Infinity)
+  ) {
     return "in-progress";
   }
 
@@ -419,7 +422,9 @@ function EventMetadata({ event }: { event: ElicitationEventSummary }) {
       {event.mode && (
         <>
           <div className="mx-4 h-4 w-px bg-slate-300" />
-          <span className="text-sm text-slate-900">{formatMode(event.mode)}</span>
+          <span className="text-sm text-slate-900">
+            {formatMode(event.mode)}
+          </span>
         </>
       )}
     </Row>

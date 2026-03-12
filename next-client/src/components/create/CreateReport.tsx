@@ -2,8 +2,7 @@
 import type { User } from "firebase/auth";
 import { AlertCircle } from "lucide-react";
 import Form from "next/form";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
