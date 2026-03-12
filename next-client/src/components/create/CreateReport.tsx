@@ -32,6 +32,7 @@ import { SigninModal } from "./components/Modals";
 import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
 import { FormVisibility } from "./components/VisibilitySelector";
 import { useFormState } from "./hooks/useFormState";
+import { usePrefetchedCsv } from "./hooks/usePrefetchedCsv";
 import { useSignInModal } from "./hooks/useSignInModal";
 import { useSubmitValidation } from "./hooks/useSubmitValidation";
 
@@ -147,8 +148,10 @@ function CreateReportComponent({
     initialState,
   );
   const [files, setFiles] = useState<FileList | undefined>(undefined);
-  const [prefetchedFiles, setPrefetchedFiles] = useState<FileList | undefined>(
-    undefined,
+  const prefetchedFiles = usePrefetchedCsv(
+    elicitationEventId,
+    user,
+    prefillTitle,
   );
 
   const formState = useFormState();
@@ -170,32 +173,6 @@ function CreateReportComponent({
   useEffect(() => {
     if (prefillTitle) title.setState(prefillTitle);
     if (prefillDescription) description.setState(prefillDescription);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
-  }, []);
-
-  useEffect(() => {
-    if (!elicitationEventId || !user) return;
-
-    const fetchCsv = async () => {
-      try {
-        const authToken = await user.getIdToken();
-        const response = await fetch(
-          `/api/elicitation/events/${elicitationEventId}/csv`,
-          { headers: { Authorization: `Bearer ${authToken}` } },
-        );
-        if (!response.ok) return;
-        const blob = await response.blob();
-        const fileName = `${prefillTitle ?? "study"}_responses.csv`;
-        const file = new File([blob], fileName, { type: "text/csv" });
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        setPrefetchedFiles(dt.files);
-      } catch {
-        // User can still upload manually
-      }
-    };
-
-    fetchCsv();
     // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   }, []);
 
