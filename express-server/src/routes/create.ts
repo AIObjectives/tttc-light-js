@@ -424,15 +424,22 @@ function getActualCsvDataSize(
   return actualDataSize;
 }
 
+interface CreateReportDocumentsOptions {
+  jsonUrl: string;
+  filename: string;
+  reportId: string;
+  elicitationEventId: string | undefined;
+  clientBaseUrl: string;
+}
+
 async function createReportDocuments(
   decodedUser: DecodedIdToken,
   userConfig: schema.LLMUserConfig,
-  jsonUrl: string,
-  filename: string,
-  reportId: string,
-  elicitationEventId: string | undefined,
-  clientBaseUrl: string,
+  options: CreateReportDocumentsOptions,
 ): Promise<{ firebaseJobId: string; response: api.GenerateApiResponse }> {
+  const { jsonUrl, filename, reportId, elicitationEventId, clientBaseUrl } =
+    options;
+
   const { firebaseJobId, reportId: createdReportId } =
     await createUserDocuments(
       decodedUser,
@@ -497,11 +504,13 @@ async function createNewReport(
   const { firebaseJobId, response } = await createReportDocuments(
     decodedUser,
     userConfig,
-    jsonUrl,
-    filename,
-    reportId,
-    elicitationEventId,
-    CLIENT_BASE_URL,
+    {
+      jsonUrl,
+      filename,
+      reportId,
+      elicitationEventId,
+      clientBaseUrl: CLIENT_BASE_URL,
+    },
   );
 
   // Combine user config with parsed data, adding IDs to comments if not present
