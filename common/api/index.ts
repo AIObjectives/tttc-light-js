@@ -121,3 +121,22 @@ export const createElicitationEventResponse = z.object({
 export type CreateElicitationEventResponse = z.infer<
   typeof createElicitationEventResponse
 >;
+
+// PATCH /api/elicitation/events/:id request
+export const updateElicitationEventRequest = z.object({
+  eventName: z.string().optional(),
+  description: z.string().optional(),
+  startDate: z.string().optional(), // ISO date string
+  endDate: z.string().optional(), // ISO date string
+  mode: z.enum(["followup", "listener", "survey"]).optional(),
+  mainQuestion: z.string().optional(),
+  questions: z.array(z.string()).optional(),
+  followUpQuestions: z.array(z.string()).optional(),
+  initialMessage: z.string().optional(),
+  completionMessage: z.string().optional(),
+  expectedParticipantCount: z.number().optional(),
+});
+
+export type UpdateElicitationEventRequest = z.infer<
+  typeof updateElicitationEventRequest
+>;
