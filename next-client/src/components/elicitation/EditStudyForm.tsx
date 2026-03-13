@@ -40,6 +40,44 @@ function toISODateString(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
+function buildRequestBody(
+  studyName: string,
+  location: string,
+  dateRange: DateRange | undefined,
+  expectedRespondents: string,
+  mode: ElicitationMode,
+  initialMessage: string,
+  completionMessage: string,
+  questions: string[],
+): UpdateElicitationEventRequest {
+  const description = location.trim()
+    ? `Location: ${location.trim()}`
+    : undefined;
+  const startDate = dateRange?.from
+    ? toISODateString(dateRange.from)
+    : undefined;
+  const endDate = dateRange?.to ? toISODateString(dateRange.to) : undefined;
+  const parsedRespondents = expectedRespondents.trim()
+    ? Number(expectedRespondents.trim())
+    : undefined;
+  const expectedParticipantCount =
+    parsedRespondents !== undefined && !Number.isNaN(parsedRespondents)
+      ? parsedRespondents
+      : undefined;
+
+  return {
+    eventName: studyName.trim(),
+    description,
+    startDate,
+    endDate,
+    mode,
+    initialMessage: initialMessage.trim() || undefined,
+    completionMessage: completionMessage.trim() || undefined,
+    questions: questions.length > 0 ? questions : undefined,
+    expectedParticipantCount,
+  };
+}
+
 function parseLocation(description: string | undefined): string {
   if (!description) return "";
   const match = description.match(/^Location: (.+)$/);
@@ -118,34 +156,16 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
     setIsSubmitting(true);
     try {
       const authToken = user ? await user.getIdToken() : undefined;
-
-      const description = location.trim()
-        ? `Location: ${location.trim()}`
-        : undefined;
-
-      const startDate = dateRange?.from
-        ? toISODateString(dateRange.from)
-        : undefined;
-      const endDate = dateRange?.to ? toISODateString(dateRange.to) : undefined;
-
-      const parsedRespondents = expectedRespondents.trim()
-        ? Number(expectedRespondents.trim())
-        : undefined;
-
-      const body: UpdateElicitationEventRequest = {
-        eventName: studyName.trim(),
-        description,
-        startDate,
-        endDate,
+      const body = buildRequestBody(
+        studyName,
+        location,
+        dateRange,
+        expectedRespondents,
         mode,
-        initialMessage: initialMessage.trim() || undefined,
-        completionMessage: completionMessage.trim() || undefined,
-        questions: questions.length > 0 ? questions : undefined,
-        expectedParticipantCount:
-          parsedRespondents !== undefined && !Number.isNaN(parsedRespondents)
-            ? parsedRespondents
-            : undefined,
-      };
+        initialMessage,
+        completionMessage,
+        questions,
+      );
 
       const response = await fetchWithRequestId(
         `/api/elicitation/events/${event.id}`,

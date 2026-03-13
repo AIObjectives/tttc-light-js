@@ -56,7 +56,10 @@ export async function PATCH(
     const result = await expressResponse.json();
     return NextResponse.json(result);
   } catch (error) {
-    elicitationEventApiLogger.error({ error }, "Failed to update elicitation event");
+    elicitationEventApiLogger.error(
+      { error },
+      "Failed to update elicitation event",
+    );
     return NextResponse.json(
       { error: "Failed to update elicitation event" },
       { status: 500 },

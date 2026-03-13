@@ -1,14 +1,10 @@
 "use client";
 
-import { use } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { use, useEffect } from "react";
 import { useUserCapabilitiesQuery } from "@/components/create/hooks/useUserCapabilitiesQuery";
 import { Spinner } from "@/components/elements";
-import {
-  EditStudyForm,
-  ElicitationNoAccess,
-} from "@/components/elicitation";
+import { EditStudyForm, ElicitationNoAccess } from "@/components/elicitation";
 import { Center } from "@/components/layout";
 import { useElicitationEvent } from "@/lib/hooks/useElicitationEvent";
 import { useUserQuery } from "@/lib/query/useUserQuery";
