@@ -408,6 +408,63 @@ const getUserCsvSizeLimit = async (
   return DEFAULT_LIMITS.csvSizeLimit;
 };
 
+function getActualCsvDataSize(
+  data: schema.DataPayload,
+  log: RequestWithAuth["log"],
+): number | undefined {
+  if (data[0] !== "csv" || !data[1]) return undefined;
+  const csvRows = data[1] as schema.SourceRow[];
+  const actualDataSize = calculateDataSize(csvRows);
+  if (actualDataSize !== undefined) {
+    log.debug(
+      { actualDataSize, sourceType: data[0] },
+      "Data size calculated for validation",
+    );
+  }
+  return actualDataSize;
+}
+
+interface CreateReportDocumentsOptions {
+  jsonUrl: string;
+  filename: string;
+  reportId: string;
+  elicitationEventId: string | undefined;
+  clientBaseUrl: string;
+}
+
+async function createReportDocuments(
+  decodedUser: DecodedIdToken,
+  userConfig: schema.LLMUserConfig,
+  options: CreateReportDocumentsOptions,
+): Promise<{ firebaseJobId: string; response: api.GenerateApiResponse }> {
+  const { jsonUrl, filename, reportId, elicitationEventId, clientBaseUrl } =
+    options;
+
+  const { firebaseJobId, reportId: createdReportId } =
+    await createUserDocuments(
+      decodedUser,
+      userConfig,
+      jsonUrl,
+      reportId,
+      elicitationEventId,
+    );
+
+  if (firebaseJobId === null) throw new Error("Failed to add firebase job.");
+  if (createdReportId === null)
+    throw new Error("Failed to create report reference.");
+
+  const reportUrl = new URL(`report/${reportId}`, clientBaseUrl).toString();
+  return {
+    firebaseJobId,
+    response: {
+      message: "Request received.",
+      filename,
+      jsonUrl,
+      reportUrl,
+    },
+  };
+}
+
 async function createNewReport(
   req: RequestWithAuth,
 ): Promise<
@@ -420,29 +477,14 @@ async function createNewReport(
   const { CLIENT_BASE_URL } = env;
   const decodedUser = req.auth;
   const body = api.generateApiRequest.parse(req.body);
-  const { data, userConfig } = body;
+  const { data, userConfig, elicitationEventId } = body;
 
   // Get user's CSV size limit based on roles and feature flags
   const userCsvSizeLimit = await getUserCsvSizeLimit(decodedUser);
 
   // Validate file size for CSV uploads
   const isCsv = data[0] === "csv";
-
-  // Calculate actual size of received data (server-side validation)
-  let actualDataSize: number | undefined;
-  if (isCsv && data[1]) {
-    const csvRows = data[1] as schema.SourceRow[];
-    actualDataSize = calculateDataSize(csvRows);
-
-    if (actualDataSize !== undefined) {
-      req.log.debug(
-        { actualDataSize, sourceType: data[0] },
-        "Data size calculated for validation",
-      );
-    }
-  }
-
-  // Validate actual data size against user's limit
+  const actualDataSize = getActualCsvDataSize(data, req.log);
   validateFileSize({ actualDataSize, maxFileSize: userCsvSizeLimit, isCsv });
 
   // Parse and process data
@@ -458,23 +500,18 @@ async function createNewReport(
   const storage = createStorage(env);
   const { filename, jsonUrl } = await createAndSaveReport(storage, reportId);
 
-  // Create Firebase documents for authenticated user
-  const { firebaseJobId, reportId: createdReportId } =
-    await createUserDocuments(decodedUser, userConfig, jsonUrl, reportId);
-
-  // Validate Firebase document creation
-  if (firebaseJobId === null) throw new Error("Failed to add firebase job.");
-  if (createdReportId === null)
-    throw new Error("Failed to create report reference.");
-
-  const reportUrl = new URL(`report/${reportId}`, CLIENT_BASE_URL).toString();
-
-  const response: api.GenerateApiResponse = {
-    message: "Request received.",
-    filename: filename,
-    jsonUrl,
-    reportUrl,
-  };
+  // Create Firebase documents and build response
+  const { firebaseJobId, response } = await createReportDocuments(
+    decodedUser,
+    userConfig,
+    {
+      jsonUrl,
+      filename,
+      reportId,
+      elicitationEventId,
+      clientBaseUrl: CLIENT_BASE_URL,
+    },
+  );
 
   // Combine user config with parsed data, adding IDs to comments if not present
   const processedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] } = {

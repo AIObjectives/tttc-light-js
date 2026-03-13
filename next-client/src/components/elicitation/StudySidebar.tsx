@@ -7,6 +7,7 @@ interface StudyItem {
   name: string;
   month: string;
   participants: number;
+  expectedParticipants?: number;
 }
 
 interface StudySidebarProps {
@@ -42,9 +43,11 @@ export function StudySidebar({ studies, activeStudyId }: StudySidebarProps) {
                     {study.name}
                   </p>
                   <div className="pl-4 space-y-1">
-                    <p className="text-sm text-slate-500">{study.month}</p>
-                    <p className="text-sm text-slate-500">
-                      {study.participants} participants
+                    <p className="text-sm text-slate-900">{study.month}</p>
+                    <p className="text-sm text-slate-900">
+                      {study.expectedParticipants !== undefined
+                        ? `${study.participants} / ${study.expectedParticipants} participants`
+                        : `${study.participants} participants`}
                     </p>
                   </div>
                 </div>

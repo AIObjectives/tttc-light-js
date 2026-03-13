@@ -188,14 +188,22 @@ export const FormDescription = ({
 export function FormDataInput({
   files,
   setFiles,
+  initialFiles,
   showErrors = false,
 }: {
   files: FileList | undefined;
   setFiles: (files: FileList | undefined) => void;
+  initialFiles?: FileList;
   /** When true, show validation error if no file is selected */
   showErrors?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!initialFiles || !inputRef.current || files) return;
+    inputRef.current.files = initialFiles;
+    setFiles(initialFiles);
+  }, [initialFiles, files, setFiles]);
   const showMissingFileError = showErrors && !files?.item(0);
 
   const fileName = useReactiveValue(() => files?.item(0)?.name || "", [files]);
@@ -353,7 +361,7 @@ export function FormDataInput({
         </div>
 
         <div>
-          {!inputRef.current?.files?.[0] ? (
+          {!files?.item(0) ? (
             <Button
               name="csvUpload"
               type="button"

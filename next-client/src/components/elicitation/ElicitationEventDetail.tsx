@@ -1,8 +1,8 @@
 "use client";
 
-import { Copy, Download, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Copy, MoreHorizontal, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
@@ -11,23 +11,24 @@ import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { useElicitationEvent } from "@/lib/hooks/useElicitationEvent";
 import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { useEventReports } from "@/lib/hooks/useEventReports";
+import { queryKeys } from "@/lib/query/queryKeys";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Badge,
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Spinner,
   TextIcon,
 } from "../elements";
 import { Center, Col, Row } from "../layout";
 import { StudySidebar } from "./StudySidebar";
-import { StudyTimeline } from "./StudyTimeline";
 
 interface ElicitationEventDetailProps {
   eventId: string;
@@ -107,33 +108,6 @@ export function ElicitationEventDetailView({
     event.reportIds || (event.reportId ? [event.reportId] : undefined);
   const { reports } = useEventReports(reportIdsToFetch);
 
-  // Build timeline: start with the event itself, then add reports
-  const eventDate = event.startDate || event.createdAt;
-  const timelineEvents = [
-    // The event itself
-    {
-      id: event.id,
-      name: event.eventName,
-      date: eventDate.toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-      }),
-      icon: "study" as const,
-      isActive: true,
-    },
-    // Add all reports
-    ...reports.map((report) => ({
-      id: report.id,
-      name: report.title,
-      date: report.createdDate.toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-      }),
-      icon: "document" as const,
-      isActive: false,
-    })),
-  ];
-
   // Get the most recent report ID for the "Go to report" button.
   // Fall back to the first known report ID from the event if fetched reports haven't loaded.
   const mostRecentReportId = reports[0]?.id ?? reportIdsToFetch?.[0];
@@ -147,6 +121,7 @@ export function ElicitationEventDetailView({
       year: "numeric",
     }),
     participants: e.responderCount,
+    expectedParticipants: e.expectedParticipantCount,
   }));
 
   return (
@@ -158,31 +133,23 @@ export function ElicitationEventDetailView({
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-8">
-          {/* Timeline */}
-          <div className="sticky top-0 bg-white z-10 border-b border-slate-200 mb-6">
-            <StudyTimeline events={timelineEvents} />
-          </div>
-
-          {/* Study details */}
-          <div className="pb-8">
-            <Card className="shadow-lg border-slate-200">
-              <CardContent className="p-6 space-y-6">
-                <EventHeader
-                  event={event}
-                  mostRecentReportId={mostRecentReportId}
-                />
-                {event.description && (
-                  <EventDescription text={event.description} />
-                )}
-                <EventMetadata event={event} />
-                {event.whatsappLink && (
-                  <WhatsAppLinkSection link={event.whatsappLink} />
-                )}
-                <EventContentSections event={event} />
-              </CardContent>
-            </Card>
-          </div>
+        <div className="max-w-3xl mx-auto px-8 py-8">
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="p-6 space-y-4">
+              <EventHeader
+                event={event}
+                mostRecentReportId={mostRecentReportId}
+              />
+              {event.description && (
+                <EventDescription text={event.description} />
+              )}
+              <EventMetadata event={event} />
+              {event.whatsappLink && (
+                <WhatsAppLinkSection link={event.whatsappLink} />
+              )}
+              <EventContentSections event={event} />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
@@ -190,7 +157,7 @@ export function ElicitationEventDetailView({
 }
 
 /**
- * Event header with title, date range, status badge, and action buttons
+ * Event header with title, date range, status badge, and actions dropdown
  */
 function EventHeader({
   event,
@@ -199,23 +166,23 @@ function EventHeader({
   event: ElicitationEventSummary;
   mostRecentReportId?: string;
 }) {
-  const router = useRouter();
   const { user } = useUserQuery();
+  const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
 
-  const handleGenerateReport = async () => {
-    setIsGenerating(true);
+  const generateReportHref = `/create?elicitationEventId=${event.id}&title=${encodeURIComponent(event.eventName)}&description=${encodeURIComponent(event.description ?? "")}`;
+
+  const handleLaunch = async () => {
+    setIsLaunching(true);
     try {
       const authToken = user ? await user.getIdToken() : undefined;
       const response = await fetchWithRequestId(
-        `/api/elicitation/events/${event.id}/generate-report`,
+        `/api/elicitation/events/${event.id}/launch`,
         {
-          method: "POST",
-          headers: {
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-            "Content-Type": "application/json",
-          },
+          method: "PATCH",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
         },
       );
 
@@ -223,12 +190,41 @@ function EventHeader({
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const { reportId } = await response.json();
-      router.push(`/report/${reportId}`);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.elicitationEvents.detail(event.id),
+      });
+      toast.success("Study launched");
     } catch {
-      toast.error("Failed to generate report");
+      toast.error("Failed to launch study");
     } finally {
-      setIsGenerating(false);
+      setIsLaunching(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setIsStopping(true);
+    try {
+      const authToken = user ? await user.getIdToken() : undefined;
+      const response = await fetchWithRequestId(
+        `/api/elicitation/events/${event.id}/stop`,
+        {
+          method: "PATCH",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.elicitationEvents.detail(event.id),
+      });
+      toast.success("Study stopped");
+    } catch {
+      toast.error("Failed to stop study");
+    } finally {
+      setIsStopping(false);
     }
   };
 
@@ -277,60 +273,122 @@ function EventHeader({
         ? formatDate(event.createdAt)
         : "No date available";
 
-  const getStatusText = (status?: string) => {
-    if (!status) return null;
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
   return (
-    <Row gap={4} className="justify-between items-start flex-wrap">
-      <Col gap={1}>
+    <Row gap={4} className="justify-between items-start">
+      <Col gap={1} className="min-w-0 flex-1">
         <h1 className="text-xl font-semibold text-slate-900">
           {event.eventName}
         </h1>
         <p className="text-sm text-slate-500">{dateRange}</p>
       </Col>
 
-      <Row gap={3} className="items-center flex-wrap">
-        {event.status && (
-          <Badge
-            variant="default"
-            className="bg-green-100 text-green-800 hover:bg-green-100 rounded-full px-3"
-          >
-            {getStatusText(event.status)}
-          </Badge>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          className="bg-indigo-50 text-indigo-700 border-indigo-50 hover:bg-indigo-100"
-          onClick={handleDownload}
-          disabled={isDownloading}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          {isDownloading ? "Downloading..." : "Download data"}
-        </Button>
-        {mostRecentReportId ? (
-          <Link href={`/report/${mostRecentReportId}`}>
-            <Button
-              size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              Go to report
+      <Row gap={3} className="items-center shrink-0">
+        <StudyStatusBadge event={event} />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
-          </Link>
-        ) : (
-          <Button
-            size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            onClick={handleGenerateReport}
-            disabled={isGenerating}
-          >
-            {isGenerating ? "Generating..." : "Generate report"}
-          </Button>
-        )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {getStudyStatus(event) === "waiting" ? (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href={`/elicitation/${event.id}/edit`}>Edit study</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-emerald-500"
+                  onSelect={handleLaunch}
+                  disabled={isLaunching}
+                >
+                  {isLaunching ? "Launching..." : "Launch study"}
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <>
+                <DropdownMenuItem
+                  onSelect={handleDownload}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? "Downloading..." : "Download data"}
+                </DropdownMenuItem>
+                {mostRecentReportId ? (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/report/${mostRecentReportId}`}>
+                      Go to report
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link href={generateReportHref}>Generate report</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="text-red-400"
+                  onSelect={handleStop}
+                  disabled={isStopping}
+                >
+                  {isStopping ? "Stopping..." : "Stop study"}
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </Row>
     </Row>
+  );
+}
+
+type StudyStatus = "completed" | "in-progress" | "waiting";
+
+function getStudyStatus(event: ElicitationEventSummary): StudyStatus {
+  const { responderCount, expectedParticipantCount, eventInitialized } = event;
+
+  if (
+    (expectedParticipantCount !== undefined &&
+      responderCount >= expectedParticipantCount) ||
+    (!eventInitialized && responderCount > 0)
+  ) {
+    return "completed";
+  }
+
+  if (
+    eventInitialized &&
+    responderCount < (expectedParticipantCount ?? Infinity)
+  ) {
+    return "in-progress";
+  }
+
+  return "waiting";
+}
+
+/**
+ * Badge showing the computed study status based on participant counts and initialization state
+ */
+function StudyStatusBadge({ event }: { event: ElicitationEventSummary }) {
+  const status = getStudyStatus(event);
+
+  if (status === "completed") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-[#dcfce7] px-3 py-1 text-xs font-medium text-[#008236] whitespace-nowrap">
+        Completed
+      </span>
+    );
+  }
+
+  if (status === "in-progress") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-[#ff6600] whitespace-nowrap">
+        In Progress
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center rounded-full bg-[#f5fb47] px-3 py-1 text-xs font-medium text-[#0f0f0f] whitespace-nowrap">
+      Waiting for launch
+    </span>
   );
 }
 
@@ -351,17 +409,23 @@ function EventMetadata({ event }: { event: ElicitationEventSummary }) {
   };
 
   return (
-    <Row gap={6} className="items-center flex-wrap">
+    <Row gap={0} className="items-center flex-wrap">
       <TextIcon icon={<Icons.People size={16} />}>
         <span className="text-green-700">{event.responderCount}</span>
         <span className="text-slate-600">
-          {" "}
-          / {event.responderCount} participants
+          {event.expectedParticipantCount !== undefined
+            ? ` / ${event.expectedParticipantCount} participants`
+            : " participants"}
         </span>
       </TextIcon>
 
       {event.mode && (
-        <span className="text-sm text-slate-900">{formatMode(event.mode)}</span>
+        <>
+          <div className="mx-4 h-4 w-px bg-slate-300" />
+          <span className="text-sm text-slate-900">
+            {formatMode(event.mode)}
+          </span>
+        </>
       )}
     </Row>
   );
@@ -403,14 +467,12 @@ function WhatsAppLinkSection({ link }: { link: string }) {
 }
 
 /**
- * Content sections: opening message, survey questions, follow-up questions, closing message
+ * Content sections: opening message, survey questions, closing message
  */
 function EventContentSections({ event }: { event: ElicitationEventSummary }) {
   const hasContent =
     event.initialMessage ||
     (event.questions && event.questions.length > 0) ||
-    (event.followUpQuestions?.enabled &&
-      event.followUpQuestions.questions.length > 0) ||
     event.completionMessage;
 
   if (!hasContent) {
@@ -421,13 +483,11 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
     <Col gap={4} className="mt-4">
       {event.initialMessage && (
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">
+          <CardContent className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
               Opening message
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            </h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
               {event.initialMessage}
             </p>
           </CardContent>
@@ -436,15 +496,13 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
 
       {event.questions && event.questions.length > 0 && (
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">
+          <CardContent className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
               Survey questions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="list-decimal list-inside space-y-2">
+            </h3>
+            <ol className="list-decimal list-inside space-y-1">
               {event.questions.map((question) => (
-                <li key={`q-${question.id}`} className="text-sm text-slate-600">
+                <li key={`q-${question.id}`} className="text-sm text-slate-500">
                   {question.text}
                 </li>
               ))}
@@ -453,38 +511,13 @@ function EventContentSections({ event }: { event: ElicitationEventSummary }) {
         </Card>
       )}
 
-      {event.followUpQuestions?.enabled &&
-        event.followUpQuestions.questions.length > 0 && (
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">
-                Follow-up questions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal list-inside space-y-2">
-                {event.followUpQuestions.questions.map((question, index) => (
-                  <li
-                    key={`fq-${index}-${question.slice(0, 30)}`}
-                    className="text-sm text-slate-600"
-                  >
-                    {question}
-                  </li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
-        )}
-
       {event.completionMessage && (
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">
+          <CardContent className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
               Closing message
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            </h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
               {event.completionMessage}
             </p>
           </CardContent>

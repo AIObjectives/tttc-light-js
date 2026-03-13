@@ -5,6 +5,7 @@ import * as schema from "../schema";
 export const generateApiRequest = z.object({
   userConfig: schema.llmUserConfig,
   data: schema.dataPayload,
+  elicitationEventId: z.string().optional(),
 });
 
 export type GenerateApiRequest = z.infer<typeof generateApiRequest>;
