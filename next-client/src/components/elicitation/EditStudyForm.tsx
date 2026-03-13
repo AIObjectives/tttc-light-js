@@ -40,6 +40,117 @@ function toISODateString(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
+function toOptionalISODate(date: Date | undefined): string | undefined {
+  return date ? toISODateString(date) : undefined;
+}
+
+function parseParticipantCount(value: string): number | undefined {
+  const parsed = value.trim() ? Number(value.trim()) : undefined;
+  return parsed !== undefined && !Number.isNaN(parsed) ? parsed : undefined;
+}
+
+interface QuestionsCardProps {
+  questions: string[];
+  onChange: (questions: string[]) => void;
+}
+
+function QuestionsCard({ questions, onChange }: QuestionsCardProps) {
+  const [newQuestion, setNewQuestion] = useState("");
+  const dragIndexRef = useRef<number | null>(null);
+
+  const handleAdd = () => {
+    const trimmed = newQuestion.trim();
+    if (!trimmed) return;
+    onChange([...questions, trimmed]);
+    setNewQuestion("");
+  };
+
+  const handleRemove = (index: number) => {
+    onChange(questions.filter((_, i) => i !== index));
+  };
+
+  const handleDrop = (toIndex: number) => {
+    const from = dragIndexRef.current;
+    if (from === null || from === toIndex) return;
+    const next = [...questions];
+    const [moved] = next.splice(from, 1);
+    next.splice(toIndex, 0, moved);
+    onChange(next);
+    dragIndexRef.current = null;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">Survey questions</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          These are the questions we ask your respondents. If you selected
+          "listening mode" above, you don't need to fill this out; we'll just
+          use the opening prompt you wrote above. If you want to use survey or
+          follow-up mode, add questions here.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Col gap={4}>
+          {questions.length > 0 && (
+            <Col gap={2}>
+              {questions.map((question, index) => (
+                <Row
+                  key={`q-${question.slice(0, 20)}-${index}`}
+                  gap={3}
+                  draggable
+                  onDragStart={() => {
+                    dragIndexRef.current = index;
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(index)}
+                  className="items-center bg-white border border-slate-200 rounded-lg px-3 py-3 cursor-grab active:cursor-grabbing"
+                >
+                  <GripVertical className="h-5 w-5 text-slate-400 flex-shrink-0" />
+                  <span className="flex-1 text-sm text-slate-600">
+                    {question}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(index)}
+                    className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                    aria-label="Remove question"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </Row>
+              ))}
+            </Col>
+          )}
+          <Row gap={2}>
+            <Input
+              placeholder="Enter a new question..."
+              value={newQuestion}
+              onChange={(e) => setNewQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAdd();
+                }
+              }}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              onClick={handleAdd}
+              disabled={!newQuestion.trim()}
+              className="bg-primary text-primary-foreground shrink-0"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </Row>
+        </Col>
+      </CardContent>
+    </Card>
+  );
+}
+
 function buildRequestBody(
   studyName: string,
   location: string,
@@ -53,28 +164,17 @@ function buildRequestBody(
   const description = location.trim()
     ? `Location: ${location.trim()}`
     : undefined;
-  const startDate = dateRange?.from
-    ? toISODateString(dateRange.from)
-    : undefined;
-  const endDate = dateRange?.to ? toISODateString(dateRange.to) : undefined;
-  const parsedRespondents = expectedRespondents.trim()
-    ? Number(expectedRespondents.trim())
-    : undefined;
-  const expectedParticipantCount =
-    parsedRespondents !== undefined && !Number.isNaN(parsedRespondents)
-      ? parsedRespondents
-      : undefined;
 
   return {
     eventName: studyName.trim(),
     description,
-    startDate,
-    endDate,
+    startDate: toOptionalISODate(dateRange?.from),
+    endDate: toOptionalISODate(dateRange?.to),
     mode,
     initialMessage: initialMessage.trim() || undefined,
     completionMessage: completionMessage.trim() || undefined,
     questions: questions.length > 0 ? questions : undefined,
-    expectedParticipantCount,
+    expectedParticipantCount: parseParticipantCount(expectedRespondents),
   };
 }
 
@@ -121,9 +221,7 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
   const [questions, setQuestions] = useState<string[]>(
     event.questions?.map((q) => q.text) ?? [],
   );
-  const [newQuestion, setNewQuestion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const dragIndexRef = useRef<number | null>(null);
 
   const sidebarStudies = allEvents.map((e) => ({
     id: e.id,
@@ -135,17 +233,6 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
     participants: e.responderCount,
     expectedParticipants: e.expectedParticipantCount,
   }));
-
-  const handleAddQuestion = () => {
-    const trimmed = newQuestion.trim();
-    if (!trimmed) return;
-    setQuestions((prev) => [...prev, trimmed]);
-    setNewQuestion("");
-  };
-
-  const handleRemoveQuestion = (index: number) => {
-    setQuestions((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const handleSubmit = async () => {
     if (!studyName.trim()) {
@@ -353,90 +440,7 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
 
             {/* Survey questions card */}
             {(mode === "survey" || mode === "followup") && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">Survey questions</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    These are the questions we ask your respondents. If you
-                    selected "listening mode" above, you don't need to fill this
-                    out; we'll just use the opening prompt you wrote above. If
-                    you want to use survey or follow-up mode, add questions
-                    here.
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <Col gap={4}>
-                    {/* Existing questions */}
-                    {questions.length > 0 && (
-                      <Col gap={2}>
-                        {questions.map((question, index) => (
-                          <Row
-                            key={`q-${question.slice(0, 20)}-${index}`}
-                            gap={3}
-                            draggable
-                            onDragStart={() => {
-                              dragIndexRef.current = index;
-                            }}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                            }}
-                            onDrop={() => {
-                              const from = dragIndexRef.current;
-                              if (from === null || from === index) return;
-                              setQuestions((prev) => {
-                                const next = [...prev];
-                                const [moved] = next.splice(from, 1);
-                                next.splice(index, 0, moved);
-                                return next;
-                              });
-                              dragIndexRef.current = null;
-                            }}
-                            className="items-center bg-white border border-slate-200 rounded-lg px-3 py-3 cursor-grab active:cursor-grabbing"
-                          >
-                            <GripVertical className="h-5 w-5 text-slate-400 flex-shrink-0" />
-                            <span className="flex-1 text-sm text-slate-600">
-                              {question}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveQuestion(index)}
-                              className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
-                              aria-label="Remove question"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </Row>
-                        ))}
-                      </Col>
-                    )}
-
-                    {/* Add new question */}
-                    <Row gap={2}>
-                      <Input
-                        placeholder="Enter a new question..."
-                        value={newQuestion}
-                        onChange={(e) => setNewQuestion(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleAddQuestion();
-                          }
-                        }}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleAddQuestion}
-                        disabled={!newQuestion.trim()}
-                        className="bg-primary text-primary-foreground shrink-0"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                      </Button>
-                    </Row>
-                  </Col>
-                </CardContent>
-              </Card>
+              <QuestionsCard questions={questions} onChange={setQuestions} />
             )}
 
             {/* Closing message card */}
