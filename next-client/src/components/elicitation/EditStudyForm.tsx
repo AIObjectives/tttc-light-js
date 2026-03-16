@@ -151,30 +151,32 @@ function QuestionsCard({ questions, onChange }: QuestionsCardProps) {
   );
 }
 
-function buildRequestBody(
-  studyName: string,
-  location: string,
-  dateRange: DateRange | undefined,
-  expectedRespondents: string,
-  mode: ElicitationMode,
-  initialMessage: string,
-  completionMessage: string,
-  questions: string[],
-): UpdateElicitationEventRequest {
-  const description = location.trim()
-    ? `Location: ${location.trim()}`
+interface FormState {
+  studyName: string;
+  location: string;
+  dateRange: DateRange | undefined;
+  expectedRespondents: string;
+  mode: ElicitationMode;
+  initialMessage: string;
+  completionMessage: string;
+  questions: string[];
+}
+
+function buildRequestBody(form: FormState): UpdateElicitationEventRequest {
+  const description = form.location.trim()
+    ? `Location: ${form.location.trim()}`
     : undefined;
 
   return {
-    eventName: studyName.trim(),
+    eventName: form.studyName.trim(),
     description,
-    startDate: toOptionalISODate(dateRange?.from),
-    endDate: toOptionalISODate(dateRange?.to),
-    mode,
-    initialMessage: initialMessage.trim() || undefined,
-    completionMessage: completionMessage.trim() || undefined,
-    questions: questions.length > 0 ? questions : undefined,
-    expectedParticipantCount: parseParticipantCount(expectedRespondents),
+    startDate: toOptionalISODate(form.dateRange?.from),
+    endDate: toOptionalISODate(form.dateRange?.to),
+    mode: form.mode,
+    initialMessage: form.initialMessage.trim() || undefined,
+    completionMessage: form.completionMessage.trim() || undefined,
+    questions: form.questions.length > 0 ? form.questions : undefined,
+    expectedParticipantCount: parseParticipantCount(form.expectedRespondents),
   };
 }
 
@@ -182,6 +184,60 @@ function parseLocation(description: string | undefined): string {
   if (!description) return "";
   const match = description.match(/^Location: (.+)$/);
   return match ? match[1] : "";
+}
+
+function initialFormValues(event: ElicitationEventSummary) {
+  return {
+    studyName: event.eventName,
+    location: parseLocation(event.description),
+    dateRange:
+      event.startDate || event.endDate
+        ? ({ from: event.startDate, to: event.endDate } as DateRange)
+        : undefined,
+    expectedRespondents:
+      event.expectedParticipantCount !== undefined
+        ? String(event.expectedParticipantCount)
+        : "",
+    mode: (event.mode as ElicitationMode) ?? "listener",
+    initialMessage: event.initialMessage ?? "",
+    completionMessage: event.completionMessage ?? "",
+    questions: event.questions?.map((q) => q.text) ?? [],
+  };
+}
+
+function toSidebarStudy(e: ElicitationEventSummary) {
+  return {
+    id: e.id,
+    name: e.eventName,
+    month: (e.startDate ?? e.createdAt).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    }),
+    participants: e.responderCount,
+    expectedParticipants: e.expectedParticipantCount,
+  };
+}
+
+async function patchElicitationEvent(
+  eventId: string,
+  body: UpdateElicitationEventRequest,
+  authToken: string | undefined,
+): Promise<void> {
+  const response = await fetchWithRequestId(
+    `/api/elicitation/events/${eventId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+  }
 }
 
 interface EditStudyFormProps {
@@ -196,43 +252,24 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
   const { user } = useUserQuery();
   const { events: allEvents } = useElicitationEvents();
 
-  const [studyName, setStudyName] = useState(event.eventName);
-  const [location, setLocation] = useState(parseLocation(event.description));
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    if (event.startDate || event.endDate) {
-      return { from: event.startDate, to: event.endDate };
-    }
-    return undefined;
-  });
+  const initial = initialFormValues(event);
+  const [studyName, setStudyName] = useState(initial.studyName);
+  const [location, setLocation] = useState(initial.location);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    initial.dateRange,
+  );
   const [expectedRespondents, setExpectedRespondents] = useState(
-    event.expectedParticipantCount !== undefined
-      ? String(event.expectedParticipantCount)
-      : "",
+    initial.expectedRespondents,
   );
-  const [mode, setMode] = useState<ElicitationMode>(
-    (event.mode as ElicitationMode) ?? "listener",
-  );
-  const [initialMessage, setInitialMessage] = useState(
-    event.initialMessage ?? "",
-  );
+  const [mode, setMode] = useState<ElicitationMode>(initial.mode);
+  const [initialMessage, setInitialMessage] = useState(initial.initialMessage);
   const [completionMessage, setCompletionMessage] = useState(
-    event.completionMessage ?? "",
+    initial.completionMessage,
   );
-  const [questions, setQuestions] = useState<string[]>(
-    event.questions?.map((q) => q.text) ?? [],
-  );
+  const [questions, setQuestions] = useState<string[]>(initial.questions);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const sidebarStudies = allEvents.map((e) => ({
-    id: e.id,
-    name: e.eventName,
-    month: (e.startDate ?? e.createdAt).toLocaleDateString("en-US", {
-      month: "long",
-      year: "numeric",
-    }),
-    participants: e.responderCount,
-    expectedParticipants: e.expectedParticipantCount,
-  }));
+  const sidebarStudies = allEvents.map(toSidebarStudy);
 
   const handleSubmit = async () => {
     if (!studyName.trim()) {
@@ -243,7 +280,7 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
     setIsSubmitting(true);
     try {
       const authToken = user ? await user.getIdToken() : undefined;
-      const body = buildRequestBody(
+      const body = buildRequestBody({
         studyName,
         location,
         dateRange,
@@ -252,25 +289,8 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
         initialMessage,
         completionMessage,
         questions,
-      );
-
-      const response = await fetchWithRequestId(
-        `/api/elicitation/events/${event.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-          },
-          body: JSON.stringify(body),
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-
+      });
+      await patchElicitationEvent(event.id, body, authToken);
       toast.success("Study updated successfully");
       router.push(`/elicitation/${event.id}`);
     } catch (err) {
