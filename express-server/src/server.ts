@@ -37,6 +37,7 @@ import {
   getElicitationEvents,
   launchElicitationEvent,
   stopElicitationEvent,
+  updateElicitationEvent,
 } from "./routes/elicitation";
 import ensureUser from "./routes/ensureUser";
 import feedback from "./routes/feedback";
@@ -406,6 +407,18 @@ app.get(
   authLimiter,
   authMiddleware(),
   getElicitationEvent as unknown as express.RequestHandler,
+);
+
+/**
+ * Update an elicitation event (waiting state only)
+ * Requires event_organizer role and ownership
+ * Uses authLimiter (5000 req/15min per IP)
+ */
+app.patch(
+  "/api/elicitation/events/:id",
+  authLimiter,
+  authMiddleware(),
+  updateElicitationEvent as unknown as express.RequestHandler,
 );
 
 /**

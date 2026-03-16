@@ -726,8 +726,9 @@ export async function createElicitationEvent(
 
     if (body.description !== undefined) docData.description = body.description;
     if (body.startDate !== undefined)
-      docData.start_date = new Date(body.startDate);
-    if (body.endDate !== undefined) docData.end_date = new Date(body.endDate);
+      docData.start_date = new Date(`${body.startDate}T01:00:00Z`);
+    if (body.endDate !== undefined)
+      docData.end_date = new Date(`${body.endDate}T01:00:00Z`);
     if (body.mainQuestion !== undefined)
       docData.main_question = body.mainQuestion;
     if (body.questions !== undefined)
@@ -856,6 +857,135 @@ export async function launchElicitationEvent(
     res.json({ event });
   } catch (error) {
     elicitationLogger.error({ error }, "Failed to launch elicitation event");
+    sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
+  }
+}
+
+/**
+ * Update an elicitation event. Only allowed when the event has not been launched
+ * (event_initialized is false or unset).
+ *
+ * Requires: authMiddleware()
+ * Requires: event_organizer role
+ * Requires: User must own the event
+ * Requires: Event must be in waiting state (not launched)
+ */
+export async function updateElicitationEvent(
+  req: RequestWithAuth,
+  res: Response,
+): Promise<void> {
+  try {
+    const decodedUser = req.auth;
+    const userId = decodedUser.uid;
+    const eventId = req.params.id;
+
+    const featureEnabled = await isFeatureEnabled(
+      FEATURE_FLAGS.ELICITATION_ENABLED,
+      { userId },
+    );
+    if (!featureEnabled) {
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    if (!eventId) {
+      elicitationLogger.warn({ userId }, "Event ID not provided");
+      sendErrorByCode(res, ERROR_CODES.INVALID_REQUEST, elicitationLogger);
+      return;
+    }
+
+    const userRef = db.collection(getCollectionName("USERS")).doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      elicitationLogger.warn({ userId }, "User document not found");
+      sendErrorByCode(res, ERROR_CODES.USER_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const roles = userData?.roles || [];
+
+    if (!isEventOrganizer(roles)) {
+      elicitationLogger.warn(
+        { userId, roles },
+        "User missing event_organizer role",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    const collectionName = getElicitationCollectionName(
+      req.context.env.NODE_ENV,
+    );
+    const eventRef = db.collection(collectionName).doc(eventId);
+    const eventDoc = await eventRef.get();
+
+    if (!eventDoc.exists) {
+      elicitationLogger.warn({ userId, eventId }, "Event not found");
+      sendErrorByCode(res, ERROR_CODES.REPORT_NOT_FOUND, elicitationLogger);
+      return;
+    }
+
+    const eventData = eventDoc.data();
+    if (eventData?.owner_user_id !== userId) {
+      elicitationLogger.warn(
+        { userId, eventId, ownerId: eventData?.owner_user_id },
+        "User does not own this event",
+      );
+      sendErrorByCode(res, ERROR_CODES.AUTH_UNAUTHORIZED, elicitationLogger);
+      return;
+    }
+
+    if (eventData?.event_initialized === true) {
+      elicitationLogger.warn(
+        { userId, eventId },
+        "Cannot edit a launched event",
+      );
+      sendErrorByCode(res, ERROR_CODES.INVALID_REQUEST, elicitationLogger);
+      return;
+    }
+
+    const body = api.updateElicitationEventRequest.parse(req.body);
+
+    const updates: Record<string, unknown> = {};
+    if (body.eventName !== undefined) updates.event_name = body.eventName;
+    if (body.description !== undefined) updates.description = body.description;
+    if (body.startDate !== undefined)
+      updates.start_date = new Date(`${body.startDate}T01:00:00Z`);
+    if (body.endDate !== undefined)
+      updates.end_date = new Date(`${body.endDate}T01:00:00Z`);
+    if (body.mode !== undefined) updates.mode = body.mode;
+    if (body.mainQuestion !== undefined)
+      updates.main_question = body.mainQuestion;
+    if (body.questions !== undefined)
+      updates.questions = body.questions.map((text, index) => ({
+        id: index,
+        text,
+        asked_count: 0,
+      }));
+    if (body.followUpQuestions !== undefined)
+      updates.follow_up_questions = {
+        enabled: true,
+        questions: body.followUpQuestions,
+      };
+    if (body.initialMessage !== undefined)
+      updates.initial_message = body.initialMessage;
+    if (body.completionMessage !== undefined)
+      updates.completion_message = body.completionMessage;
+    if (body.expectedParticipantCount !== undefined)
+      updates.expected_participant_count = body.expectedParticipantCount;
+
+    await eventRef.update(updates);
+
+    const updatedDoc = await eventRef.get();
+    const event = await buildEventSummary(updatedDoc, userId);
+
+    elicitationLogger.info({ userId, eventId }, "Elicitation event updated");
+
+    res.json({ event });
+  } catch (error) {
+    elicitationLogger.error({ error }, "Failed to update elicitation event");
     sendErrorByCode(res, ERROR_CODES.INTERNAL_ERROR, elicitationLogger);
   }
 }

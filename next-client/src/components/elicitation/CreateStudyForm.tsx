@@ -9,6 +9,7 @@ import type { CreateElicitationEventRequest } from "tttc-common/api";
 import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { useUserQuery } from "@/lib/query/useUserQuery";
+import { utcDateToLocal } from "@/lib/utils/dates";
 import {
   Button,
   Calendar,
@@ -62,10 +63,10 @@ export function CreateStudyForm() {
   const sidebarStudies = allEvents.map((e) => ({
     id: e.id,
     name: e.eventName,
-    month: (e.startDate ?? e.createdAt).toLocaleDateString("en-US", {
-      month: "long",
-      year: "numeric",
-    }),
+    month: utcDateToLocal(e.startDate ?? e.createdAt).toLocaleDateString(
+      "en-US",
+      { month: "long", year: "numeric" },
+    ),
     participants: e.responderCount,
     expectedParticipants: e.expectedParticipantCount,
   }));
