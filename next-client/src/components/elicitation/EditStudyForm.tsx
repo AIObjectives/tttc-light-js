@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -9,6 +10,7 @@ import type { UpdateElicitationEventRequest } from "tttc-common/api";
 import type { ElicitationEventSummary } from "tttc-common/firebase";
 import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
+import { queryKeys } from "@/lib/query/queryKeys";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   Button,
@@ -426,6 +428,7 @@ interface EditStudyFormProps {
  */
 export function EditStudyForm({ event }: EditStudyFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useUserQuery();
   const { events: allEvents } = useElicitationEvents();
 
@@ -456,6 +459,9 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
         questions,
       });
       await patchElicitationEvent(event.id, body, authToken);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.elicitationEvents.all,
+      });
       toast.success("Study updated successfully");
       router.push(`/elicitation/${event.id}`);
     } catch (err) {
