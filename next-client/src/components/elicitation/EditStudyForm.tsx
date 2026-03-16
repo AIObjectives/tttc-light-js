@@ -12,6 +12,7 @@ import { fetchWithRequestId } from "@/lib/api/fetchWithRequestId";
 import { useElicitationEvents } from "@/lib/hooks/useElicitationEvents";
 import { queryKeys } from "@/lib/query/queryKeys";
 import { useUserQuery } from "@/lib/query/useUserQuery";
+import { utcDateToLocal } from "@/lib/utils/dates";
 import {
   Button,
   Calendar,
@@ -43,16 +44,6 @@ function toISODateString(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
-}
-
-/**
- * Dates from the server are stored as UTC midnight (e.g. "2026-03-20T00:00:00Z").
- * In timezones west of UTC this renders as the previous day in local time.
- * Convert to a local-midnight Date using the UTC date parts so the calendar
- * always shows the intended calendar date regardless of timezone.
- */
-function utcDateToLocal(date: Date): Date {
-  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
 function toOptionalISODate(date: Date | undefined): string | undefined {
@@ -398,10 +389,10 @@ function toSidebarStudy(e: ElicitationEventSummary) {
   return {
     id: e.id,
     name: e.eventName,
-    month: (e.startDate ?? e.createdAt).toLocaleDateString("en-US", {
-      month: "long",
-      year: "numeric",
-    }),
+    month: utcDateToLocal(e.startDate ?? e.createdAt).toLocaleDateString(
+      "en-US",
+      { month: "long", year: "numeric" },
+    ),
     participants: e.responderCount,
     expectedParticipants: e.expectedParticipantCount,
   };
