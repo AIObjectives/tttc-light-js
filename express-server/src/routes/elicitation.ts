@@ -726,8 +726,9 @@ export async function createElicitationEvent(
 
     if (body.description !== undefined) docData.description = body.description;
     if (body.startDate !== undefined)
-      docData.start_date = new Date(body.startDate);
-    if (body.endDate !== undefined) docData.end_date = new Date(body.endDate);
+      docData.start_date = new Date(`${body.startDate}T01:00:00Z`);
+    if (body.endDate !== undefined)
+      docData.end_date = new Date(`${body.endDate}T01:00:00Z`);
     if (body.mainQuestion !== undefined)
       docData.main_question = body.mainQuestion;
     if (body.questions !== undefined)
@@ -951,8 +952,9 @@ export async function updateElicitationEvent(
     if (body.eventName !== undefined) updates.event_name = body.eventName;
     if (body.description !== undefined) updates.description = body.description;
     if (body.startDate !== undefined)
-      updates.start_date = new Date(body.startDate);
-    if (body.endDate !== undefined) updates.end_date = new Date(body.endDate);
+      updates.start_date = new Date(`${body.startDate}T01:00:00Z`);
+    if (body.endDate !== undefined)
+      updates.end_date = new Date(`${body.endDate}T01:00:00Z`);
     if (body.mode !== undefined) updates.mode = body.mode;
     if (body.mainQuestion !== undefined)
       updates.main_question = body.mainQuestion;
