@@ -218,6 +218,12 @@ function toSidebarStudy(e: ElicitationEventSummary) {
   };
 }
 
+async function getAuthToken(
+  user: { getIdToken: () => Promise<string> } | null | undefined,
+): Promise<string | undefined> {
+  return user ? user.getIdToken() : undefined;
+}
+
 async function patchElicitationEvent(
   eventId: string,
   body: UpdateElicitationEventRequest,
@@ -279,7 +285,7 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
 
     setIsSubmitting(true);
     try {
-      const authToken = user ? await user.getIdToken() : undefined;
+      const authToken = await getAuthToken(user);
       const body = buildRequestBody({
         studyName,
         location,
