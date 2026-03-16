@@ -151,15 +151,186 @@ function QuestionsCard({ questions, onChange }: QuestionsCardProps) {
   );
 }
 
-interface FormState {
+interface BasicInfo {
   studyName: string;
   location: string;
   dateRange: DateRange | undefined;
   expectedRespondents: string;
   mode: ElicitationMode;
+}
+
+interface FormState extends BasicInfo {
   initialMessage: string;
   completionMessage: string;
   questions: string[];
+}
+
+function BasicInfoCard({
+  value,
+  onChange,
+}: {
+  value: BasicInfo;
+  onChange: (updates: Partial<BasicInfo>) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">Basic information</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Col gap={4}>
+          <Col gap={1.5}>
+            <label
+              htmlFor="study-name"
+              className="text-sm font-medium text-foreground"
+            >
+              Study Name
+            </label>
+            <Input
+              id="study-name"
+              placeholder="Unique identifier for your study"
+              value={value.studyName}
+              onChange={(e) => onChange({ studyName: e.target.value })}
+            />
+          </Col>
+          <Col gap={1.5}>
+            <label
+              htmlFor="location"
+              className="text-sm font-medium text-foreground"
+            >
+              Location
+            </label>
+            <Input
+              id="location"
+              placeholder="Where will your respondents be?"
+              value={value.location}
+              onChange={(e) => onChange({ location: e.target.value })}
+            />
+          </Col>
+          <Col gap={1.5}>
+            <p className="text-sm font-medium text-foreground">Dates</p>
+            <Calendar
+              mode="range"
+              selected={value.dateRange}
+              onSelect={(range) => onChange({ dateRange: range })}
+              className="rounded-md border w-fit"
+            />
+          </Col>
+          <Col gap={1.5}>
+            <label
+              htmlFor="expected-respondents"
+              className="text-sm font-medium text-foreground"
+            >
+              Expected total respondents
+            </label>
+            <Input
+              id="expected-respondents"
+              type="number"
+              placeholder="How many respondents do you think will use your tool in total?"
+              value={value.expectedRespondents}
+              onChange={(e) =>
+                onChange({ expectedRespondents: e.target.value })
+              }
+              className="max-w-sm"
+            />
+          </Col>
+          <Col gap={0.5}>
+            <p className="text-sm font-medium text-foreground">Phone number</p>
+            <p className="text-xs text-muted-foreground">
+              Our default phone number for WhatsApp messages is U.S-based. If
+              you need a different country code, please provide one we can use
+              or reach out to us at t3c@objective.is.
+            </p>
+          </Col>
+          <Col gap={0.5}>
+            <p className="text-sm font-medium text-foreground">
+              Elicitation mode
+            </p>
+            <Row gap={6} className="flex-wrap">
+              {MODE_OPTIONS.map(({ value: modeValue, label }) => (
+                <label
+                  key={modeValue}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="elicitation-mode"
+                    value={modeValue}
+                    checked={value.mode === modeValue}
+                    onChange={() => onChange({ mode: modeValue })}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm text-muted-foreground">{label}</span>
+                </label>
+              ))}
+            </Row>
+          </Col>
+        </Col>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OpeningMessageCard({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">Opening message</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Write the instruction or conversational prompt that respondents see
+          first. For example, "Please provide your name and organization to get
+          started" or "Welcome to Summit 2026! What do you think so far?"
+        </p>
+      </CardHeader>
+      <CardContent>
+        <TextArea
+          id="initial-message"
+          placeholder="Maximum 2000 characters"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={2000}
+          rows={5}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ClosingMessageCard({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">Closing message</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Write the final message respondents see at the end of their
+          interaction. For example, "Thank you for your insights today! Your
+          responses have been recorded."
+        </p>
+      </CardHeader>
+      <CardContent>
+        <TextArea
+          id="completion-message"
+          placeholder="Maximum 2000 characters"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={2000}
+          rows={5}
+        />
+      </CardContent>
+    </Card>
+  );
 }
 
 function buildRequestBody(form: FormState): UpdateElicitationEventRequest {
@@ -259,15 +430,7 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
   const { events: allEvents } = useElicitationEvents();
 
   const initial = initialFormValues(event);
-  const [studyName, setStudyName] = useState(initial.studyName);
-  const [location, setLocation] = useState(initial.location);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(
-    initial.dateRange,
-  );
-  const [expectedRespondents, setExpectedRespondents] = useState(
-    initial.expectedRespondents,
-  );
-  const [mode, setMode] = useState<ElicitationMode>(initial.mode);
+  const [basicInfo, setBasicInfo] = useState<BasicInfo>(initial);
   const [initialMessage, setInitialMessage] = useState(initial.initialMessage);
   const [completionMessage, setCompletionMessage] = useState(
     initial.completionMessage,
@@ -278,7 +441,7 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
   const sidebarStudies = allEvents.map(toSidebarStudy);
 
   const handleSubmit = async () => {
-    if (!studyName.trim()) {
+    if (!basicInfo.studyName.trim()) {
       toast.error("Study name is required");
       return;
     }
@@ -287,11 +450,7 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
     try {
       const authToken = await getAuthToken(user);
       const body = buildRequestBody({
-        studyName,
-        location,
-        dateRange,
-        expectedRespondents,
-        mode,
+        ...basicInfo,
         initialMessage,
         completionMessage,
         questions,
@@ -330,172 +489,27 @@ export function EditStudyForm({ event }: EditStudyFormProps) {
           </Col>
 
           <Col gap={6}>
-            {/* Basic information card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">Basic information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Col gap={4}>
-                  {/* Study Name */}
-                  <Col gap={1.5}>
-                    <label
-                      htmlFor="study-name"
-                      className="text-sm font-medium text-foreground"
-                    >
-                      Study Name
-                    </label>
-                    <Input
-                      id="study-name"
-                      placeholder="Unique identifier for your study"
-                      value={studyName}
-                      onChange={(e) => setStudyName(e.target.value)}
-                    />
-                  </Col>
-
-                  {/* Location */}
-                  <Col gap={1.5}>
-                    <label
-                      htmlFor="location"
-                      className="text-sm font-medium text-foreground"
-                    >
-                      Location
-                    </label>
-                    <Input
-                      id="location"
-                      placeholder="Where will your respondents be?"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                    />
-                  </Col>
-
-                  {/* Dates */}
-                  <Col gap={1.5}>
-                    <p className="text-sm font-medium text-foreground">Dates</p>
-                    <Calendar
-                      mode="range"
-                      selected={dateRange}
-                      onSelect={setDateRange}
-                      className="rounded-md border w-fit"
-                    />
-                  </Col>
-
-                  {/* Expected total respondents */}
-                  <Col gap={1.5}>
-                    <label
-                      htmlFor="expected-respondents"
-                      className="text-sm font-medium text-foreground"
-                    >
-                      Expected total respondents
-                    </label>
-                    <Input
-                      id="expected-respondents"
-                      type="number"
-                      placeholder="How many respondents do you think will use your tool in total?"
-                      value={expectedRespondents}
-                      onChange={(e) => setExpectedRespondents(e.target.value)}
-                      className="max-w-sm"
-                    />
-                  </Col>
-
-                  {/* Phone number (informational) */}
-                  <Col gap={0.5}>
-                    <p className="text-sm font-medium text-foreground">
-                      Phone number
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Our default phone number for WhatsApp messages is
-                      U.S-based. If you need a different country code, please
-                      provide one we can use or reach out to us at
-                      t3c@objective.is.
-                    </p>
-                  </Col>
-
-                  {/* Elicitation mode */}
-                  <Col gap={0.5}>
-                    <p className="text-sm font-medium text-foreground">
-                      Elicitation mode
-                    </p>
-                    <Row gap={6} className="flex-wrap">
-                      {MODE_OPTIONS.map(({ value: modeValue, label }) => (
-                        <label
-                          key={modeValue}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="elicitation-mode"
-                            value={modeValue}
-                            checked={mode === modeValue}
-                            onChange={() => setMode(modeValue)}
-                            className="accent-primary"
-                          />
-                          <span className="text-sm text-muted-foreground">
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </Row>
-                  </Col>
-                </Col>
-              </CardContent>
-            </Card>
-
-            {/* Opening message card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">Opening message</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Write the instruction or conversational prompt that
-                  respondents see first. For example, "Please provide your name
-                  and organization to get started" or "Welcome to Summit 2026!
-                  What do you think so far?"
-                </p>
-              </CardHeader>
-              <CardContent>
-                <TextArea
-                  id="initial-message"
-                  placeholder="Maximum 2000 characters"
-                  value={initialMessage}
-                  onChange={(e) => setInitialMessage(e.target.value)}
-                  maxLength={2000}
-                  rows={5}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Survey questions card */}
-            {(mode === "survey" || mode === "followup") && (
+            <BasicInfoCard
+              value={basicInfo}
+              onChange={(updates) =>
+                setBasicInfo((prev) => ({ ...prev, ...updates }))
+              }
+            />
+            <OpeningMessageCard
+              value={initialMessage}
+              onChange={setInitialMessage}
+            />
+            {(basicInfo.mode === "survey" || basicInfo.mode === "followup") && (
               <QuestionsCard questions={questions} onChange={setQuestions} />
             )}
-
-            {/* Closing message card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">Closing message</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Write the final message respondents see at the end of their
-                  interaction. For example, "Thank you for your insights today!
-                  Your responses have been recorded."
-                </p>
-              </CardHeader>
-              <CardContent>
-                <TextArea
-                  id="completion-message"
-                  placeholder="Maximum 2000 characters"
-                  value={completionMessage}
-                  onChange={(e) => setCompletionMessage(e.target.value)}
-                  maxLength={2000}
-                  rows={5}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Submit button */}
+            <ClosingMessageCard
+              value={completionMessage}
+              onChange={setCompletionMessage}
+            />
             <div className="flex justify-end pb-8">
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !studyName.trim()}
+                disabled={isSubmitting || !basicInfo.studyName.trim()}
                 className="bg-primary text-primary-foreground"
               >
                 {isSubmitting ? "Saving..." : "Save study"}
