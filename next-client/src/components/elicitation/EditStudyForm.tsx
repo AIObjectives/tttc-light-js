@@ -42,6 +42,16 @@ function toISODateString(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
+/**
+ * Dates from the server are stored as UTC midnight (e.g. "2026-03-20T00:00:00Z").
+ * In timezones west of UTC this renders as the previous day in local time.
+ * Convert to a local-midnight Date using the UTC date parts so the calendar
+ * always shows the intended calendar date regardless of timezone.
+ */
+function utcDateToLocal(date: Date): Date {
+  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
 function toOptionalISODate(date: Date | undefined): string | undefined {
   return date ? toISODateString(date) : undefined;
 }
@@ -365,7 +375,10 @@ function initialFormValues(event: ElicitationEventSummary) {
     location: parseLocation(event.description),
     dateRange:
       event.startDate || event.endDate
-        ? ({ from: event.startDate, to: event.endDate } as DateRange)
+        ? ({
+            from: event.startDate ? utcDateToLocal(event.startDate) : undefined,
+            to: event.endDate ? utcDateToLocal(event.endDate) : undefined,
+          } as DateRange)
         : undefined,
     expectedRespondents:
       event.expectedParticipantCount !== undefined
