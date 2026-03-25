@@ -727,7 +727,9 @@ export async function createElicitationEvent(
     const collectionName = getElicitationCollectionName(
       req.context.env.NODE_ENV,
     );
-    const docRef = db.collection(collectionName).doc(toPascalCase(body.eventName));
+    const docRef = db
+      .collection(collectionName)
+      .doc(toPascalCase(body.eventName));
     const now = new Date();
 
     const docData: Record<string, unknown> = {
