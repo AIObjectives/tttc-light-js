@@ -752,10 +752,30 @@ export async function createElicitationEvent(
         text,
         asked_count: 0,
       }));
-    if (body.followUpQuestions !== undefined)
+    const defaultFollowUpQuestions = [
+      "Can you elaborate on what stood out to you the most about X?",
+      "How did X make you feel, and why do you think that is?",
+      "What aspects of X do you think work well, and what could be improved?",
+      "Can you share an example or experience that relates to your impression of X?",
+      "What specific elements of X influenced your thoughts the most?",
+      "Did anything about X surprise you or challenge your expectations?",
+      "If you were to explain X to someone else, how would you describe it?",
+      "What additional context or information do you think would be helpful when discussing X?",
+      "Are there any aspects of X that you think are being overlooked or under-discussed?",
+      "What would you recommend as the next step or action based on your impressions of X?",
+      "Do you think X aligns with your initial expectations? Why or why not?",
+      "What do you think could be added to X to make it more engaging or effective?",
+      "How does X compare to similar experiences or ideas you've encountered before?",
+      "What questions or concerns come to mind when you think about X?",
+      "If you had to summarize your overall impression of X in one sentence, what would it be?",
+    ];
+    const followUpQuestions =
+      body.followUpQuestions ??
+      (body.mode === "followup" ? defaultFollowUpQuestions : undefined);
+    if (followUpQuestions !== undefined)
       docData.follow_up_questions = {
         enabled: true,
-        questions: body.followUpQuestions,
+        questions: followUpQuestions,
       };
     if (body.initialMessage !== undefined)
       docData.initial_message = body.initialMessage;
