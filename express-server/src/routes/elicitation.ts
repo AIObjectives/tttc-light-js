@@ -134,6 +134,19 @@ function buildCsvContent(headers: string[], rows: string[][]): string {
 }
 
 /**
+ * Convert a string to PascalCase for use as a Firestore document ID.
+ * Non-alphanumeric characters are treated as word separators.
+ */
+function toPascalCase(str: string): string {
+  return str
+    .trim()
+    .split(/[^a-zA-Z0-9]+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join("");
+}
+
+/**
  * Get elicitation collection name with environment suffix
  */
 function getElicitationCollectionName(env: string): string {
@@ -714,7 +727,7 @@ export async function createElicitationEvent(
     const collectionName = getElicitationCollectionName(
       req.context.env.NODE_ENV,
     );
-    const docRef = db.collection(collectionName).doc();
+    const docRef = db.collection(collectionName).doc(toPascalCase(body.eventName));
     const now = new Date();
 
     const docData: Record<string, unknown> = {
