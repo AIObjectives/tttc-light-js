@@ -458,9 +458,17 @@ function WhatsAppLinkSection({ link }: { link: string }) {
   };
 
   return (
-    <div className="flex items-center justify-between w-full">
+    <div className="flex items-center gap-2">
       <p className="text-base text-slate-600">
-        Whatsapp link: <span className="text-indigo-600">{link}</span>
+        Whatsapp link:{" "}
+        <a
+          href={link}
+          target="_blank"
+          rel="noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          {link}
+        </a>
       </p>
       <button
         type="button"
