@@ -21,10 +21,16 @@ const env = z.object({
       error: "PIPELINE_EXPRESS_URL env var is missing. This is required.",
     })
     .url("PIPELINE_EXPRESS_URL env var should be a valid url"),
+  // Phone number for the elicitation bot (WhatsApp). Used to generate
+  // wa.me links on the study detail page with the event ID as the message.
+  // Include country code, e.g. 12345678900
+  NEXT_PUBLIC_ELICITATION_BOT_PHONE: z.string().optional(),
 });
 
 const result = env.safeParse({
   PIPELINE_EXPRESS_URL: process.env.PIPELINE_EXPRESS_URL,
+  NEXT_PUBLIC_ELICITATION_BOT_PHONE:
+    process.env.NEXT_PUBLIC_ELICITATION_BOT_PHONE,
 });
 
 if (!result.success) {

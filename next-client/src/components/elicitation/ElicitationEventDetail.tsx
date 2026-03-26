@@ -113,6 +113,11 @@ export function ElicitationEventDetailView({
   // Fall back to the first known report ID from the event if fetched reports haven't loaded.
   const mostRecentReportId = reports[0]?.id ?? reportIdsToFetch?.[0];
 
+  const botPhone = process.env.NEXT_PUBLIC_ELICITATION_BOT_PHONE;
+  const whatsappBotLink = botPhone
+    ? `https://wa.me/${botPhone}?text=${encodeURIComponent(event.id)}`
+    : undefined;
+
   const { events: allEvents } = useElicitationEvents();
   const sidebarStudies = allEvents.map((e) => ({
     id: e.id,
@@ -147,6 +152,9 @@ export function ElicitationEventDetailView({
               <EventMetadata event={event} />
               {event.whatsappLink && (
                 <WhatsAppLinkSection link={event.whatsappLink} />
+              )}
+              {whatsappBotLink && (
+                <WhatsAppLinkSection link={whatsappBotLink} />
               )}
               <EventContentSections event={event} />
             </CardContent>
@@ -450,20 +458,27 @@ function WhatsAppLinkSection({ link }: { link: string }) {
   };
 
   return (
-    <Row gap={2} className="items-center">
-      <p className="text-base text-slate-700">
-        Whatsapp link: <span className="text-indigo-600">{link}</span>
+    <div className="flex items-center gap-2">
+      <p className="text-base text-slate-600">
+        Whatsapp link:{" "}
+        <a
+          href={link}
+          target="_blank"
+          rel="noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          {link}
+        </a>
       </p>
       <button
         type="button"
         onClick={copyWhatsAppLink}
-        className="p-1 hover:bg-slate-100 rounded"
+        className="p-1 hover:bg-slate-100 rounded shrink-0"
         aria-label="Copy WhatsApp link"
       >
         <Copy className="w-4 h-4 text-slate-500" />
       </button>
-      {isCopied && <span className="text-xs text-green-600">Copied!</span>}
-    </Row>
+    </div>
   );
 }
 
