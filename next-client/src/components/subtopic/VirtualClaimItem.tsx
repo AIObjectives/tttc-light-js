@@ -18,7 +18,7 @@ export function VirtualClaimItem({
   claim: ClaimNode;
   index: number;
   style: React.CSSProperties;
-  measureElement: (node: Element | null | undefined) => void;
+  measureElement: (node: Element | null) => void;
 }) {
   // Create a ref callback for measurement
   const measureRef = useCallback(
