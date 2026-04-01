@@ -25,7 +25,6 @@ import {
   optionalAuthMiddleware,
   visibilityRateLimitMiddleware,
 } from "./middleware";
-import { createQueue } from "./queue";
 import { GooglePubSubQueue } from "./queue/providers/googlePubSub";
 import authEvents from "./routes/authEvents";
 import create from "./routes/create";
@@ -118,32 +117,19 @@ app.use(correlationIdMiddleware);
 // Adds context middleware - lets us pass things like env variables
 app.use(contextMiddleware(env));
 
-// Create and start the queue
-const pipelineQueue = createQueue(env);
-pipelineQueue.listen().catch(async (error: Error) => {
-  serverLogger.error(
-    { error },
-    "Failed to start pipeline queue listener - exiting",
-  );
-  await gracefulShutdown("QUEUE_LISTEN_ERROR");
-});
-
-// Create optional node worker queue if configured
-let nodeWorkerQueue: ReturnType<typeof createQueue> | null = null;
-if (env.NODE_WORKER_TOPIC_NAME && env.NODE_WORKER_SUBSCRIPTION_NAME) {
-  nodeWorkerQueue = new GooglePubSubQueue(
-    env.NODE_WORKER_TOPIC_NAME,
-    env.NODE_WORKER_SUBSCRIPTION_NAME,
-    env.GOOGLE_CLOUD_PROJECT_ID,
-  );
-  serverLogger.info(
-    {
-      topic: env.NODE_WORKER_TOPIC_NAME,
-      subscription: env.NODE_WORKER_SUBSCRIPTION_NAME,
-    },
-    "Node worker queue configured",
-  );
-}
+// Create node worker queue
+const nodeWorkerQueue = new GooglePubSubQueue(
+  env.NODE_WORKER_TOPIC_NAME,
+  env.NODE_WORKER_SUBSCRIPTION_NAME,
+  env.GOOGLE_CLOUD_PROJECT_ID,
+);
+serverLogger.info(
+  {
+    topic: env.NODE_WORKER_TOPIC_NAME,
+    subscription: env.NODE_WORKER_SUBSCRIPTION_NAME,
+  },
+  "Node worker queue configured",
+);
 
 // Create Redis connection for rate limiting
 const redisConnection = new Redis(env.REDIS_URL, {
@@ -151,7 +137,7 @@ const redisConnection = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: null,
 });
 
-export { pipelineQueue, nodeWorkerQueue };
+export { nodeWorkerQueue };
 
 // Initialize feature flags
 initializeFeatureFlags(env);
@@ -639,10 +625,8 @@ async function gracefulShutdown(signal: string) {
 
     try {
       // Close queue connection
-      if (pipelineQueue) {
-        await pipelineQueue.close();
-        serverLogger.info("Queue connection closed");
-      }
+      await nodeWorkerQueue.close();
+      serverLogger.info("Queue connection closed");
 
       // Close Redis connection for rate limiting
       if (redisConnection) {

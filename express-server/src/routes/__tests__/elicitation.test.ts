@@ -65,13 +65,19 @@ vi.mock("../../featureFlags", () => ({
   isFeatureEnabled: vi.fn().mockResolvedValue(true),
 }));
 
-// Mock create route to prevent transitive loading of server.ts
+// Mock server to prevent transitive loading of server.ts
+vi.mock("../../server", () => ({
+  nodeWorkerQueue: {
+    enqueue: vi.fn(),
+  },
+}));
+
+// Mock create route utilities
 vi.mock("../create", () => ({
   createAndSaveReport: vi.fn(),
   createUserDocuments: vi.fn(),
   buildPipelineJob: vi.fn(),
   addAnonymousNames: vi.fn((data: { data: unknown[] }) => data),
-  selectQueue: vi.fn(),
 }));
 
 // Mock error handler

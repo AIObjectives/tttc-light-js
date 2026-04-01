@@ -17,6 +17,8 @@ describe("Environment Variable Validation", () => {
       PYSERVER_URL: "http://localhost:8000",
       REDIS_URL: "redis://localhost:6379",
       ALLOWED_GCS_BUCKETS: "test-bucket,another-bucket",
+      NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
+      NODE_WORKER_SUBSCRIPTION_NAME: "test-node-worker-subscription",
     };
   });
 

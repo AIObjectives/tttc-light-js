@@ -107,8 +107,10 @@ export const env = z.object({
   PUBSUB_TOPIC_NAME: z.string().optional().default("test-topic"),
   PUBSUB_SUBSCRIPTION_NAME: z.string().optional().default("test-subscription"),
   GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
-  NODE_WORKER_TOPIC_NAME: z.string().optional(),
-  NODE_WORKER_SUBSCRIPTION_NAME: z.string().optional(),
+  NODE_WORKER_TOPIC_NAME: z.string({ error: "Missing NODE_WORKER_TOPIC_NAME" }),
+  NODE_WORKER_SUBSCRIPTION_NAME: z.string({
+    error: "Missing NODE_WORKER_SUBSCRIPTION_NAME",
+  }),
   ALLOWED_ORIGINS: z
     .string({
       error: "ALLOWED_ORIGINS is required in all environments",

@@ -30,6 +30,8 @@ export function createMinimalTestEnv() {
     REDIS_QUEUE_NAME: "test-queue",
     PUBSUB_TOPIC_NAME: "test-topic",
     PUBSUB_SUBSCRIPTION_NAME: "test-subscription",
+    NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
+    NODE_WORKER_SUBSCRIPTION_NAME: "test-node-worker-subscription",
     FEATURE_FLAG_PROVIDER: "local" as const,
     ANALYTICS_PROVIDER: "local" as const,
     ANALYTICS_ENABLED: false,

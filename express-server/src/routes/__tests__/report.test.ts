@@ -59,10 +59,9 @@ const asExpressResponse = (mockRes: MockResponse): Response =>
 
 // Mock the server pipeline queue import
 vi.mock("../../server", () => ({
-  pipelineQueue: {
-    getJob: vi.fn(),
+  nodeWorkerQueue: {
+    enqueue: vi.fn(),
   },
-  nodeWorkerQueue: null,
 }));
 
 // Create a focused mock request factory for testing
