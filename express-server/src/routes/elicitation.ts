@@ -559,6 +559,7 @@ export async function generateReportForEvent(
       userConfig,
       { ...userConfig, data: processedData },
       jsonUrl,
+      "gpt-4o-mini",
     );
 
     await nodeWorkerQueue.enqueue(pipelineJob, {});
