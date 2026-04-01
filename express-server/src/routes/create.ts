@@ -464,6 +464,22 @@ async function createReportDocuments(
   };
 }
 
+const DEFAULT_MODEL = "gpt-4o-mini";
+
+async function resolveModel(
+  email: string | undefined,
+  requestedModel: string | undefined,
+): Promise<string> {
+  if (!requestedModel) return DEFAULT_MODEL;
+  const enabled = await isFeatureEnabled(
+    FEATURE_FLAGS.MODEL_SELECTION_ENABLED,
+    {
+      email,
+    },
+  );
+  return enabled ? requestedModel : DEFAULT_MODEL;
+}
+
 async function createNewReport(
   req: RequestWithAuth,
 ): Promise<
@@ -521,13 +537,7 @@ async function createNewReport(
     })),
   };
 
-  const DEFAULT_MODEL = "gpt-4o-mini";
-  const modelSelectionEnabled = await isFeatureEnabled(
-    FEATURE_FLAGS.MODEL_SELECTION_ENABLED,
-    { email: decodedUser.email },
-  );
-  const model =
-    modelSelectionEnabled && requestedModel ? requestedModel : DEFAULT_MODEL;
+  const model = await resolveModel(decodedUser.email, requestedModel);
 
   createLogger.debug(
     {
