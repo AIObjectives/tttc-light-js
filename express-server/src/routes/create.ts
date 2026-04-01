@@ -1,7 +1,7 @@
 import "dotenv/config";
 import type { Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
-import type { PipelineJob } from "src/jobs/pipeline";
+import type { PipelineJob } from "../queue/types";
 import * as api from "tttc-common/api";
 import {
   ERROR_CODES,
