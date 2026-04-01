@@ -20,6 +20,8 @@ import {
 } from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
 import * as firebase from "../Firebase";
+import { isFeatureEnabled } from "../featureFlags";
+import { FEATURE_FLAGS } from "../featureFlags/constants";
 import { nodeWorkerQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";
@@ -295,6 +297,7 @@ export const buildPipelineJob = (
   userConfig: schema.LLMUserConfig,
   updatedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] },
   jsonUrl: string,
+  model: string,
 ): PipelineJob => {
   const filename = `${reportId}.json`;
 
@@ -318,9 +321,7 @@ export const buildPipelineJob = (
         evaluations: isUsingDefaultPrompts(userConfig),
       },
       llm: {
-        // Model is intentionally hardcoded until user model selection is implemented.
-        // See: https://linear.app/ai-objectives/issue/T3C-1014
-        model: "gpt-4o-mini",
+        model,
       },
     },
     data: updatedConfig.data,
@@ -463,6 +464,22 @@ async function createReportDocuments(
   };
 }
 
+const DEFAULT_MODEL = "gpt-4o-mini";
+
+async function resolveModel(
+  email: string | undefined,
+  requestedModel: string | undefined,
+): Promise<string> {
+  if (!requestedModel) return DEFAULT_MODEL;
+  const enabled = await isFeatureEnabled(
+    FEATURE_FLAGS.MODEL_SELECTION_ENABLED,
+    {
+      email,
+    },
+  );
+  return enabled ? requestedModel : DEFAULT_MODEL;
+}
+
 async function createNewReport(
   req: RequestWithAuth,
 ): Promise<
@@ -475,7 +492,7 @@ async function createNewReport(
   const { CLIENT_BASE_URL } = env;
   const decodedUser = req.auth;
   const body = api.generateApiRequest.parse(req.body);
-  const { data, userConfig, elicitationEventId } = body;
+  const { data, userConfig, elicitationEventId, model: requestedModel } = body;
 
   // Get user's CSV size limit based on roles and feature flags
   const userCsvSizeLimit = await getUserCsvSizeLimit(decodedUser);
@@ -520,10 +537,13 @@ async function createNewReport(
     })),
   };
 
+  const model = await resolveModel(decodedUser.email, requestedModel);
+
   createLogger.debug(
     {
       cruxesEnabled: processedConfig.cruxesEnabled,
       bridgingEnabled: processedConfig.bridgingEnabled,
+      model,
     },
     "Building pipeline job with config",
   );
@@ -536,6 +556,7 @@ async function createNewReport(
     userConfig,
     processedConfig,
     jsonUrl,
+    model,
   );
 
   return {
