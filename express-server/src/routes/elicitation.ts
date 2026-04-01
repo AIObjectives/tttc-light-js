@@ -9,6 +9,7 @@ import type * as schema from "tttc-common/schema";
 import { admin, db, getCollectionName } from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
+import { nodeWorkerQueue } from "../server";
 import { createStorage } from "../storage";
 import type { RequestWithAuth } from "../types/request";
 import {
@@ -16,7 +17,6 @@ import {
   buildPipelineJob,
   createAndSaveReport,
   createUserDocuments,
-  selectQueue,
 } from "./create";
 import { sendErrorByCode } from "./sendError";
 
@@ -561,8 +561,7 @@ export async function generateReportForEvent(
       jsonUrl,
     );
 
-    const selectedQueue = await selectQueue(req.auth);
-    await selectedQueue.enqueue(pipelineJob, {});
+    await nodeWorkerQueue.enqueue(pipelineJob, {});
 
     const reportUrl = new URL(
       `report/${reportId}`,

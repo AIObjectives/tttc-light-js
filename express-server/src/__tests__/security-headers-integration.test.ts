@@ -13,6 +13,8 @@ describe("CORS + Security Headers Integration", () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
     process.env.NODE_ENV = "development";
+    process.env.NODE_WORKER_TOPIC_NAME = "test-node-worker-topic";
+    process.env.NODE_WORKER_SUBSCRIPTION_NAME = "test-node-worker-subscription";
     app = express();
   });
 

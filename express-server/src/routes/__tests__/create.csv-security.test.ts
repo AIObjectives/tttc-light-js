@@ -56,10 +56,9 @@ vi.mock("../../storage", () => ({
 }));
 
 vi.mock("../../server", () => ({
-  pipelineQueue: {
+  nodeWorkerQueue: {
     enqueue: vi.fn(),
   },
-  nodeWorkerQueue: null,
 }));
 
 describe("CSV Security in Create Route", () => {
@@ -97,6 +96,8 @@ describe("CSV Security in Create Route", () => {
           PYSERVER_MAX_CONCURRENCY: 5,
           PUBSUB_TOPIC_NAME: "test-topic",
           PUBSUB_SUBSCRIPTION_NAME: "test-sub",
+          NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
+          NODE_WORKER_SUBSCRIPTION_NAME: "test-node-worker-subscription",
         },
       };
       // Mock logger for RequestWithLogger interface

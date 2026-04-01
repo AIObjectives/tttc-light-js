@@ -23,6 +23,8 @@ describe("CORS Integration Tests", () => {
       REDIS_URL: "redis://localhost:6379",
       ALLOWED_ORIGINS: "http://localhost:3000",
       ALLOWED_GCS_BUCKETS: "test-bucket,another-bucket",
+      NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
+      NODE_WORKER_SUBSCRIPTION_NAME: "test-node-worker-subscription",
     };
 
     // Create Express app with CORS

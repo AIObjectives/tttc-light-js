@@ -56,6 +56,8 @@ const createMockEnv = (
   PYSERVER_MAX_CONCURRENCY: 5,
   PUBSUB_TOPIC_NAME: "test-topic",
   PUBSUB_SUBSCRIPTION_NAME: "test-sub",
+  NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
+  NODE_WORKER_SUBSCRIPTION_NAME: "test-node-worker-subscription",
 });
 
 // Mock validateEnv to return a valid test environment
@@ -77,6 +79,8 @@ vi.mock("../types/context", () => ({
     LOCAL_FLAGS: undefined,
     PUBSUB_TOPIC_NAME: "test-topic",
     PUBSUB_SUBSCRIPTION_NAME: "test-sub",
+    NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
+    NODE_WORKER_SUBSCRIPTION_NAME: "test-node-worker-subscription",
   })),
 }));
 
