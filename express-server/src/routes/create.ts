@@ -1,7 +1,6 @@
 import "dotenv/config";
 import type { Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
-import type { PipelineJob } from "src/jobs/pipeline";
 import * as api from "tttc-common/api";
 import {
   ERROR_CODES,
@@ -22,6 +21,7 @@ import type * as schema from "tttc-common/schema";
 import * as firebase from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
+import type { PipelineJob } from "../queue/types";
 import { nodeWorkerQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";
