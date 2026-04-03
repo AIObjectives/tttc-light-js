@@ -18,7 +18,6 @@ export function createMinimalTestEnv() {
     GOOGLE_CREDENTIALS_ENCODED: "dGVzdA==",
     FIREBASE_CREDENTIALS_ENCODED: "dGVzdA==",
     CLIENT_BASE_URL: "http://localhost:3000",
-    PYSERVER_URL: "http://localhost:8000",
     NODE_ENV: "test" as const,
     REDIS_URL: "redis://localhost:6379",
 
@@ -39,7 +38,6 @@ export function createMinimalTestEnv() {
     ANALYTICS_FLUSH_AT: 20,
     ANALYTICS_FLUSH_INTERVAL: 10000,
     RATE_LIMIT_PREFIX: "test",
-    PYSERVER_MAX_CONCURRENCY: 5,
     FEATURE_FLAG_HOST: "https://us.i.posthog.com",
     ANALYTICS_HOST: "https://app.posthog.com",
   };

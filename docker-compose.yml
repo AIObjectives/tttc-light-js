@@ -22,14 +22,6 @@ services:
     # depends_on: # <-- for dev
     #   - redis
 
-  pyserver:
-    image: gcr.io/tttc-light-js/pyserver-brandon
-    build:
-      context: .
-      dockerfile: pyserver/Dockerfile
-    ports:
-      - "8000:8000"
-
   # redis: # for dev
   #   image: redis:6-alpine
   #   ports:

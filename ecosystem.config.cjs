@@ -8,7 +8,7 @@
  * Logs:          pnpm dev:logs [name]
  * Kill daemon:   pnpm dev:kill
  *
- * Service names: common, server, client, pubsub, pyserver
+ * Service names: common, server, client, pubsub
  */
 
 const path = require("node:path");
@@ -64,19 +64,6 @@ module.exports = {
       watch: false,
       autorestart: true,
       restart_delay: 2000,
-    },
-    {
-      name: "pyserver",
-      cwd: __dirname,
-      script: path.join(__dirname, "pyserver/.venv/bin/uvicorn"),
-      args: "--app-dir pyserver main:app --reload --host 0.0.0.0 --port 8000",
-      interpreter: "none",
-      watch: false,
-      autorestart: true,
-      restart_delay: 1000,
-      env: {
-        NODE_ENV: "development",
-      },
     },
   ],
 };

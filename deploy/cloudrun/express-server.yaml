@@ -33,8 +33,6 @@ spec:
           env:
             - name: NODE_ENV
               value: production
-            - name: PYSERVER_URL
-              value: "https://example.com"
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:

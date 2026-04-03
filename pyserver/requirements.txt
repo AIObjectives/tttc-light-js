@@ -1,8 +1,0 @@
-fastapi[standard]
-openai
-pydantic
-wandb
-uvicorn
-python-dotenv
-psutil
-redis

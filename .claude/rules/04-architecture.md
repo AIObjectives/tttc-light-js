@@ -6,7 +6,6 @@
 next-client/     # Next.js frontend (TypeScript, Tailwind CSS)
 express-server/  # Express.js backend API (TypeScript)
 common/          # Shared schemas, utilities, types
-pyserver/        # Python FastAPI for LLM processing
 pipeline-worker/ # Background job processing
 utils/           # Utility scripts
 ```
@@ -23,8 +22,8 @@ utils/           # Utility scripts
 
 1. Users submit CSV → Next.js client
 2. Client sends data → Express server
-3. Server queues LLM jobs → Python server
-4. Python processes with LLMs → JSON reports
+3. Server queues LLM jobs → pipeline worker
+4. Pipeline worker processes with LLMs → JSON reports
 5. Reports stored in GCS → displayed in client
 
 ## Schema System

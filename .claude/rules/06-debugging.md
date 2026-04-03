@@ -7,13 +7,12 @@ Fetch logs using the `pnpm logs` utility:
 ```bash
 # Quick examples
 pnpm logs server staging --since 1h
-pnpm logs pyserver prod --errors --since 2h
 pnpm logs server prod --from "2026-01-05T10:00:00Z" --to "2026-01-05T12:00:00Z"
 pnpm logs server ephemeral --pr 123
 pnpm logs server staging > /tmp/logs.json
 ```
 
-**Services:** `server`, `pyserver`, `client`
+**Services:** `server`, `client`
 **Environments:** `staging`, `prod`, `ephemeral` (requires `--pr`)
 
 **Options:**
@@ -27,7 +26,6 @@ pnpm logs server staging > /tmp/logs.json
 | Alias | Staging | Production |
 |-------|---------|------------|
 | `server` | `stage-t3c-express-server` | `ts-server-brandon` |
-| `pyserver` | `stage-t3c-pyserver` | `pyserver-brandon` |
 | `client` | `t3c-next-client-staging` | `t3c-next-client` |
 
 **Prerequisites:**

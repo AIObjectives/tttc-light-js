@@ -44,7 +44,6 @@ Use `tttc-common/logger` with module-specific child loggers. See `02-code-style.
 Required in `express-server/.env`:
 - `NODE_ENV`
 - `CLIENT_BASE_URL`
-- `PYSERVER_URL`
 - `FIREBASE_CREDENTIALS_ENCODED`
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_URL`
 - `OPENAI_API_KEY`

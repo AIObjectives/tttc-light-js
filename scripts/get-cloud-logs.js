@@ -11,7 +11,6 @@
  *
  * Examples:
  *   node scripts/get-cloud-logs.js server staging
- *   node scripts/get-cloud-logs.js pyserver prod --errors --since 2h
  *   node scripts/get-cloud-logs.js server ephemeral --pr 123
  *
  * Options:
@@ -34,11 +33,6 @@ const SERVICE_NAMES = {
     staging: "stage-t3c-express-server",
     prod: "ts-server-brandon",
     ephemeral: (pr) => `dev-t3c-express-server-pr-${pr}`,
-  },
-  pyserver: {
-    staging: "stage-t3c-pyserver",
-    prod: "pyserver-brandon",
-    ephemeral: (pr) => `dev-pyserver-pr-${pr}`,
   },
   client: {
     staging: "t3c-next-client-staging",
@@ -154,7 +148,6 @@ Usage:
 
 Services:
   server    Express server (API backend)
-  pyserver  Python server (LLM processing)
   client    Next.js client (frontend)
 
 Environments:
@@ -176,9 +169,6 @@ Examples:
   # Get last 30 minutes of staging server logs
   pnpm logs server staging
 
-  # Get last 2 hours of production pyserver errors
-  pnpm logs pyserver prod --errors --since 2h
-
   # Get logs for a specific time range
   pnpm logs server prod --from "2025-01-05T10:00:00Z" --to "2025-01-05T12:00:00Z"
 
@@ -193,7 +183,6 @@ Service Name Mappings:
   │ Alias    │ Staging                   │ Production           │ Ephemeral                      │
   ├──────────┼───────────────────────────┼──────────────────────┼────────────────────────────────┤
   │ server   │ stage-t3c-express-server  │ ts-server-brandon    │ dev-t3c-express-server-pr-{N}  │
-  │ pyserver │ stage-t3c-pyserver        │ pyserver-brandon     │ dev-pyserver-pr-{N}            │
   │ client   │ t3c-next-client-staging   │ t3c-next-client      │ dev-t3c-next-client-pr-{N}     │
   └──────────┴───────────────────────────┴──────────────────────┴────────────────────────────────┘
 `);

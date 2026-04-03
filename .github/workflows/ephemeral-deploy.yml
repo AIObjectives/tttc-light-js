@@ -79,16 +79,6 @@ jobs:
             -t gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA} .
           docker push gcr.io/$PROJECT_ID/dev-t3c-express-server:pr-${PR_NUMBER}-${SHORT_SHA}
 
-      - name: Build and push Docker image for Python server
-        run: |
-          # Build and tag images with PR number
-          PR_NUMBER=${{ github.event.number }}
-          COMMIT_SHA=${{ github.sha }}
-          SHORT_SHA=${COMMIT_SHA:0:7}
-
-          docker build -f pyserver/Dockerfile -t gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA} .
-          docker push gcr.io/$PROJECT_ID/dev-pyserver:pr-${PR_NUMBER}-${SHORT_SHA}
-
       - name: Build and push Docker image for Pipeline Worker
         run: |
           PR_NUMBER=${{ github.event.number }}
@@ -122,7 +112,7 @@ jobs:
           mkdir -p deploy/temp
 
           # Process each manifest
-          for service in next-client express-server pyserver pipeline-worker; do
+          for service in next-client express-server pipeline-worker; do
             cp deploy/cloudrun/${service}.yaml deploy/temp/${service}.yaml
 
             # Replace placeholders
@@ -137,7 +127,6 @@ jobs:
 
           # Deploy each service
           gcloud run services replace deploy/temp/express-server.yaml --region=$REGION
-          gcloud run services replace deploy/temp/pyserver.yaml --region=$REGION
           gcloud run services replace deploy/temp/pipeline-worker.yaml --region=$REGION
           gcloud run services replace deploy/temp/next-client.yaml --region=$REGION
 
@@ -146,12 +135,7 @@ jobs:
             --member="allUsers" \
             --role="roles/run.invoker" \
             --region=$REGION
-            
-          gcloud run services add-iam-policy-binding dev-pyserver-pr-${PR_NUMBER} \
-            --member="allUsers" \
-            --role="roles/run.invoker" \
-            --region=$REGION
-            
+
           gcloud run services add-iam-policy-binding dev-t3c-next-client-pr-${PR_NUMBER} \
             --member="allUsers" \
             --role="roles/run.invoker" \
@@ -170,12 +154,10 @@ jobs:
 
           FRONTEND_URL=$(gcloud run services describe dev-t3c-next-client-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
           BACKEND_URL=$(gcloud run services describe dev-t3c-express-server-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
-          PYTHON_URL=$(gcloud run services describe dev-pyserver-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
           PIPELINE_WORKER_URL=$(gcloud run services describe dev-t3c-pipeline-worker-pr-${PR_NUMBER} --region=$REGION --format='value(status.url)')
 
           echo "frontend_url=$FRONTEND_URL" >> $GITHUB_OUTPUT
           echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
-          echo "python_url=$PYTHON_URL" >> $GITHUB_OUTPUT
           echo "pipeline_worker_url=$PIPELINE_WORKER_URL" >> $GITHUB_OUTPUT
 
       - name: Configure push subscriptions
@@ -218,15 +200,10 @@ jobs:
         run: |
           PR_NUMBER=${{ github.event.number }}
 
-          gcloud run services update dev-pyserver-pr-${PR_NUMBER} \
-            --region=$REGION \
-            --update-env-vars \
-              ALLOWED_ORIGINS=${{steps.get-urls.outputs.backend_url}}
-
           gcloud run services update dev-t3c-express-server-pr-${PR_NUMBER} \
             --region=$REGION \
             --update-env-vars \
-              ALLOWED_ORIGINS=${{steps.get-urls.outputs.frontend_url}},PYSERVER_URL=${{steps.get-urls.outputs.python_url}},CLIENT_BASE_URL=${{steps.get-urls.outputs.frontend_url}}
+              ALLOWED_ORIGINS=${{steps.get-urls.outputs.frontend_url}},CLIENT_BASE_URL=${{steps.get-urls.outputs.frontend_url}}
 
           gcloud run services update dev-t3c-next-client-pr-${PR_NUMBER} \
             --region=$REGION \
@@ -272,13 +249,11 @@ jobs:
             const pr_number = context.payload.pull_request.number;
             const frontend_url = "${{ steps.get-urls.outputs.frontend_url }}";
             const backend_url = "${{ steps.get-urls.outputs.backend_url }}";
-            const python_url = "${{ steps.get-urls.outputs.python_url }}";
 
             const deployedCommentBody = `🚀 **Ephemeral Environment Deployed**
 
             **Frontend**: ${frontend_url}
             **Backend API**: ${backend_url}
-            **Python Service**: ${python_url}
 
             This environment will be automatically cleaned up when the PR is closed or merged.`;
 

@@ -88,7 +88,6 @@ describe("Queue Failure Handling (T3C-891)", () => {
         env: {
           OPENAI_API_KEY: "sk-test-key",
           CLIENT_BASE_URL: "http://localhost:3000",
-          PYSERVER_URL: "http://localhost:8000",
           GCLOUD_STORAGE_BUCKET: "test-bucket",
           GOOGLE_CREDENTIALS_ENCODED: "test-google-creds",
           ALLOWED_GCS_BUCKETS: ["test-bucket"],
@@ -106,7 +105,6 @@ describe("Queue Failure Handling (T3C-891)", () => {
           ANALYTICS_FLUSH_INTERVAL: 10000,
           ANALYTICS_DEBUG: false,
           RATE_LIMIT_PREFIX: "test",
-          PYSERVER_MAX_CONCURRENCY: 5,
           PUBSUB_TOPIC_NAME: "test-topic",
           PUBSUB_SUBSCRIPTION_NAME: "test-sub",
           NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
@@ -171,7 +169,6 @@ describe("Queue Failure Handling (T3C-891)", () => {
         env: {
           OPENAI_API_KEY: "sk-test-key",
           CLIENT_BASE_URL: "http://localhost:3000",
-          PYSERVER_URL: "http://localhost:8000",
           GCLOUD_STORAGE_BUCKET: "test-bucket",
           GOOGLE_CREDENTIALS_ENCODED: "test-google-creds",
           ALLOWED_GCS_BUCKETS: ["test-bucket"],
@@ -189,7 +186,6 @@ describe("Queue Failure Handling (T3C-891)", () => {
           ANALYTICS_FLUSH_INTERVAL: 10000,
           ANALYTICS_DEBUG: false,
           RATE_LIMIT_PREFIX: "test",
-          PYSERVER_MAX_CONCURRENCY: 5,
           PUBSUB_TOPIC_NAME: "test-topic",
           PUBSUB_SUBSCRIPTION_NAME: "test-sub",
           NODE_WORKER_TOPIC_NAME: "test-node-worker-topic",
