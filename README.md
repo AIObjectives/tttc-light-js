@@ -30,7 +30,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions on:
        └─────────────────────────────────────┘
 ```
 
-**External Services**: Firebase (Auth), Google Cloud Storage (Reports), Redis (Jobs)
+**External Services**: Firebase (Auth), Google Cloud Storage (Reports), Redis (Caching), Google Pub/Sub (Jobs)
 
 ## Example Data
 

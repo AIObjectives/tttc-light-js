@@ -301,6 +301,89 @@ pnpm --filter=express-server run test
 # For coverage: pnpm --filter=express-server run test:coverage
 ```
 
+### 6. pipeline-worker (Background Job Processor)
+
+Processes LLM pipeline jobs received via Pub/Sub push subscriptions.
+
+No separate install needed - dependencies were installed by `pnpm install` at root.
+
+**Configuration:**
+
+Create `pipeline-worker/.env` file with these variables:
+
+```bash
+NODE_ENV=development
+
+# Redis (state persistence and caching)
+REDIS_URL=redis://localhost:6379
+
+# Google Cloud Storage (report output)
+GCLOUD_STORAGE_BUCKET=your-bucket-name
+GOOGLE_CREDENTIALS_ENCODED=<base64-encoded-google-credentials.json>
+
+# Firestore (report metadata)
+WHICH_SERVICE_REFSTORE=firebase
+FIREBASE_CREDENTIALS_ENCODED=<base64-encoded-firebase-credentials.json>
+
+# HTTP server port (must differ from express-server in local dev)
+PORT=8081
+```
+
+**Run:**
+
+```bash
+pnpm --filter=pipeline-worker run dev
+```
+
+**Test:**
+
+```bash
+pnpm --filter=pipeline-worker run test
+```
+
+**Note**: The pipeline-worker is **not** included in `pnpm dev` or `pnpm dev:start`. It must be started separately. In production it runs as a separate Cloud Run service that receives Pub/Sub push messages at its `/pubsub/push` endpoint.
+
+### 6. pipeline-worker (Background Job Processor)
+
+Processes LLM pipeline jobs received via Pub/Sub push subscriptions. Runs an HTTP server that accepts jobs at `POST /pubsub/push`.
+
+No separate install needed - dependencies were installed by `pnpm install` at root.
+
+**Configuration:**
+
+Create `pipeline-worker/.env` file with these variables:
+
+```bash
+NODE_ENV=development
+
+# Redis (state persistence and caching)
+REDIS_URL=redis://localhost:6379
+
+# Google Cloud Storage (report output)
+GCLOUD_STORAGE_BUCKET=your-bucket-name
+GOOGLE_CREDENTIALS_ENCODED=<base64-encoded-google-credentials.json>
+
+# Firestore (report metadata)
+WHICH_SERVICE_REFSTORE=firebase
+FIREBASE_CREDENTIALS_ENCODED=<base64-encoded-firebase-credentials.json>
+
+# HTTP server port (set in ecosystem.config.cjs for pnpm dev:start)
+PORT=8082
+```
+
+**Run:**
+
+```bash
+pnpm dev:worker
+# or: pnpm --filter=pipeline-worker run dev
+```
+
+**Test:**
+
+```bash
+pnpm --filter=pipeline-worker run test
+```
+
 ### 7. next-client (Next.js Frontend)
 
 Web application frontend.
@@ -355,6 +438,7 @@ This launches concurrently:
 - **server**: Express backend API at http://localhost:8080
 - **client**: Next.js frontend at http://localhost:3000
 - **pubsub**: Google Pub/Sub emulator at localhost:8085
+- **worker**: Pipeline worker HTTP server at http://localhost:8082
 
 ### Starting Individual Services
 
@@ -365,6 +449,7 @@ pnpm dev:common   # Common package in watch mode
 pnpm dev:server   # Express server only
 pnpm dev:client   # Next.js client only
 pnpm dev:pubsub   # Pub/Sub emulator only
+pnpm dev:worker   # Pipeline worker only
 ```
 
 This is useful when:

@@ -8,7 +8,7 @@
  * Logs:          pnpm dev:logs [name]
  * Kill daemon:   pnpm dev:kill
  *
- * Service names: common, server, client, pubsub
+ * Service names: common, server, client, pubsub, worker
  */
 
 const path = require("node:path");
@@ -64,6 +64,21 @@ module.exports = {
       watch: false,
       autorestart: true,
       restart_delay: 2000,
+    },
+    {
+      name: "worker",
+      cwd: path.join(__dirname, "pipeline-worker"),
+      script: "pnpm",
+      args: "run dev",
+      interpreter: "none",
+      watch: false,
+      autorestart: true,
+      restart_delay: 1000,
+      env: {
+        NODE_ENV: "development",
+        PORT: "8082",
+        PUBSUB_EMULATOR_HOST: "localhost:8085",
+      },
     },
   ],
 };
