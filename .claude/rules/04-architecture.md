@@ -6,7 +6,7 @@
 next-client/     # Next.js frontend (TypeScript, Tailwind CSS)
 express-server/  # Express.js backend API (TypeScript)
 common/          # Shared schemas, utilities, types
-pipeline-worker/ # Background job processing
+pipeline-worker/ # LLM pipeline processor (Pub/Sub push, port 8082 in dev)
 utils/           # Utility scripts
 ```
 

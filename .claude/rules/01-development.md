@@ -18,7 +18,7 @@ pnpm dev:logs server     # View service logs
 pnpm dev:kill     # Stop PM2 daemon completely
 ```
 
-**Service names:** `common`, `server`, `client`, `pubsub`
+**Service names:** `common`, `server`, `client`, `pubsub`, `worker`
 
 **Individual services:**
 ```bash
@@ -26,6 +26,7 @@ pnpm dev:common   # Common package watch mode
 pnpm dev:server   # Express server only
 pnpm dev:client   # Next.js client only
 pnpm dev:pubsub   # Pub/Sub emulator only
+pnpm dev:worker   # Pipeline worker only
 ```
 
 ## Critical Port Requirements
