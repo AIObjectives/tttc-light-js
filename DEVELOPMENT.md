@@ -6,9 +6,9 @@ This guide covers setting up a local development environment for Talk to the Cit
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   next-client   │◄──►│ express-server  │◄──►│   pyserver      │
+│   next-client   │◄──►│ express-server  │◄──►│pipeline-worker  │
 │   (Frontend)    │    │   (Backend)     │    │ (LLM Processing)│
-│   Port: 3000    │    │   Port: 8080    │    │   Port: 8000    │
+│   Port: 3000    │    │   Port: 8080    │    │                 │
 └─────────┬───────┘    └─────────┬───────┘    └─────────────────┘
           │                      │
           │                      │
@@ -26,8 +26,8 @@ This guide covers setting up a local development environment for Talk to the Cit
 
 1. User uploads input CSV → next-client
 2. Client sends data → express-server
-3. Server queues LLM jobs → pyserver
-4. Python processes with LLMs → JSON reports
+3. Server queues LLM jobs → pipeline worker
+4. Pipeline worker processes with LLMs → JSON reports
 5. Reports stored in GCS → displayed in client
 
 ## Prerequisites
@@ -105,7 +105,7 @@ Cloud Storage stores generated report JSON files.
 
 ### OpenAI API
 
-Required for LLM processing in pyserver.
+Required for LLM processing.
 
 1. Create account at [OpenAI](https://platform.openai.com/)
 2. Generate API key in API settings
@@ -222,57 +222,9 @@ gcloud beta emulators pubsub start --host-port=localhost:8085
 pnpm dev:pubsub
 ```
 
-### 5. pyserver (Python/FastAPI)
+### 5. express-server (Node.js/Express)
 
-Handles LLM processing calls.
-
-**Setup:**
-
-```bash
-cd pyserver
-python -m venv .venv
-source ./.venv/bin/activate
-pip install -r requirements.txt
-```
-
-**Configuration:**
-
-Create `pyserver/.env` file with these variables:
-
-```bash
-# CORS Configuration (REQUIRED - server will fail to start without this)
-ALLOWED_ORIGINS=http://localhost:8080
-
-# Redis for LLM response caching (optional but recommended)
-REDIS_URL=redis://localhost:6379
-```
-
-**Run:**
-
-```bash
-# From repository root (recommended):
-pnpm dev:pyserver
-
-# Or manually:
-cd pyserver
-source ./.venv/bin/activate
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-**Note:** Always use `uvicorn` directly. Do not use `fastapi dev` as it changes the working directory and breaks local imports.
-
-**Test:**
-
-```bash
-cd pyserver
-source ./.venv/bin/activate
-pytest
-# For coverage: pytest --cov=.
-```
-
-### 6. express-server (Node.js/Express)
-
-Main backend API that coordinates with pyserver and manages jobs.
+Main backend API that manages jobs.
 
 No separate install needed - dependencies were installed by `pnpm install` at root.
 
@@ -284,7 +236,6 @@ Create `express-server/.env` file with these variables:
 # Basic config
 NODE_ENV=development
 CLIENT_BASE_URL=http://localhost:3000
-PYSERVER_URL=http://localhost:8000
 
 # Firebase (from your Firebase project)
 FIREBASE_CREDENTIALS_ENCODED=<base64-encoded-firebase-credentials.json>
@@ -404,7 +355,6 @@ This launches concurrently:
 - **server**: Express backend API at http://localhost:8080
 - **client**: Next.js frontend at http://localhost:3000
 - **pubsub**: Google Pub/Sub emulator at localhost:8085
-- **pyserver**: Python FastAPI server at http://localhost:8000
 
 ### Starting Individual Services
 
@@ -415,7 +365,6 @@ pnpm dev:common   # Common package in watch mode
 pnpm dev:server   # Express server only
 pnpm dev:client   # Next.js client only
 pnpm dev:pubsub   # Pub/Sub emulator only
-pnpm dev:pyserver # Python server only
 ```
 
 This is useful when:
@@ -493,9 +442,6 @@ Fetch logs from deployed Cloud Run services using the `pnpm logs` utility:
 # Get last 30 minutes of staging server logs
 pnpm logs server staging
 
-# Get last 2 hours of production pyserver errors
-pnpm logs pyserver prod --errors --since 2h
-
 # Trace a request across services by correlation ID
 pnpm logs server prod --request-id "abc123-def456"
 
@@ -503,7 +449,7 @@ pnpm logs server prod --request-id "abc123-def456"
 pnpm logs server ephemeral --pr 123
 ```
 
-**Services:** `server`, `pyserver`, `client`
+**Services:** `server`, `client`
 **Environments:** `staging`, `prod`, `ephemeral` (requires `--pr`)
 
 **Options:**

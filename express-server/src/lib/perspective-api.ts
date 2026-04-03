@@ -473,108 +473,6 @@ async function acquireRateLimitWithFallback(
   }
 }
 
-/**
- * Zod schema for pyserver taxonomy structure.
- * Validates the claims tree structure from pyserver sorting.
- */
-const pyserverClaimSchema = z.object({
-  claim: z.string(),
-});
-
-const pyserverSubtopicDataSchema = z.object({
-  counts: z.record(z.string(), z.unknown()).optional(),
-  claims: z.array(pyserverClaimSchema),
-});
-
-const pyserverSubtopicTupleSchema = z.tuple([
-  z.string(), // subtopicName
-  pyserverSubtopicDataSchema,
-]);
-
-const pyserverTopicDataSchema = z.object({
-  counts: z.record(z.string(), z.unknown()).optional(),
-  topics: z.array(pyserverSubtopicTupleSchema),
-});
-
-const pyserverTopicTupleSchema = z.tuple([
-  z.string(), // topicName
-  pyserverTopicDataSchema,
-]);
-
-const pyserverTaxonomySchema = z.object({
-  taxonomy: z.array(pyserverTopicTupleSchema),
-});
-
-/**
- * Type alias for the pyserver taxonomy structure.
- * Inferred from Zod schema for type-safe function signatures.
- */
-type PyserverTaxonomy = z.infer<typeof pyserverTaxonomySchema>;
-
-/**
- * Extract all claims from the sorted claims tree.
- *
- * Tree structure from pyserver:
- * [
- *   [topicName: string, {
- *     counts: {...},
- *     topics: [  // Actually subtopics
- *       [subtopicName: string, {
- *         counts: {...},
- *         claims: [...]
- *       }]
- *     ]
- *   }]
- * ]
- */
-function extractClaimsFromTree(tree: unknown): Array<{
-  id: string;
-  claim: string;
-  topicName: string;
-  subtopicName: string;
-}> {
-  const claims: Array<{
-    id: string;
-    claim: string;
-    topicName: string;
-    subtopicName: string;
-  }> = [];
-
-  // Validate tree structure with Zod
-  const parseResult = pyserverTaxonomySchema.safeParse(tree);
-
-  if (!parseResult.success) {
-    perspectiveLogger.error(
-      {
-        error: parseResult.error.message,
-        issues: parseResult.error.issues,
-      },
-      "Invalid pyserver taxonomy structure for bridging scoring",
-    );
-    return claims;
-  }
-
-  const validatedTree = parseResult.data;
-
-  // tree.taxonomy is an array of validated tuples: [topicName, subtopicData]
-  for (const [topicName, subtopicData] of validatedTree.taxonomy) {
-    // subtopicData.topics is an array of validated tuples: [subtopicName, claimData]
-    for (const [subtopicName, claimData] of subtopicData.topics) {
-      for (const claim of claimData.claims) {
-        claims.push({
-          // Temporarily use claim text as ID for matching (IDs don't exist yet at this stage)
-          id: claim.claim,
-          claim: claim.claim,
-          topicName,
-          subtopicName,
-        });
-      }
-    }
-  }
-
-  return claims;
-}
-
 // ============================================================================
 // Scoring Progress Tracking
 // ============================================================================
@@ -636,7 +534,7 @@ interface ScoringContext {
 
 /**
  * Generic helper to score a collection of items using Perspective API.
- * Shared by scoreClaims and scoreQuotes to eliminate code duplication.
+ * Shared by scoreClaimsFromHydratedTree and scoreQuotes to eliminate code duplication.
  */
 async function scoreItems<TItem, TResult>(
   items: TItem[],
@@ -786,46 +684,6 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-/**
- * Score multiple claims using Perspective API with rate limiting and Redis caching.
- *
- * @param claimsTree - The sorted claims tree from pipeline
- * @param redis - Redis client for caching (optional)
- * @param apiKey - Google Perspective API key (defaults to PERSPECTIVE_API_KEY env var)
- * @param envPrefix - Environment prefix for Redis cache keys (e.g., 'prod', 'dev')
- * @returns Array of bridging score objects
- */
-export async function scoreClaims(
-  claimsTree: PyserverTaxonomy,
-  redis?: Redis,
-  apiKey?: string,
-  envPrefix?: string,
-): Promise<schema.ClaimBridgingScore[]> {
-  const config = resolveApiConfig(apiKey, envPrefix);
-  if (!config) return [];
-
-  const claims = extractClaimsFromTree(claimsTree);
-  if (!claims || claims.length === 0) {
-    perspectiveLogger.info("No claims provided for scoring");
-    return [];
-  }
-
-  return scoreItems(claims, {
-    itemTypeName: "claim",
-    itemTypeNamePlural: "claims",
-    getText: (claim) => claim.claim,
-    getId: (claim) => claim.id,
-    buildResult: (claim, score) => ({
-      claimId: claim.id,
-      topicName: claim.topicName,
-      subtopicName: claim.subtopicName,
-      ...score,
-    }),
-    redis,
-    apiKey: config.apiKey,
-    envPrefix: config.envPrefix,
-  });
-}
 /**
  * Extract all claims from the hydrated report tree.
  *

@@ -34,7 +34,6 @@ const _sortLogger = logger.child({ module: "sort-and-deduplicate" });
 
 /**
  * Maximum number of subtopics to process concurrently
- * Based on observed performance characteristics from pyserver implementation
  */
 const MAX_CONCURRENT_SUBTOPICS = 6;
 

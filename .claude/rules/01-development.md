@@ -18,7 +18,7 @@ pnpm dev:logs server     # View service logs
 pnpm dev:kill     # Stop PM2 daemon completely
 ```
 
-**Service names:** `common`, `server`, `client`, `pubsub`, `pyserver`
+**Service names:** `common`, `server`, `client`, `pubsub`
 
 **Individual services:**
 ```bash
@@ -26,7 +26,6 @@ pnpm dev:common   # Common package watch mode
 pnpm dev:server   # Express server only
 pnpm dev:client   # Next.js client only
 pnpm dev:pubsub   # Pub/Sub emulator only
-pnpm dev:pyserver # Python server only
 ```
 
 ## Critical Port Requirements
@@ -35,7 +34,6 @@ Dev servers MUST run on standard ports:
 - **Next.js client**: Port 3000 (required for auth redirects)
 - **Express server**: Port 8080
 - **Pub/Sub emulator**: Port 8085 (required for report pipeline)
-- **Python server**: Port 8000
 
 If a port is in use: `fuser -k 3000/tcp`
 
@@ -104,6 +102,4 @@ cd express-server && npm run dev
 ## Important Notes
 
 - Build `common` package first when starting development
-- Use `uvicorn` directly for pyserver (not `fastapi dev`)
 - Environment variables required in `express-server/.env` and `next-client/.env`
-- Python virtual environment: `source pyserver/.venv/bin/activate`

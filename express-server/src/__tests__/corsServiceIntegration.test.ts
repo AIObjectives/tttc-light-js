@@ -19,7 +19,6 @@ describe("CORS Service Integration Tests", () => {
       GOOGLE_CREDENTIALS_ENCODED: "test-google-creds",
       FIREBASE_CREDENTIALS_ENCODED: "test-firebase-creds",
       CLIENT_BASE_URL: "http://localhost:3000",
-      PYSERVER_URL: "http://localhost:8000",
       REDIS_URL: "redis://localhost:6379",
       ALLOWED_ORIGINS: "http://localhost:3000",
       ALLOWED_GCS_BUCKETS: "test-bucket,another-bucket",
@@ -35,14 +34,10 @@ describe("CORS Service Integration Tests", () => {
 
     expressApp.use(cors(corsOptions));
 
-    // Simulate Express→Python communication endpoint
     expressApp.post("/call-python-service", (_req, res) => {
-      // In real implementation, this would make HTTP request to Python server
-      // For testing, we simulate the communication pattern
       res.json({
         status: "python_service_called",
         expressOrigin: "http://localhost:8080",
-        pythonUrl: process.env.PYSERVER_URL,
         corsConfigured: true,
       });
     });
@@ -79,43 +74,6 @@ describe("CORS Service Integration Tests", () => {
 
       expect(response.body.status).toBe("python_service_called");
       expect(response.body.expressOrigin).toBe("http://localhost:8080");
-    });
-  });
-
-  describe("Python Service Communication Requirements", () => {
-    it("should validate Python server would accept Express server requests", () => {
-      // This tests the configuration logic that Python service should use
-      const expressServerOrigin = "http://localhost:8080";
-
-      // Simulate Python server's required origins for service communication
-      const requiredPythonOrigins = [
-        "http://localhost:3000", // Next.js client
-        "http://localhost:8080", // Express server - CRITICAL
-      ];
-
-      expect(requiredPythonOrigins).toContain(expressServerOrigin);
-    });
-
-    it("should ensure consistent CORS configuration between services", () => {
-      const env = validateEnv();
-      const expressConfig = getAllowedOrigins(env);
-
-      // Verify Express server is configured for development
-      expect(expressConfig.environment).toBe("development");
-      expect(expressConfig.origins).toContain("http://localhost:3000");
-
-      // Express server needs to allow Next.js client requests
-      expect(expressConfig.origins).toContain("http://localhost:3000");
-
-      // Python server needs to allow BOTH Next.js client AND Express server requests
-      const _requiredPythonOrigins = [
-        "http://localhost:3000", // Next.js client
-        "http://localhost:8080", // Express server - CRITICAL for service communication
-      ];
-
-      // Note: Express server doesn't need to allow itself as an origin
-      // Only Python server needs to allow Express server requests
-      // This is the correct architecture - Express makes requests TO Python, not vice versa
     });
   });
 
@@ -199,7 +157,7 @@ describe("CORS Service Integration Tests", () => {
   });
 
   describe("Environment Variable Consistency", () => {
-    it("should parse ALLOWED_ORIGINS consistently between Express and Python", () => {
+    it("should parse ALLOWED_ORIGINS consistently", () => {
       const testOrigins = "  https://app1.com  ,  https://app2.com  ,  ";
 
       // Express parsing (via Zod)

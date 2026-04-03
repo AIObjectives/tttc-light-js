@@ -16,9 +16,9 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions on:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   next-client   │◄──►│ express-server  │◄──►│   pyserver      │
+│   next-client   │◄──►│ express-server  │◄──►│pipeline-worker  │
 │   (Frontend)    │    │   (Backend)     │    │ (LLM Processing)│
-│   Port: 3000    │    │   Port: 8080    │    │   Port: 8000    │
+│   Port: 3000    │    │   Port: 8080    │    │                 │
 └─────────┬───────┘    └─────────┬───────┘    └─────────────────┘
           │                      │
           │                      │

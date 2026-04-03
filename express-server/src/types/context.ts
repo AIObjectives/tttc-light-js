@@ -90,10 +90,7 @@ export const env = z.object({
   }),
   CLIENT_BASE_URL: z
     .string({ error: "Missing CLIENT_BASE_URL" })
-    .url({ message: "PYSERVER_URL in env should be a valid url" }),
-  PYSERVER_URL: z
-    .string({ error: "Missing PYSERVER_URL" })
-    .url({ message: "PYSERVER_URL in env should be a valid url" }),
+    .url({ message: "CLIENT_BASE_URL in env should be a valid url" }),
   NODE_ENV: z.union(
     [z.literal("development"), z.literal("production"), z.literal("test")],
     {
@@ -189,16 +186,6 @@ export const env = z.object({
     .transform((val) => val.toLowerCase() === "true"),
   FIREBASE_ADMIN_PROJECT_ID: z.string().optional(),
   RATE_LIMIT_PREFIX: z.string().optional().default("dev"),
-
-  // Concurrency settings for Python server
-  PYSERVER_MAX_CONCURRENCY: z
-    .string()
-    .optional()
-    .default("8") // Match pyserver default
-    .transform((val) => parseInt(val, 10))
-    .refine((val) => !Number.isNaN(val) && val > 0 && val <= 20, {
-      message: "PYSERVER_MAX_CONCURRENCY must be between 1 and 20",
-    }),
 });
 
 export type Env = z.infer<typeof env>;

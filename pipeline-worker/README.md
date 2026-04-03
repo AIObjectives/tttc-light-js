@@ -710,4 +710,3 @@ redis-cli DEL "pipeline_lock:abc123"
 
 - Express Server: `express-server/README.md` (job submission)
 - Common Package: `common/README.md` (shared types and schemas)
-- Python Server: `pyserver/README.md` (LLM API wrapper)

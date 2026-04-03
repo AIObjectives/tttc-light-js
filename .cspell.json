@@ -6,7 +6,6 @@
     "tttc",
     "TTTC",
     "aiobjectives",
-    "pyserver",
     "crux",
     "cruxes",
     "morphism",
@@ -309,8 +308,7 @@
     "**/playwright/**",
     "**/testData.ts",
     "**/dummyData.ts",
-    "**/__tests__/**",
-    "pyserver/test_*.py"
+    "**/__tests__/**"
   ],
   "ignoreRegExpList": [
     "/[a-f0-9]{7,40}/gi",

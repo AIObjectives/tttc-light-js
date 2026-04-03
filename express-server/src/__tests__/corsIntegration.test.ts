@@ -19,7 +19,6 @@ describe("CORS Integration Tests", () => {
       GOOGLE_CREDENTIALS_ENCODED: "test-google-creds",
       FIREBASE_CREDENTIALS_ENCODED: "test-firebase-creds",
       CLIENT_BASE_URL: "http://localhost:3000",
-      PYSERVER_URL: "http://localhost:8000",
       REDIS_URL: "redis://localhost:6379",
       ALLOWED_ORIGINS: "http://localhost:3000",
       ALLOWED_GCS_BUCKETS: "test-bucket,another-bucket",
@@ -38,12 +37,8 @@ describe("CORS Integration Tests", () => {
       res.json({ status: "ok", service: "express" });
     });
 
-    // Simulate calling Python service
     expressApp.post("/call-python", (_req, res) => {
-      res.json({
-        status: "would call python service",
-        pythonUrl: process.env.PYSERVER_URL,
-      });
+      res.json({ status: "ok" });
     });
   });
 
@@ -106,19 +101,6 @@ describe("CORS Integration Tests", () => {
   });
 
   describe("CORS Configuration Validation", () => {
-    it("should ensure Python server would accept Express server requests", () => {
-      // This tests the configuration logic that Python service should use
-      const expressServerOrigin = "http://localhost:8080";
-
-      // Simulate Python server's default origins
-      const pythonDefaultOrigins = [
-        "http://localhost:3000", // Next.js client
-        "http://localhost:8080", // Express server - REQUIRED
-      ];
-
-      expect(pythonDefaultOrigins).toContain(expressServerOrigin);
-    });
-
     it("should validate environment variable parsing consistency", () => {
       const testOrigins = "  https://app1.com  ,  https://app2.com  ,  ";
 
