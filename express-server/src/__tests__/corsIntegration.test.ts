@@ -101,7 +101,6 @@ describe("CORS Integration Tests", () => {
   });
 
   describe("CORS Configuration Validation", () => {
-
     it("should validate environment variable parsing consistency", () => {
       const testOrigins = "  https://app1.com  ,  https://app2.com  ,  ";
 
