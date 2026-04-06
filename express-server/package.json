@@ -23,7 +23,7 @@
     "supertest": "^7.1.4"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.81.0",
+    "@anthropic-ai/sdk": "^0.82.0",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.17.2",
     "p-retry": "^6.2.1",
