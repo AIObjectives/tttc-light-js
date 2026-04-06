@@ -3,6 +3,7 @@
  */
 
 import type OpenAI from "openai";
+import type { LLMClient } from "./llm-client.js";
 
 /**
  * Base class for all clustering errors
@@ -377,10 +378,8 @@ export interface ClaimsModelResult {
  * Input parameters for claims extraction from a single comment
  */
 export interface ExtractClaimsInput {
-  /** OpenAI client instance */
-  openaiClient: OpenAI;
-  /** Model name (e.g., "gpt-4o-mini") */
-  modelName: string;
+  /** LLM client instance */
+  llmClient: LLMClient;
   /** System prompt */
   systemPrompt: string;
   /** User prompt template */
@@ -397,6 +396,8 @@ export interface ExtractClaimsInput {
   options?: {
     enableWeave?: boolean;
     weaveProjectName?: string;
+    /** Raw OpenAI client for Weave LLM judge scorer (temporary until T3C-853) */
+    openaiClientForWeave?: OpenAI;
   };
 }
 
@@ -448,10 +449,8 @@ export interface SummaryModelResult {
  * Input parameters for generating a summary for a single topic
  */
 export interface GenerateSummaryInput {
-  /** OpenAI client instance */
-  openaiClient: OpenAI;
-  /** Model name (e.g., "gpt-4o-mini") */
-  modelName: string;
+  /** LLM client instance */
+  llmClient: LLMClient;
   /** System prompt */
   systemPrompt: string;
   /** User prompt template */
@@ -466,6 +465,8 @@ export interface GenerateSummaryInput {
   options?: {
     enableWeave?: boolean;
     weaveProjectName?: string;
+    /** Raw OpenAI client for Weave LLM judge scorer (temporary until T3C-853) */
+    openaiClientForWeave?: OpenAI;
   };
 }
 
@@ -601,10 +602,8 @@ export type TopicDescMap = Record<string, string>;
  * Input parameters for generating a crux for a single subtopic
  */
 export interface GenerateCruxInput {
-  /** OpenAI client instance */
-  openaiClient: OpenAI;
-  /** Model name (e.g., "gpt-4o-mini") */
-  modelName: string;
+  /** LLM client instance */
+  llmClient: LLMClient;
   /** System prompt */
   systemPrompt: string;
   /** User prompt template */
@@ -625,6 +624,8 @@ export interface GenerateCruxInput {
   options?: {
     enableWeave?: boolean;
     weaveProjectName?: string;
+    /** Raw OpenAI client for Weave LLM judge scorer (temporary until T3C-853) */
+    openaiClientForWeave?: OpenAI;
   };
 }
 /**

@@ -13,6 +13,7 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
+import { createOpenAILLMClient, type LLMClient } from "../llm-client.js";
 import { sanitizeForOutput } from "../sanitizer";
 import { getReportLogger, processBatchConcurrently } from "../utils";
 import { callSummaryModel } from "./model";
@@ -35,7 +36,7 @@ const MAX_CONCURRENT_SUMMARIES = 6;
 /**
  * Process a single topic to generate its summary
  *
- * @param openaiClient - Shared OpenAI client instance
+ * @param llmClient - Shared LLM client instance
  * @param topicName - Name of the topic
  * @param topicData - Processed topic data with subtopics and claims
  * @param llmConfig - LLM configuration for summary generation
@@ -45,7 +46,7 @@ const MAX_CONCURRENT_SUMMARIES = 6;
  * @returns Result containing topic summary with usage stats, or an error
  */
 async function processTopicSummary(
-  openaiClient: OpenAI,
+  llmClient: LLMClient,
   topicName: string,
   topicData: SortedTree[number][1],
   llmConfig: LLMConfig,
@@ -54,6 +55,7 @@ async function processTopicSummary(
   options?: {
     enableWeave?: boolean;
     weaveProjectName?: string;
+    openaiClientForWeave?: OpenAI;
   },
 ): Promise<
   Result<SummaryModelResult & { topicName: string }, ClusteringError>
@@ -65,8 +67,7 @@ async function processTopicSummary(
 
   // Call model to generate summary
   const result = await callSummaryModel({
-    openaiClient,
-    modelName: llmConfig.model_name,
+    llmClient,
     systemPrompt: llmConfig.system_prompt,
     userPrompt: llmConfig.user_prompt,
     tree: singleTopicTree,
@@ -127,8 +128,12 @@ export async function generateTopicSummaries(
     "Starting individual topic summaries",
   );
 
-  // Create shared OpenAI client for all topics
-  const openaiClient = new OpenAI({ apiKey });
+  // Create shared LLM client for all topics
+  const llmClient = await createOpenAILLMClient(apiKey, llm.model_name, {
+    enableWeave,
+    weaveProjectName,
+  });
+  const openaiClientForWeave = enableWeave ? new OpenAI({ apiKey }) : undefined;
 
   // Process each topic individually with controlled concurrency
   // Using processBatchConcurrently to limit parallel API calls
@@ -136,13 +141,13 @@ export async function generateTopicSummaries(
     tree,
     async ([topicName, topicData]) => {
       return processTopicSummary(
-        openaiClient,
+        llmClient,
         topicName,
         topicData,
         llm,
         reportId,
         reportLogger,
-        { enableWeave, weaveProjectName },
+        { enableWeave, weaveProjectName, openaiClientForWeave },
       );
     },
     MAX_CONCURRENT_SUMMARIES,

@@ -2,19 +2,21 @@
  * Shared utility functions for pipeline steps
  */
 
-import type OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import * as weave from "weave";
 
 const utilsLogger = logger.child({ module: "pipeline-utils" });
 
 // Model cost configuration
-// Currently only gpt-4o-mini is supported
 const COST_BY_MODEL: Record<string, { in_per_1K: number; out_per_1K: number }> =
   {
+    // GPT-4o mini: $0.150/1M input, $0.600/1M output
     "gpt-4o-mini": { in_per_1K: 0.00015, out_per_1K: 0.0006 },
+    // GPT-4o: $2.50/1M input, $10.00/1M output
+    "gpt-4o": { in_per_1K: 0.0025, out_per_1K: 0.01 },
+    // GPT-5 mini: TODO verify pricing
+    "gpt-5-mini": { in_per_1K: 0.00015, out_per_1K: 0.0006 },
   };
 
 /**
@@ -149,46 +151,4 @@ export async function processBatchConcurrently<T, R>(
 
   processNext();
   return promise;
-}
-
-/**
- * Initialize Weave for scoring if enabled.
- * The scorers (jsonStructureScorer, topicCoverageScorer, etc.) are already
- * wrapped as weave.op, so weave.init() alone is sufficient to enable tracing.
- *
- * @param openaiClient - OpenAI client instance
- * @param enableWeave - Whether to enable Weave scoring
- * @param weaveProjectName - Name of the Weave project to log to
- * @returns The responses.create function (unwrapped)
- */
-export async function initializeWeaveIfEnabled(
-  openaiClient: OpenAI,
-  enableWeave: boolean,
-  weaveProjectName: string,
-): Promise<OpenAI["responses"]["create"]> {
-  const responsesCreate = openaiClient.responses.create.bind(
-    openaiClient.responses,
-  );
-
-  if (enableWeave) {
-    try {
-      await weave.init(weaveProjectName);
-      logger.info(
-        { weaveProjectName, module: "weave-init" },
-        "Weave initialized successfully",
-      );
-    } catch (error) {
-      logger.error(
-        { error, weaveProjectName, module: "weave-init" },
-        "Failed to initialize Weave",
-      );
-    }
-  } else {
-    logger.info(
-      { weaveProjectName, module: "weave-init" },
-      "Weave disabled, skipping initialization",
-    );
-  }
-
-  return responsesCreate;
 }

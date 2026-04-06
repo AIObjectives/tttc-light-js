@@ -414,10 +414,10 @@ describe("Summaries Generation Pipeline Step", () => {
       expect(vi.mocked(callSummaryModel)).toHaveBeenCalledWith(
         expect.objectContaining({
           reportId: "test-report-123",
-          options: {
+          options: expect.objectContaining({
             enableWeave: true,
             weaveProjectName: "test-project",
-          },
+          }),
         }),
       );
     });
@@ -443,13 +443,13 @@ describe("Summaries Generation Pipeline Step", () => {
       }
     });
 
-    it("should share OpenAI client across all topics", async () => {
+    it("should share LLM client across all topics", async () => {
       const { callSummaryModel } = await import("../model.js");
       const clientInstances = new Set();
 
-      // Track OpenAI client instances
+      // Track LLM client instances
       vi.mocked(callSummaryModel).mockImplementation(async (input) => {
-        clientInstances.add(input.openaiClient);
+        clientInstances.add(input.llmClient);
         return {
           tag: "success",
           value: {

@@ -515,10 +515,10 @@ describe("Cruxes Extraction Pipeline Step", () => {
       expect(vi.mocked(generateCruxForSubtopic)).toHaveBeenCalledWith(
         expect.objectContaining({
           reportId: "test-report-123",
-          options: {
+          options: expect.objectContaining({
             enableWeave: true,
             weaveProjectName: "test-project",
-          },
+          }),
         }),
       );
     });
@@ -582,12 +582,12 @@ describe("Cruxes Extraction Pipeline Step", () => {
       }
     });
 
-    it("should share OpenAI client across all subtopics", async () => {
+    it("should share LLM client across all subtopics", async () => {
       const { generateCruxForSubtopic } = await import("../model.js");
       const clientInstances = new Set();
 
       vi.mocked(generateCruxForSubtopic).mockImplementation(async (input) => {
-        clientInstances.add(input.openaiClient);
+        clientInstances.add(input.llmClient);
         return {
           tag: "success",
           value: {

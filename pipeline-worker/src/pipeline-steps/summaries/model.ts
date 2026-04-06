@@ -1,5 +1,5 @@
 /**
- * Summary generation model using OpenAI API
+ * Summary generation model using LLMClient
  */
 
 import type OpenAI from "openai";
@@ -13,12 +13,8 @@ import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import * as weave from "weave";
 import { basicSanitize } from "../sanitizer";
-import {
-  ApiCallFailedError,
-  EmptyResponseError,
-  ParseFailedError,
-} from "../types";
-import { initializeWeaveIfEnabled, tokenCost } from "../utils";
+import { ParseFailedError } from "../types";
+import { tokenCost } from "../utils";
 import type {
   ClusteringError,
   GenerateSummaryInput,
@@ -43,9 +39,7 @@ function runSummaryScorers(
   summary: string,
   tree: SortedTree,
 ): void {
-  // Type assertion needed temporarily until T3C-853 is completed
-  // (https://linear.app/ai-objectives/issue/T3C-853/update-openai-sdk-version-in-eval-suite)
-  // The eval suite uses OpenAI v4 while pipeline-worker uses v6
+  // biome-ignore lint/suspicious/noExplicitAny: SDK version mismatch requires assertion (T3C-853)
   const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 
   const capturedTopicName = topicName;
@@ -82,47 +76,14 @@ function runSummaryScorers(
 /**
  * Call the summary generation model to create a summary for a single topic
  *
- * This function uses OpenAI's Responses API to generate a summary for a topic
- * based on its claims and subtopics. The function handles JSON parsing, token
- * usage tracking, and cost calculation. If Weave evaluation is enabled, it runs
- * quality scorers asynchronously in the background.
- *
  * @param input - Input parameters for summary generation
- * @param input.openaiClient - Configured OpenAI client instance
- * @param input.modelName - Name of the OpenAI model to use (e.g., "gpt-4o-mini")
- * @param input.systemPrompt - System-level instructions for the LLM
- * @param input.userPrompt - User-level prompt template
- * @param input.tree - Tree data containing topic and claims to summarize
- * @param input.topicName - Name of the topic being summarized
- * @param input.reportId - Optional report identifier for logging
- * @param input.options - Optional configuration for Weave evaluation
- * @param input.options.enableWeave - Whether to enable Weave scoring
- * @param input.options.weaveProjectName - Weave project name for tracking
  * @returns Result containing summary text with usage stats and cost, or an error
- *
- * @example
- * const result = await callSummaryModel({
- *   openaiClient: client,
- *   modelName: "gpt-4o-mini",
- *   systemPrompt: "Generate a concise summary...",
- *   userPrompt: "Summarize the following topic:",
- *   tree: topicTree,
- *   topicName: "Climate Change",
- *   reportId: "report-123",
- *   options: { enableWeave: true }
- * });
- *
- * if (result.tag === "success") {
- *   console.log(result.value.summary);
- *   console.log(`Cost: $${result.value.cost.toFixed(4)}`);
- * }
  */
 export async function callSummaryModel(
   input: GenerateSummaryInput,
 ): Promise<Result<SummaryModelResult, ClusteringError>> {
   const {
-    openaiClient,
-    modelName,
+    llmClient,
     systemPrompt,
     userPrompt,
     tree,
@@ -131,8 +92,7 @@ export async function callSummaryModel(
     options = {},
   } = input;
 
-  const { enableWeave = false, weaveProjectName = "production-summaries" } =
-    options;
+  const { enableWeave = false } = options;
 
   const context = {
     topic: topicName,
@@ -149,45 +109,25 @@ export async function callSummaryModel(
   // Sanitize system prompt
   const { sanitizedText: sanitizedSystemPrompt } = basicSanitize(systemPrompt);
 
-  // Initialize Weave for scoring if enabled
-  const responsesCreate = await initializeWeaveIfEnabled(
-    openaiClient,
-    enableWeave,
-    weaveProjectName,
-  );
-
-  // Call OpenAI Responses API
-  let response: Awaited<ReturnType<typeof responsesCreate>>;
-  try {
-    response = await responsesCreate({
-      model: modelName,
-      instructions: sanitizedSystemPrompt,
-      input: fullPrompt,
-      text: {
-        format: {
-          type: "json_object",
-        },
-      },
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    summaryLogger.error({ ...context, error }, "Failed to call summary model");
-    return failure(new ApiCallFailedError(modelName, errorMessage));
+  const llmResult = await llmClient.complete({
+    systemPrompt: sanitizedSystemPrompt,
+    userPrompt: fullPrompt,
+  });
+  if (llmResult.tag === "failure") {
+    summaryLogger.error(
+      { ...context, error: llmResult.error },
+      "Failed to call summary model",
+    );
+    return llmResult;
   }
 
-  // Extract usage information
+  const { content, usage: rawUsage } = llmResult.value;
+
   const usage: TokenUsage = {
-    input_tokens: response.usage?.input_tokens || 0,
-    output_tokens: response.usage?.output_tokens || 0,
-    total_tokens: response.usage?.total_tokens || 0,
+    input_tokens: rawUsage.input_tokens,
+    output_tokens: rawUsage.output_tokens,
+    total_tokens: rawUsage.total_tokens,
   };
-
-  // Extract content
-  const content = response.output_text;
-  if (!content) {
-    summaryLogger.error({ ...context, response }, "No response from model");
-    return failure(new EmptyResponseError(modelName));
-  }
 
   // Parse JSON response
   let summary: string;
@@ -215,9 +155,8 @@ export async function callSummaryModel(
     return failure(new ParseFailedError(content, errorMessage));
   }
 
-  // Calculate cost
   const costResult = tokenCost(
-    modelName,
+    llmClient.modelName,
     usage.input_tokens,
     usage.output_tokens,
   );
@@ -240,9 +179,8 @@ export async function callSummaryModel(
     cost: costResult.value,
   };
 
-  // If scoring is enabled, run scorers on the result asynchronously
-  if (enableWeave) {
-    runSummaryScorers(openaiClient, topicName, summary, tree);
+  if (enableWeave && options.openaiClientForWeave) {
+    runSummaryScorers(options.openaiClientForWeave, topicName, summary, tree);
   }
 
   return success(result);

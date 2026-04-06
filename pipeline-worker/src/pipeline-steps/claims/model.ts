@@ -1,5 +1,5 @@
 /**
- * Claims extraction model using OpenAI Responses API
+ * Claims extraction model using LLMClient
  */
 
 import type OpenAI from "openai";
@@ -15,15 +15,13 @@ import { logger } from "tttc-common/logger";
 import * as weave from "weave";
 import { escapeQuotes } from "../sanitizer";
 import {
-  ApiCallFailedError,
   type ClaimsModelResult,
   type ClusteringError,
-  EmptyResponseError,
   type ExtractClaimsInput,
   ParseFailedError,
 } from "../types";
-import { initializeWeaveIfEnabled, tokenCost } from "../utils";
-import type { Claim, TokenUsage, Topic } from "./types";
+import { tokenCost } from "../utils";
+import type { Claim, Topic } from "./types";
 import { extractSubtopicNames, extractTopicNames } from "./utils";
 
 const claimsLogger = logger.child({ module: "claims-model" });
@@ -53,62 +51,6 @@ function validateTaxonomy(
 }
 
 /**
- * Call OpenAI API to extract claims
- */
-async function callOpenAIForClaims(
-  responsesCreate: OpenAI["responses"]["create"],
-  modelName: string,
-  systemPrompt: string,
-  userPrompt: string,
-  commentText: string,
-  taxonomy: Topic[],
-): Promise<Result<{ content: string; usage: TokenUsage }, ClusteringError>> {
-  // Build taxonomy constraints for the prompt
-  const taxonomyPrompt = buildTaxonomyPromptSection(taxonomy);
-
-  // Construct the full prompts
-  const fullSystemPrompt = `${systemPrompt}\n\n${taxonomyPrompt}`;
-  const fullUserPrompt = `${userPrompt}\n\nComment:\n${commentText}`;
-
-  // Call OpenAI Responses API with JSON output
-  let response: Awaited<ReturnType<typeof responsesCreate>> | undefined;
-  try {
-    response = await responsesCreate({
-      model: modelName,
-      instructions: fullSystemPrompt,
-      input: fullUserPrompt,
-      text: {
-        format: {
-          type: "json_object",
-        },
-      },
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    claimsLogger.error({ error, modelName }, "Failed to call OpenAI API");
-    return failure(new ApiCallFailedError(modelName, errorMessage));
-  }
-
-  // Extract usage information
-  const usage = response.usage || {
-    input_tokens: 0,
-    output_tokens: 0,
-    total_tokens: 0,
-  };
-
-  const content = response.output_text;
-  if (!content) {
-    claimsLogger.error(
-      { response },
-      "No response from claims extraction model",
-    );
-    return failure(new EmptyResponseError(modelName));
-  }
-
-  return success({ content, usage });
-}
-
-/**
  * Parameters for parsing and validating claims
  */
 interface ParseClaimsParams {
@@ -125,7 +67,6 @@ function parseAndValidateClaims(
   params: ParseClaimsParams,
 ): Result<Claim[], ClusteringError> {
   const { content, taxonomy, speaker, commentId } = params;
-  // Parse the JSON response
   let parsed: {
     claims: Array<{
       claim: string;
@@ -142,10 +83,8 @@ function parseAndValidateClaims(
     return failure(new ParseFailedError(content, errorMessage));
   }
 
-  // Validate and transform the claims
   const claims: Claim[] = [];
   for (const rawClaim of parsed.claims || []) {
-    // Find the topic in the taxonomy
     const topic = taxonomy.find((t) => t.topicName === rawClaim.topicName);
     if (!topic) {
       claimsLogger.error(
@@ -158,7 +97,6 @@ function parseAndValidateClaims(
       continue;
     }
 
-    // Validate that the subtopic belongs to this specific topic
     const validSubtopicsForTopic =
       topic.subtopics?.map((s) => s.subtopicName) || [];
     if (!validSubtopicsForTopic.includes(rawClaim.subtopicName)) {
@@ -236,7 +174,7 @@ function buildTaxonomyPromptSection(taxonomy: Topic[]): string {
 }
 
 /**
- * Extract claims from a single comment using OpenAI Responses API
+ * Extract claims from a single comment
  *
  * @param input - Object containing all required parameters
  * @returns Result containing claims with usage stats and cost, or an error
@@ -245,8 +183,7 @@ export async function extractClaimsFromComment(
   input: ExtractClaimsInput,
 ): Promise<Result<ClaimsModelResult, ClusteringError>> {
   const {
-    openaiClient,
-    modelName,
+    llmClient,
     systemPrompt,
     userPrompt,
     commentText,
@@ -256,15 +193,7 @@ export async function extractClaimsFromComment(
     options = {},
   } = input;
 
-  const { enableWeave = false, weaveProjectName = "production-extraction" } =
-    options;
-
-  // Initialize Weave for scoring if enabled
-  const responsesCreate = await initializeWeaveIfEnabled(
-    openaiClient,
-    enableWeave,
-    weaveProjectName,
-  );
+  const { enableWeave = false } = options;
 
   // Validate taxonomy structure
   const taxonomyValidation = validateTaxonomy(taxonomy);
@@ -272,19 +201,24 @@ export async function extractClaimsFromComment(
     return taxonomyValidation;
   }
 
-  // Call OpenAI API to extract claims
-  const apiResult = await callOpenAIForClaims(
-    responsesCreate,
-    modelName,
-    systemPrompt,
-    userPrompt,
-    commentText,
-    taxonomy,
-  );
-  if (apiResult.tag === "failure") {
-    return apiResult;
+  // Build taxonomy constraints for the prompt
+  const taxonomyPrompt = buildTaxonomyPromptSection(taxonomy);
+  const fullSystemPrompt = `${systemPrompt}\n\n${taxonomyPrompt}`;
+  const fullUserPrompt = `${userPrompt}\n\nComment:\n${commentText}`;
+
+  const llmResult = await llmClient.complete({
+    systemPrompt: fullSystemPrompt,
+    userPrompt: fullUserPrompt,
+  });
+  if (llmResult.tag === "failure") {
+    claimsLogger.error(
+      { error: llmResult.error },
+      "Failed to call claims extraction model",
+    );
+    return llmResult;
   }
-  const { content, usage } = apiResult.value;
+
+  const { content, usage } = llmResult.value;
 
   // Parse and validate claims
   const claimsResult = parseAndValidateClaims({
@@ -298,9 +232,8 @@ export async function extractClaimsFromComment(
   }
   const claims = claimsResult.value;
 
-  // Calculate cost
   const costResult = tokenCost(
-    modelName,
+    llmClient.modelName,
     usage.input_tokens,
     usage.output_tokens,
   );
@@ -318,9 +251,13 @@ export async function extractClaimsFromComment(
     cost: costResult.value,
   };
 
-  // If scoring is enabled, run scorers on the result asynchronously
-  if (enableWeave) {
-    runClaimsEvaluation(openaiClient, claims, commentText, taxonomy);
+  if (enableWeave && options.openaiClientForWeave) {
+    runClaimsEvaluation(
+      options.openaiClientForWeave,
+      claims,
+      commentText,
+      taxonomy,
+    );
   }
 
   return success(result);
@@ -336,9 +273,8 @@ function runClaimsEvaluation(
   commentText: string,
   taxonomy: Topic[],
 ): void {
-  // TODO: Remove 'any' cast after fixing OpenAI SDK version mismatch
-  // See: https://linear.app/ai-objectives/issue/T3C-853/update-openai-sdk-version-in-eval-suite
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // TODO: Remove cast after fixing OpenAI SDK version mismatch (T3C-853)
+  // biome-ignore lint/suspicious/noExplicitAny: SDK version mismatch requires assertion
   const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 
   const capturedClaims = claims.map((c) => ({

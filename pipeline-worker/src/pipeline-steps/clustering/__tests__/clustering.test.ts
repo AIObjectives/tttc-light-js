@@ -20,8 +20,7 @@ vi.mock("tttc-common/logger", () => ({
 vi.mock("../model", () => ({
   callClusteringModel: vi.fn(
     async (
-      _client,
-      _modelName,
+      _llmClient,
       _systemPrompt,
       _userPrompt,
       _commentsText,

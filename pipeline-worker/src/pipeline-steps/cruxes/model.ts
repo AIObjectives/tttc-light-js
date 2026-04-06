@@ -1,8 +1,7 @@
 /**
- * Cruxes extraction model using OpenAI Responses API
+ * Cruxes extraction model using LLMClient
  */
 
-import type OpenAI from "openai";
 import {
   createLLMJudgeScorer,
   cruxJsonStructureScorer,
@@ -11,12 +10,8 @@ import {
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import { basicSanitize, sanitizePromptLength } from "../sanitizer";
-import {
-  ApiCallFailedError,
-  EmptyResponseError,
-  ParseFailedError,
-} from "../types";
-import { initializeWeaveIfEnabled, tokenCost } from "../utils";
+import { ParseFailedError } from "../types";
+import { tokenCost } from "../utils";
 import type {
   AnonymizedClaims,
   ClusteringError,
@@ -100,56 +95,12 @@ function buildPrompt(
   return sanitizePromptLength(fullPrompt);
 }
 
-/** Response type from OpenAI Responses API (non-streaming) */
-interface ResponsesApiResult {
-  output_text?: string;
-  usage?: {
-    input_tokens?: number;
-    output_tokens?: number;
-    total_tokens?: number;
-  };
-}
-
-/**
- * Call OpenAI API for crux extraction
- */
-async function callOpenAI(
-  responsesCreate: OpenAI["responses"]["create"],
-  modelName: string,
-  systemPrompt: string,
-  fullPrompt: string,
-): Promise<Result<ResponsesApiResult, ClusteringError>> {
-  try {
-    const response = await responsesCreate({
-      model: modelName,
-      instructions: systemPrompt,
-      input: fullPrompt,
-      text: {
-        format: {
-          type: "json_object",
-        },
-      },
-    });
-    // Cast to our expected response type (non-streaming)
-    return success(response as ResponsesApiResult);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return failure(new ApiCallFailedError(modelName, errorMessage));
-  }
-}
-
 /**
  * Parse OpenAI response and extract crux object
  */
 function parseResponse(
-  response: unknown,
-  modelName: string,
+  content: string,
 ): Result<RawCruxResponse, ClusteringError> {
-  const content = (response as { output_text?: string }).output_text;
-  if (!content) {
-    return failure(new EmptyResponseError(modelName));
-  }
-
   try {
     const cruxObj = JSON.parse(content);
     return success(cruxObj);
@@ -166,15 +117,14 @@ function parseResponse(
  * The 'topic' parameter is formatted as "Topic, Subtopic" by the caller,
  * and 'claims' contains only claims from that specific subtopic.
  *
- * @param input - Input parameters including OpenAI client, prompts, and claims
+ * @param input - Input parameters including LLM client, prompts, and claims
  * @returns Result containing crux response and usage, or an error
  */
 export async function generateCruxForSubtopic(
   input: GenerateCruxInput,
 ): Promise<Result<CruxForTopicResult, ClusteringError>> {
   const {
-    openaiClient,
-    modelName,
+    llmClient,
     systemPrompt,
     userPrompt,
     subtopicIdentifier,
@@ -186,8 +136,7 @@ export async function generateCruxForSubtopic(
     options = {},
   } = input;
 
-  const { enableWeave = false, weaveProjectName = "production-cruxes" } =
-    options;
+  const { enableWeave = false } = options;
 
   const context = {
     subtopicIdentifier,
@@ -238,39 +187,32 @@ export async function generateCruxForSubtopic(
       ...context,
       claimCount: claims.length,
       speakerCount,
-      model: modelName,
+      model: llmClient.modelName,
     },
-    "Calling OpenAI for crux extraction",
+    "Calling LLM for crux extraction",
   );
 
-  const responsesCreate = await initializeWeaveIfEnabled(
-    openaiClient,
-    enableWeave,
-    weaveProjectName,
-  );
-
-  const responseResult = await callOpenAI(
-    responsesCreate,
-    modelName,
+  const llmResult = await llmClient.complete({
     systemPrompt,
-    fullPrompt,
-  );
-  if (responseResult.tag === "failure") {
+    userPrompt: fullPrompt,
+  });
+  if (llmResult.tag === "failure") {
     cruxesLogger.error(
-      { ...context, error: responseResult.error },
-      "Failed to call OpenAI API for crux extraction",
+      { ...context, error: llmResult.error },
+      "Failed to call LLM for crux extraction",
     );
-    return responseResult;
+    return llmResult;
   }
 
-  const response = responseResult.value;
+  const { content, usage: rawUsage } = llmResult.value;
+
   const usage: TokenUsage = {
-    input_tokens: response.usage?.input_tokens || 0,
-    output_tokens: response.usage?.output_tokens || 0,
-    total_tokens: response.usage?.total_tokens || 0,
+    input_tokens: rawUsage.input_tokens,
+    output_tokens: rawUsage.output_tokens,
+    total_tokens: rawUsage.total_tokens,
   };
 
-  const cruxResult = parseResponse(response, modelName);
+  const cruxResult = parseResponse(content);
   if (cruxResult.tag === "failure") {
     cruxesLogger.error(
       { ...context, error: cruxResult.error },
@@ -281,7 +223,7 @@ export async function generateCruxForSubtopic(
 
   const cruxObj = cruxResult.value;
   const costResult = tokenCost(
-    modelName,
+    llmClient.modelName,
     usage.input_tokens,
     usage.output_tokens,
   );
@@ -308,9 +250,9 @@ export async function generateCruxForSubtopic(
     },
   };
 
-  if (enableWeave) {
+  if (enableWeave && options.openaiClientForWeave) {
     runCruxesEvaluation({
-      openaiClient,
+      openaiClient: options.openaiClientForWeave,
       cruxResponse: cruxObj,
       claims: claimsAnon,
       totalSpeakers: speakerCount,
@@ -333,9 +275,6 @@ function runCruxesEvaluation(params: CruxEvaluationParams): void {
   // biome-ignore lint/suspicious/noExplicitAny: SDK version mismatch requires assertion
   const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
 
-  // Build model output format for scorers
-  // Cast to match CruxModelOutput type expected by scorers
-  // Our internal RawCruxResponse uses (string | number)[] while scorers expect string[]
   const modelOutput = {
     crux: {
       cruxClaim: cruxResponse.crux.cruxClaim,
@@ -345,11 +284,6 @@ function runCruxesEvaluation(params: CruxEvaluationParams): void {
     },
   };
 
-  // Build dataset row format with claims for evaluation.
-  // Simple scorers (cruxJsonStructureScorer, explanationQualityScorer) don't use
-  // datasetRow topic fields, so minimal data is sufficient.
-  // TODO(T3C-XXX): Consider passing full topic/subtopic info to improve LLM judge
-  // accuracy, or evaluate whether the LLM judge scorer is effective without it.
   const datasetRow = {
     topic: subtopicIdentifier,
     topicDescription: "",
@@ -361,8 +295,6 @@ function runCruxesEvaluation(params: CruxEvaluationParams): void {
     }),
   };
 
-  // Run scorers on the result we already have (non-blocking)
-  // Scores are automatically sent to Weave since scorers are wrapped with weave.op
   Promise.all([
     cruxJsonStructureScorer({
       modelOutput,

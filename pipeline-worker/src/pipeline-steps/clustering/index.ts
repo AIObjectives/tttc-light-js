@@ -8,6 +8,7 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
+import { createOpenAILLMClient } from "../llm-client.js";
 import {
   basicSanitize,
   sanitizeForOutput,
@@ -120,9 +121,6 @@ export async function commentsToTree(
     `Starting topic_tree processing with ${comments.length} comments`,
   );
 
-  // Initialize OpenAI client
-  const client = new OpenAI({ apiKey });
-
   // Build prompt with sanitized comments and collect sanitized text for evaluation
   const { fullPrompt, sanitizedComments } = sanitizeAndBuildPrompt(
     comments,
@@ -142,14 +140,21 @@ export async function commentsToTree(
     "Calling clustering model",
   );
 
+  const llmClient = await createOpenAILLMClient(apiKey, llmConfig.model_name, {
+    enableWeave: options.enableWeave,
+    weaveProjectName: options.weaveProjectName,
+  });
+  const openaiClientForWeave = options.enableWeave
+    ? new OpenAI({ apiKey })
+    : undefined;
+
   // Call clustering model with usage tracking
   const clusteringResult = await callClusteringModel(
-    client,
-    llmConfig.model_name,
+    llmClient,
     llmConfig.system_prompt,
     fullPrompt,
     commentsText,
-    { enableWeave: options.enableWeave },
+    { enableWeave: options.enableWeave, openaiClientForWeave },
   );
 
   if (clusteringResult.tag === "failure") {
