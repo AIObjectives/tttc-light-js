@@ -278,7 +278,8 @@
     "vCPU",
     "cooldown",
     "underutilized",
-    "nacked"
+    "nacked",
+    "AILLM"
   ],
   "ignorePaths": [
     "node_modules",
