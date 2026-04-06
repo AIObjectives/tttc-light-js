@@ -11,23 +11,18 @@ import {
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import * as weave from "weave";
+import type { LLMClient } from "../llm-client.js";
 import type { ClusteringOutput, Topic } from "../types";
 
-import {
-  ApiCallFailedError,
-  type ClusteringError,
-  EmptyResponseError,
-  ParseFailedError,
-} from "../types";
-import { initializeWeaveIfEnabled, tokenCost } from "../utils";
+import { type ClusteringError, ParseFailedError } from "../types";
+import { tokenCost } from "../utils";
 
 const clusteringLogger = logger.child({ module: "clustering-model" });
 
 /**
  * Call the clustering model with usage tracking and optional evaluation
  *
- * @param openaiClient - OpenAI client instance
- * @param modelName - Model name (e.g., "gpt-4o-mini")
+ * @param llmClient - LLM client instance
  * @param systemPrompt - System prompt
  * @param userPrompt - User prompt (should contain comments)
  * @param commentsText - Raw comments text for evaluation
@@ -35,57 +30,27 @@ const clusteringLogger = logger.child({ module: "clustering-model" });
  * @returns Clustering output with taxonomy, usage stats, and cost
  */
 export async function callClusteringModel(
-  openaiClient: OpenAI,
-  modelName: string,
+  llmClient: LLMClient,
   systemPrompt: string,
   userPrompt: string,
   commentsText: string,
   options: {
     enableWeave?: boolean;
-    weaveProjectName?: string;
+    openaiClientForWeave?: OpenAI;
   } = {},
 ): Promise<Result<ClusteringOutput, ClusteringError>> {
-  const { enableWeave = false, weaveProjectName = "production-clustering" } =
-    options;
+  const { enableWeave = false } = options;
 
-  // If Weave is enabled, initialize it and wrap responses create in a WeaveOp
-  const responsesCreate = await initializeWeaveIfEnabled(
-    openaiClient,
-    enableWeave,
-    weaveProjectName,
-  );
-
-  // Call OpenAI API directly to capture usage information
-  let response: Awaited<ReturnType<typeof responsesCreate>> | undefined;
-  try {
-    response = await responsesCreate({
-      model: modelName,
-      instructions: systemPrompt,
-      input: userPrompt,
-      text: {
-        format: {
-          type: "json_object",
-        },
-      },
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    clusteringLogger.error({ error, modelName }, "Failed to call OpenAI API");
-    return failure(new ApiCallFailedError(modelName, errorMessage));
+  const llmResult = await llmClient.complete({ systemPrompt, userPrompt });
+  if (llmResult.tag === "failure") {
+    clusteringLogger.error(
+      { error: llmResult.error, modelName: llmClient.modelName },
+      "Failed to call clustering model",
+    );
+    return llmResult;
   }
 
-  // Extract usage information
-  const usage = response.usage || {
-    input_tokens: 0,
-    output_tokens: 0,
-    total_tokens: 0,
-  };
-
-  const content = response.output_text;
-  if (!content) {
-    clusteringLogger.error({ response }, "No response from clustering model");
-    return failure(new EmptyResponseError(modelName));
-  }
+  const { content, usage } = llmResult.value;
 
   let taxonomy: Topic[];
   try {
@@ -100,9 +65,8 @@ export async function callClusteringModel(
     return failure(new ParseFailedError(content, errorMessage));
   }
 
-  // Calculate cost using the utility function
   const costResult = tokenCost(
-    modelName,
+    llmClient.modelName,
     usage.input_tokens,
     usage.output_tokens,
   );
@@ -121,9 +85,11 @@ export async function callClusteringModel(
   };
 
   // If Weave is enabled, run a Weave Evaluation (shows in the evaluations tab)
-  if (enableWeave) {
-    // Cast to any to handle OpenAI version mismatch between pipeline-worker (v6) and common (v4)
-    const llmJudgeScorer = createLLMJudgeScorer(openaiClient as any);
+  if (enableWeave && options.openaiClientForWeave) {
+    const llmJudgeScorer = createLLMJudgeScorer(
+      // biome-ignore lint/suspicious/noExplicitAny: SDK version mismatch requires assertion (T3C-853)
+      options.openaiClientForWeave as any,
+    );
 
     const capturedTaxonomy = taxonomy;
     const model = weave.op(async function clusteringModel() {

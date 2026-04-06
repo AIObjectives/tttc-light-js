@@ -8,6 +8,7 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
+import { createOpenAILLMClient } from "../llm-client.js";
 import { basicSanitize, sanitizeForOutput } from "../sanitizer";
 import { ClusteringError } from "../types";
 import { getReportLogger, processBatchConcurrently } from "../utils";
@@ -258,8 +259,12 @@ export async function extractClaims(
     );
   }
 
-  // Initialize OpenAI client
-  const client = new OpenAI({ apiKey });
+  const llmClient = await createOpenAILLMClient(apiKey, llmConfig.model_name, {
+    enableWeave: options.enableWeave,
+  });
+  const openaiClientForWeave = options.enableWeave
+    ? new OpenAI({ apiKey })
+    : undefined;
 
   // Filter and sanitize comments
   const { sanitizedComments } = filterAndSanitizeComments(
@@ -299,8 +304,7 @@ export async function extractClaims(
       chunk,
       async (comment) => {
         const result = await extractClaimsFromComment({
-          openaiClient: client,
-          modelName: llmConfig.model_name,
+          llmClient,
           systemPrompt: llmConfig.system_prompt,
           userPrompt: llmConfig.user_prompt,
           commentText: comment.text,
@@ -309,6 +313,7 @@ export async function extractClaims(
           commentId: comment.id,
           options: {
             enableWeave: options.enableWeave,
+            openaiClientForWeave,
           },
         });
         return { comment, result };

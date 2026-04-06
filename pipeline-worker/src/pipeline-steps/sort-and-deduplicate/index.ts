@@ -9,10 +9,10 @@
  * Near-duplicate claims are nested under a primary claim in the "duplicates" field.
  */
 
-import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import { createOpenAILLMClient, type LLMClient } from "../llm-client.js";
 import { getReportLogger, processBatchConcurrently, tokenCost } from "../utils";
 import { callDeduplicationModel } from "./model";
 import type {
@@ -274,7 +274,7 @@ function addMissingClaims(
 interface SubtopicProcessingConfig {
   subtopicData: { total: number; claims: Claim[] };
   llmConfig: { model_name: string; system_prompt: string; user_prompt: string };
-  apiKey: string;
+  llmClient: LLMClient;
   topicName: string;
   subtopicName: string;
   reportId: string | undefined;
@@ -364,7 +364,7 @@ async function processSubtopic(
   const {
     subtopicData,
     llmConfig,
-    apiKey,
+    llmClient,
     topicName,
     subtopicName,
     reportId,
@@ -377,9 +377,8 @@ async function processSubtopic(
   }
 
   // Deduplicate multiple claims
-  const client = new OpenAI({ apiKey });
   const dedupResult = await callDeduplicationModel(
-    client,
+    llmClient,
     subtopicData.claims,
     llmConfig,
     topicName,
@@ -479,6 +478,8 @@ export async function sortAndDeduplicateClaims(
     "Starting sort and deduplicate",
   );
 
+  const llmClient = await createOpenAILLMClient(apiKey, llm.model_name);
+
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   let totalTokens = 0;
@@ -513,7 +514,7 @@ export async function sortAndDeduplicateClaims(
           result: await processSubtopic({
             subtopicData,
             llmConfig: llm,
-            apiKey,
+            llmClient,
             topicName,
             subtopicName,
             reportId,

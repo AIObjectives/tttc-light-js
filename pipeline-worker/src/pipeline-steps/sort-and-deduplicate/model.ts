@@ -1,17 +1,11 @@
 /**
- * Deduplication model using OpenAI API
+ * Deduplication model using LLMClient
  */
 
-import type OpenAI from "openai";
-import { APIError, BadRequestError, RateLimitError } from "openai";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import {
-  ApiCallFailedError,
-  EmptyResponseError,
-  ParseFailedError,
-} from "../types";
-import { initializeWeaveIfEnabled } from "../utils";
+import type { LLMClient } from "../llm-client.js";
+import { ParseFailedError } from "../types";
 import type {
   Claim,
   ClusteringError,
@@ -24,58 +18,24 @@ import type {
 const dedupLogger = logger.child({ module: "deduplication-model" });
 
 /**
- * Determine the error type from an API error
- *
- * @param error - The error object from the API call
- * @returns String describing the error type
- */
-function getErrorType(error: unknown): string {
-  if (error instanceof RateLimitError) {
-    return "rate_limit";
-  }
-
-  if (error instanceof BadRequestError) {
-    return "invalid_request";
-  }
-
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  if (
-    errorMessage.toLowerCase().includes("quota") ||
-    errorMessage.toLowerCase().includes("insufficient_quota")
-  ) {
-    return "quota_exceeded";
-  }
-
-  return "unknown";
-}
-
-/**
  * Call the deduplication model to identify near-duplicate claims
  *
- * @param openaiClient - OpenAI client instance
+ * @param llmClient - LLM client instance
  * @param claims - Array of claims to deduplicate
- * @param llmConfig - LLM configuration with prompts and model name
+ * @param llmConfig - LLM configuration with prompts
  * @param topicName - Name of the topic (for logging)
  * @param subtopicName - Name of the subtopic (for logging)
  * @param reportId - Optional report ID for logging context
- * @param options - Optional weave tracking configuration
  * @returns Result containing deduplication response with usage stats, or an error
  */
 export async function callDeduplicationModel(
-  openaiClient: OpenAI,
+  llmClient: LLMClient,
   claims: Claim[],
   llmConfig: LLMConfig,
   topicName: string,
   subtopicName: string,
   reportId?: string,
-  options: {
-    enableWeave?: boolean;
-    weaveProjectName?: string;
-  } = {},
 ): Promise<Result<DeduplicationOutput, ClusteringError>> {
-  const { enableWeave = false, weaveProjectName = "production-deduplication" } =
-    options;
-
   const context = {
     topic: topicName,
     subtopic: subtopicName,
@@ -98,57 +58,25 @@ export async function callDeduplicationModel(
     fullPrompt += `\n  - quoteId: quote${i}`;
   }
 
-  // Initialize Weave for scoring if enabled
-  const responsesCreate = await initializeWeaveIfEnabled(
-    openaiClient,
-    enableWeave,
-    weaveProjectName,
-  );
-
-  // Call OpenAI Responses API
-  // biome-ignore lint/suspicious/noImplicitAnyLet: responsesCreate return type is complex and inferred from Weave wrapper
-  let response;
-  try {
-    response = await responsesCreate({
-      model: llmConfig.model_name,
-      instructions: llmConfig.system_prompt,
-      input: fullPrompt,
-      text: {
-        format: {
-          type: "json_object",
-        },
-      },
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorType = getErrorType(error);
-
+  const llmResult = await llmClient.complete({
+    systemPrompt: llmConfig.system_prompt,
+    userPrompt: fullPrompt,
+  });
+  if (llmResult.tag === "failure") {
     dedupLogger.error(
-      {
-        ...context,
-        error,
-        errorType,
-        statusCode: error instanceof APIError ? error.status : undefined,
-      },
-      `Failed to call deduplication model: ${errorType}`,
+      { ...context, error: llmResult.error },
+      "Failed to call deduplication model",
     );
-
-    return failure(new ApiCallFailedError(llmConfig.model_name, errorMessage));
+    return llmResult;
   }
 
-  // Extract usage information
+  const { content, usage: rawUsage } = llmResult.value;
+
   const usage: TokenUsage = {
-    input_tokens: response.usage?.input_tokens || 0,
-    output_tokens: response.usage?.output_tokens || 0,
-    total_tokens: response.usage?.total_tokens || 0,
+    input_tokens: rawUsage.input_tokens,
+    output_tokens: rawUsage.output_tokens,
+    total_tokens: rawUsage.total_tokens,
   };
-
-  // Extract content
-  const content = response.output_text;
-  if (!content) {
-    dedupLogger.error({ ...context, response }, "No response from model");
-    return failure(new EmptyResponseError(llmConfig.model_name));
-  }
 
   // Parse JSON response
   let dedupClaims: DeduplicationResponse;

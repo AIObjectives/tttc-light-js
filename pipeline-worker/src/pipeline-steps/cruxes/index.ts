@@ -9,6 +9,7 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
+import { createOpenAILLMClient } from "../llm-client.js";
 import { sanitizeForOutput } from "../sanitizer";
 import { ClusteringError, ParseFailedError } from "../types";
 import { getReportLogger, processBatchConcurrently, tokenCost } from "../utils";
@@ -522,8 +523,11 @@ export async function extractCruxes(
     );
   }
 
-  // Initialize OpenAI client
-  const client = new OpenAI({ apiKey });
+  const llmClient = await createOpenAILLMClient(apiKey, llmConfig.model_name, {
+    enableWeave,
+    weaveProjectName,
+  });
+  const openaiClientForWeave = enableWeave ? new OpenAI({ apiKey }) : undefined;
 
   // Track aggregated usage and cost
   let totalInputTokens = 0;
@@ -537,8 +541,7 @@ export async function extractCruxes(
     subtopicsToProcess,
     async (item) => {
       const llmResult = await generateCruxForSubtopic({
-        openaiClient: client,
-        modelName: llmConfig.model_name,
+        llmClient,
         systemPrompt: llmConfig.system_prompt,
         userPrompt: llmConfig.user_prompt,
         subtopicIdentifier: item.cruxIdentifier,
@@ -550,6 +553,7 @@ export async function extractCruxes(
         options: {
           enableWeave,
           weaveProjectName,
+          openaiClientForWeave,
         },
       });
 
