@@ -18,6 +18,7 @@ import {
   defaultSystemPrompt,
 } from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
+import { DEFAULT_MODEL, supportedModel } from "tttc-common/schema";
 import * as firebase from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
@@ -464,20 +465,30 @@ async function createReportDocuments(
   };
 }
 
-const DEFAULT_MODEL = "gpt-4o-mini";
+class UnsupportedModelError extends Error {
+  constructor(model: string) {
+    super(`Unsupported model: ${model}`);
+    this.name = "UnsupportedModelError";
+  }
+}
 
 async function resolveModel(
-  email: string | undefined,
+  decodedUser: DecodedIdToken,
   requestedModel: string | undefined,
 ): Promise<string> {
   if (!requestedModel) return DEFAULT_MODEL;
   const enabled = await isFeatureEnabled(
     FEATURE_FLAGS.MODEL_SELECTION_ENABLED,
     {
-      email,
+      userId: decodedUser.uid,
     },
   );
-  return enabled ? requestedModel : DEFAULT_MODEL;
+  if (!enabled) return DEFAULT_MODEL;
+  const parseResult = supportedModel.safeParse(requestedModel);
+  if (!parseResult.success) {
+    throw new UnsupportedModelError(requestedModel);
+  }
+  return parseResult.data;
 }
 
 async function createNewReport(
@@ -505,6 +516,9 @@ async function createNewReport(
   // Parse and process data
   const _parsedData = await parseData(data);
   const parsedData = addAnonymousNames(_parsedData);
+
+  // Resolve model before any side effects (storage/Firebase creation)
+  const model = await resolveModel(decodedUser, requestedModel);
 
   // Generate reportId that will be used for both storage filename and Firebase document ID
   const reportId = firebase.db
@@ -536,8 +550,6 @@ async function createNewReport(
       id: row.id ? row.id : `cm${i}`,
     })),
   };
-
-  const model = await resolveModel(decodedUser.email, requestedModel);
 
   createLogger.debug(
     {
@@ -579,6 +591,8 @@ function getErrorCodeForException(e: unknown): ErrorCode {
     case "CreateReportError":
       // CSV security violations are client errors, not server errors
       return ERROR_CODES.CSV_SECURITY_VIOLATION;
+    case "UnsupportedModelError":
+      return ERROR_CODES.UNSUPPORTED_MODEL;
     default:
       return ERROR_CODES.INTERNAL_ERROR;
   }

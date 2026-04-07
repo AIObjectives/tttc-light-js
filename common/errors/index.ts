@@ -25,6 +25,7 @@ export const ERROR_CODES = {
   CSV_SECURITY_VIOLATION: "CSV_SECURITY_VIOLATION",
   CSV_EMPTY_COMMENTS: "CSV_EMPTY_COMMENTS",
   INVALID_REPORT_URI: "INVALID_REPORT_URI",
+  UNSUPPORTED_MODEL: "UNSUPPORTED_MODEL",
 
   // Resource errors (404)
   REPORT_NOT_FOUND: "REPORT_NOT_FOUND",
@@ -72,6 +73,8 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ERROR_CODES.CSV_EMPTY_COMMENTS]:
     "Some rows have empty comment fields. Please ensure all comments contain text.",
   [ERROR_CODES.INVALID_REPORT_URI]: "The report address is invalid.",
+  [ERROR_CODES.UNSUPPORTED_MODEL]:
+    "The selected model is not supported. Please choose a different model.",
 
   // Resources
   [ERROR_CODES.REPORT_NOT_FOUND]:
@@ -113,6 +116,7 @@ export const ERROR_STATUS_CODES: Record<ErrorCode, number> = {
   [ERROR_CODES.CSV_SECURITY_VIOLATION]: 400,
   [ERROR_CODES.CSV_EMPTY_COMMENTS]: 400,
   [ERROR_CODES.INVALID_REPORT_URI]: 400,
+  [ERROR_CODES.UNSUPPORTED_MODEL]: 400,
 
   // Resources - 404
   [ERROR_CODES.REPORT_NOT_FOUND]: 404,

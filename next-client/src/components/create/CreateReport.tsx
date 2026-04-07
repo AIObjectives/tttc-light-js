@@ -19,6 +19,7 @@ import {
 } from "@/components/elements";
 import { Center, Col } from "@/components/layout";
 import submitAction from "@/features/submission/actions/SubmitAction";
+import { useFeatureFlagQuery } from "@/lib/query/useFeatureFlagQuery";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   AdvancedSettings,
@@ -29,6 +30,7 @@ import {
   TermsAndConditions,
 } from "./components/FormSections";
 import { SigninModal } from "./components/Modals";
+import { ModelSelector } from "./components/ModelSelector";
 import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
 import { FormVisibility } from "./components/VisibilitySelector";
 import { useFormState } from "./hooks/useFormState";
@@ -169,7 +171,17 @@ function CreateReportComponent({
     bridgingEnabled,
     outputLanguage,
     visibility,
+    selectedModel,
   } = formState;
+
+  const flagContext = useMemo(
+    () => (user?.uid ? { userId: user.uid } : undefined),
+    [user?.uid],
+  );
+  const { enabled: modelSelectionEnabled } = useFeatureFlagQuery(
+    "model_selection_enabled",
+    flagContext,
+  );
 
   usePrefillForm(formState, prefillTitle, prefillDescription);
 
@@ -208,6 +220,10 @@ function CreateReportComponent({
               showErrors={submitAttempted}
             />
             <FormVisibility visibility={visibility} />
+            <ModelSelector
+              selectedModel={selectedModel}
+              show={modelSelectionEnabled}
+            />
             <FormDataInput
               files={files}
               setFiles={setFiles}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import * as prompts from "tttc-common/prompts";
+import { DEFAULT_MODEL } from "tttc-common/schema";
 
 type FormStatus<T, E> = Result<T, E> | { tag: "initial"; value: T };
 
@@ -175,6 +176,12 @@ export function useFormState() {
     },
   });
 
+  // Dropdown with fixed options - always valid
+  const selectedModel = useFormItem({
+    initialValue: DEFAULT_MODEL,
+    statusEval: (val) => success(val),
+  });
+
   /**
    * Returns a list of validation error messages for required fields.
    * Used to show error count on submit attempt.
@@ -210,6 +217,7 @@ export function useFormState() {
     bridgingEnabled,
     outputLanguage,
     visibility,
+    selectedModel,
     getValidationErrors,
   };
 }
