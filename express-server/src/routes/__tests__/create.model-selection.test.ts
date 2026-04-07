@@ -11,6 +11,7 @@
 import type { RequestHandler } from "express";
 import express from "express";
 import request from "supertest";
+import rateLimit from "express-rate-limit";
 import { validateParsedData } from "tttc-common/csv-security";
 import { ERROR_CODES } from "tttc-common/errors";
 import type { SourceRow } from "tttc-common/schema";
@@ -70,6 +71,11 @@ vi.mock("../../server", () => ({
 vi.mock("../../featureFlags", () => ({
   isFeatureEnabled: vi.fn().mockResolvedValue(false),
 }));
+
+const rateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
 
 const minimalUserConfig = {
   title: "Test Report",
@@ -132,7 +138,12 @@ describe("Model selection in create route", () => {
       next();
     });
 
-    app.post("/create", authMiddleware(), create as unknown as RequestHandler);
+    app.post(
+      "/create",
+      authMiddleware(),
+      rateLimiter,
+      create as unknown as RequestHandler,
+    );
   });
 
   beforeEach(async () => {
