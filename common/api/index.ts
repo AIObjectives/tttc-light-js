@@ -6,7 +6,7 @@ export const generateApiRequest = z.object({
   userConfig: schema.llmUserConfig,
   data: schema.dataPayload,
   elicitationEventId: z.string().optional(),
-  model: z.string().optional(),
+  model: z.string().max(100).optional(),
 });
 
 export type GenerateApiRequest = z.infer<typeof generateApiRequest>;

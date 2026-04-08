@@ -101,12 +101,14 @@ const buildGenerateRequest = (
   formData: FormData,
 ): GenerateApiRequest => {
   const elicitationEventId = formData.get("elicitationEventId");
+  const model = formData.get("model");
   return {
     userConfig: config,
     data,
     ...(elicitationEventId
       ? { elicitationEventId: String(elicitationEventId) }
       : {}),
+    ...(model ? { model: String(model) } : {}),
   };
 };
 

@@ -19,6 +19,7 @@ import {
 } from "@/components/elements";
 import { Center, Col } from "@/components/layout";
 import submitAction from "@/features/submission/actions/SubmitAction";
+import { useFeatureFlagQuery } from "@/lib/query/useFeatureFlagQuery";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   AdvancedSettings,
@@ -29,6 +30,7 @@ import {
   TermsAndConditions,
 } from "./components/FormSections";
 import { SigninModal } from "./components/Modals";
+import { ModelSelector } from "./components/ModelSelector";
 import { SubmissionErrorBanner } from "./components/SubmissionErrorBanner";
 import { FormVisibility } from "./components/VisibilitySelector";
 import { useFormState } from "./hooks/useFormState";
@@ -38,6 +40,18 @@ import { useSignInModal } from "./hooks/useSignInModal";
 import { useSubmitValidation } from "./hooks/useSubmitValidation";
 
 const createReportLogger = logger.child({ module: "create-report" });
+
+function useModelSelectionEnabled(userId: string | undefined): boolean {
+  const flagContext = useMemo(
+    () => (userId ? { userId } : undefined),
+    [userId],
+  );
+  const { enabled } = useFeatureFlagQuery(
+    "model_selection_enabled",
+    flagContext,
+  );
+  return enabled;
+}
 
 /** Check if user needs email verification (email/password users only, not Google) */
 function checkNeedsEmailVerification(
@@ -169,7 +183,10 @@ function CreateReportComponent({
     bridgingEnabled,
     outputLanguage,
     visibility,
+    selectedModel,
   } = formState;
+
+  const modelSelectionEnabled = useModelSelectionEnabled(user?.uid);
 
   usePrefillForm(formState, prefillTitle, prefillDescription);
 
@@ -208,6 +225,10 @@ function CreateReportComponent({
               showErrors={submitAttempted}
             />
             <FormVisibility visibility={visibility} />
+            <ModelSelector
+              selectedModel={selectedModel}
+              show={modelSelectionEnabled}
+            />
             <FormDataInput
               files={files}
               setFiles={setFiles}
@@ -231,16 +252,10 @@ function CreateReportComponent({
               !state.error.code.startsWith("AUTH_") && (
                 <SubmissionErrorBanner error={state.error} />
               )}
-            {submitAttempted && errorCount > 0 && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                  You need to fix {errorCount} error{errorCount > 1 ? "s" : ""}{" "}
-                  above before continuing
-                </AlertDescription>
-              </Alert>
-            )}
+            <ValidationErrorAlert
+              submitAttempted={submitAttempted}
+              errorCount={errorCount}
+            />
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
                 Generate the report
@@ -272,6 +287,26 @@ function FormLoading({ reportUrl }: { reportUrl?: string | null }) {
         </p>
       )}
     </Col>
+  );
+}
+
+function ValidationErrorAlert({
+  submitAttempted,
+  errorCount,
+}: {
+  submitAttempted: boolean;
+  errorCount: number;
+}) {
+  if (!submitAttempted || errorCount === 0) return null;
+  return (
+    <Alert variant="destructive">
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle>Error</AlertTitle>
+      <AlertDescription>
+        You need to fix {errorCount} error{errorCount > 1 ? "s" : ""} above
+        before continuing
+      </AlertDescription>
+    </Alert>
   );
 }
 
