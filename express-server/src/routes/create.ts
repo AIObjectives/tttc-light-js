@@ -470,6 +470,19 @@ async function createReportDocuments(
   };
 }
 
+function buildProcessedConfig(
+  userConfig: schema.LLMUserConfig,
+  parsedData: { data: schema.SourceRow[] },
+): schema.LLMUserConfig & { data: schema.SourceRow[] } {
+  return {
+    ...userConfig,
+    data: parsedData.data.map((row, i) => ({
+      ...row,
+      id: row.id ? row.id : `cm${i}`,
+    })),
+  };
+}
+
 class UnsupportedModelError extends Error {
   constructor(model: string) {
     super(`Unsupported model: ${model}`);
@@ -547,14 +560,7 @@ async function createNewReport(
     },
   );
 
-  // Combine user config with parsed data, adding IDs to comments if not present
-  const processedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] } = {
-    ...userConfig,
-    data: parsedData.data.map((row, i) => ({
-      ...row,
-      id: row.id ? row.id : `cm${i}`,
-    })),
-  };
+  const processedConfig = buildProcessedConfig(userConfig, parsedData);
 
   createLogger.debug(
     {

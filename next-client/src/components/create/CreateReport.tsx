@@ -252,16 +252,10 @@ function CreateReportComponent({
               !state.error.code.startsWith("AUTH_") && (
                 <SubmissionErrorBanner error={state.error} />
               )}
-            {submitAttempted && errorCount > 0 && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                  You need to fix {errorCount} error{errorCount > 1 ? "s" : ""}{" "}
-                  above before continuing
-                </AlertDescription>
-              </Alert>
-            )}
+            <ValidationErrorAlert
+              submitAttempted={submitAttempted}
+              errorCount={errorCount}
+            />
             <div>
               <Button size={"sm"} type="submit" disabled={isDisabled}>
                 Generate the report
@@ -293,6 +287,26 @@ function FormLoading({ reportUrl }: { reportUrl?: string | null }) {
         </p>
       )}
     </Col>
+  );
+}
+
+function ValidationErrorAlert({
+  submitAttempted,
+  errorCount,
+}: {
+  submitAttempted: boolean;
+  errorCount: number;
+}) {
+  if (!submitAttempted || errorCount === 0) return null;
+  return (
+    <Alert variant="destructive">
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle>Error</AlertTitle>
+      <AlertDescription>
+        You need to fix {errorCount} error{errorCount > 1 ? "s" : ""} above
+        before continuing
+      </AlertDescription>
+    </Alert>
   );
 }
 
