@@ -41,6 +41,18 @@ import { useSubmitValidation } from "./hooks/useSubmitValidation";
 
 const createReportLogger = logger.child({ module: "create-report" });
 
+function useModelSelectionEnabled(userId: string | undefined): boolean {
+  const flagContext = useMemo(
+    () => (userId ? { userId } : undefined),
+    [userId],
+  );
+  const { enabled } = useFeatureFlagQuery(
+    "model_selection_enabled",
+    flagContext,
+  );
+  return enabled;
+}
+
 /** Check if user needs email verification (email/password users only, not Google) */
 function checkNeedsEmailVerification(
   user: ReturnType<typeof useUserQuery>["user"],
@@ -174,14 +186,7 @@ function CreateReportComponent({
     selectedModel,
   } = formState;
 
-  const flagContext = useMemo(
-    () => (user?.uid ? { userId: user.uid } : undefined),
-    [user?.uid],
-  );
-  const { enabled: modelSelectionEnabled } = useFeatureFlagQuery(
-    "model_selection_enabled",
-    flagContext,
-  );
+  const modelSelectionEnabled = useModelSelectionEnabled(user?.uid);
 
   usePrefillForm(formState, prefillTitle, prefillDescription);
 

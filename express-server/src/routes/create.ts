@@ -293,13 +293,11 @@ const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean => {
 export const buildPipelineJob = (
   env: Env,
   decodedUser: DecodedIdToken,
-  firebaseJobId: string,
-  reportId: string,
   userConfig: schema.LLMUserConfig,
   updatedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] },
-  jsonUrl: string,
-  model: string,
+  options: BuildPipelineJobOptions,
 ): PipelineJob => {
+  const { firebaseJobId, reportId, jsonUrl, model } = options;
   const filename = `${reportId}.json`;
 
   return {
@@ -430,6 +428,13 @@ interface CreateReportDocumentsOptions {
   reportId: string;
   elicitationEventId: string | undefined;
   clientBaseUrl: string;
+}
+
+interface BuildPipelineJobOptions {
+  firebaseJobId: string;
+  reportId: string;
+  jsonUrl: string;
+  model: string;
 }
 
 async function createReportDocuments(
@@ -563,12 +568,14 @@ async function createNewReport(
   const pipelineJob = buildPipelineJob(
     env,
     decodedUser,
-    firebaseJobId,
-    reportId,
     userConfig,
     processedConfig,
-    jsonUrl,
-    model,
+    {
+      firebaseJobId,
+      reportId,
+      jsonUrl,
+      model,
+    },
   );
 
   return {

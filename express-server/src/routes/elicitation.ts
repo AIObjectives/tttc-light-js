@@ -554,12 +554,9 @@ export async function generateReportForEvent(
     const pipelineJob = buildPipelineJob(
       req.context.env,
       decodedUser,
-      firebaseJobId,
-      reportId,
       userConfig,
       { ...userConfig, data: processedData },
-      jsonUrl,
-      "gpt-4o-mini",
+      { firebaseJobId, reportId, jsonUrl, model: "gpt-4o-mini" },
     );
 
     await nodeWorkerQueue.enqueue(pipelineJob, {});
