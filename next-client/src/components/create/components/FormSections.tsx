@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { ColumnMappings } from "tttc-common/csv-validation";
 import { SUPPORTED_LANGUAGES } from "tttc-common/prompts";
+import { SUPPORTED_MODELS } from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import {
   Button,
@@ -70,11 +71,11 @@ export const FormAbout = () => (
     <h3>Overview</h3>
     <div className="text-muted-foreground">
       <p>
-        We send the contents of the data uploaded below through OpenAI’s API to
-        extract key claims and topics, and store the results as a T3C report on
-        this site. Optionally, you can customize the prompts we use for each
-        step of the pipeline &ndash; e.g. to focus on particular questions,
-        themes, or perspectives in your data.
+        We send the contents of the data uploaded below through an AI provider’s
+        API to extract key claims and topics, and store the results as a T3C
+        report on this site. Optionally, you can customize the prompts we use
+        for each step of the pipeline &ndash; e.g. to focus on particular
+        questions, themes, or perspectives in your data.
       </p>
       <br />
       <p>
@@ -93,7 +94,7 @@ export const FormAbout = () => (
         </li>
         <li>
           Dataset uploads are limited to 150KB by default &ndash; but we pay the
-          OpenAI analysis costs
+          AI analysis costs
         </li>
         <li>
           After this alpha phase, we'll support analysis of larger datasets
@@ -441,6 +442,53 @@ export function CostEstimate({ files }: { files: FileList | undefined }) {
 }
 
 /**
+ * Model selector for report generation.
+ * Controls which LLM model is used for all pipeline steps.
+ */
+const ModelSelector = ({
+  show,
+  selectedModel,
+}: {
+  show: boolean;
+  selectedModel: FormItemState<string>;
+}) => {
+  return (
+    <Col gap={4} className={show ? "" : "hidden"}>
+      <Col gap={2}>
+        <label htmlFor="selectedModel" className="font-medium">
+          AI model
+        </label>
+        <p id="selectedModel-description" className="p2 text-muted-foreground">
+          Model used for all pipeline steps (topic clustering, claim extraction,
+          deduplication, and summaries).
+        </p>
+      </Col>
+      <Select
+        value={selectedModel.state}
+        onValueChange={(val) => selectedModel.setState(val)}
+      >
+        <SelectTrigger
+          className="w-full max-w-[250px]"
+          id="selectedModel"
+          aria-describedby="selectedModel-description"
+        >
+          <SelectValue placeholder="Select model" />
+        </SelectTrigger>
+        <SelectContent>
+          {SUPPORTED_MODELS.map((model) => (
+            <SelectItem key={model} value={model}>
+              {model}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {/* Hidden input to ensure value is submitted with form */}
+      <input type="hidden" name="selectedModel" value={selectedModel.state} />
+    </Col>
+  );
+};
+
+/**
  * Language selector for report output.
  * Controls what language the LLM generates topics, claims, and summaries in.
  */
@@ -640,6 +688,7 @@ export function AdvancedSettings({
   cruxesEnabled,
   bridgingEnabled,
   outputLanguage,
+  selectedModel,
 }: {
   systemInstructions: FormItemState<string>;
   clusteringInstructions: FormItemState<string>;
@@ -650,6 +699,7 @@ export function AdvancedSettings({
   cruxesEnabled: FormItemState<boolean>;
   bridgingEnabled: FormItemState<boolean>;
   outputLanguage: FormItemState<string>;
+  selectedModel: FormItemState<string>;
 }) {
   const [show, setShow] = useState<boolean>(false);
 
@@ -665,6 +715,7 @@ export function AdvancedSettings({
           {show ? "Hide advanced settings" : "Show advanced settings"}
         </Button>
       </div>
+      <ModelSelector show={show} selectedModel={selectedModel} />
       <OutputLanguageSelector show={show} outputLanguage={outputLanguage} />
       <CustomizePrompts
         show={show}

@@ -1,133 +1,205 @@
 /**
- * LLM client abstraction for pipeline steps
+ * LLM provider abstraction for pipeline steps.
  *
- * Defines the LLMClient interface that all LLM providers must implement,
- * along with the OpenAI implementation. Adding a new provider (e.g. Anthropic)
- * means implementing LLMClient and providing a factory function.
+ * Provides a unified interface for calling OpenAI and Anthropic language models,
+ * allowing pipeline steps to remain provider-agnostic.
  */
 
+import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
-import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import * as weave from "weave";
-import {
-  ApiCallFailedError,
-  type ClusteringError,
-  EmptyResponseError,
-  type TokenUsage,
-} from "./types.js";
+import { getModelProvider } from "tttc-common/schema";
 
 const llmClientLogger = logger.child({ module: "llm-client" });
 
 /**
- * The response returned by LLMClient.complete()
+ * Parameters for calling an LLM
  */
-export interface LLMResponse {
-  content: string;
-  usage: TokenUsage;
+export interface LLMCallParams {
+  /** Model identifier */
+  model: string;
+  /** System-level instructions */
+  systemPrompt: string;
+  /** User-level prompt */
+  userPrompt: string;
+  /** Whether to request JSON output */
+  jsonMode: boolean;
 }
 
 /**
- * Interface that all LLM provider clients must implement.
- * Pipeline steps call complete() without knowing which provider is underneath.
+ * Standardized token usage from an LLM call
+ */
+export interface LLMUsage {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+
+/**
+ * Result of an LLM call
+ */
+export interface LLMCallResult {
+  /** The text content returned by the model */
+  content: string;
+  /** Token usage for cost calculation */
+  usage: LLMUsage;
+}
+
+/**
+ * Unified interface for calling LLMs from different providers
  */
 export interface LLMClient {
-  readonly modelName: string;
-  complete(params: {
-    systemPrompt: string;
-    userPrompt: string;
-  }): Promise<Result<LLMResponse, ClusteringError>>;
+  /** The provider this client uses */
+  provider: "openai" | "anthropic";
+  /**
+   * Call the LLM with a prompt and return the response.
+   *
+   * @param params - The call parameters
+   * @returns The LLM response text and token usage
+   */
+  call(params: LLMCallParams): Promise<LLMCallResult>;
 }
 
 /**
- * OpenAI implementation of LLMClient using the Responses API.
+ * OpenAI LLM client wrapping the Responses API.
+ *
+ * Uses the `openai.responses.create` endpoint with JSON mode support.
  */
 export class OpenAILLMClient implements LLMClient {
-  constructor(
-    readonly modelName: string,
-    private readonly openaiClient: OpenAI,
-  ) {}
+  readonly provider = "openai" as const;
 
-  async complete(params: {
-    systemPrompt: string;
-    userPrompt: string;
-  }): Promise<Result<LLMResponse, ClusteringError>> {
-    const { systemPrompt, userPrompt } = params;
+  constructor(private readonly client: OpenAI) {}
 
-    let response: Awaited<
-      ReturnType<typeof this.openaiClient.responses.create>
-    >;
-    try {
-      response = await this.openaiClient.responses.create({
-        model: this.modelName,
-        instructions: systemPrompt,
-        input: userPrompt,
-        text: {
-          format: {
-            type: "json_object",
-          },
+  /**
+   * Call OpenAI via the Responses API.
+   *
+   * @param params - Call parameters including model, prompts, and JSON mode flag
+   * @returns The text response and token usage
+   * @throws If the API call fails or returns no content
+   */
+  async call(params: LLMCallParams): Promise<LLMCallResult> {
+    const { model, systemPrompt, userPrompt, jsonMode } = params;
+
+    const response = await this.client.responses.create({
+      model,
+      instructions: systemPrompt,
+      input: userPrompt,
+      text: {
+        format: {
+          type: jsonMode ? "json_object" : "text",
         },
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      llmClientLogger.error(
-        { error, modelName: this.modelName },
-        "Failed to call OpenAI API",
-      );
-      return failure(new ApiCallFailedError(this.modelName, errorMessage));
+      },
+    });
+
+    const content = response.output_text;
+    if (!content) {
+      throw new Error(`OpenAI returned empty response for model ${model}`);
     }
 
-    const usage: TokenUsage = {
+    const usage: LLMUsage = {
       input_tokens: response.usage?.input_tokens ?? 0,
       output_tokens: response.usage?.output_tokens ?? 0,
       total_tokens: response.usage?.total_tokens ?? 0,
     };
 
-    const content = response.output_text;
-    if (!content) {
-      llmClientLogger.error(
-        { modelName: this.modelName },
-        "Empty response from OpenAI API",
-      );
-      return failure(new EmptyResponseError(this.modelName));
-    }
-
-    return success({ content, usage });
+    return { content, usage };
   }
 }
 
 /**
- * Create an OpenAI LLM client, optionally initializing Weave tracing.
+ * Anthropic LLM client wrapping the Messages API.
  *
- * @param apiKey - OpenAI API key
- * @param modelName - Model name (e.g., "gpt-4o-mini")
- * @param options - Optional Weave configuration
+ * Uses `anthropic.messages.create` with a fixed max_tokens of 8192.
+ * JSON mode is achieved via system prompt instruction rather than a
+ * dedicated API parameter (Anthropic does not have a native JSON mode).
  */
-export async function createOpenAILLMClient(
-  apiKey: string,
-  modelName: string,
-  options: {
-    enableWeave?: boolean;
-    weaveProjectName?: string;
-  } = {},
-): Promise<OpenAILLMClient> {
-  const openaiClient = new OpenAI({ apiKey });
+export class AnthropicLLMClient implements LLMClient {
+  readonly provider = "anthropic" as const;
 
-  if (options.enableWeave && options.weaveProjectName) {
-    try {
-      await weave.init(options.weaveProjectName);
-      llmClientLogger.info(
-        { weaveProjectName: options.weaveProjectName },
-        "Weave initialized successfully",
-      );
-    } catch (error) {
-      llmClientLogger.error(
-        { error, weaveProjectName: options.weaveProjectName },
-        "Failed to initialize Weave",
-      );
+  constructor(private readonly client: Anthropic) {}
+
+  /**
+   * Call Anthropic via the Messages API.
+   *
+   * @param params - Call parameters including model, prompts, and JSON mode flag
+   * @returns The text response and token usage (total = input + output)
+   * @throws If the API call fails, returns no content, or the first block is not text
+   */
+  async call(params: LLMCallParams): Promise<LLMCallResult> {
+    const { model, systemPrompt, userPrompt, jsonMode } = params;
+
+    const effectiveSystem = jsonMode
+      ? `${systemPrompt}\n\nYou must respond with valid JSON only. Do not include any text outside the JSON object.`
+      : systemPrompt;
+
+    const response = await this.client.messages.create({
+      model,
+      system: effectiveSystem,
+      messages: [{ role: "user", content: userPrompt }],
+      max_tokens: 8192,
+    });
+
+    const firstBlock = response.content[0];
+    if (!firstBlock || firstBlock.type !== "text") {
+      throw new Error(`Anthropic returned no text content for model ${model}`);
     }
+
+    const content = firstBlock.text;
+
+    const input_tokens = response.usage.input_tokens;
+    const output_tokens = response.usage.output_tokens;
+    const usage: LLMUsage = {
+      input_tokens,
+      output_tokens,
+      total_tokens: input_tokens + output_tokens,
+    };
+
+    return { content, usage };
+  }
+}
+
+/**
+ * Create the appropriate LLM client for a given model name.
+ *
+ * Routes to the correct provider using the canonical getModelProvider function
+ * from tttc-common/schema, which checks the authoritative SUPPORTED_ANTHROPIC_MODELS
+ * allowlist. This ensures provider routing stays in sync with the server's model
+ * allowlist and avoids a divergent prefix-matching heuristic.
+ *
+ * @param modelName - The model identifier (e.g. "gpt-4o-mini" or "claude-sonnet-4-5")
+ * @param openaiApiKey - OpenAI API key (required for OpenAI models)
+ * @param anthropicApiKey - Anthropic API key (required for Anthropic models)
+ * @returns An LLMClient instance configured for the specified model
+ * @throws {Error} If the required API key for the model's provider is missing
+ *
+ * @example
+ * const client = createLLMClient("gpt-4o-mini", process.env.OPENAI_API_KEY, undefined);
+ * const result = await client.call({ model: "gpt-4o-mini", systemPrompt: "...", userPrompt: "...", jsonMode: true });
+ */
+export function createLLMClient(
+  modelName: string,
+  openaiApiKey: string | undefined,
+  anthropicApiKey: string | undefined,
+): LLMClient {
+  const provider = getModelProvider(modelName);
+
+  if (provider === "anthropic") {
+    if (!anthropicApiKey) {
+      throw new Error(`LLM configuration error`);
+    }
+    llmClientLogger.info(
+      { modelName, provider: "anthropic" },
+      "Creating Anthropic LLM client",
+    );
+    return new AnthropicLLMClient(new Anthropic({ apiKey: anthropicApiKey }));
   }
 
-  return new OpenAILLMClient(modelName, openaiClient);
+  if (!openaiApiKey) {
+    throw new Error(`LLM configuration error`);
+  }
+  llmClientLogger.info(
+    { modelName, provider: "openai" },
+    "Creating OpenAI LLM client",
+  );
+  return new OpenAILLMClient(new OpenAI({ apiKey: openaiApiKey }));
 }

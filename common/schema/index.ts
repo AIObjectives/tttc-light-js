@@ -1242,5 +1242,19 @@ export const downloadReportSchema = downloadReportSchema_v1;
 
 export type DownloadDataReportSchema = z.infer<typeof downloadReportSchema>;
 
+// Model definitions for supported LLM providers
+export {
+  DEFAULT_MODEL,
+  getModelProvider,
+  isAnthropicModel,
+  isSupportedModel,
+  type ModelProvider,
+  SUPPORTED_ANTHROPIC_MODELS,
+  SUPPORTED_MODELS,
+  SUPPORTED_OPENAI_MODELS,
+  type SupportedAnthropicModel,
+  type SupportedModel,
+  type SupportedOpenAIModel,
+} from "./models.js";
 // Pipeline job message schema for queue communication
 export { type PipelineJobMessage, pipelineJobSchema } from "./pipelineJob.js";

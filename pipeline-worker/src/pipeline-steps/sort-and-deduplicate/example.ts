@@ -148,7 +148,7 @@ async function main() {
 
   console.log("Running sort and deduplicate example...");
 
-  const result = await sortAndDeduplicateClaims(input, apiKey, {
+  const result = await sortAndDeduplicateClaims(input, apiKey, undefined, {
     reportId: "example-report",
     userId: "example-user",
   });

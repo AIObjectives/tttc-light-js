@@ -8,7 +8,7 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
-import { createOpenAILLMClient } from "../llm-client.js";
+import { createLLMClient } from "../llm-client.js";
 import { basicSanitize, sanitizeForOutput } from "../sanitizer";
 import { ClusteringError } from "../types";
 import { getReportLogger, processBatchConcurrently } from "../utils";
@@ -209,7 +209,8 @@ function buildClaimsTree(
  * @param comments - Array of Comment objects to extract claims from
  * @param taxonomy - Array of topics with subtopics (from clustering step)
  * @param llmConfig - LLM configuration (model, prompts)
- * @param apiKey - OpenAI API key for LLM calls
+ * @param openaiApiKey - OpenAI API key (required for OpenAI models)
+ * @param anthropicApiKey - Anthropic API key (required for Claude models)
  * @param options - Optional configuration object
  * @param options.reportId - Optional report identifier for logging context
  * @param options.userId - Optional user identifier for logging context
@@ -234,7 +235,8 @@ export async function extractClaims(
   comments: Comment[],
   taxonomy: Topic[],
   llmConfig: LLMConfig,
-  apiKey: string,
+  openaiApiKey: string | undefined,
+  anthropicApiKey: string | undefined,
   options: ClaimsOptions = {},
 ): Promise<Result<ClaimsResult, ClusteringError>> {
   const { reportId, userId } = options;
@@ -259,12 +261,18 @@ export async function extractClaims(
     );
   }
 
-  const llmClient = await createOpenAILLMClient(apiKey, llmConfig.model_name, {
-    enableWeave: options.enableWeave,
-  });
-  const openaiClientForWeave = options.enableWeave
-    ? new OpenAI({ apiKey })
-    : undefined;
+  // Initialize LLM client for the requested model
+  const client = createLLMClient(
+    llmConfig.model_name,
+    openaiApiKey,
+    anthropicApiKey,
+  );
+
+  // OpenAI client for Weave evaluation (only used when provider is openai)
+  const openaiClientForWeave =
+    client.provider === "openai" && openaiApiKey
+      ? new OpenAI({ apiKey: openaiApiKey })
+      : undefined;
 
   // Filter and sanitize comments
   const { sanitizedComments } = filterAndSanitizeComments(
@@ -304,7 +312,9 @@ export async function extractClaims(
       chunk,
       async (comment) => {
         const result = await extractClaimsFromComment({
-          llmClient,
+          llmClient: client,
+          openaiClientForWeave,
+          modelName: llmConfig.model_name,
           systemPrompt: llmConfig.system_prompt,
           userPrompt: llmConfig.user_prompt,
           commentText: comment.text,

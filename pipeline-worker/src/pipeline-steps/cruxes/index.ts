@@ -9,7 +9,7 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
-import { createOpenAILLMClient } from "../llm-client.js";
+import { createLLMClient } from "../llm-client.js";
 import { sanitizeForOutput } from "../sanitizer";
 import { ClusteringError, ParseFailedError } from "../types";
 import { getReportLogger, processBatchConcurrently, tokenCost } from "../utils";
@@ -477,7 +477,8 @@ function processSubtopicResult(
  * @param claimsTree - Claims tree from the claims extraction step
  * @param topics - Array of topics with descriptions (from clustering step)
  * @param llmConfig - LLM configuration (model, prompts)
- * @param apiKey - OpenAI API key
+ * @param openaiApiKey - OpenAI API key (required for OpenAI models)
+ * @param anthropicApiKey - Anthropic API key (required for Claude models)
  * @param options - Optional configuration (reportId, userId, etc.)
  * @returns Result containing cruxes with usage and cost information, or an error
  */
@@ -485,7 +486,8 @@ export async function extractCruxes(
   claimsTree: ClaimsTree,
   topics: Topic[],
   llmConfig: LLMConfig,
-  apiKey: string,
+  openaiApiKey: string | undefined,
+  anthropicApiKey: string | undefined,
   options: CruxesOptions = {},
 ): Promise<Result<CruxesResult, ClusteringError>> {
   const { reportId, userId, enableWeave, weaveProjectName } = options;
@@ -523,11 +525,18 @@ export async function extractCruxes(
     );
   }
 
-  const llmClient = await createOpenAILLMClient(apiKey, llmConfig.model_name, {
-    enableWeave,
-    weaveProjectName,
-  });
-  const openaiClientForWeave = enableWeave ? new OpenAI({ apiKey }) : undefined;
+  // Initialize LLM client for the requested model
+  const llmClient = createLLMClient(
+    llmConfig.model_name,
+    openaiApiKey,
+    anthropicApiKey,
+  );
+
+  // OpenAI client for Weave evaluation (only used when provider is openai)
+  const openaiClientForWeave =
+    llmClient.provider === "openai" && openaiApiKey
+      ? new OpenAI({ apiKey: openaiApiKey })
+      : undefined;
 
   // Track aggregated usage and cost
   let totalInputTokens = 0;
@@ -542,6 +551,8 @@ export async function extractCruxes(
     async (item) => {
       const llmResult = await generateCruxForSubtopic({
         llmClient,
+        openaiClientForWeave,
+        modelName: llmConfig.model_name,
         systemPrompt: llmConfig.system_prompt,
         userPrompt: llmConfig.user_prompt,
         subtopicIdentifier: item.cruxIdentifier,

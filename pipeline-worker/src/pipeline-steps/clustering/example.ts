@@ -83,7 +83,7 @@ Comments:`,
   console.log("Processing comments...\n");
 
   // Call the clustering function
-  const result = await commentsToTree(comments, llmConfig, apiKey, {
+  const result = await commentsToTree(comments, llmConfig, apiKey, undefined, {
     reportId: "example-report",
     userId: "example-user",
   });

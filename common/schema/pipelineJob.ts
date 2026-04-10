@@ -63,7 +63,10 @@ export const pipelineJobSchema = z.object({
       sortStrategy: z.enum(["numPeople", "numClaims"]).default("numPeople"),
     }),
     env: z.object({
-      OPENAI_API_KEY: z.string().min(1, "API key cannot be empty"),
+      OPENAI_API_KEY: z.string().optional(),
+      // ANTHROPIC_API_KEY is intentionally excluded from the PubSub message
+      // to avoid serializing secrets into the queue. The pipeline worker reads
+      // ANTHROPIC_API_KEY directly from its own environment variables.
     }),
   }),
   data: z.array(commentSchema),

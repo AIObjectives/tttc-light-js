@@ -1,5 +1,5 @@
 /**
- * Cruxes extraction model using LLMClient
+ * Cruxes extraction model using LLM client abstraction
  */
 
 import {
@@ -9,8 +9,13 @@ import {
 } from "tttc-common/evaluations/crux/scorers";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
+import type { LLMClient } from "../llm-client.js";
 import { basicSanitize, sanitizePromptLength } from "../sanitizer";
-import { ParseFailedError } from "../types";
+import {
+  ApiCallFailedError,
+  EmptyResponseError,
+  ParseFailedError,
+} from "../types";
 import { tokenCost } from "../utils";
 import type {
   AnonymizedClaims,
@@ -96,10 +101,46 @@ function buildPrompt(
 }
 
 /**
- * Parse OpenAI response and extract crux object
+ * Call LLM API for crux extraction
+ */
+async function callLLMForCrux(
+  llmClient: LLMClient,
+  modelName: string,
+  systemPrompt: string,
+  fullPrompt: string,
+): Promise<Result<{ content: string; usage: TokenUsage }, ClusteringError>> {
+  try {
+    const result = await llmClient.call({
+      model: modelName,
+      systemPrompt,
+      userPrompt: fullPrompt,
+      jsonMode: true,
+    });
+
+    if (!result.content) {
+      return failure(new EmptyResponseError(modelName));
+    }
+
+    return success({
+      content: result.content,
+      usage: {
+        input_tokens: result.usage.input_tokens,
+        output_tokens: result.usage.output_tokens,
+        total_tokens: result.usage.total_tokens,
+      },
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return failure(new ApiCallFailedError(modelName, errorMessage));
+  }
+}
+
+/**
+ * Parse LLM response and extract crux object
  */
 function parseResponse(
   content: string,
+  modelName: string,
 ): Result<RawCruxResponse, ClusteringError> {
   try {
     const cruxObj = JSON.parse(content);
@@ -125,6 +166,8 @@ export async function generateCruxForSubtopic(
 ): Promise<Result<CruxForTopicResult, ClusteringError>> {
   const {
     llmClient,
+    openaiClientForWeave,
+    modelName,
     systemPrompt,
     userPrompt,
     subtopicIdentifier,
@@ -143,6 +186,14 @@ export async function generateCruxForSubtopic(
     subtopicIndex,
     reportId,
   };
+
+  // Weave evaluation is only supported with OpenAI
+  if (enableWeave && llmClient.provider === "anthropic") {
+    cruxesLogger.warn(
+      { modelName },
+      "Weave evaluation is not supported for Anthropic models, skipping",
+    );
+  }
 
   const { claimsAnon, speakerCount } = buildAnonymizedClaims(
     claims,
@@ -192,27 +243,23 @@ export async function generateCruxForSubtopic(
     "Calling LLM for crux extraction",
   );
 
-  const llmResult = await llmClient.complete({
+  const llmResult = await callLLMForCrux(
+    llmClient,
+    modelName,
     systemPrompt,
-    userPrompt: fullPrompt,
-  });
+    fullPrompt,
+  );
   if (llmResult.tag === "failure") {
     cruxesLogger.error(
       { ...context, error: llmResult.error },
-      "Failed to call LLM for crux extraction",
+      "Failed to call LLM API for crux extraction",
     );
     return llmResult;
   }
 
-  const { content, usage: rawUsage } = llmResult.value;
+  const { content, usage } = llmResult.value;
 
-  const usage: TokenUsage = {
-    input_tokens: rawUsage.input_tokens,
-    output_tokens: rawUsage.output_tokens,
-    total_tokens: rawUsage.total_tokens,
-  };
-
-  const cruxResult = parseResponse(content);
+  const cruxResult = parseResponse(content, modelName);
   if (cruxResult.tag === "failure") {
     cruxesLogger.error(
       { ...context, error: cruxResult.error },
@@ -223,7 +270,7 @@ export async function generateCruxForSubtopic(
 
   const cruxObj = cruxResult.value;
   const costResult = tokenCost(
-    llmClient.modelName,
+    modelName,
     usage.input_tokens,
     usage.output_tokens,
   );
@@ -250,12 +297,11 @@ export async function generateCruxForSubtopic(
     },
   };
 
-  if (enableWeave && options.openaiClientForWeave) {
+  if (enableWeave && llmClient.provider === "openai" && openaiClientForWeave) {
     runCruxesEvaluation({
-      openaiClient: options.openaiClientForWeave,
+      openaiClient: openaiClientForWeave,
       cruxResponse: cruxObj,
       claims: claimsAnon,
-      totalSpeakers: speakerCount,
       subtopicIdentifier,
     });
   }

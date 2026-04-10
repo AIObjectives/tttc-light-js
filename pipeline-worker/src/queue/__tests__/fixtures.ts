@@ -36,7 +36,7 @@ export const TEST_STRINGS = {
   speaker: "Speaker1",
   comment: "Test comment",
   apiKey: "test-api-key",
-  model: "gpt-4",
+  model: "gpt-4o",
 } as const;
 
 export const TEST_INSTRUCTIONS = {

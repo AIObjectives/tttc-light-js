@@ -18,11 +18,15 @@ import {
   defaultSystemPrompt,
 } from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
-import { DEFAULT_MODEL, supportedModel } from "tttc-common/schema";
+import {
+  DEFAULT_MODEL,
+  isAnthropicModel,
+  isSupportedModel,
+} from "tttc-common/schema";
 import * as firebase from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
-import type { PipelineJob } from "../queue/types";
+import type { PipelineEnv, PipelineJob } from "../queue/types";
 import { nodeWorkerQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";
@@ -42,6 +46,13 @@ class CreateReportError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "CreateReportError";
+  }
+}
+
+class ModelUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ModelUnavailableError";
   }
 }
 
@@ -300,6 +311,13 @@ export const buildPipelineJob = (
   const { firebaseJobId, reportId, jsonUrl, model } = options;
   const filename = `${reportId}.json`;
 
+  const pipelineEnv: PipelineEnv = {
+    OPENAI_API_KEY: env.OPENAI_API_KEY,
+    // ANTHROPIC_API_KEY is not passed through the PubSub message to avoid
+    // serializing secrets into the queue. The pipeline worker reads it directly
+    // from its own environment variables.
+  };
+
   return {
     config: {
       firebaseDetails: {
@@ -308,7 +326,7 @@ export const buildPipelineJob = (
         firebaseJobId,
         reportId,
       },
-      env,
+      env: pipelineEnv,
       auth: "public",
       instructions: {
         ...userConfig,
@@ -483,30 +501,19 @@ function buildProcessedConfig(
   };
 }
 
-class UnsupportedModelError extends Error {
-  constructor(model: string) {
-    super(`Unsupported model: ${model}`);
-    this.name = "UnsupportedModelError";
-  }
-}
-
 async function resolveModel(
   decodedUser: DecodedIdToken,
   requestedModel: string | undefined,
 ): Promise<string> {
-  if (!requestedModel) return DEFAULT_MODEL;
+  if (!requestedModel || !isSupportedModel(requestedModel))
+    return DEFAULT_MODEL;
   const enabled = await isFeatureEnabled(
     FEATURE_FLAGS.MODEL_SELECTION_ENABLED,
     {
       userId: decodedUser.uid,
     },
   );
-  if (!enabled) return DEFAULT_MODEL;
-  const parseResult = supportedModel.safeParse(requestedModel);
-  if (!parseResult.success) {
-    throw new UnsupportedModelError(requestedModel);
-  }
-  return parseResult.data;
+  return enabled ? requestedModel : DEFAULT_MODEL;
 }
 
 async function createNewReport(
@@ -562,6 +569,16 @@ async function createNewReport(
 
   const processedConfig = buildProcessedConfig(userConfig, parsedData);
 
+  if (isAnthropicModel(model) && !env.ANTHROPIC_API_KEY) {
+    createLogger.warn(
+      { model },
+      "Anthropic model requested but API key is not configured",
+    );
+    throw new ModelUnavailableError(
+      "The selected model is not currently available",
+    );
+  }
+
   createLogger.debug(
     {
       cruxesEnabled: processedConfig.cruxesEnabled,
@@ -604,8 +621,8 @@ function getErrorCodeForException(e: unknown): ErrorCode {
     case "CreateReportError":
       // CSV security violations are client errors, not server errors
       return ERROR_CODES.CSV_SECURITY_VIOLATION;
-    case "UnsupportedModelError":
-      return ERROR_CODES.UNSUPPORTED_MODEL;
+    case "ModelUnavailableError":
+      return ERROR_CODES.SERVICE_UNAVAILABLE;
     default:
       return ERROR_CODES.INTERNAL_ERROR;
   }

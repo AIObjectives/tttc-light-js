@@ -1,11 +1,15 @@
 /**
- * Deduplication model using LLMClient
+ * Deduplication model using LLM client abstraction
  */
 
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import type { LLMClient } from "../llm-client.js";
-import { ParseFailedError } from "../types";
+import {
+  ApiCallFailedError,
+  EmptyResponseError,
+  ParseFailedError,
+} from "../types";
 import type {
   Claim,
   ClusteringError,
@@ -20,7 +24,7 @@ const dedupLogger = logger.child({ module: "deduplication-model" });
 /**
  * Call the deduplication model to identify near-duplicate claims
  *
- * @param llmClient - LLM client instance
+ * @param llmClient - LLM client instance (OpenAI or Anthropic)
  * @param claims - Array of claims to deduplicate
  * @param llmConfig - LLM configuration with prompts
  * @param topicName - Name of the topic (for logging)
@@ -58,26 +62,36 @@ export async function callDeduplicationModel(
     fullPrompt += `\n  - quoteId: quote${i}`;
   }
 
-  const llmResult = await llmClient.complete({
-    systemPrompt: llmConfig.system_prompt,
-    userPrompt: fullPrompt,
-  });
-  if (llmResult.tag === "failure") {
+  // Call LLM API
+  let content: string;
+  let usage: TokenUsage;
+  try {
+    const result = await llmClient.call({
+      model: llmConfig.model_name,
+      systemPrompt: llmConfig.system_prompt,
+      userPrompt: fullPrompt,
+      jsonMode: true,
+    });
+
+    if (!result.content) {
+      dedupLogger.error({ ...context }, "No response from model");
+      return failure(new EmptyResponseError(llmConfig.model_name));
+    }
+
+    content = result.content;
+    usage = {
+      input_tokens: result.usage.input_tokens,
+      output_tokens: result.usage.output_tokens,
+      total_tokens: result.usage.total_tokens,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     dedupLogger.error(
-      { ...context, error: llmResult.error },
+      { ...context, error: errorMessage },
       "Failed to call deduplication model",
     );
-    return llmResult;
+    return failure(new ApiCallFailedError(llmConfig.model_name, errorMessage));
   }
-
-  const { content, usage: rawUsage } = llmResult.value;
-
-  const usage: TokenUsage = {
-    input_tokens: rawUsage.input_tokens,
-    output_tokens: rawUsage.output_tokens,
-    total_tokens: rawUsage.total_tokens,
-  };
-
   // Parse JSON response
   let dedupClaims: DeduplicationResponse;
   try {

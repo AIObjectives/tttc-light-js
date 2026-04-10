@@ -124,7 +124,7 @@ async function runSortAndDeduplicate(
   sort: "numPeople" | "numClaims",
 ) {
   const input = createInput(tree, sort);
-  return await sortAndDeduplicateClaims(input, "fake-api-key");
+  return await sortAndDeduplicateClaims(input, "fake-api-key", undefined);
 }
 
 function expectSuccessResult(result: any) {

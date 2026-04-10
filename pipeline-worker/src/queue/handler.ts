@@ -7,6 +7,7 @@ import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import type * as schema from "tttc-common/schema";
 import type { PipelineJobMessage } from "tttc-common/schema";
+import { isSupportedModel } from "tttc-common/schema";
 import { llmPipelineToSchema } from "tttc-common/transforms/pipeline";
 import type { BucketStore } from "../bucketstore/index.js";
 import type { RefStoreServices } from "../datastore/refstore/index.js";
@@ -292,7 +293,6 @@ function validatePipelineJobConfig(
       value: instructions.summariesInstructions,
       name: "summaries instructions",
     },
-    { value: env.OPENAI_API_KEY, name: "API key" },
   ];
 
   for (const field of requiredFields) {
@@ -301,6 +301,21 @@ function validatePipelineJobConfig(
         new ValidationError(`Missing required field: ${field.name}`),
       );
     }
+  }
+
+  if (!isSupportedModel(llm.model)) {
+    return failure(new ValidationError("Unsupported model"));
+  }
+
+  // At least one API key must be present.
+  // OPENAI_API_KEY comes from the job config env; ANTHROPIC_API_KEY is read
+  // directly from process.env (not serialized into the PubSub message).
+  if (!env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    return failure(
+      new ValidationError(
+        "Pipeline configuration error: missing API credentials",
+      ),
+    );
   }
 
   if (
@@ -407,7 +422,10 @@ function convertToPipelineInput(
             user_prompt: instructions.cruxInstructions,
           }
         : undefined,
-    apiKey: env.OPENAI_API_KEY,
+    openaiApiKey: env.OPENAI_API_KEY,
+    // ANTHROPIC_API_KEY is read from the worker's environment directly,
+    // not from the PubSub message, to avoid serializing secrets into the queue.
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     enableCruxes: options.cruxes,
     enableWeave: options.evaluations,
     sortStrategy: options.sortStrategy,

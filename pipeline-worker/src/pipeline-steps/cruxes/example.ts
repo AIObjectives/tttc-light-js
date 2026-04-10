@@ -44,7 +44,7 @@
  * ### Configuration Options
  * You can optionally enable Weave evaluation tracking:
  * ```typescript
- * const result = await extractCruxes(claimsTree, topics, llmConfig, apiKey, {
+ * const result = await extractCruxes(claimsTree, topics, llmConfig, apiKey, undefined, {
  *   reportId: "example-report",
  *   userId: "example-user",
  *   enableWeave: true,
@@ -134,10 +134,17 @@ async function exampleCruxesExtraction() {
   const apiKey = process.env.OPENAI_API_KEY || "your-api-key";
 
   // Extract cruxes
-  const result = await extractCruxes(claimsTree, topics, llmConfig, apiKey, {
-    reportId: "example-report",
-    userId: "example-user",
-  });
+  const result = await extractCruxes(
+    claimsTree,
+    topics,
+    llmConfig,
+    apiKey,
+    undefined,
+    {
+      reportId: "example-report",
+      userId: "example-user",
+    },
+  );
 
   if (result.tag === "success") {
     console.log("Cruxes extraction successful!");

@@ -1,5 +1,4 @@
 import type * as schema from "tttc-common/schema";
-import type { Env } from "../types/context";
 
 /**
  * Options for enqueueing a pipeline job
@@ -19,8 +18,15 @@ type FirebaseDetails = {
   reportId?: string;
 };
 
+/** API keys passed to the pipeline worker via the PubSub message */
+export interface PipelineEnv {
+  OPENAI_API_KEY: string | undefined;
+  // ANTHROPIC_API_KEY is intentionally excluded from the PubSub message.
+  // The pipeline worker reads it directly from its own environment variables.
+}
+
 interface PipelineConfig {
-  env: Env;
+  env: PipelineEnv;
   auth: "public" | "private";
   firebaseDetails: FirebaseDetails;
   llm: { model: string };

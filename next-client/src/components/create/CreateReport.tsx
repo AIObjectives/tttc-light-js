@@ -246,6 +246,7 @@ function CreateReportComponent({
               cruxesEnabled={cruxesEnabled}
               bridgingEnabled={bridgingEnabled}
               outputLanguage={outputLanguage}
+              selectedModel={selectedModel}
             />
             {/* Show inline error banner for non-auth errors */}
             {state.status === "error" &&

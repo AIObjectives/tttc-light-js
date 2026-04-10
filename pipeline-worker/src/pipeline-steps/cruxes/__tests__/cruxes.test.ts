@@ -306,6 +306,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -331,6 +332,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -391,6 +393,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -411,6 +414,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -434,6 +438,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -453,6 +458,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -473,6 +479,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("failure");
@@ -490,6 +497,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         emptyTopics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("failure");
@@ -504,12 +512,19 @@ describe("Cruxes Extraction Pipeline Step", () => {
       const claimsTree = createSampleClaimsTree();
       const topics = createSampleTopics();
 
-      await extractCruxes(claimsTree, topics, llmConfig, "fake-api-key", {
-        reportId: "test-report-123",
-        userId: "test-user-456",
-        enableWeave: true,
-        weaveProjectName: "test-project",
-      });
+      await extractCruxes(
+        claimsTree,
+        topics,
+        llmConfig,
+        "fake-api-key",
+        undefined,
+        {
+          reportId: "test-report-123",
+          userId: "test-user-456",
+          enableWeave: true,
+          weaveProjectName: "test-project",
+        },
+      );
 
       // Verify options were passed to the model
       expect(vi.mocked(generateCruxForSubtopic)).toHaveBeenCalledWith(
@@ -532,6 +547,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -573,6 +589,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -606,7 +623,13 @@ describe("Cruxes Extraction Pipeline Step", () => {
       });
 
       const { claimsTree, topics } = createConcurrencyTestData(2);
-      await extractCruxes(claimsTree, topics, llmConfig, "fake-api-key");
+      await extractCruxes(
+        claimsTree,
+        topics,
+        llmConfig,
+        "fake-api-key",
+        undefined,
+      );
 
       expect(clientInstances.size).toBe(1);
     });
@@ -637,6 +660,7 @@ describe("Cruxes Extraction Pipeline Step", () => {
         topics,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");

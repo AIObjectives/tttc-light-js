@@ -449,8 +449,12 @@ export interface SummaryModelResult {
  * Input parameters for generating a summary for a single topic
  */
 export interface GenerateSummaryInput {
-  /** LLM client instance */
+  /** LLM client instance (OpenAI or Anthropic) */
   llmClient: LLMClient;
+  /** Optional OpenAI client for Weave evaluation (only used when provider is openai) */
+  openaiClientForWeave?: OpenAI;
+  /** Model name (e.g., "gpt-4o-mini") */
+  modelName: string;
   /** System prompt */
   systemPrompt: string;
   /** User prompt template */
@@ -602,8 +606,12 @@ export type TopicDescMap = Record<string, string>;
  * Input parameters for generating a crux for a single subtopic
  */
 export interface GenerateCruxInput {
-  /** LLM client instance */
+  /** LLM client instance (OpenAI or Anthropic) */
   llmClient: LLMClient;
+  /** Optional OpenAI client for Weave evaluation (only used when provider is openai) */
+  openaiClientForWeave?: OpenAI;
+  /** Model name (e.g., "gpt-4o-mini") */
+  modelName: string;
   /** System prompt */
   systemPrompt: string;
   /** User prompt template */
@@ -648,7 +656,7 @@ export interface CruxEvaluationParams {
   openaiClient: OpenAI;
   cruxResponse: RawCruxResponse;
   claims: string[];
-  totalSpeakers: number;
+  totalSpeakers?: number;
   subtopicIdentifier: string;
 }
 
