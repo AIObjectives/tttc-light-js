@@ -1024,11 +1024,12 @@ const reportData = v0_2_Report; // make union when we have more versions
  ********************************/
 
 // Models available for user selection when model_selection_enabled feature flag is on
-export const SUPPORTED_MODELS = ["gpt-4o", "gpt-4o-mini"] as const;
-
-export const supportedModel = z.enum(SUPPORTED_MODELS);
-export type SupportedModel = z.infer<typeof supportedModel>;
-export const DEFAULT_MODEL: SupportedModel = "gpt-4o-mini";
+// Note: SUPPORTED_MODELS, DEFAULT_MODEL, SupportedModel are re-exported from ./models.ts below
+// supportedModel Zod schema is kept here for backward compatibility
+import { SUPPORTED_MODELS as _SUPPORTED_MODELS } from "./models.js";
+export const supportedModel = z.enum(
+  _SUPPORTED_MODELS as unknown as [string, ...string[]],
+);
 
 // template + optional text
 export const openAIModels = z.enum([

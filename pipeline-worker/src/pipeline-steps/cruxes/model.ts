@@ -238,7 +238,7 @@ export async function generateCruxForSubtopic(
       ...context,
       claimCount: claims.length,
       speakerCount,
-      model: llmClient.modelName,
+      model: modelName,
     },
     "Calling LLM for crux extraction",
   );

@@ -323,7 +323,6 @@ export async function extractClaims(
           commentId: comment.id,
           options: {
             enableWeave: options.enableWeave,
-            openaiClientForWeave,
           },
         });
         return { comment, result };
