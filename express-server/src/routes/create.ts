@@ -516,6 +516,18 @@ async function resolveModel(
   return enabled ? requestedModel : DEFAULT_MODEL;
 }
 
+function assertAnthropicKeyConfigured(model: string, env: Env): void {
+  if (isAnthropicModel(model) && !env.ANTHROPIC_API_KEY) {
+    createLogger.warn(
+      { model },
+      "Anthropic model requested but API key is not configured",
+    );
+    throw new ModelUnavailableError(
+      "The selected model is not currently available",
+    );
+  }
+}
+
 async function createNewReport(
   req: RequestWithAuth,
 ): Promise<
@@ -569,15 +581,7 @@ async function createNewReport(
 
   const processedConfig = buildProcessedConfig(userConfig, parsedData);
 
-  if (isAnthropicModel(model) && !env.ANTHROPIC_API_KEY) {
-    createLogger.warn(
-      { model },
-      "Anthropic model requested but API key is not configured",
-    );
-    throw new ModelUnavailableError(
-      "The selected model is not currently available",
-    );
-  }
+  assertAnthropicKeyConfigured(model, env);
 
   createLogger.debug(
     {
