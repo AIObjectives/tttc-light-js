@@ -107,6 +107,17 @@ export class OpenAILLMClient implements LLMClient {
 }
 
 /**
+ * Strip markdown code fences from a string.
+ * Claude sometimes wraps JSON in ```json ... ``` despite being instructed not to.
+ */
+function stripMarkdownCodeFences(text: string): string {
+  return text
+    .replace(/^```(?:json)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "")
+    .trim();
+}
+
+/**
  * Anthropic LLM client wrapping the Messages API.
  *
  * Uses `anthropic.messages.create` with a fixed max_tokens of 8192.
@@ -144,7 +155,9 @@ export class AnthropicLLMClient implements LLMClient {
       throw new Error(`Anthropic returned no text content for model ${model}`);
     }
 
-    const content = firstBlock.text;
+    const content = jsonMode
+      ? stripMarkdownCodeFences(firstBlock.text)
+      : firstBlock.text;
 
     const input_tokens = response.usage.input_tokens;
     const output_tokens = response.usage.output_tokens;

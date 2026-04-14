@@ -184,6 +184,58 @@ describe("AnthropicLLMClient", () => {
     expect(result.usage.total_tokens).toBe(150);
   });
 
+  it("should strip markdown code fences from JSON mode response", async () => {
+    const { client, mockMessagesCreate } = makeClient();
+    mockMessagesCreate.mockResolvedValueOnce({
+      content: [{ type: "text", text: '```json\n{"result": "test"}\n```' }],
+      usage: { input_tokens: 100, output_tokens: 50 },
+    });
+
+    const result = await client.call({
+      model: "claude-sonnet-4-5",
+      systemPrompt: "You are helpful",
+      userPrompt: "Test prompt",
+      jsonMode: true,
+    });
+
+    expect(result.content).toBe('{"result": "test"}');
+  });
+
+  it("should strip plain code fences from JSON mode response", async () => {
+    const { client, mockMessagesCreate } = makeClient();
+    mockMessagesCreate.mockResolvedValueOnce({
+      content: [{ type: "text", text: '```\n{"result": "test"}\n```' }],
+      usage: { input_tokens: 100, output_tokens: 50 },
+    });
+
+    const result = await client.call({
+      model: "claude-sonnet-4-5",
+      systemPrompt: "You are helpful",
+      userPrompt: "Test prompt",
+      jsonMode: true,
+    });
+
+    expect(result.content).toBe('{"result": "test"}');
+  });
+
+  it("should not strip code fences when jsonMode is false", async () => {
+    const { client, mockMessagesCreate } = makeClient();
+    const raw = "```json\n{}\n```";
+    mockMessagesCreate.mockResolvedValueOnce({
+      content: [{ type: "text", text: raw }],
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+
+    const result = await client.call({
+      model: "claude-sonnet-4-5",
+      systemPrompt: "System",
+      userPrompt: "User",
+      jsonMode: false,
+    });
+
+    expect(result.content).toBe(raw);
+  });
+
   it("should not add JSON instruction when jsonMode is false", async () => {
     const { client, mockMessagesCreate } = makeClient();
     mockMessagesCreate.mockResolvedValueOnce({
