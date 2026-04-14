@@ -552,7 +552,6 @@ export async function generateReportForEvent(
     );
 
     const pipelineJob = buildPipelineJob(
-      req.context.env,
       decodedUser,
       userConfig,
       { ...userConfig, data: processedData },

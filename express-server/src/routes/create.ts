@@ -18,15 +18,11 @@ import {
   defaultSystemPrompt,
 } from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
-import {
-  DEFAULT_MODEL,
-  isAnthropicModel,
-  isSupportedModel,
-} from "tttc-common/schema";
+import { DEFAULT_MODEL, isSupportedModel } from "tttc-common/schema";
 import * as firebase from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
-import type { PipelineEnv, PipelineJob } from "../queue/types";
+import type { PipelineJob } from "../queue/types";
 import { nodeWorkerQueue } from "../server";
 import { createStorage } from "../storage";
 import type { Env } from "../types/context";
@@ -46,13 +42,6 @@ class CreateReportError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "CreateReportError";
-  }
-}
-
-class ModelUnavailableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ModelUnavailableError";
   }
 }
 
@@ -309,7 +298,6 @@ const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean => {
 };
 
 export const buildPipelineJob = (
-  env: Env,
   decodedUser: DecodedIdToken,
   userConfig: schema.LLMUserConfig,
   updatedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] },
@@ -317,13 +305,6 @@ export const buildPipelineJob = (
 ): PipelineJob => {
   const { firebaseJobId, reportId, jsonUrl, model } = options;
   const filename = `${reportId}.json`;
-
-  const pipelineEnv: PipelineEnv = {
-    OPENAI_API_KEY: env.OPENAI_API_KEY,
-    // ANTHROPIC_API_KEY is not passed through the PubSub message to avoid
-    // serializing secrets into the queue. The pipeline worker reads it directly
-    // from its own environment variables.
-  };
 
   return {
     config: {
@@ -333,7 +314,6 @@ export const buildPipelineJob = (
         firebaseJobId,
         reportId,
       },
-      env: pipelineEnv,
       auth: "public",
       instructions: {
         ...userConfig,
@@ -526,18 +506,6 @@ async function resolveModel(
   return requestedModel;
 }
 
-function assertAnthropicKeyConfigured(model: string, env: Env): void {
-  if (isAnthropicModel(model) && !env.ANTHROPIC_API_KEY) {
-    createLogger.warn(
-      { model },
-      "Anthropic model requested but API key is not configured",
-    );
-    throw new ModelUnavailableError(
-      "The selected model is not currently available",
-    );
-  }
-}
-
 async function createNewReport(
   req: RequestWithAuth,
 ): Promise<
@@ -591,8 +559,6 @@ async function createNewReport(
 
   const processedConfig = buildProcessedConfig(userConfig, parsedData);
 
-  assertAnthropicKeyConfigured(model, env);
-
   createLogger.debug(
     {
       cruxesEnabled: processedConfig.cruxesEnabled,
@@ -603,7 +569,6 @@ async function createNewReport(
   );
 
   const pipelineJob = buildPipelineJob(
-    env,
     decodedUser,
     userConfig,
     processedConfig,
@@ -635,8 +600,6 @@ function getErrorCodeForException(e: unknown): ErrorCode {
     case "CreateReportError":
       // CSV security violations are client errors, not server errors
       return ERROR_CODES.CSV_SECURITY_VIOLATION;
-    case "ModelUnavailableError":
-      return ERROR_CODES.SERVICE_UNAVAILABLE;
     case "UnsupportedModelError":
       return ERROR_CODES.UNSUPPORTED_MODEL;
     default:

@@ -269,7 +269,7 @@ function validatePipelineJobConfig(
   job: PipelineJobMessage,
 ): Result<void, ValidationError> {
   const { config } = job;
-  const { instructions, llm, options, env } = config;
+  const { instructions, llm, options } = config;
 
   const requiredFields = [
     { value: llm.model, name: "LLM model" },
@@ -307,10 +307,9 @@ function validatePipelineJobConfig(
     return failure(new ValidationError("Unsupported model"));
   }
 
-  // At least one API key must be present.
-  // OPENAI_API_KEY comes from the job config env; ANTHROPIC_API_KEY is read
-  // directly from process.env (not serialized into the PubSub message).
-  if (!env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+  // At least one API key must be present. Both are read from the worker's
+  // own environment variables, not from the queue message.
+  if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
     return failure(
       new ValidationError(
         "Pipeline configuration error: missing API credentials",
@@ -378,7 +377,7 @@ function convertToPipelineInput(
   job: PipelineJobMessage,
 ): Result<PipelineInput, ValidationError> {
   const { config, data } = job;
-  const { instructions, llm, options, env } = config;
+  const { instructions, llm, options } = config;
 
   queueLogger.info(
     { evaluations: options.evaluations, cruxes: options.cruxes },
@@ -422,9 +421,7 @@ function convertToPipelineInput(
             user_prompt: instructions.cruxInstructions,
           }
         : undefined,
-    openaiApiKey: env.OPENAI_API_KEY,
-    // ANTHROPIC_API_KEY is read from the worker's environment directly,
-    // not from the PubSub message, to avoid serializing secrets into the queue.
+    openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     enableCruxes: options.cruxes,
     enableWeave: options.evaluations,
