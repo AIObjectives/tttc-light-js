@@ -13,7 +13,8 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
-import { createOpenAILLMClient, type LLMClient } from "../llm-client.js";
+import type { LLMClient } from "../llm-client.js";
+import { createLLMClient } from "../llm-client.js";
 import { sanitizeForOutput } from "../sanitizer";
 import { getReportLogger, processBatchConcurrently } from "../utils";
 import { callSummaryModel } from "./model";
@@ -37,6 +38,7 @@ const MAX_CONCURRENT_SUMMARIES = 6;
  * Process a single topic to generate its summary
  *
  * @param llmClient - Shared LLM client instance
+ * @param openaiClientForWeave - Optional OpenAI client for Weave evaluation
  * @param topicName - Name of the topic
  * @param topicData - Processed topic data with subtopics and claims
  * @param llmConfig - LLM configuration for summary generation
@@ -47,6 +49,7 @@ const MAX_CONCURRENT_SUMMARIES = 6;
  */
 async function processTopicSummary(
   llmClient: LLMClient,
+  openaiClientForWeave: OpenAI | undefined,
   topicName: string,
   topicData: SortedTree[number][1],
   llmConfig: LLMConfig,
@@ -68,6 +71,8 @@ async function processTopicSummary(
   // Call model to generate summary
   const result = await callSummaryModel({
     llmClient,
+    openaiClientForWeave,
+    modelName: llmConfig.model_name,
     systemPrompt: llmConfig.system_prompt,
     userPrompt: llmConfig.user_prompt,
     tree: singleTopicTree,
@@ -102,13 +107,15 @@ async function processTopicSummary(
  * (fail-fast behavior). The results are aggregated with combined usage and cost.
  *
  * @param input - Input configuration with tree and LLM config
- * @param apiKey - OpenAI API key
+ * @param openaiApiKey - OpenAI API key (required for OpenAI models)
+ * @param anthropicApiKey - Anthropic API key (required for Claude models)
  * @param options - Optional configuration (reportId, userId, enableWeave, weaveProjectName)
  * @returns Result containing array of topic summaries with aggregated usage and cost, or an error
  */
 export async function generateTopicSummaries(
   input: SummariesInput,
-  apiKey: string,
+  openaiApiKey: string | undefined,
+  anthropicApiKey: string | undefined,
   options: ClusteringOptions = {},
 ): Promise<Result<SummariesResult, ClusteringError>> {
   const { tree, llm } = input;
@@ -128,12 +135,18 @@ export async function generateTopicSummaries(
     "Starting individual topic summaries",
   );
 
-  // Create shared LLM client for all topics
-  const llmClient = await createOpenAILLMClient(apiKey, llm.model_name, {
-    enableWeave,
-    weaveProjectName,
-  });
-  const openaiClientForWeave = enableWeave ? new OpenAI({ apiKey }) : undefined;
+  // Create LLM client for the requested model
+  const llmClient = createLLMClient(
+    llm.model_name,
+    openaiApiKey,
+    anthropicApiKey,
+  );
+
+  // OpenAI client for Weave evaluation (only used when provider is openai)
+  const openaiClientForWeave =
+    llmClient.provider === "openai" && openaiApiKey
+      ? new OpenAI({ apiKey: openaiApiKey })
+      : undefined;
 
   // Process each topic individually with controlled concurrency
   // Using processBatchConcurrently to limit parallel API calls
@@ -142,6 +155,7 @@ export async function generateTopicSummaries(
     async ([topicName, topicData]) => {
       return processTopicSummary(
         llmClient,
+        openaiClientForWeave,
         topicName,
         topicData,
         llm,

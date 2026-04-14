@@ -62,9 +62,6 @@ export const pipelineJobSchema = z.object({
       evaluations: z.boolean().default(false),
       sortStrategy: z.enum(["numPeople", "numClaims"]).default("numPeople"),
     }),
-    env: z.object({
-      OPENAI_API_KEY: z.string().min(1, "API key cannot be empty"),
-    }),
   }),
   data: z.array(commentSchema),
   reportDetails: z.object({

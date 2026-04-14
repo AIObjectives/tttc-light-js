@@ -94,6 +94,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -127,6 +128,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -142,6 +144,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("failure");
@@ -161,6 +164,7 @@ describe("Claims Extraction Pipeline Step", () => {
         [],
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("failure");
@@ -185,6 +189,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -205,6 +210,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -246,6 +252,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -324,6 +331,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("failure");
@@ -464,6 +472,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -488,6 +497,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -549,6 +559,7 @@ describe("Claims Extraction Pipeline Step", () => {
         sampleTaxonomy,
         llmConfig,
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");

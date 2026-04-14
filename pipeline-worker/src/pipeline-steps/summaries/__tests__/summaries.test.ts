@@ -110,6 +110,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -147,6 +148,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -162,6 +164,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: emptyTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("failure");
@@ -216,6 +219,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -282,6 +286,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("failure");
@@ -316,6 +321,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -369,6 +375,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -403,6 +410,7 @@ describe("Summaries Generation Pipeline Step", () => {
       await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
         {
           reportId: "test-report-123",
           enableWeave: true,
@@ -432,6 +440,7 @@ describe("Summaries Generation Pipeline Step", () => {
       const result = await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       expect(result.tag).toBe("success");
@@ -473,6 +482,7 @@ describe("Summaries Generation Pipeline Step", () => {
       await generateTopicSummaries(
         { tree: sampleTree, llm: llmConfig },
         "fake-api-key",
+        undefined,
       );
 
       // Should use the same client instance for all topics

@@ -477,11 +477,17 @@ async function executeClusteringStep(
   return executeStep(
     "clustering",
     () =>
-      commentsToTree(input.comments, input.clusteringConfig, input.apiKey, {
-        reportId: config.reportId,
-        userId: config.userId,
-        ...config.options,
-      }),
+      commentsToTree(
+        input.comments,
+        input.clusteringConfig,
+        input.openaiApiKey,
+        input.anthropicApiKey,
+        {
+          reportId: config.reportId,
+          userId: config.userId,
+          ...config.options,
+        },
+      ),
     reportLogger,
   );
 }
@@ -498,11 +504,18 @@ async function executeClaimsStep(
   return executeStep(
     "claims",
     () =>
-      extractClaims(input.comments, topics, input.claimsConfig, input.apiKey, {
-        reportId: config.reportId,
-        userId: config.userId,
-        ...config.options,
-      }),
+      extractClaims(
+        input.comments,
+        topics,
+        input.claimsConfig,
+        input.openaiApiKey,
+        input.anthropicApiKey,
+        {
+          reportId: config.reportId,
+          userId: config.userId,
+          ...config.options,
+        },
+      ),
     reportLogger,
   );
 }
@@ -525,7 +538,8 @@ async function executeSortAndDeduplicateStep(
           llm: input.dedupConfig,
           sort: input.sortStrategy,
         },
-        input.apiKey,
+        input.openaiApiKey,
+        input.anthropicApiKey,
         {
           reportId: config.reportId,
           userId: config.userId,
@@ -553,7 +567,8 @@ async function executeSummariesStep(
           tree: sortedResult.data,
           llm: input.summariesConfig,
         },
-        input.apiKey,
+        input.openaiApiKey,
+        input.anthropicApiKey,
         {
           reportId: config.reportId,
           userId: config.userId,
@@ -583,11 +598,18 @@ async function executeCruxesStep(
   return executeStep(
     "cruxes",
     () =>
-      extractCruxes(claimsTree, topics, cruxesConfig, input.apiKey, {
-        reportId: config.reportId,
-        userId: config.userId,
-        ...config.options,
-      }),
+      extractCruxes(
+        claimsTree,
+        topics,
+        cruxesConfig,
+        input.openaiApiKey,
+        input.anthropicApiKey,
+        {
+          reportId: config.reportId,
+          userId: config.userId,
+          ...config.options,
+        },
+      ),
     reportLogger,
   );
 }

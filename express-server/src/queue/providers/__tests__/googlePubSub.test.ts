@@ -135,7 +135,6 @@ describe("GooglePubSubQueue", () => {
     it("should call publishMessage on topic", async () => {
       const pipelineJob: PipelineJob = {
         config: {
-          env: "test" as any,
           auth: "public",
           firebaseDetails: {
             reportDataUri: "test-uri",

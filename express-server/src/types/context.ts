@@ -75,7 +75,11 @@ function transformLocalFlags(
 }
 
 export const env = z.object({
-  OPENAI_API_KEY: z.string({ error: "Missing OpenAI Key" }),
+  // At least one of OPENAI_API_KEY or ANTHROPIC_API_KEY must be set.
+  // The model selection logic in create.ts ensures the selected model's
+  // required key is present at job-dispatch time.
+  OPENAI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
   OPENAI_API_KEY_PASSWORD: z
     .string({ error: "Invalid type for openapi key password" })
     .optional(),

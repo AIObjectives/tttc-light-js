@@ -36,7 +36,7 @@ export const TEST_STRINGS = {
   speaker: "Speaker1",
   comment: "Test comment",
   apiKey: "test-api-key",
-  model: "gpt-4",
+  model: "gpt-4o",
 } as const;
 
 export const TEST_INSTRUCTIONS = {
@@ -125,7 +125,6 @@ export const createMockMessage = (): PubSubMessage<{
       evaluations: boolean;
       sortStrategy: "numPeople" | "numClaims";
     };
-    env: { OPENAI_API_KEY: string };
     firebaseDetails: { reportId: string; userId: string };
   };
   reportDetails: {
@@ -155,7 +154,6 @@ export const createMockMessage = (): PubSubMessage<{
       },
       llm: { model: TEST_STRINGS.model, temperature: 0.7, max_tokens: 1000 },
       options: { cruxes: false, evaluations: false, sortStrategy: "numPeople" },
-      env: { OPENAI_API_KEY: TEST_STRINGS.apiKey },
       firebaseDetails: {
         reportId: TEST_IDS.report,
         userId: TEST_IDS.user,

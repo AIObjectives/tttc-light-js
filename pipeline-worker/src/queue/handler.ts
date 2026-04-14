@@ -7,6 +7,7 @@ import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
 import type * as schema from "tttc-common/schema";
 import type { PipelineJobMessage } from "tttc-common/schema";
+import { isSupportedModel } from "tttc-common/schema";
 import { llmPipelineToSchema } from "tttc-common/transforms/pipeline";
 import type { BucketStore } from "../bucketstore/index.js";
 import type { RefStoreServices } from "../datastore/refstore/index.js";
@@ -268,7 +269,7 @@ function validatePipelineJobConfig(
   job: PipelineJobMessage,
 ): Result<void, ValidationError> {
   const { config } = job;
-  const { instructions, llm, options, env } = config;
+  const { instructions, llm, options } = config;
 
   const requiredFields = [
     { value: llm.model, name: "LLM model" },
@@ -292,7 +293,6 @@ function validatePipelineJobConfig(
       value: instructions.summariesInstructions,
       name: "summaries instructions",
     },
-    { value: env.OPENAI_API_KEY, name: "API key" },
   ];
 
   for (const field of requiredFields) {
@@ -301,6 +301,20 @@ function validatePipelineJobConfig(
         new ValidationError(`Missing required field: ${field.name}`),
       );
     }
+  }
+
+  if (!isSupportedModel(llm.model)) {
+    return failure(new ValidationError("Unsupported model"));
+  }
+
+  // At least one API key must be present. Both are read from the worker's
+  // own environment variables, not from the queue message.
+  if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    return failure(
+      new ValidationError(
+        "Pipeline configuration error: missing API credentials",
+      ),
+    );
   }
 
   if (
@@ -363,7 +377,7 @@ function convertToPipelineInput(
   job: PipelineJobMessage,
 ): Result<PipelineInput, ValidationError> {
   const { config, data } = job;
-  const { instructions, llm, options, env } = config;
+  const { instructions, llm, options } = config;
 
   queueLogger.info(
     { evaluations: options.evaluations, cruxes: options.cruxes },
@@ -407,7 +421,8 @@ function convertToPipelineInput(
             user_prompt: instructions.cruxInstructions,
           }
         : undefined,
-    apiKey: env.OPENAI_API_KEY,
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     enableCruxes: options.cruxes,
     enableWeave: options.evaluations,
     sortStrategy: options.sortStrategy,

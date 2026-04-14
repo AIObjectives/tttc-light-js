@@ -12,7 +12,8 @@
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import { logger } from "tttc-common/logger";
-import { createOpenAILLMClient, type LLMClient } from "../llm-client.js";
+import type { LLMClient } from "../llm-client.js";
+import { createLLMClient } from "../llm-client.js";
 import { getReportLogger, processBatchConcurrently, tokenCost } from "../utils";
 import { callDeduplicationModel } from "./model";
 import type {
@@ -451,13 +452,15 @@ async function processSubtopic(
  * - Within each subtopic, claims with most duplicates appear first
  *
  * @param input - Input configuration with tree, LLM config, and sort strategy
- * @param apiKey - OpenAI API key
+ * @param openaiApiKey - OpenAI API key (required for OpenAI models)
+ * @param anthropicApiKey - Anthropic API key (required for Claude models)
  * @param options - Optional configuration (reportId, userId)
  * @returns Result containing sorted tree with usage and cost, or an error
  */
 export async function sortAndDeduplicateClaims(
   input: SortAndDeduplicateInput,
-  apiKey: string,
+  openaiApiKey: string | undefined,
+  anthropicApiKey: string | undefined,
   options: ClusteringOptions = {},
 ): Promise<Result<SortAndDeduplicateResult, ClusteringError>> {
   const { tree, llm, sort } = input;
@@ -469,6 +472,13 @@ export async function sortAndDeduplicateClaims(
     reportId,
   );
 
+  // Create LLM client for the requested model
+  const llmClient = createLLMClient(
+    llm.model_name,
+    openaiApiKey,
+    anthropicApiKey,
+  );
+
   reportLogger.info(
     {
       numTopics: Object.keys(tree).length,
@@ -476,8 +486,6 @@ export async function sortAndDeduplicateClaims(
     },
     "Starting sort and deduplicate",
   );
-
-  const llmClient = await createOpenAILLMClient(apiKey, llm.model_name);
 
   let totalInputTokens = 0;
   let totalOutputTokens = 0;

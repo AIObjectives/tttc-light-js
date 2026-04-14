@@ -1,5 +1,4 @@
 import type * as schema from "tttc-common/schema";
-import type { Env } from "../types/context";
 
 /**
  * Options for enqueueing a pipeline job
@@ -20,7 +19,6 @@ type FirebaseDetails = {
 };
 
 interface PipelineConfig {
-  env: Env;
   auth: "public" | "private";
   firebaseDetails: FirebaseDetails;
   llm: { model: string };

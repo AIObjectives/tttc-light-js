@@ -18,7 +18,7 @@ import {
   defaultSystemPrompt,
 } from "tttc-common/prompts";
 import type * as schema from "tttc-common/schema";
-import { DEFAULT_MODEL, supportedModel } from "tttc-common/schema";
+import { DEFAULT_MODEL, isSupportedModel } from "tttc-common/schema";
 import * as firebase from "../Firebase";
 import { isFeatureEnabled } from "../featureFlags";
 import { FEATURE_FLAGS } from "../featureFlags/constants";
@@ -42,6 +42,13 @@ class CreateReportError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "CreateReportError";
+  }
+}
+
+class UnsupportedModelError extends Error {
+  constructor(model: string) {
+    super(`Unsupported model: ${model}`);
+    this.name = "UnsupportedModelError";
   }
 }
 
@@ -291,7 +298,6 @@ const isUsingDefaultPrompts = (userConfig: schema.LLMUserConfig): boolean => {
 };
 
 export const buildPipelineJob = (
-  env: Env,
   decodedUser: DecodedIdToken,
   userConfig: schema.LLMUserConfig,
   updatedConfig: schema.LLMUserConfig & { data: schema.SourceRow[] },
@@ -308,7 +314,6 @@ export const buildPipelineJob = (
         firebaseJobId,
         reportId,
       },
-      env,
       auth: "public",
       instructions: {
         ...userConfig,
@@ -483,30 +488,22 @@ function buildProcessedConfig(
   };
 }
 
-class UnsupportedModelError extends Error {
-  constructor(model: string) {
-    super(`Unsupported model: ${model}`);
-    this.name = "UnsupportedModelError";
-  }
-}
-
 async function resolveModel(
   decodedUser: DecodedIdToken,
   requestedModel: string | undefined,
 ): Promise<string> {
-  if (!requestedModel) return DEFAULT_MODEL;
   const enabled = await isFeatureEnabled(
     FEATURE_FLAGS.MODEL_SELECTION_ENABLED,
     {
       userId: decodedUser.uid,
     },
   );
+
   if (!enabled) return DEFAULT_MODEL;
-  const parseResult = supportedModel.safeParse(requestedModel);
-  if (!parseResult.success) {
+  if (!requestedModel) return DEFAULT_MODEL;
+  if (!isSupportedModel(requestedModel))
     throw new UnsupportedModelError(requestedModel);
-  }
-  return parseResult.data;
+  return requestedModel;
 }
 
 async function createNewReport(
@@ -572,7 +569,6 @@ async function createNewReport(
   );
 
   const pipelineJob = buildPipelineJob(
-    env,
     decodedUser,
     userConfig,
     processedConfig,

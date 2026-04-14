@@ -78,7 +78,12 @@ describe("Clustering Pipeline Step", () => {
         user_prompt: "Analyze these comments:",
       };
 
-      const result = await commentsToTree(comments, llmConfig, "fake-api-key");
+      const result = await commentsToTree(
+        comments,
+        llmConfig,
+        "fake-api-key",
+        undefined,
+      );
 
       expect(result.tag).toBe("success");
       if (result.tag === "success") {

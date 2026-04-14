@@ -8,7 +8,7 @@
 import OpenAI from "openai";
 import type { Logger } from "pino";
 import { failure, type Result, success } from "tttc-common/functional-utils";
-import { createOpenAILLMClient } from "../llm-client.js";
+import { createLLMClient } from "../llm-client.js";
 import {
   basicSanitize,
   sanitizeForOutput,
@@ -102,14 +102,16 @@ function sanitizeAndBuildPrompt(
  *
  * @param comments - Array of Comment objects to cluster
  * @param llmConfig - LLM configuration (model, prompts)
- * @param apiKey - OpenAI API key
+ * @param openaiApiKey - OpenAI API key (required for OpenAI models)
+ * @param anthropicApiKey - Anthropic API key (required for Claude models)
  * @param options - Optional configuration (reportId, userId, etc.)
  * @returns Result containing topic tree with usage and cost information, or an error
  */
 export async function commentsToTree(
   comments: Comment[],
   llmConfig: LLMConfig,
-  apiKey: string,
+  openaiApiKey: string | undefined,
+  anthropicApiKey: string | undefined,
   options: ClusteringOptions = {},
 ): Promise<Result<TopicTreeResult, ClusteringError>> {
   const { reportId, userId } = options;
@@ -120,6 +122,19 @@ export async function commentsToTree(
   reportLogger.info(
     `Starting topic_tree processing with ${comments.length} comments`,
   );
+
+  // Initialize LLM client for the requested model
+  const client = createLLMClient(
+    llmConfig.model_name,
+    openaiApiKey,
+    anthropicApiKey,
+  );
+
+  // OpenAI client for Weave evaluation (only used when provider is openai)
+  const openaiClientForWeave =
+    client.provider === "openai" && openaiApiKey
+      ? new OpenAI({ apiKey: openaiApiKey })
+      : undefined;
 
   // Build prompt with sanitized comments and collect sanitized text for evaluation
   const { fullPrompt, sanitizedComments } = sanitizeAndBuildPrompt(
@@ -140,21 +155,15 @@ export async function commentsToTree(
     "Calling clustering model",
   );
 
-  const llmClient = await createOpenAILLMClient(apiKey, llmConfig.model_name, {
-    enableWeave: options.enableWeave,
-    weaveProjectName: options.weaveProjectName,
-  });
-  const openaiClientForWeave = options.enableWeave
-    ? new OpenAI({ apiKey })
-    : undefined;
-
   // Call clustering model with usage tracking
   const clusteringResult = await callClusteringModel(
-    llmClient,
+    client,
+    llmConfig.model_name,
     llmConfig.system_prompt,
     fullPrompt,
     commentsText,
-    { enableWeave: options.enableWeave, openaiClientForWeave },
+    openaiClientForWeave,
+    { enableWeave: options.enableWeave },
   );
 
   if (clusteringResult.tag === "failure") {

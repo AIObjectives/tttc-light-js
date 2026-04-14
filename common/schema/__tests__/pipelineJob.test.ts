@@ -131,11 +131,8 @@ describe("pipelineJobSchema validation", () => {
         path: ["config", "llm", "model"],
         expectedError: "Model name cannot be empty",
       },
-      {
-        name: "API key",
-        path: ["config", "env", "OPENAI_API_KEY"],
-        expectedError: "API key cannot be empty",
-      },
+      // Note: API keys are now optional in pipelineJobSchema (both OPENAI and Anthropic keys)
+      // so empty API key validation is no longer enforced at the schema level
       {
         name: "reportId",
         path: ["config", "firebaseDetails", "reportId"],

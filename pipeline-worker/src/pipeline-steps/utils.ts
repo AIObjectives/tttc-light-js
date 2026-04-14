@@ -9,14 +9,17 @@ import { logger } from "tttc-common/logger";
 const utilsLogger = logger.child({ module: "pipeline-utils" });
 
 // Model cost configuration
+// Prices per 1K tokens in USD
+// This is the authoritative cost table for the pipeline worker.
 const COST_BY_MODEL: Record<string, { in_per_1K: number; out_per_1K: number }> =
   {
-    // GPT-4o mini: $0.150/1M input, $0.600/1M output
-    "gpt-4o-mini": { in_per_1K: 0.00015, out_per_1K: 0.0006 },
-    // GPT-4o: $2.50/1M input, $10.00/1M output
     "gpt-4o": { in_per_1K: 0.0025, out_per_1K: 0.01 },
+    "gpt-4o-mini": { in_per_1K: 0.00015, out_per_1K: 0.0006 },
     // GPT-5 mini: TODO verify pricing
     "gpt-5-mini": { in_per_1K: 0.00015, out_per_1K: 0.0006 },
+    "claude-opus-4-5": { in_per_1K: 0.015, out_per_1K: 0.075 },
+    "claude-sonnet-4-5": { in_per_1K: 0.003, out_per_1K: 0.015 },
+    "claude-haiku-4-5": { in_per_1K: 0.00025, out_per_1K: 0.00125 },
   };
 
 /**
@@ -32,7 +35,7 @@ export class UnknownModelError extends Error {
 /**
  * Calculate the cost in USD for an LLM API call based on token usage
  *
- * Currently supports only gpt-4o-mini model. If an unknown model is provided,
+ * Supports OpenAI and Anthropic models. If an unknown model is provided,
  * returns a failure Result.
  *
  * @param modelName - The name of the model being used (e.g., "gpt-4o-mini")

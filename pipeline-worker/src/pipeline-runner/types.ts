@@ -127,8 +127,10 @@ export interface PipelineInput {
   summariesConfig: LLMConfig;
   /** LLM configuration for cruxes step (optional) */
   cruxesConfig?: LLMConfig;
-  /** OpenAI API key */
-  apiKey: string;
+  /** OpenAI API key (required for OpenAI models) */
+  openaiApiKey: string | undefined;
+  /** Anthropic API key (required for Anthropic/Claude models) */
+  anthropicApiKey: string | undefined;
   /** Whether to run cruxes step */
   enableCruxes: boolean;
   /** Whether to run Weave evaluation suite */

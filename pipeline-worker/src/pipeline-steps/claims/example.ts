@@ -240,10 +240,17 @@ async function main() {
   console.log("Extracting claims from comments...\n");
 
   // Call the claims extraction function
-  const result = await extractClaims(comments, taxonomy, llmConfig, apiKey, {
-    reportId: "example-report",
-    userId: "example-user",
-  });
+  const result = await extractClaims(
+    comments,
+    taxonomy,
+    llmConfig,
+    apiKey,
+    undefined,
+    {
+      reportId: "example-report",
+      userId: "example-user",
+    },
+  );
 
   if (result.tag === "failure") {
     console.error("Error:", result.error);

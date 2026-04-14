@@ -382,6 +382,9 @@ importers:
 
   pipeline-worker:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.88.0
+        version: 0.88.0(zod@4.2.1)
       '@google-cloud/pubsub':
         specifier: ^5.2.0
         version: 5.2.0

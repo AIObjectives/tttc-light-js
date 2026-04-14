@@ -14,7 +14,12 @@ import * as weave from "weave";
 import type { LLMClient } from "../llm-client.js";
 import type { ClusteringOutput, Topic } from "../types";
 
-import { type ClusteringError, ParseFailedError } from "../types";
+import {
+  ApiCallFailedError,
+  type ClusteringError,
+  EmptyResponseError,
+  ParseFailedError,
+} from "../types";
 import { tokenCost } from "../utils";
 
 const clusteringLogger = logger.child({ module: "clustering-model" });
@@ -22,35 +27,63 @@ const clusteringLogger = logger.child({ module: "clustering-model" });
 /**
  * Call the clustering model with usage tracking and optional evaluation
  *
- * @param llmClient - LLM client instance
+ * @param llmClient - LLM client instance (OpenAI or Anthropic)
+ * @param modelName - Model name (e.g., "gpt-4o-mini")
  * @param systemPrompt - System prompt
  * @param userPrompt - User prompt (should contain comments)
  * @param commentsText - Raw comments text for evaluation
+ * @param openaiClientForWeave - Optional OpenAI client for Weave evaluation (OpenAI only)
  * @param options - Optional evaluation options
  * @returns Clustering output with taxonomy, usage stats, and cost
  */
 export async function callClusteringModel(
   llmClient: LLMClient,
+  modelName: string,
   systemPrompt: string,
   userPrompt: string,
   commentsText: string,
+  openaiClientForWeave: OpenAI | undefined,
   options: {
     enableWeave?: boolean;
-    openaiClientForWeave?: OpenAI;
   } = {},
 ): Promise<Result<ClusteringOutput, ClusteringError>> {
   const { enableWeave = false } = options;
 
-  const llmResult = await llmClient.complete({ systemPrompt, userPrompt });
-  if (llmResult.tag === "failure") {
-    clusteringLogger.error(
-      { error: llmResult.error, modelName: llmClient.modelName },
-      "Failed to call clustering model",
+  // Weave is only supported with OpenAI clients
+  if (enableWeave && llmClient.provider === "anthropic") {
+    clusteringLogger.warn(
+      { modelName },
+      "Weave evaluation is not supported for Anthropic models, skipping",
     );
-    return llmResult;
   }
 
-  const { content, usage } = llmResult.value;
+  // Call LLM API to capture usage information
+  let content: string;
+  let usage: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
+
+  try {
+    const result = await llmClient.call({
+      model: modelName,
+      systemPrompt,
+      userPrompt,
+      jsonMode: true,
+    });
+    content = result.content;
+    usage = result.usage;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    clusteringLogger.error({ error, modelName }, "Failed to call LLM API");
+    return failure(new ApiCallFailedError(modelName, errorMessage));
+  }
+
+  if (!content) {
+    clusteringLogger.error({ modelName }, "No response from clustering model");
+    return failure(new EmptyResponseError(modelName));
+  }
 
   let taxonomy: Topic[];
   try {
@@ -66,7 +99,7 @@ export async function callClusteringModel(
   }
 
   const costResult = tokenCost(
-    llmClient.modelName,
+    modelName,
     usage.input_tokens,
     usage.output_tokens,
   );
@@ -84,12 +117,11 @@ export async function callClusteringModel(
     cost: costResult.value,
   };
 
-  // If Weave is enabled, run a Weave Evaluation (shows in the evaluations tab)
-  if (enableWeave && options.openaiClientForWeave) {
-    const llmJudgeScorer = createLLMJudgeScorer(
-      // biome-ignore lint/suspicious/noExplicitAny: SDK version mismatch requires assertion (T3C-853)
-      options.openaiClientForWeave as any,
-    );
+  // If Weave is enabled with OpenAI, run a Weave Evaluation (shows in the evaluations tab)
+  if (enableWeave && openaiClientForWeave) {
+    // Cast to any to handle OpenAI version mismatch between pipeline-worker (v6) and common (v4)
+    // biome-ignore lint/suspicious/noExplicitAny: SDK version mismatch requires assertion
+    const llmJudgeScorer = createLLMJudgeScorer(openaiClientForWeave as any);
 
     const capturedTaxonomy = taxonomy;
     const model = weave.op(async function clusteringModel() {

@@ -19,6 +19,7 @@
   "license": "Apache-2.0",
   "description": "Pipeline worker for T3C report processing",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.17.2",
     "dotenv": "^16.4.7",
