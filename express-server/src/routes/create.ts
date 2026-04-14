@@ -56,6 +56,13 @@ class ModelUnavailableError extends Error {
   }
 }
 
+class UnsupportedModelError extends Error {
+  constructor(model: string) {
+    super(`Unsupported model: ${model}`);
+    this.name = "UnsupportedModelError";
+  }
+}
+
 class EmailNotVerifiedError extends Error {
   constructor() {
     super(ERROR_MESSAGES[ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED]);
@@ -505,15 +512,18 @@ async function resolveModel(
   decodedUser: DecodedIdToken,
   requestedModel: string | undefined,
 ): Promise<string> {
-  if (!requestedModel || !isSupportedModel(requestedModel))
-    return DEFAULT_MODEL;
   const enabled = await isFeatureEnabled(
     FEATURE_FLAGS.MODEL_SELECTION_ENABLED,
     {
       userId: decodedUser.uid,
     },
   );
-  return enabled ? requestedModel : DEFAULT_MODEL;
+
+  if (!enabled) return DEFAULT_MODEL;
+  if (!requestedModel) return DEFAULT_MODEL;
+  if (!isSupportedModel(requestedModel))
+    throw new UnsupportedModelError(requestedModel);
+  return requestedModel;
 }
 
 function assertAnthropicKeyConfigured(model: string, env: Env): void {
@@ -627,6 +637,8 @@ function getErrorCodeForException(e: unknown): ErrorCode {
       return ERROR_CODES.CSV_SECURITY_VIOLATION;
     case "ModelUnavailableError":
       return ERROR_CODES.SERVICE_UNAVAILABLE;
+    case "UnsupportedModelError":
+      return ERROR_CODES.UNSUPPORTED_MODEL;
     default:
       return ERROR_CODES.INTERNAL_ERROR;
   }
