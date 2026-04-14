@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { ColumnMappings } from "tttc-common/csv-validation";
 import { SUPPORTED_LANGUAGES } from "tttc-common/prompts";
-import { SUPPORTED_MODELS } from "tttc-common/schema";
+import { SUPPORTED_MODELS, type SupportedModel } from "tttc-common/schema";
 import Icons from "@/assets/icons";
 import {
   Button,
@@ -450,7 +450,7 @@ const ModelSelector = ({
   selectedModel,
 }: {
   show: boolean;
-  selectedModel: FormItemState<string>;
+  selectedModel: FormItemState<SupportedModel>;
 }) => {
   return (
     <Col gap={4} className={show ? "" : "hidden"}>
@@ -465,7 +465,7 @@ const ModelSelector = ({
       </Col>
       <Select
         value={selectedModel.state}
-        onValueChange={(val) => selectedModel.setState(val)}
+        onValueChange={(val) => selectedModel.setState(val as SupportedModel)}
       >
         <SelectTrigger
           className="w-full max-w-[250px]"
@@ -699,7 +699,7 @@ export function AdvancedSettings({
   cruxesEnabled: FormItemState<boolean>;
   bridgingEnabled: FormItemState<boolean>;
   outputLanguage: FormItemState<string>;
-  selectedModel: FormItemState<string>;
+  selectedModel: FormItemState<SupportedModel>;
 }) {
   const [show, setShow] = useState<boolean>(false);
 

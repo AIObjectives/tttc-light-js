@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { failure, type Result, success } from "tttc-common/functional-utils";
 import * as prompts from "tttc-common/prompts";
-import { DEFAULT_MODEL, isSupportedModel } from "tttc-common/schema";
+import {
+  DEFAULT_MODEL,
+  isSupportedModel,
+  type SupportedModel,
+} from "tttc-common/schema";
 
 type FormStatus<T, E> = Result<T, E> | { tag: "initial"; value: T };
 
@@ -178,8 +182,8 @@ export function useFormState() {
 
   // Model selection - defaults to DEFAULT_MODEL, always valid if supported
   const selectedModel = useFormItem({
-    initialValue: DEFAULT_MODEL as string,
-    statusEval: (val: string) => {
+    initialValue: DEFAULT_MODEL,
+    statusEval: (val: SupportedModel) => {
       if (!isSupportedModel(val))
         return failure({ message: "Please select a valid model" });
       return success(val);
