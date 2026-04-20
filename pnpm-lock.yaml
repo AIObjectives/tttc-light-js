@@ -308,7 +308,7 @@ importers:
         version: 4.1.3(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))
       '@next/bundle-analyzer':
         specifier: ^16.1.0
-        version: 16.2.3
+        version: 16.2.4
       '@playwright/test':
         specifier: ^1.56.1
         version: 1.59.1
@@ -2210,8 +2210,8 @@ packages:
   '@neoconfetti/react@1.0.0':
     resolution: {integrity: sha512-klcSooChXXOzIm+SE5IISIAn3bYzYfPjbX7D7HoqZL84oAfgREeSg5vSIaSFH+DaGzzvImTyWe1OyrJ67vik4A==}
 
-  '@next/bundle-analyzer@16.2.3':
-    resolution: {integrity: sha512-aDwW4f4SVqbQDWzSBHQJ1KI6H+lx8oX/vS3xGqzLajUu+KQb7uakK88AIMvRIf7TlIonce67g594rzpxvBuJIw==}
+  '@next/bundle-analyzer@16.2.4':
+    resolution: {integrity: sha512-EAA9xTDv0P1IiUcZaASJJPkNDjRvL7OMTha6XN8MBzALYGfn7I52Mn7vRiyjVfNrtUPi2qiacY+eFVXe3lKCXA==}
 
   '@next/env@16.1.7':
     resolution: {integrity: sha512-rJJbIdJB/RQr2F1nylZr/PJzamvNNhfr3brdKP6s/GW850jbtR70QlSfFselvIBbcPUOlQwBakexjFzqLzF6pg==}
@@ -9555,7 +9555,7 @@ snapshots:
 
   '@neoconfetti/react@1.0.0': {}
 
-  '@next/bundle-analyzer@16.2.3':
+  '@next/bundle-analyzer@16.2.4':
     dependencies:
       webpack-bundle-analyzer: 4.10.1
     transitivePeerDependencies:
