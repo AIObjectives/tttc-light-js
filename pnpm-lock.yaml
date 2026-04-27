@@ -67,8 +67,8 @@ importers:
         specifier: ^2.17.0
         version: 2.17.3
       uuid:
-        specifier: ^11.0.5
-        version: 11.1.0
+        specifier: ^14.0.0
+        version: 14.0.0
       weave:
         specifier: ^0.11.0
         version: 0.11.0(ws@8.19.0)(zod@4.2.1)
@@ -450,8 +450,8 @@ importers:
         specifier: workspace:*
         version: link:../common
       uuid:
-        specifier: ^11.0.5
-        version: 11.1.0
+        specifier: ^14.0.0
+        version: 14.0.0
       zod:
         specifier: ^4.2.1
         version: 4.2.1
@@ -7367,6 +7367,10 @@ packages:
 
   uuid@11.1.0:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
+    hasBin: true
+
+  uuid@14.0.0:
+    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
     hasBin: true
 
   uuid@8.3.2:
@@ -15254,6 +15258,8 @@ snapshots:
   uuid@10.0.0: {}
 
   uuid@11.1.0: {}
+
+  uuid@14.0.0: {}
 
   uuid@8.3.2: {}
 
