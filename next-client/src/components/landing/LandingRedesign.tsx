@@ -85,22 +85,22 @@ const LOGO_OPACITY: Record<string, number> = {
 
 function LogosGrid() {
   return (
-    <div className="w-fit mx-auto grid grid-cols-[repeat(2,280px)] sm:grid-cols-[repeat(3,280px)] lg:grid-cols-[repeat(4,280px)] gap-x-1 gap-y-0">
+    <div className="w-fit mx-auto grid grid-cols-[repeat(2,320px)] sm:grid-cols-[repeat(3,320px)] lg:grid-cols-[repeat(4,320px)] gap-x-1 gap-y-0">
       {PARTNERS.map((partner) => (
         <a
           key={partner.name}
           href={partner.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center h-[140px] grayscale hover:grayscale-0 transition-all"
+          className="flex items-center justify-center h-[100px] grayscale hover:grayscale-0 transition-all"
           style={{ opacity: LOGO_OPACITY[partner.name] ?? 1 }}
         >
           <Image
             src={partner.logoUri}
             alt={partner.name}
-            width={270}
-            height={130}
-            className="max-h-[130px] w-auto object-contain"
+            width={310}
+            height={95}
+            className="max-h-[90px] w-auto object-contain"
           />
         </a>
       ))}
