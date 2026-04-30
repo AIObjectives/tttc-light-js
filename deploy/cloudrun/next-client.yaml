@@ -37,6 +37,10 @@ spec:
               value: "1:384505539696:web:e3395d2ecc7cfd59a958b5"
             - name: PIPELINE_EXPRESS_URL
               value: "https://example.com"
+            - name: FEATURE_FLAG_PROVIDER
+              value: "local"
+            - name: LOCAL_FLAGS
+              value: '{"website-redesign": true}'
           resources:
             limits:
               cpu: "1"
