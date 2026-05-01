@@ -7,6 +7,8 @@ import {
   isFeatureEnabled,
 } from "@/lib/feature-flags/featureFlags.server";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return [{ slug: [""] }];
 }
