@@ -55,7 +55,7 @@ const auth = admin.auth(app);
 const getCollectionName = useGetCollectionName(env.NODE_ENV);
 
 // Export for use in other routes
-export { db, admin, getCollectionName };
+export { admin, db, getCollectionName };
 
 // Transaction helpers to reduce method complexity
 async function updateDocumentWithValidation<T extends Record<string, any>>(

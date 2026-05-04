@@ -241,4 +241,4 @@ export function getFeatureFlagProvider(): FeatureFlagProvider | null {
   return provider;
 }
 
-export type { FeatureFlagProvider, FeatureFlagContext };
+export type { FeatureFlagContext, FeatureFlagProvider };
