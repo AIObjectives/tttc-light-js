@@ -89,8 +89,8 @@ importers:
   express-server:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^0.91.0
-        version: 0.91.1(zod@4.2.1)
+        specifier: ^0.93.0
+        version: 0.93.0(zod@4.2.1)
       '@google-cloud/pubsub':
         specifier: ^5.2.0
         version: 5.2.0
@@ -383,8 +383,8 @@ importers:
   pipeline-worker:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^0.91.0
-        version: 0.91.1(zod@4.2.1)
+        specifier: ^0.93.0
+        version: 0.93.0(zod@4.2.1)
       '@google-cloud/pubsub':
         specifier: ^5.2.0
         version: 5.2.0
@@ -478,8 +478,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@anthropic-ai/sdk@0.91.1':
-    resolution: {integrity: sha512-LAmu761tSN9r66ixvmciswUj/ZC+1Q4iAfpedTfSVLeswRwnY3n2Nb6Tsk+cLPP28aLOPWeMgIuTuCcMC6W/iw==}
+  '@anthropic-ai/sdk@0.93.0':
+    resolution: {integrity: sha512-q9vaSZQVFx6B/gPxetGYfLXSJD5v0sOmh0OpZDq7yCrTSA+Rscvrtyol7JJTW40wEpQB4U1B4JXzxQitbQ3CAA==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -7708,7 +7708,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/sdk@0.91.1(zod@4.2.1)':
+  '@anthropic-ai/sdk@0.93.0(zod@4.2.1)':
     dependencies:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
