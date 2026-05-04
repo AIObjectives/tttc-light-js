@@ -90,4 +90,4 @@ const Col = forwardRef<HTMLDivElement, DirectionProps>(function Col(
   );
 });
 
-export { Row, Col };
+export { Col, Row };
