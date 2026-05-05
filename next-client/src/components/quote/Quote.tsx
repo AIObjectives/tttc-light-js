@@ -107,7 +107,7 @@ const Video = ({
 
 export const parseTimestampToSeconds = (timestamp: string): number => {
   const parts = timestamp.split(":").map(Number);
-  if (parts.some(isNaN)) return 0;
+  if (parts.some(Number.isNaN)) return 0;
   if (parts.length === 3) {
     const [h, m, s] = parts;
     return h * 3600 + m * 60 + s;
