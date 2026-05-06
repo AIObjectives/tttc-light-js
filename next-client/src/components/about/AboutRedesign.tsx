@@ -93,7 +93,7 @@ function FAQQuestion({ children }: { children: React.ReactNode }) {
 
 function FAQAnswer({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-6">
+    <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-10">
       {children}
     </p>
   );
@@ -118,7 +118,7 @@ function GeneralFAQ() {
         thousands of respondents for projects with governments, institutions and
         communities, including:
       </p>
-      <ul className="list-disc text-xl font-normal text-muted-foreground leading-[31px] mb-6 ml-12 space-y-1">
+      <ul className="list-disc text-xl font-normal text-muted-foreground leading-[31px] mb-10 ml-12 space-y-1">
         <li>
           <span className="font-medium">Taiwan:</span> We partnered with the
           Ministry of Digital Affairs to analyze public input on AI policy,
@@ -221,7 +221,7 @@ function ProductFAQ() {
           videos and the timestamps of specific text (optional)
         </li>
       </ul>
-      <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-6">
+      <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-10">
         A{" "}
         <a
           href="https://talktothe.city/Talk-to-the-City-Sample.csv"
@@ -267,7 +267,7 @@ function ProductFAQ() {
         Expand the &ldquo;Advanced Settings&rdquo; section in the report creator
         to find &ldquo;Customize AI prompts.&rdquo; You can modify prompts to:
       </p>
-      <ul className="list-disc text-xl font-normal text-muted-foreground leading-[31px] mb-6 ml-8 space-y-1">
+      <ul className="list-disc text-xl font-normal text-muted-foreground leading-[31px] mb-10 ml-8 space-y-1">
         <li>
           Specify the number of topics/subtopics, or suggest possible themes to
           include
