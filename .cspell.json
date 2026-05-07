@@ -278,7 +278,8 @@
     "cooldown",
     "underutilized",
     "nacked",
-    "AILLM"
+    "AILLM",
+    "youtu"
   ],
   "ignorePaths": [
     "node_modules",
