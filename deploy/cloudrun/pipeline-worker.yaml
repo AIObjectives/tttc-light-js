@@ -45,6 +45,16 @@ spec:
                 secretKeyRef:
                   key: latest
                   name: firebase-credentials
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: openai-api-key
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: anthropic-api-key
             - name: FIREBASE_DATABASE_URL
               value: "https://tttc-light-js.firebaseapp.com"
             - name: WHICH_SERVICE_REFSTORE
