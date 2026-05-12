@@ -728,6 +728,7 @@ function convertUserTimestamps(
     createdAt: userData.createdAt?.toDate() || new Date(),
     lastLoginAt: userData.lastLoginAt?.toDate() || new Date(),
     profileCompletedAt: userData.profileCompletedAt?.toDate(),
+    apiTierUpdatedAt: userData.apiTierUpdatedAt?.toDate?.() ?? null,
   } as unknown as UserDocument;
 }
 
@@ -805,6 +806,7 @@ async function createNewUserDocument(
     roles: ["user"],
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+    apiTier: "free",
   };
 
   if (profileData) {

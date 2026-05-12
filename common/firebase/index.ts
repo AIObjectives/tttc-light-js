@@ -135,6 +135,9 @@ export const reportJob = z.object({
 
 export type ReportJob = z.infer<typeof reportJob>;
 
+export const apiTier = z.enum(["free", "standard"]);
+export type ApiTier = z.infer<typeof apiTier>;
+
 export const userDocument = z.object({
   firebaseUid: z.string(),
   email: z.string().email(),
@@ -172,6 +175,18 @@ export const userDocument = z.object({
       z.date(),
     )
     .optional(),
+  // API tier fields (T3C-1159) — tier is looked up from user doc at validation time
+  apiTier: apiTier.optional(),
+  apiTierUpdatedAt: z
+    .preprocess(
+      (arg) =>
+        firebaseTimestamp.safeParse(arg).success
+          ? new Date((arg as FirebaseTimestamp).seconds * 1000)
+          : arg,
+      z.date().nullable(),
+    )
+    .optional(),
+  apiTierUpdatedBy: z.string().nullable().optional(),
   // Schema version for future migrations
   schemaVersion: z.number().optional(),
 });
@@ -272,7 +287,7 @@ const COLLECTIONS = {
 export const SCHEMA_VERSIONS = {
   REPORT_REF: 1, // Current schema with placeholder URI security
   REPORT_JOB: 1, // Current schema with timestamps and optional fields
-  USER_DOCUMENT: 1, // Current schema with roles and profile fields
+  USER_DOCUMENT: 2, // v2: added apiTier fields (T3C-1159)
   ELICITATION_EVENT: 1, // Current schema with description, dates, status, whatsapp link
 } as const;
 

@@ -49,7 +49,7 @@ vi.mock("tttc-common/firebase", () => ({
   SCHEMA_VERSIONS: {
     REPORT_REF: 1,
     REPORT_JOB: 1,
-    USER_DOCUMENT: 1,
+    USER_DOCUMENT: 2,
   },
 }));
 
@@ -101,6 +101,7 @@ describe("User Account Handling", () => {
     roles: string[];
     createdAt: { toDate: () => Date };
     lastLoginAt: { toDate: () => Date };
+    apiTier?: "free" | "standard";
   }
 
   // Helper function to create mock user document responses
@@ -178,7 +179,8 @@ describe("User Account Handling", () => {
         roles: ["user"],
         createdAt: expect.any(Object), // FieldValue.serverTimestamp()
         lastLoginAt: expect.any(Object), // FieldValue.serverTimestamp()
-        schemaVersion: 1,
+        apiTier: "free",
+        schemaVersion: 2,
       });
       expect(mockChildLogger.debug).toHaveBeenCalledWith(
         {
@@ -321,8 +323,28 @@ describe("User Account Handling", () => {
         roles: ["user"],
         createdAt: expect.any(Object),
         lastLoginAt: expect.any(Object),
-        schemaVersion: 1,
+        apiTier: "free",
+        schemaVersion: 2,
       });
+    });
+
+    it("should set apiTier to 'free' for new users by default", async () => {
+      // Arrange
+      const uid = "test-uid-apitier";
+      const email = "apitier@example.com";
+
+      mockUserRef.get.mockResolvedValueOnce(createMockNonExistentDoc());
+      mockUserRef.get.mockResolvedValueOnce(
+        createMockUserDoc({ firebaseUid: uid, email, displayName: null }),
+      );
+
+      // Act
+      await ensureUserDocument(uid, email, null);
+
+      // Assert
+      expect(mockUserRef.set).toHaveBeenCalledWith(
+        expect.objectContaining({ apiTier: "free" }),
+      );
     });
 
     it("should handle Firebase errors and log them", async () => {
