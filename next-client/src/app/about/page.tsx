@@ -1,7 +1,15 @@
 import type React from "react";
 import Icons from "@/assets/icons";
+import AboutRedesign from "@/components/about/AboutRedesign";
 import { Col, Row } from "@/components/layout";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
+import {
+  initializeFeatureFlags,
+  isFeatureEnabled,
+} from "@/lib/feature-flags/featureFlags.server";
+
+export const dynamic = "force-dynamic";
+
 import {
   CaseStudies,
   DemoVideo,
@@ -49,8 +57,13 @@ const Outline = () => (
 );
 
 export default async function AboutPage() {
+  initializeFeatureFlags();
   const analytics = await serverSideAnalyticsClient();
   await analytics.page("About");
+  const redesignEnabled = await isFeatureEnabled("website-redesign");
+  if (redesignEnabled) {
+    return <AboutRedesign />;
+  }
   return (
     <Col className="p-4 sm:p-8 max-w-[896px] m-auto">
       <ContentGroupContainer>
