@@ -74,9 +74,7 @@ const buildSourceMap = (sourceRows: schema.SourceRow[]): SourceMap => {
             {
               text: row.comment,
               link: row.video,
-              // timestamp is optional in schema but required for video entries
-              // biome-ignore lint/style/noNonNullAssertion: video entries always have timestamp
-              timestamp: row.timestamp!,
+              timestamp: row.timestamp ?? "0:00:00",
             },
           ]
         : [

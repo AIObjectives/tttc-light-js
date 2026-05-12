@@ -92,6 +92,7 @@ const Video = ({
   startTimestamp: string;
 }) => {
   const link = formatLink(src, startTimestamp);
+  if (!link) return null;
   return (
     <Col>
       <iframe
@@ -104,17 +105,75 @@ const Video = ({
   );
 };
 
-const formatLink = (link: string, beginTimestamp: string) => {
-  const url = new URL(link);
-  if (url.hostname.includes("vimeo"))
-    return formatVimeoLink(link, beginTimestamp);
-  else if (process.env.NODE_ENV === "development") {
-    throw new Error(
-      "Video links from sources other than Vimeo are not supported",
-    );
-  } else {
-    return link;
+export const parseTimestampToSeconds = (timestamp: string): number => {
+  const parts = timestamp.split(":").map(Number);
+  if (parts.some(Number.isNaN)) return 0;
+  if (parts.length === 3) {
+    const [h, m, s] = parts;
+    return h * 3600 + m * 60 + s;
   }
+  if (parts.length === 2) {
+    const [m, s] = parts;
+    return m * 60 + s;
+  }
+  return parts[0] ?? 0;
+};
+
+const YOUTUBE_HOSTNAMES = new Set([
+  "www.youtube.com",
+  "youtube.com",
+  "youtu.be",
+]);
+
+const VIMEO_HOSTNAMES = new Set([
+  "vimeo.com",
+  "www.vimeo.com",
+  "player.vimeo.com",
+]);
+
+export const extractYouTubeVideoId = (link: string): string | null => {
+  const url = new URL(link);
+  if (url.pathname.startsWith("/embed/")) {
+    return url.pathname.split("/embed/")[1]?.split("/")[0] || null;
+  }
+  if (YOUTUBE_HOSTNAMES.has(url.hostname) && url.hostname !== "youtu.be") {
+    return url.searchParams.get("v");
+  }
+  if (url.hostname === "youtu.be") {
+    return url.pathname.split("/").filter(Boolean)[0] ?? null;
+  }
+  return null;
+};
+
+export const formatYouTubeLink = (
+  link: string,
+  beginTimestamp: string,
+): string => {
+  const url = new URL(link);
+  const startSeconds = parseTimestampToSeconds(beginTimestamp);
+  if (url.pathname.startsWith("/embed/")) {
+    if (startSeconds > 0) url.searchParams.set("start", String(startSeconds));
+    return url.toString();
+  }
+  const videoId = extractYouTubeVideoId(link);
+  if (!videoId) return "";
+  const startParam = startSeconds > 0 ? `?start=${startSeconds}` : "";
+  return `https://www.youtube.com/embed/${videoId}${startParam}`;
+};
+
+const formatLink = (link: string, beginTimestamp: string): string => {
+  let url: URL;
+  try {
+    url = new URL(link);
+  } catch {
+    return "";
+  }
+  if (url.protocol !== "https:") return "";
+  if (VIMEO_HOSTNAMES.has(url.hostname))
+    return formatVimeoLink(link, beginTimestamp);
+  if (YOUTUBE_HOSTNAMES.has(url.hostname))
+    return formatYouTubeLink(link, beginTimestamp);
+  return "";
 };
 
 const formatVimeoNonEmbeddedLink = (link: string, beginTimestamp: string) => {
