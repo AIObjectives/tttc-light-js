@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import type React from "react";
 import { Col } from "@/components/layout";
+import SafetyRedesign from "@/components/safety/SafetyRedesign";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
+import {
+  initializeFeatureFlags,
+  isFeatureEnabled,
+} from "@/lib/feature-flags/featureFlags.server";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "LLM Safety - Talk to the City",
@@ -21,12 +28,18 @@ const ContentGroupContainer = ({ children }: React.PropsWithChildren) => (
  * LLM Safety Info and Disclaimers page for T3C
  */
 export default async function SafetyPage() {
+  initializeFeatureFlags();
   try {
     const analytics = await serverSideAnalyticsClient();
     await analytics.page("LLM Safety");
   } catch (error) {
     // Log analytics failure but don't block page render
     console.error("Failed to track page view:", error);
+  }
+
+  const redesignEnabled = await isFeatureEnabled("website-redesign");
+  if (redesignEnabled) {
+    return <SafetyRedesign />;
   }
 
   return (
