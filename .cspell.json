@@ -278,7 +278,12 @@
     "cooldown",
     "underutilized",
     "nacked",
-    "AILLM"
+    "AILLM",
+    "Martti",
+    "Ahtisaari",
+    "peacebuilding",
+    "governorates",
+    "Inverurie"
   ],
   "ignorePaths": [
     "node_modules",
