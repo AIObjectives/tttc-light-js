@@ -45,8 +45,8 @@ HoverCardContent.displayName = HoverCardPrimitive.Content.displayName;
 
 export {
   HoverCard,
-  HoverCardTrigger,
   HoverCardContent,
-  HoverCardPortal,
   HoverCardOverlay,
+  HoverCardPortal,
+  HoverCardTrigger,
 };

@@ -83,12 +83,11 @@ export function initializeFeatureFlags(
   return initializeFeatureFlagsCommon(config);
 }
 
+export type { FeatureFlagContext, FeatureFlagProvider };
 // Re-export all other functions and types from common
 export {
-  isFeatureEnabled,
   getFeatureFlag,
-  shutdownFeatureFlags,
   getFeatureFlagProvider,
+  isFeatureEnabled,
+  shutdownFeatureFlags,
 };
-
-export type { FeatureFlagProvider, FeatureFlagContext };
