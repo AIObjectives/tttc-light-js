@@ -178,10 +178,21 @@ export async function callSummaryModel(
 
   summaryLogger.info(context, `Generating summary for topic: ${topicName}`);
 
-  // Build prompt with tree data
+  // Build prompt with a slim projection of the tree.
+  // The full ProcessedTopic carries fields the summary prompt does not use
+  // (per-claim duplicates/quote/speaker/commentId, subtopic-level speakers/counts).
+  // Including them inflates the payload enough to exceed gpt-4o-mini's 128k window
+  // on large reports — see qtrjTx42u0N2dckBh2dK (May 2026, Taiwan TEC).
+  const slimTopic = {
+    topic: topicName,
+    subtopics: tree[0][1].topics.map(([subtopicName, subtopicData]) => ({
+      name: subtopicName,
+      claims: subtopicData.claims.map((c) => c.claim),
+    })),
+  };
   const { sanitizedText: sanitizedPrompt } = basicSanitize(userPrompt);
   let fullPrompt = sanitizedPrompt;
-  fullPrompt += `\n${JSON.stringify(tree, null, 2)}`;
+  fullPrompt += `\n${JSON.stringify(slimTopic, null, 2)}`;
 
   // Sanitize system prompt
   const { sanitizedText: sanitizedSystemPrompt } = basicSanitize(systemPrompt);
