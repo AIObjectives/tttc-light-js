@@ -7,6 +7,7 @@ import {
   initializeFeatureFlags,
   isFeatureEnabled,
 } from "@/lib/feature-flags/featureFlags.server";
+import { getPostHogDistinctId } from "@/lib/feature-flags/getPostHogDistinctId";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,10 @@ export default async function AboutPage() {
   initializeFeatureFlags();
   const analytics = await serverSideAnalyticsClient();
   await analytics.page("About");
-  const redesignEnabled = await isFeatureEnabled("website-redesign");
+  const distinctId = await getPostHogDistinctId();
+  const redesignEnabled = await isFeatureEnabled("website-redesign", {
+    userId: distinctId,
+  });
   if (redesignEnabled) {
     return <AboutRedesign />;
   }
