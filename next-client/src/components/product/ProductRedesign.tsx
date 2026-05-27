@@ -31,14 +31,13 @@ function IntroSection() {
   return (
     <section className="px-8 lg:px-28 pb-8">
       <p className="text-xl text-muted-foreground leading-[31px]">
-        Talk to the City (T3C) is an{" "}
-        <strong>open-source AI tool</strong> that reimagines how communities,
-        institutions, and decision-makers gather and act on public input. T3C
-        allows you to design and launch{" "}
+        Talk to the City (T3C) is an <strong>open-source AI tool</strong> that
+        reimagines how communities, institutions, and decision-makers gather and
+        act on public input. T3C allows you to design and launch{" "}
         <strong>conversational AI surveys</strong> to engage diverse groups at
-        scale. Then, T3C helps you explore the results, distilling
-        conversations into <strong>interactive reports</strong> that highlight
-        themes and link every insight back to real participant quotes.
+        scale. Then, T3C helps you explore the results, distilling conversations
+        into <strong>interactive reports</strong> that highlight themes and link
+        every insight back to real participant quotes.
       </p>
     </section>
   );
@@ -222,8 +221,8 @@ function HowSurveysWork() {
           </li>
           <li>
             <strong>Survey mode:</strong> T3C works its way through the set of
-            survey questions you provide without asking follow-up questions.
-            T3C will notify the participant when the survey is over.
+            survey questions you provide without asking follow-up questions. T3C
+            will notify the participant when the survey is over.
           </li>
           <li>
             <strong>Follow-up mode:</strong> This mode is used to conduct
@@ -234,14 +233,14 @@ function HowSurveysWork() {
               <li>
                 <strong>How it works:</strong> T3C keeps the last 30 exchanges
                 to provide context for follow-up questions. After a participant
-                responds, T3C consults a bank of follow-up questions and
-                selects the most appropriate one given the context, or is
-                prompted to generate a new question if none of the existing
-                ones are suitable. It replaces placeholder variables in the
-                follow-up questions with specific content, e.g., &ldquo;Tell me
-                more about X&rdquo; becomes &ldquo;Tell me more about the
-                weather where you live.&rdquo; After asking the follow-up
-                question, T3C moves on to the next structured question.
+                responds, T3C consults a bank of follow-up questions and selects
+                the most appropriate one given the context, or is prompted to
+                generate a new question if none of the existing ones are
+                suitable. It replaces placeholder variables in the follow-up
+                questions with specific content, e.g., &ldquo;Tell me more about
+                X&rdquo; becomes &ldquo;Tell me more about the weather where you
+                live.&rdquo; After asking the follow-up question, T3C moves on
+                to the next structured question.
               </li>
             </ul>
           </li>
@@ -252,15 +251,15 @@ function HowSurveysWork() {
           participant, T3C can select similar and dissimilar claims across the
           collected data and present them for discussion. The way claims are
           presented, the claims themselves and the style with which the bot
-          prompts reflection can all be customized. Currently, deliberative
-          mode is not available in self-service; please reach out if you are
+          prompts reflection can all be customized. Currently, deliberative mode
+          is not available in self-service; please reach out if you are
           interested.
         </p>
         <p className="font-medium mb-2">Text, voice and language support</p>
         <p className="mb-3">
-          All modes accept voice messages. T3C can also be configured to
-          operate in different languages and is prompted to ask questions in
-          the participant&apos;s language if detected.
+          All modes accept voice messages. T3C can also be configured to operate
+          in different languages and is prompted to ask questions in the
+          participant&apos;s language if detected.
         </p>
         <p className="font-medium mb-2">FAQs</p>
         <p>
