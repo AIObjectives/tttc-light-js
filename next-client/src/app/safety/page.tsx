@@ -7,6 +7,7 @@ import {
   initializeFeatureFlags,
   isFeatureEnabled,
 } from "@/lib/feature-flags/featureFlags.server";
+import { getPostHogDistinctId } from "@/lib/feature-flags/getPostHogDistinctId";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,10 @@ export default async function SafetyPage() {
     console.error("Failed to track page view:", error);
   }
 
-  const redesignEnabled = await isFeatureEnabled("website-redesign");
+  const distinctId = await getPostHogDistinctId();
+  const redesignEnabled = await isFeatureEnabled("website-redesign", {
+    userId: distinctId,
+  });
   if (redesignEnabled) {
     return <SafetyRedesign />;
   }
