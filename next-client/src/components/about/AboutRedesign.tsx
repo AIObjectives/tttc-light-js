@@ -21,7 +21,7 @@ function HeroSection() {
       <h1 className="text-7xl lg:text-[96px] font-medium tracking-wide leading-tight mb-10">
         About us
       </h1>
-      <p className="text-xl text-muted-foreground max-w-7xl leading-[31px] mb-4">
+      <p className="text-xl text-muted-foreground leading-[31px] mb-4">
         T3C is built by the{" "}
         <a
           href={EXTERNAL_LINKS.AI_OBJECTIVES_INSTITUTE}
@@ -52,7 +52,7 @@ function HeroSection() {
         </a>
         .
       </p>
-      <p className="text-xl text-muted-foreground max-w-7xl leading-[31px]">
+      <p className="text-xl text-muted-foreground leading-[31px]">
         Our mission in building T3C is to make it as easy as possible for groups
         to understand one another. We are entering an era in which it is cheaper
         to manufacture data about people than to listen to their voices. At AOI,
