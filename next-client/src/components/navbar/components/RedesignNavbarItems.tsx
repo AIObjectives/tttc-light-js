@@ -62,7 +62,8 @@ function AppNavButton({
   matchPrefix: string;
 }) {
   const pathname = usePathname();
-  const isActive = pathname === matchPrefix || pathname.startsWith(`${matchPrefix}/`);
+  const isActive =
+    pathname === matchPrefix || pathname.startsWith(`${matchPrefix}/`);
   return (
     <Button
       asChild
@@ -75,12 +76,18 @@ function AppNavButton({
 }
 
 export function StudiesButton() {
-  return <AppNavButton href="/studies" label="Studies" matchPrefix="/studies" />;
+  return (
+    <AppNavButton href="/studies" label="Studies" matchPrefix="/studies" />
+  );
 }
 
 export function ReportsButton() {
   return (
-    <AppNavButton href="/my-reports" label="Reports" matchPrefix="/my-reports" />
+    <AppNavButton
+      href="/my-reports"
+      label="Reports"
+      matchPrefix="/my-reports"
+    />
   );
 }
 
