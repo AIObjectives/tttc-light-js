@@ -285,9 +285,9 @@ function HowReportsWork() {
         <p className="mb-3">
           We use Large Language Models (LLMs) to extract themes from your data,
           summarize specific claims and link those claims back to exact quotes.
-          We create an interactive report from the results, combining all
-          scales of analysis, and store for you on the talktothe.city site. You
-          can modify the prompts used to create reports by looking under
+          We create an interactive report from the results, combining all scales
+          of analysis, and store for you on the talktothe.city site. You can
+          modify the prompts used to create reports by looking under
           &ldquo;Advanced Settings&rdquo; on the report creator page.
         </p>
         <p className="font-medium mb-2">Report access</p>
