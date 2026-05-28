@@ -183,11 +183,9 @@ function CreateReportComponent({
     selectedModel,
   } = formState;
 
-  const modelSelectionEnabled = useUserFlag(
-    "model_selection_enabled",
-    user?.uid,
-  );
-  const redesignEnabled = useUserFlag("website-redesign", user?.uid);
+  const uid = user?.uid;
+  const modelSelectionEnabled = useUserFlag("model_selection_enabled", uid);
+  const redesignEnabled = useUserFlag("website-redesign", uid);
 
   usePrefillForm(formState, prefillTitle, prefillDescription);
 
