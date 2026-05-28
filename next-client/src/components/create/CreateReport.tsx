@@ -26,6 +26,7 @@ import {
   FormAbout,
   FormDataInput,
   FormDescription,
+  FormHeader,
   TermsAndConditions,
 } from "./components/FormSections";
 import { SigninModal } from "./components/Modals";
@@ -49,6 +50,15 @@ function useModelSelectionEnabled(userId: string | undefined): boolean {
     "model_selection_enabled",
     flagContext,
   );
+  return enabled;
+}
+
+function useRedesignEnabled(userId: string | undefined): boolean {
+  const flagContext = useMemo(
+    () => (userId ? { userId } : undefined),
+    [userId],
+  );
+  const { enabled } = useFeatureFlagQuery("website-redesign", flagContext);
   return enabled;
 }
 
@@ -186,6 +196,7 @@ function CreateReportComponent({
   } = formState;
 
   const modelSelectionEnabled = useModelSelectionEnabled(user?.uid);
+  const redesignEnabled = useRedesignEnabled(user?.uid);
 
   usePrefillForm(formState, prefillTitle, prefillDescription);
 
@@ -216,6 +227,7 @@ function CreateReportComponent({
             {needsEmailVerification && (
               <EmailVerificationPrompt userEmail={user?.email ?? null} />
             )}
+            {!redesignEnabled && <FormHeader />}
             <FormAbout />
             <FormDescription
               title={title}
