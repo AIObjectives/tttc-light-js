@@ -225,24 +225,10 @@ function HowSurveysWork() {
             will notify the participant when the survey is over.
           </li>
           <li>
-            <strong>Follow-up mode:</strong> This mode is used to conduct
-            semi-structured, adaptive surveys that act more like traditional
-            interviews. Instead of moving straight through the questions you
-            provide, T3C asks follow-up questions.
-            <ul className="list-disc ml-8 mt-2">
-              <li>
-                <strong>How it works:</strong> T3C keeps the last 30 exchanges
-                to provide context for follow-up questions. After a participant
-                responds, T3C consults a bank of follow-up questions and selects
-                the most appropriate one given the context, or is prompted to
-                generate a new question if none of the existing ones are
-                suitable. It replaces placeholder variables in the follow-up
-                questions with specific content, e.g., &ldquo;Tell me more about
-                X&rdquo; becomes &ldquo;Tell me more about the weather where you
-                live.&rdquo; After asking the follow-up question, T3C moves on
-                to the next structured question.
-              </li>
-            </ul>
+            <strong>Follow-up mode:</strong> T3C asks follow-up questions after
+            each survey question, eliciting explanations for what people say.
+            For example, &ldquo;Tell me more about that — can you give me an
+            example of when that happened?&rdquo;
           </li>
         </ul>
         <p className="mb-3">
