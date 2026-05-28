@@ -41,24 +41,12 @@ import { useSubmitValidation } from "./hooks/useSubmitValidation";
 
 const createReportLogger = logger.child({ module: "create-report" });
 
-function useModelSelectionEnabled(userId: string | undefined): boolean {
+function useUserFlag(flagName: string, userId: string | undefined): boolean {
   const flagContext = useMemo(
     () => (userId ? { userId } : undefined),
     [userId],
   );
-  const { enabled } = useFeatureFlagQuery(
-    "model_selection_enabled",
-    flagContext,
-  );
-  return enabled;
-}
-
-function useRedesignEnabled(userId: string | undefined): boolean {
-  const flagContext = useMemo(
-    () => (userId ? { userId } : undefined),
-    [userId],
-  );
-  const { enabled } = useFeatureFlagQuery("website-redesign", flagContext);
+  const { enabled } = useFeatureFlagQuery(flagName, flagContext);
   return enabled;
 }
 
@@ -195,8 +183,11 @@ function CreateReportComponent({
     selectedModel,
   } = formState;
 
-  const modelSelectionEnabled = useModelSelectionEnabled(user?.uid);
-  const redesignEnabled = useRedesignEnabled(user?.uid);
+  const modelSelectionEnabled = useUserFlag(
+    "model_selection_enabled",
+    user?.uid,
+  );
+  const redesignEnabled = useUserFlag("website-redesign", user?.uid);
 
   usePrefillForm(formState, prefillTitle, prefillDescription);
 
