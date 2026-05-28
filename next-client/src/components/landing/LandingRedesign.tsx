@@ -163,10 +163,8 @@ function TestimonialCard({
       />
       <div className="flex-1 border border-border rounded-lg shadow-md p-4">
         <div className="flex gap-3 items-start">
-          <span className="text-muted-foreground text-xl shrink-0">
-            &ldquo;
-          </span>
-          <p className="text-muted-foreground text-base leading-6">
+          <span className="text-foreground text-xl shrink-0">&ldquo;</span>
+          <p className="text-foreground text-base leading-6">
             {quote}
             <br />
             {attribution}
