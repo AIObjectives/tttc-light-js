@@ -26,7 +26,6 @@ import {
   FormAbout,
   FormDataInput,
   FormDescription,
-  FormHeader,
   TermsAndConditions,
 } from "./components/FormSections";
 import { SigninModal } from "./components/Modals";
@@ -217,7 +216,6 @@ function CreateReportComponent({
             {needsEmailVerification && (
               <EmailVerificationPrompt userEmail={user?.email ?? null} />
             )}
-            <FormHeader />
             <FormAbout />
             <FormDescription
               title={title}

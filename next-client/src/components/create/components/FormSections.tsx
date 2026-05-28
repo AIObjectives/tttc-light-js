@@ -1,6 +1,5 @@
 "use client";
 import { AlertCircle } from "lucide-react";
-import Link from "next/link";
 import {
   type ChangeEvent,
   type RefObject,
@@ -12,7 +11,6 @@ import {
 import type { ColumnMappings } from "tttc-common/csv-validation";
 import { SUPPORTED_LANGUAGES } from "tttc-common/prompts";
 import { SUPPORTED_MODELS, type SupportedModel } from "tttc-common/schema";
-import Icons from "@/assets/icons";
 import {
   Button,
   Input,
@@ -37,34 +35,6 @@ import {
   ColumnMappingWarningModal,
   InvalidCSVErrorModal,
 } from "./ValidationModals";
-
-export const FormHeader = () => (
-  <Col gap={3}>
-    <h3>Survey tool</h3>
-    <Row
-      gap={2}
-      className="p-4 border self-stretch items-center justify-center rounded-[2px]"
-    >
-      <div>
-        <Icons.WhatsApp />
-      </div>
-      <p className="p2 text-muted-foreground grow">
-        Gather report responses using our survey tool directly from
-        participants' devices.
-      </p>
-      <Link
-        target="_blank"
-        href={
-          "https://docs.google.com/forms/d/e/1FAIpQLSfl9vVzX83F537RrAi1JoqvvCr0ScbBtHOx41dnLX7ynX5djA/viewform"
-        }
-      >
-        <Button variant={"secondary"} type="button">
-          Use it
-        </Button>
-      </Link>
-    </Row>
-  </Col>
-);
 
 export const FormAbout = () => (
   <Col gap={3}>
