@@ -41,15 +41,12 @@ import { useSubmitValidation } from "./hooks/useSubmitValidation";
 
 const createReportLogger = logger.child({ module: "create-report" });
 
-function useModelSelectionEnabled(userId: string | undefined): boolean {
+function useUserFlag(flagName: string, userId: string | undefined): boolean {
   const flagContext = useMemo(
     () => (userId ? { userId } : undefined),
     [userId],
   );
-  const { enabled } = useFeatureFlagQuery(
-    "model_selection_enabled",
-    flagContext,
-  );
+  const { enabled } = useFeatureFlagQuery(flagName, flagContext);
   return enabled;
 }
 
@@ -186,7 +183,9 @@ function CreateReportComponent({
     selectedModel,
   } = formState;
 
-  const modelSelectionEnabled = useModelSelectionEnabled(user?.uid);
+  const uid = user?.uid;
+  const modelSelectionEnabled = useUserFlag("model_selection_enabled", uid);
+  const redesignEnabled = useUserFlag("website-redesign", uid);
 
   usePrefillForm(formState, prefillTitle, prefillDescription);
 
@@ -217,7 +216,7 @@ function CreateReportComponent({
             {needsEmailVerification && (
               <EmailVerificationPrompt userEmail={user?.email ?? null} />
             )}
-            <FormHeader />
+            {!redesignEnabled && <FormHeader />}
             <FormAbout />
             <FormDescription
               title={title}

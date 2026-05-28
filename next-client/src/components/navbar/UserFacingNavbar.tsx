@@ -1,11 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
 import { Button } from "@/components/elements";
 import { Row } from "@/components/layout";
-import { useFeatureFlagQuery } from "@/lib/query/useFeatureFlagQuery";
-import { useUserQuery } from "@/lib/query/useUserQuery";
 import {
   RedesignLogo,
   RedesignMobileMenu,
@@ -23,24 +20,14 @@ const LoginButton = dynamic(() => import("./components/LoginButton"), {
   ),
 });
 
+// Studies link is always shown; users without elicitation access see the
+// no-access view when they navigate to /studies.
+const USER_FACING_MOBILE_LINKS = [
+  { href: "/studies", label: "Studies" },
+  { href: "/my-reports", label: "Reports" },
+];
+
 export default function UserFacingNavbar() {
-  const { user } = useUserQuery();
-  // Match the same study-access gating the old dropdown used so visibility
-  // doesn't change — we're only moving the link, not the gate.
-  const flagContext = useMemo(
-    () => (user?.uid ? { userId: user.uid } : undefined),
-    [user?.uid],
-  );
-  const { enabled: studiesEnabled } = useFeatureFlagQuery(
-    "elicitation_enabled",
-    flagContext,
-  );
-
-  const mobileLinks = [
-    ...(studiesEnabled ? [{ href: "/studies", label: "Studies" }] : []),
-    { href: "/my-reports", label: "Reports" },
-  ];
-
   return (
     <Row
       gap={6}
@@ -48,12 +35,12 @@ export default function UserFacingNavbar() {
       data-navbar
     >
       <Row gap={2} className="items-center">
-        <RedesignMobileMenu links={mobileLinks} />
+        <RedesignMobileMenu links={USER_FACING_MOBILE_LINKS} />
         <RedesignLogo />
       </Row>
       <Row gap={7} className="items-center">
         <Row gap={3} className="items-center hidden md:flex">
-          {studiesEnabled && <StudiesButton />}
+          <StudiesButton />
           <ReportsButton />
         </Row>
         <VerticalDivider />

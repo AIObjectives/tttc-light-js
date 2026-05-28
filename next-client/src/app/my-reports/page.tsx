@@ -1,8 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import { Spinner } from "@/components/elements";
 import { Center } from "@/components/layout";
 import MyReports from "@/components/myReports/MyReports";
+import NoReportsEmptyState from "@/components/myReports/NoReportsEmptyState";
+import { useFeatureFlagQuery } from "@/lib/query/useFeatureFlagQuery";
 import { useUserQuery } from "@/lib/query/useUserQuery";
 import { useUserReportsQuery } from "@/lib/query/useUserReportsQuery";
 
@@ -13,6 +16,14 @@ export default function MyReportsPage() {
     isLoading: reportsLoading,
     error,
   } = useUserReportsQuery(user?.uid ?? null);
+  const flagContext = useMemo(
+    () => (user?.uid ? { userId: user.uid } : undefined),
+    [user?.uid],
+  );
+  const { enabled: redesignEnabled } = useFeatureFlagQuery(
+    "website-redesign",
+    flagContext,
+  );
 
   if (authLoading) {
     return (
@@ -46,9 +57,15 @@ export default function MyReportsPage() {
     );
   }
 
+  const reportsList = reports ?? [];
+
+  if (redesignEnabled && reportsList.length === 0) {
+    return <NoReportsEmptyState />;
+  }
+
   return (
     <div className="justify-items-center">
-      <MyReports reports={reports ?? []} />
+      <MyReports reports={reportsList} redesignEnabled={redesignEnabled} />
     </div>
   );
 }

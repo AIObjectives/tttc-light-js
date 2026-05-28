@@ -160,7 +160,7 @@ function ReadyToGetStarted() {
   return (
     <section className="max-w-7xl mx-auto px-8 lg:px-28 py-16 flex justify-center">
       <Link
-        href="/pricing"
+        href="/workwithus"
         className="bg-theme_violet-accent rounded-[28px] w-full max-w-[625px] py-12 flex items-center justify-center text-indigo-600 text-4xl lg:text-5xl font-medium hover:opacity-90 transition-opacity"
       >
         Ready to get started?
@@ -254,7 +254,7 @@ function HowSurveysWork() {
             here
           </Link>{" "}
           and provide information on security and privacy{" "}
-          <Link href="/safety" className="text-indigo-600 hover:underline">
+          <Link href="/privacy" className="text-indigo-600 hover:underline">
             here
           </Link>
           .

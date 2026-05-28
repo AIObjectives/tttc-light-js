@@ -1,5 +1,5 @@
 "use client";
-import { Check, ChevronsUpDown, Globe, Lock } from "lucide-react";
+import { Check, ChevronsUpDown, Globe, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { ReportRef, ReportStatus } from "tttc-common/firebase";
@@ -94,9 +94,13 @@ const reportLink = (id: string) =>
 
 interface MyReportsProps {
   reports: ReportRef[];
+  redesignEnabled?: boolean;
 }
 
-export default function MyReports({ reports }: MyReportsProps) {
+export default function MyReports({
+  reports,
+  redesignEnabled = false,
+}: MyReportsProps) {
   const [sortMode, setSortMode] = useState<MyReportsSortMode>("date-newest");
 
   // Hydrate from localStorage after mount (SSR-safe)
@@ -131,7 +135,11 @@ export default function MyReports({ reports }: MyReportsProps) {
 
   return (
     <Col gap={8} className="items-center px-4">
-      <YourReportsHeader sortMode={sortMode} onSortChange={handleSortChange} />
+      <YourReportsHeader
+        sortMode={sortMode}
+        onSortChange={handleSortChange}
+        redesignEnabled={redesignEnabled}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[896px] w-full">
         {sortedReports.map((report) => (
           <ReportItem {...report} key={report.id} />
@@ -144,19 +152,31 @@ export default function MyReports({ reports }: MyReportsProps) {
 interface YourReportsHeaderProps {
   sortMode: MyReportsSortMode;
   onSortChange: (mode: MyReportsSortMode) => void;
+  redesignEnabled?: boolean;
 }
 
-function YourReportsHeader({ sortMode, onSortChange }: YourReportsHeaderProps) {
+function YourReportsHeader({
+  sortMode,
+  onSortChange,
+  redesignEnabled = false,
+}: YourReportsHeaderProps) {
   return (
     <Row
       gap={4}
       className="pt-8 w-full max-w-[896px] justify-between items-center"
     >
       <Col gap={2} className="justify-center">
-        <h3>My reports</h3>
+        <h3>{redesignEnabled ? "Reports" : "My reports"}</h3>
       </Col>
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Sort by</span>
+      <Row gap={2} className="items-center">
+        {redesignEnabled && (
+          <Link href="/create">
+            <Button size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Create a report
+            </Button>
+          </Link>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -231,7 +251,7 @@ function YourReportsHeader({ sortMode, onSortChange }: YourReportsHeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </Row>
     </Row>
   );
 }

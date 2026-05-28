@@ -11,8 +11,9 @@ const FRONT_FACING_ROUTES = [
   "/",
   "/about",
   "/safety",
+  "/privacy",
   "/product",
-  "/pricing",
+  "/workwithus",
   "/help",
 ];
 

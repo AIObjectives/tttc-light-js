@@ -13,7 +13,7 @@ import {
 
 const FRONT_FACING_MOBILE_LINKS = [
   { href: "/product", label: "Product" },
-  { href: "/pricing", label: "Pricing" },
+  { href: "/workwithus", label: "Pricing" },
   { href: "/about", label: "About" },
   { href: "https://github.com/aIObjectives/tttc-light-js", label: "Github" },
 ];
@@ -41,7 +41,7 @@ export default function FrontFacingNavbar() {
       <Row gap={7} className="items-center">
         <Row gap={7} className="items-center hidden md:flex">
           <FrontFacingNavLink href="/product" label="Product" />
-          <FrontFacingNavLink href="/pricing" label="Pricing" />
+          <FrontFacingNavLink href="/workwithus" label="Pricing" />
           <FrontFacingNavLink href="/about" label="About" />
           <FrontFacingNavLink
             href="https://github.com/aIObjectives/tttc-light-js"

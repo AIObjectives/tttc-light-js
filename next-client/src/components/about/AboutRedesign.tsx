@@ -168,7 +168,7 @@ function ProductFAQ() {
       </FAQQuestion>
       <FAQAnswer>
         We have a detailed{" "}
-        <Link href="/safety" className="text-indigo-600 hover:underline">
+        <Link href="/privacy" className="text-indigo-600 hover:underline">
           privacy and security policy
         </Link>
         . If you still have questions or specific requirements we can&apos;t
