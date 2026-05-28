@@ -15,11 +15,9 @@ function HeroSection() {
       </h1>
       <p className="text-xl text-foreground leading-[31px]">
         Our privacy and security policy is below. We are{" "}
-        <strong>
-          working on supporting more Large Language Models (LLMs)
-        </strong>
-        , including local models. If you require this or are
-        interested in funding this work, please reach out at{" "}
+        <strong>working on supporting more Large Language Models (LLMs)</strong>
+        , including local models. If you require this or are interested in
+        funding this work, please reach out at{" "}
         <a
           href="mailto:t3c@objective.is"
           className="text-indigo-600 hover:underline"
@@ -57,6 +55,22 @@ function Paragraph({ children }: { children: React.ReactNode }) {
 function ContentSection() {
   return (
     <section className="max-w-7xl mx-auto px-8 lg:px-28 pb-16">
+      <WhatWeCollect />
+      <DataHandling />
+      <HowWeProtect />
+      <ThirdPartySharing />
+      <YourRights />
+      <ContentOwnership />
+      <AgeRestrictions />
+      <YourResponsibilities />
+      <ChangesToThisPolicy />
+    </section>
+  );
+}
+
+function WhatWeCollect() {
+  return (
+    <>
       <SectionHeading>What we collect</SectionHeading>
       <Bullets>
         <li>
@@ -83,7 +97,13 @@ function ContentSection() {
           liability for the inclusion of prohibited data in user submissions.
         </li>
       </Bullets>
+    </>
+  );
+}
 
+function DataHandling() {
+  return (
+    <>
       <SectionHeading>Data handling</SectionHeading>
       <Bullets>
         <li>
@@ -129,12 +149,17 @@ function ContentSection() {
           opt-out of this temporary retention.
         </li>
       </Bullets>
+    </>
+  );
+}
 
+function HowWeProtect() {
+  return (
+    <>
       <SectionHeading>How we protect your data</SectionHeading>
       <Bullets>
         <li>
-          Encryption: All data transmitted is encrypted in transit
-          using HTTPS.
+          Encryption: All data transmitted is encrypted in transit using HTTPS.
         </li>
         <li>
           Error monitoring: We collect anonymous error logs to maintain service
@@ -156,7 +181,13 @@ function ContentSection() {
           ).
         </li>
       </Bullets>
+    </>
+  );
+}
 
+function ThirdPartySharing() {
+  return (
+    <>
       <SectionHeading>Third-party sharing</SectionHeading>
       <Paragraph>
         No additional sharing: Your data are sent exclusively to select
@@ -164,7 +195,13 @@ function ContentSection() {
         and Weights and Biases for processing. We do not share, sell, or
         distribute your data to any entity.
       </Paragraph>
+    </>
+  );
+}
 
+function YourRights() {
+  return (
+    <>
       <SectionHeading>Your rights</SectionHeading>
       <Bullets>
         <li>
@@ -199,7 +236,13 @@ function ContentSection() {
           .
         </li>
       </Bullets>
+    </>
+  );
+}
 
+function ContentOwnership() {
+  return (
+    <>
       <SectionHeading>Content ownership</SectionHeading>
       <Bullets>
         <li>User inputs: You retain rights to your input content.</li>
@@ -209,14 +252,26 @@ function ContentSection() {
           terms of service and usage policies.
         </li>
       </Bullets>
+    </>
+  );
+}
 
+function AgeRestrictions() {
+  return (
+    <>
       <SectionHeading>Age Restrictions</SectionHeading>
       <Paragraph>
         This service is not intended for users under the age of 13. Users
         between 13–16 years old may require parental consent depending on their
         jurisdiction.
       </Paragraph>
+    </>
+  );
+}
 
+function YourResponsibilities() {
+  return (
+    <>
       <SectionHeading>Your Responsibilities</SectionHeading>
       <Bullets>
         <li>
@@ -228,7 +283,13 @@ function ContentSection() {
           laws and regulations.
         </li>
       </Bullets>
+    </>
+  );
+}
 
+function ChangesToThisPolicy() {
+  return (
+    <>
       <SectionHeading>Changes to This Policy</SectionHeading>
       <Paragraph>
         We may update this Privacy and Security Policy from time to time. Any
@@ -236,6 +297,6 @@ function ContentSection() {
         Significant changes will be communicated directly to users.
       </Paragraph>
       <Paragraph>Policy last updated: 28 May 2026</Paragraph>
-    </section>
+    </>
   );
 }
