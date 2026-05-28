@@ -65,7 +65,7 @@ export default function MyReportsPage() {
 
   return (
     <div className="justify-items-center">
-      <MyReports reports={reportsList} />
+      <MyReports reports={reportsList} redesignEnabled={redesignEnabled} />
     </div>
   );
 }
