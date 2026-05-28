@@ -19,7 +19,7 @@ export default function ProductRedesign() {
 
 function HeroSection() {
   return (
-    <section className="px-8 lg:px-28 pt-16 pb-8">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pt-16 pb-8">
       <h1 className="text-5xl lg:text-[96px] font-medium tracking-tight leading-tight text-center">
         Talk to the [<span className="text-indigo-600"> everyone </span>]
       </h1>
@@ -29,8 +29,8 @@ function HeroSection() {
 
 function IntroSection() {
   return (
-    <section className="px-8 lg:px-28 pb-8">
-      <p className="text-xl text-muted-foreground leading-[31px]">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pb-8">
+      <p className="text-xl text-foreground leading-[31px]">
         Talk to the City (T3C) is an <strong>open-source AI tool</strong> that
         reimagines how communities, institutions, and decision-makers gather and
         act on public input. T3C allows you to design and launch{" "}
@@ -80,9 +80,9 @@ function AudienceCard({
 
 function WhoT3CIsFor() {
   return (
-    <section className="px-8 lg:px-28 pb-12">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pb-12">
       <SectionHeading>Who T3C is great for</SectionHeading>
-      <p className="text-xl text-muted-foreground leading-[31px] mb-8">
+      <p className="text-xl text-foreground leading-[31px] mb-8">
         T3C is ideal for people who need to collect richer data than surveys
         allow, at bigger scales than is possible through traditional interviews.
         We&apos;re great for quickly understanding many diverse perspectives,
@@ -139,7 +139,7 @@ function WhoT3CIsFor() {
 
 function WhatT3CDoes() {
   return (
-    <section className="px-8 lg:px-28 pb-12">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pb-12">
       <SectionHeading>What T3C does</SectionHeading>
       <div className="bg-theme_violet-accent rounded-3xl p-8 max-w-5xl mx-auto">
         <div className="relative w-full aspect-video">
@@ -158,10 +158,10 @@ function WhatT3CDoes() {
 
 function ReadyToGetStarted() {
   return (
-    <section className="px-8 lg:px-28 py-16 flex justify-center">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 py-16 flex justify-center">
       <Link
         href="/pricing"
-        className="bg-white border border-border rounded-[28px] w-full max-w-[625px] py-12 flex items-center justify-center text-indigo-600 text-4xl lg:text-5xl font-medium hover:bg-indigo-50 transition-colors"
+        className="bg-theme_violet-accent rounded-[28px] w-full max-w-[625px] py-12 flex items-center justify-center text-indigo-600 text-4xl lg:text-5xl font-medium hover:opacity-90 transition-opacity"
       >
         Ready to get started?
       </Link>
@@ -184,17 +184,17 @@ function CollapsibleBubble({
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
-        className="w-full text-left border border-slate-500 rounded-[27px] px-8 py-5 flex items-center justify-between bg-transparent cursor-pointer hover:bg-slate-50 transition-colors"
+        className="w-full text-left bg-theme_violet-accent rounded-[27px] px-8 py-5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
       >
         <span className="text-2xl font-semibold tracking-tight text-foreground">
           {title}
         </span>
-        <span aria-hidden className="text-2xl text-muted-foreground">
+        <span aria-hidden className="text-2xl text-foreground">
           {isOpen ? "–" : "+"}
         </span>
       </button>
       {isOpen && (
-        <div className="px-8 pt-6 text-xl text-muted-foreground leading-[31px]">
+        <div className="px-8 pt-6 text-xl text-foreground leading-[31px] [&_p]:text-xl">
           {children}
         </div>
       )}
@@ -204,7 +204,7 @@ function CollapsibleBubble({
 
 function HowSurveysWork() {
   return (
-    <section className="px-8 lg:px-28 pb-8">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pb-8">
       <CollapsibleBubble title="How conversational surveys work">
         <p className="mb-3">
           You can use our study creator to design and launch an LLM-powered
@@ -280,7 +280,7 @@ function HowSurveysWork() {
 
 function HowReportsWork() {
   return (
-    <section className="px-8 lg:px-28 pb-16">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pb-16">
       <CollapsibleBubble title="How reports work">
         <p className="mb-3">
           We use Large Language Models (LLMs) to extract themes from your data,
