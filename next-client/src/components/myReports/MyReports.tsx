@@ -1,5 +1,5 @@
 "use client";
-import { Check, ChevronsUpDown, Globe, Lock } from "lucide-react";
+import { Check, ChevronsUpDown, Globe, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { ReportRef, ReportStatus } from "tttc-common/firebase";
@@ -18,7 +18,6 @@ import {
   TextIcon,
 } from "../elements";
 import { Col, Row } from "../layout";
-import { CreateReport } from "../navbar/components/NavbarButtons";
 
 // Sort mode types and helpers
 const SortModes = ["date-newest", "date-oldest", "title-asc", "title-desc"];
@@ -169,8 +168,16 @@ function YourReportsHeader({
       <Col gap={2} className="justify-center">
         <h3>{redesignEnabled ? "Reports" : "My reports"}</h3>
       </Col>
-      {redesignEnabled && <CreateReport />}
-      <div className="flex items-center gap-2">
+      <Row gap={2} className="items-center">
+        {redesignEnabled && (
+          <Link href="/create">
+            <Button size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Create a report
+            </Button>
+          </Link>
+        )}
+        <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Sort by</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -246,7 +253,8 @@ function YourReportsHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+        </div>
+      </Row>
     </Row>
   );
 }
