@@ -194,7 +194,7 @@ function CollapsibleBubble({
         </span>
       </button>
       {isOpen && (
-        <div className="px-8 pt-6 text-xl text-foreground leading-[31px] [&_p]:text-xl">
+        <div className="px-8 pt-6 text-xl text-foreground leading-6 [&_p]:text-xl">
           {children}
         </div>
       )}
