@@ -211,7 +211,7 @@ function HowSurveysWork() {
           conversational survey through WhatsApp. T3C can operate in three
           different modes:
         </p>
-        <ul className="list-disc ml-8 space-y-3 mb-3">
+        <ul className="list-disc ml-8 space-y-4 mb-6">
           <li>
             <strong>Listening mode:</strong> T3C opens with an initial prompt,
             then listens to the participant, providing brief responses
@@ -255,13 +255,13 @@ function HowSurveysWork() {
           is not available in self-service; please reach out if you are
           interested.
         </p>
-        <p className="font-medium mb-2">Text, voice and language support</p>
+        <p className="font-bold mt-6 mb-3">Text, voice and language support</p>
         <p className="mb-3">
           All modes accept voice messages. T3C can also be configured to operate
           in different languages and is prompted to ask questions in the
           participant&apos;s language if detected.
         </p>
-        <p className="font-medium mb-2">FAQs</p>
+        <p className="font-bold mt-6 mb-3">FAQs</p>
         <p>
           We answer FAQs about data collection{" "}
           <Link href="/about" className="text-indigo-600 hover:underline">
@@ -290,12 +290,12 @@ function HowReportsWork() {
           modify the prompts used to create reports by looking under
           &ldquo;Advanced Settings&rdquo; on the report creator page.
         </p>
-        <p className="font-medium mb-2">Report access</p>
+        <p className="font-bold mt-6 mb-3">Report access</p>
         <p className="mb-3">
           Reports can be kept for your eyes only or made public to anybody who
           has the exact URL.
         </p>
-        <p className="font-medium mb-2">Experimental features</p>
+        <p className="font-bold mt-6 mb-3">Experimental features</p>
         <p className="mb-3">
           We have a few experimental features for you to try, including ranking
           claims by controversiality and identifying how constructive or
@@ -303,7 +303,7 @@ function HowReportsWork() {
           snippets, but this requires some pre-processing; if you can&apos;t
           figure it out from our Github please reach out and we will help you.
         </p>
-        <p className="font-medium mb-2">FAQs</p>
+        <p className="font-bold mt-6 mb-3">FAQs</p>
         <p>
           We answer FAQs about reports{" "}
           <Link href="/about" className="text-indigo-600 hover:underline">
