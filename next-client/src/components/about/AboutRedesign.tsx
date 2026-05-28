@@ -17,11 +17,11 @@ export default function AboutRedesign() {
 
 function HeroSection() {
   return (
-    <section className="px-8 lg:px-28 pt-16 pb-8">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pt-16 pb-8">
       <h1 className="text-7xl lg:text-[96px] font-medium tracking-wide leading-tight mb-10">
         About us
       </h1>
-      <p className="text-xl text-muted-foreground max-w-5xl leading-[31px] mb-4">
+      <p className="text-xl text-foreground leading-[31px] mb-4">
         T3C is built by the{" "}
         <a
           href={EXTERNAL_LINKS.AI_OBJECTIVES_INSTITUTE}
@@ -52,7 +52,7 @@ function HeroSection() {
         </a>
         .
       </p>
-      <p className="text-xl text-muted-foreground max-w-5xl leading-[31px]">
+      <p className="text-xl text-foreground leading-[31px]">
         Our mission in building T3C is to make it as easy as possible for groups
         to understand one another. We are entering an era in which it is cheaper
         to manufacture data about people than to listen to their voices. At AOI,
@@ -67,7 +67,7 @@ function HeroSection() {
 
 function ContentSection() {
   return (
-    <section className="px-8 lg:px-28 pb-16">
+    <section className="max-w-7xl mx-auto px-8 lg:px-28 pb-16">
       <GeneralFAQ />
       <ProductFAQ />
       <MediaSection />
@@ -85,7 +85,7 @@ function FAQHeading({ children }: { children: React.ReactNode }) {
 
 function FAQQuestion({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xl font-medium text-muted-foreground leading-[31px] mb-2">
+    <p className="text-xl font-medium text-foreground leading-[31px] mb-2">
       {children}
     </p>
   );
@@ -93,7 +93,7 @@ function FAQQuestion({ children }: { children: React.ReactNode }) {
 
 function FAQAnswer({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-10">
+    <p className="text-xl font-normal text-foreground leading-[31px] mb-10">
       {children}
     </p>
   );
@@ -113,12 +113,12 @@ function GeneralFAQ() {
       </FAQAnswer>
 
       <FAQQuestion>What&apos;s your track record?</FAQQuestion>
-      <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-2">
+      <p className="text-xl font-normal text-foreground leading-[31px] mb-2">
         We&apos;ve generated hundreds of reports and collected data from
         thousands of respondents for projects with governments, institutions and
         communities, including:
       </p>
-      <ul className="list-disc text-xl font-normal text-muted-foreground leading-[31px] mb-10 ml-12 space-y-1">
+      <ul className="list-disc text-xl font-normal text-foreground leading-[31px] mb-10 ml-12 space-y-1">
         <li>
           <span className="font-medium">Taiwan:</span> We partnered with the
           Ministry of Digital Affairs to analyze public input on AI policy,
@@ -199,11 +199,11 @@ function ProductFAQ() {
       <FAQQuestion>
         Do I have to collect data with your tool in order to generate reports?
       </FAQQuestion>
-      <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-2">
+      <p className="text-xl font-normal text-foreground leading-[31px] mb-2">
         No, you can bring your own data for reports. T3C works with the
         following column headers:
       </p>
-      <ul className="list-disc text-xl font-normal text-muted-foreground leading-[31px] mb-2 ml-8 space-y-1">
+      <ul className="list-disc text-xl font-normal text-foreground leading-[31px] mb-2 ml-8 space-y-1">
         <li>
           &ldquo;comment&rdquo; contains the text of the responses to analyze
           with T3C (required)
@@ -221,7 +221,7 @@ function ProductFAQ() {
           videos and the timestamps of specific text (optional)
         </li>
       </ul>
-      <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-10">
+      <p className="text-xl font-normal text-foreground leading-[31px] mb-10">
         A{" "}
         <a
           href="https://talktothe.city/Talk-to-the-City-Sample.csv"
@@ -263,11 +263,11 @@ function ProductFAQ() {
       </FAQAnswer>
 
       <FAQQuestion>How do I customize the analysis prompts?</FAQQuestion>
-      <p className="text-xl font-normal text-muted-foreground leading-[31px] mb-2">
+      <p className="text-xl font-normal text-foreground leading-[31px] mb-2">
         Expand the &ldquo;Advanced Settings&rdquo; section in the report creator
         to find &ldquo;Customize AI prompts.&rdquo; You can modify prompts to:
       </p>
-      <ul className="list-disc text-xl font-normal text-muted-foreground leading-[31px] mb-10 ml-8 space-y-1">
+      <ul className="list-disc text-xl font-normal text-foreground leading-[31px] mb-10 ml-8 space-y-1">
         <li>
           Specify the number of topics/subtopics, or suggest possible themes to
           include
@@ -319,7 +319,7 @@ function CaseStudiesGrid() {
             <p className="text-sm text-foreground leading-5 line-clamp-2 tracking-wide">
               {report.title}
             </p>
-            <p className="text-sm text-muted-foreground tracking-wide">
+            <p className="text-sm text-foreground tracking-wide">
               {report.date}
             </p>
           </div>
@@ -361,7 +361,7 @@ function MediaSection() {
               />
             </div>
             <div className="p-3 flex flex-col gap-2">
-              <p className="text-sm text-muted-foreground leading-5 line-clamp-2 tracking-wide">
+              <p className="text-sm text-foreground leading-5 line-clamp-2 tracking-wide">
                 {item.title}
               </p>
               <div className="flex items-center gap-2">
