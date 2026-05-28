@@ -16,9 +16,9 @@ function HeroSection() {
       <p className="text-xl text-foreground leading-[31px]">
         Our privacy and security policy is below. We are{" "}
         <strong>
-          currently working on supporting more than one Large Language Model
+          working on supporting more Large Language Models (LLMs)
         </strong>
-        , including local models supplied by users. If you require this or are
+        , including local models. If you require this or are
         interested in funding this work, please reach out at{" "}
         <a
           href="mailto:t3c@objective.is"
@@ -61,10 +61,10 @@ function ContentSection() {
       <Bullets>
         <li>
           User input: text or queries entered into &ldquo;Talk to the
-          City&rdquo; are transmitted to OpenAI&apos;s API for generating
-          responses. Raw input text, intermediate stages of processing, and
-          final report data are stored in our cloud infrastructure so we can
-          serve the report.
+          City&rdquo; are transmitted to OpenAI and/or Anthropic&apos;s API for
+          generating responses. Raw input text, intermediate stages of
+          processing, and final report data are stored in our cloud
+          infrastructure so we can serve the report.
         </li>
         <li>
           Technical Information: We automatically collect certain technical
@@ -90,9 +90,10 @@ function ContentSection() {
           Data transmission: When you use &ldquo;Talk to the City,&rdquo; your
           text input (specifically the &ldquo;comment&rdquo; column of a CSV) is
           transmitted securely to either OpenAI&apos;s or Anthropic&apos;s API
-          for processing, depending on the model selected for the report. This
-          processing step is required to generate summaries, reports, and
-          insights from T3C.
+          for processing, depending on which model you choose under Advanced
+          Settings. Note that for conversational surveys, we rely on
+          OpenAI&apos;s Whisper. This processing step is required to generate
+          summaries, reports, and insights from T3C.
         </li>
         <li>
           Limited data retention by LLM providers: Neither OpenAI nor Anthropic
@@ -132,7 +133,7 @@ function ContentSection() {
       <SectionHeading>How we protect your data</SectionHeading>
       <Bullets>
         <li>
-          Encryption: All data transmitted to OpenAI is encrypted in transit
+          Encryption: All data transmitted is encrypted in transit
           using HTTPS.
         </li>
         <li>
@@ -234,7 +235,7 @@ function ContentSection() {
         changes will be reflected here with an updated effective date.
         Significant changes will be communicated directly to users.
       </Paragraph>
-      <Paragraph>Policy last updated: 18 Sept 2025</Paragraph>
+      <Paragraph>Policy last updated: 28 May 2026</Paragraph>
     </section>
   );
 }
