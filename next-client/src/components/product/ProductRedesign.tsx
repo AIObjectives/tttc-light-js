@@ -254,7 +254,7 @@ function HowSurveysWork() {
             here
           </Link>{" "}
           and provide information on security and privacy{" "}
-          <Link href="/safety" className="text-indigo-600 hover:underline">
+          <Link href="/privacy" className="text-indigo-600 hover:underline">
             here
           </Link>
           .
