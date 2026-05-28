@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import PrivacyRedesign from "@/components/privacy/PrivacyRedesign";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
 import {
   initializeFeatureFlags,
   isFeatureEnabled,
 } from "@/lib/feature-flags/featureFlags.server";
 import { getPostHogDistinctId } from "@/lib/feature-flags/getPostHogDistinctId";
-import PrivacyRedesign from "@/components/privacy/PrivacyRedesign";
 
 export const dynamic = "force-dynamic";
 

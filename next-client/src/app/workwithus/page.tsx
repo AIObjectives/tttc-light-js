@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
+import WorkWithUsRedesign from "@/components/workwithus/WorkWithUsRedesign";
 import { serverSideAnalyticsClient } from "@/lib/analytics/serverSideAnalytics";
 import {
   initializeFeatureFlags,
   isFeatureEnabled,
 } from "@/lib/feature-flags/featureFlags.server";
 import { getPostHogDistinctId } from "@/lib/feature-flags/getPostHogDistinctId";
-import WorkWithUsRedesign from "@/components/workwithus/WorkWithUsRedesign";
 
 export const dynamic = "force-dynamic";
 
