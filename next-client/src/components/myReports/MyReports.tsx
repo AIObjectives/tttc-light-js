@@ -177,8 +177,6 @@ function YourReportsHeader({
             </Button>
           </Link>
         )}
-        <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Sort by</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -253,7 +251,6 @@ function YourReportsHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        </div>
       </Row>
     </Row>
   );

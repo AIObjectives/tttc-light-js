@@ -77,8 +77,8 @@ function ContentSection() {
           tracking cookies are used.
         </li>
         <li>
-          No sensitive data: Users are encouraged to refrain from submitting
-          any personal, sensitive, confidential, or otherwise individually
+          No sensitive data: Users are encouraged to refrain from submitting any
+          personal, sensitive, confidential, or otherwise individually
           identifiable information. T3C disclaims any responsibility or
           liability for the inclusion of prohibited data in user submissions.
         </li>
@@ -88,8 +88,8 @@ function ContentSection() {
       <Bullets>
         <li>
           Data transmission: When you use &ldquo;Talk to the City,&rdquo; your
-          text input (specifically the &ldquo;comment&rdquo; column of a CSV)
-          is transmitted securely to OpenAI&apos;s API for processing. This
+          text input (specifically the &ldquo;comment&rdquo; column of a CSV) is
+          transmitted securely to OpenAI&apos;s API for processing. This
           processing step is required to generate summaries, reports, and
           insights from T3C.
         </li>
@@ -110,11 +110,11 @@ function ContentSection() {
           deleted.
         </li>
         <li>
-          No-Opt Out of Retention: Participants should be aware that this
-          30-day retention is a standard condition of using OpenAI&apos;s API.
-          At this time, Talk to the City does not qualify for OpenAI&apos;s
-          &ldquo;Zero Data Retention&rdquo; service tier, and therefore we cannot
-          offer an opt-out of this temporary retention.
+          No-Opt Out of Retention: Participants should be aware that this 30-day
+          retention is a standard condition of using OpenAI&apos;s API. At this
+          time, Talk to the City does not qualify for OpenAI&apos;s &ldquo;Zero
+          Data Retention&rdquo; service tier, and therefore we cannot offer an
+          opt-out of this temporary retention.
         </li>
       </Bullets>
 
