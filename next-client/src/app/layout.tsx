@@ -1,5 +1,11 @@
 import { Toaster } from "@/components/elements";
 import Navbar from "@/components/navbar/Navbar";
+import NavbarRedesign from "@/components/navbar/NavbarRedesign";
+import {
+  initializeFeatureFlags,
+  isFeatureEnabled,
+} from "@/lib/feature-flags/featureFlags.server";
+import { getPostHogDistinctId } from "@/lib/feature-flags/getPostHogDistinctId";
 import { nextTypography } from "@/lib/font";
 import "./global.css";
 import type { Metadata } from "next";
@@ -49,6 +55,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  initializeFeatureFlags();
+  const distinctId = await getPostHogDistinctId();
+  const redesignEnabled = await isFeatureEnabled("website-redesign", {
+    userId: distinctId,
+  });
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -57,7 +69,7 @@ export default async function RootLayout({
       <body className={nextTypography}>
         <Providers>
           <div className="h-screen w-screen">
-            <Navbar />
+            {redesignEnabled ? <NavbarRedesign /> : <Navbar />}
             {children}
           </div>
           <Toaster position="bottom-right" />

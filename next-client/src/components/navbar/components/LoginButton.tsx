@@ -111,7 +111,15 @@ const recordProfileSetupComplete = () => {
   localStorage.setItem(PROFILE_SETUP_KEY, JSON.stringify(updated));
 };
 
-export default function LoginButton() {
+interface LoginButtonProps {
+  // When true, omits the Reports/Studies items from the avatar dropdown.
+  // Used by the redesigned navbar where these are top-level nav items instead.
+  hideAppNavItems?: boolean;
+}
+
+export default function LoginButton({
+  hideAppNavItems = false,
+}: LoginButtonProps = {}) {
   const { user, loading, error } = useUserQuery();
   const flagContext = useMemo(
     () => (user?.uid ? { userId: user.uid } : undefined),
@@ -294,13 +302,17 @@ export default function LoginButton() {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent sideOffset={20}>
-            <Link href={"/my-reports"}>
-              <DropdownMenuItem>Reports</DropdownMenuItem>
-            </Link>
-            {studiesEnabled && (
-              <Link href={"/studies"}>
-                <DropdownMenuItem>Studies</DropdownMenuItem>
-              </Link>
+            {!hideAppNavItems && (
+              <>
+                <Link href={"/my-reports"}>
+                  <DropdownMenuItem>Reports</DropdownMenuItem>
+                </Link>
+                {studiesEnabled && (
+                  <Link href={"/studies"}>
+                    <DropdownMenuItem>Studies</DropdownMenuItem>
+                  </Link>
+                )}
+              </>
             )}
             <DropdownMenuItem onClick={handleSignOut}>
               Sign out
