@@ -14,7 +14,6 @@ const AUDIENCE_WORDS = [
   "community",
   "expert",
   "field",
-  "patient",
   "client",
   "partners",
   "grantee",
@@ -45,14 +44,17 @@ function HeroSection() {
   return (
     <section className="bg-white px-8 lg:px-20 py-16 text-center">
       <h1 className="text-5xl lg:text-7xl font-medium tracking-tight leading-tight mb-8">
-        Talk to the [
-        <span className="inline-grid justify-items-center">
-          <span className="invisible col-start-1 row-start-1">community</span>
-          <span className="col-start-1 row-start-1 text-indigo-600">
-            {AUDIENCE_WORDS[wordIndex]}
+        Talk to the{" "}
+        <span className="inline-block whitespace-nowrap">
+          [
+          <span className="inline-grid justify-items-center align-middle">
+            <span className="invisible col-start-1 row-start-1">community</span>
+            <span className="col-start-1 row-start-1 text-indigo-600">
+              {AUDIENCE_WORDS[wordIndex]}
+            </span>
           </span>
+          ]
         </span>
-        ]
       </h1>
       <p className="text-xl lg:text-2xl text-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
         Capture human perspectives at any scale and generate insightful reports
