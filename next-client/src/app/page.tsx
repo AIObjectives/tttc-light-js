@@ -25,7 +25,7 @@ export default async function HomePage() {
   return (
     <div>
       {redesignEnabled ? <LandingRedesign /> : <Landing />}
-      <Feedback />
+      <Feedback className="hidden md:block" />
     </div>
   );
 }

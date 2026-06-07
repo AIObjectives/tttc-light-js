@@ -117,7 +117,7 @@ export function RedesignMobileMenu({ links }: { links: MobileLink[] }) {
       </SheetTrigger>
       <SheetContent
         side="bottom"
-        className="h-[calc(100vh-5rem)] p-6 pt-8"
+        className="h-[80vh] p-6 pt-12"
         aria-describedby={undefined}
         hideCloseButton
       >

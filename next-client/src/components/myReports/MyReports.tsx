@@ -161,14 +161,9 @@ function YourReportsHeader({
   redesignEnabled = false,
 }: YourReportsHeaderProps) {
   return (
-    <Row
-      gap={4}
-      className="pt-8 w-full max-w-[896px] justify-between items-center"
-    >
-      <Col gap={2} className="justify-center">
-        <h3>{redesignEnabled ? "Reports" : "My reports"}</h3>
-      </Col>
-      <Row gap={2} className="items-center">
+    <div className="pt-8 w-full max-w-[896px] flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
+      <h3>{redesignEnabled ? "Reports" : "My reports"}</h3>
+      <Row gap={2} className="items-center flex-wrap">
         {redesignEnabled && (
           <Link href="/create">
             <Button size="sm">
@@ -252,7 +247,7 @@ function YourReportsHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       </Row>
-    </Row>
+    </div>
   );
 }
 
