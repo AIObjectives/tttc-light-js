@@ -91,8 +91,10 @@ export function ReportsButton() {
   );
 }
 
-export function VerticalDivider() {
-  return <div className="bg-border h-[25px] w-px" aria-hidden />;
+export function VerticalDivider({ className = "" }: { className?: string }) {
+  return (
+    <div className={`bg-border h-[25px] w-px ${className}`} aria-hidden />
+  );
 }
 
 type MobileLink = { href: string; label: string };
@@ -117,7 +119,7 @@ export function RedesignMobileMenu({ links }: { links: MobileLink[] }) {
       </SheetTrigger>
       <SheetContent
         side="bottom"
-        className="h-[90vh] p-6 pt-8"
+        className="h-[calc(100vh-5rem)] p-6 pt-8"
         aria-describedby={undefined}
         hideCloseButton
       >

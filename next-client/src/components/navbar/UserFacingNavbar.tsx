@@ -43,7 +43,7 @@ export default function UserFacingNavbar() {
           <StudiesButton />
           <ReportsButton />
         </Row>
-        <VerticalDivider />
+        <VerticalDivider className="hidden md:block" />
         <LoginButton hideAppNavItems />
       </Row>
     </Row>

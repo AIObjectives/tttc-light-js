@@ -21,7 +21,10 @@ function HeroSection() {
   return (
     <section className="max-w-7xl mx-auto px-8 lg:px-28 pt-16 pb-8">
       <h1 className="text-5xl lg:text-[96px] font-medium tracking-tight leading-tight text-center">
-        Talk to the [<span className="text-indigo-600"> everyone </span>]
+        Talk to the{" "}
+        <span className="whitespace-nowrap">
+          [<span className="text-indigo-600"> everyone </span>]
+        </span>
       </h1>
     </section>
   );
@@ -161,7 +164,7 @@ function ReadyToGetStarted() {
     <section className="max-w-7xl mx-auto px-8 lg:px-28 py-16 flex justify-center">
       <Link
         href="/workwithus"
-        className="bg-theme_violet-accent rounded-[28px] w-full max-w-[625px] py-12 flex items-center justify-center text-indigo-600 text-4xl lg:text-5xl font-medium hover:opacity-90 transition-opacity"
+        className="bg-theme_violet-accent rounded-[28px] w-full max-w-[625px] py-12 px-6 flex items-center justify-center text-center text-indigo-600 text-4xl lg:text-5xl font-medium hover:opacity-90 transition-opacity"
       >
         Ready to get started?
       </Link>

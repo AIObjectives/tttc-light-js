@@ -16,6 +16,7 @@ const FRONT_FACING_MOBILE_LINKS = [
   { href: "/workwithus", label: "Pricing" },
   { href: "/about", label: "About" },
   { href: "https://github.com/aIObjectives/tttc-light-js", label: "Github" },
+  { href: "/my-reports", label: "Home" },
 ];
 
 const LoginButton = dynamic(() => import("./components/LoginButton"), {
@@ -49,7 +50,7 @@ export default function FrontFacingNavbar() {
           />
           <FrontFacingHomeLink />
         </Row>
-        <VerticalDivider />
+        <VerticalDivider className="hidden md:block" />
         <LoginButton hideAppNavItems />
       </Row>
     </Row>
