@@ -92,9 +92,7 @@ export function ReportsButton() {
 }
 
 export function VerticalDivider({ className = "" }: { className?: string }) {
-  return (
-    <div className={`bg-border h-[25px] w-px ${className}`} aria-hidden />
-  );
+  return <div className={`bg-border h-[25px] w-px ${className}`} aria-hidden />;
 }
 
 type MobileLink = { href: string; label: string };
