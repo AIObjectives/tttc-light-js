@@ -5,6 +5,16 @@
   "schedule": ["before 9am on monday"],
   "timezone": "America/Los_Angeles",
   "postUpdateOptions": ["pnpmDedupe"],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": true,
+    "labels": ["dependencies", "security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true,
+    "schedule": ["before 9am on monday"]
+  },
   "packageRules": [
     {
       "description": "Auto-merge patch updates",
