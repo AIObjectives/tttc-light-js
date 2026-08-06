@@ -58,6 +58,7 @@ overrides:
   uuid: 14.0.1
   webpack: 5.104.1
   websocket-driver: 0.7.5
+  ws@8: 8.21.0
   yaml: 2.9.0
 
 importers:
@@ -99,7 +100,7 @@ importers:
     dependencies:
       openai:
         specifier: ^4.104.0
-        version: 4.104.0(ws@8.19.0)(zod@4.2.1)
+        version: 4.104.0(ws@8.21.0)(zod@4.2.1)
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -120,7 +121,7 @@ importers:
         version: 14.0.1
       weave:
         specifier: ^0.11.0
-        version: 0.11.0(ws@8.19.0)(zod@4.2.1)
+        version: 0.11.0(ws@8.21.0)(zod@4.2.1)
       zod:
         specifier: ^4.2.1
         version: 4.2.1
@@ -178,7 +179,7 @@ importers:
         version: 3.3.2
       openai:
         specifier: ^6.10.0
-        version: 6.15.0(ws@8.19.0)(zod@4.2.1)
+        version: 6.15.0(ws@8.21.0)(zod@4.2.1)
       p-retry:
         specifier: ^6.2.1
         version: 6.2.1
@@ -454,7 +455,7 @@ importers:
         version: 5.10.1
       openai:
         specifier: ^6.10.0
-        version: 6.15.0(ws@8.19.0)(zod@4.2.1)
+        version: 6.15.0(ws@8.21.0)(zod@4.2.1)
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -466,7 +467,7 @@ importers:
         version: link:../common
       weave:
         specifier: ^0.11.0
-        version: 0.11.0(ws@8.19.0)(zod@4.2.1)
+        version: 0.11.0(ws@8.21.0)(zod@4.2.1)
       zod:
         specifier: ^4.2.1
         version: 4.2.1
@@ -6027,7 +6028,7 @@ packages:
     resolution: {integrity: sha512-p99EFNsA/yX6UhVO93f5kJsDRLAg+CTA2RBqdHK4RtK8u5IJw32Hyb2dTGKbnnFmnuoBv5r7Z2CURI9sGZpSuA==}
     hasBin: true
     peerDependencies:
-      ws: ^8.18.0
+      ws: 8.21.0
       zod: ^3.23.8
     peerDependenciesMeta:
       ws:
@@ -6039,7 +6040,7 @@ packages:
     resolution: {integrity: sha512-F1Lvs5BoVvmZtzkUEVyh8mDQPPFolq4F+xdsx/DO8Hee8YF3IGAlZqUIsF+DVGhqf4aU0a3bTghsxB6OIsRy1g==}
     hasBin: true
     peerDependencies:
-      ws: ^8.18.0
+      ws: 8.21.0
       zod: ^3.25 || ^4.0
     peerDependenciesMeta:
       ws:
@@ -7661,8 +7662,8 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.19.0:
-    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
+  ws@8.21.0:
+    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -13224,7 +13225,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
-      ws: 8.19.0
+      ws: 8.21.0
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -13744,7 +13745,7 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@4.104.0(ws@8.19.0)(zod@4.2.1):
+  openai@4.104.0(ws@8.21.0)(zod@4.2.1):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -13754,14 +13755,14 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.19.0
+      ws: 8.21.0
       zod: 4.2.1
     transitivePeerDependencies:
       - encoding
 
-  openai@6.15.0(ws@8.19.0)(zod@4.2.1):
+  openai@6.15.0(ws@8.21.0)(zod@4.2.1):
     optionalDependencies:
-      ws: 8.19.0
+      ws: 8.21.0
       zod: 4.2.1
 
   opener@1.5.2: {}
@@ -14875,7 +14876,7 @@ snapshots:
       recast: 0.23.11
       semver: 7.8.0
       use-sync-external-store: 1.6.0(react@19.2.5)
-      ws: 8.19.0
+      ws: 8.21.0
     optionalDependencies:
       prettier: 3.2.5
     transitivePeerDependencies:
@@ -15515,7 +15516,7 @@ snapshots:
       glob-to-regexp: 0.4.1
       graceful-fs: 4.2.11
 
-  weave@0.11.0(ws@8.19.0)(zod@4.2.1):
+  weave@0.11.0(ws@8.21.0)(zod@4.2.1):
     dependencies:
       cli-progress: 3.12.0
       cross-spawn: 7.0.6
@@ -15523,7 +15524,7 @@ snapshots:
       import-in-the-middle: 1.15.0
       ini: 5.0.0
       module-details-from-path: 1.0.4
-      openai: 4.104.0(ws@8.19.0)(zod@4.2.1)
+      openai: 4.104.0(ws@8.21.0)(zod@4.2.1)
       semifies: 1.0.0
       uuidv7: 1.1.0
     transitivePeerDependencies:
@@ -15671,7 +15672,7 @@ snapshots:
 
   ws@7.5.11: {}
 
-  ws@8.19.0: {}
+  ws@8.21.0: {}
 
   wsl-utils@0.1.0:
     dependencies:
