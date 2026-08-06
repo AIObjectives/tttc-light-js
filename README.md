@@ -1,5 +1,9 @@
 # Talk to the City
 
+<!-- hy-mt2-i18n:start -->
+**English** · [中文](./README_zh-CN.md) · [日本語](./README_ja.md) · [Español](./README_es.md)
+<!-- hy-mt2-i18n:end -->
+
 [Talk to the City (T3C)](https://ai.objectives.institute/talk-to-the-city) is an open-source, LLM-enabled SaaS tool for improving collective deliberation and decision-making by analyzing detailed, qualitative data. It aggregates responses and organizes similar claims into a nested tree of main topics and subtopics.
 
 **Try it live**: [https://talktothe.city/](https://talktothe.city/)
