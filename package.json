@@ -92,7 +92,7 @@
       "form-data@2": "2.5.6",
       "form-data@4": "4.0.6",
       "@grpc/grpc-js@1.14": "1.14.4",
-      "@grpc/grpc-js@1.9": "1.9.16",
+      "@grpc/grpc-js@1.9": "1.14.4",
       "ip-address": "10.4.0",
       "js-yaml": "4.3.1",
       "lodash": "4.18.1",
