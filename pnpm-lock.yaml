@@ -61,6 +61,11 @@ overrides:
   ws@8: 8.21.0
   yaml: 2.9.0
 
+patchedDependencies:
+  minimatch@3.1.5:
+    hash: 7c8cc4137f91a36a810988f24be3fa5923f35a4c1597196e76018f82ea60ac3b
+    path: patches/minimatch@3.1.5.patch
+
 importers:
 
   .:
@@ -12428,7 +12433,7 @@ snapshots:
       deepmerge: 4.3.1
       fs-extra: 10.1.0
       memfs: 3.5.3
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=7c8cc4137f91a36a810988f24be3fa5923f35a4c1597196e76018f82ea60ac3b)
       node-abort-controller: 3.1.1
       schema-utils: 3.3.0
       semver: 7.8.5
@@ -13356,7 +13361,7 @@ snapshots:
     dependencies:
       brace-expansion: 5.0.9
 
-  minimatch@3.1.5:
+  minimatch@3.1.5(patch_hash=7c8cc4137f91a36a810988f24be3fa5923f35a4c1597196e76018f82ea60ac3b):
     dependencies:
       brace-expansion: 5.0.9
 

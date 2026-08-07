@@ -70,7 +70,6 @@
       "flat-cache": "^4.0.1",
       "@types/react": "^19.2.7",
       "@types/react-dom": "^19.2.3",
-
       "ajv@6": "6.14.0",
       "ajv@8": "8.20.0",
       "axios": "1.19.0",
@@ -121,6 +120,9 @@
       "websocket-driver": "0.7.5",
       "ws@8": "8.21.0",
       "yaml": "2.9.0"
+    },
+    "patchedDependencies": {
+      "minimatch@3.1.5": "patches/minimatch@3.1.5.patch"
     }
   }
 }
