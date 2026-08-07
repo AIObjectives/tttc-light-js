@@ -14,9 +14,23 @@
       "dependencies": ["openai"],
       "packages": ["**"],
       "isIgnored": true
+    },
+    {
+      "label": "pnpm.overrides pin exact patched versions for security fixes",
+      "dependencyTypes": ["pnpmOverrides"],
+      "dependencies": ["**"],
+      "packages": ["**"],
+      "isIgnored": true
     }
   ],
   "semverGroups": [
+    {
+      "label": "pnpm.overrides pin exact patched versions for security fixes",
+      "dependencyTypes": ["pnpmOverrides"],
+      "dependencies": ["**"],
+      "packages": ["**"],
+      "isIgnored": true
+    },
     {
       "label": "Use caret ranges for all dependencies",
       "range": "^",
