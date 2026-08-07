@@ -13,6 +13,7 @@ ENV TURBO_TEAM=$TURBO_TEAM
 
 # Copy workspace config files first for layer caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY patches ./patches
 COPY common/package.json ./common/
 COPY pipeline-worker/package.json ./pipeline-worker/
 
@@ -32,6 +33,7 @@ RUN npm install -g pnpm@10
 WORKDIR /usr/src/app
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY patches ./patches
 COPY common/package.json ./common/
 COPY pipeline-worker/package.json ./pipeline-worker/
 

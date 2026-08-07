@@ -13,6 +13,7 @@ ENV TURBO_TEAM=$TURBO_TEAM
 
 # Copy workspace config files first for layer caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY patches ./patches
 COPY common/package.json ./common/
 COPY express-server/package.json ./express-server/
 
@@ -35,6 +36,7 @@ WORKDIR /usr/src/app
 
 # Copy workspace config for production install
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY patches ./patches
 COPY common/package.json ./common/
 COPY express-server/package.json ./express-server/
 

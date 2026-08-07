@@ -9,6 +9,7 @@ WORKDIR /app
 
 # Copy workspace config
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY patches ./patches
 COPY common/package.json ./common/
 COPY next-client/package.json ./next-client/
 
