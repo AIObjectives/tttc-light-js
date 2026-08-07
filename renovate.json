@@ -56,6 +56,11 @@
       "description": "Group Firebase packages",
       "matchPackagePatterns": ["^firebase", "^@firebase/"],
       "groupName": "Firebase"
+    },
+    {
+      "description": "Never auto-merge pnpm scoped major-line overrides (pkg@N syntax in pnpm.overrides). Each entry pins a version for one specific major line in the dependency tree, so bumping the value across a major boundary can break API compatibility for whatever depends on that line. Needs manual review even for security alerts.",
+      "matchPackagePatterns": ["@[0-9]+(\\.[0-9]+)*$"],
+      "automerge": false
     }
   ]
 }
