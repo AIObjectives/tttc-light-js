@@ -305,7 +305,7 @@ importers:
         version: 2.0.1
       immer:
         specifier: ^11.1.0
-        version: 11.1.16
+        version: 11.1.17
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.5)
@@ -356,7 +356,7 @@ importers:
         version: 4.2.1
       zustand:
         specifier: ^5.0.9
-        version: 5.0.14(@types/react@19.2.18)(immer@11.1.16)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
+        version: 5.0.14(@types/react@19.2.18)(immer@11.1.17)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
     devDependencies:
       '@chromatic-com/storybook':
         specifier: ^4.1.3
@@ -5224,8 +5224,8 @@ packages:
     engines: {node: '>=16.x'}
     hasBin: true
 
-  immer@11.1.16:
-    resolution: {integrity: sha512-Xs7H9rBc+kti1J6RueUvbEBkmOz7jqj11XYgf+YMXAYzu8EeE7hwZ9poLXdVfVnGmJu7QAf41T7H2KuF6QoK6Q==}
+  immer@11.1.17:
+    resolution: {integrity: sha512-8Vu44Y0MuMBlTQz/jQ8HEMYNq/bBqk87MnBwYR5mC8AthfhEXidZ5aT/oA/CUqboa8THKltnD9L3xyqhU/Sy1Q==}
 
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
@@ -12884,7 +12884,7 @@ snapshots:
 
   image-size@2.0.2: {}
 
-  immer@11.1.16: {}
+  immer@11.1.17: {}
 
   import-fresh@3.3.1:
     dependencies:
@@ -15566,9 +15566,9 @@ snapshots:
 
   zod@4.2.1: {}
 
-  zustand@5.0.14(@types/react@19.2.18)(immer@11.1.16)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5)):
+  zustand@5.0.14(@types/react@19.2.18)(immer@11.1.17)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5)):
     optionalDependencies:
       '@types/react': 19.2.18
-      immer: 11.1.16
+      immer: 11.1.17
       react: 19.2.5
       use-sync-external-store: 1.6.0(react@19.2.5)
