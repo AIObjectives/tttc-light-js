@@ -60,7 +60,7 @@
     "syncpack": "^13.0.4",
     "turbo": "^2.6.3",
     "typescript": "^5.9.3",
-    "vitest": "^3.1.2"
+    "vitest": "^4.0.0"
   },
   "type": "module",
   "pnpm": {
