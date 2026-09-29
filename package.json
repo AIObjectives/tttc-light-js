@@ -114,7 +114,7 @@
       "systeminformation": "5.33.1",
       "tmp": "0.2.7",
       "@tootallnate/once": "2.0.1",
-      "undici": "7.29.0",
+      "undici": "7.29.1",
       "uuid": "14.0.1",
       "webpack": "5.104.1",
       "websocket-driver": "0.7.5",

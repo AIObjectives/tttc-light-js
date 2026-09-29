@@ -54,7 +54,7 @@ overrides:
   systeminformation: 5.33.1
   tmp: 0.2.7
   '@tootallnate/once': 2.0.1
-  undici: 7.29.0
+  undici: 7.29.1
   uuid: 14.0.1
   webpack: 5.104.1
   websocket-driver: 0.7.5
@@ -7277,8 +7277,8 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@7.29.0:
-    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+  undici@7.29.1:
+    resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
     engines: {node: '>=20.18.1'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -14994,7 +14994,7 @@ snapshots:
       ssh-remote-port-forward: 1.0.4
       tar-fs: 3.1.1
       tmp: 0.2.7
-      undici: 7.29.0
+      undici: 7.29.1
     transitivePeerDependencies:
       - bare-abort-controller
       - bare-buffer
@@ -15165,7 +15165,7 @@ snapshots:
   undici-types@8.9.0:
     optional: true
 
-  undici@7.29.0: {}
+  undici@7.29.1: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
