@@ -65,6 +65,7 @@
   "type": "module",
   "pnpm": {
     "overrides": {
+      "sharp": "0.35.5",
       "color-normalize": "^2.0.0",
       "color-space": "^2.0.0",
       "flat-cache": "^4.0.1",
