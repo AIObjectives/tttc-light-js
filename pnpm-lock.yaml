@@ -25,14 +25,18 @@ overrides:
   brace-expansion@5: 5.0.12
   diff: 4.0.4
   esbuild: 0.28.2
+  '@fastify/busboy': 3.2.2
+  fast-copy: 4.1.0
   fast-uri: 3.1.8
   fast-xml-parser: 5.7.0
+  fflate: 0.4.9
   flatted: 3.4.4
   follow-redirects: 1.16.0
   form-data@2: 2.5.6
   form-data@4: 4.0.6
   '@grpc/grpc-js@1.14': 1.14.6
   '@grpc/grpc-js@1.9': 1.14.6
+  image-size: 2.0.3
   ip-address: 10.7.1
   js-yaml: 4.3.2
   lodash: 4.18.1
@@ -40,18 +44,22 @@ overrides:
   node-forge: 1.4.0
   '@opentelemetry/core': 2.8.0
   path-to-regexp: 8.4.2
+  pbkdf2: 3.1.7
   picomatch@2: 2.3.2
   picomatch@4: 4.0.5
   postcss: 8.5.26
+  postcss-selector-parser: 7.1.6
   preact: 10.29.8
   protobufjs: 7.6.5
   '@protobufjs/utf8': 1.1.2
+  proxy-addr: 2.0.8
   qs: 6.16.0
   rollup: 4.62.4
   sanitize-html: 2.17.7
   serialize-javascript: 7.0.5
   shell-quote: 1.11.0
   smol-toml: 1.9.0
+  source-map-js: 1.2.2
   systeminformation: 5.33.1
   tmp: 0.2.7
   '@tootallnate/once': 2.0.1
@@ -312,7 +320,7 @@ importers:
         version: 0.562.0(react@19.2.5)
       next:
         specifier: ^16.4.1
-        version: 16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@22.20.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+        version: 16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@26.5.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -370,13 +378,13 @@ importers:
         version: 1.59.1
       '@storybook/addon-docs':
         specifier: ^10.0.0
-        version: 10.1.9(@types/react@19.2.18)(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))
+        version: 10.1.9(@types/react@19.2.18)(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))
       '@storybook/addon-onboarding':
         specifier: ^10.0.0
         version: 10.1.9(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))
       '@storybook/nextjs':
         specifier: ^10.0.0
-        version: 10.1.9(esbuild@0.28.2)(next@16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@22.20.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(type-fest@2.19.0)(typescript@5.9.3)(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack-hot-middleware@2.26.1)(webpack@5.104.1(esbuild@0.28.2))
+        version: 10.1.9(esbuild@0.28.2)(next@16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@26.5.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(type-fest@2.19.0)(typescript@5.9.3)(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack-hot-middleware@2.26.1)(webpack@5.104.1(esbuild@0.28.2))
       '@storybook/react':
         specifier: ^10.0.0
         version: 10.1.9(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
@@ -520,7 +528,7 @@ importers:
         version: 11.0.4
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@types/node@22.20.1)(typescript@5.9.3)
+        version: 10.9.2(@types/node@26.5.1)(typescript@5.9.3)
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -1593,8 +1601,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@fastify/busboy@3.2.0':
-    resolution: {integrity: sha512-m9FVDXU3GT2ITSe0UaMA5rU3QkfC/UXtCU8y0gSN/GugTqtVldOBWIB5V6V3sbmenVZUIpU6f+mPEO2+m5iTaA==}
+  '@fastify/busboy@3.2.2':
+    resolution: {integrity: sha512-yXSS27qPExaXeuLvMRMXOLtpipzfQYNjG3FkunDWKGfMYjKuhFXko9CVzqxm8jcF+lmtS9Fd89QNdh9XDjnbNg==}
 
   '@firebase/ai@1.4.1':
     resolution: {integrity: sha512-bcusQfA/tHjUjBTnMx6jdoPMpDl3r8K15Z+snHz9wq0Foox0F/V+kNLXucEOHoTL2hTc9l+onZCyBJs2QoIC3g==}
@@ -3315,6 +3323,9 @@ packages:
   '@types/node@22.20.1':
     resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
 
+  '@types/node@26.5.1':
+    resolution: {integrity: sha512-CzNm2FezW4VR/LjG6yUdiEgLE/rAQ9Slj5gCu/C2VrdcW7I0ahNZ8DRbHT7zOZ6r3ONgd/bsQIeSaoDGrd1C6g==}
+
   '@types/papaparse@5.5.2':
     resolution: {integrity: sha512-gFnFp/JMzLHCwRf7tQHrNnfhN4eYBVYYI897CGX4MY1tzY9l2aLkVyx2IlKZ/SAqDbB3I1AOZW5gTMGGsqWliA==}
 
@@ -4730,8 +4741,8 @@ packages:
     resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
     engines: {node: '>=8.0.0'}
 
-  fast-copy@4.0.2:
-    resolution: {integrity: sha512-ybA6PDXIXOXivLJK/z9e+Otk7ve13I4ckBvGO5I2RRmBU1gMHLVDJYEuJYhGwez7YNlYji2M2DvVU+a9mSFDlw==}
+  fast-copy@4.1.0:
+    resolution: {integrity: sha512-f5oNUvGAmBPLP85im9czQ7fVWh3RfcIIIzyXrcXKmCiWoDn+CRmfsoQN3jmE5J+UEquj4Ugc1woTaxD0oa37Gg==}
 
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
@@ -4792,8 +4803,8 @@ packages:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
 
-  fflate@0.4.8:
-    resolution: {integrity: sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==}
+  fflate@0.4.9:
+    resolution: {integrity: sha512-zdxgIEddhfsyCaWpJ2SdXEP8ZMrKJ6+5jl4OupODcywU0IhRk6gdXuVGcPICyfx2H97hVK7xmJtRLPjkxAX8Vw==}
 
   filesize@10.1.6:
     resolution: {integrity: sha512-sJslQKU2uM33qH5nqewAwVB2QgR6w1aMNsYUp3aN5rMRyXEwJGmZvaWzeJFNTOXWlHQyBFCWrdj3fV/fsTOX8w==}
@@ -5220,9 +5231,9 @@ packages:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
 
-  image-size@2.0.2:
-    resolution: {integrity: sha512-IRqXKlaXwgSMAMtpNzZa1ZAe8m+Sa1770Dhk8VkSsP9LS+iHD62Zd8FQKs8fbPiagBE7BzoFX23cxFnwshpV6w==}
-    engines: {node: '>=16.x'}
+  image-size@2.0.3:
+    resolution: {integrity: sha512-9BJAtVCBth+76NwqnEfWr3PiRnYhbquk6K/USuQ1GQajz5NgLzO7tNsnoNjHfO7LuftgkBf+CCH6j28hjMbIYQ==}
+    engines: {node: '>=18'}
     hasBin: true
 
   immer@11.1.8:
@@ -6121,8 +6132,8 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
-  pbkdf2@3.1.5:
-    resolution: {integrity: sha512-Q3CG/cYvCO1ye4QKkuH7EXxs3VC/rI1/trd+qX2+PolbaKG0H+bgcZzrTt96mMyRtejk+JMCiLUn3y29W8qmFQ==}
+  pbkdf2@3.1.7:
+    resolution: {integrity: sha512-nS4mvFgVwUrecPTRdpdseM2fwpdfnX0/HibA8DgBRQtihUAzHQYJFU2l+OlEtiXtpqkrMvCPDwyXMUnASDt6Qw==}
     engines: {node: '>= 0.10'}
 
   picocolors@1.1.1:
@@ -6250,8 +6261,8 @@ packages:
     peerDependencies:
       postcss: 8.5.26
 
-  postcss-selector-parser@7.1.1:
-    resolution: {integrity: sha512-orRsuYpJVw8LdAwqqLykBj9ecS5/cRHlI5+nvTo8LcCKmzDmqVORXtOIYEEQuL9D4BxtA1lm5isAqzQZCoQ6Eg==}
+  postcss-selector-parser@7.1.6:
+    resolution: {integrity: sha512-7qASPzhKF2l2KLboRZux8CCTRMdGiV08vWmyKzPz22qZ7ZjQBOeY7rNzNoCLSUiftJ7HUq0GERHmxw/t0dCdMw==}
     engines: {node: '>=4'}
 
   postcss-value-parser@4.2.0:
@@ -6328,8 +6339,8 @@ packages:
     resolution: {integrity: sha512-/FPD0nUc9jH6rfFjji9IBqOz4pcSE3CsT1m7Ep6Mdb0LxSUMj8hgl6GomOvZzpNpAqqGaXA0P3VSrZLFzIhQrw==}
     engines: {node: '>=12.0.0'}
 
-  proxy-addr@2.0.7:
-    resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
+  proxy-addr@2.0.8:
+    resolution: {integrity: sha512-5nnx0yGyVUcY6t9RnWcARWtwT9F1D8O9rt08htPvnd49W1IgZtmLkhu9WfMzQj1cFxjHIO6connUNVW5k7AVyQ==}
     engines: {node: '>= 0.10'}
 
   proxy-agent@6.4.0:
@@ -6838,8 +6849,8 @@ packages:
       react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
 
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
+  source-map-js@1.2.2:
+    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
   source-map-support@0.5.21:
@@ -7273,6 +7284,9 @@ packages:
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
   undici@7.29.1:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
@@ -8834,7 +8848,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@fastify/busboy@3.2.0': {}
+  '@fastify/busboy@3.2.2': {}
 
   '@firebase/ai@1.4.1(@firebase/app-types@0.9.3)(@firebase/app@0.13.2)':
     dependencies:
@@ -10168,10 +10182,10 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@storybook/addon-docs@10.1.9(@types/react@19.2.18)(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))':
+  '@storybook/addon-docs@10.1.9(@types/react@19.2.18)(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))':
     dependencies:
       '@mdx-js/react': 3.1.1(@types/react@19.2.18)(react@19.2.5)
-      '@storybook/csf-plugin': 10.1.9(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))
+      '@storybook/csf-plugin': 10.1.9(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))
       '@storybook/icons': 2.0.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@storybook/react-dom-shim': 10.1.9(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))
       react: 19.2.5
@@ -10189,10 +10203,10 @@ snapshots:
     dependencies:
       storybook: 10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
 
-  '@storybook/builder-webpack5@10.1.9(esbuild@0.28.2)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))':
+  '@storybook/builder-webpack5@10.1.9(esbuild@0.28.2)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@storybook/core-webpack': 10.1.9(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))
-      '@vitest/mocker': 3.2.4(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))
+      '@vitest/mocker': 3.2.4(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))
       case-sensitive-paths-webpack-plugin: 2.4.0
       cjs-module-lexer: 1.4.3
       css-loader: 7.1.2(webpack@5.104.1(esbuild@0.28.2))
@@ -10224,14 +10238,14 @@ snapshots:
       storybook: 10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       ts-dedent: 2.2.0
 
-  '@storybook/csf-plugin@10.1.9(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))':
+  '@storybook/csf-plugin@10.1.9(esbuild@0.28.2)(rollup@4.62.4)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.104.1(esbuild@0.28.2))':
     dependencies:
       storybook: 10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       unplugin: 2.3.11
     optionalDependencies:
       esbuild: 0.28.2
       rollup: 4.62.4
-      vite: 7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0)
       webpack: 5.104.1(esbuild@0.28.2)
 
   '@storybook/global@5.0.0': {}
@@ -10241,7 +10255,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@storybook/nextjs@10.1.9(esbuild@0.28.2)(next@16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@22.20.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(type-fest@2.19.0)(typescript@5.9.3)(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack-hot-middleware@2.26.1)(webpack@5.104.1(esbuild@0.28.2))':
+  '@storybook/nextjs@10.1.9(esbuild@0.28.2)(next@16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@26.5.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(type-fest@2.19.0)(typescript@5.9.3)(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))(webpack-hot-middleware@2.26.1)(webpack@5.104.1(esbuild@0.28.2))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-syntax-bigint': 7.8.3(@babel/core@7.29.7)
@@ -10257,15 +10271,15 @@ snapshots:
       '@babel/preset-typescript': 7.28.5(@babel/core@7.29.7)
       '@babel/runtime': 7.29.7
       '@pmmmwh/react-refresh-webpack-plugin': 0.5.17(react-refresh@0.14.2)(type-fest@2.19.0)(webpack-hot-middleware@2.26.1)(webpack@5.104.1(esbuild@0.28.2))
-      '@storybook/builder-webpack5': 10.1.9(esbuild@0.28.2)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))
+      '@storybook/builder-webpack5': 10.1.9(esbuild@0.28.2)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))
       '@storybook/preset-react-webpack': 10.1.9(esbuild@0.28.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
       '@storybook/react': 10.1.9(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.2.5)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
       '@types/semver': 7.7.1
       babel-loader: 9.2.1(@babel/core@7.29.7)(webpack@5.104.1(esbuild@0.28.2))
       css-loader: 6.11.0(webpack@5.104.1(esbuild@0.28.2))
-      image-size: 2.0.2
+      image-size: 2.0.3
       loader-utils: 3.3.1
-      next: 16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@22.20.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      next: 16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@26.5.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       node-polyfill-webpack-plugin: 2.0.1(webpack@5.104.1(esbuild@0.28.2))
       postcss: 8.5.26
       postcss-loader: 8.2.0(postcss@8.5.26)(typescript@5.9.3)(webpack@5.104.1(esbuild@0.28.2))
@@ -10372,7 +10386,7 @@ snapshots:
       jiti: 2.6.1
       lightningcss: 1.30.2
       magic-string: 0.30.21
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
       tailwindcss: 4.1.18
 
   '@tailwindcss/oxide-android-arm64@4.1.18':
@@ -10685,6 +10699,10 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/node@26.5.1':
+    dependencies:
+      undici-types: 8.9.0
+
   '@types/papaparse@5.5.2':
     dependencies:
       '@types/node': 22.20.1
@@ -10783,13 +10801,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))':
+  '@vitest/mocker@3.2.4(vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 3.2.4
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0)
 
   '@vitest/mocker@3.2.6(vite@7.3.6(@types/node@22.20.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
@@ -11653,7 +11671,7 @@ snapshots:
       diffie-hellman: 5.0.3
       hash-base: 3.0.5
       inherits: 2.0.4
-      pbkdf2: 3.1.5
+      pbkdf2: 3.1.7
       public-encrypt: 4.0.3
       randombytes: 2.1.0
       randomfill: 1.0.4
@@ -12227,7 +12245,7 @@ snapshots:
       on-finished: 2.4.1
       once: 1.4.0
       parseurl: 1.3.3
-      proxy-addr: 2.0.7
+      proxy-addr: 2.0.8
       qs: 6.16.0
       range-parser: 1.2.1
       router: 2.2.0
@@ -12253,7 +12271,7 @@ snapshots:
     dependencies:
       pure-rand: 6.1.0
 
-  fast-copy@4.0.2: {}
+  fast-copy@4.1.0: {}
 
   fast-deep-equal@3.1.3: {}
 
@@ -12310,7 +12328,7 @@ snapshots:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
 
-  fflate@0.4.8: {}
+  fflate@0.4.9: {}
 
   filesize@10.1.6: {}
 
@@ -12354,7 +12372,7 @@ snapshots:
 
   firebase-admin@13.6.0:
     dependencies:
-      '@fastify/busboy': 3.2.0
+      '@fastify/busboy': 3.2.2
       '@firebase/database-compat': 2.1.0
       '@firebase/database-types': 1.0.16
       '@types/node': 22.20.1
@@ -12883,7 +12901,7 @@ snapshots:
 
   ignore@7.0.5: {}
 
-  image-size@2.0.2: {}
+  image-size@2.0.3: {}
 
   immer@11.1.8: {}
 
@@ -13430,7 +13448,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  next@16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@22.20.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
+  next@16.4.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(@types/node@26.5.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:
       '@next/env': 16.4.2
       '@swc/helpers': 0.5.23
@@ -13451,7 +13469,7 @@ snapshots:
       '@next/swc-win32-x64-msvc': 16.4.2
       '@opentelemetry/api': 1.9.0
       '@playwright/test': 1.59.1
-      sharp: 0.35.5(@types/node@22.20.1)
+      sharp: 0.35.5(@types/node@26.5.1)
     transitivePeerDependencies:
       - '@babel/core'
       - '@types/node'
@@ -13697,7 +13715,7 @@ snapshots:
       asn1.js: 4.10.1
       browserify-aes: 1.2.0
       evp_bytestokey: 1.0.3
-      pbkdf2: 3.1.5
+      pbkdf2: 3.1.7
       safe-buffer: 5.2.1
 
   parse-json@5.2.0:
@@ -13747,7 +13765,7 @@ snapshots:
 
   pathval@2.0.1: {}
 
-  pbkdf2@3.1.5:
+  pbkdf2@3.1.7:
     dependencies:
       create-hash: 1.2.0
       create-hmac: 1.1.7
@@ -13790,7 +13808,7 @@ snapshots:
     dependencies:
       colorette: 2.0.20
       dateformat: 4.6.3
-      fast-copy: 4.0.2
+      fast-copy: 4.1.0
       fast-safe-stringify: 2.1.1
       help-me: 5.0.0
       joycon: 3.1.1
@@ -13942,20 +13960,20 @@ snapshots:
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.26)
       postcss: 8.5.26
-      postcss-selector-parser: 7.1.1
+      postcss-selector-parser: 7.1.6
       postcss-value-parser: 4.2.0
 
   postcss-modules-scope@3.2.1(postcss@8.5.26):
     dependencies:
       postcss: 8.5.26
-      postcss-selector-parser: 7.1.1
+      postcss-selector-parser: 7.1.6
 
   postcss-modules-values@4.0.0(postcss@8.5.26):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.26)
       postcss: 8.5.26
 
-  postcss-selector-parser@7.1.1:
+  postcss-selector-parser@7.1.6:
     dependencies:
       cssesc: 3.0.0
       util-deprecate: 1.0.2
@@ -13966,13 +13984,13 @@ snapshots:
     dependencies:
       nanoid: 3.3.17
       picocolors: 1.1.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   posthog-js@1.307.2:
     dependencies:
       '@posthog/core': 1.8.0
       core-js: 3.47.0
-      fflate: 0.4.8
+      fflate: 0.4.9
       preact: 10.29.8
       web-vitals: 4.2.4
     transitivePeerDependencies:
@@ -14051,7 +14069,7 @@ snapshots:
       '@types/node': 22.20.1
       long: 5.3.2
 
-  proxy-addr@2.0.7:
+  proxy-addr@2.0.8:
     dependencies:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
@@ -14544,7 +14562,7 @@ snapshots:
       safe-buffer: 5.2.1
       to-buffer: 1.2.2
 
-  sharp@0.35.5(@types/node@22.20.1):
+  sharp@0.35.5(@types/node@26.5.1):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -14575,7 +14593,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
-      '@types/node': 22.20.1
+      '@types/node': 26.5.1
     optional: true
 
   shebang-command@2.0.0:
@@ -14662,7 +14680,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  source-map-js@1.2.1: {}
+  source-map-js@1.2.2: {}
 
   source-map-support@0.5.21:
     dependencies:
@@ -15070,14 +15088,14 @@ snapshots:
 
   ts-dedent@2.2.0: {}
 
-  ts-node@10.9.2(@types/node@22.20.1)(typescript@5.9.3):
+  ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.12
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 22.20.1
+      '@types/node': 26.5.1
       acorn: 8.18.0
       acorn-walk: 8.3.5
       arg: 4.1.3
@@ -15157,6 +15175,8 @@ snapshots:
   undici-types@5.26.5: {}
 
   undici-types@6.21.0: {}
+
+  undici-types@8.9.0: {}
 
   undici@7.29.1: {}
 
@@ -15286,6 +15306,24 @@ snapshots:
       terser: 5.44.1
       tsx: 4.21.0
       yaml: 2.9.0
+
+  vite@7.3.6(@types/node@26.5.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0):
+    dependencies:
+      esbuild: 0.28.2
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
+      postcss: 8.5.26
+      rollup: 4.62.4
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.5.1
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      lightningcss: 1.30.2
+      terser: 5.44.1
+      tsx: 4.21.0
+      yaml: 2.9.0
+    optional: true
 
   vitest@3.2.6(@types/node@22.20.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
