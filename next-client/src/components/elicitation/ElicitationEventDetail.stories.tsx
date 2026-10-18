@@ -31,6 +31,12 @@ const meta = {
     nextjs: {
       appDirectory: true,
     },
+    // @storybook/nextjs's app-router mock doesn't yet provide the
+    // parentRenderTree.data.bfcacheId field that Next.js 16.4's useRouter()
+    // reads, so any story that renders a <Link> (which wraps RedirectBoundary)
+    // crashes here. Upstream: https://github.com/storybookjs/storybook/issues/36720
+    // Remove this once a Storybook release includes that fix.
+    chromatic: { disableSnapshot: true },
     mockData: [
       {
         url: /\/report\/([\w-]+)/,
