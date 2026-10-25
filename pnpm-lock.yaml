@@ -114,7 +114,7 @@ importers:
     dependencies:
       openai:
         specifier: ^4.104.0
-        version: 4.104.0(ws@8.21.0)(zod@4.2.1)
+        version: 4.104.0(ws@8.21.0)(zod@4.6.6)
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -135,10 +135,10 @@ importers:
         version: 14.0.1
       weave:
         specifier: ^0.11.0
-        version: 0.11.0(ws@8.21.0)(zod@4.2.1)
+        version: 0.11.0(ws@8.21.0)(zod@4.6.6)
       zod:
         specifier: ^4.2.1
-        version: 4.2.1
+        version: 4.6.6
     devDependencies:
       '@types/sanitize-html':
         specifier: ^2.16.0
@@ -154,7 +154,7 @@ importers:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.93.0
-        version: 0.93.0(zod@4.2.1)
+        version: 0.93.0(zod@4.6.6)
       '@google-cloud/pubsub':
         specifier: ^5.2.0
         version: 5.2.0
@@ -193,7 +193,7 @@ importers:
         version: 3.3.2
       openai:
         specifier: ^6.10.0
-        version: 6.15.0(ws@8.21.0)(zod@4.2.1)
+        version: 6.15.0(ws@8.21.0)(zod@4.6.6)
       p-retry:
         specifier: ^6.2.1
         version: 6.2.1
@@ -217,7 +217,7 @@ importers:
         version: link:../common
       zod:
         specifier: ^4.2.1
-        version: 4.2.1
+        version: 4.6.6
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -362,7 +362,7 @@ importers:
         version: 1.1.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       zod:
         specifier: ^4.2.1
-        version: 4.2.1
+        version: 4.6.6
       zustand:
         specifier: ^5.0.9
         version: 5.0.14(@types/react@19.3.0)(immer@11.1.8)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
@@ -448,7 +448,7 @@ importers:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.93.0
-        version: 0.93.0(zod@4.2.1)
+        version: 0.93.0(zod@4.6.6)
       '@google-cloud/pubsub':
         specifier: ^5.2.0
         version: 5.2.0
@@ -469,7 +469,7 @@ importers:
         version: 5.10.1
       openai:
         specifier: ^6.10.0
-        version: 6.15.0(ws@8.21.0)(zod@4.2.1)
+        version: 6.15.0(ws@8.21.0)(zod@4.6.6)
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -481,10 +481,10 @@ importers:
         version: link:../common
       weave:
         specifier: ^0.11.0
-        version: 0.11.0(ws@8.21.0)(zod@4.2.1)
+        version: 0.11.0(ws@8.21.0)(zod@4.6.6)
       zod:
         specifier: ^4.2.1
-        version: 4.2.1
+        version: 4.6.6
     devDependencies:
       '@testcontainers/redis':
         specifier: ^11.11.0
@@ -518,7 +518,7 @@ importers:
         version: 14.0.1
       zod:
         specifier: ^4.2.1
-        version: 4.2.1
+        version: 4.6.6
     devDependencies:
       '@types/csv-parse':
         specifier: ^1.1.12
@@ -7664,8 +7664,8 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod@4.2.1:
-    resolution: {integrity: sha512-0wZ1IRqGGhMP76gLqz8EyfBXKk0J2qo2+H3fi4mcUP/KtTocoX08nmIAHl1Z2kJIZbZee8KOpBCSNPRgauucjw==}
+  zod@4.6.6:
+    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
   zustand@5.0.14:
     resolution: {integrity: sha512-/8tAspM5LMPr28b3fwLYrtdj77ECpfZviaP75CMTnwO8ISyaE4GDIG/9rDDYq/cH9D2Xw2A2RXglLInmVBQB/g==}
@@ -7691,11 +7691,11 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/sdk@0.93.0(zod@4.2.1)':
+  '@anthropic-ai/sdk@0.93.0(zod@4.6.6)':
     dependencies:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
-      zod: 4.2.1
+      zod: 4.6.6
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
@@ -13559,7 +13559,7 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@4.104.0(ws@8.21.0)(zod@4.2.1):
+  openai@4.104.0(ws@8.21.0)(zod@4.6.6):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -13570,14 +13570,14 @@ snapshots:
       node-fetch: 2.7.0
     optionalDependencies:
       ws: 8.21.0
-      zod: 4.2.1
+      zod: 4.6.6
     transitivePeerDependencies:
       - encoding
 
-  openai@6.15.0(ws@8.21.0)(zod@4.2.1):
+  openai@6.15.0(ws@8.21.0)(zod@4.6.6):
     optionalDependencies:
       ws: 8.21.0
-      zod: 4.2.1
+      zod: 4.6.6
 
   opener@1.5.2: {}
 
@@ -15343,7 +15343,7 @@ snapshots:
       glob-to-regexp: 0.4.1
       graceful-fs: 4.2.11
 
-  weave@0.11.0(ws@8.21.0)(zod@4.2.1):
+  weave@0.11.0(ws@8.21.0)(zod@4.6.6):
     dependencies:
       cli-progress: 3.12.0
       cross-spawn: 7.0.6
@@ -15351,7 +15351,7 @@ snapshots:
       import-in-the-middle: 1.15.0
       ini: 5.0.0
       module-details-from-path: 1.0.4
-      openai: 4.104.0(ws@8.21.0)(zod@4.2.1)
+      openai: 4.104.0(ws@8.21.0)(zod@4.6.6)
       semifies: 1.0.0
       uuidv7: 1.1.0
     transitivePeerDependencies:
@@ -15557,7 +15557,7 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.7.0
 
-  zod@4.2.1: {}
+  zod@4.6.6: {}
 
   zustand@5.0.14(@types/react@19.3.0)(immer@11.1.8)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5)):
     optionalDependencies:
