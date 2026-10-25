@@ -87,7 +87,7 @@
       "esbuild": "0.28.2",
       "@fastify/busboy": "3.2.2",
       "fast-copy": "4.1.0",
-      "fast-uri": "3.1.8",
+      "fast-uri": "3.1.9",
       "fast-xml-parser": "5.7.0",
       "fflate": "0.4.9",
       "flatted": "3.4.4",
