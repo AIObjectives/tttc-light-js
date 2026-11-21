@@ -60,7 +60,7 @@ overrides:
   shell-quote: 1.11.0
   smol-toml: 1.9.0
   source-map-js: 1.2.2
-  systeminformation: 5.33.1
+  systeminformation: 5.33.16
   tmp: 0.2.7
   '@tootallnate/once': 2.0.1
   undici: 7.30.1
@@ -7294,8 +7294,8 @@ packages:
     engines: {node: '>=18.18.0'}
     hasBin: true
 
-  systeminformation@5.33.1:
-    resolution: {integrity: sha512-DEN6ICHk3Tk0Uf/hrAHh7xlt7iL5CJFBtPZinA0H62DrGG/KPKqq/Nzj6lCXPS4Ay/sf/14zNnk9LpqKzBIc+w==}
+  systeminformation@5.33.16:
+    resolution: {integrity: sha512-R+Lh69IJXfJj6bfyH1In5cIR9FTr4hBS39YvlZHZjsK1p9cuELPq7hplZZIb56ZESMMb+DzdKqqE6Iomi01Mvg==}
     engines: {node: '>=10.0.0'}
     os: [darwin, linux, win32, freebsd, openbsd, netbsd, sunos, android]
     hasBin: true
@@ -14346,7 +14346,7 @@ snapshots:
       async: 3.2.6
       debug: 4.4.3(supports-color@5.5.0)
       pidusage: 2.0.21
-      systeminformation: 5.33.1
+      systeminformation: 5.33.16
       tx2: 1.0.5
     transitivePeerDependencies:
       - supports-color
@@ -15363,7 +15363,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  systeminformation@5.33.1:
+  systeminformation@5.33.16:
     optional: true
 
   tailwind-merge@2.6.1: {}
