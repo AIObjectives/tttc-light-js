@@ -16,7 +16,7 @@ overrides:
   axios: 1.20.0
   '@babel/core': 7.29.7
   '@babel/plugin-transform-modules-systemjs': 7.29.8
-  basic-ftp: 5.3.1
+  basic-ftp: 6.2.4
   bn.js@4: 4.12.5
   bn.js@5: 5.2.5
   body-parser: 2.4.0
@@ -4035,8 +4035,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  basic-ftp@5.3.1:
-    resolution: {integrity: sha512-bopVNp6ugyA150DDuZfPFdt1KZ5a94ZDiwX4hMgZDzF+GttD80lEy8kj98kbyhLXnPvhtIo93mdnLIjpCAeeOw==}
+  basic-ftp@6.2.4:
+    resolution: {integrity: sha512-6ACKOQxSlv5xka4i03ujfncNr9qp5yZNK3u0+yUFTAU4HfG5AeztCC9+R1I9dm8oq+1vt4RZ7cIRTBrdHqL2mw==}
     engines: {node: '>=10.0.0'}
 
   bcrypt-pbkdf@1.0.2:
@@ -11656,7 +11656,7 @@ snapshots:
 
   baseline-browser-mapping@2.11.39: {}
 
-  basic-ftp@5.3.1: {}
+  basic-ftp@6.2.4: {}
 
   bcrypt-pbkdf@1.0.2:
     dependencies:
@@ -13011,7 +13011,7 @@ snapshots:
 
   get-uri@6.0.5:
     dependencies:
-      basic-ftp: 5.3.1
+      basic-ftp: 6.2.4
       data-uri-to-buffer: 6.0.2
       debug: 4.4.3(supports-color@5.5.0)
     transitivePeerDependencies:
