@@ -19,18 +19,20 @@ vi.mock("tttc-common/logger", () => ({
 // Mock OpenAI
 vi.mock("openai", () => {
   const mockResponsesCreate = vi.fn();
-  const MockOpenAI = vi.fn().mockImplementation(() => ({
-    responses: { create: mockResponsesCreate },
-  }));
+  // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+  const MockOpenAI = vi.fn().mockImplementation(function () {
+    return { responses: { create: mockResponsesCreate } };
+  });
   return { default: MockOpenAI, __mockResponsesCreate: mockResponsesCreate };
 });
 
 // Mock Anthropic
 vi.mock("@anthropic-ai/sdk", () => {
   const mockMessagesCreate = vi.fn();
-  const MockAnthropic = vi.fn().mockImplementation(() => ({
-    messages: { create: mockMessagesCreate },
-  }));
+  // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+  const MockAnthropic = vi.fn().mockImplementation(function () {
+    return { messages: { create: mockMessagesCreate } };
+  });
   return { default: MockAnthropic, __mockMessagesCreate: mockMessagesCreate };
 });
 

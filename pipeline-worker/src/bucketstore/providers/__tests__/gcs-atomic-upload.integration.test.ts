@@ -76,9 +76,10 @@ vi.mock("@google-cloud/storage", () => {
     file: mockFile,
   }));
 
-  const MockStorage = vi.fn(() => ({
-    bucket: mockBucket,
-  }));
+  // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+  const MockStorage = vi.fn(function () {
+    return { bucket: mockBucket };
+  });
 
   // Export mocks for test access
   (MockStorage as { _mockFile?: Mock })._mockFile = mockFile;

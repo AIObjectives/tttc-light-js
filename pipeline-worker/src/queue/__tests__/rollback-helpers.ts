@@ -1,17 +1,17 @@
-import type { vi } from "vitest";
+import type { Mock } from "vitest";
 import { TEST_STORAGE } from "./fixtures.js";
 
 // Shared test helper for rollback behavior tests
 export type MockStorage = {
-  storeFile: ReturnType<typeof vi.fn>;
-  deleteFile: ReturnType<typeof vi.fn>;
-  fileExists: ReturnType<typeof vi.fn>;
+  storeFile: Mock<(...args: unknown[]) => unknown>;
+  deleteFile: Mock<(...args: unknown[]) => unknown>;
+  fileExists: Mock<(...args: unknown[]) => unknown>;
 };
 
 export type MockRefStore = {
   Report: {
-    get: ReturnType<typeof vi.fn>;
-    modify: ReturnType<typeof vi.fn>;
+    get: Mock<(...args: unknown[]) => Promise<Record<string, unknown>>>;
+    modify: Mock<(...args: unknown[]) => unknown>;
   };
 };
 

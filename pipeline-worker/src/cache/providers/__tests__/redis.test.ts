@@ -19,14 +19,17 @@ const mockOn = vi.fn();
 // Mock the ioredis module
 vi.mock("ioredis", () => {
   return {
-    default: vi.fn(() => ({
-      set: mockSet,
-      setex: mockSetex,
-      get: mockGet,
-      del: mockDel,
-      disconnect: mockDisconnect,
-      on: mockOn,
-    })),
+    // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+    default: vi.fn(function () {
+      return {
+        set: mockSet,
+        setex: mockSetex,
+        get: mockGet,
+        del: mockDel,
+        disconnect: mockDisconnect,
+        on: mockOn,
+      };
+    }),
   };
 });
 

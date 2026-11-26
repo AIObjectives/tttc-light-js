@@ -39,14 +39,17 @@ let originalClientWidth: PropertyDescriptor | undefined;
 beforeEach(() => {
   resizeObserverDisconnect = vi.fn();
 
-  global.ResizeObserver = vi.fn().mockImplementation((callback) => {
-    resizeObserverCallback = callback;
-    return {
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: resizeObserverDisconnect,
-    };
-  });
+  global.ResizeObserver = vi
+    .fn()
+    // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+    .mockImplementation(function (callback: ResizeObserverCallback) {
+      resizeObserverCallback = callback;
+      return {
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: resizeObserverDisconnect,
+      };
+    });
 
   // Mock clientWidth on all elements
   originalClientWidth = Object.getOwnPropertyDescriptor(

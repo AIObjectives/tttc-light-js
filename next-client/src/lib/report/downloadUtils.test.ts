@@ -47,10 +47,10 @@ beforeEach(() => {
   });
 
   Object.defineProperty(global, "Blob", {
-    value: vi.fn((content, options) => ({
-      content,
-      type: options?.type,
-    })),
+    // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+    value: vi.fn(function (content: unknown, options?: { type?: string }) {
+      return { content, type: options?.type };
+    }),
     writable: true,
   });
 });
