@@ -26,7 +26,10 @@ const mockPostHogInstance = {
 
 vi.mock("posthog-node", () => {
   return {
-    PostHog: vi.fn().mockImplementation(() => mockPostHogInstance),
+    // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+    PostHog: vi.fn().mockImplementation(function () {
+      return mockPostHogInstance;
+    }),
   };
 });
 

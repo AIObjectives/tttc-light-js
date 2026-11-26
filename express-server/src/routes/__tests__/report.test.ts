@@ -180,9 +180,10 @@ const createMockStorage = (
 });
 
 const setupStorageMock = (storage: MockStorage) => {
-  vi.mocked(Bucket).mockReturnValue(
-    storage as unknown as InstanceType<typeof Bucket>,
-  );
+  // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+  vi.mocked(Bucket).mockImplementation(function () {
+    return storage as unknown as InstanceType<typeof Bucket>;
+  });
 };
 
 const setupRequestParams = (

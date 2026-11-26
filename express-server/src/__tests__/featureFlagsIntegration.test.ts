@@ -97,7 +97,10 @@ const { mockPostHogInstance } = vi.hoisted(() => ({
 
 vi.mock("posthog-node", () => {
   return {
-    PostHog: vi.fn().mockImplementation(() => mockPostHogInstance),
+    // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+    PostHog: vi.fn().mockImplementation(function () {
+      return mockPostHogInstance;
+    }),
   };
 });
 
@@ -137,9 +140,12 @@ vi.mock("firebase-admin", () => ({
 
 // Mock Google Cloud Storage
 vi.mock("@google-cloud/storage", () => ({
-  Storage: vi.fn().mockImplementation(() => ({
-    bucket: vi.fn(),
-  })),
+  // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+  Storage: vi.fn().mockImplementation(function () {
+    return {
+      bucket: vi.fn(),
+    };
+  }),
 }));
 
 describe("Feature Flags Integration Tests", () => {

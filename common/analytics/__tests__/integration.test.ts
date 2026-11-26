@@ -59,15 +59,18 @@ vi.mock("../environment", () => ({
 // Mock PostHog providers to work in test environment
 vi.mock("../providers/posthogProvider", () => {
   return {
-    PostHogAnalyticsProvider: vi.fn().mockImplementation(() => ({
-      track: vi.fn(),
-      identify: vi.fn(),
-      page: vi.fn(),
-      flush: vi.fn(),
-      shutdown: vi.fn(),
-      isReady: vi.fn(() => true),
-      ensureInitialized: vi.fn(),
-    })),
+    // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+    PostHogAnalyticsProvider: vi.fn().mockImplementation(function () {
+      return {
+        track: vi.fn(),
+        identify: vi.fn(),
+        page: vi.fn(),
+        flush: vi.fn(),
+        shutdown: vi.fn(),
+        isReady: vi.fn(() => true),
+        ensureInitialized: vi.fn(),
+      };
+    }),
   };
 });
 

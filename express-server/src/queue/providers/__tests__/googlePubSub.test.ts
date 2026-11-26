@@ -96,20 +96,23 @@ import { GooglePubSubQueue } from "../googlePubSub";
 
 // Mock the Google Cloud PubSub module
 vi.mock("@google-cloud/pubsub", () => ({
-  PubSub: vi.fn().mockImplementation(() => ({
-    topic: vi.fn().mockImplementation(() => ({
-      publishMessage: vi.fn().mockResolvedValue(undefined),
-      get: vi.fn().mockResolvedValue([{ name: "test-topic" }]), // Returns [Topic]
-      name: "test-topic",
-      subscription: vi.fn().mockImplementation(() => ({
-        on: vi.fn(),
-        close: vi.fn().mockResolvedValue(undefined),
-        get: vi.fn().mockResolvedValue([{ name: "test-subscription" }]), // Returns [Subscription]
-        create: vi.fn().mockResolvedValue(undefined), // For creating subscription
-        name: "test-subscription",
+  // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+  PubSub: vi.fn().mockImplementation(function () {
+    return {
+      topic: vi.fn().mockImplementation(() => ({
+        publishMessage: vi.fn().mockResolvedValue(undefined),
+        get: vi.fn().mockResolvedValue([{ name: "test-topic" }]), // Returns [Topic]
+        name: "test-topic",
+        subscription: vi.fn().mockImplementation(() => ({
+          on: vi.fn(),
+          close: vi.fn().mockResolvedValue(undefined),
+          get: vi.fn().mockResolvedValue([{ name: "test-subscription" }]), // Returns [Subscription]
+          create: vi.fn().mockResolvedValue(undefined), // For creating subscription
+          name: "test-subscription",
+        })),
       })),
-    })),
-  })),
+    };
+  }),
 }));
 
 describe("GooglePubSubQueue", () => {

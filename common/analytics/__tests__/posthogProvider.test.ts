@@ -80,7 +80,10 @@ describe("PostHogAnalyticsProvider", () => {
 
     // Recreate mock instance to ensure fresh state
     mockPostHogInstance = createMockPostHogInstance();
-    mockPostHogConstructor.mockImplementation(() => mockPostHogInstance);
+    // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+    mockPostHogConstructor.mockImplementation(function () {
+      return mockPostHogInstance;
+    });
 
     // Default config
     config = {
@@ -182,7 +185,8 @@ describe("PostHogAnalyticsProvider", () => {
 
     it("should handle PostHog import failure", async () => {
       // Mock PostHog constructor to fail during initialization
-      mockPostHogConstructor.mockImplementation(() => {
+      // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+      mockPostHogConstructor.mockImplementation(function () {
         throw new Error("PostHog import failed");
       });
 
@@ -200,7 +204,8 @@ describe("PostHogAnalyticsProvider", () => {
     });
 
     it("should handle PostHog constructor failure", async () => {
-      mockPostHogConstructor.mockImplementation(() => {
+      // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+      mockPostHogConstructor.mockImplementation(function () {
         throw new Error("PostHog constructor failed");
       });
 
@@ -415,7 +420,8 @@ describe("PostHogAnalyticsProvider", () => {
     it("should handle track errors gracefully when not initialized", async () => {
       // Create provider but don't initialize it
       const uninitializedProvider = new PostHogAnalyticsProvider(config);
-      mockPostHogConstructor.mockImplementation(() => {
+      // biome-ignore lint/complexity/useArrowFunction: vitest 4 requires a real function/class here since this mock is invoked with `new`
+      mockPostHogConstructor.mockImplementation(function () {
         throw new Error("Initialization failed");
       });
 
